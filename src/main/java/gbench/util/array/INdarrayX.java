@@ -570,7 +570,8 @@ public interface INdarrayX<T> extends INdarray<T> {
 			final Tuple2<INdarrayX<Double>, Tuple2<INdarrayX<Double>, INdarrayX<Double>>> palu = nx.lu();
 			final INdarrayX<Double> p = palu._1;
 			final INdarrayX<Double> u = palu._2._2;
-			final INdarray<Integer> pnd = p.rowS().map(INdarrayX::ohDecode).collect(INdarray.ndclc(p.ncol(),Integer.class));
+			final INdarray<Integer> pnd = p.rowS().map(INdarrayX::ohDecode)
+					.collect(INdarray.ndclc(p.ncol(), Integer.class));
 			final int ptau = pnd.tau();
 			final double sign = ptau % 2 == 0 ? 1d : -1d;
 			final Iterator<Double> itr = u.diagonalS().iterator(); // 对角线迭代器
