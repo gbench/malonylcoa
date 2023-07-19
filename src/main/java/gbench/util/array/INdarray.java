@@ -1036,7 +1036,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 */
 	default <U> INdarray<T> assign2(final Iterable<U> us, final int offset, final BiFunction<T, U, T> biop) {
 		final INdarray<U> _us = us instanceof INdarray ? (INdarray<U>) us
-				: INdarray.of(StreamSupport.stream(us.spliterator(), false).collect(Types.arrayclc()));
+				: StreamSupport.stream(us.spliterator(), false).collect(Lisp.aaclc(this.length(), null, INdarray::of));
 		this.subarray(offset).subset().assign((i, t) -> {
 			final T _t = biop.apply(t.get(), _us.get(i % _us.length()));
 			t.set(_t);
@@ -1228,8 +1228,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	default <U> INdarray<U> fmap(final Function<T, U> mapper) {
-		final U[] us = this.map(mapper).collect(Types.arrayclc());
-		return of(us);
+		return this.map(mapper).collect(Lisp.aaclc(this.length(), null, INdarray::of));
 	}
 
 	/**
@@ -1244,8 +1243,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	default <U> INdarray<U> fmap(final BiFunction<Integer, T, U> mapper) {
-		final U[] us = this.map(mapper).collect(Types.arrayclc());
-		return of(us);
+		return this.map(mapper).collect(Lisp.aaclc(this.length(), null, INdarray::of));
 	}
 
 	/**
@@ -2648,8 +2646,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	static <T> INdarray<T> of(Function<Integer, T> gen, final int n) {
-		final T[] ts = Stream.iterate(0, i -> i + 1).limit(n).map(gen).collect(Types.arrayclc());
-		return INdarray.of(ts);
+		return Stream.iterate(0, i -> i + 1).limit(n).map(gen).collect(Lisp.aaclc(n, null, INdarray::of));
 	}
 
 	/**
