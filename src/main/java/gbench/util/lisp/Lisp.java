@@ -230,7 +230,7 @@ public class Lisp {
 	 *
 	 * @param <T>      归集器元素类型
 	 * @param <U>      结果类型
-	 * @param size     每次增增扩的空间大小
+	 * @param size     每次增扩的空间大小
 	 * @param tclazz   元素类型,tclazz 为null时候，默认为获取的第一个非空元素的类型作为数组元素的类型。
 	 * @param finisher 完成归集器 ll->u
 	 * @return [t]->u 链表归集器

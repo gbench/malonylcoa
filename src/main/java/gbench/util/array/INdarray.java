@@ -2910,12 +2910,12 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	/**
 	 * ndarray 归集器
 	 *
-	 * @param <T>             元素类型
-	 * @param initialCapacity the initial capacity of the list
+	 * @param <T>  元素类型
+	 * @param size 每次增扩的空间大小
 	 * @return INdarray 归集器 [t]->nd
 	 */
-	static <T> Collector<T, ?, INdarray<T>> ndclc(final int initialCapacity) {
-		return Lisp.aaclc(initialCapacity, false, INdarray::nd);
+	static <T> Collector<T, ?, INdarray<T>> ndclc(final int size) {
+		return Lisp.aaclc(size, null, INdarray::nd);
 	}
 
 	/**
