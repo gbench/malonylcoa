@@ -10,6 +10,7 @@ import static gbench.util.io.Output.println;
 import static gbench.util.lisp.IRecord.A;
 import static java.util.Arrays.asList;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -161,12 +162,25 @@ public class NdarrayTest {
 		println("p2.create(0)", p2.create(0), p2.datalen());
 		println(nd);
 	}
-	
+
 	@Test
 	public void dupq() {
 		println(nats(100).entries());
 		println(nats(10).heads());
 		println(nats(10).tails());
+	}
+
+	@Test
+	public void dup1() {
+		final var nd1 = nats(100);
+		final var nd2 = INdarray.nd(nd1);
+		nd2.set(100);
+		println(nd1);
+		println("----------------------------");
+		final var nums = new Integer[] { 1, 2, 3, 4, 5 };
+		final var nd3 = INdarray.nd(Arrays.asList(nums));
+		nums[0] = 100;
+		println(nd3);
 	}
 
 }

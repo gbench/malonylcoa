@@ -149,6 +149,12 @@ public class Types {
 	public static <T> T[] itr2array(final Iterable<T> itr, final int maxSize) {
 		if (itr instanceof List) {
 			final Object[] objs = ((List<T>) itr).toArray();
+			if (objs != null) {
+				final Class<?> objclazz = objs.getClass().getComponentType();
+				if (!Objects.equals(objclazz, Object.class)) {
+					return (T[]) objs;
+				} // if
+			} // if
 			final HashSet<Class<?>> clazzes = new HashSet<Class<?>>();
 			for (int i = 0; i < objs.length; i++) {
 				if (Objects.nonNull(objs[i])) {

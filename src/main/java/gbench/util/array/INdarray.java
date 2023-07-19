@@ -2668,6 +2668,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	static <T> INdarray<T> of(final Iterable<T> data) {
+		if (data instanceof INdarray) {
+			return ((INdarray<T>) data).duplicate();
+		}
 		return INdarray.of(Types.itr2array(data));
 	}
 
