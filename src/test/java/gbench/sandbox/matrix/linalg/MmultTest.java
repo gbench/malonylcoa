@@ -15,5 +15,14 @@ public class MmultTest {
 		println(nx.mmult(nx));
 
 	}
+	
+	@Test
+	public void bar() {
+		final var m = 5;
+		final var n = 2;
+		final var nx = INdarray.nd(i -> i * 1d, m*n).nx(n);
+		println(nx.mmult(nx.transpose()));
+
+	}
 
 }
