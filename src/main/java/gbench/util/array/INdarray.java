@@ -2183,7 +2183,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 							.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum);
 				}); // j
 			}); // i
-		} else { // 小于1000使用并行流
+		} else { // 小于1000使用顺序流
 			IntStream.iterate(0, i -> i < ts.length, i -> i + mod).forEach(i -> {
 				final int offset = i / mod * ncol;
 				IntStream.iterate(0, j -> j < us.length, j -> j + mod).forEach(j -> {
