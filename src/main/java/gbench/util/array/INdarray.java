@@ -2176,24 +2176,15 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 						.mapToDouble(i -> udata[(i % ncol) * mod + i / ncol]).toArray())
 				.get();
 		final Double[] data = new Double[nrow * ncol]; // 结果数据
+		final Function<IntStream, IntStream> parallelize = s -> data.length > 1000 ? s.parallel() : s;
 
-		if (data.length > 1000) { // 大于1000个元素 使用并发流
-			IntStream.iterate(0, i -> i < ts.length, i -> i + mod).parallel().forEach(i -> {
-				final int offset = i / mod * ncol;
-				IntStream.iterate(0, j -> j < us.length, j -> j + mod).parallel().forEach(j -> {
-					data[offset + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
-							.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum);
-				}); // j
-			}); // i
-		} else { // 小于1000使用并行流
-			IntStream.iterate(0, i -> i < ts.length, i -> i + mod).forEach(i -> {
-				final int offset = i / mod * ncol;
-				IntStream.iterate(0, j -> j < us.length, j -> j + mod).forEach(j -> {
-					data[offset + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
-							.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum);
-				}); // j
-			}); // i
-		} // if
+		Optional.of(IntStream.iterate(0, i -> i < ts.length, i -> i + mod)).map(parallelize).get().forEach(i -> {
+			final int offset = i / mod * ncol;
+			Optional.of(IntStream.iterate(0, j -> j < us.length, j -> j + mod)).map(parallelize).get().forEach(j -> {
+				data[offset + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
+						.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum); //
+			}); // j
+		}); // i
 
 		return INdarray.nd(data);
 	}
