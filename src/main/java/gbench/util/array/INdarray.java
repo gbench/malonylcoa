@@ -2164,20 +2164,33 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @param <U> 矩阵元素
 	 * @param mod 当前矩阵的列数
-	 * @param us  另一个矩阵: mod x n
+	 * @param nu  另一个矩阵: mod x n
 	 * @return ndarray
 	 */
-	default <U> INdarray<Double> mmult(final int mod, INdarray<U> us) {
+	default <U> INdarray<Double> mmult(final int mod, INdarray<U> nu) {
 		final int nrow = this.length() / mod;
-		final int ncol = us.length() / mod;
-		final INdarray<Double> tx = this.dbls();
-		final INdarray<Double> ux = us.nx(ncol).transposeS() // 转换成行顺序方便读取列数据
-				.map(IPoint::get).collect(INdarray.ndclc(us.length())).dbls();
-		final INdarray<Double> nd = Stream.iterate(0, i -> i + 1).limit(nrow) //
-				.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(ncol) //
-						.map(j -> dot(tx.row(mod, i), ux.row(mod, j))))
-				.collect(INdarray.ndclc(nrow * ncol));
-		return nd;
+		final int ncol = nu.length() / mod;
+		final Double[] ts = this.dbls().data();
+		final Double[] us = nu.dbls().nx(ncol).transposeS() // 转换成行顺序方便读取列数据
+				.map(IPoint::get).toArray(Double[]::new);
+		double[] data = new double[nrow * ncol];
+		if (data.length > 1000) { // 大于1000个元素 使用并发流
+			IntStream.iterate(0, i -> i < ts.length, i -> i + mod).parallel().forEach(i -> {
+				IntStream.iterate(0, j -> j < us.length, j -> j + mod).parallel().forEach(j -> {
+					data[i / mod * ncol + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
+							.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum);
+				}); // j
+			}); // i
+		} else { // 小于1000使用并行流
+			IntStream.iterate(0, i -> i < ts.length, i -> i + mod).forEach(i -> {
+				IntStream.iterate(0, j -> j < us.length, j -> j + mod).forEach(j -> {
+					data[i / mod * ncol + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
+							.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum);
+				}); // j
+			}); // i
+		} // if
+
+		return INdarray.nd(data);
 	}
 
 	/**
