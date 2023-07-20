@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import gbench.util.function.Getter;
@@ -550,10 +551,10 @@ public interface INdarrayX<T> extends INdarray<T> {
 	static Double det1(final INdarrayX<Double> nx) {
 		final int n = nx.ncol();
 		return Lisp.permute(nats(n).data()).map(e -> {
-			final Double term = Stream.iterate(0, i -> i + 1).limit(e.length) //
-					.map(i -> nx.row(i).get(e[i])).reduce(1d, (a, b) -> a * b);
+			final double d = DoubleStream.iterate(0, i -> i + 1).limit(e.length) //
+					.map(i -> nx.row((int) i).get(e[(int) i])).reduce(1d, (a, b) -> a * b);
 			final double sign = Optional.of(nd(e).tau()).map(s -> s % 2 == 0 ? 1d : -1d).get();
-			return sign * term;
+			return sign * d;
 		}).reduce(0d, Double::sum);
 	}
 
