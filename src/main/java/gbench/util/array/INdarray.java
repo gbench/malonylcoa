@@ -2171,8 +2171,10 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		final int nrow = this.length() / mod;
 		final int ncol = nu.length() / mod;
 		final Double[] ts = this.dbls().data();
-		final Double[] us = nu.dbls().nx(ncol).transposeS() // 转换成行顺序方便读取列数据
-				.map(IPoint::get).toArray(Double[]::new);
+		final double[] us = Optional.of(nu.dbls().data())
+				.map(udata -> IntStream.iterate(0, i -> i < udata.length, i -> i + 1)
+						.mapToDouble(i -> udata[(i % ncol) * mod + i / ncol]).toArray())
+				.get();
 		final Double[] data = new Double[nrow * ncol]; // 结果数据
 
 		if (data.length > 1000) { // 大于1000个元素 使用并发流
