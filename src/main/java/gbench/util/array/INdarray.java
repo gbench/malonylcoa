@@ -2176,15 +2176,17 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		double[] data = new double[nrow * ncol];
 		if (data.length > 1000) { // 大于1000个元素 使用并发流
 			IntStream.iterate(0, i -> i < ts.length, i -> i + mod).parallel().forEach(i -> {
+				final int offset = i / mod * ncol;
 				IntStream.iterate(0, j -> j < us.length, j -> j + mod).parallel().forEach(j -> {
-					data[i / mod * ncol + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
+					data[offset + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
 							.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum);
 				}); // j
 			}); // i
 		} else { // 小于1000使用并行流
 			IntStream.iterate(0, i -> i < ts.length, i -> i + mod).forEach(i -> {
+				final int offset = i / mod * ncol;
 				IntStream.iterate(0, j -> j < us.length, j -> j + mod).forEach(j -> {
-					data[i / mod * ncol + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
+					data[offset + j / mod] = IntStream.iterate(0, k -> k < mod, k -> k + 1) //
 							.mapToDouble(k -> ts[i + k] * us[j + k]).reduce(0d, Double::sum);
 				}); // j
 			}); // i
