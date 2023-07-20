@@ -1036,7 +1036,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 */
 	default <U> INdarray<T> assign2(final Iterable<U> us, final int offset, final BiFunction<T, U, T> biop) {
 		final INdarray<U> _us = us instanceof INdarray ? (INdarray<U>) us
-				: StreamSupport.stream(us.spliterator(), false).collect(Lisp.aaclc(this.length(), null, INdarray::of));
+				: StreamSupport.stream(us.spliterator(), false).collect(INdarray.ndclc(this.length()));
 		this.subarray(offset).subset().assign((i, t) -> {
 			final T _t = biop.apply(t.get(), _us.get(i % _us.length()));
 			t.set(_t);
@@ -1228,7 +1228,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	default <U> INdarray<U> fmap(final Function<T, U> mapper) {
-		return this.map(mapper).collect(Lisp.aaclc(this.length(), null, INdarray::of));
+		return this.map(mapper).collect(INdarray.ndclc(this.length()));
 	}
 
 	/**
@@ -1243,7 +1243,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	default <U> INdarray<U> fmap(final BiFunction<Integer, T, U> mapper) {
-		return this.map(mapper).collect(Lisp.aaclc(this.length(), null, INdarray::of));
+		return this.map(mapper).collect(INdarray.ndclc(this.length()));
 	}
 
 	/**
@@ -1845,7 +1845,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return i:提取周期，从0开始、行号索引 -> 提取第i个mod周期开始后的size长度的数据。(row)
 	 */
 	default Getter<Integer, INdarray<T>> modgets(final int mod, final int size) {
-		return i -> this.subset(is_modrem(mod, 0), size).get(i);
+		final INdarray<INdarray<T>> rows = this.subset(is_modrem(mod, 0), size);
+		return i -> rows.get(i);
 	}
 
 	/**
@@ -1906,7 +1907,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return i:列号索引，从0开始->col,返回列数据向量
 	 */
 	default Getter<Integer, INdarray<T>> cols2(final int mod) {
-		return i -> this.subset(is_modrem(mod, i)).fflat(e -> e);
+		int n = this.length() / mod;
+		return i -> this.subsetS(is_modrem(mod, i)).map(e -> e.get()).collect(INdarray.ndclc(n));
 	}
 
 	/**
@@ -2166,13 +2168,12 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	default <U> INdarray<Double> mmult(final int mod, INdarray<U> us) {
-		final int[] dims = this.shape(mod);
-		final int nrow = dims[0];
+		final int nrow = this.length() / mod;
 		final int ncol = us.length() / mod;
 		final INdarray<Double> nd = Stream.iterate(0, i -> i + 1).limit(nrow) //
 				.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(ncol) //
 						.map(j -> dot(this.row(mod, i).dbls(), us.col(ncol, j).dbls())))
-				.collect(ndclc());
+				.collect(INdarray.ndclc(nrow * ncol));
 		return nd;
 	}
 
@@ -2646,7 +2647,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray
 	 */
 	static <T> INdarray<T> of(Function<Integer, T> gen, final int n) {
-		return Stream.iterate(0, i -> i + 1).limit(n).map(gen).collect(Lisp.aaclc(n, null, INdarray::of));
+		return Stream.iterate(0, i -> i + 1).limit(n).map(gen).collect(INdarray.ndclc(n));
 	}
 
 	/**
