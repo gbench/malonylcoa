@@ -10,7 +10,8 @@ public class MmultTest {
 
 	@Test
 	public void foo() {
-		final var nx = INdarray.nd(i -> i * 1d, 16).nx(4);
+		final var n = 100;
+		final var nx = INdarray.nd(i -> i * 1d, n * n).nx(n);
 		println(nx.mmult(nx));
 
 	}

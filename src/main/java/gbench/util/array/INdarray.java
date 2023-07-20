@@ -2170,9 +2170,12 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	default <U> INdarray<Double> mmult(final int mod, INdarray<U> us) {
 		final int nrow = this.length() / mod;
 		final int ncol = us.length() / mod;
+		final INdarray<Double> tx = this.dbls();
+		final INdarray<Double> ux = us.nx(ncol).transposeS() //
+				.map(IPoint::get).collect(INdarray.ndclc(us.length())).dbls();
 		final INdarray<Double> nd = Stream.iterate(0, i -> i + 1).limit(nrow) //
 				.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(ncol) //
-						.map(j -> dot(this.row(mod, i).dbls(), us.col(ncol, j).dbls())))
+						.map(j -> dot(tx.row(mod, i), ux.row(ncol, j))))
 				.collect(INdarray.ndclc(nrow * ncol));
 		return nd;
 	}
