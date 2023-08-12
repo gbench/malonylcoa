@@ -67,10 +67,11 @@ public class H2Test {
 	@Test
 	public static StrMatrix shtmx(final String name) {
 		final var datafile = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
+		StrMatrix mx = null;
 		try (final var excel = SimpleExcel.of(datafile)) {
-			final var mx = excel.autoDetect(1);
-			return mx;
+			mx = excel.autoDetect(name);
 		}
+		return mx;
 	}
 
 	/**
