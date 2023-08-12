@@ -3310,7 +3310,7 @@ public class DataApp {
 		 * X 查询
 		 *
 		 * @param sql sql 语句
-		 * @return X
+		 * @return X 结果类型，比如 DFrame 由 this.collectorX 定义
 		 * @throws SQLException
 		 */
 		default X sql2x(final String sql) throws SQLException {

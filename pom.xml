@@ -10,6 +10,9 @@
 		<project.build.outputEncoding>UTF-8</project.build.outputEncoding>
 		<poi-version>LATEST</poi-version>
 		<jackson-version>LATEST</jackson-version>
+		<jupiter-version>LATEST</jupiter-version>
+		<h2-version>LATEST</h2-version>
+		<mysql-version>LATEST</mysql-version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -49,15 +52,29 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
+			<version>${jupiter-version}</version>
 			<scope>test</scope>
-			<version>5.9.3</version>
 		</dependency>
 		<!--
 		https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.9.3</version>
+			<version>${jupiter-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>${h2-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
+		<dependency>
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+			<version>${mysql-version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
