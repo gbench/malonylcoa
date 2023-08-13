@@ -2,7 +2,6 @@ package gbench.sandbox.data;
 
 import org.junit.jupiter.api.Test;
 
-import static gbench.util.data.MyDataApp.ds;
 import static gbench.util.io.Output.println;
 
 import java.util.function.Function;
@@ -21,12 +20,11 @@ public class H2Test {
 
 	@Test
 	public void foo() {
-		new MyDataApp(ds(h2_rec)).withTransaction(sess -> {
-			final var compdfm = shtmx("t_company").rowS(IRecord::REC).collect(DataApp.DFrame.dfmclc);
-			final var prototype = compdfm.get(0);
-			sess.sqlexecute(createsql(prototype));
-			for (final var f : compdfm)
-				sess.sql2execute(insql(f));
+		new MyDataApp(h2_rec).withTransaction(sess -> {
+			final var linedfm = shtmx("t_company").collect(DataApp.DFrame.dfmclc2);
+			sess.sqlexecute(createsql(linedfm.get(0)));
+			for (final var line : linedfm)
+				sess.sql2execute(insql(line));
 			final var dfm = sess.sql2x("select * from t_company");
 			println(dfm);
 		});
@@ -53,9 +51,9 @@ public class H2Test {
 	 */
 	public static String insql(final IRecord line) {
 		return String.format("insert into %s ( %s ) values ( %s )", "t_company",
-				line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(",")),
+				line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
 				line.tupleS().map(e -> String.format("'%s'", (e._2 + "").replace("'", "''")))
-						.collect(Collectors.joining(",")));
+						.collect(Collectors.joining(", ")));
 	}
 
 	/**
