@@ -26,7 +26,7 @@ public class H2Test {
 		new MyDataApp(h2_rec).withTransaction(sess -> {
 			final String table = "t_company";
 			final var linedfm = shtmx(table).collect(DataApp.DFrame.dfmclc2);
-			sess.sqlexecute(createsql(table, linedfm.get(0)));
+			sess.sqlexecute(ctsql(table, linedfm.get(0)));
 			for (final var line : linedfm)
 				sess.sql2execute(insql(table, line));
 			final var dfm = sess.sql2x(String.format("select * from %s", table));
@@ -37,24 +37,27 @@ public class H2Test {
 	@Test
 	public void bar() {
 		new MyDataApp(h2_rec).withTransaction(sess -> {
-			final var line = REC("id", 1, "name", "zhangsan", "address",
-					REC("city", "shanghai", "district", "changning", "street", "fahuazhen"));
+			final var line = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690610", "address",
+					REC("city", "shanghai", "district", "changning", "street", "fahuazhen", "nong", 101, "building",
+							REC("unit", 11, "room", 201)));
 			final var table = "t_individual";
-			sess.sql2execute(createsql(table, line));
+			sess.sql2execute(ctsql(table, line));
 			sess.sql2execute(insql(table, line));
 			final var p = sess.sql2x(String.format("select * from %s", table));
 			p.rowS().forEach(r -> r.compute("ADDRESS", H2Test::json)); // 地址类型转换
 			println(p);
+			println("unit", p.get(0).pathi4("ADDRESS/building/unit"));
 		});
 	}
 
 	/**
 	 * 创建表
 	 * 
-	 * @param line
-	 * @return
+	 * @param table 表名
+	 * @param line  数据行
+	 * @return create table sql
 	 */
-	public static String createsql(final String table, final IRecord line) {
+	public static String ctsql(final String table, final IRecord line) {
 		final Function<Object, String> typeof = v -> {
 			if (v instanceof Map || v instanceof IRecord) {
 				return "JSON";
@@ -70,8 +73,9 @@ public class H2Test {
 	/**
 	 * 插入数据
 	 * 
-	 * @param line
-	 * @return
+	 * @param table 表名
+	 * @param line  数据行
+	 * @return insert sql
 	 */
 	public static String insql(final String table, final IRecord line) {
 		final Function<Object, String> v2s = v -> {
