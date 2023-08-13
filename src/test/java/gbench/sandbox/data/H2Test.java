@@ -2,8 +2,11 @@ package gbench.sandbox.data;
 
 import org.junit.jupiter.api.Test;
 
+import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.io.Output.println;
+import static gbench.util.json.MyJson.toJson;
 
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -21,12 +24,27 @@ public class H2Test {
 	@Test
 	public void foo() {
 		new MyDataApp(h2_rec).withTransaction(sess -> {
-			final var linedfm = shtmx("t_company").collect(DataApp.DFrame.dfmclc2);
-			sess.sqlexecute(createsql(linedfm.get(0)));
+			final String table = "t_company";
+			final var linedfm = shtmx(table).collect(DataApp.DFrame.dfmclc2);
+			sess.sqlexecute(createsql(table, linedfm.get(0)));
 			for (final var line : linedfm)
-				sess.sql2execute(insql(line));
-			final var dfm = sess.sql2x("select * from t_company");
+				sess.sql2execute(insql(table, line));
+			final var dfm = sess.sql2x(String.format("select * from %s", table));
 			println(dfm);
+		});
+	}
+
+	@Test
+	public void bar() {
+		new MyDataApp(h2_rec).withTransaction(sess -> {
+			final var line = REC("id", 1, "name", "zhangsan", "address",
+					REC("city", "shanghai", "district", "changning", "street", "fahuazhen"));
+			final var table = "t_individual";
+			sess.sql2execute(createsql(table, line));
+			sess.sql2execute(insql(table, line));
+			final var p = sess.sql2x(String.format("select * from %s", table));
+			p.rowS().forEach(r -> r.compute("ADDRESS", H2Test::json)); // 地址类型转换
+			println(p);
 		});
 	}
 
@@ -36,9 +54,15 @@ public class H2Test {
 	 * @param line
 	 * @return
 	 */
-	public static String createsql(final IRecord line) {
-		final Function<Object, String> typeof = v -> "VARCHAR(256)";
-		final var sql = String.format("create table %s ( %s )", "t_company", line.tupleS()
+	public static String createsql(final String table, final IRecord line) {
+		final Function<Object, String> typeof = v -> {
+			if (v instanceof Map || v instanceof IRecord) {
+				return "JSON";
+			} else {
+				return "VARCHAR(256)";
+			}
+		};
+		final var sql = String.format("create table %s ( %s )", table, line.tupleS()
 				.map(e -> String.format("%s %s", e._1, typeof.apply(e._2))).collect(Collectors.joining(",")));
 		return sql;
 	}
@@ -49,11 +73,17 @@ public class H2Test {
 	 * @param line
 	 * @return
 	 */
-	public static String insql(final IRecord line) {
-		return String.format("insert into %s ( %s ) values ( %s )", "t_company",
+	public static String insql(final String table, final IRecord line) {
+		final Function<Object, String> v2s = v -> {
+			if (v instanceof Map || v instanceof IRecord) {
+				return toJson(v);
+			} else {
+				return (v + "").replace("'", "''");
+			}
+		};
+		return String.format("insert into %s ( %s ) values ( %s )", table,
 				line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
-				line.tupleS().map(e -> String.format("'%s'", (e._2 + "").replace("'", "''")))
-						.collect(Collectors.joining(", ")));
+				line.tupleS().map(e -> String.format("'%s'", v2s.apply(e._2))).collect(Collectors.joining(", ")));
 	}
 
 	/**
@@ -70,6 +100,16 @@ public class H2Test {
 			mx = excel.autoDetect(name);
 		}
 		return mx;
+	}
+
+	/**
+	 * 
+	 * @param bb
+	 * @return
+	 */
+	public static IRecord json(final byte[] bb) {
+		final var d = (new String(bb)).replace("\\\"", "\"");
+		return REC(d.substring(1, d.length() - 1));
 	}
 
 	/**
