@@ -10,6 +10,7 @@ import static gbench.sandbox.data.H2db.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.function.BiFunction;
@@ -50,21 +51,40 @@ public class H2Test {
 	public void quz() {
 		new MyDataApp(h2_rec).withTransaction(sess -> { // 准备数据
 			imports("t_company,t_product,t_company_product".split(",")).accept(sess);
-			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("ID")), 10);
-			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("ID")), 10);
+			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
+			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("id")), 10);
 			final var now = LocalDateTime.now();
 			final var cps = new HashMap<Integer, IRecord>();
-			for (final var ce : companies.entrySet()) { // 随机生成数据
+			for (final var ce : companies.entrySet()) { // 随机生成数据公司数据
 				final var c = ce.getValue();
 				for (final var pe : products.entrySet()) {
 					final var p = pe.getValue();
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), "attrs",
 							p.filter("id,name,price"), "create_time", now, "update_time", now); // 产品数据
 					sess.sqlexecuteS(insql("t_company_product", line)).findFirst().map(e -> e.i4(0))
-							.ifPresent(id -> cps.put(id, line.add("ID", id)));
+							.ifPresent(id -> cps.put(id, line.add("id", id)));
 				} // for
 			} // for
-		});
+
+			final var cpds = cps.values().stream().collect(groupby("company_id", DataApp.DFrame::new));
+			var id = 1;
+			final var t_order = "t_order";
+			for (final var partae : shuffle(companies).entrySet()) {
+				final var parta = partae.getValue();
+				for (final var partbe : shuffle(companies).entrySet()) {
+					final var partb = partbe.getValue();
+					final var lines = cpds.get(partb.i4("id")).stream().sorted((a, b) -> Math.random() > 0.5 ? 1 : -1)
+							.collect(DataApp.DFrame.dfmclc).head(5);
+					final var order = REC("id", id++, "parta", parta.get("id"), "partb", partb.get("id"), "lines",
+							lines);
+					if (id <= 2) {
+						sess.sql2execute(ctsql(t_order, order));
+					} // if
+					sess.sql2execute(insql(t_order, order));
+				} // for
+			} // for
+			println(sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines")));
+		}); // withTransaction
 	}
 
 	/**
@@ -89,7 +109,7 @@ class H2db {
 		final var datepattern = "^[1-9]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\\s+(20|21|22|23|[0-1]\\d):[0-5]\\d:[0-5]\\d$";
 		final BiFunction<String, Object, String> typeof = (k, v) -> {
 			final String inttype = String.format("%s %s", "INT", "id".equalsIgnoreCase(k) ? "AUTO_INCREMENT" : "");
-			if (v instanceof Map || v instanceof IRecord) {
+			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
 				return "JSON";
 			} else if (v instanceof Integer) {
 				return inttype;
@@ -128,10 +148,12 @@ class H2db {
 	 */
 	public static String insql(final String table, final IRecord line) {
 		final Function<Object, String> v2s = v -> {
-			if (v instanceof Map || v instanceof IRecord) {
+			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
 				return toJson(v);
 			} else if (v instanceof LocalDateTime ldt) {
 				return ldt.format(dtf);
+			} else if (v instanceof DataApp.DFrame dfm) {
+				return MyJson.toJson(dfm);
 			} else {
 				return (v + "").replace("'", "''");
 			}
@@ -189,10 +211,25 @@ class H2db {
 	 * @param keys 键名序列
 	 * @return
 	 */
-	public static Function<IRecord, IRecord> jsncompute(final String... keys) {
+	public static Function<IRecord, IRecord> jcompute(final String... keys) {
 		return rec -> {
 			for (final var key : keys) {
 				rec.compute(key, H2db::json);
+			}
+			return rec;
+		};
+	}
+
+	/**
+	 * jsncompute
+	 * 
+	 * @param keys 键名序列
+	 * @return
+	 */
+	public static Function<IRecord, IRecord> jscompute(final String... keys) {
+		return rec -> {
+			for (final var key : keys) {
+				rec.compute(key, H2db::jsons);
 			}
 			return rec;
 		};
@@ -210,11 +247,47 @@ class H2db {
 
 	/**
 	 * 
+	 * @param bb
+	 * @return
+	 */
+	public static Object jsons(final byte[] bb) {
+		final var d = (new String(bb)).replace("\\\"", "\"");
+		return DataApp.JSON.parse(d.substring(1, d.length() - 1));
+	}
+
+	/**
+	 * 
 	 * @param key 键名
 	 * @return
 	 */
 	public static Collector<? super IRecord, ?, Map<Integer, IRecord>> mapby(final String key) {
-		return IRecord.mapclc2(e -> DataApp.Tuple2.of(e.i4("ID"), e));
+		return IRecord.mapclc2(e -> DataApp.Tuple2.of(e.i4(key), e));
+	}
+
+	/**
+	 * 
+	 * @param <V>    结果类型
+	 * @param key    键名
+	 * @param mapper 值变换类型
+	 * @return
+	 */
+	public static <V> Collector<? super IRecord, ?, Map<Integer, V>> groupby(final String key,
+			final Function<List<IRecord>, V> mapper) {
+		return Collectors.collectingAndThen(IRecord.mapclc(e -> DataApp.Tuple2.of(e.i4(key), e)), lhm -> {
+			final Map<Integer, V> m = new HashMap<Integer, V>();
+			lhm.forEach((k, ll) -> m.put(k, mapper.apply(ll)));
+			return m;
+		});
+	}
+
+	/**
+	 * 洗牌排序
+	 * 
+	 * @param lines 源数据
+	 * @return 洗牌排序
+	 */
+	public static LinkedHashMap<Integer, IRecord> shuffle(final Map<Integer, IRecord> lines) {
+		return shuffle(lines, null);
 	}
 
 	/**
