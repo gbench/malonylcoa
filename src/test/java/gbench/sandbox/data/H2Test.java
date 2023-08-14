@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -71,7 +72,7 @@ public class H2Test {
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), //
 							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
 							"create_time", now, "update_time", now); // 产品数据
-					sess.sqlexecuteS(insql("t_company_product", line)).findFirst().map(e -> e.i4(0))
+					sess.sql2executeS(insql("t_company_product", line)).findFirst().map(e -> e.i4(0))
 							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
 				} // for
 			} // for
@@ -96,25 +97,28 @@ public class H2Test {
 				} // for
 			} // for
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
-			orderdfm.rowS().flatMap(e -> e.filter("parta,partb").valueS()).distinct().forEach((entity_id) -> { // 会计主体
+			orderdfm.rowS().flatMap(e -> e.filter("parta,partb").valueS()).distinct().forEach(entity_id -> { // 会计主体
 				final var rootNode = Node.of("root"); // 核算根节点
+				final Consumer<? super Tuple2<String, Object>> buildtree = p -> {
+					(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
+						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
+							final var node = Node.of(parent, p._1);
+							if (p._2 instanceof IRecord rec) {
+								rec.forEach(_p -> this.accept(node, _p));
+							} else {
+								node.attrSet("value", p._2);
+							} // if
+						} // accept
+					}).accept(rootNode, p);
+				};
 				orderdfm.rowS().flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb")
 										.add(e.alias("id,order_id"))))
 						.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")) //
-						.forEach(p -> {
-							(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
-								public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
-									final var node = Node.of(parent, p._1);
-									if (p._2 instanceof IRecord rec) {
-										rec.forEach(_p -> this.accept(node, _p));
-									} else {
-										node.attrSet("value", p._2);
-									} // if
-								} // accept
-							}).accept(rootNode, p);
-						}); // forEach
+						.forEach(buildtree); // forEach
+
+				// 结果打印
 				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));
 				rootNode.forEach(node -> {
 					final var amount = Optional.ofNullable(node.attrval(Types.cast(DFrame.class))).map(e -> {
@@ -122,8 +126,8 @@ public class H2Test {
 					}).orElse(null);
 					println(String.format("%s%s\t%s\t%.2f", " | ".repeat(node.getLevel()), node.getName(),
 							node.getPath(), amount));
-				});
-			});
+				}); // forEach(node
+			}); // forEach(entity_id
 		}); // withTransaction
 	}
 
