@@ -40,32 +40,30 @@ public class H2Test {
 			sess.sql2execute(ctsql(table, line));
 			sess.sql2execute(insql(table, line));
 			final var p = sess.sql2x(String.format("select * from %s", table));
-			p.forEach(r -> r.compute("ADDRESS", H2db::json)); // 地址类型转换
+			p.forEach(r -> r.compute("address", H2db::json)); // 地址类型转换
 			println(p);
-			println("unit", p.get(0).pathi4("ADDRESS/building/unit"));
+			println("unit", p.get(0).pathi4("address/building/unit"));
 		});
 	}
 
 	@Test
 	public void quz() {
-		new MyDataApp(h2_rec).withTransaction(sess -> {
+		new MyDataApp(h2_rec).withTransaction(sess -> { // 准备数据
 			imports("t_company,t_product,t_company_product".split(",")).accept(sess);
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("ID")), 10);
 			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("ID")), 10);
 			final var now = LocalDateTime.now();
+			final var cps = new HashMap<Integer, IRecord>();
 			for (final var ce : companies.entrySet()) { // 随机生成数据
 				final var c = ce.getValue();
 				for (final var pe : products.entrySet()) {
 					final var p = pe.getValue();
-					final var line = REC("company_id", c.i4("ID"), "product_id", p.i4("ID"), "attrs",
-							REC("id", p.str("ID"), "name", p.str("NAME"), "price", p.dbl("PRICE")), //
-							"create_time", now, "update_time", now); // 产品数据
-					final var cpsql = insql("t_company_product", line);
-					final var id = sess.sqlexecuteS(cpsql).findFirst().map(e -> e.i4(0));
-					println("id", id);
+					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), "attrs",
+							p.filter("id,name,price"), "create_time", now, "update_time", now); // 产品数据
+					sess.sqlexecuteS(insql("t_company_product", line)).findFirst().map(e -> e.i4(0))
+							.ifPresent(id -> cps.put(id, line.add("ID", id)));
 				} // for
 			} // for
-			println(sess.sql2x("select * from t_company_product").fmap(jsncompute("ATTRS")));
 		});
 	}
 
@@ -73,7 +71,7 @@ public class H2Test {
 	 * 数据库配置
 	 */
 	final IRecord h2_rec = IRecord.REC( //
-			"url", "jdbc:h2:mem:malonylcoadb;MODE=MYSQL;DB_CLOSE_DELAY=-1;", //
+			"url", "jdbc:h2:mem:malonylcoadb;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", //
 			"driver", "org.h2.Driver", //
 			"user", "root", "password", "123456");
 }
@@ -212,10 +210,10 @@ class H2db {
 
 	/**
 	 * 
-	 * @param key
+	 * @param key 键名
 	 * @return
 	 */
-	public static Collector<? super IRecord, ?, Map<Integer, IRecord>> mapby(String key) {
+	public static Collector<? super IRecord, ?, Map<Integer, IRecord>> mapby(final String key) {
 		return IRecord.mapclc2(e -> DataApp.Tuple2.of(e.i4("ID"), e));
 	}
 
