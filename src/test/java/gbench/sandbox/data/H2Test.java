@@ -13,7 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
@@ -32,14 +31,16 @@ import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
 import gbench.util.json.MyJson;
 import gbench.util.tree.Node;
-import gbench.util.type.Types;
 import gbench.util.data.MyDataApp;
 
 /**
- * 
+ * H2数据库操作
  */
 public class H2Test {
 
+	/**
+	 * 数据操作演示
+	 */
 	@Test
 	public void bar() {
 		new MyDataApp(h2_rec).withTransaction(sess -> {
@@ -56,10 +57,14 @@ public class H2Test {
 		});
 	}
 
+	/**
+	 * 订单演示
+	 */
 	@Test
 	public void quz() {
 		final var now = LocalDateTime.now();
 		final var rnd = new Random();
+
 		new MyDataApp(h2_rec).withTransaction(sess -> { // 准备数据
 			imports("t_company,t_product,t_company_product".split(",")).accept(sess);
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
@@ -76,58 +81,56 @@ public class H2Test {
 							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
 				} // for
 			} // for
-			final var linesdfm = cps.values().stream().collect(groupby("company_id", DFrame::new));
-			var order_id = 1;
-			final var t_order = "t_order";
+
+			final var cpdfm = cps.values().stream().collect(groupby("company_id", DFrame::new)); // 公司产品
+			final var t_order = "t_order"; // 订单表名
+			sess.sql2execute(ctsql(t_order, REC("parta", 0, "partb", 0, "lines", REC(), "create_time", now))); // 创建订单表
 			for (final var partaent : shuffle(companies).entrySet()) {
 				final var parta = partaent.getValue();
 				for (final var partbent : shuffle(companies).entrySet()) {
 					final var partb = partbent.getValue();
-					final var lines = linesdfm.get(partb.i4("id")).stream()
-							.sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
+					final var lines = cpdfm.get(partb.i4("id")).stream().sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
 							.map(e -> e.filter("id,company_id").add(e.pathget("attrs", IRecord::REC) //
 									.alias("id,product_id,name,title,price,price,quantity,quantity")))
-							.collect(DFrame.dfmclc).head(5); // 订单行
-					final var orderdata = REC("id", order_id++, "parta", parta.get("id"), "partb", partb.get("id"), //
+							.collect(DFrame.dfmclc).head(5); // 订单行：公司产品
+					final var orderdata = REC("parta", parta.get("id"), "partb", partb.get("id"), //
 							"lines", lines, "create_time", now);
-					if (order_id <= 2) { // 创建表格
-						sess.sql2execute(ctsql(t_order, orderdata));
-					} // if
 					sess.sql2execute(insql(t_order, orderdata));
 				} // for
 			} // for
+
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
 			orderdfm.rowS().flatMap(e -> e.filter("parta,partb").valueS()).distinct().forEach(entity_id -> { // 会计主体
-				final Function<Node<String>, Consumer<? super Tuple2<String, Object>>> mountf = rootNode -> p -> { // 挂载
-					(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
-						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
-							final var node = Node.of(parent, p._1);
-							if (p._2 instanceof IRecord rec) {
-								rec.forEach(_p -> this.accept(node, _p));
-							} else {
-								node.attrSet("value", p._2);
-							} // if
-						} // accept
-					}).accept(rootNode, p);
-				}; // mount
+				final BiFunction<Function<Object, Object>, Node<String>, Consumer<? super Tuple2<String, Object>>> mountf = (
+						evaluator, rootNode) -> p -> { // 挂载
+							(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
+								public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
+									final var node = Node.of(parent, p._1);
+									if (p._2 instanceof IRecord rec) {
+										rec.tupleS().parallel().forEach(_p -> this.accept(node, _p));
+									} else { // 值计算
+										node.attrSet("value", evaluator.apply(p._2));
+									} // if
+								} // accept
+							}).accept(rootNode, p);
+						}; // mount
 				final var rootNode = orderdfm.rowS().flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
 						.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")).tupleS().parallel()
 						.reduce(Node.of("root"), (acc, a) -> {
-							mountf.apply(acc).accept(a); // 把a挂载到acc
+							mountf.apply(e -> e instanceof DFrame dfm ? dfm.rowS()
+									.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum()
+									: null, acc).accept(a); // 把a挂载到acc
 							return acc;
 						}, (a, b) -> a.addChildren(b.getChildren()));
 
 				// 结果打印
 				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));
 				rootNode.forEach(node -> {
-					final var amount = Optional.ofNullable(node.attrval(Types.cast(DFrame.class))).map(e -> {
-						return e.rowS().collect(summarizingDouble(q -> q.dbl("price") * q.dbl("quantity"))).getSum();
-					}).orElse(null);
 					println(String.format("%s%s\t%s\t%.2f", " | ".repeat(node.getLevel()), node.getName(),
-							node.getPath(), amount));
+							node.getPath(), node.attrval()));
 				}); // forEach(node
 			}); // forEach(entity_id
 		}); // withTransaction
