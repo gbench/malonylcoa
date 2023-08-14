@@ -120,7 +120,7 @@ public class H2Test {
 					.map(k -> String.format("select %s k from %s", k, t_order)).collect(Collectors.joining(" union ")));
 			for (final var entity_id : sess.sql2recordS(entity_sql).map(e -> e.get(0)).toList()) { // 会计主体
 				final var ordersql = Stream.of("parta,partb".split(","))
-						.map(k -> String.format("select * from %s where %s=%s", t_order, k, entity_id))
+						.map(k -> String.format("select * from %s where %s = %s", t_order, k, entity_id))
 						.collect(Collectors.joining(" union ")); // 订单sql
 				final var rootNode = sess.sql2recordS(ordersql).map(jscompute("lines"))
 						.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
