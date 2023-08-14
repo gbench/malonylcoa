@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -29,6 +30,7 @@ import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
 import gbench.util.json.MyJson;
 import gbench.util.tree.Node;
+import gbench.util.type.Types;
 import gbench.util.data.MyDataApp;
 
 /**
@@ -55,7 +57,7 @@ public class H2Test {
 	@Test
 	public void quz() {
 		final var now = LocalDateTime.now();
-
+		final var rnd = new Random();
 		new MyDataApp(h2_rec).withTransaction(sess -> { // 准备数据
 			imports("t_company,t_product,t_company_product".split(",")).accept(sess);
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
@@ -65,14 +67,15 @@ public class H2Test {
 				final var c = ce.getValue();
 				for (final var pe : products.entrySet()) {
 					final var p = pe.getValue();
-					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), "attrs",
-							p.filter("id,name,price"), "create_time", now, "update_time", now); // 产品数据
+					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), //
+							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
+							"create_time", now, "update_time", now); // 产品数据
 					sess.sqlexecuteS(insql("t_company_product", line)).findFirst().map(e -> e.i4(0))
 							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
 				} // for
 			} // for
 
-			final var linesdfm = cps.values().stream().collect(groupby("company_id", DataApp.DFrame::new));
+			final var linesdfm = cps.values().stream().collect(groupby("company_id", DFrame::new));
 			var order_id = 1;
 			final var t_order = "t_order";
 			for (final var partae : shuffle(companies).entrySet()) {
@@ -81,9 +84,9 @@ public class H2Test {
 					final var partb = partbe.getValue();
 					final var lines = linesdfm.get(partb.i4("id")).stream()
 							.sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
-							.map(e -> e.filter("id,company_id").add(
-									e.pathget("attrs", IRecord::REC).alias("id,product_id,name,title,price,price")))
-							.collect(DataApp.DFrame.dfmclc).head(5); // 订单行
+							.map(e -> e.filter("id,company_id").add(e.pathget("attrs", IRecord::REC) //
+									.alias("id,product_id,name,title,price,price,quantity,quantity")))
+							.collect(DFrame.dfmclc).head(5); // 订单行
 					final var orderdata = REC("id", order_id++, "parta", parta.get("id"), "partb", partb.get("id"), //
 							"lines", lines, "create_time", now);
 					if (order_id <= 2) { // 创建表格
@@ -95,30 +98,34 @@ public class H2Test {
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
 			final var accts = orderdfm.stream()
 					.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(lines -> lines.add(e.filter("id,parta,partb"))))
-					.collect(groupby("parta", DataApp.DFrame::new));
+					.collect(groupby("parta", DFrame::new));
 			accts.forEach((entity_id, dfm) -> {
-				final var drcrdfm = accts.values().stream().reduce(DataApp.DFrame::rbind).get()
-						.fmap(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1).add(
-								e.filter("company_id,product_id,title,price,parta,partb").add(e.alias("id,order_id"))));
+				final var drcrdfm = accts.values().stream().reduce(DFrame::rbind).get()
+						.fmap(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
+								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb")
+										.add(e.alias("id,order_id"))));
 				final var rootNode = Node.of("root");
-				drcrdfm.collect(IRecord.pvtclc(DataApp.DFrame::new, "partb,product_id,drcr")).forEach(p -> {
+				drcrdfm.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")).forEach(p -> {
 					(new BiConsumer<Node<String>, Tuple2<String, Object>>() {
 						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
 							final var node = Node.of(p._1);
-							if (p._2 instanceof IRecord r) {
-								r.forEach(_p -> this.accept(node, _p));
+							if (p._2 instanceof IRecord rec) {
+								rec.forEach(_p -> this.accept(node, _p));
 							} else {
-								node.setAttr("value", p._2);
+								node.attrSet("value", p._2);
 							}
 							parent.addChild(node);
 						}
 					}).accept(rootNode, p);
 				}); // forEach
+				println(String.format("[%s]", cps.get(entity_id)));
 				rootNode.forEach(node -> {
-					final var opt = Optional.ofNullable(node.attr("value", DFrame.class)).map(e -> {
-						return String.format("%s\t%s", e.keys(), e.size());
-					});
-					println(String.format("%s%s/%s", " | ".repeat(node.getLevel()), node.getPath(), opt));
+					final var opt = Optional.ofNullable(node.attrval(Types.cast(DFrame.class))).map(e -> {
+						return e.rowS().collect(Collectors.summarizingDouble(q -> q.dbl("price") * q.dbl("quantity")))
+								.getSum();
+					}).orElse(null);
+					println(String.format("%s%s\t%s\t%.2f", " | ".repeat(node.getLevel()), node.getName(), node.getPath(),
+							opt));
 				});
 			});
 		}); // withTransaction
@@ -189,7 +196,7 @@ class H2db {
 				return toJson(v);
 			} else if (v instanceof LocalDateTime ldt) {
 				return ldt.format(dtf);
-			} else if (v instanceof DataApp.DFrame dfm) {
+			} else if (v instanceof DFrame dfm) {
 				return MyJson.toJson(dfm);
 			} else {
 				return (v + "").replace("'", "''");
@@ -222,10 +229,10 @@ class H2db {
 	 * @param tables
 	 * @return 数据表
 	 */
-	public static ExceptionalConsumer<DataApp.IJdbcSession<Object, DataApp.DFrame>> imports(final String... tables) {
+	public static ExceptionalConsumer<DataApp.IJdbcSession<Object, DFrame>> imports(final String... tables) {
 		return sess -> {
 			for (final String table : tables) { // 遍历数据表
-				final var data = shtmx(table).collect(DataApp.DFrame.dfmclc2);
+				final var data = shtmx(table).collect(DFrame.dfmclc2);
 				final var line = REC();
 				data.cols().forEach((k, v) -> { // 提取最长行
 					v.stream().sorted((a, b) -> (b + "").length() - (a + "").length()).findFirst() //
@@ -342,8 +349,9 @@ class H2db {
 				.compareTo(kk.computeIfAbsent(b.getKey(), e -> rnd.nextInt()))).forEach(e -> {
 					if (maxsize != null && lhm.size() > maxsize) {
 						return;
+					} else {
+						lhm.put(e.getKey(), e.getValue());
 					}
-					lhm.put(e.getKey(), e.getValue());
 				});
 		return lhm;
 	}

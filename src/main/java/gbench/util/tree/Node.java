@@ -898,6 +898,51 @@ public class Node<T> {
 	}
 
 	/**
+	 * 设置节点属性
+	 * 
+	 * @param name  属性名
+	 * @param value 属性值
+	 * @return 节点本身 以实现链式编程
+	 */
+	public Node<T> attrSet(final String name, final Object value) {
+		return this.setAttr(name, value);
+	}
+
+	/**
+	 * this.getAttribute("value") 的简写
+	 * 
+	 * @return 属性key为value的值，注意不是 节点value
+	 */
+	public Object attrval() {
+		return this.attributes.get("value");
+	}
+
+	/**
+	 * this.getAttribute("value")的结果变换
+	 * 
+	 * @param <U>    mapper 参数类型
+	 * @param <V>    mapper 结果类型
+	 * @param mapper u->v 值变换函数 对结果进行 mapper 变换
+	 * @return V 类型的结果
+	 */
+	public <U, V> V attrval(final Function<U, V> mapper) {
+		return this.attrval("value", mapper);
+	}
+
+	/**
+	 * this.getAttribute("value")的结果变换
+	 * 
+	 * @param <U>    mapper 参数类型
+	 * @param <V>    mapper 结果类型
+	 * @param mapper u->v 值变换函数 对结果进行 mapper 变换
+	 * @return V 类型的结果
+	 */
+	@SuppressWarnings("unchecked")
+	public <U, V> V attrval(final String key, final Function<U, V> mapper) {
+		return mapper.apply((U) this.attributes.get(key));
+	}
+
+	/**
 	 * 使用产品的名字进行节点散列：采用名称name 进行散开列。
 	 *
 	 * @return hashCode
