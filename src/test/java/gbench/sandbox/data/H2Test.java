@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
@@ -116,7 +117,9 @@ public class H2Test {
 			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream()
 					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 数据统计
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
-			orderdfm.rowS().flatMap(e -> e.filter("parta,partb").valueS()).distinct().forEach(entity_id -> { // 会计主体
+			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb")
+					.map(k -> String.format("select %s k from %s", k, t_order)).collect(Collectors.joining(" union ")));
+			sess.sql2recordS(entity_sql).map(e -> e.get(0)).forEach(entity_id -> { // 会计主体
 				final var rootNode = orderdfm.rowS().filter(e -> e.filter("parta,partb").vals().contains(entity_id))
 						.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
