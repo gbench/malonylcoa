@@ -116,11 +116,13 @@ public class H2Test {
 					}; // mount
 			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream()
 					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 数据统计
-			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
 			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb".split(","))
 					.map(k -> String.format("select %s k from %s", k, t_order)).collect(Collectors.joining(" union ")));
-			sess.sql2recordS(entity_sql).map(e -> e.get(0)).forEach(entity_id -> { // 会计主体
-				final var rootNode = orderdfm.rowS().filter(e -> e.filter("parta,partb").vals().contains(entity_id))
+			for (final var entity_id : sess.sql2recordS(entity_sql).map(e -> e.get(0)).toList()) { // 会计主体
+				final var ordersql = Stream.of("parta,partb".split(","))
+						.map(k -> String.format("select * from %s where %s=%s", t_order, k, entity_id))
+						.collect(Collectors.joining(" union ")); // 订单sql
+				final var rootNode = sess.sql2recordS(ordersql).map(jscompute("lines"))
 						.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
@@ -137,7 +139,7 @@ public class H2Test {
 					println(String.format("%s%s\t%s\t%.2f", " | ".repeat(node.getLevel()), node.getName(),
 							node.getPath(), node.attrval(Types.cast(Double.class))));
 				}); // forEach(node
-			}); // forEach(entity_id
+			} // forEach(entity_id
 		}); // withTransaction
 	}
 
