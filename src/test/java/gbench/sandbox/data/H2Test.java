@@ -6,6 +6,7 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.io.Output.println;
 import static gbench.util.json.MyJson.toJson;
 import static gbench.sandbox.data.H2db.*;
+import static java.util.stream.Collectors.summarizingDouble;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -74,14 +75,13 @@ public class H2Test {
 							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
 				} // for
 			} // for
-
 			final var linesdfm = cps.values().stream().collect(groupby("company_id", DFrame::new));
 			var order_id = 1;
 			final var t_order = "t_order";
-			for (final var partae : shuffle(companies).entrySet()) {
-				final var parta = partae.getValue();
-				for (final var partbe : shuffle(companies).entrySet()) {
-					final var partb = partbe.getValue();
+			for (final var partaent : shuffle(companies).entrySet()) {
+				final var parta = partaent.getValue();
+				for (final var partbent : shuffle(companies).entrySet()) {
+					final var partb = partbent.getValue();
 					final var lines = linesdfm.get(partb.i4("id")).stream()
 							.sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
 							.map(e -> e.filter("id,company_id").add(e.pathget("attrs", IRecord::REC) //
@@ -96,36 +96,33 @@ public class H2Test {
 				} // for
 			} // for
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
-			final var accts = orderdfm.stream()
-					.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(lines -> lines.add(e.filter("id,parta,partb"))))
-					.collect(groupby("parta", DFrame::new));
-			accts.forEach((entity_id, dfm) -> {
-				final var drcrdfm = accts.values().stream().reduce(DFrame::rbind).get()
-						.fmap(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
-								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb")
-										.add(e.alias("id,order_id"))));
+			final var acctS = orderdfm.stream().flatMap(e -> e.filter("parta,partb").valueS()).distinct(); // 会计主体
+			acctS.forEach((entity_id) -> {
 				final var rootNode = Node.of("root");
-				drcrdfm.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")).forEach(p -> {
-					(new BiConsumer<Node<String>, Tuple2<String, Object>>() {
-						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
-							final var node = Node.of(p._1);
-							if (p._2 instanceof IRecord rec) {
-								rec.forEach(_p -> this.accept(node, _p));
-							} else {
-								node.attrSet("value", p._2);
-							}
-							parent.addChild(node);
-						}
-					}).accept(rootNode, p);
-				}); // forEach
+				orderdfm.rowS().flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
+						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
+								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb")
+										.add(e.alias("id,order_id"))))
+						.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")) //
+						.forEach(p -> {
+							(new BiConsumer<Node<String>, Tuple2<String, Object>>() {
+								public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
+									final var node = Node.of(parent, p._1);
+									if (p._2 instanceof IRecord rec) {
+										rec.forEach(_p -> this.accept(node, _p));
+									} else {
+										node.attrSet("value", p._2);
+									} // if
+								} // accept
+							}).accept(rootNode, p);
+						}); // forEach
 				println(String.format("[%s]", cps.get(entity_id)));
 				rootNode.forEach(node -> {
-					final var opt = Optional.ofNullable(node.attrval(Types.cast(DFrame.class))).map(e -> {
-						return e.rowS().collect(Collectors.summarizingDouble(q -> q.dbl("price") * q.dbl("quantity")))
-								.getSum();
+					final var amount = Optional.ofNullable(node.attrval(Types.cast(DFrame.class))).map(e -> {
+						return e.rowS().collect(summarizingDouble(q -> q.dbl("price") * q.dbl("quantity"))).getSum();
 					}).orElse(null);
-					println(String.format("%s%s\t%s\t%.2f", " | ".repeat(node.getLevel()), node.getName(), node.getPath(),
-							opt));
+					println(String.format("%s%s\t%s\t%.2f", " | ".repeat(node.getLevel()), node.getName(),
+							node.getPath(), amount));
 				});
 			});
 		}); // withTransaction

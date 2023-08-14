@@ -892,11 +892,6 @@ public class Node<T> {
 		return this;
 	}
 
-	@Override
-	public String toString() {
-		return value + "";
-	}
-
 	/**
 	 * 设置节点属性
 	 * 
@@ -940,46 +935,6 @@ public class Node<T> {
 	@SuppressWarnings("unchecked")
 	public <U, V> V attrval(final String key, final Function<U, V> mapper) {
 		return mapper.apply((U) this.attributes.get(key));
-	}
-
-	/**
-	 * 使用产品的名字进行节点散列：采用名称name 进行散开列。
-	 *
-	 * @return hashCode
-	 */
-	public int hashCode() {
-		// 之所以不采用路径的hashcode 的是为了提高效率，hashCode 的效率。
-		return this.getName().hashCode();// 根据名称
-	}
-
-	/**
-	 * 依据名称来进行判断对象属性
-	 *
-	 * @param obj 比较对象
-	 */
-	public boolean equals(final Object obj) {
-		if (this.hashCode() != obj.hashCode())
-			return false;
-		if (obj instanceof Node) {// 类型相互一致才进行比较
-			@SuppressWarnings("unchecked")
-			final Node<T> node = (Node<T>) obj;
-			final Node<T> p0 = this.getParent();
-			final Node<T> p1 = node.getParent();
-			if (p0 == null && p1 != null)
-				return false;
-			else if (p0 == p1 || p0.equals(p1)) {// 先对父级路径进行比较
-				final T v0 = this.getValue();
-				final T v1 = node.getValue();
-				if (v0 == v1)
-					return true;
-				else
-					return v0 != null && v0.equals(v1);
-			} else {
-				return false;
-			} // if
-		} else {
-			return false;
-		}
 	}
 
 	/**
@@ -1106,6 +1061,51 @@ public class Node<T> {
 	 */
 	public int size(final boolean b) {
 		return b ? this.getChildren().size() : this.getChildren(Objects::nonNull).size();
+	}
+
+	/**
+	 * 使用产品的名字进行节点散列：采用名称name 进行散开列。
+	 *
+	 * @return hashCode
+	 */
+	public int hashCode() {
+		// 之所以不采用路径的hashcode 的是为了提高效率，hashCode 的效率。
+		return this.getName().hashCode();// 根据名称
+	}
+
+	/**
+	 * 依据名称来进行判断对象属性
+	 *
+	 * @param obj 比较对象
+	 */
+	public boolean equals(final Object obj) {
+		if (this.hashCode() != obj.hashCode())
+			return false;
+		if (obj instanceof Node) {// 类型相互一致才进行比较
+			@SuppressWarnings("unchecked")
+			final Node<T> node = (Node<T>) obj;
+			final Node<T> p0 = this.getParent();
+			final Node<T> p1 = node.getParent();
+			if (p0 == null && p1 != null)
+				return false;
+			else if (p0 == p1 || p0.equals(p1)) {// 先对父级路径进行比较
+				final T v0 = this.getValue();
+				final T v1 = node.getValue();
+				if (v0 == v1)
+					return true;
+				else
+					return v0 != null && v0.equals(v1);
+			} else {
+				return false;
+			} // if
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public String toString() {
+		return value + "";
 	}
 
 	/**
@@ -1371,6 +1371,22 @@ public class Node<T> {
 	 */
 	public static <T> Node<T> of(final T t) {
 		return new Node<T>(t);
+	}
+
+	/**
+	 * 节点对象生成器
+	 * 
+	 * @param <T>    元素类型
+	 * @param parent 父节点
+	 * @param t      元素
+	 * @return 元素节点
+	 */
+	public static <T> Node<T> of(final Node<T> parent, final T t) {
+		final Node<T> node = new Node<T>(t);
+		if (parent != null) {
+			parent.addChild(node);
+		}
+		return node;
 	}
 
 	private T value;// 节点的信息值
