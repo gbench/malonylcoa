@@ -116,7 +116,7 @@ public class H2Test {
 								} // accept
 							}).accept(rootNode, p);
 						}); // forEach
-				println(String.format("[%s]", cps.get(entity_id)));
+				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));
 				rootNode.forEach(node -> {
 					final var amount = Optional.ofNullable(node.attrval(Types.cast(DFrame.class))).map(e -> {
 						return e.rowS().collect(summarizingDouble(q -> q.dbl("price") * q.dbl("quantity"))).getSum();
