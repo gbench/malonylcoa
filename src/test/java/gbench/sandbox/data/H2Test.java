@@ -117,7 +117,7 @@ public class H2Test {
 			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream()
 					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 数据统计
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
-			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb")
+			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb".split(","))
 					.map(k -> String.format("select %s k from %s", k, t_order)).collect(Collectors.joining(" union ")));
 			sess.sql2recordS(entity_sql).map(e -> e.get(0)).forEach(entity_id -> { // 会计主体
 				final var rootNode = orderdfm.rowS().filter(e -> e.filter("parta,partb").vals().contains(entity_id))
