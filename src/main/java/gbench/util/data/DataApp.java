@@ -5278,8 +5278,19 @@ public class DataApp {
 		 * @param tt collection containing elements to be added to this list
 		 * @return this 对象本身
 		 */
-		public DFrame insert(int i, IRecord... tt) {
+		public DFrame insert(final int i, final IRecord... tt) {
 			this.addAll(i, Arrays.asList(tt));
+			return this;
+		}
+
+		/**
+		 * 增加元素
+		 *
+		 * @param tt collection containing elements to be added to this list
+		 * @return this 对象本身
+		 */
+		public DFrame rbind(final Iterable<IRecord> tt) {
+			tt.forEach(this::add);
 			return this;
 		}
 

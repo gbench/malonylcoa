@@ -97,11 +97,11 @@ public class H2Test {
 					.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(lines -> lines.add(e.filter("id,parta,partb"))))
 					.collect(groupby("parta", DataApp.DFrame::new));
 			accts.forEach((entity_id, dfm) -> {
-				final var drcrdfm = orderdfm
+				final var drcrdfm = accts.values().stream().reduce(DataApp.DFrame::rbind).get()
 						.fmap(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1).add(
 								e.filter("company_id,product_id,title,price,parta,partb").add(e.alias("id,order_id"))));
 				final var rootNode = Node.of("root");
-				drcrdfm.collect(IRecord.pvtclc(DataApp.DFrame::new, "partb,drcr")).forEach(p -> {
+				drcrdfm.collect(IRecord.pvtclc(DataApp.DFrame::new, "partb,product_id,drcr")).forEach(p -> {
 					(new BiConsumer<Node<String>, Tuple2<String, Object>>() {
 						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
 							final var node = Node.of(p._1);
