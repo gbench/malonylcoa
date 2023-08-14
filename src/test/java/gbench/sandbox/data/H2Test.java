@@ -98,7 +98,7 @@ public class H2Test {
 			} // for
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
 			orderdfm.rowS().flatMap(e -> e.filter("parta,partb").valueS()).distinct().forEach(entity_id -> { // 会计主体
-				final Function<Node<String>, Consumer<? super Tuple2<String, Object>>> mount = rootNode -> p -> { // 挂载
+				final Function<Node<String>, Consumer<? super Tuple2<String, Object>>> mountf = rootNode -> p -> { // 挂载
 					(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
 						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
 							final var node = Node.of(parent, p._1);
@@ -116,7 +116,7 @@ public class H2Test {
 								.add(e.alias("id,order_id")))
 						.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")).tupleS().parallel()
 						.reduce(Node.of("root"), (acc, a) -> {
-							mount.apply(acc).accept(a);
+							mountf.apply(acc).accept(a); // 把a挂载到acc
 							return acc;
 						}, (a, b) -> a.addChildren(b.getChildren()));
 
