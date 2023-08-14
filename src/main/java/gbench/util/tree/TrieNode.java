@@ -120,7 +120,9 @@ public class TrieNode<T> {
 	 * @return 名称为 name的TrieNode
 	 */
 	public TrieNode<T> addPart(final T name) {
-		return children.compute(name, (k, v) -> v == null ? new TrieNode<>(k, this, this.children_ctor) : v);
+		synchronized (children) {
+			return children.compute(name, (k, v) -> v == null ? new TrieNode<>(k, this, this.children_ctor) : v);
+		}
 	}
 
 	/**
