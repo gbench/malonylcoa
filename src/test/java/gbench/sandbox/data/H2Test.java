@@ -82,14 +82,14 @@ public class H2Test {
 				} // for
 			} // for
 
-			final var cpdfm = cps.values().stream().collect(groupby("company_id", DFrame::new)); // 公司产品
+			final var cpdfms = cps.values().stream().collect(groupby("company_id", DFrame::new)); // 公司产品
 			final var t_order = "t_order"; // 订单表名
 			sess.sql2execute(ctsql(t_order, REC("parta", 0, "partb", 0, "lines", REC(), "create_time", now))); // 创建订单表
 			for (final var partaent : shuffle(companies).entrySet()) {
 				final var parta = partaent.getValue();
 				for (final var partbent : shuffle(companies).entrySet()) {
 					final var partb = partbent.getValue();
-					final var lines = cpdfm.get(partb.i4("id")).stream().sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
+					final var lines = cpdfms.get(partb.i4("id")).stream().sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
 							.map(e -> e.filter("id,company_id").add(e.pathget("attrs", IRecord::REC) //
 									.alias("id,product_id,name,title,price,price,quantity,quantity")))
 							.collect(DFrame.dfmclc).head(5); // 订单行：公司产品
