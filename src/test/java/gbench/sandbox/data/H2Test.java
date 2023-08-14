@@ -19,6 +19,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import gbench.util.data.DataApp;
+import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.ExceptionalConsumer;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.xls.SimpleExcel;
@@ -87,7 +88,16 @@ public class H2Test {
 					sess.sql2execute(insql(t_order, orderdata));
 				} // for
 			} // for
-			println(sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines")));
+			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
+			final var accts = orderdfm.stream()
+					.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(lines -> lines.add(e.filter("id,parta,partb"))))
+					.collect(groupby("parta", DataApp.DFrame::new));
+			accts.forEach((entity_id, dfm) -> {
+				final var ldfm = orderdfm
+						.fmap(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1).add(
+								e.filter("company_id,product_id,title,price,parta,partb").add(e.alias("id,order_id"))));
+				println(ldfm);
+			});
 		}); // withTransaction
 	}
 
