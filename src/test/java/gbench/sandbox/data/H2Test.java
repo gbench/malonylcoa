@@ -98,8 +98,7 @@ public class H2Test {
 			} // for
 			final var orderdfm = sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines"));
 			orderdfm.rowS().flatMap(e -> e.filter("parta,partb").valueS()).distinct().forEach(entity_id -> { // 会计主体
-				final var rootNode = Node.of("root"); // 核算根节点
-				final Consumer<? super Tuple2<String, Object>> buildtree = p -> {
+				final Function<Node<String>, Consumer<? super Tuple2<String, Object>>> mount = rootNode -> p -> { // 挂载
 					(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
 						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
 							final var node = Node.of(parent, p._1);
@@ -110,13 +109,16 @@ public class H2Test {
 							} // if
 						} // accept
 					}).accept(rootNode, p);
-				};
-				orderdfm.rowS().flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
+				}; // mount
+				final var rootNode = orderdfm.rowS().flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
-								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb")
-										.add(e.alias("id,order_id"))))
-						.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")) //
-						.forEach(buildtree); // forEach
+								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
+								.add(e.alias("id,order_id")))
+						.collect(IRecord.pvtclc(DFrame::new, "partb,product_id,drcr")).tupleS().parallel()
+						.reduce(Node.of("root"), (acc, a) -> {
+							mount.apply(acc).accept(a);
+							return acc;
+						}, (a, b) -> a.addChildren(b.getChildren()));
 
 				// 结果打印
 				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));

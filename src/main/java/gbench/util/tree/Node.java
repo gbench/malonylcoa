@@ -619,8 +619,10 @@ public class Node<T> {
 	 * @param cc 子节点,null 节点不添加
 	 */
 	public Node<T> addChildren(final Iterable<Node<T>> cc) {
-		for (Node<T> c : cc) {
-			this.addChild(c);
+		synchronized (cc) {
+			for (final Node<T> c : cc) {
+				this.addChild(c);
+			}
 		}
 		return this;
 	}
@@ -642,16 +644,19 @@ public class Node<T> {
 	 * @param checkExists 是否做子节点的存在性检测 true 检测(同一节点可以添加多次),false 不检测
 	 */
 	public Node<T> addChild(final Node<T> c, final boolean b, final boolean checkExists) {
-		if (c != null) {
-			if (checkExists && this.hasChild(c)) {// 存在性检测
-				// System.out.println("节点"+c+",已存在");
-				return this;
-			} // if 存在性检测
-			this.children.add(c);
-			c.setParent(this);
-		} else {
-			if (b)
-				this.children.add(null);
+		synchronized (this.children) {
+			if (c != null) {
+				if (checkExists && this.hasChild(c)) {// 存在性检测
+					// System.out.println("节点"+c+",已存在");
+					return this;
+				} // if 存在性检测
+				this.children.add(c);
+				c.setParent(this);
+			} else {
+				if (b) {
+					this.children.add(null);
+				}
+			} // if
 		}
 		return this;
 	}
