@@ -49,11 +49,12 @@ public class H2Test {
 
 	@Test
 	public void quz() {
+		final var now = LocalDateTime.now();
+
 		new MyDataApp(h2_rec).withTransaction(sess -> { // 准备数据
 			imports("t_company,t_product,t_company_product".split(",")).accept(sess);
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
 			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("id")), 10);
-			final var now = LocalDateTime.now();
 			final var cps = new HashMap<Integer, IRecord>();
 			for (final var ce : companies.entrySet()) { // 随机生成数据公司数据
 				final var c = ce.getValue();
@@ -62,25 +63,28 @@ public class H2Test {
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), "attrs",
 							p.filter("id,name,price"), "create_time", now, "update_time", now); // 产品数据
 					sess.sqlexecuteS(insql("t_company_product", line)).findFirst().map(e -> e.i4(0))
-							.ifPresent(id -> cps.put(id, line.add("id", id)));
+							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
 				} // for
 			} // for
 
-			final var cpds = cps.values().stream().collect(groupby("company_id", DataApp.DFrame::new));
-			var id = 1;
+			final var linesdfm = cps.values().stream().collect(groupby("company_id", DataApp.DFrame::new));
+			var order_id = 1;
 			final var t_order = "t_order";
 			for (final var partae : shuffle(companies).entrySet()) {
 				final var parta = partae.getValue();
 				for (final var partbe : shuffle(companies).entrySet()) {
 					final var partb = partbe.getValue();
-					final var lines = cpds.get(partb.i4("id")).stream().sorted((a, b) -> Math.random() > 0.5 ? 1 : -1)
-							.collect(DataApp.DFrame.dfmclc).head(5);
-					final var order = REC("id", id++, "parta", parta.get("id"), "partb", partb.get("id"), "lines",
-							lines);
-					if (id <= 2) {
-						sess.sql2execute(ctsql(t_order, order));
+					final var lines = linesdfm.get(partb.i4("id")).stream()
+							.sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
+							.map(e -> e.filter("id,company_id").add(
+									e.pathget("attrs", IRecord::REC).alias("id,product_id,name,title,price,price")))
+							.collect(DataApp.DFrame.dfmclc).head(5); // 订单行
+					final var orderdata = REC("id", order_id++, "parta", parta.get("id"), "partb", partb.get("id"), //
+							"lines", lines, "create_time", now);
+					if (order_id <= 2) { // 创建表格
+						sess.sql2execute(ctsql(t_order, orderdata));
 					} // if
-					sess.sql2execute(insql(t_order, order));
+					sess.sql2execute(insql(t_order, orderdata));
 				} // for
 			} // for
 			println(sess.sql2x(String.format("select * from %s", t_order)).fmap(jscompute("lines")));
@@ -221,7 +225,7 @@ class H2db {
 	}
 
 	/**
-	 * jsncompute
+	 * jscompute
 	 * 
 	 * @param keys 键名序列
 	 * @return
