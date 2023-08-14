@@ -939,6 +939,15 @@ public class DataApp {
 		}
 
 		/**
+		 * 键值列表
+		 *
+		 * @return 键值列表
+		 */
+		default List<Object> vals() {
+			return this.tupleS().map(e -> e._2).toList();
+		}
+
+		/**
 		 * 设置键，若 key 与 老的 键 相同则 覆盖 老的值
 		 *
 		 * @param key   键名
