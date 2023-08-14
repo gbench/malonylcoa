@@ -12,7 +12,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.HashMap;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -22,9 +24,11 @@ import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.ExceptionalConsumer;
 import gbench.util.data.DataApp.IRecord;
+import gbench.util.data.DataApp.Tuple2;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
 import gbench.util.json.MyJson;
+import gbench.util.tree.Node;
 import gbench.util.data.MyDataApp;
 
 /**
@@ -93,10 +97,29 @@ public class H2Test {
 					.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(lines -> lines.add(e.filter("id,parta,partb"))))
 					.collect(groupby("parta", DataApp.DFrame::new));
 			accts.forEach((entity_id, dfm) -> {
-				final var ldfm = orderdfm
+				final var drcrdfm = orderdfm
 						.fmap(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1).add(
 								e.filter("company_id,product_id,title,price,parta,partb").add(e.alias("id,order_id"))));
-				println(ldfm);
+				final var rootNode = Node.of("root");
+				drcrdfm.collect(IRecord.pvtclc(DataApp.DFrame::new, "partb,drcr")).forEach(p -> {
+					(new BiConsumer<Node<String>, Tuple2<String, Object>>() {
+						public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
+							final var node = Node.of(p._1);
+							if (p._2 instanceof IRecord r) {
+								r.forEach(_p -> this.accept(node, _p));
+							} else {
+								node.setAttr("value", p._2);
+							}
+							parent.addChild(node);
+						}
+					}).accept(rootNode, p);
+				}); // forEach
+				rootNode.forEach(node -> {
+					final var opt = Optional.ofNullable(node.attr("value", DFrame.class)).map(e -> {
+						return String.format("%s\t%s", e.keys(), e.size());
+					});
+					println(String.format("%s%s/%s", " | ".repeat(node.getLevel()), node.getPath(), opt));
+				});
 			});
 		}); // withTransaction
 	}
