@@ -86,7 +86,7 @@ public class H2Test {
 
 			final var cpdfms = cps.values().stream().collect(groupby("company_id", DFrame::new)); // 公司产品
 			final var t_order = "t_order"; // 订单表名
-			sess.sql2execute(ctsql(t_order, REC("parta", 0, "partb", 0, "lines", REC(), "create_time", now))); // 创建订单表
+			sess.sql2execute(ctsql(t_order, REC("id", 0, "parta", 0, "partb", 0, "lines", REC(), "create_time", now))); // 创建订单表
 			for (final var partaent : shuffle(companies).entrySet()) {
 				final var parta = partaent.getValue();
 				for (final var partbent : shuffle(companies).entrySet()) {
