@@ -323,7 +323,7 @@ public class H2db {
 	 */
 	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Node<String> rootNode,
 			final Function<List<IRecord>, U> evaluator, final String keys) {
-		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys), rec -> rec.tupleS()
+		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys), rec -> rec.tupleS().parallel()
 				.reduce(Optional.ofNullable(rootNode).orElse(Node.of("root")), ndaccum(e -> e), Node::merge));
 	};
 
