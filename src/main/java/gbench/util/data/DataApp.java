@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -4446,25 +4447,32 @@ public class DataApp {
 		}
 
 		/**
+		 * 分词器
+		 * 
 		 * @author gbench
 		 */
 		public static class JsonTokenizer {
-			private String s;
-			private int p;
-			private Pattern numberPtn = Pattern
-					.compile("([1-9]\\d+|\\d|\\-[1-9]\\d+|\\-\\d)(\\.\\d+)?([Ee][\\+\\-]?\\d+)?");
 
-			public JsonTokenizer(String s) {
-				this.s = s;
+			/**
+			 * 构造函数
+			 * 
+			 * @param line 输入行
+			 */
+			public JsonTokenizer(final String line) {
+				this.line = line;
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			public final boolean hasNext() {
-				return p < s.length();
+				return p < line.length();
 			}
 
 			public final Token nextToken() {
 				Token token = new Token();
-				char ch = s.charAt(p);
+				char ch = line.charAt(p);
 				switch (ch) {
 				case '{':
 					token.setType(TokenType.BEGIN_OBJECT);
@@ -4497,7 +4505,7 @@ public class DataApp {
 					p++;
 					break;
 				case 't':
-					if (s.charAt(++p) == 'r' && s.charAt(++p) == 'u' && s.charAt(++p) == 'e') {
+					if (line.charAt(++p) == 'r' && line.charAt(++p) == 'u' && line.charAt(++p) == 'e') {
 						token.setType(TokenType.BOOLEN);
 						token.setVal("true");
 					} else {
@@ -4506,7 +4514,8 @@ public class DataApp {
 					p++;
 					break;
 				case 'f':
-					if (s.charAt(++p) == 'a' && s.charAt(++p) == 'l' && s.charAt(++p) == 's' && s.charAt(++p) == 'e') {
+					if (line.charAt(++p) == 'a' && line.charAt(++p) == 'l' && line.charAt(++p) == 's'
+							&& line.charAt(++p) == 'e') {
 						token.setType(TokenType.BOOLEN);
 						token.setVal("false");
 					} else {
@@ -4515,7 +4524,7 @@ public class DataApp {
 					p++;
 					break;
 				case 'n':
-					if (s.charAt(++p) == 'u' && s.charAt(++p) == 'l' && s.charAt(++p) == 'l') {
+					if (line.charAt(++p) == 'u' && line.charAt(++p) == 'l' && line.charAt(++p) == 'l') {
 						token.setType(TokenType.NULL);
 						token.setVal("null");
 					} else {
@@ -4524,13 +4533,13 @@ public class DataApp {
 					p++;
 					break;
 				case '"':
-					StringBuilder val = new StringBuilder();
+					final StringBuilder val = new StringBuilder();
 					int i = 1;
-					char c = s.charAt(p + i);
+					char c = line.charAt(p + i);
 					while ('"' != c) {
 						if ('\\' == c) {
 							i++;
-							switch (s.charAt(p + i)) {
+							switch (line.charAt(p + i)) {
 							case 'b':
 								val.append('\b');
 								break;
@@ -4557,17 +4566,18 @@ public class DataApp {
 								break;
 							case 'u':
 								i++;
-								char u1 = s.charAt(p + i);
+								final char u1 = line.charAt(p + i);
 								i++;
-								char u2 = s.charAt(p + i);
+								final char u2 = line.charAt(p + i);
 								i++;
-								char u3 = s.charAt(p + i);
+								final char u3 = line.charAt(p + i);
 								i++;
-								char u4 = s.charAt(p + i);
+								final char u4 = line.charAt(p + i);
 								if (!isDigit(u1) || !isDigit(u2) || !isDigit(u3) || !isDigit(u4)) {
 									throw new RuntimeException();
 								}
-								char ucode = (char) Integer.parseInt(String.valueOf(new char[] { u1, u2, u3, u4 }), 16);
+								final char ucode = (char) Integer
+										.parseInt(String.valueOf(new char[] { u1, u2, u3, u4 }), 16);
 								val.append(ucode);
 								break;
 							default:
@@ -4577,7 +4587,7 @@ public class DataApp {
 							val.append(c);
 						}
 						i++;
-						c = s.charAt(p + i);
+						c = line.charAt(p + i);
 					}
 					token.setType(TokenType.STRING);
 					token.setVal(val.toString());
@@ -4594,10 +4604,10 @@ public class DataApp {
 				case '7':
 				case '8':
 				case '9':
-					Matcher numMt = numberPtn.matcher(s.substring(p));
-					if (numMt.lookingAt()) {
-						int end = numMt.end();
-						String grp = numMt.group();
+					final Matcher matcher = numPattern.matcher(line.substring(p));
+					if (matcher.lookingAt()) {
+						final int end = matcher.end();
+						final String grp = matcher.group();
 						token.setType(TokenType.NUMBER);
 						token.setVal(grp);
 						p = p + end;
@@ -4616,25 +4626,43 @@ public class DataApp {
 					break;
 				default:
 					throw new RuntimeException();
-				}
+				} // switch
 				return token;
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			public Token lookAhead() {
-				int p1 = p;
-				Token token = nextToken();
+				final int p1 = p;
+				final Token token = nextToken();
 				p = p1;
 				return token;
 			}
 
+			/**
+			 * 
+			 * @param ch
+			 * @return
+			 */
 			private Boolean isDigit(char ch) {
 				return ch >= 48 || ch <= 57 || ch >= 65 || ch <= 70 || ch >= 97 || ch <= 102;
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			public int getPoint() {
 				return p;
 			}
-		}
+
+			private final String line;
+			private int p;
+			private final Pattern numPattern = Pattern
+					.compile("([1-9]\\d+|\\d|\\-[1-9]\\d+|\\-\\d)(\\.\\d+)?([Ee][\\+\\-]?\\d+)?");
+		} // JsonTokenizer
 
 		/**
 		 * JsonWriter
@@ -4679,9 +4707,9 @@ public class DataApp {
 			public static String bean2json(final Object bean) {
 				final StringBuilder json = new StringBuilder();
 				json.append("{");
-				final LinkedHashMap<String, Object> m = obj2lhm(bean);
-				if (m.size() > 0 && m != null) {
-					for (var e : m.entrySet()) {
+				final LinkedHashMap<String, Object> kvps = obj2lhm(bean);
+				if (kvps.size() > 0 && kvps != null) {
+					for (final Entry<String, Object> e : kvps.entrySet()) {
 						final String name = toJson(e.getKey());
 						final String value = toJson(e.getValue());
 						json.append(name);
@@ -4829,7 +4857,7 @@ public class DataApp {
 				}
 				return sb.toString();
 			}
-		}
+		} // JsonWriter
 
 		/**
 		 * JsonParser
@@ -4981,8 +5009,8 @@ public class DataApp {
 				return s;
 			}
 
-			private JsonTokenizer jsonTokenizer;
-		}
+			private final JsonTokenizer jsonTokenizer;
+		} // JsonParser
 
 		/**
 		 * @author gbench
