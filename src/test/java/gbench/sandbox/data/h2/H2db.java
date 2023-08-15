@@ -375,9 +375,9 @@ public class H2db {
 	 * @param post_processor 后处理
 	 * @return json字符串
 	 */
-	public static <N> String toJson(final N node, final Function<N, Iterable<N>> get_children,
+	public static <N> String writeJson(final N node, final Function<N, Iterable<N>> get_children,
 			final BiConsumer<StringBuilder, N> pre_processor, final BiConsumer<StringBuilder, N> post_processor) {
-		return toJson(null, node, get_children, pre_processor, post_processor);
+		return writeJson(null, node, get_children, pre_processor, post_processor);
 	}
 
 	/**
@@ -391,7 +391,7 @@ public class H2db {
 	 * @param post_processor 后处理
 	 * @return json字符串
 	 */
-	public static <N> String toJson(final StringBuilder builder, final N node,
+	public static <N> String writeJson(final StringBuilder builder, final N node,
 			final Function<N, Iterable<N>> get_children, final BiConsumer<StringBuilder, N> pre_processor,
 			final BiConsumer<StringBuilder, N> post_processor) {
 		final var sb = Optional.ofNullable(builder).orElse(new StringBuilder());
@@ -405,7 +405,7 @@ public class H2db {
 				} else {
 					sb.append(",");
 				}
-				toJson(sb, c, get_children, pre_processor, post_processor);
+				writeJson(sb, c, get_children, pre_processor, post_processor);
 			}
 		}
 		post_processor.accept(sb, node);

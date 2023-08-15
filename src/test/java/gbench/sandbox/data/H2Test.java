@@ -115,9 +115,9 @@ public class H2Test {
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
 						.collect(pvtreeclc2(stats_evaluator, "partb,product_id,drcr")); // 数据透视分阶层统计
-				final var json = toJson(rootNode, p -> p.childrenL(),
+				final var json = writeJson(rootNode, p -> p.childrenL(),
 						(sb, e) -> sb.append(
-								FT("{\"name\":\"$0\"$1$2", e, e.attrval(k -> k == null ? "" : FT(", \"value\":$0", k)),
+								FT("{\"name\":\"$0\"$1$2", e, e.attrval(v -> v == null ? "" : FT(", \"value\":$0", v)),
 										e.isLeaf() ? "" : ", \"children\":[")),
 						(sb, e) -> sb.append(e.isLeaf() ? "}" : "]}"));
 				// 结果打印
