@@ -73,10 +73,10 @@ public class H2Test {
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
 			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("id")), 10);
 			final var cps = new HashMap<Integer, IRecord>();
-			for (final var ce : companies.entrySet()) { // 随机生成数据公司数据
-				final var c = ce.getValue();
-				for (final var pe : products.entrySet()) {
-					final var p = pe.getValue();
+			for (final var cent : companies.entrySet()) { // 随机生成数据:公司数据
+				final var c = cent.getValue();
+				for (final var pent : products.entrySet()) {
+					final var p = pent.getValue();
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), //
 							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
 							"create_time", now, "update_time", now); // 产品数据
@@ -103,18 +103,16 @@ public class H2Test {
 			} // for
 
 			final BiFunction<Function<Object, Object>, Node<String>, Consumer<? super Tuple2<String, Object>>> mountf = (
-					evaluator, rootNode) -> p -> { // 挂载
-						(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
-							public void accept(final Node<String> parent, final Tuple2<String, Object> p) {
-								final var node = Node.of(parent, p._1);
-								if (p._2 instanceof IRecord rec) {
-									rec.tupleS().parallel().forEach(_p -> this.accept(node, _p));
-								} else { // 值计算
-									node.attrSet("value", evaluator.apply(p._2));
-								} // if
-							} // accept
-						}).accept(rootNode, p);
-					}; // mount
+					evaluator, rootNode) -> kvp -> (new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
+						public void accept(final Node<String> parent, final Tuple2<String, Object> tp) { // 递归方法
+							final var node = Node.of(parent, tp._1);
+							if (tp._2 instanceof IRecord rec) {
+								rec.tupleS().parallel().forEach(_tp -> this.accept(node, _tp)); // 递归
+							} else { // 值计算
+								node.attrSet("value", evaluator.apply(tp._2));
+							} // if
+						} // accept
+					}).accept(rootNode, kvp);// mountf
 			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream()
 					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 数据统计
 			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb".split(","))
