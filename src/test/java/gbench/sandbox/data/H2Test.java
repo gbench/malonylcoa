@@ -118,7 +118,7 @@ public class H2Test {
 			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb".split(","))
 					.map(k -> String.format("select %s k from %s", k, t_order)).collect(Collectors.joining(" union ")));
 			for (final var entity_id : sess.sql2recordS(entity_sql).map(e -> e.get(0)).toList()) { // 会计主体
-				final var ordersql = IRecord.FT("select * from $0 where parta=$1 or partb=$1", t_order, entity_id); // 订单sql
+				final var ordersql = IRecord.FT("select * from $0 where parta = $1 or partb = $1", t_order, entity_id); // 订单sql
 				final var rootNode = sess.sql2recordS(ordersql).map(jscompute("lines"))
 						.flatMap(e -> e.getS("lines", IRecord::REC).map(e::derive))
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
