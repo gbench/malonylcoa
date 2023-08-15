@@ -301,7 +301,7 @@ public class MyRecord implements IRecord, Serializable {
 				IRecord.REC(ln).forEach((_k, _v) -> { // 字段添加
 					data.put(_k, _v);
 				}); // forEach
-			} else { // if
+			} else { // 其他情况尝试做javabean分解
 				data.putAll(IRecord.obj2lhm(single));
 			} // if
 		} else { // 键名减值序列

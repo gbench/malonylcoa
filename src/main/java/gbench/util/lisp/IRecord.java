@@ -3568,7 +3568,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
-	 * 把一个对象转换成键值对儿
+	 * 把一个对象转换成键值对儿(javabean分解)
 	 * 
 	 * @param obj 目标对象
 	 * @return 键值对儿列表

@@ -4403,7 +4403,7 @@ public class DataApp {
 					put_stream.accept(stream);
 				} else if (single instanceof String) {// json 格式结构，尝试解析
 					Optional.ofNullable(JSON.asMap((String) single)).ifPresent(data::putAll);
-				} else {
+				} else { // 其他情况尝试做javabean分解
 					data.putAll(JSON.obj2lhm(single));
 				} // if
 			} else { // 键名减值序列
@@ -5052,7 +5052,7 @@ public class DataApp {
 		}
 
 		/**
-		 * 把一个对象转换成键值对儿
+		 * 把一个对象转换成键值对儿(javabean分解)
 		 * 
 		 * @param obj 目标对象
 		 * @return 键值对儿列表
