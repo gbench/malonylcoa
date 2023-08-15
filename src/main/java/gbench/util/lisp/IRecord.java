@@ -159,6 +159,62 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
+	 * 根据键名提取数据(pathgetS单层路径别名) <br>
+	 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+	 *
+	 * @param <T>    元素类型
+	 * @param <U>    结果（流）：元素类型
+	 * @param key    键名
+	 * @param mapper 元素值变换函数 t->u
+	 * @return U类型的流
+	 */
+	default <T, U> Stream<U> getS(final String key, final Function<T, U> mapper) {
+		return this.pathgetS(key, mapper);
+	}
+
+	/**
+	 * 根据键名索引提取数据 <br>
+	 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+	 *
+	 * @param <T>    元素类型
+	 * @param <U>    结果（流）：元素类型
+	 * @param idx    键名索引,从0开始
+	 * @param mapper 元素值变换函数 t->u
+	 * @return U类型的流
+	 */
+	default <T, U> Stream<U> getS(final int idx, final Function<T, U> mapper) {
+		return this.getS(this.keyOf(idx), mapper);
+	}
+
+	/**
+	 * 根据键名提取数据(pathgetS单层路径别名) <br>
+	 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+	 *
+	 * @param <T>    元素类型
+	 * @param <U>    结果（流）：元素类型
+	 * @param key    键名
+	 * @param mapper 元素值变换函数 t->u
+	 * @return U类型的列表
+	 */
+	default <T, U> List<U> gets(final String key, final Function<T, U> mapper) {
+		return this.getS(key, mapper).toList();
+	}
+
+	/**
+	 * 根据键名索引提取数据 <br>
+	 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+	 *
+	 * @param <T>    元素类型
+	 * @param <U>    结果（流）：元素类型
+	 * @param idx    键名索引,从0开始
+	 * @param mapper 元素值变换函数 t->u
+	 * @return U类型的列表
+	 */
+	default <T, U> List<U> gets(final int idx, final Function<T, U> mapper) {
+		return this.gets(this.keyOf(idx), mapper);
+	}
+
+	/**
 	 * 键名序列
 	 *
 	 * @return 键名列表
