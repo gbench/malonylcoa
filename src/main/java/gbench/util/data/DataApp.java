@@ -4066,17 +4066,17 @@ public class DataApp {
 		 * @param keys 键名列表的迭代器
 		 */
 		public <T> Builder(final Iterable<T> keys) {
-			this.keys = StreamSupport.stream(keys.spliterator(), false).limit(10000).map(e -> e + "")
-					.collect(Collectors.toList());
+			this.keys = new ArrayList<>(StreamSupport.stream(keys.spliterator(), false).limit(10000).map(e -> e + "")
+					.collect(Collectors.toList()));
 		}
 
 		/**
-		 * 系统构建
-		 *
-		 * @param kvs
+		 * @param <T> 参数列表元素类型
+		 * @param kvs 键值序列 key1,value1,key2,value2,...
 		 * @return
 		 */
-		public IRecord build(final Object... kvs) {
+		@SafeVarargs
+		final public <T> IRecord build(final T... kvs) {
 			return MyRecord.REC(kvs);
 		}
 
@@ -4085,12 +4085,14 @@ public class DataApp {
 		 * 按照构建器的 键名序列表，依次把objs中的元素与其适配以生成 IRecord <br>
 		 * {key0:objs[0],key1:objs[1],key2:objs[2],...}
 		 *
+		 * @param <T>  参数列表元素类型
 		 * @param objs 值序列, 若 objs 为 null 则返回null, <br>
 		 *             若 objs 长度不足以匹配 keys 将采用 循环补位的仿制给予填充 <br>
 		 *             若 objs 长度为0则返回一个空对象{},注意是没有元素且不是null的对象
 		 * @return IRecord 对象 若 objs 为 null 则返回null
 		 */
-		public IRecord get(final Object... objs) {
+		@SafeVarargs
+		final public <T> IRecord get(final T... objs) {
 			if (objs == null) { // 空值判断
 				return null;
 			}
@@ -4135,6 +4137,49 @@ public class DataApp {
 		}
 
 		/**
+		 * 注意这是一个修改Builder的方法。<br>
+		 * Inserts the specified element at the specified position in thislist. Shifts
+		 * the element currently at that position (if any) andany subsequent elements to
+		 * the right (adds one to their indices).
+		 * 
+		 * @param index at which the specified element is to be inserted
+		 * @param key   element to be inserted
+		 * @return Builder 对象本身
+		 */
+		public Builder insert(final int index, final String key) {
+			this.keys.add(index, key);
+			return this;
+		}
+
+		/**
+		 * 在头部添加key
+		 * 
+		 * @param keys 键名序列
+		 * @return Builder 对象复制品
+		 */
+		public Builder prepend(final String... keys) {
+			final int this_size = this.keys.size();
+			final String[] kk = Arrays.copyOf(keys, keys.length + this_size);
+			final int start = keys.length;
+			for (int i = 0; i < this_size; i++) {
+				kk[i + start] = this.keys.get(i);
+			}
+			return new Builder(Arrays.asList(kk));
+		}
+
+		/**
+		 * 尾部追加键名
+		 * 
+		 * @param keys 键名序列
+		 * @return 对象复制品
+		 */
+		public Builder append(final String... keys) {
+			final Builder rb = this.clone();
+			rb.keys.addAll(Arrays.asList(keys));
+			return rb;
+		}
+
+		/**
 		 * 健名列表
 		 *
 		 * @return 健名列表
@@ -4143,7 +4188,22 @@ public class DataApp {
 			return this.keys().stream();
 		}
 
-		private List<String> keys = new ArrayList<>();
+		/**
+		 * 构造复制品
+		 */
+		public Builder duplicate() {
+			return this.clone();
+		}
+
+		/**
+		 * 复制品
+		 */
+		@Override
+		public Builder clone() {
+			return new Builder(this.keys);
+		}
+
+		private ArrayList<String> keys = new ArrayList<>();
 	}
 
 	/**

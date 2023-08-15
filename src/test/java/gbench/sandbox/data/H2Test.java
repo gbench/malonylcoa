@@ -3,6 +3,7 @@ package gbench.sandbox.data;
 import org.junit.jupiter.api.Test;
 
 import static gbench.util.data.DataApp.IRecord.REC;
+import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.io.Output.println;
 import static gbench.util.json.MyJson.toJson;
 import static gbench.sandbox.data.H2db.*;
@@ -86,7 +87,8 @@ public class H2Test {
 
 			final var cpdfms = cps.values().stream().collect(groupby("company_id", DFrame::new)); // 公司产品
 			final var t_order = "t_order"; // 订单表名
-			sess.sql2execute(ctsql(t_order, REC("id", 0, "parta", 0, "partb", 0, "lines", REC(), "create_time", now))); // 创建订单表
+			final var orderb = rb("parta,partb,lines,create_time"); // 订单结构
+			sess.sql2execute(ctsql(t_order, orderb.prepend("id").get(0, 0, 0, REC(), now))); // 创建订单表
 			for (final var partaent : shuffle(companies).entrySet()) {
 				final var parta = partaent.getValue();
 				for (final var partbent : shuffle(companies).entrySet()) {
@@ -95,8 +97,7 @@ public class H2Test {
 							.map(e -> e.filter("id,company_id").add(e.pathget("attrs", IRecord::REC) //
 									.alias("id,product_id,name,title,price,price,quantity,quantity")))
 							.collect(DFrame.dfmclc).head(5); // 订单行：公司产品
-					final var orderdata = REC("parta", parta.get("id"), "partb", partb.get("id"), //
-							"lines", lines, "create_time", now);
+					final var orderdata = orderb.get(parta.get("id"), partb.get("id"), lines, now);
 					sess.sql2execute(insql(t_order, orderdata));
 				} // for
 			} // for

@@ -3528,8 +3528,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		 * @param keys 键名列表的迭代器
 		 */
 		public <T> Builder(final Iterable<T> keys) {
-			this.keys = StreamSupport.stream(keys.spliterator(), false).limit(10000).map(e -> e + "")
-					.collect(Collectors.toList());
+			this.keys = new ArrayList<>(StreamSupport.stream(keys.spliterator(), false).limit(10000).map(e -> e + "")
+					.collect(Collectors.toList()));
 		}
 
 		/**
@@ -3580,6 +3580,12 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 				data.put(key, value == null ? "" : value); // key 默认为 ""
 			} // for
 
+			for (int i = 0; n > 0 && i < size; i++) {
+				final String key = keys.get(i);
+				final Object value = oo[i % n];
+				data.put(key, value == null ? "" : value); // key 默认为 ""
+			} // for
+
 			return this.build(data);
 		}
 
@@ -3593,6 +3599,49 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		}
 
 		/**
+		 * 注意这是一个修改Builder的方法。<br>
+		 * Inserts the specified element at the specified position in thislist. Shifts
+		 * the element currently at that position (if any) andany subsequent elements to
+		 * the right (adds one to their indices).
+		 * 
+		 * @param index at which the specified element is to be inserted
+		 * @param key   element to be inserted
+		 * @return Builder 对象本身
+		 */
+		public Builder insert(final int index, final String key) {
+			this.keys.add(index, key);
+			return this;
+		}
+
+		/**
+		 * 在头部添加key
+		 * 
+		 * @param keys 键名序列
+		 * @return Builder 对象复制品
+		 */
+		public Builder prepend(final String... keys) {
+			final int this_size = this.keys.size();
+			final String[] kk = Arrays.copyOf(keys, keys.length + this_size);
+			final int start = keys.length;
+			for (int i = 0; i < this_size; i++) {
+				kk[i + start] = this.keys.get(i);
+			}
+			return new Builder(Arrays.asList(kk));
+		}
+
+		/**
+		 * 尾部追加键名
+		 * 
+		 * @param keys 键名序列
+		 * @return 对象复制品
+		 */
+		public Builder append(final String... keys) {
+			final Builder rb = this.clone();
+			rb.keys.addAll(Arrays.asList(keys));
+			return rb;
+		}
+
+		/**
 		 * 健名列表
 		 *
 		 * @return 健名列表
@@ -3602,9 +3651,21 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		}
 
 		/**
-		 * 键名列表
+		 * 构造复制品
 		 */
-		private List<String> keys = new ArrayList<>();
+		public Builder duplicate() {
+			return this.clone();
+		}
+
+		/**
+		 * 复制品
+		 */
+		@Override
+		public Builder clone() {
+			return new Builder(this.keys);
+		}
+
+		private ArrayList<String> keys = new ArrayList<>();
 	}
 
 }
