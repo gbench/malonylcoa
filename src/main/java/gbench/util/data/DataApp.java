@@ -1,10 +1,8 @@
 package gbench.util.data;
 
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.io.*;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Clob;
@@ -4404,6 +4402,8 @@ public class DataApp {
 					put_stream.accept(stream);
 				} else if (single instanceof String) {// json 格式结构，尝试解析
 					Optional.ofNullable(JSON.asMap((String) single)).ifPresent(data::putAll);
+				} else {
+					data.putAll(JSON.obj2lhm(single));
 				} // if
 			} else { // 键名减值序列
 				for (int i = 0; i < n - 1; i += 2) {
@@ -4642,8 +4642,9 @@ public class DataApp {
 		public static class JsonWriter {
 
 			/**
+			 * 把一个对象转换成json 字符串
 			 * 
-			 * @param obj
+			 * @param obj 目标对象
 			 * @return
 			 */
 			public static String toJson(final Object obj) {
@@ -4670,29 +4671,23 @@ public class DataApp {
 			}
 
 			/**
+			 * 把一个javabean转换成json
 			 * 
-			 * @param bean
-			 * @return
+			 * @param bean javabean
+			 * @return json 对象
 			 */
 			public static String bean2json(final Object bean) {
 				final StringBuilder json = new StringBuilder();
 				json.append("{");
-				PropertyDescriptor[] props = null;
-				try {
-					props = Introspector.getBeanInfo(bean.getClass(), Object.class).getPropertyDescriptors();
-				} catch (IntrospectionException e) {
-				}
-				if (props != null) {
-					for (int i = 0; i < props.length; i++) {
-						try {
-							final String name = toJson(props[i].getName());
-							final String value = toJson(props[i].getReadMethod().invoke(bean));
-							json.append(name);
-							json.append(":");
-							json.append(value);
-							json.append(",");
-						} catch (Exception e) {
-						}
+				final LinkedHashMap<String, Object> m = obj2lhm(bean);
+				if (m.size() > 0 && m != null) {
+					for (var e : m.entrySet()) {
+						final String name = toJson(e.getKey());
+						final String value = toJson(e.getValue());
+						json.append(name);
+						json.append(":");
+						json.append(value);
+						json.append(",");
 					}
 					json.setCharAt(json.length() - 1, '}');
 				} else {
@@ -5026,6 +5021,28 @@ public class DataApp {
 			public void setVal(String val) {
 				this.val = val;
 			}
+		}
+
+		/**
+		 * 把一个对象转换成键值对儿
+		 * 
+		 * @param obj 目标对象
+		 * @return 键值对儿列表
+		 */
+		public static LinkedHashMap<String, Object> obj2lhm(final Object obj) {
+			final LinkedHashMap<String, Object> lhm = new LinkedHashMap<String, Object>();
+			for (final Field fld : obj.getClass().getDeclaredFields()) {
+				fld.setAccessible(true);
+				final String key = fld.getName();
+				try {
+					final Object value = fld.get(obj);
+					lhm.put(key, value);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} // for
+
+			return lhm;
 		}
 
 		/**

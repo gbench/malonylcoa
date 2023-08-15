@@ -1,6 +1,7 @@
 package gbench.util.lisp;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -3564,6 +3565,28 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	@SafeVarargs
 	public static <T> T rndget(T... ts) {
 		return ts[new Random().nextInt(ts.length)];
+	}
+
+	/**
+	 * 把一个对象转换成键值对儿
+	 * 
+	 * @param obj 目标对象
+	 * @return 键值对儿列表
+	 */
+	public static LinkedHashMap<String, Object> obj2lhm(final Object obj) {
+		final LinkedHashMap<String, Object> lhm = new LinkedHashMap<String, Object>();
+		for (final Field fld : obj.getClass().getDeclaredFields()) {
+			fld.setAccessible(true);
+			final String key = fld.getName();
+			try {
+				final Object value = fld.get(obj);
+				lhm.put(key, value);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} // for
+
+		return lhm;
 	}
 
 	/**

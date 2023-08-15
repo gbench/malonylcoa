@@ -302,7 +302,7 @@ public class MyRecord implements IRecord, Serializable {
 					data.put(_k, _v);
 				}); // forEach
 			} else { // if
-				// do nothing 省略其他单值情况
+				data.putAll(IRecord.obj2lhm(single));
 			} // if
 		} else { // 键名减值序列
 			for (int i = 0; i < n - 1; i += 2) {
