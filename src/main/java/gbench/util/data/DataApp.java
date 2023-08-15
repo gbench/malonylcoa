@@ -5178,8 +5178,8 @@ public class DataApp {
 		public abstract Connection getConnection();
 
 		private D data;
-		private IRecord attributes = IRecord.REC();
-		private Set<Stream<?>> activeStreams = new LinkedHashSet<>();
+		private final IRecord attributes = IRecord.REC();
+		private final Set<Stream<?>> activeStreams = new LinkedHashSet<>();
 	}
 
 	/**
