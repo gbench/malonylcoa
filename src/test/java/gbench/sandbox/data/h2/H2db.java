@@ -318,7 +318,7 @@ public class H2db {
 	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Function<List<IRecord>, U> evaluator,
 			final String keys) {
 		return pvtreeclc(null, evaluator, keys);
-	};
+	}
 
 	/**
 	 * pvtreeclc 数据透视表规约: node 根节点
@@ -334,7 +334,7 @@ public class H2db {
 		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys),
 				rec -> rec.tupleS().parallel().reduce(Optional.ofNullable(rootNode).orElse(Node.of("root")),
 						ndaccum((leaf, p) -> leaf.attrSet("value", p._2), Node::of), Node::merge));
-	};
+	}
 
 	/**
 	 * pvtreeclc2 数据透视表规约: trienode 根节点
@@ -347,7 +347,7 @@ public class H2db {
 	public static <U> Collector<IRecord, ?, TrieNode<String>> pvtreeclc2(final Function<List<IRecord>, U> evaluator,
 			final String keys) {
 		return pvtreeclc2(null, evaluator, keys);
-	};
+	}
 
 	/**
 	 * pvtreeclc2 数据透视表规约: trienode 根节点
@@ -363,7 +363,54 @@ public class H2db {
 		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys),
 				rec -> rec.tupleS().parallel().reduce(Optional.ofNullable(rootNode).orElse(TrieNode.of("root")),
 						ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge));
-	};
+	}
+
+	/**
+	 * 节点转换成Json
+	 * 
+	 * @param <N>            节点类型
+	 * @param node           树形元素节点
+	 * @param get_children   获取子节点
+	 * @param pre_processor  前处理
+	 * @param post_processor 后处理
+	 * @return json字符串
+	 */
+	public static <N> String toJson(final N node, final Function<N, Iterable<N>> get_children,
+			final BiConsumer<StringBuilder, N> pre_processor, final BiConsumer<StringBuilder, N> post_processor) {
+		return toJson(null, node, get_children, pre_processor, post_processor);
+	}
+
+	/**
+	 * 节点转换成Json
+	 * 
+	 * @param <N>            节点类型
+	 * @param builder        字符串构建器
+	 * @param node           树形元素节点
+	 * @param get_children   获取子节点
+	 * @param pre_processor  前处理
+	 * @param post_processor 后处理
+	 * @return json字符串
+	 */
+	public static <N> String toJson(final StringBuilder builder, final N node,
+			final Function<N, Iterable<N>> get_children, final BiConsumer<StringBuilder, N> pre_processor,
+			final BiConsumer<StringBuilder, N> post_processor) {
+		final var sb = Optional.ofNullable(builder).orElse(new StringBuilder());
+		pre_processor.accept(sb, node);
+		final var cc = get_children.apply(node);
+		if (cc != null) {
+			boolean flag = false;
+			for (final N c : cc) {
+				if (!flag) {
+					flag = true;
+				} else {
+					sb.append(",");
+				}
+				toJson(sb, c, get_children, pre_processor, post_processor);
+			}
+		}
+		post_processor.accept(sb, node);
+		return sb.toString();
+	}
 
 	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 }

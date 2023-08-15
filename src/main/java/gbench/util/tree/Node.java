@@ -546,6 +546,16 @@ public class Node<T> {
 	}
 
 	/**
+	 * getChildren别名 <br>
+	 * 获取所有的子节点信息记录
+	 *
+	 * @return 所有子节点包括空节点
+	 */
+	public LinkedList<Node<T>> childrenL() {
+		return this.getChildren();
+	}
+
+	/**
 	 * 获取所有的子节点信息记录
 	 *
 	 * @return 所有子节点包括空节点

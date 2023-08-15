@@ -630,7 +630,7 @@ public class TrieNode<T> {
 	/**
 	 * 子节点
 	 * 
-	 * @return [trienode]
+	 * @return 子节点 列表 [trienode]
 	 */
 	public List<TrieNode<T>> childrenL() {
 		return this.children.values().stream().collect(Collectors.toList());
