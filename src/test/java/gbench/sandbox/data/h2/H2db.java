@@ -26,6 +26,7 @@ import gbench.util.data.DataApp.Tuple2;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
 import gbench.util.tree.Node;
+import gbench.util.tree.TrieNode;
 
 public class H2db {
 	/**
@@ -307,7 +308,7 @@ public class H2db {
 	}
 
 	/**
-	 * pvtreeclc 数据透视表规约
+	 * pvtreeclc 数据透视表规约: node 根节点
 	 * 
 	 * @param <U>       核算结果类型
 	 * @param evaluator 分组核算器 [rec] -> u
@@ -320,7 +321,7 @@ public class H2db {
 	};
 
 	/**
-	 * pvtreeclc 数据透视表规约
+	 * pvtreeclc 数据透视表规约: node 根节点
 	 * 
 	 * @param <U>       核算结果类型
 	 * @param rootNode  根节点
@@ -333,6 +334,35 @@ public class H2db {
 		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys),
 				rec -> rec.tupleS().parallel().reduce(Optional.ofNullable(rootNode).orElse(Node.of("root")),
 						ndaccum((leaf, p) -> leaf.attrSet("value", p._2), Node::of), Node::merge));
+	};
+
+	/**
+	 * pvtreeclc2 数据透视表规约: trienode 根节点
+	 * 
+	 * @param <U>       核算结果类型
+	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param keys      键名列表
+	 * @return 归集器 [rec]->trienode
+	 */
+	public static <U> Collector<IRecord, ?, TrieNode<String>> pvtreeclc2(final Function<List<IRecord>, U> evaluator,
+			final String keys) {
+		return pvtreeclc2(null, evaluator, keys);
+	};
+
+	/**
+	 * pvtreeclc2 数据透视表规约: trienode 根节点
+	 * 
+	 * @param <U>       核算结果类型
+	 * @param rootNode  根节点
+	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param keys      键名列表
+	 * @return 归集器 [rec]->trienode
+	 */
+	public static <U> Collector<IRecord, ?, TrieNode<String>> pvtreeclc2(final TrieNode<String> rootNode,
+			final Function<List<IRecord>, U> evaluator, final String keys) {
+		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys),
+				rec -> rec.tupleS().parallel().reduce(Optional.ofNullable(rootNode).orElse(TrieNode.of("root")),
+						ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge));
 	};
 
 	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

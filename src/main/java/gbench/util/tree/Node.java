@@ -639,7 +639,7 @@ public class Node<T> {
 	/**
 	 * 把另一个node的子节点合并入自己的子节点
 	 *
-	 * @param node 另一个节点,当node为this时候或是null时候，直接返回this
+	 * @param node 另一个节点,当node为this或是null时候，直接返回this
 	 * @return 当前对象本身
 	 */
 	public Node<T> merge(final Node<T> node) {

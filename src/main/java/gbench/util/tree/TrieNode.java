@@ -646,6 +646,21 @@ public class TrieNode<T> {
 	}
 
 	/**
+	 * 把另一个node的子节点合并入自己的子节点
+	 * 
+	 * @param node 另一个节点,当node为this或是null时候，直接返回this
+	 * @return 当前对象本身
+	 */
+	public TrieNode<T> merge(final TrieNode<T> node) {
+		if (null == node || this == node) {
+			// do nothing
+		} else {
+			this.children.putAll(node.children);
+		}
+		return this;
+	}
+
+	/**
 	 * 兄弟排行
 	 * 
 	 * 第一个节点0,第二个节点1,第三个节点2,依次类图
