@@ -123,7 +123,7 @@ public class H2Test {
 						.map(k -> String.format("select * from %s where %s = %s", t_order, k, entity_id))
 						.collect(Collectors.joining(" union ")); // 订单sql
 				final var rootNode = sess.sql2recordS(ordersql).map(jscompute("lines"))
-						.flatMap(e -> e.pathgetS("lines", IRecord::REC).map(q -> q.add(e)))
+						.flatMap(e -> e.getS("lines", IRecord::REC).map(e::derive))
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
