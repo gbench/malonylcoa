@@ -124,7 +124,7 @@ public class H2Test {
 						.map(e -> REC("entity_id", entity_id, "drcr", e.i4("parta").equals(entity_id) ? 1 : -1)
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
-						.collect(IRecord.pvtclc(stats_evaluator, "partb,product_id,drcr")).tupleS().parallel()
+						.collect(IRecord.pvtclc(stats_evaluator, "partb,product_id,drcr")).tupleS().parallel() // 数据透视分阶层统计
 						.reduce(Node.of("root"), (acc, a) -> {
 							mountf.apply(e -> e, acc).accept(a); // 把a挂载到acc
 							return acc;
