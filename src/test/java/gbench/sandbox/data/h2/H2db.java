@@ -285,18 +285,7 @@ public class H2db {
 	 */
 	public static <V, U, P extends Tuple2<String, V>> Collector<P, ?, Node<String>> ndtreeclc(
 			final Supplier<Node<String>> rootgen, final Function<V, U> evaluator) {
-		return Collector.of(rootgen, (new BiConsumer<Node<String>, P>() { // 使用匿名类的this对象实现FunctionalInterace递归
-			@SuppressWarnings("unchecked")
-			public void accept(final Node<String> parent, final P tp) { // 递归方法
-				final var node = Node.of(parent, tp._1);
-				if (((Object) tp._2) instanceof Iterable tps) {
-					StreamSupport.stream(((Iterable<P>) tps).spliterator(), true)
-							.forEach(_tp -> this.accept(node, (P) _tp)); // 递归
-				} else { // 值计算
-					node.attrSet("value", evaluator.apply(tp._2));
-				} // if
-			} // accept
-		}), Node::merge, a -> a);
+		return Collector.of(rootgen, (acc, a) -> ndaccum(evaluator).apply(acc, a), Node::merge, a -> a);
 	}
 
 	/**
