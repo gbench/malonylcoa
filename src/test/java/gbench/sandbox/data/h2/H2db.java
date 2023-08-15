@@ -246,8 +246,8 @@ public class H2db {
 	/**
 	 * 树形结构的递归归集 <br>
 	 * 
-	 * final var rootNode = ss.reduce(Node.of("root"),ndaccum((node, p) ->
-	 * node.attrSet("value", p._2), Node::of), Node::merge)
+	 * final var rootNode = ss.reduce(Node.of("root"),ndaccum((leaf, p) ->
+	 * leaf.attrSet("value", p._2), Node::of), Node::merge)
 	 * 
 	 * @param <K>          元组键名类型
 	 * @param <V>          元组值类型
@@ -255,18 +255,18 @@ public class H2db {
 	 * @param <P>          键值对儿类型
 	 * @param <N>          节点类型
 	 * @param leaf_handler (node,p)->{} 叶子节点处理函数
-	 * @param ngen         节点生成器 (parent,p)->node
-	 * @return (acc,a)->acc
+	 * @param nodegen      节点生成器 (parent,p)->node
+	 * @return 累加器 (acc,a)->acc
 	 */
 	public static <K, V, U, P extends Tuple2<K, V>, N> BiFunction<N, P, N> ndaccum(final BiConsumer<N, P> leaf_handler,
-			final BiFunction<N, K, N> ngen) {
+			final BiFunction<N, K, N> nodegen) {
 		return (acc, a) -> { // 规约处理
 			(new BiConsumer<N, P>() { // 使用匿名类的this对象实现FunctionalInterace递归
 				@SuppressWarnings("unchecked")
 				public void accept(final N parent, final P tp) { // 递归方法
-					final var node = ngen.apply(parent, tp._1);
+					final var node = nodegen.apply(parent, tp._1);
 					if (tp._2 instanceof Iterable ps) {
-						StreamSupport.stream(ps.spliterator(), true).forEach(_tp -> accept(node, (P) _tp)); // 递归
+						StreamSupport.stream(ps.spliterator(), true).forEach(_tp -> accept(node, (P) _tp)); // accept递归循环
 					} else { // 值计算
 						leaf_handler.accept(node, tp);
 					} // if
@@ -284,7 +284,7 @@ public class H2db {
 	 * @param <P>          键值对儿类型
 	 * @param rootgen      根节点生成器
 	 * @param leaf_handler 分组核算器 (node,p) -> {}
-	 * @return node tree 归集器
+	 * @return 归集器 [p]->node
 	 */
 	public static <V, U, P extends Tuple2<String, V>> Collector<P, ?, Node<String>> ndtreeclc(
 			final Supplier<Node<String>> rootgen, BiConsumer<Node<String>, P> leaf_handler) {
@@ -299,11 +299,11 @@ public class H2db {
 	 * @param <P>      键值对儿类型
 	 * @param rootgen  根节点生成器
 	 * @param finisher 分组核算器 [rec] -> u
-	 * @return node tree 归集器
+	 * @return 归集器 [p]->node
 	 */
 	public static <V, U, P extends Tuple2<String, V>> Collector<P, ?, Node<String>> ndtreeclc(
 			final Supplier<Node<String>> rootgen) {
-		return ndtreeclc(rootgen, (node, p) -> node.attrSet("value", p._2));
+		return ndtreeclc(rootgen, (leaf, p) -> leaf.attrSet("value", p._2));
 	}
 
 	/**
@@ -312,7 +312,7 @@ public class H2db {
 	 * @param <U>       核算结果类型
 	 * @param evaluator 分组核算器 [rec] -> u
 	 * @param keys      键名列表
-	 * @return [rec]->node
+	 * @return 归集器 [rec]->node
 	 */
 	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Function<List<IRecord>, U> evaluator,
 			final String keys) {
@@ -326,13 +326,13 @@ public class H2db {
 	 * @param rootNode  根节点
 	 * @param evaluator 分组核算器 [rec] -> u
 	 * @param keys      键名列表
-	 * @return [rec]->node
+	 * @return 归集器 [rec]->node
 	 */
 	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Node<String> rootNode,
 			final Function<List<IRecord>, U> evaluator, final String keys) {
 		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys),
 				rec -> rec.tupleS().parallel().reduce(Optional.ofNullable(rootNode).orElse(Node.of("root")),
-						ndaccum((node, p) -> node.attrSet("value", p._2), Node::of), Node::merge));
+						ndaccum((leaf, p) -> leaf.attrSet("value", p._2), Node::of), Node::merge));
 	};
 
 	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
