@@ -36,6 +36,8 @@ public class H2Test {
 	@Test
 	public void foo() {
 		println(JSON.isJson("1243.4"));
+		println(rb("id,name,sex,address").get("1,zhangsan,man,shanghai".split(",")).json());
+		println(shtmx("t_customer").collect(DFrame.dfmclc2).json());
 	}
 
 	/**
