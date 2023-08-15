@@ -2135,6 +2135,15 @@ public class DataApp {
 		}
 
 		/**
+		 * json 字符串
+		 * 
+		 * @return json 字符串
+		 */
+		default String json() {
+			return JSON.toJson(this);
+		}
+
+		/**
 		 * 比较器,需要 键名序列keys中的每个值对象带有比较能力:Comparable
 		 *
 		 * @param keys 键名序列
@@ -5707,6 +5716,15 @@ public class DataApp {
 		public DFrame rbind(final Iterable<IRecord> tt) {
 			tt.forEach(this::add);
 			return this;
+		}
+
+		/**
+		 * json 字符串
+		 * 
+		 * @return json 字符串
+		 */
+		public String json() {
+			return JSON.toJson(this);
 		}
 
 		/**
