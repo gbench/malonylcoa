@@ -639,11 +639,11 @@ public class Node<T> {
 	/**
 	 * 把另一个node的子节点合并入自己的子节点
 	 *
-	 * @param node 零杠一个节点
+	 * @param node 另一个节点,当node为this时候或是null时候，直接返回this
 	 * @return 当前对象本身
 	 */
 	public Node<T> merge(final Node<T> node) {
-		if (node == null) {
+		if (node == null || node == this) {
 			return this;
 		}
 		return this.addChildren(node.getChildren());
@@ -754,7 +754,7 @@ public class Node<T> {
 	/**
 	 * 添加子节点
 	 *
-	 * @param cc 子节点集合
+	 * @param cc 子节点集合，叫注意cc中包含有this父节点或是this子节点，addChildren仅仅添加不做树形结构完整性检测：有意为之除外。
 	 * @return 当前对象本身
 	 */
 	public Node<T> addChildren(final List<Node<T>> cc) {
