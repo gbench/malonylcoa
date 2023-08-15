@@ -1,8 +1,12 @@
 package gbench.util.data;
 
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.*;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -1336,7 +1340,8 @@ public class DataApp {
 		 */
 		@SuppressWarnings("unchecked")
 		default <X, Y> IRecord rec(final String key, final BiFunction<String, X, Y> preprocessor) {
-			final Y value = preprocessor.apply(key, (X) this.get(key));
+			final Y value = Optional.ofNullable(preprocessor)
+					.orElse((BiFunction<String, X, Y>) (k, x) -> (Y) IRecord.REC(x)).apply(key, (X) this.get(key));
 			final Function<Collection<?>, IRecord> clcn2rec = tt -> {
 				int i = 0;
 				final IRecord rec = this.build(); // 创建一个空IRecord
@@ -1364,6 +1369,26 @@ public class DataApp {
 			} else {
 				return null;
 			}
+		}
+
+		/**
+		 * 返回 key 所对应的 键值, IRecord 类型
+		 *
+		 * @param key 键名
+		 * @return key 所标定的 值
+		 */
+		default IRecord rec(final String key) {
+			return this.rec(key, null);
+		}
+
+		/**
+		 * 返回 键名索引 所对应的 键值, IRecord 类型
+		 *
+		 * @param idx 键名索引 从0开始
+		 * @return key 所标定的 值
+		 */
+		default IRecord rec(final int idx) {
+			return this.rec(this.keyOf(idx));
 		}
 
 		/**
@@ -4603,35 +4628,245 @@ public class DataApp {
 		}
 
 		/**
+		 * JsonWriter
+		 */
+		public static class JsonWriter {
+
+			/**
+			 * 
+			 * @param obj
+			 * @return
+			 */
+			public static String toJson(final Object obj) {
+				final StringBuilder json = new StringBuilder();
+				if (obj == null) {
+					json.append("\"\"");
+				} else if (obj instanceof String || obj instanceof Integer || obj instanceof Float
+						|| obj instanceof Boolean || obj instanceof Short || obj instanceof Double
+						|| obj instanceof Long || obj instanceof BigDecimal || obj instanceof BigInteger
+						|| obj instanceof Byte) {
+					json.append("\"").append(string2json(obj.toString())).append("\"");
+				} else if (obj instanceof Object[]) {
+					json.append(array2json((Object[]) obj));
+				} else if (obj instanceof List) {
+					json.append(list2json((List<?>) obj));
+				} else if (obj instanceof Map) {
+					json.append(map2json((Map<?, ?>) obj));
+				} else if (obj instanceof Set) {
+					json.append(set2json((Set<?>) obj));
+				} else {
+					json.append(bean2json(obj));
+				}
+				return json.toString();
+			}
+
+			/**
+			 * 
+			 * @param bean
+			 * @return
+			 */
+			public static String bean2json(final Object bean) {
+				final StringBuilder json = new StringBuilder();
+				json.append("{");
+				PropertyDescriptor[] props = null;
+				try {
+					props = Introspector.getBeanInfo(bean.getClass(), Object.class).getPropertyDescriptors();
+				} catch (IntrospectionException e) {
+				}
+				if (props != null) {
+					for (int i = 0; i < props.length; i++) {
+						try {
+							final String name = toJson(props[i].getName());
+							final String value = toJson(props[i].getReadMethod().invoke(bean));
+							json.append(name);
+							json.append(":");
+							json.append(value);
+							json.append(",");
+						} catch (Exception e) {
+						}
+					}
+					json.setCharAt(json.length() - 1, '}');
+				} else {
+					json.append("}");
+				}
+				return json.toString();
+			}
+
+			/**
+			 * 
+			 * @param list
+			 * @return
+			 */
+			public static String list2json(final List<?> list) {
+				final StringBuilder json = new StringBuilder();
+				json.append("[");
+				if (list != null && list.size() > 0) {
+					for (Object obj : list) {
+						json.append(toJson(obj));
+						json.append(",");
+					}
+					json.setCharAt(json.length() - 1, ']');
+				} else {
+					json.append("]");
+				}
+				return json.toString();
+			}
+
+			/**
+			 * 
+			 * @param array
+			 * @return
+			 */
+			public static String array2json(final Object[] array) {
+				final StringBuilder json = new StringBuilder();
+				json.append("[");
+				if (array != null && array.length > 0) {
+					for (final Object obj : array) {
+						json.append(toJson(obj));
+						json.append(",");
+					}
+					json.setCharAt(json.length() - 1, ']');
+				} else {
+					json.append("]");
+				}
+				return json.toString();
+			}
+
+			/**
+			 * 
+			 * @param map
+			 * @return
+			 */
+			public static String map2json(final Map<?, ?> map) {
+				final StringBuilder json = new StringBuilder();
+				json.append("{");
+				if (map != null && map.size() > 0) {
+					for (final Object key : map.keySet()) {
+						json.append(toJson(key));
+						json.append(":");
+						json.append(toJson(map.get(key)));
+						json.append(",");
+					}
+					json.setCharAt(json.length() - 1, '}');
+				} else {
+					json.append("}");
+				}
+				return json.toString();
+			}
+
+			/**
+			 * 
+			 * @param set
+			 * @return
+			 */
+			public static String set2json(final Set<?> set) {
+				final StringBuilder json = new StringBuilder();
+				json.append("[");
+				if (set != null && set.size() > 0) {
+					for (Object obj : set) {
+						json.append(toJson(obj));
+						json.append(",");
+					}
+					json.setCharAt(json.length() - 1, ']');
+				} else {
+					json.append("]");
+				}
+				return json.toString();
+			}
+
+			/**
+			 * 
+			 * @param s
+			 * @return
+			 */
+			public static String string2json(final String s) {
+				if (s == null)
+					return "";
+				final StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < s.length(); i++) {
+					char ch = s.charAt(i);
+					switch (ch) {
+					case '"':
+						sb.append("\\\"");
+						break;
+					case '\\':
+						sb.append("\\\\");
+						break;
+					case '\b':
+						sb.append("\\b");
+						break;
+					case '\f':
+						sb.append("\\f");
+						break;
+					case '\n':
+						sb.append("\\n");
+						break;
+					case '\r':
+						sb.append("\\r");
+						break;
+					case '\t':
+						sb.append("\\t");
+						break;
+					case '/':
+						sb.append("\\/");
+						break;
+					default:
+						if (ch >= '\u0000' && ch <= '\u001F') {
+							final String ss = Integer.toHexString(ch);
+							sb.append("\\u");
+							for (int k = 0; k < 4 - ss.length(); k++) {
+								sb.append('0');
+							}
+							sb.append(ss.toUpperCase());
+						} else {
+							sb.append(ch);
+						}
+					}
+				}
+				return sb.toString();
+			}
+		}
+
+		/**
+		 * JsonParser
+		 * 
 		 * @author gbench
 		 */
 		public static class JsonParser {
-			private JsonTokenizer jsonTokenizer;
 
-			public JsonParser(JsonTokenizer jsonTokenizer) {
+			/**
+			 * JsonParser
+			 * 
+			 * @param jsonTokenizer
+			 */
+			public JsonParser(final JsonTokenizer jsonTokenizer) {
 				this.jsonTokenizer = jsonTokenizer;
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			public Object parseValue() {
-				Token token = jsonTokenizer.nextToken();
-				TokenType tt = token.getType();
+				final Token token = jsonTokenizer.nextToken();
+				final TokenType tt = token.getType();
 				if (tt == TokenType.BEGIN_OBJECT) {
-					Map<?, ?> map = parseObj();
+					final Map<?, ?> map = parseObj();
 					return map;
 				}
 				if (tt == TokenType.BEGIN_ARRAY) {
-					List<?> list = parseArray();
+					final List<?> list = parseArray();
 					return list;
 				}
 				if (tt == TokenType.STRING) {
-					String str = token.getVal();
+					final String str = token.getVal();
 					return str;
 				}
 				if (tt == TokenType.NUMBER) {
 					return new BigDecimal(token.getVal());
 				}
 				if (tt == TokenType.BOOLEN) {
-					String s = token.getVal();
+					final String s = token.getVal();
 					if ("true".equals(s)) {
 						return true;
 					}
@@ -4645,27 +4880,35 @@ public class DataApp {
 				throw new RuntimeException("parseValue error." + prettyToken(token));
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			private Map<?, ?> parseObj() {
-				Token lookAhead = jsonTokenizer.lookAhead();
+				final Token lookAhead = jsonTokenizer.lookAhead();
 				if (lookAhead.getType() == TokenType.END_OBJECT) {
 					jsonTokenizer.nextToken();
 					return new LinkedHashMap<>();
 				} else if (lookAhead.getType() == TokenType.STRING) {
-					Map<?, ?> map = parseMembers();
+					final Map<?, ?> map = parseMembers();
 					return map;
 				} else {
 					throw new RuntimeException("parseObj error." + prettyToken(lookAhead));
 				}
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			private Map<?, ?> parseMembers() {
-				Map<Object, Object> map = new LinkedHashMap<>();
-				Object[] objects = parseMember();
+				final Map<Object, Object> map = new LinkedHashMap<>();
+				final Object[] objects = parseMember();
 				map.put(objects[0], objects[1]);
-				Token token = jsonTokenizer.nextToken();
-				TokenType tt = token.getType();
+				final Token token = jsonTokenizer.nextToken();
+				final TokenType tt = token.getType();
 				if (tt == TokenType.SEP_COMMA) {
-					Map<?, ?> map1 = parseMembers();
+					final Map<?, ?> map1 = parseMembers();
 					map.putAll(map1);
 				} else if (tt == TokenType.END_OBJECT) {
 				} else {
@@ -4675,39 +4918,47 @@ public class DataApp {
 			}
 
 			private Object[] parseMember() {
-				Token key = jsonTokenizer.nextToken();
+				final Token key = jsonTokenizer.nextToken();
 				if (key.getType() != TokenType.STRING) {
 					throw new RuntimeException("key的类型不为string:" + prettyToken(key));
 				}
-				String s = key.getVal();
-				Token colon = jsonTokenizer.nextToken();
+				final String s = key.getVal();
+				final Token colon = jsonTokenizer.nextToken();
 				if (colon.getType() != TokenType.SEP_COLON) {
 					throw new RuntimeException("key后缺少冒号:" + prettyToken(key));
 				}
-				Object o = parseValue();
-				Object[] objects = { s, o };
+				final Object o = parseValue();
+				final Object[] objects = { s, o };
 				return objects;
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			private List<?> parseArray() {
-				Token lookAhead = jsonTokenizer.lookAhead();
+				final Token lookAhead = jsonTokenizer.lookAhead();
 				if (lookAhead.getType() == TokenType.END_ARRAY) {
 					jsonTokenizer.nextToken();
 					return new ArrayList<>();
 				} else {
-					List<?> list = parseValues();
+					final List<?> list = parseValues();
 					return list;
 				}
 			}
 
+			/**
+			 * 
+			 * @return
+			 */
 			private List<?> parseValues() {
-				List<Object> list = new ArrayList<>();
-				Object o = parseValue();
+				final List<Object> list = new ArrayList<>();
+				final Object o = parseValue();
 				list.add(o);
-				Token token = jsonTokenizer.nextToken();
-				TokenType tt = token.getType();
+				final Token token = jsonTokenizer.nextToken();
+				final TokenType tt = token.getType();
 				if (tt == TokenType.SEP_COMMA) {
-					List<?> list1 = parseValues();
+					final List<?> list1 = parseValues();
 					list.addAll(list1);
 				} else if (tt == TokenType.END_ARRAY) {
 				} else {
@@ -4716,11 +4967,17 @@ public class DataApp {
 				return list;
 			}
 
+			/**
+			 * 
+			 * @param token
+			 * @return
+			 */
 			private String prettyToken(Token token) {
-				String s = " type:" + token.getType() + ",value:" + token.getVal();
+				final String s = " type:" + token.getType() + ",value:" + token.getVal();
 				return s;
 			}
 
+			private JsonTokenizer jsonTokenizer;
 		}
 
 		/**
@@ -4763,22 +5020,53 @@ public class DataApp {
 		}
 
 		/**
-		 * @param s
+		 * 
+		 * @param obj
 		 * @return
 		 */
-		public static final Object parse(String s) {
-			JsonTokenizer tokenizer = new JsonTokenizer(s);
-			JsonParser parser = new JsonParser(tokenizer);
+		public static boolean isJson(final String obj) {
+			boolean flag = false;
+			try {
+				final Object o = JSON.parse(obj);
+				if (obj != null && !o.getClass().isPrimitive() && !(o instanceof Number)) {
+					flag = true;
+				} // if
+			} catch (Exception e) {
+				//
+			}
+			return flag;
+		}
+
+		/**
+		 * json 对象解析
+		 * 
+		 * @param line json 数据行
+		 * @return json 对象
+		 */
+		public static final Object parse(final String line) {
+			final JsonTokenizer tokenizer = new JsonTokenizer(line);
+			final JsonParser parser = new JsonParser(tokenizer);
 			Object o = null;
 			try {
 				o = parser.parseValue();
 			} catch (Exception e) {
-				int p = tokenizer.getPoint();
-				int endIndex = Math.min(p + 20, s.length());
-				String errMsg = "格式不正确位置:" + s.substring(p, endIndex) + ";" + e.getMessage();
+				final int p = tokenizer.getPoint();
+				final int endIndex = Math.min(p + 20, line.length());
+				final String errMsg = "格式不正确位置:" + line.substring(p, endIndex) + ";" + e.getMessage();
+				// System.err.println(line);
 				throw new JsonException(errMsg);
 			}
 			return o;
+		}
+
+		/**
+		 * 将一个对象 转换成 json 字符串
+		 * 
+		 * @param obj 数据对象
+		 * @return json 字符串
+		 */
+		public static final String toJson(final Object obj) {
+			return obj == null ? null : JsonWriter.toJson(obj);
 		}
 
 		/**
@@ -4786,8 +5074,8 @@ public class DataApp {
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		public static Map<String, Object> asMap(String line) {
-			Object ret = JSON.parse(line);
+		public static Map<String, Object> asMap(final String line) {
+			final Object ret = JSON.parse(line);
 			return ret instanceof Map ? (Map<String, Object>) ret : null;
 		}
 	}
