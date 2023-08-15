@@ -125,7 +125,7 @@ public class H2Test {
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
 						.collect(IRecord.pvtclc(stats_evaluator, "partb,product_id,drcr")).tupleS().parallel() // 数据透视分阶层统计
-						.reduce(Node.of("root"), (acc, a) -> {
+						.reduce(Node.of("root"), (acc, a) -> { // 挂载到根节点root,把数据透视表换成node形式的树形结构以方便展示
 							mountf.apply(e -> e, acc).accept(a); // 把a挂载到acc
 							return acc;
 						}, Node::merge);
