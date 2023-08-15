@@ -290,7 +290,7 @@ public class H2db {
 			public void accept(final Node<String> parent, final P tp) { // 递归方法
 				final var node = Node.of(parent, tp._1);
 				if (((Object) tp._2) instanceof Iterable tps) {
-					StreamSupport.stream(((Iterable<P>) tps).spliterator(), false)
+					StreamSupport.stream(((Iterable<P>) tps).spliterator(), true)
 							.forEach(_tp -> this.accept(node, (P) _tp)); // 递归
 				} else { // 值计算
 					node.attrSet("value", evaluator.apply(tp._2));
