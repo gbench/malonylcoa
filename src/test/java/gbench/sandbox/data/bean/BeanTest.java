@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import gbench.util.data.DataApp.JSON;
 import gbench.util.io.Output;
-import gbench.util.lisp.IRecord;
 
 @SuppressWarnings("all")
 public class BeanTest {
