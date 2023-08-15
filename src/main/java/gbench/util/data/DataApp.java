@@ -878,7 +878,7 @@ public class DataApp {
 
 		/**
 		 * 根据键名提取数据(pathgetS单层路径别名) <br>
-		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
@@ -892,7 +892,7 @@ public class DataApp {
 
 		/**
 		 * 根据键名索引提取数据 <br>
-		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
@@ -906,7 +906,7 @@ public class DataApp {
 
 		/**
 		 * 根据键名提取数据(pathgetS单层路径别名) <br>
-		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
@@ -920,7 +920,7 @@ public class DataApp {
 
 		/**
 		 * 根据键名索引提取数据 <br>
-		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
@@ -1167,7 +1167,7 @@ public class DataApp {
 
 		/**
 		 * 根据路径提取数据 <br>
-		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
@@ -1197,7 +1197,7 @@ public class DataApp {
 
 		/**
 		 * 根据路径提取数据 <br>
-		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
 		 * @param <T>        结果（流）：元素类型
 		 * @param path       键名路径 如 a/b/c
@@ -1211,7 +1211,7 @@ public class DataApp {
 
 		/**
 		 * 根据路径提取数据 <br>
-		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素素的流[a]。
+		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
 		 * @param path 键名路径 如 a/b/c
 		 * @return Object类型的流
