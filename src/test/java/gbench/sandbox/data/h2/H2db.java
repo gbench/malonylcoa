@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -18,8 +19,10 @@ import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.ExceptionalConsumer;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
+import gbench.util.data.DataApp.Tuple2;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
+import gbench.util.tree.Node;
 
 public class H2db {
 	/**
@@ -235,6 +238,34 @@ public class H2db {
 					}
 				});
 		return lhm;
+	}
+
+	/**
+	 * 树形结构的递归归集
+	 * 
+	 * final var rootNode = ss.reduce(Node.of("root"), node_accum(e -> e),
+	 * Node::merge);
+	 * 
+	 * @param <T>       元素值的参数类型
+	 * @param evaluator t->u
+	 * @return (acc,a)->acc
+	 */
+	public static <T, U> BiFunction<Node<String>, ? super Tuple2<String, Object>, Node<String>> node_accum(
+			final Function<T, U> evaluator) {
+		return (acc, a) -> { // 规约处理
+			(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
+				@SuppressWarnings("unchecked")
+				public void accept(final Node<String> parent, final Tuple2<String, Object> tp) { // 递归方法
+					final var node = Node.of(parent, tp._1);
+					if (tp._2 instanceof IRecord rec) {
+						rec.tupleS().parallel().forEach(_tp -> this.accept(node, _tp)); // 递归
+					} else { // 值计算
+						node.attrSet("value", evaluator.apply((T) tp._2));
+					} // if
+				} // accept
+			}).accept(acc, a);// mountf
+			return acc;
+		};
 	}
 
 	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

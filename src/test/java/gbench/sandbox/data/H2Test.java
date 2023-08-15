@@ -12,9 +12,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 import java.util.HashMap;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,7 +20,6 @@ import gbench.sandbox.data.h2.H2db;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
-import gbench.util.data.DataApp.Tuple2;
 import gbench.util.tree.Node;
 import gbench.util.type.Types;
 import gbench.util.data.MyDataApp;
@@ -107,17 +103,6 @@ public class H2Test {
 				} // for
 			} // for
 
-			final BiFunction<Function<Object, Object>, Node<String>, Consumer<? super Tuple2<String, Object>>> mountf = (
-					evaluator, rootNode) -> kvp -> (new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
-						public void accept(final Node<String> parent, final Tuple2<String, Object> tp) { // 递归方法
-							final var node = Node.of(parent, tp._1);
-							if (tp._2 instanceof IRecord rec) {
-								rec.tupleS().parallel().forEach(_tp -> this.accept(node, _tp)); // 递归
-							} else { // 值计算
-								node.attrSet("value", evaluator.apply(tp._2));
-							} // if
-						} // accept
-					}).accept(rootNode, kvp);// mountf
 			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream()
 					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 数据统计
 			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb".split(","))
@@ -130,10 +115,7 @@ public class H2Test {
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
 						.collect(IRecord.pvtclc(stats_evaluator, "partb,product_id,drcr")).tupleS().parallel() // 数据透视分阶层统计
-						.reduce(Node.of("root"), (acc, a) -> { // 挂载到根节点root,把数据透视表换成node形式的树形结构以方便展示
-							mountf.apply(e -> e, acc).accept(a); // 把a挂载到acc
-							return acc;
-						}, Node::merge);
+						.reduce(Node.of("root"), node_accum(e -> e), Node::merge);
 
 				// 结果打印
 				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));
