@@ -5040,10 +5040,12 @@ public class DataApp {
 		/**
 		 * json 对象解析
 		 * 
+		 * @param <T>  结果类型
 		 * @param line json 数据行
 		 * @return json 对象
 		 */
-		public static final Object parse(final String line) {
+		@SuppressWarnings("unchecked")
+		public static <T> T parse(final String line) {
 			final JsonTokenizer tokenizer = new JsonTokenizer(line);
 			final JsonParser parser = new JsonParser(tokenizer);
 			Object o = null;
@@ -5056,7 +5058,7 @@ public class DataApp {
 				// System.err.println(line);
 				throw new JsonException(errMsg);
 			}
-			return o;
+			return (T) o;
 		}
 
 		/**
