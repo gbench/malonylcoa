@@ -130,7 +130,7 @@ public class H2Test {
 						.reduce(Node.of("root"), (acc, a) -> {
 							mountf.apply(e -> e, acc).accept(a); // 把a挂载到acc
 							return acc;
-						}, (a, b) -> a.addChildren(b.getChildren()));
+						}, Node::merge);
 
 				// 结果打印
 				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));

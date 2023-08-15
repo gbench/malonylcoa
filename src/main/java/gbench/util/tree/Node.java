@@ -637,6 +637,19 @@ public class Node<T> {
 	}
 
 	/**
+	 * 把另一个node的子节点合并入自己的子节点
+	 *
+	 * @param node 零杠一个节点
+	 * @return 当前对象本身
+	 */
+	public Node<T> merge(final Node<T> node) {
+		if (node == null) {
+			return this;
+		}
+		return this.addChildren(node.getChildren());
+	}
+
+	/**
 	 * 添加子节点,自动设置子节点的父节点
 	 *
 	 * @param c           子节点
@@ -742,10 +755,14 @@ public class Node<T> {
 	 * 添加子节点
 	 *
 	 * @param cc 子节点集合
+	 * @return 当前对象本身
 	 */
-	void addChildren(final List<Node<T>> cc) {
-		this.children.addAll(cc);
-		cc.forEach(c -> c.setParent(this));// 设置父节点
+	public Node<T> addChildren(final List<Node<T>> cc) {
+		synchronized (this.children) {
+			this.children.addAll(cc);
+			cc.forEach(c -> c.setParent(this));// 设置父节点
+		}
+		return this;
 	}
 
 	/**
