@@ -7,12 +7,15 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
@@ -241,32 +244,88 @@ public class H2db {
 	}
 
 	/**
-	 * 树形结构的递归归集
+	 * 树形结构的递归归集 <br>
 	 * 
-	 * final var rootNode = ss.reduce(Node.of("root"), node_accum(e -> e),
-	 * Node::merge);
+	 * final var rootNode = <br>
+	 * ss.reduce(Node.of("root"), node_accum(e -> e), Node::merge);
 	 * 
-	 * @param <T>       元素值的参数类型
+	 * @param <V>       元组值类型
+	 * @param <U>       核算器结果类型
+	 * @param <P>       键值对儿类型
 	 * @param evaluator t->u
 	 * @return (acc,a)->acc
 	 */
-	public static <T, U> BiFunction<Node<String>, ? super Tuple2<String, Object>, Node<String>> node_accum(
-			final Function<T, U> evaluator) {
+	public static <V, U, P extends Tuple2<String, V>> BiFunction<Node<String>, P, Node<String>> ndaccum(
+			final Function<V, U> evaluator) {
 		return (acc, a) -> { // 规约处理
-			(new BiConsumer<Node<String>, Tuple2<String, Object>>() { // 使用匿名类的this对象实现FunctionalInterace递归
+			(new BiConsumer<Node<String>, P>() { // 使用匿名类的this对象实现FunctionalInterace递归
 				@SuppressWarnings("unchecked")
-				public void accept(final Node<String> parent, final Tuple2<String, Object> tp) { // 递归方法
+				public void accept(final Node<String> parent, final P tp) { // 递归方法
 					final var node = Node.of(parent, tp._1);
-					if (tp._2 instanceof IRecord rec) {
-						rec.tupleS().parallel().forEach(_tp -> this.accept(node, _tp)); // 递归
+					if (tp._2 instanceof Iterable ps) {
+						StreamSupport.stream(ps.spliterator(), true).forEach(_tp -> accept(node, (P) _tp)); // 递归
 					} else { // 值计算
-						node.attrSet("value", evaluator.apply((T) tp._2));
+						node.attrSet("value", evaluator.apply(tp._2));
 					} // if
 				} // accept
 			}).accept(acc, a);// mountf
 			return acc;
 		};
 	}
+
+	/**
+	 * node tree collector
+	 * 
+	 * @param <V>       元组值类型
+	 * @param <U>       核算器结果类型
+	 * @param <P>       键值对儿类型
+	 * @param rootgen   根节点生成器
+	 * @param evaluator 分组核算器 [rec] -> u
+	 * @return node tree 归集器
+	 */
+	public static <V, U, P extends Tuple2<String, V>> Collector<P, ?, Node<String>> ndtreeclc(
+			final Supplier<Node<String>> rootgen, final Function<V, U> evaluator) {
+		return Collector.of(rootgen, (new BiConsumer<Node<String>, P>() { // 使用匿名类的this对象实现FunctionalInterace递归
+			@SuppressWarnings("unchecked")
+			public void accept(final Node<String> parent, final P tp) { // 递归方法
+				final var node = Node.of(parent, tp._1);
+				if (((Object) tp._2) instanceof Iterable tps) {
+					StreamSupport.stream(((Iterable<P>) tps).spliterator(), false)
+							.forEach(_tp -> this.accept(node, (P) _tp)); // 递归
+				} else { // 值计算
+					node.attrSet("value", evaluator.apply(tp._2));
+				} // if
+			} // accept
+		}), Node::merge, a -> a);
+	}
+
+	/**
+	 * pvtreeclc 数据透视表规约
+	 * 
+	 * @param <U>       核算结果类型
+	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param keys      键名列表
+	 * @return [rec]->node
+	 */
+	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Function<List<IRecord>, U> evaluator,
+			final String keys) {
+		return pvtreeclc(null, evaluator, keys);
+	};
+
+	/**
+	 * pvtreeclc 数据透视表规约
+	 * 
+	 * @param <U>       核算结果类型
+	 * @param rootNode  根节点
+	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param keys      键名列表
+	 * @return [rec]->node
+	 */
+	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Node<String> rootNode,
+			final Function<List<IRecord>, U> evaluator, final String keys) {
+		return Collectors.collectingAndThen(IRecord.pvtclc(evaluator, keys), rec -> rec.tupleS()
+				.reduce(Optional.ofNullable(rootNode).orElse(Node.of("root")), ndaccum(e -> e), Node::merge));
+	};
 
 	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 }
