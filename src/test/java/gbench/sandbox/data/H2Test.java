@@ -36,8 +36,14 @@ public class H2Test {
 	@Test
 	public void foo() {
 		println(JSON.isJson("1243.4"));
-		println(rb("id,name,sex,address").get("1,zhangsan,man,shanghai".split(",")).json());
-		println(shtmx("t_customer").collect(DFrame.dfmclc2).json());
+		final var rec = rb("id,name,sex").get("1,zhangsan,man".split(",")).add("address",
+				REC("city", "shanghai", "street", "huahuazhen", "building", "101nong11#"));
+		final var recjson = rec.json();
+		println(recjson);
+		println("recjson", JSON.isJson(recjson));
+		final var dfmjson = shtmx("t_customer").collect(DFrame.dfmclc2).json();
+		println(dfmjson);
+		println("dfmjson", JSON.isJson(dfmjson));
 	}
 
 	/**
