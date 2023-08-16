@@ -74,7 +74,7 @@ public class H2Test {
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
 			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("id")), 10);
 			final var cps = new HashMap<Integer, IRecord>();
-			for (final var cent : companies.entrySet()) { // 随机生成数据:公司数据
+			for (final var cent : companies.entrySet()) {
 				final var c = cent.getValue();
 				for (final var pent : products.entrySet()) {
 					final var p = pent.getValue();
@@ -115,11 +115,9 @@ public class H2Test {
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
 						.collect(pvtreeclc2(stats_evaluator, "partb,product_id,drcr")); // 数据透视分阶层统计
-				final var json = writeJson(rootNode, p -> p.childrenL(),
-						(sb, e) -> sb.append(
-								FT("{\"name\":\"$0\"$1$2", e, e.attrval(v -> v == null ? "" : FT(", \"value\":$0", v)),
-										e.isLeaf() ? "" : ", \"children\":[")),
-						(sb, e) -> sb.append(e.isLeaf() ? "}" : "]}"));
+				final var json = writeJson(rootNode, p -> p.childrenL(), (sb, e) -> FT("{\"name\":\"$0\"$1$2", e,
+						e.attrval(v -> v == null ? "" : FT(", \"value\":$0", v)), e.isLeaf() ? "" : ", \"children\":["),
+						(sb, e) -> e.isLeaf() ? "}" : "]}");
 				// 结果打印
 				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));
 				rootNode.forEach(node -> {

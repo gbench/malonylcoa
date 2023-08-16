@@ -266,7 +266,7 @@ public class H2db {
 				@SuppressWarnings("unchecked")
 				public void accept(final N parent, final P tp) { // 递归方法
 					final var node = nodegen.apply(parent, tp._1);
-					if (tp._2 instanceof Iterable ps) {
+					if (tp._2 instanceof Iterable<?> ps) {
 						StreamSupport.stream(ps.spliterator(), true).forEach(_tp -> accept(node, (P) _tp)); // accept递归循环
 					} else { // 值计算
 						leaf_handler.accept(node, tp);
@@ -371,8 +371,25 @@ public class H2db {
 	 * @param <N>            节点类型
 	 * @param node           树形元素节点
 	 * @param get_children   获取子节点
-	 * @param pre_processor  前处理
-	 * @param post_processor 后处理
+	 * @param pre_processor  前处理 (sb:操作缓存,e:节点元素)->s
+	 * @param post_processor 后处理 (sb:操作缓存,e:节点元素)->s
+	 * @return json字符串
+	 */
+	public static <N> String writeJson(final N node, final Function<N, Iterable<N>> get_children,
+			final BiFunction<StringBuilder, N, String> pre_processor,
+			final BiFunction<StringBuilder, N, String> post_processor) {
+		return writeJson(null, node, get_children, (sb, e) -> sb.append(pre_processor.apply(sb, e)),
+				(sb, e) -> sb.append(post_processor.apply(sb, e)));
+	}
+
+	/**
+	 * 节点转换成Json
+	 * 
+	 * @param <N>            节点类型
+	 * @param node           树形元素节点
+	 * @param get_children   获取子节点
+	 * @param pre_processor  前处理 (sb:操作缓存,e:节点元素)->{}
+	 * @param post_processor 后处理 (sb:操作缓存,e:节点元素)->{}
 	 * @return json字符串
 	 */
 	public static <N> String writeJson(final N node, final Function<N, Iterable<N>> get_children,
@@ -387,8 +404,8 @@ public class H2db {
 	 * @param builder        字符串构建器
 	 * @param node           树形元素节点
 	 * @param get_children   获取子节点
-	 * @param pre_processor  前处理
-	 * @param post_processor 后处理
+	 * @param pre_processor  前处理 (sb:操作缓存,e:节点元素)->{}
+	 * @param post_processor 后处理 (sb:操作缓存,e:节点元素)->{}
 	 * @return json字符串
 	 */
 	public static <N> String writeJson(final StringBuilder builder, final N node,
