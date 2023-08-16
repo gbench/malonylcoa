@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -138,6 +139,33 @@ public class ArrayRecord implements IRecord, Serializable {
 		return keys == null ? null : Arrays.stream(keys);
 	}
 
+	/**
+	 * 当前元素类型
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public <X, T> T[] toArray(final Function<X, T> mapper) {
+		return this.valueS().map(e -> mapper.apply((X) e)) //
+				.collect(Lisp.aaclc(this.size(), null, e -> e));
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public Object[] toArray() {
+		return this.values;
+	}
+
+	/**
+	 * 
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T, U> U arrayOf(final Function<T[], U> mapper) {
+		return mapper.apply((T[]) this.values);
+	}
+
 	@Override
 	public List<Object> values() {
 		return values == null ? null : Arrays.asList(values);
@@ -208,9 +236,41 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param keys
 	 * @return ra 本身
 	 */
-	public ArrayRecord setKeys(String[] keys) {
-		this.keys = keys;
+	public ArrayRecord setKeys(final String[] keys) {
+		if (keys != null && keys.length == this.size()) {
+			this.keys = keys;
+		}
 		return this;
+	}
+
+	/**
+	 * setKeys 别名: 为 一个数组values 指定键名索引
+	 * 
+	 * @param keys 键名序列
+	 * @return ra 本身
+	 */
+	public ArrayRecord dressup(final String[] keys) {
+		return this.setKeys(keys);
+	}
+
+	/**
+	 * dressup and clone
+	 * 
+	 * @param keys 键名序列
+	 * @return ra 本身
+	 */
+	public ArrayRecord dressupClone(final String[] keys) {
+		return this.dressup(keys).clone();
+	}
+
+	/**
+	 * dressup and clone
+	 * 
+	 * @param keys 键名序列
+	 * @return ra 本身
+	 */
+	public IRecord dressupDuplicate(final String[] keys) {
+		return this.dressup(keys).duplicate();
 	}
 
 	/**
@@ -260,13 +320,23 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * setValues 别名: 为 一个数组values 指定键名索引
+	 * attach and clone
 	 * 
-	 * @param values
+	 * @param values 值数据
 	 * @return ra 本身
 	 */
-	public ArrayRecord wrap(final Object[] values) {
-		return this.setValues(values);
+	public ArrayRecord attachClone(final Object[] values) {
+		return this.attach(values).clone();
+	}
+
+	/**
+	 * attach and duplicate
+	 * 
+	 * @param values 值数据
+	 * @return ra 本身
+	 */
+	public IRecord attachDuplicate(final Object[] values) {
+		return this.attach(values).duplicate();
 	}
 
 	/**
@@ -305,12 +375,21 @@ public class ArrayRecord implements IRecord, Serializable {
 	/**
 	 * ArrayRecord
 	 * 
-	 * @param keys   键名序列
-	 * @param values 键值序列
+	 * @param keys 键名序列
 	 * @return ArrayRecord
 	 */
 	public static ArrayRecord of(final String... keys) {
 		return new ArrayRecord(keys, null);
+	}
+
+	/**
+	 * ArrayRecord
+	 * 
+	 * @param keys 键名序列,逗号[,;/\\]进行分割
+	 * @return ArrayRecord
+	 */
+	public static ArrayRecord of(final String keys) {
+		return ArrayRecord.of(keys.split("[,;/\\\\]+"));
 	}
 
 	/**

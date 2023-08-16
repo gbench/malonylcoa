@@ -737,6 +737,37 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
+	 * 分组 &排序
+	 * 
+	 * @param <K>        分类键类型
+	 * @param classifier 分类器 把T转换成分组键名
+	 * @return {(k,nd)}
+	 */
+	default <K extends Comparable<K>> Map<K, INdarray<T>> groupBy(final Function<T, K> classifier) {
+		final LinkedHashMap<K, INdarray<T>> groups = new LinkedHashMap<K, INdarray<T>>(); // 分组结果
+		final INdarray<T> nd = this.dup();
+		final Iterator<Tuple2<K, Integer>> key_itr = this.map(classifier).map(Tuple2.snb2(0)).sorted().iterator(); // 计算键值
+
+		int i = 0; // 当前读取位置
+		int start = i; // 开始位置
+		K prev_key = null; // 前设元素位置:当前的分组键名
+		while (key_itr.hasNext()) {
+			final Tuple2<K, Integer> e = key_itr.next(); // 提取
+			if (prev_key != null && prev_key != e._1) {
+				groups.put(prev_key, this.create(start, i));
+				start = i; // 更新开始位置
+			} //
+			prev_key = e._1; // 记录先前键值
+			this.set(i++, nd.get(e._2)); // 排序
+		} // while
+		if (prev_key != null && start < i) { // 记录索引结果
+			groups.put(prev_key, this.create(start, i));
+		} // if
+
+		return groups; // 返回分组
+	}
+
+	/**
 	 * <b>关键的类:相对访问的终点实现</br>
 	 * this.get(0)的简写，方便对长度为1的INdarray进行处; 读取位置索引的元素值 <br>
 	 * 非法索引会抛出 ArrayIndexOutOfBoundsException <br>

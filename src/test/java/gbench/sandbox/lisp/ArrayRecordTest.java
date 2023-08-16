@@ -11,6 +11,7 @@ import gbench.util.lisp.Lisp;
 import gbench.util.lisp.MyRecord;
 
 import static gbench.util.io.Output.println;
+import static gbench.util.lisp.IRecord.A;
 
 /**
  * 
@@ -45,8 +46,8 @@ public class ArrayRecordTest {
 		println("ra", ra);
 
 		final var nx = pcts.dataOf(INdarray::of) //
-				.sorted((a, b) -> ra.attach(b).i4(0).compareTo(rb.attach(a).i4(0))) //
-				.fmap(e -> ra.wrap(e).clone()).nx(1);
+				.sorted((a, b) -> ra.attachClone(b).i4(0).compareTo(rb.attachClone(a).i4(0))) //
+				.fmap(e -> ra.attachClone(e).clone()).nx(1);
 		final var dfm = nx.dataOf(DFrame::new);
 		final var dfm2 = nx.arrayOf(DFrame::new);
 
@@ -68,14 +69,21 @@ public class ArrayRecordTest {
 	public void quz() {
 		final var ra = ArrayRecord.of("a,b,c".split(","));
 		final var dfm = Lisp.cph(IRecord.RPTA(IRecord.A(1, 2, 3), 3)) //
-				.map(e -> ra.attach(e).duplicate()).collect(Lisp.aaclc(27, DFrame::new));
+				.map(e -> ra.attachDuplicate(e)).collect(Lisp.aaclc(27, DFrame::new));
 		println(dfm);
 		println(dfm.shape());
 		println("-----------------------------------------------");
 		final var nd = dfm.dataOf(INdarray::of) //
-				.fmap(e -> ra.attach(e).clone()).sortBy(e -> e.filter("b,c"), false);
+				.fmap(e -> ra.attachClone(e)).sortBy(e -> e.filter("b,c"), false);
 		println(nd.nx(1));
-
+	}
+	
+	@Test
+	public void qux() {
+		final var ra = ArrayRecord.of("a,b,c".split(","));
+		ra.attach(A(1, 2, 3));
+		ra.set(2, 2000);
+		println(ra.dressupClone("a1,b1,c1".split(",")));
 	}
 
 }
