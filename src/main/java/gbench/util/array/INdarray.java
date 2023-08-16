@@ -742,7 +742,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param <K>         键名索引类型
 	 * @param <INDICATOR> 核算指标
 	 * @param evaluator   核算器[t]->indicator
-	 * @param classifiers 键名函数序列
+	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
 	@SuppressWarnings("unchecked")
@@ -759,34 +759,37 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param <CF>        分类函数类型
 	 * @param pvts        透视表结果
 	 * @param evaluator   核算器[t]->x
-	 * @param classifiers 键名函数序列
+	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
 	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
 			final Map<K, Object> pvts, final CF[] classifiers, final Function<INdarray<T>, INDICATOR> evaluator) {
-		final Map<K, Object> final_pvts = pvts == null ? new LinkedHashMap<>() : pvts; // 透视表结果
+		final Map<K, Object> final_pvts = pvts == null ? new LinkedHashMap<>() : pvts; // 透视表结果，用于结果返回。
+
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
-			if (classifiers.length == 1) {// 达到最后一层
+			final int n = classifiers.length; // 枢轴：分类函数序列 长度
+			if (n == 1) {// 达到最后一层，枢轴
 				if (evaluator == null) { // 不存在核算函数直接将分类数据作为分类结果
-					final_pvts.putAll(groups);
-				} else {// 继续
-					groups.entrySet().stream().parallel().forEach(e -> {
-						final K k = e.getKey();
-						final INdarray<T> nd = e.getValue();
-						final_pvts.put(k, evaluator.apply(nd));
+					final_pvts.putAll(groups); // 保存分类结果数据。
+				} else {// 进行指标计算
+					groups.entrySet().stream().parallel().forEach(e -> { // 采用并发模式计算指标
+						final K k = e.getKey(); // 枢轴键名索引
+						final INdarray<T> nd = e.getValue(); // 键名分类数据
+						final INDICATOR indicator = evaluator.apply(nd); // 计算分类指标
+						final_pvts.put(k, indicator); // 记录分类指标
 					}); // forEach
-				} // if
-			} else {
-				groups.entrySet().stream().parallel().forEach(e -> {
-					final K k = e.getKey();
-					final INdarray<T> nd = e.getValue();
-					final Map<K, Object> _pvts = new LinkedHashMap<>();
+				} // if evaluator
+			} else { // 继续沿着枢轴进行指标计算，枢轴长度大于1
+				groups.entrySet().stream().parallel().forEach(e -> { // 采用并发模式计算枢轴层级
+					final K k = e.getKey(); // 枢轴键名索引
+					final INdarray<T> nd = e.getValue(); // 键名分类数据
+					final Map<K, Object> _pvts = new LinkedHashMap<>(); // 下一层数据透视表数据容器
 					final_pvts.put(k, _pvts); // 记录核算结果
-					nd.pivotTable(_pvts, Arrays.copyOfRange(classifiers, 1, classifiers.length), evaluator);
+					nd.pivotTable(_pvts, Arrays.copyOfRange(classifiers, 1, n), evaluator); // 递归进入下一层分类哦统计。
 				}); // forEach
-			} // if
-		} // if
+			} // if n 枢轴长度
+		} // if classifiers
 
 		return final_pvts;
 	}
