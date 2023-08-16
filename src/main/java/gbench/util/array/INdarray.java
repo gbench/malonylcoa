@@ -1815,6 +1815,17 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
+	 * 数组应用
+	 * 
+	 * @param <TARGET> 目标结果类型
+	 * @param mapper   结果变换类型 this->u, this 为当前ISeq对象
+	 * @return U类型的结果
+	 */
+	default <TARGET> TARGET mutate(final Function<INdarray<T>, TARGET> mapper) {
+		return mapper.apply(this);
+	}
+
+	/**
 	 * 格式化输出
 	 *
 	 * @param fmt 格式化输出

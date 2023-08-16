@@ -211,17 +211,4 @@ public interface IStream<T> extends Iterable<T> {
 		return mapper.apply(ts);
 	}
 
-	/**
-	 * 数组应用
-	 * 
-	 * @param <SELF>   当前对象数据类型:SELF
-	 * @param <TARGET> 目标结果类型
-	 * @param mapper   结果变换类型 this->u, this 为当前ISeq对象
-	 * @return U类型的结果
-	 */
-	@SuppressWarnings("unchecked")
-	default <SELF extends IStream<T>, TARGET> TARGET mutate(final Function<SELF, TARGET> mapper) {
-		return mapper.apply((SELF) this);
-	}
-
 }

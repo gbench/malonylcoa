@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import gbench.util.json.MyJson;
 
@@ -23,7 +24,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param keys
 	 * @param values
 	 */
-	public ArrayRecord(final String[] keys, Object[] values) {
+	public ArrayRecord(final String[] keys, final Object[] values) {
 		super();
 		this.keys = keys;
 		this.values = values;
@@ -73,8 +74,8 @@ public class ArrayRecord implements IRecord, Serializable {
 
 	@Override
 	public IRecord duplicate() {
-		final int n = this.size();
-		return new ArrayRecord(Arrays.copyOf(keys, n), Arrays.copyOf(values, n));
+		return new ArrayRecord(keys == null ? null : Arrays.copyOf(keys, keys.length),
+				values == null ? null : Arrays.copyOf(values, values.length));
 	}
 
 	@Override
@@ -84,14 +85,15 @@ public class ArrayRecord implements IRecord, Serializable {
 
 	@Override
 	public List<String> keys() {
-		return Arrays.asList(keys);
+		return keys == null ? null : Arrays.asList(keys);
 	}
 
 	@Override
 	public Map<String, Object> toMap() {
 		final LinkedHashMap<String, Object> data = new LinkedHashMap<String, Object>();
 		for (int i = 0; i < keys.length; i++) {
-			data.put(keys[i], values[i]);
+			final Object value = values == null || i >= values.length ? null : values[i];
+			data.put(keys[i], value);
 		}
 		return data;
 	}
@@ -108,10 +110,37 @@ public class ArrayRecord implements IRecord, Serializable {
 		return this.toMap().toString();
 	}
 
+	/**
+	 * 
+	 */
+	@Override
+	public Stream<String> keyS() {
+		return keys == null ? null : Arrays.stream(keys);
+	}
+
+	@Override
+	public List<Object> values() {
+		return values == null ? null : Arrays.asList(values);
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public Stream<Object> valueS() {
+		return values == null ? null : Arrays.stream(values);
+	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T get(final int idx) {
-		return (T) this.values[idx];
+		if (this.values == null)
+			return null;
+		else if (idx < this.values.length) {
+			return (T) this.values[idx];
+		} else {
+			return null;
+		}
 	}
 
 	@Override
@@ -142,6 +171,70 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 
+	 * @return
+	 */
+	public String[] getKeys() {
+		return keys;
+	}
+
+	/**
+	 * 
+	 * @param keys
+	 * @return ra 本身
+	 */
+	public ArrayRecord setKeys(String[] keys) {
+		this.keys = keys;
+		return this;
+	}
+
+	/**
+	 * 
+	 * @param keys
+	 * @return ra 本身
+	 */
+	public ArrayRecord setKeys(final Iterable<String> keys) {
+		this.keys = StreamSupport.stream(keys.spliterator(), false).toArray(String[]::new);
+		return this;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public Object[] getValues() {
+		return values;
+	}
+
+	/**
+	 * 
+	 * @param values
+	 * @return ra 本身
+	 */
+	public ArrayRecord setValues(Object[] values) {
+		this.values = values;
+		return this;
+	}
+
+	/**
+	 * 浅拷贝
+	 */
+	@Override
+	public ArrayRecord clone() {
+		return new ArrayRecord(this.keys, this.values);
+	}
+
+	/**
+	 * setValues 别名
+	 * 
+	 * @param values
+	 * @return ra 本身
+	 */
+	public ArrayRecord attach(Object[] values) {
+		return this.setValues(values);
+	}
+
+	/**
 	 * 构建一个键名键值序列 指定的 IRecord
 	 *
 	 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
@@ -164,10 +257,33 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 
+	 * @param keys
+	 * @param values
+	 * @return
+	 */
+	public static ArrayRecord of(final String[] keys, final Object[] values) {
+		return new ArrayRecord(keys, values);
+	}
+
+	/**
+	 * 
+	 * @param keys
+	 * @param values
+	 * @return
+	 */
+	public static ArrayRecord of(final Iterable<String> keys, final Iterable<Object> values) {
+		final String[] _keys = keys == null ? null
+				: StreamSupport.stream(keys.spliterator(), false).toArray(String[]::new);
+		final Object[] _values = values == null ? null
+				: StreamSupport.stream(values.spliterator(), false).toArray(Object[]::new);
+		return new ArrayRecord(_keys, _values);
+	}
+
+	/**
 	 * 序列号
 	 */
 	private static final long serialVersionUID = -4990916390989613873L;
-	private final String[] keys; // 键名
-	private final Object[] values; // 键值
-
+	private String[] keys; // 键名
+	private Object[] values; // 键值
 }

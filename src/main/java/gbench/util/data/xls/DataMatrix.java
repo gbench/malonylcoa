@@ -170,6 +170,16 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 
+	 * @param <U>
+	 * @param mapper
+	 * @return
+	 */
+	public <U> Stream<U> map(final Function<T[], U> mapper) {
+		return Arrays.stream(this.data()).map(mapper);
+	}
+
+	/**
 	 * 获取并设置健名（列名）索引
 	 *
 	 * @param keys 列名字段序列
@@ -201,6 +211,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 行列表
 	 *
+	 * @param<U> 变换的结果类型
 	 * @param mapper 行元素变换器: [t]->{}
 	 * @return 行列表 集合
 	 */
@@ -2098,6 +2109,16 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public T[][] data() {
 		return this.cells;
+	}
+
+	/**
+	 * 矩阵数据的二维数组
+	 *
+	 * @param mapper 变换函数
+	 * @return 矩阵数据的二维数组
+	 */
+	public <U> U data(final Function<T[][], U> mapper) {
+		return mapper.apply(this.cells);
 	}
 
 	private T[][] cells; // 单元格数据
