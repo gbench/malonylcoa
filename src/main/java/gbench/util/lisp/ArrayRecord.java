@@ -293,6 +293,17 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param values 键值序列
 	 * @return ArrayRecord
 	 */
+	public static ArrayRecord of(final String... keys) {
+		return new ArrayRecord(keys, null);
+	}
+
+	/**
+	 * ArrayRecord
+	 * 
+	 * @param keys   键名序列
+	 * @param values 键值序列
+	 * @return ArrayRecord
+	 */
 	public static ArrayRecord of(final Iterable<String> keys, final Iterable<Object> values) {
 		final String[] _keys = keys == null ? null
 				: StreamSupport.stream(keys.spliterator(), false).toArray(String[]::new);

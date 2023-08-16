@@ -338,6 +338,17 @@ public class DFrame implements Iterable<IRecord> {
 	}
 
 	/**
+	 * 数组应用 暴露源数据, arrayOf的别名
+	 * 
+	 * @param <TARGET> 目标结果类型
+	 * @param mapper   结果变换类型 data->u
+	 * @return U类型的结果
+	 */
+	public <TARGET> TARGET dataOf(final Function<Object[][], TARGET> mapper) {
+		return this.arrayOf(mapper);
+	}
+
+	/**
 	 * 数据数组
 	 * 
 	 * @param <T>    mapper 结果类型

@@ -6,6 +6,8 @@ import gbench.sandbox.data.h2.H2db;
 import gbench.util.array.INdarray;
 import gbench.util.lisp.ArrayRecord;
 import gbench.util.lisp.DFrame;
+import gbench.util.lisp.IRecord;
+import gbench.util.lisp.Lisp;
 
 import static gbench.util.io.Output.println;
 
@@ -51,6 +53,21 @@ public class ArrayRecordTest {
 		println(dfm2);
 		println("strmx");
 		println(pcts);
+	}
+
+	@Test
+	public void quz() {
+		final var ra = ArrayRecord.of("a,b,c".split(","));
+		final var rb = ra.clone();
+		final var dfm = Lisp.cph(IRecord.RPTA(IRecord.A(1, 2, 3), 3)) //
+				.map(e -> ra.attach(e).duplicate()).collect(Lisp.aaclc(27, DFrame::new));
+		println(dfm);
+		println(dfm.shape());
+		final var nd = dfm.dataOf(INdarray::of) //
+				.sorted((a, b) -> ra.attach(b).i4(0).compareTo(rb.attach(b).i4(0)));
+		println(dfm);
+		println(nd.data() == dfm.dataOf(e->e));
+		
 	}
 
 }
