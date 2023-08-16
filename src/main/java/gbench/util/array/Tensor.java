@@ -518,6 +518,18 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 		return Arrays.asList(this.data).iterator();
 	}
 
+	/**
+	 * 数组应用
+	 * 
+	 * @param <TARGET> 目标结果类型
+	 * @param mapper   结果变换类型 this->u, this 为当前ISeq对象
+	 * @return U类型的结果
+	 */
+	@SuppressWarnings("unchecked")
+	public <SELF extends Tensor<T>, TARGET> TARGET mutate(final Function<SELF, TARGET> mapper) {
+		return mapper.apply((SELF) this);
+	}
+
 	@Override
 	public int hashCode() {
 		return Arrays.hashCode(new Object[] { this.data, this.dims });
