@@ -429,5 +429,31 @@ public class H2db {
 		return sb.toString();
 	}
 
+	/**
+	 * ifnull 函数,仅当 u 为非null的时候执行notnull_branch,否则返回defaultvalue
+	 * 
+	 * @param <U>            参数类型
+	 * @param <V>            结果类型
+	 * @param notnull_branch u->v
+	 * @param v              默认值
+	 * @return u->v
+	 */
+	public static <U, V> Function<U, V> ifnull(final Function<U, V> notnull_branch, final V v) {
+		return ifnull(notnull_branch, (Supplier<V>) () -> v);
+	};
+
+	/**
+	 * ifnull 函数,仅当 u 为非null的时候执行notnull_branch,否则返回defaultvalue
+	 * 
+	 * @param <U>            参数类型
+	 * @param <V>            结果类型
+	 * @param notnull_branch u->v
+	 * @param nullbranch     默认值
+	 * @return u->v
+	 */
+	public static <U, V> Function<U, V> ifnull(final Function<U, V> notnull_branch, final Supplier<V> nullbranch) {
+		return u -> u != null ? notnull_branch.apply(u) : nullbranch.get();
+	};
+
 	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 }
