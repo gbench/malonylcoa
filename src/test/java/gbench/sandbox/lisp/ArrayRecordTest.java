@@ -73,7 +73,7 @@ public class ArrayRecordTest {
 		println(dfm.shape());
 		println("-----------------------------------------------");
 		final var nd = dfm.dataOf(INdarray::of) //
-				.fmap(e -> ra.attach(e).clone()).sortBy(e -> e.filter("b,a"), false);
+				.fmap(e -> ra.attach(e).clone()).sortBy(e -> e.filter("b,c"), false);
 		println(nd.nx(1));
 
 	}
