@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,7 +41,7 @@ import gbench.util.lisp.Tuple2;
  *
  * @param <T> 节点名称的类型。
  */
-public class TrieNode<T> {
+public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 
 	/**
 	 * 前缀树的节点
@@ -1129,8 +1130,18 @@ public class TrieNode<T> {
 	}
 
 	/**
+	 * 
+	 */
+	@Override
+	public String json(BiFunction<StringBuilder, TrieNode<T>, String> pre_processor,
+			BiFunction<StringBuilder, TrieNode<T>, String> post_processor) {
+		return INodeWriter.writeJson(this, p -> p.childrenL(), pre_processor, post_processor);
+	}
+
+	/**
 	 * 字符串格式化
 	 */
+	@Override
 	public String toString() {
 		return MessageFormat.format("{0}", this.value);
 	}

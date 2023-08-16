@@ -115,16 +115,16 @@ public class H2Test {
 								.add(e.filter("company_id,product_id,title,price,quantity,parta,partb"))
 								.add(e.alias("id,order_id")))
 						.collect(pvtreeclc(stats_evaluator, "partb,product_id,drcr")); // 数据透视分阶层统计
-				final var json = writeJson(rootNode, p -> p.childrenL(), (sb, e) -> FT("{\"name\":\"$0\"$1$2", e,
-						e.attrval(ifnull(v -> FT(", \"value\":$0", v), "")), e.isLeaf() ? "" : ", \"children\":["),
-						(sb, e) -> e.isLeaf() ? "}" : "]}");
+
 				// 结果打印
 				println(String.format("[%s]", companies.getOrDefault(entity_id, IRecord.REC("entity_id", entity_id))));
 				rootNode.forEach(node -> {
 					println(String.format("%s%s\t%s\t%.2f", " | ".repeat(node.getLevel()), node.getName(),
 							node.getPath(), node.attrval(Types.cast(Double.class))));
 				}); // forEach(node
-				println("json ", json);
+				println("json ", rootNode.json((sb, e) -> FT("{\"name\":\"$0\"$1$2", e, //
+						e.attrval(ifnull(v -> FT(", \"value\":$0", v), "")), e.isLeaf() ? "" : ", \"children\":["),
+						(sb, e) -> e.isLeaf() ? "}" : "]}"));
 			} // forEach(entity_id
 		}); // withTransaction
 	}

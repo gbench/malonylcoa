@@ -62,7 +62,7 @@ import java.util.stream.StreamSupport;
  * @param <T> 节点中的元素的类型
  * @author gbench
  */
-public class Node<T> {
+public class Node<T> implements INodeWriter<Node<T>> {
 	/**
 	 * 拷贝钩爪函数
 	 *
@@ -1096,10 +1096,20 @@ public class Node<T> {
 	}
 
 	/**
+	 * 
+	 */
+	@Override
+	public String json(BiFunction<StringBuilder, Node<T>, String> pre_processor,
+			BiFunction<StringBuilder, Node<T>, String> post_processor) {
+		return INodeWriter.writeJson(this, p -> p.childrenL(), pre_processor, post_processor);
+	}
+
+	/**
 	 * 使用产品的名字进行节点散列：采用名称name 进行散开列。
 	 *
 	 * @return hashCode
 	 */
+	@Override
 	public int hashCode() {
 		// 之所以不采用路径的hashcode 的是为了提高效率，hashCode 的效率。
 		return this.getName().hashCode();// 根据名称
@@ -1110,6 +1120,7 @@ public class Node<T> {
 	 *
 	 * @param obj 比较对象
 	 */
+	@Override
 	public boolean equals(final Object obj) {
 		if (this.hashCode() != obj.hashCode())
 			return false;
