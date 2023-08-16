@@ -1821,8 +1821,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper   结果变换类型 this->u, this 为当前ISeq对象
 	 * @return U类型的结果
 	 */
-	default <TARGET> TARGET mutate(final Function<INdarray<T>, TARGET> mapper) {
-		return mapper.apply(this);
+	@SuppressWarnings("unchecked")
+	default <SELF extends INdarray<T>, TARGET> TARGET mutate(final Function<SELF, TARGET> mapper) {
+		return mapper.apply((SELF) this);
 	}
 
 	/**
