@@ -669,7 +669,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			}
 			return MessageFormat.format(line, e);
 		}// 默认的格式化
-				: cell_formatter;
+		: cell_formatter;
 
 		if (cells == null || cells.length < 1 || cells[0] == null || cells[0].length < 1)
 			return "";
@@ -746,7 +746,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 
 		return DataMatrix.mmult(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl),
 				(Double a, Double b) -> Optional.ofNullable(a)
-						.map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null),
+				.map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null),
 				Collectors.summingDouble(e -> e));
 	}
 
@@ -1571,16 +1571,16 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public static String adjust_formula(final String formula, final Tuple2<Integer, Integer> origin_offset) {
 
-// JAVA 9 的API这里不适用
-//		final Matcher matcher = Pattern.compile("([A-Z]+)([0-9]+)", Pattern.CASE_INSENSITIVE).matcher(formula);
-//		final String _line = matcher.replaceAll(e -> {
-//			final var term = e.group();
-//			final var offset = DataMatrix.addr2offset(term) //
-//					.map1(p -> p + origin_offset._1) //
-//					.map2(p -> p + origin_offset._2); //
-//			return DataMatrix.offset2addr(offset);
-//		});
-//		return _line;
+		// JAVA 9 的API这里不适用
+		//		final Matcher matcher = Pattern.compile("([A-Z]+)([0-9]+)", Pattern.CASE_INSENSITIVE).matcher(formula);
+		//		final String _line = matcher.replaceAll(e -> {
+		//			final var term = e.group();
+		//			final var offset = DataMatrix.addr2offset(term) //
+		//					.map1(p -> p + origin_offset._1) //
+		//					.map2(p -> p + origin_offset._2); //
+		//			return DataMatrix.offset2addr(offset);
+		//		});
+		//		return _line;
 
 		final String pattern = "([A-Z]+)([0-9]+)";
 		final String line = pattern_replace_all(formula, pattern, term -> {
@@ -1650,8 +1650,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	public static <T> DataMatrix<T> build(final Iterable<String> keys, final T[][] datas) {
 		final DataMatrix<T> dm = new DataMatrix<T>(datas,
 				keys == null
-						? Stream.iterate(0, i -> i + 1).limit(datas[0].length).map(DataMatrix::index_to_excel_name)
-								.collect(Collectors.toList())
+				? Stream.iterate(0, i -> i + 1).limit(datas[0].length).map(DataMatrix::index_to_excel_name)
+						.collect(Collectors.toList())
 						: StreamSupport.stream(keys.spliterator(), false).collect(Collectors.toList()));
 		return dm;
 	}
@@ -1838,11 +1838,11 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		final AtomicInteger ai = new AtomicInteger(0); // 数组长度
 		@SuppressWarnings("unchecked")
 		final T[][] tt = StreamSupport.stream(rows.spliterator(), false).filter(Objects::nonNull)
-				.map(row -> DataMatrix.row2aa(tclass, row)).peek(e -> { // 计算元素(数组)长度
-					if (e.length > ai.get()) { // 保持长度为最长元素（数组）的长度
-						ai.set(e.length); // 更新数组长度
-					} // if
-				}).toArray(n -> (T[][]) Array.newInstance(tclass, n, ai.get()));
+		.map(row -> DataMatrix.row2aa(tclass, row)).peek(e -> { // 计算元素(数组)长度
+			if (e.length > ai.get()) { // 保持长度为最长元素（数组）的长度
+				ai.set(e.length); // 更新数组长度
+			} // if
+		}).toArray(n -> (T[][]) Array.newInstance(tclass, n, ai.get()));
 		return tt;
 	}
 
@@ -2112,9 +2112,10 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 矩阵数据的二维数组
+	 * 矩阵数据的二维数组, 一般用于向外暴露cells数据。
 	 *
-	 * @param mapper 变换函数
+	 * @param <U>    结果类型
+	 * @param mapper 变换函数 data->u
 	 * @return 矩阵数据的二维数组
 	 */
 	public <U> U data(final Function<T[][], U> mapper) {

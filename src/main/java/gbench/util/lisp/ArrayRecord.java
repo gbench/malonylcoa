@@ -13,6 +13,7 @@ import gbench.util.json.MyJson;
 import java.util.LinkedHashMap;
 
 /**
+ * 数据结构的IRecord 通常用于为一个值values指定某种键名序列
  * 
  * @author gbench
  *
@@ -52,19 +53,7 @@ public class ArrayRecord implements IRecord, Serializable {
 
 	@Override
 	public IRecord remove(final String key) {
-		final Integer idx = this.indexOf(key);
-		final Integer n = this.size();
-
-		if (idx != null && idx < this.size()) {
-			final Object[] oo = new Object[n - 1];
-			for (int i = 0; i < n; i++) {
-				final int j = i < idx ? i : i - 1;
-				oo[j] = this.values[i];
-			}
-			return this.build(oo);
-		} else {
-			return this.duplicate();
-		} // if
+		return this.remove(this.indexOf(key));
 	}
 
 	@Override
@@ -108,6 +97,26 @@ public class ArrayRecord implements IRecord, Serializable {
 	@Override
 	public String toString() {
 		return this.toMap().toString();
+	}
+
+	@Override
+	public IRecord remove(final Integer idx) {
+		final Integer n = this.size();
+		if (idx != null && idx < this.size()) {
+			final Object[] oo = new Object[2 * (n - 1)];
+			for (int i = 0; i < n; i++) {
+				if (i == idx)
+					continue;
+				else {
+					final int j = i < idx ? i : i - 1;
+					oo[2 * j] = this.keys[i];
+					oo[2 * j + 1] = this.values[i];
+				}
+			}
+			return this.build(oo);
+		} else {
+			return this.duplicate();
+		} // if
 	}
 
 	/**
@@ -225,12 +234,22 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * setValues 别名
+	 * setValues 别名： 为 一个数组values 指定键名索引
 	 * 
 	 * @param values
 	 * @return ra 本身
 	 */
-	public ArrayRecord attach(Object[] values) {
+	public ArrayRecord attach(final Object[] values) {
+		return this.setValues(values);
+	}
+
+	/**
+	 * setValues 别名: 为 一个数组values 指定键名索引
+	 * 
+	 * @param values
+	 * @return ra 本身
+	 */
+	public ArrayRecord wrap(final Object[] values) {
 		return this.setValues(values);
 	}
 
@@ -257,20 +276,22 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * ArrayRecord
 	 * 
-	 * @param keys
-	 * @param values
-	 * @return
+	 * @param keys   键名序列
+	 * @param values 键值序列
+	 * @return ArrayRecord
 	 */
 	public static ArrayRecord of(final String[] keys, final Object[] values) {
 		return new ArrayRecord(keys, values);
 	}
 
 	/**
+	 * ArrayRecord
 	 * 
-	 * @param keys
-	 * @param values
-	 * @return
+	 * @param keys   键名序列
+	 * @param values 键值序列
+	 * @return ArrayRecord
 	 */
 	public static ArrayRecord of(final Iterable<String> keys, final Iterable<Object> values) {
 		final String[] _keys = keys == null ? null
@@ -278,6 +299,16 @@ public class ArrayRecord implements IRecord, Serializable {
 		final Object[] _values = values == null ? null
 				: StreamSupport.stream(values.spliterator(), false).toArray(Object[]::new);
 		return new ArrayRecord(_keys, _values);
+	}
+
+	/**
+	 * ArrayRecord
+	 * 
+	 * @param keys 键名序列
+	 * @return ArrayRecord
+	 */
+	public static ArrayRecord of(final Iterable<String> keys) {
+		return ArrayRecord.of(keys, null);
 	}
 
 	/**
