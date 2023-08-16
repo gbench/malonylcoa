@@ -20,13 +20,17 @@ public class NdarrayTest9 {
 		ra.attach(A(1, 2, 3));
 		ra.set(2, 2000);
 		println(ra.dressupClone("a1,b1,c1".split(",")));
-		final var m = nd.groupBy(e -> e.get(1));
-		m.forEach((k,v)->{
+		final var groups = nd.groupBy(e -> e.get(1));
+		groups.forEach((k, v) -> {
 			println("------------------------");
 			println(k);
-			println(v);
 		});
 		println("------------------------");
+		println(nd.nx(1));
+		println("------------------------");
+		@SuppressWarnings("unchecked")
+		final var pvt = nd.pivotTable(e -> e, e -> -e.get(0), e -> -e.get(1));
+		println(pvt);
 		println(nd.nx(1));
 
 	}

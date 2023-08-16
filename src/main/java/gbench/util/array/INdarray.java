@@ -737,6 +737,61 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
+	 * 数据透视表
+	 * 
+	 * @param <K>         键名索引类型
+	 * @param <INDICATOR> 核算指标
+	 * @param evaluator   核算器[t]->indicator
+	 * @param classifiers 键名函数序列
+	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
+	 */
+	@SuppressWarnings("unchecked")
+	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
+			final Function<INdarray<T>, INDICATOR> evaluator, final Function<T, K>... classifiers) {
+		return this.pivotTable(null, classifiers, evaluator);
+	}
+
+	/**
+	 * 数据透视表
+	 * 
+	 * @param <K>         键名索引类型
+	 * @param <INDICATOR> 核算指标类型
+	 * @param <CF>        分类函数类型
+	 * @param pvts        透视表结果
+	 * @param evaluator   核算器[t]->x
+	 * @param classifiers 键名函数序列
+	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
+	 */
+	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
+			final Map<K, Object> pvts, final CF[] classifiers, final Function<INdarray<T>, INDICATOR> evaluator) {
+		final Map<K, Object> final_pvts = pvts == null ? new LinkedHashMap<>() : pvts; // 透视表结果
+		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
+			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
+			if (classifiers.length == 1) {// 达到最后一层
+				if (evaluator == null) { // 不存在核算函数直接将分类数据作为分类结果
+					final_pvts.putAll(groups);
+				} else {// 继续
+					groups.entrySet().stream().parallel().forEach(e -> {
+						final K k = e.getKey();
+						final INdarray<T> nd = e.getValue();
+						final_pvts.put(k, evaluator.apply(nd));
+					}); // forEach
+				} // if
+			} else {
+				groups.entrySet().stream().parallel().forEach(e -> {
+					final K k = e.getKey();
+					final INdarray<T> nd = e.getValue();
+					final Map<K, Object> _pvts = new LinkedHashMap<>();
+					final_pvts.put(k, _pvts); // 记录核算结果
+					nd.pivotTable(_pvts, Arrays.copyOfRange(classifiers, 1, classifiers.length), evaluator);
+				}); // forEach
+			} // if
+		} // if
+
+		return final_pvts;
+	}
+
+	/**
 	 * 分组 &排序
 	 * 
 	 * @param <K>        分类键类型
