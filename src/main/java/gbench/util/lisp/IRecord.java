@@ -1298,11 +1298,17 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 *
 	 * @param key   新的 键名
 	 * @param value 新的 键值
-	 * @return 对象本身
+	 * @return 添加了新元素后的对象,可能为this(MyRecord),也可能为新生成的对象(ArrayRecord)等。
 	 */
 	default IRecord add(final String key, final Object value) {
-		this.set(key, value);
-		return this;
+		final IRecord r = this.set(key, value);
+		if (r == this) {
+			return this;
+		} else {
+			// System.err.println(String.format("IRecord.set(key,value)生成了新的对象:%s",
+			// this.getClass()));
+			return r;
+		} // if
 	}
 
 	/**
@@ -1518,17 +1524,11 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return 新生的IRecord
 	 */
 	default IRecord filter(final List<String> keys) {
-		final IRecord rec = this.build();
-
-		keys.forEach(key -> {
+		return keys.stream().reduce(this.build(), (acc, key) -> {
 			final String _key = key.trim();
 			final Object value = this.get(_key);
-			if (value != null) {
-				rec.add(key, value);
-			}
-		});
-
-		return rec;
+			return value != null ? acc.add(key, value) : acc;
+		}, IRecord::add);
 	}
 
 	/**

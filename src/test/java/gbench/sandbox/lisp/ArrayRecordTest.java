@@ -8,6 +8,7 @@ import gbench.util.lisp.ArrayRecord;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
 import gbench.util.lisp.Lisp;
+import gbench.util.lisp.MyRecord;
 
 import static gbench.util.io.Output.println;
 
@@ -20,11 +21,19 @@ public class ArrayRecordTest {
 
 	@Test
 	final void foo() {
-		final var p = ArrayRecord.REC("name", "zhangsan", "height", 175, "phone", 13120751773l);
-		println(p);
-		println("height", p.i4("height"), "index:1", p.i4(1));
-		println("remove height", p.remove("height"));
-		println("p", p);
+		final var ra = ArrayRecord.REC("name", "zhangsan", "height", 175, "phone", 13120751773l);
+		println(ra);
+		println("ra.i4(\"height\")", ra.i4("height"), "ra.i4(1)", ra.i4(1));
+		println("ra.remove(\"height\")", ra.remove("height"));
+		println("ra", ra);
+		println("ra.filter(\"phone,name,height\")", ra.filter("phone,name,height"));
+		println("ra.set(100, 2323)", ra.set(100, 2323));
+		final var rm = MyRecord.REC(ra);
+		println("ra==ra.set(\"name\", \"zhanger\")", ra == ra.set("name", "zhanger"));
+		println("ra==ra.set(\"name1\", \"zhanger\")", ra == ra.set("name1", "zhanger"));
+		println("rm==rm.set(\"name\", \"zhanger\")", rm == rm.set("name", "zhanger"));
+		println("rm==rm.set(\"name1\", \"zhanger\")", rm == rm.set("name1", "zhanger"));
+
 	}
 
 	@Test
@@ -64,7 +73,7 @@ public class ArrayRecordTest {
 		println(dfm.shape());
 		println("-----------------------------------------------");
 		final var nd = dfm.dataOf(INdarray::of) //
-				.fmap(e -> ra.attach(e).clone()).sortBy(e -> e.i4(2), false);
+				.fmap(e -> ra.attach(e).clone()).sortBy(e -> e.alias("b,b,a,a"), false);
 		println(nd.nx(1));
 
 	}

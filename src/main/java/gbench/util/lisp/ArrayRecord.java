@@ -45,10 +45,21 @@ public class ArrayRecord implements IRecord, Serializable {
 	@Override
 	public IRecord set(final String key, Object value) {
 		final Integer idx = this.indexOf(key);
-		if (idx != null) {
+		if (idx != null && idx >= 0) {
 			this.set(idx, value);
+			return this;
+		} else { //
+			final int n = this.size();
+			if (n < 1) {
+				return new ArrayRecord(new String[] { key }, new Object[] { value });
+			} else {
+				final String[] kk = Arrays.copyOf(keys, n + 1);
+				final Object[] vv = Arrays.copyOf(values, n + 1);
+				kk[n] = key;
+				vv[n] = value;
+				return new ArrayRecord(kk, vv);
+			}
 		}
-		return this;
 	}
 
 	@Override
@@ -154,7 +165,12 @@ public class ArrayRecord implements IRecord, Serializable {
 
 	@Override
 	public IRecord set(final Integer idx, final Object value) {
-		this.values[idx] = value;
+		if (this.values != null && idx < this.values.length) {
+			this.values[idx] = value;
+		} else {
+			// System.err.println(String.format("状态非法,values空标志:%s,参数索引:(%d)", this.values
+			// == null, idx));
+		}
 		return this;
 	}
 
