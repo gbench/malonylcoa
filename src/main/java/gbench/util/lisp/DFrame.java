@@ -41,6 +41,15 @@ public class DFrame implements Iterable<IRecord> {
 	}
 
 	/**
+	 * 构造函数
+	 * 
+	 * @param data 源数据
+	 */
+	public DFrame(final IRecord[] data) {
+		this.rowsData = data;
+	}
+
+	/**
 	 * 健名列表
 	 * 
 	 * @return 健名列表

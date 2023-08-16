@@ -2118,7 +2118,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param mapper 变换函数 data->u
 	 * @return 矩阵数据的二维数组
 	 */
-	public <U> U data(final Function<T[][], U> mapper) {
+	public <U> U dataOf(final Function<T[][], U> mapper) {
 		return mapper.apply(this.cells);
 	}
 

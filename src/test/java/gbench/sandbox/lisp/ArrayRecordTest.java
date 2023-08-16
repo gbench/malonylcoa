@@ -9,6 +9,11 @@ import gbench.util.lisp.DFrame;
 
 import static gbench.util.io.Output.println;
 
+/**
+ * 
+ * @author Administrator
+ *
+ */
 public class ArrayRecordTest {
 
 	@Test
@@ -28,12 +33,22 @@ public class ArrayRecordTest {
 		println("get(1)", ra.get(1));
 		println("ra", ra);
 
-		final var dfm = pcts.data(INdarray::of) //
+		final var nx = pcts.dataOf(INdarray::of) //
 				.sorted((a, b) -> ra.attach(b).i4(0).compareTo(rb.attach(a).i4(0))) //
-				.fmap(e->ra.wrap(e).clone())
-				.nx(1);
+				.fmap(e -> ra.wrap(e).clone()).nx(1);
+		final var dfm = nx.dataOf(DFrame::new);
+		final var dfm2 = nx.arrayOf(DFrame::new);
+
+		// 修改
+		nx.head().set("id", "101");
+
+		// 显示数据
+		println("nx");
+		println(nx);
 		println("dfm");
 		println(dfm);
+		println("dfm2");
+		println(dfm2);
 		println("strmx");
 		println(pcts);
 	}

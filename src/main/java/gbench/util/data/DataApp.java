@@ -5339,9 +5339,21 @@ public class DataApp {
 		 *
 		 * @param data 源数据
 		 */
-		public DFrame(final List<IRecord> data) {
+		public DFrame(final Iterable<? extends IRecord> data) {
+			if (data instanceof Collection<? extends IRecord> cc) {
+				this.addAll(cc);
+			} else {
+				this.addAll(StreamSupport.stream(data.spliterator(), false).toList());
+			}
+		}
 
-			this.addAll(data);
+		/**
+		 * 构造函数
+		 *
+		 * @param data 源数据
+		 */
+		public DFrame(final IRecord[] data) {
+			this(Arrays.asList(data));
 		}
 
 		/**
