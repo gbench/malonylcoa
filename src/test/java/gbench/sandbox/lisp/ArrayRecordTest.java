@@ -58,16 +58,15 @@ public class ArrayRecordTest {
 	@Test
 	public void quz() {
 		final var ra = ArrayRecord.of("a,b,c".split(","));
-		final var rb = ra.clone();
 		final var dfm = Lisp.cph(IRecord.RPTA(IRecord.A(1, 2, 3), 3)) //
 				.map(e -> ra.attach(e).duplicate()).collect(Lisp.aaclc(27, DFrame::new));
 		println(dfm);
 		println(dfm.shape());
+		println("-----------------------------------------------");
 		final var nd = dfm.dataOf(INdarray::of) //
-				.sorted((a, b) -> ra.attach(b).i4(0).compareTo(rb.attach(b).i4(0)));
-		println(dfm);
-		println(nd.data() == dfm.dataOf(e->e));
-		
+				.fmap(e -> ra.attach(e).clone()).sortBy(e -> e.i4(2), false);
+		println(nd.nx(1));
+
 	}
 
 }

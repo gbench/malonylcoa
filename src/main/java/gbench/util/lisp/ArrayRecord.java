@@ -236,7 +236,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	/**
 	 * setValues 别名： 为 一个数组values 指定键名索引
 	 * 
-	 * @param values
+	 * @param values 值数据
 	 * @return ra 本身
 	 */
 	public ArrayRecord attach(final Object[] values) {

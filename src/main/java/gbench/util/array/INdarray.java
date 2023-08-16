@@ -1583,6 +1583,32 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * 数据信息排序
 	 * <p>
 	 * 使用T的自带比较方法进行排序
+	 * 
+	 * @param keyer t->k 排序键转换器,排序算法
+	 * @return 排序后的数据
+	 */
+	default <K extends Comparable<K>> INdarray<T> sortBy(final Function<T, K> keyer) {
+		return this.sortBy(keyer, true);
+	}
+
+	/**
+	 * 数据信息排序
+	 * <p>
+	 * 使用T的自带比较方法进行排序
+	 * 
+	 * @param keyer t->k 排序键转换器
+	 * @param 排序标记  true 升序,false降序
+	 * @return 排序后的数据
+	 */
+	default <K extends Comparable<K>> INdarray<T> sortBy(final Function<T, K> keyer, final boolean flag) {
+		return flag ? this.sorted((a, b) -> keyer.apply(a).compareTo(keyer.apply(b)))
+				: this.sorted((a, b) -> keyer.apply(b).compareTo(keyer.apply(a)));
+	}
+
+	/**
+	 * 数据信息排序
+	 * <p>
+	 * 使用T的自带比较方法进行排序
 	 *
 	 * @return 排序后的数据
 	 */
