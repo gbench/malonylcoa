@@ -797,8 +797,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
 			final int n = classifiers.length; // 枢轴：分类函数序列 长度
-			final Consumer<Function<INdarray<T>, ?>> cs = f -> groups.entrySet().stream().parallel()
-					.forEach(e -> final_pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算
+			final Consumer<Function<INdarray<T>, ?>> cs = f -> groups.entrySet().stream().parallel() // 启动并发计算标志
+					.forEach(e -> final_pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算：分别为每个键建立一个指标计算线程并发计算。
 
 			if (n == 1) {// 达到最后一层，枢轴
 				if (evaluator == null) { // 不存在核算函数直接将分类数据作为分类结果
