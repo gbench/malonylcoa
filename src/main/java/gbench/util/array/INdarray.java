@@ -802,24 +802,25 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return {(k,nd)}
 	 */
 	default <K extends Comparable<K>> Map<K, INdarray<T>> groupBy(final Function<T, K> classifier) {
-		final LinkedHashMap<K, INdarray<T>> groups = new LinkedHashMap<K, INdarray<T>>(); // 分组结果
-		final INdarray<T> nd = this.dupdata();
-		final Iterator<Tuple2<K, Integer>> key_itr = this.map(classifier).map(Tuple2.snb2(0)).sorted().iterator(); // 计算键值
+		final Map<K, INdarray<T>> groups = new LinkedHashMap<>(); // 分组结果
+		final INdarray<T> ndata = this.dupdata(); // 备份当前数据区域已作为后续的索引排序的数据源。
+		final Iterator<Tuple2<K, Integer>> key_itr = this.map(classifier) // 计算键值（索引排序的键索引）
+				.map(Tuple2.snb2(0)).sorted().iterator(); // 计算键值并排序
 
 		int i = 0; // 当前读取位置
 		int start = i; // 开始位置
-		K prev_key = null; // 前设元素位置:当前的分组键名
+		K key = null; // 先前key:当前的分组键名
 		while (key_itr.hasNext()) {
 			final Tuple2<K, Integer> e = key_itr.next(); // 提取
-			if (prev_key != null && prev_key != e._1) {
-				groups.put(prev_key, this.create(start, i));
+			if (key != null && key != e._1) { // key 发生变化，将先前的数据合并一个区域分组。
+				groups.put(key, this.create(start, i));
 				start = i; // 更新开始位置
 			} //
-			prev_key = e._1; // 记录先前键值
-			this.set(i++, nd.get(e._2)); // 排序
+			key = e._1; // 记录键值
+			this.set(i++, ndata.get(e._2)); // 对当前数据区域的数据进行排序
 		} // while
-		if (prev_key != null && start < i) { // 记录索引结果
-			groups.put(prev_key, this.create(start, i));
+		if (key != null && start < i) { // 记录索引结果
+			groups.put(key, this.create(start, i));
 		} // if
 
 		return groups; // 返回分组
