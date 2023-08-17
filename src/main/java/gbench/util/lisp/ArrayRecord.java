@@ -22,9 +22,10 @@ import java.util.LinkedHashMap;
 public class ArrayRecord implements IRecord, Serializable {
 
 	/**
+	 * 构造函数
 	 * 
-	 * @param keys
-	 * @param values
+	 * @param keys   键名序列
+	 * @param values 键值序列
 	 */
 	public ArrayRecord(final String[] keys, final Object[] values) {
 		super();
@@ -44,7 +45,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	@Override
-	public IRecord set(final String key, Object value) {
+	public IRecord set(final String key, final Object value) {
 		final Integer idx = this.indexOf(key);
 		if (idx != null && idx >= 0) {
 			this.set(idx, value);
@@ -75,8 +76,14 @@ public class ArrayRecord implements IRecord, Serializable {
 
 	@Override
 	public IRecord duplicate() {
-		return new ArrayRecord(keys == null ? null : Arrays.copyOf(keys, keys.length),
-				values == null ? null : Arrays.copyOf(values, values.length));
+		return new ArrayRecord( // 元素拷贝，深度拷贝
+				keys == null //
+						? null //
+						: Arrays.copyOf(keys, keys.length),
+				values == null //
+						? null //
+						: Arrays.copyOf(values, values.length) //
+		);
 	}
 
 	@Override
@@ -100,33 +107,38 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	// -----------------------------------------------------------------
-	// 非必须接口实现
+	// 非必须接口实现: 特色方法的实现。
 	// -----------------------------------------------------------------
 
 	/**
-	 * 
+	 * 格式化
 	 */
 	@Override
 	public String toString() {
 		return this.toMap().toString();
 	}
 
+	/**
+	 * 删除指定索引的数据
+	 * 
+	 * @return 删除数据后的复制品
+	 */
 	@Override
 	public IRecord remove(final Integer idx) {
 		final Integer n = this.size();
-		if (idx != null && idx < this.size()) {
-			final Object[] oo = new Object[2 * (n - 1)];
+		if (idx != null && idx < this.size()) { // 确保索引位置有效
+			final Object[] data = new Object[2 * (n - 1)];
 			for (int i = 0; i < n; i++) {
-				if (i == idx)
+				if (i == idx) { // 越过索引位置
 					continue;
-				else {
-					final int j = i < idx ? i : i - 1;
-					oo[2 * j] = this.keys[i];
-					oo[2 * j + 1] = this.values[i];
-				}
-			}
-			return this.build(oo);
-		} else {
+				} else { // 拷贝其他索引位置
+					final int j = i < idx ? i : i - 1; // 低于idx保持不变高于idx则向前移动一位
+					data[2 * j] = this.keys[i];
+					data[2 * j + 1] = this.values[i];
+				} // for
+			} // for
+			return this.build(data);
+		} else { // 索引位置无效返回复制品
 			return this.duplicate();
 		} // if
 	}
@@ -145,12 +157,14 @@ public class ArrayRecord implements IRecord, Serializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <X, T> T[] toArray(final Function<X, T> mapper) {
-		return this.valueS().map(e -> mapper.apply((X) e)) //
-				.collect(Lisp.aaclc(this.size(), null, e -> e));
+		return mapper == null //
+				? (T[]) this.values
+				: this.valueS().map(e -> mapper.apply((X) e)) //
+						.collect(Lisp.aaclc(this.size(), null, e -> e));
 	}
 
 	/**
-	 * 
+	 * @return 直接返回值数组
 	 */
 	@Override
 	public Object[] toArray() {
@@ -158,7 +172,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * 
+	 * @应用mapper作用于值数组
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
@@ -182,18 +196,18 @@ public class ArrayRecord implements IRecord, Serializable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T get(final int idx) {
-		if (this.values == null)
+		if (this.values == null) {
 			return null;
-		else if (idx < this.values.length) {
+		} else if (idx < this.values.length) { // 确保索引位置有效
 			return (T) this.values[idx];
-		} else {
+		} else { // 索引无效返回 null
 			return null;
 		}
 	}
 
 	@Override
 	public IRecord set(final Integer idx, final Object value) {
-		if (this.values != null && idx < this.values.length) {
+		if (this.values != null && idx < this.values.length) { // 确保索引有效
 			this.values[idx] = value;
 		} else {
 			// System.err.println(String.format("状态非法,values空标志:%s,参数索引:(%d)", this.values
@@ -204,23 +218,34 @@ public class ArrayRecord implements IRecord, Serializable {
 
 	@Override
 	public String keyOf(final int idx) {
-		return this.keys[idx];
+		if (this.keys == null || idx >= this.keys.length) { // 索引位置无效
+			return null;
+		} else { // 索引有效
+			return this.keys[idx];
+		} // if
 	}
 
 	@Override
 	public Integer indexOf(final String key) {
-		return Arrays.asList(this.keys).indexOf(key);
+		return null == key ? null : Arrays.asList(this.keys).indexOf(key);
 	}
 
+	/**
+	 * 依据键名长度为基准
+	 */
 	@Override
 	public int size() {
-		return this.keys.length;
+		return this.keys == null ? 0 : this.keys.length;
 	}
 
 	@Override
 	public Stream<Tuple2<String, Object>> tupleS() {
 		final int n = this.size();
-		return Stream.iterate(0, i -> i < n, i -> i + 1).map(i -> Tuple2.of(keys[i], values[i]));
+		return Stream.iterate(0, i -> i < n, i -> i + 1) //
+				.map(i -> Tuple2.of( // 键值对儿
+						keys == null || i >= keys.length ? null : keys[i], //
+						values == null || i >= values.length ? null : values[i] //
+				)); // map
 	}
 
 	/**
@@ -256,11 +281,21 @@ public class ArrayRecord implements IRecord, Serializable {
 	/**
 	 * dressup and clone
 	 * 
-	 * @param keys 键名序列
+	 * @param keys 键名序列,逗号[,;/\\]进行分割
 	 * @return ra 本身
 	 */
 	public ArrayRecord dressupClone(final String[] keys) {
 		return this.dressup(keys).clone();
+	}
+
+	/**
+	 * dressup and clone
+	 * 
+	 * @param keys 键名序列
+	 * @return ra 本身
+	 */
+	public ArrayRecord dressupClone(final String keys) {
+		return this.dressupClone(keys.split("[,;/\\\\]+"));
 	}
 
 	/**
@@ -302,7 +337,9 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * 浅拷贝
+	 * 浅拷贝:注意clone 与 duplicate的区别是: <br>
+	 * 1)clone返回实际类型而duplicate返回IRecord <br>
+	 * 2)clone是浅拷贝,而duplicate是深拷贝 <br>
 	 */
 	@Override
 	public ArrayRecord clone() {

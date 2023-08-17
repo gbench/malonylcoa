@@ -6,12 +6,12 @@ import gbench.sandbox.data.h2.H2db;
 import gbench.util.array.INdarray;
 import gbench.util.lisp.ArrayRecord;
 import gbench.util.lisp.DFrame;
-import gbench.util.lisp.IRecord;
 import gbench.util.lisp.Lisp;
 import gbench.util.lisp.MyRecord;
 
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.IRecord.A;
+import static gbench.util.lisp.IRecord.RPTA;
 
 /**
  * 
@@ -34,7 +34,6 @@ public class ArrayRecordTest {
 		println("ra==ra.set(\"name1\", \"zhanger\")", ra == ra.set("name1", "zhanger"));
 		println("rm==rm.set(\"name\", \"zhanger\")", rm == rm.set("name", "zhanger"));
 		println("rm==rm.set(\"name1\", \"zhanger\")", rm == rm.set("name1", "zhanger"));
-
 	}
 
 	@Test
@@ -68,7 +67,7 @@ public class ArrayRecordTest {
 	@Test
 	public void quz() {
 		final var ra = ArrayRecord.of("a,b,c".split(","));
-		final var dfm = Lisp.cph(IRecord.RPTA(IRecord.A(1, 2, 3), 3)) //
+		final var dfm = Lisp.cph(RPTA(A(1, 2, 3), 3)) //
 				.map(e -> ra.attachDuplicate(e)).collect(Lisp.aaclc(27, DFrame::new));
 		println(dfm);
 		println(dfm.shape());
@@ -80,10 +79,10 @@ public class ArrayRecordTest {
 	
 	@Test
 	public void qux() {
-		final var ra = ArrayRecord.of("a,b,c".split(","));
+		final var ra = ArrayRecord.of("a,b,c");
 		ra.attach(A(1, 2, 3));
 		ra.set(2, 2000);
-		println(ra.dressupClone("a1,b1,c1".split(",")));
+		println(ra.dressupClone("a1,b1,c1"));
 	}
 
 }
