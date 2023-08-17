@@ -377,6 +377,16 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 把一个键名序列转换成要给索引序列
+	 * 
+	 * @param keys 键名序列
+	 * @return 索引序列
+	 */
+	public Integer[] indexOf(final String... keys) {
+		return null == keys ? null : Stream.of(keys).map(this::indexOf).toArray(Integer[]::new);
+	}
+
+	/**
 	 * 构建一个键名键值序列 指定的 IRecord
 	 *
 	 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
