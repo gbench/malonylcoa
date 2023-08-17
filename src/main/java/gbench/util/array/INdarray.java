@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -777,7 +778,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 */
 	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
 			final Function<INdarray<T>, INDICATOR> evaluator, final CF[] classifiers) {
-		final Map<K, Object> final_pvts = new LinkedHashMap<>(); // 透视表结果，用于结果返回。
+		final Map<K, Object> final_pvts = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
