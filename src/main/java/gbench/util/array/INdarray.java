@@ -798,14 +798,15 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
 			final int n = classifiers.length; // 枢轴：分类函数序列，枢轴长度
 			final Consumer<Function<INdarray<T>, ?>> cs = f -> groups.entrySet().stream().parallel() // 启动并发计算标志
-					.forEach(e -> final_pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算：分别为每个键建立一个指标计算线程并发计算。
+					.forEach(e -> final_pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算：分别为每个 键 建立一个 指标计算线程 做
+																						// 并发计算。
 
-			if (n == 1 && evaluator == null) { // 不存在核算函数直接将分类数据作为分类结果
+			if (n == 1 && evaluator == null) { // 抵达枢轴末端 并且 不存在核算函数直接将分类数据作为分类结果
 				final_pvts.putAll(groups); // 保存分类结果数据。
 			} else {
-				cs.accept(n == 1 // 枢轴长度评估，是否抵达枢轴末端。
-						? evaluator // 抵达枢轴末尾，执行指标计算
-						: nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), null)); // 继续沿着枢轴计算，递归进入下一层分类哦统计。
+				cs.accept(n == 1 // 枢轴长度评估:是否抵达枢轴末端。
+						? evaluator // 抵达枢轴末尾则执行指标计算
+						: nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), null)); // 未抵达枢轴末尾,继续沿着枢轴计算,递归进入下一阶层做分类统计。
 			} // if
 		} // if classifiers
 
