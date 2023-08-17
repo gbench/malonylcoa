@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import gbench.util.array.INdarray;
 import gbench.util.io.Output;
 
-public class NdarrayTest7 {
+public class Ndarray7Test {
 
 	@Test
 	public void foo() {

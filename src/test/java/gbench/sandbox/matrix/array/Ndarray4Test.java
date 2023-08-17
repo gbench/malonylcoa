@@ -5,7 +5,7 @@ import static gbench.util.io.Output.println;
 
 import org.junit.jupiter.api.Test;
 
-public class NdarrayTest4 {
+public class Ndarray4Test {
 
 	@Test
 	public void foo() {

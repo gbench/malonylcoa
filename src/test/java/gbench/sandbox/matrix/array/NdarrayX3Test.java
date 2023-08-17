@@ -13,7 +13,7 @@ import static gbench.util.io.Output.println;
  * @author gbench
  *
  */
-public class NdarrayXTest3 {
+public class NdarrayX3Test {
 
 	@Test
 	public void foo() {

@@ -14,7 +14,7 @@ import gbench.util.lisp.Tuple2;
 import gbench.util.matrix.Matrices;
 import gbench.util.matrix.Matrix;
 
-public class MatrixTest4 {
+public class Matrix4Test {
 
 	@Test
 	public void foo() {

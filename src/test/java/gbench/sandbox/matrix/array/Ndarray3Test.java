@@ -29,7 +29,7 @@ import gbench.util.array.INdarray;
 import gbench.util.lisp.Tuple2;
 import gbench.util.matrix.Matrix;
 
-public class NdarrayTest3 {
+public class Ndarray3Test {
 
 	@Test
 	public void foo() {

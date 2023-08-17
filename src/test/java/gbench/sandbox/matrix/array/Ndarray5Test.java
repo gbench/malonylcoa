@@ -17,7 +17,7 @@ import gbench.util.io.Output;
  * @author gbench
  *
  */
-public class NdarrayTest5 {
+public class Ndarray5Test {
 
 	@Test
 	public void foo() {

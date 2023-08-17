@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
  * @author gbench
  *
  */
-public class NdarrayTest6 {
+public class Ndarray6Test {
 
 	@Test
 	public void foo() {

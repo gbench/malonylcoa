@@ -7,7 +7,7 @@ import static gbench.util.io.Output.println;
 
 import gbench.util.matrix.Matrices;
 
-public class NdarrayTest8 {
+public class Ndarray8Test {
 
 	@Test
 	public void foo() {

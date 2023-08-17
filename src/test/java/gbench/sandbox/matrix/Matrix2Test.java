@@ -17,7 +17,7 @@ import static gbench.util.matrix.Matrix.V;
  * @author gbench
  *
  */
-public class MatrixTest2 {
+public class Matrix2Test {
 
 	@Test
 	public void foo() {

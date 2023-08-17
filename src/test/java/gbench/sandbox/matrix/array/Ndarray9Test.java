@@ -18,7 +18,7 @@ import gbench.util.data.xls.DataMatrix;
 /**
  * 
  */
-public class NdarrayTest9 {
+public class Ndarray9Test {
 
 	@Test
 	public void foo() {

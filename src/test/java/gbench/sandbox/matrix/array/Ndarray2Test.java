@@ -11,7 +11,7 @@ import gbench.util.array.INdarray;
 import gbench.util.array.StandardNdarray;
 import gbench.util.matrix.Matrix;
 
-public class NdarrayTest2 {
+public class Ndarray2Test {
 
 	@Test
 	public void foo() {

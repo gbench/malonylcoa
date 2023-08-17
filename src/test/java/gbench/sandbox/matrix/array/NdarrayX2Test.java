@@ -19,7 +19,7 @@ import gbench.util.lisp.Tuple2;
 import gbench.util.type.Streams;
 import gbench.util.array.INdarray;
 
-public class NdarrayXTest2 {
+public class NdarrayX2Test {
 
 	/**
 	 * 余子式

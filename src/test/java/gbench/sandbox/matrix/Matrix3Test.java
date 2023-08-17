@@ -14,7 +14,7 @@ import static gbench.util.type.Types.*;
 
 import java.util.function.Function;
 
-public class MatrixTest3 {
+public class Matrix3Test {
 	
 	@SuppressWarnings("unchecked")
 	public Function<IRecord,Matrices<Double>> K(final String key){
