@@ -778,16 +778,16 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 */
 	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
 			final Function<INdarray<T>, INDICATOR> evaluator, final CF[] classifiers) {
-		final Map<K, Object> final_pvts = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
+		final Map<K, Object> pvts = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
 			final int n = classifiers.length; // 枢轴：分类函数序列，枢轴长度
 			final Consumer<Function<INdarray<T>, ?>> cs = f -> groups.entrySet().stream().parallel() // 启动并发计算标志
-					.forEach(e -> final_pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算:分别为每个键建立一个指标计算线程做并发计算。
+					.forEach(e -> pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算:分别为每个键建立一个指标计算线程做并发计算。
 
 			if (n == 1 && evaluator == null) { // 抵达枢轴末端 并且 不存在核算函数直接将分类数据作为分类结果
-				final_pvts.putAll(groups); // 保存分类结果数据。
+				pvts.putAll(groups); // 保存分类结果数据。
 			} else { // 未抵达枢轴末端 或 指定特定 指标计算函数 evaluator 的情况。
 				cs.accept(n == 1 // 枢轴长度评估:是否抵达枢轴末端。
 						? evaluator // 抵达枢轴末尾则执行指标计算
@@ -795,7 +795,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 			} // if
 		} // if classifiers
 
-		return final_pvts;
+		return pvts;
 	}
 
 	/**
