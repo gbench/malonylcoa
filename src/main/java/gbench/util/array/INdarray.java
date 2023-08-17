@@ -796,19 +796,17 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
-			final int n = classifiers.length; // 枢轴：分类函数序列 长度
+			final int n = classifiers.length; // 枢轴：分类函数序列，枢轴长度
 			final Consumer<Function<INdarray<T>, ?>> cs = f -> groups.entrySet().stream().parallel() // 启动并发计算标志
 					.forEach(e -> final_pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算：分别为每个键建立一个指标计算线程并发计算。
 
-			if (n == 1) {// 达到最后一层，枢轴
-				if (evaluator == null) { // 不存在核算函数直接将分类数据作为分类结果
-					final_pvts.putAll(groups); // 保存分类结果数据。
-				} else {// 进行指标计算
-					cs.accept(evaluator); // 分类指标核算
-				} // if evaluator
-			} else { // 继续沿着枢轴进行指标计算，枢轴长度大于1，分类指标核算：注意透视表也是一种指标，复合指标。
-				cs.accept(nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), new LinkedHashMap<>())); // 递归进入下一层分类哦统计。
-			} // if n 枢轴长度
+			if (n == 1 && evaluator == null) { // 不存在核算函数直接将分类数据作为分类结果
+				final_pvts.putAll(groups); // 保存分类结果数据。
+			} else {
+				cs.accept(n == 1 // 枢轴长度评估，是否抵达枢轴末端。
+						? evaluator // 抵达枢轴末尾，执行指标计算
+						: nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), null)); // 继续沿着枢轴计算，递归进入下一层分类哦统计。
+			} // if
 		} // if classifiers
 
 		return final_pvts;
