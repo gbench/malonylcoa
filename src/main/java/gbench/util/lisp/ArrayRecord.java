@@ -285,7 +285,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param keys 键名序列,逗号[,;/\\]进行分割
 	 * @return ra 本身
 	 */
-	public ArrayRecord dressupClone(final String[] keys) {
+	public ArrayRecord dresscln(final String[] keys) {
 		return this.dressup(keys).clone();
 	}
 
@@ -295,8 +295,8 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param keys 键名序列
 	 * @return ra 本身
 	 */
-	public ArrayRecord dressupClone(final String keys) {
-		return this.dressupClone(keys.split(delims));
+	public ArrayRecord dresscln(final String keys) {
+		return this.dresscln(keys.split(delims));
 	}
 
 	/**
@@ -305,7 +305,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param keys 键名序列
 	 * @return ra 本身
 	 */
-	public IRecord dressupDuplicate(final String[] keys) {
+	public IRecord dressdup(final String[] keys) {
 		return this.dressup(keys).duplicate();
 	}
 
@@ -363,7 +363,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param values 值数据
 	 * @return ra 本身
 	 */
-	public ArrayRecord attachClone(final Object[] values) {
+	public ArrayRecord attachcln(final Object[] values) {
 		return this.attach(values).clone();
 	}
 
@@ -373,7 +373,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param values 值数据
 	 * @return ra 本身
 	 */
-	public IRecord attachDuplicate(final Object[] values) {
+	public IRecord attachdup(final Object[] values) {
 		return this.attach(values).duplicate();
 	}
 
@@ -388,51 +388,6 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * 把一个键名序列转换成索引序列
-	 * 
-	 * @param keys 键名序列
-	 * @return 索引序列
-	 */
-	public <T, U> Stream<Function<T, U>> flatMapperS(final String[] keys, final BiFunction<T, Integer, U> mapper) {
-		return this.indexOfS(null == keys ? this.keys : keys).map(i -> (Function<T, U>) t -> mapper.apply(t, i));
-	}
-
-	/**
-	 * 把一个键名序列转换成索引序列
-	 * 
-	 * @param <T>    参数类型
-	 * @param <U>    结果类型
-	 * @param keys   键名序列
-	 * @param mapper (t,i)->
-	 * @return 索引序列
-	 */
-	public <T, U> Stream<Function<T, U>> flatMapperS(final String keys, final BiFunction<T, Integer, U> mapper) {
-		return this.indexOfS(null == keys ? this.keys : keys.split(delims))
-				.map(i -> (Function<T, U>) t -> mapper.apply(t, i));
-	}
-
-	/**
-	 * 把一个键名序列转换成索引序列
-	 * 
-	 * @param keys 键名序列
-	 * @return 索引序列
-	 */
-	public <T, U> Stream<Function<T, U>> flatMapperS(final Integer[] index, final BiFunction<T, Integer, U> mapper) {
-		return (index == null ? Stream.iterate(0, i -> i + 1).limit(this.size()) : Stream.of(index))
-				.map(i -> (Function<T, U>) t -> mapper.apply(t, i));
-	}
-
-	/**
-	 * 把一个键名序列转换成索引序列
-	 * 
-	 * @param keys 键名序列
-	 * @return 索引序列
-	 */
-	public <T, U> Stream<Function<T, U>> flatMapperS(final BiFunction<T, Integer, U> mapper) {
-		return this.flatMapperS((Integer[]) null, mapper);
-	}
-
-	/**
 	 * 把一个索引序列转换成键序列
 	 * 
 	 * @param indices 索引序列
@@ -440,6 +395,54 @@ public class ArrayRecord implements IRecord, Serializable {
 	 */
 	public Stream<String> keyOfS(final Integer... indices) {
 		return null == keys ? null : Stream.of(indices).map(this::keyOf);
+	}
+
+	/**
+	 * 生成一个索引访问器序列
+	 * 
+	 * @param keys 键名序列
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> generateS(final String[] keys, final BiFunction<T, Integer, U> mapper) {
+		return this.indexOfS(null == keys ? this.keys : keys).map(i -> (Function<T, U>) t -> mapper.apply(t, i));
+	}
+
+	/**
+	 * 生成一个索引访问器序列
+	 * 
+	 * @param <T>      参数类型
+	 * @param <U>      结果类型
+	 * @param keys     键名序列,逗号[,;/\\]进行分割
+	 * @param accessor 索引访问器 (t,i)->u
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> generateS(final String keys, final BiFunction<T, Integer, U> accessor) {
+		return this.generateS(keys.split(delims), accessor);
+	}
+
+	/**
+	 * 生成一个索引访问器序列
+	 * 
+	 * @param <T>      参数类型
+	 * @param <U>      结果类型
+	 * @param keys     键名序列,
+	 * @param accessor 索引访问器 (t,i)->u
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> generateS(final Integer[] index,
+			final BiFunction<T, Integer, U> accessor) {
+		return (index == null ? Stream.iterate(0, i -> i + 1).limit(this.size()) : Stream.of(index))
+				.map(i -> (Function<T, U>) t -> accessor.apply(t, i));
+	}
+
+	/**
+	 * 生成一个索引访问器序列
+	 * 
+	 * @param accessor 索引访问器 (t,i)->u
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> generateS(final BiFunction<T, Integer, U> accessor) {
+		return this.generateS((Integer[]) null, accessor);
 	}
 
 	/**

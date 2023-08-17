@@ -45,8 +45,8 @@ public class ArrayRecordTest {
 		println("ra", ra);
 
 		final var nx = pcts.dataOf(INdarray::of) //
-				.sorted((a, b) -> ra.attachClone(b).i4(0).compareTo(rb.attachClone(a).i4(0))) //
-				.fmap(e -> ra.attachClone(e).clone()).nx(1);
+				.sorted((a, b) -> ra.attachcln(b).i4(0).compareTo(rb.attachcln(a).i4(0))) //
+				.fmap(e -> ra.attachcln(e).clone()).nx(1);
 		final var dfm = nx.dataOf(DFrame::new);
 		final var dfm2 = nx.arrayOf(DFrame::new);
 
@@ -68,12 +68,12 @@ public class ArrayRecordTest {
 	public void quz() {
 		final var ra = ArrayRecord.of("a,b,c".split(","));
 		final var dfm = Lisp.cph(RPTA(A(1, 2, 3), 3)) //
-				.map(e -> ra.attachDuplicate(e)).collect(Lisp.aaclc(27, DFrame::new));
+				.map(e -> ra.attachdup(e)).collect(Lisp.aaclc(27, DFrame::new));
 		println(dfm);
 		println(dfm.shape());
 		println("-----------------------------------------------");
 		final var nd = dfm.dataOf(INdarray::of) //
-				.fmap(e -> ra.attachClone(e)).sortBy(e -> e.filter("b,c"), false);
+				.fmap(e -> ra.attachcln(e)).sortBy(e -> e.filter("b,c"), false);
 		println(nd.nx(1));
 	}
 	
@@ -82,7 +82,7 @@ public class ArrayRecordTest {
 		final var ra = ArrayRecord.of("a,b,c");
 		ra.attach(A(1, 2, 3));
 		ra.set(2, 2000);
-		println(ra.dressupClone("a1,b1,c1"));
+		println(ra.dresscln("a1,b1,c1"));
 	}
 
 }
