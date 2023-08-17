@@ -2586,7 +2586,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 			final Optional<Integer> optional = Stream.iterate(0, i -> i + 1).limit(n).map(i -> {
 				final T t1 = i < ts.length ? ts[i] : null;
 				final U t2 = i < us.length ? us[i] : null;
-				int flag = 1; // 默认值类型不匹配的亲狂
+				int flag = 1; // 默认值类型不匹配的情况
 				try {
 					flag = (int) Optional.ofNullable(t1) //
 							.map(_t1 -> Optional.ofNullable(t2) //
@@ -2595,7 +2595,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 				} catch (Exception e) {
 					e.printStackTrace();
 				} // try
-				return flag; // 默认值类型不匹配的亲狂
+				return flag; // 默认值类型不匹配的情况
 			}).filter(e -> e != 0).findFirst();
 
 			return optional.orElse(0);
