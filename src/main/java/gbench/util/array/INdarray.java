@@ -748,7 +748,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	@SuppressWarnings("unchecked")
 	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
 			final Function<INdarray<T>, INDICATOR> evaluator, final Function<T, K>... classifiers) {
-		return this.pivotTable(null, classifiers, evaluator);
+		return this.pivotTable(evaluator, classifiers, null);
 	}
 
 	/**
@@ -757,13 +757,13 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param <K>         键名索引类型
 	 * @param <INDICATOR> 核算指标类型
 	 * @param <CF>        分类函数类型
-	 * @param pvts        透视表结果
 	 * @param evaluator   核算器[t]->x
 	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
+	 * @param pvts        透视表结果
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
 	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
-			final Map<K, Object> pvts, final CF[] classifiers, final Function<INdarray<T>, INDICATOR> evaluator) {
+			final Function<INdarray<T>, INDICATOR> evaluator, final CF[] classifiers, final Map<K, Object> pvts) {
 		final Map<K, Object> final_pvts = pvts == null ? new LinkedHashMap<>() : pvts; // 透视表结果，用于结果返回。
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
@@ -786,7 +786,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 					final INdarray<T> nd = e.getValue(); // 键名分类数据
 					final Map<K, Object> _pvts = new LinkedHashMap<>(); // 下一层数据透视表数据容器
 					final_pvts.put(k, _pvts); // 记录核算结果
-					nd.pivotTable(_pvts, Arrays.copyOfRange(classifiers, 1, n), evaluator); // 递归进入下一层分类哦统计。
+					nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), _pvts); // 递归进入下一层分类哦统计。
 				}); // forEach
 			} // if n 枢轴长度
 		} // if classifiers
