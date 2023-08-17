@@ -745,24 +745,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
-	@SuppressWarnings("unchecked")
-	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
-			final Function<INdarray<T>, INDICATOR> evaluator, final Function<T, K>... classifiers) {
-		return this.pivotTable(evaluator, classifiers, null);
-	}
-
-	/**
-	 * 数据透视表
-	 * 
-	 * @param <K>         键名索引类型
-	 * @param <INDICATOR> 核算指标
-	 * @param evaluator   核算器[t]->indicator
-	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
-	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
-	 */
 	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
 			final Function<INdarray<T>, INDICATOR> evaluator, final Iterable<Function<T, K>> classifiers) {
-		return this.pivotTable(evaluator, Types.itr2array(classifiers), null);
+		return this.pivotTable(evaluator, Types.itr2array(classifiers));
 	}
 
 	/**
@@ -776,7 +761,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 */
 	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
 			final Function<INdarray<T>, INDICATOR> evaluator, final Stream<Function<T, K>> classifiers) {
-		return this.pivotTable(evaluator, Types.stream2array(classifiers), null);
+		return this.pivotTable(evaluator, Types.stream2array(classifiers));
 	}
 
 	/**
@@ -791,8 +776,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
 	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
-			final Function<INdarray<T>, INDICATOR> evaluator, final CF[] classifiers, final Map<K, Object> pvts) {
-		final Map<K, Object> final_pvts = pvts == null ? new LinkedHashMap<>() : pvts; // 透视表结果，用于结果返回。
+			final Function<INdarray<T>, INDICATOR> evaluator, final CF[] classifiers) {
+		final Map<K, Object> final_pvts = new LinkedHashMap<>(); // 透视表结果，用于结果返回。
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
@@ -802,10 +787,10 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 
 			if (n == 1 && evaluator == null) { // 抵达枢轴末端 并且 不存在核算函数直接将分类数据作为分类结果
 				final_pvts.putAll(groups); // 保存分类结果数据。
-			} else {
+			} else { // 未抵达枢轴末端 或 指定特定 指标计算函数 evaluator 的情况。
 				cs.accept(n == 1 // 枢轴长度评估:是否抵达枢轴末端。
 						? evaluator // 抵达枢轴末尾则执行指标计算
-						: nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), null)); // 未抵达枢轴末尾,继续沿着枢轴计算,递归进入下一阶层做分类统计。
+						: nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n))); // 未抵达枢轴末尾,继续沿着枢轴计算,递归进入下一阶层做分类统计。
 			} // if
 		} // if classifiers
 
