@@ -4,14 +4,19 @@ import org.junit.jupiter.api.Test;
 
 import gbench.sandbox.data.h2.H2db;
 import gbench.util.array.INdarray;
+import gbench.util.data.xls.DataMatrix;
 import gbench.util.lisp.ArrayRecord;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.Lisp;
 import gbench.util.lisp.MyRecord;
 
+import static gbench.util.array.INdarray.nats;
 import static gbench.util.io.Output.println;
+import static gbench.util.lisp.ArrayRecord.ra;
 import static gbench.util.lisp.IRecord.A;
 import static gbench.util.lisp.IRecord.RPTA;
+
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -66,17 +71,19 @@ public class ArrayRecordTest {
 
 	@Test
 	public void quz() {
-		final var ra = ArrayRecord.of("a,b,c".split(","));
-		final var dfm = Lisp.cph(RPTA(A(1, 2, 3), 3)) //
+		final var n = 3;
+		final var keys = nats(n).map(DataMatrix::index_to_excel_name).collect(Collectors.joining(","));
+		final var ra = ra(keys);
+		final var dfm = Lisp.cph(RPTA(nats(n).data(), n)) //
 				.map(e -> ra.attachdup(e)).collect(Lisp.aaclc(27, DFrame::new));
 		println(dfm);
 		println(dfm.shape());
 		println("-----------------------------------------------");
 		final var nd = dfm.dataOf(INdarray::of) //
-				.fmap(e -> ra.attachcln(e)).sortBy(e -> e.filter("b,c"), false);
+				.fmap(e -> ra.attachcln(e)).sortBy(e -> e.filter("B,C"), false);
 		println(nd.nx(1));
 	}
-	
+
 	@Test
 	public void qux() {
 		final var ra = ArrayRecord.of("a,b,c");
