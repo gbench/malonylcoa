@@ -755,6 +755,20 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * 数据透视表
 	 * 
 	 * @param <K>         键名索引类型
+	 * @param <INDICATOR> 核算指标
+	 * @param evaluator   核算器[t]->indicator
+	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
+	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
+	 */
+	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
+			final Function<INdarray<T>, INDICATOR> evaluator, final Iterable<Function<T, K>> classifiers) {
+		return this.pivotTable(evaluator, Types.itr2array(classifiers), null);
+	}
+
+	/**
+	 * 数据透视表
+	 * 
+	 * @param <K>         键名索引类型
 	 * @param <INDICATOR> 核算指标类型
 	 * @param <CF>        分类函数类型
 	 * @param evaluator   核算器[t]->x
