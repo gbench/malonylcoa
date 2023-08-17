@@ -162,29 +162,29 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
-	 * 复制 INdarray
+	 * 复制 INdarray shallow copy
 	 *
-	 * @return 复制品, data不进行复制
+	 * @return 复制品, data不进行复制，仅复制start与end索引位置，浅拷贝
 	 */
 	default INdarray<T> duplicate() {
 		return this.create(this.start());
 	}
 
 	/**
-	 * 复制 INdarray
+	 * 复制 INdarray deep
 	 *
-	 * @return 复制品,进行data复制,只复制[start,end) 之间的数据空间。
+	 * @return 复制品,进行data复制,只复制[start,end) 之间的数据空间。 深拷贝
 	 */
-	default INdarray<T> dup() {
+	default INdarray<T> dupdata() {
 		return this.arrayOf(data -> this.create(data, 0, this.length()));
 	}
 
 	/**
-	 * 复制 INdarray
+	 * 复制 INdarray deep2
 	 *
-	 * @return 复制品,进行data进行完全复制
+	 * @return 复制品,进行data进行完全复制,深拷贝
 	 */
-	default INdarray<T> dup2() {
+	default INdarray<T> dupdata2() {
 		final T[] data = this.data();
 		return this.create(Arrays.copyOf(data, data.length), this.start(), this.end(), this.strides());
 	}
@@ -803,7 +803,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 */
 	default <K extends Comparable<K>> Map<K, INdarray<T>> groupBy(final Function<T, K> classifier) {
 		final LinkedHashMap<K, INdarray<T>> groups = new LinkedHashMap<K, INdarray<T>>(); // 分组结果
-		final INdarray<T> nd = this.dup();
+		final INdarray<T> nd = this.dupdata();
 		final Iterator<Tuple2<K, Integer>> key_itr = this.map(classifier).map(Tuple2.snb2(0)).sorted().iterator(); // 计算键值
 
 		int i = 0; // 当前读取位置
@@ -2165,7 +2165,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray 保持this形状的累加值
 	 */
 	default <U, NU extends INdarray<U>> INdarray<T> accum(final BiFunction<T, U, T> tuacc, final List<NU> nus) {
-		final INdarray<T> nt = this.dup();
+		final INdarray<T> nt = this.dupdata();
 		final int tlen = nt.length();
 
 		for (final NU nu : nus) {

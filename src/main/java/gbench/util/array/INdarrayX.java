@@ -236,7 +236,7 @@ public interface INdarrayX<T> extends INdarray<T> {
 	 * @return 复制品,进行data复制,只复制[start,end) 之间的数据空间。
 	 */
 	@Override
-	default INdarrayX<T> dup() {
+	default INdarrayX<T> dupdata() {
 		final INdarray<T> nd = this.arrayOf(data -> this.create(data, 0, this.length()));
 		return this.asNx(nd);
 	}

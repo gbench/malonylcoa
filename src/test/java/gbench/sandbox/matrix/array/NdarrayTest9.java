@@ -15,7 +15,7 @@ public class NdarrayTest9 {
 	@Test
 	public void foo() {
 		println("NdarrayTest9.foo");
-		final var nd = Lisp.cph(RPTA(A(1, 2, 3), 3)).map(e -> INdarray.nd(e).dup()).collect(INdarray.ndclc());
+		final var nd = Lisp.cph(RPTA(A(1, 2, 3), 3)).map(e -> INdarray.nd(e).dupdata()).collect(INdarray.ndclc());
 		println("nd", nd);
 		final var ra = ArrayRecord.of("a,b,c");
 		ra.attach(A(1, 2, 3));

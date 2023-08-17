@@ -90,7 +90,7 @@ public class NdarrayTest3 {
 	@Test
 	public void dd() {
 		final var a = INdarray.of(i -> i, 10);
-		final var b = a.dup();
+		final var b = a.dupdata();
 
 		println(b);
 		println(a.subset(8, 2, 9, 1).assign((t) -> t.set(t.get() * -1)));
@@ -161,7 +161,7 @@ public class NdarrayTest3 {
 		final var data = INdarray.of(i -> i, 10); // 原始数据
 		println(data.cuts(3, true).get(1)); // 第2行
 		println(data.subset(is_modrem(3, 1)).assign(pts(t -> 10 * t))); // 第2列
-		println(data.dup());
+		println(data.dupdata());
 	}
 
 }

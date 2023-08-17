@@ -153,8 +153,8 @@ public class NdarrayTest {
 	public void dup() {
 		final var nd = nats(10);
 		final var p = nd.shift(3);
-		final var p1 = p.dup();
-		final var p2 = p.dup2();
+		final var p1 = p.dupdata();
+		final var p2 = p.dupdata2();
 
 		println(p.set(23));
 		println("p1", p1, p1.datalen());

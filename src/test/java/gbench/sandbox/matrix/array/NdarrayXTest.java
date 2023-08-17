@@ -105,7 +105,7 @@ public class NdarrayXTest {
 		println("--");
 		println(b);
 		println("--");
-		final var palu = a.dup().lu();
+		final var palu = a.dupdata().lu();
 		final var p = palu._1;
 		final var l = palu._2._1;
 		final var u = palu._2._2;
@@ -116,7 +116,7 @@ public class NdarrayXTest {
 		println("--u");
 		println(u);
 		println("--求解方程");
-		println("root", a.dup().solve(b).transpose());
+		println("root", a.dupdata().solve(b).transpose());
 	}
 
 }

@@ -43,7 +43,7 @@ public class NdarrayTest7 {
 		final var m = INdarray.nats(100);
 		println(m.toString(10));
 		println("-----------------行交换------------------");
-		final var t = m.row(10, 0).dup();
+		final var t = m.row(10, 0).dupdata();
 		m.row(10, 0).assign(vls(m.row(10, 1)));
 		m.row(10, 1).assign(vls(t));
 		println("----------------列交换-------------------");

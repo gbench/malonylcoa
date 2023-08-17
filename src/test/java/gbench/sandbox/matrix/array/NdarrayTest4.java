@@ -36,7 +36,7 @@ public class NdarrayTest4 {
 
 	@Test
 	public void qux() {
-		final var data = nd(i -> i * 1.0, 25).dup();
+		final var data = nd(i -> i * 1.0, 25).dupdata();
 		println(data);
 		println(data.row(5, 2));
 		println(data.col(5, 1));

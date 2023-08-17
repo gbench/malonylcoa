@@ -66,7 +66,7 @@ public class DeterminantTest {
 		println(nx);
 		println(String.format("np.linalg.det(np.array(%s).reshape(%s,%s))", nx.head(nx.length()), n, n));
 		println("------------------------------");
-		final var palu = nx.dup().lu(); // lu 会修改 源矩阵，这里复制一下求行列式
+		final var palu = nx.dupdata().lu(); // lu 会修改 源矩阵，这里复制一下求行列式
 		final var p = palu._1;
 		final var u = palu._2._2;
 		println(p);
