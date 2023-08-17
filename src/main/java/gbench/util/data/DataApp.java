@@ -389,59 +389,6 @@ public class DataApp {
 		}
 
 		/**
-		 * @param <T>     结果元素类型
-		 * @param seed
-		 * @param hasNext
-		 * @param next
-		 * @return 结果元素类型
-		 */
-		public static <T> Stream<T> iterate(T seed, Predicate<? super T> hasNext, UnaryOperator<T> next) {
-			Objects.requireNonNull(next);
-			Objects.requireNonNull(hasNext);
-			Spliterator<T> spliterator = new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE,
-					Spliterator.ORDERED | Spliterator.IMMUTABLE) {
-				T prev;
-				boolean started, finished;
-
-				@Override
-				public boolean tryAdvance(Consumer<? super T> action) {
-					Objects.requireNonNull(action);
-					if (finished)
-						return false;
-					T t;
-					if (started)
-						t = next.apply(prev);
-					else {
-						t = seed;
-						started = true;
-					}
-					if (!hasNext.test(t)) {
-						prev = null;
-						finished = true;
-						return false;
-					}
-					action.accept(prev = t);
-					return true;
-				}
-
-				@Override
-				public void forEachRemaining(Consumer<? super T> action) {
-					Objects.requireNonNull(action);
-					if (finished)
-						return;
-					finished = true;
-					T t = started ? next.apply(prev) : seed;
-					prev = null;
-					while (hasNext.test(t)) {
-						action.accept(t);
-						t = next.apply(t);
-					}
-				}
-			};
-			return StreamSupport.stream(spliterator, false);
-		}
-
-		/**
 		 * 健名，键值 序列 (默认采用空格 逗号 /进行间隔)
 		 *
 		 * @param line 健名，键值 序列
@@ -450,8 +397,6 @@ public class DataApp {
 		public static final Stream<Tuple2<String, String>> tupleS(final String line) {
 			return Tuple2.tupleS(line, "[\\s,;/]+");
 		}
-
-		;
 
 		/**
 		 * 健名，键值 序列
@@ -463,8 +408,6 @@ public class DataApp {
 		public static final Stream<Tuple2<String, String>> tupleS(final String line, final String pattern) {
 			return Tuple2.tupleS(line.split(pattern));
 		}
-
-		;
 
 		/**
 		 * @param tup
