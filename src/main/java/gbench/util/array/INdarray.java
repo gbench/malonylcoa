@@ -781,10 +781,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		final Map<K, Object> pvts = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
-			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
 			final int n = classifiers.length; // 枢轴：分类函数序列，枢轴长度
-			final Consumer<Function<INdarray<T>, ?>> cs = f -> groups.entrySet().stream().parallel() // 启动并发计算标志
-					.forEach(e -> pvts.put(e.getKey(), null == f ? e.getValue() : f.apply(e.getValue()))); // 分类指标核算:分别为每个键建立一个指标计算线程做并发计算。
+			final Consumer<Function<INdarray<T>, ?>> cs = f -> this.groupBy(classifiers[0]).entrySet().stream() // 提取枢轴上的首位分类函数进行分组计算
+					.parallel().forEach(e -> pvts.put(e.getKey(), null == f ? e.getValue() : f.apply(e.getValue()))); // 分类指标核算:分别为每个键建立一个指标计算线程做并发计算。
 
 			cs.accept(n == 1 // 枢轴长度评估:是否抵达枢轴末端。
 					? evaluator // 抵达枢轴末尾则执行指标计算
