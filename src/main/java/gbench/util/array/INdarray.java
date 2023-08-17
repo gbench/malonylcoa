@@ -764,7 +764,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 			final Function<INdarray<T>, INDICATOR> evaluator, final Iterable<Function<T, K>> classifiers) {
 		return this.pivotTable(evaluator, Types.itr2array(classifiers), null);
 	}
-	
+
 	/**
 	 * 数据透视表
 	 * 
@@ -797,25 +797,17 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
 			final Map<K, INdarray<T>> groups = this.groupBy(classifiers[0]); // 使用分类函数计算分类结果
 			final int n = classifiers.length; // 枢轴：分类函数序列 长度
+			final Consumer<Function<INdarray<T>, ?>> cs = f -> groups.entrySet().stream().parallel()
+					.forEach(e -> final_pvts.put(e.getKey(), f.apply(e.getValue()))); // 分类指标核算
+
 			if (n == 1) {// 达到最后一层，枢轴
 				if (evaluator == null) { // 不存在核算函数直接将分类数据作为分类结果
 					final_pvts.putAll(groups); // 保存分类结果数据。
 				} else {// 进行指标计算
-					groups.entrySet().stream().parallel().forEach(e -> { // 采用并发模式计算指标
-						final K k = e.getKey(); // 枢轴键名索引
-						final INdarray<T> nd = e.getValue(); // 键名分类数据
-						final INDICATOR indicator = evaluator.apply(nd); // 计算分类指标
-						final_pvts.put(k, indicator); // 记录分类指标
-					}); // forEach
+					cs.accept(evaluator); // 分类指标核算
 				} // if evaluator
-			} else { // 继续沿着枢轴进行指标计算，枢轴长度大于1
-				groups.entrySet().stream().parallel().forEach(e -> { // 采用并发模式计算枢轴层级
-					final K k = e.getKey(); // 枢轴键名索引
-					final INdarray<T> nd = e.getValue(); // 键名分类数据
-					final Map<K, Object> _pvts = new LinkedHashMap<>(); // 下一层数据透视表数据容器
-					final_pvts.put(k, _pvts); // 记录核算结果
-					nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), _pvts); // 递归进入下一层分类哦统计。
-				}); // forEach
+			} else { // 继续沿着枢轴进行指标计算，枢轴长度大于1，分类指标核算：注意透视表也是一种指标，复合指标。
+				cs.accept(nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, n), new LinkedHashMap<>())); // 递归进入下一层分类哦统计。
 			} // if n 枢轴长度
 		} // if classifiers
 
