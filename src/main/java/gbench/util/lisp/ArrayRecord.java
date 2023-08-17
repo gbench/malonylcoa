@@ -386,15 +386,19 @@ public class ArrayRecord implements IRecord, Serializable {
 	 */
 	@SafeVarargs
 	public static <T> IRecord REC(final T... kvs) {
-		final int len = kvs.length;
-		final Object[] oo = len % 2 == 0 ? kvs : Arrays.copyOf(kvs, len + 1);
-		final int n = oo.length;
-		final String[] keys = new String[n / 2];
-		final Object[] values = new Object[n / 2];
-		for (int i = 0; i < n / 2; i++) {
-			keys[i] = oo[2 * i] + "";
-			values[i] = oo[2 * i + 1];
-		}
+		final int len = kvs.length; // 输入数据长度
+		final Object[] data = len % 2 == 0 ? kvs : Arrays.copyOf(kvs, len + 1);
+		final int size = data.length; // 新数据长度
+		final int n = size / 2; // 新IRecord长度
+		final String[] keys = new String[n];
+		final Object[] values = new Object[n];
+
+		for (int i = 0; i < n; i++) {
+			final Object key = data[2 * i];
+			keys[i] = key instanceof String k ? k : key + "";
+			values[i] = data[2 * i + 1];
+		} // for
+
 		return new ArrayRecord(keys, values);
 	}
 
