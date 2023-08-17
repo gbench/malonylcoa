@@ -20,6 +20,7 @@ jshell --class-path D:/sliced/mvn_repos/gbench/pubchem/malonylcoa/0.0.1-SNAPSHOT
 import gbench.util.array.*
 import static gbench.util.lisp.Lisp.*
 import static gbench.util.array.INdarray.*
+
 cph(RPTA(nats(2).data(),10)).map(INdarray::nd).map(INdarray::dupdata).collect(ndclc()).pivotTable(INdarray::length,nats(10).reverse().head(4).fmap(i->(Function<INdarray<Integer>,Integer>)nd->nd.get(i)))
 ```
 #### 参与贡献
