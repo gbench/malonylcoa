@@ -1,13 +1,15 @@
 package gbench.sandbox.matrix.array;
 
 import static gbench.util.io.Output.println;
+import static gbench.util.lisp.ArrayRecord.ra;
 import static gbench.util.lisp.IRecord.A;
 import static gbench.util.lisp.IRecord.RPTA;
+
+import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
 
 import gbench.util.array.INdarray;
-import gbench.util.lisp.ArrayRecord;
 import gbench.util.lisp.Lisp;
 
 public class NdarrayTest9 {
@@ -17,7 +19,7 @@ public class NdarrayTest9 {
 		println("NdarrayTest9.foo");
 		final var nd = Lisp.cph(RPTA(A(1, 2, 3), 3)).map(e -> INdarray.nd(e).dupdata()).collect(INdarray.ndclc());
 		println("nd", nd);
-		final var ra = ArrayRecord.of("a,b,c");
+		final var ra = ra("a,b,c");
 		ra.attach(A(1, 2, 3));
 		ra.set(2, 2000);
 		println("ra.dressupClone", ra.dressupClone("a1,b1,c1".split(",")));
@@ -31,8 +33,8 @@ public class NdarrayTest9 {
 		println("------------------------");
 		println(nd.nx(1));
 		println("------------------------");
-		@SuppressWarnings("unchecked")
-		final var pvt = nd.pivotTable(e -> e, e -> -e.get(2), e -> -e.get(0)); // 倒序显示。
+		final var pvt = nd.pivotTable(e -> e,
+				ra("a,b,c").flatMapperS("c,b,a", (BiFunction<INdarray<Integer>, Integer, Integer>) INdarray::get)); // 倒序显示。
 		println("pivotTable:=======================");
 		println(pvt);
 		println("------------------------");

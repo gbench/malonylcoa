@@ -189,6 +189,17 @@ public class Types {
 	/**
 	 * 流变换为数组
 	 * 
+	 * @param <T>    元素类型
+	 * @param stream 元素流
+	 * @return T类型的数组
+	 */
+	public static <T> T[] stream2array(final Stream<T> stream) {
+		return Types.stream2array(stream, MAX_SIZE);
+	}
+
+	/**
+	 * 流变换为数组
+	 * 
 	 * @param <T>     元素类型
 	 * @param stream  元素流
 	 * @param maxSize 最大数组容量

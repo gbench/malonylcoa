@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -295,7 +296,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @return ra 本身
 	 */
 	public ArrayRecord dressupClone(final String keys) {
-		return this.dressupClone(keys.split("[,;/\\\\]+"));
+		return this.dressupClone(keys.split(delims));
 	}
 
 	/**
@@ -377,13 +378,68 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * 把一个键名序列转换成要给索引序列
+	 * 把一个键名序列转换成索引序列
 	 * 
 	 * @param keys 键名序列
 	 * @return 索引序列
 	 */
-	public Integer[] indexOf(final String... keys) {
-		return null == keys ? null : Stream.of(keys).map(this::indexOf).toArray(Integer[]::new);
+	public Stream<Integer> indexOfS(final String... keys) {
+		return null == keys ? null : Stream.of(keys).map(this::indexOf);
+	}
+
+	/**
+	 * 把一个键名序列转换成索引序列
+	 * 
+	 * @param keys 键名序列
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> flatMapperS(final String[] keys, final BiFunction<T, Integer, U> mapper) {
+		return this.indexOfS(null == keys ? this.keys : keys).map(i -> (Function<T, U>) t -> mapper.apply(t, i));
+	}
+
+	/**
+	 * 把一个键名序列转换成索引序列
+	 * 
+	 * @param <T>    参数类型
+	 * @param <U>    结果类型
+	 * @param keys   键名序列
+	 * @param mapper (t,i)->
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> flatMapperS(final String keys, final BiFunction<T, Integer, U> mapper) {
+		return this.indexOfS(null == keys ? this.keys : keys.split(delims))
+				.map(i -> (Function<T, U>) t -> mapper.apply(t, i));
+	}
+
+	/**
+	 * 把一个键名序列转换成索引序列
+	 * 
+	 * @param keys 键名序列
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> flatMapperS(final Integer[] index, final BiFunction<T, Integer, U> mapper) {
+		return (index == null ? Stream.iterate(0, i -> i + 1).limit(this.size()) : Stream.of(index))
+				.map(i -> (Function<T, U>) t -> mapper.apply(t, i));
+	}
+
+	/**
+	 * 把一个键名序列转换成索引序列
+	 * 
+	 * @param keys 键名序列
+	 * @return 索引序列
+	 */
+	public <T, U> Stream<Function<T, U>> flatMapperS(final BiFunction<T, Integer, U> mapper) {
+		return this.flatMapperS((Integer[]) null, mapper);
+	}
+
+	/**
+	 * 把一个索引序列转换成键序列
+	 * 
+	 * @param indices 索引序列
+	 * @return 键名序列
+	 */
+	public Stream<String> keyOfS(final Integer... indices) {
+		return null == keys ? null : Stream.of(indices).map(this::keyOf);
 	}
 
 	/**
@@ -440,7 +496,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @return ArrayRecord
 	 */
 	public static ArrayRecord of(final String keys) {
-		return ArrayRecord.of(keys.split("[,;/\\\\]+"));
+		return ArrayRecord.of(keys.split(delims));
 	}
 
 	/**
@@ -469,9 +525,30 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * ArrayRecord
+	 * 
+	 * @param keys 键名序列,逗号[,;/\\]进行分割
+	 * @return ArrayRecord
+	 */
+	public static ArrayRecord ra(final String keys) {
+		return ArrayRecord.of(keys);
+	}
+
+	/**
+	 * ArrayRecord
+	 * 
+	 * @param keys 键名序列
+	 * @return ArrayRecord
+	 */
+	public static ArrayRecord ra(final String... keys) {
+		return ArrayRecord.of(keys);
+	}
+
+	/**
 	 * 序列号
 	 */
 	private static final long serialVersionUID = -4990916390989613873L;
+	private static String delims = "[,;/\\\\]+";
 	private String[] keys; // 键名
 	private Object[] values; // 键值
 }
