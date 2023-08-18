@@ -171,29 +171,27 @@ public class H2Test {
 					nds.fmap(e -> prototyperb.get(e)))).collect(DFrame.dfmclc).col(0);
 			sess.setData(Tuple2.of(dbid_of.apply(nds.head()), Tuple2.of(table, ids))); // db,table,ids
 		}), cfs); // 数据透视分阶层统计
-
-		println("数据透视表:", pvt);
 		final var rootNode = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
-		final var dtrb = rb("DBID,TBL");
+		final var sortby = "DBID,TBL"; // 排序标记
+		final var sbrb = rb(sortby); // 排序键构建器
 		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()).map(e -> {
 			final var p = e.attrval(Types.cast((Tuple2<Integer, Tuple2<String, List<Integer>>>) null));
 			return Tuple2.of(p._1, p._2._1); // 数据库id,tablename
 		}).distinct().map(p -> dataApps[p._1] // 提取数据应用App
-				.sql2dframe(String.format("select * from %s", p._2)).fmap(e -> dtrb.get(p._1, p._2).add(e)))
+				.sql2dframe(String.format("select * from %s", p._2)).fmap(sbrb.get(p._1, p._2)::add))
 				.reduce(DFrame::rbind) // 归集各个数据库
-				.map(e -> e.sorted((a, b) -> a.filter(dtrb.keys()).compareTo(b.filter(dtrb.keys())))) //
+				.map(e -> e.sorted((a, b) -> a.filter(sortby).compareTo(b.filter(sortby)))) // 排序
 				.get();
 
+		println("数据透视表:\n", pvt);
+		println("root:");
 		rootNode.forEach(e -> { // 显示分组计算结果
 			println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(), e.attrvalOpt().orElse(""))); // 树形结构显示
 		}); // forEach
-		
 		println("tbls:\n", dfdata.sorted((a, b) -> a.filter("DBID,TBL").compareTo(b.filter("DBID,TBL"))));
-		println("size:", dfdata.size());
-
-		println("原始数据:");
-		println("nx:", ndata.nx(1));
+		println("size:\n", dfdata.size());
+		println("原始数据:\n", ndata.nx(1));
 		println("nx.length:", ndata.nx(1).length());
 	}
 
