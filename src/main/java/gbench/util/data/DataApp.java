@@ -3498,7 +3498,7 @@ public class DataApp {
 		}
 
 		/**
-		 * 查询结果集合
+		 * 查询类:查询结果集合
 		 *
 		 * @param sql sql 语句
 		 * @return 查询结果集合
@@ -3506,6 +3506,18 @@ public class DataApp {
 		 */
 		default Optional<IRecord> sql2maybe(String sql) throws SQLException {
 			return this.sql2recordS(sql).findFirst();
+		}
+
+		/**
+		 * 执行类:execute版本的sql2maybe<br>
+		 * sql2executeS
+		 *
+		 * @param sql sql 语句
+		 * @return execute的返回结果，一般用于获取自增长的id主键
+		 * @throws SQLException
+		 */
+		default Optional<IRecord> sql2maybe2(String sql) throws SQLException {
+			return this.sql2executeS(sql).findFirst();
 		}
 
 		/**
