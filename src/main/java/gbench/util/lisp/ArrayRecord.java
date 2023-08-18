@@ -58,7 +58,7 @@ public class ArrayRecord implements IRecord, Serializable {
 				return new ArrayRecord(new String[] { key }, new Object[] { value });
 			} else {
 				final String[] kk = Arrays.copyOf(keys, n + 1);
-				final Object[] vv = Arrays.copyOf(values, n + 1);
+				final Object[] vv = values == null ? new Object[n + 1] : Arrays.copyOf(values, n + 1);
 				kk[n] = key;
 				vv[n] = value;
 				return new ArrayRecord(kk, vv);

@@ -9,6 +9,8 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
+import static gbench.util.lisp.ArrayRecord.ra;
+import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
 import static gbench.sandbox.data.h2.H2db.*;
@@ -143,7 +145,7 @@ public class H2Test {
 	 */
 	@Test
 	public void qux() {
-		final var n = 3;
+		final var n = 4;
 		final var dup = identity((Integer[]) null).andThen(INdarray::nd).andThen(INdarray::dupdata);
 		final var cfs = nats(n).reverse().head(n - 1)
 				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i)));
@@ -151,13 +153,21 @@ public class H2Test {
 		final var prototype = xra(n).wrap(ndata.get()); // 基础结构
 		new MyDataApp(h2_rec).withTransaction(sess -> {
 			final var pvt = ndata.pivotTable(nds -> {
-				final var table = String.format("t_nd%s",
-						cfs.map(e -> e.apply(nds.get()) + "").collect(Collectors.joining("")));
-				sess.sqlexecute(ctsql(table, prototype.add("ID", 0).toMap())); // 创建数据表
-				return Tuple2.of(table, //
-						nds.map(nd -> insql(table, prototype.attach(nd.data()).toMap())) // 插入数据
-								.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
-								.toList());
+				final var table = String.format("t_nd%s", //
+						cfs.map(e -> e.apply(nds.get()) + "").limit(1) // 提取首位前缀
+								.collect(Collectors.joining("")));
+
+				synchronized (sess) { //
+					final var flag = !sess.isTablePresent(table);
+					if (flag) { // 数据表不存在则创建表
+						final var ctsql = ctsql(table, ra("ID").attach(A(0)).add(prototype).toMap());
+						println(ctsql);
+						sess.sqlexecute(ctsql); // 创建数据表
+					} // if
+				}
+				return Tuple2.of(table, nds.map(nd -> insql(table, prototype.attach(nd.data()).toMap())) // 插入数据
+						.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
+						.toList());
 			}, cfs);
 			println(pvt);
 			final var root = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
@@ -167,7 +177,7 @@ public class H2Test {
 			});
 			final var sql = root.stream().filter(e -> e.isLeaf())
 					.map(e -> e.attrval(Types.cast((Tuple2<String, List<Integer>>) null)))
-					.map(e -> FT("(select '$0' tname,t.* from $0 t)", e._1)) //
+					.map(e -> FT("(select t.*,'$0' `TABLE` from $0 t)", e._1)) //
 					.collect(Collectors.joining(" union "));
 			println(sess.sql2x(sql));
 		});
