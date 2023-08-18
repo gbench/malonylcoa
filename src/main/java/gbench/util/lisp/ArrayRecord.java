@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import gbench.util.json.MyJson;
+import gbench.util.type.Types;
 
 import java.util.LinkedHashMap;
 
@@ -348,7 +349,9 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * setValues 别名： 为 一个数组values 指定键名索引
+	 * 数据共享是附加：提供一套keys用于访问数据，<br>
+	 * 即 提供IRecord的键值对儿算法来使用数据values <br>
+	 * setValues 别名： 为 一个数组values 指定键名索引. 参见与wrap方法的区别。
 	 * 
 	 * @param values 值数据
 	 * @return ra 本身
@@ -375,6 +378,22 @@ public class ArrayRecord implements IRecord, Serializable {
 	 */
 	public IRecord attachdup(final Object[] values) {
 		return this.attach(values).duplicate();
+	}
+
+	/**
+	 * setValues 别名： 为 一个数组values 指定键名索引.<br>
+	 * wrap 和 attach 的区别就是 attach 参数是 对象数组 Object[] <br>
+	 * 数据类型的参数Object[]而wrap是Iterabl类型的参数。<br>
+	 * attach强调共享共享数据，用 IRecord的接口来操作数据。 <br>
+	 * 在IRecord上的修在可以在另外的以values为成员的对象比如DataMatrix上反应 <br>
+	 * 或者DataMatrix上的操作可以在IRecord上反应。 <br>
+	 * 而wrap强调在vlaues之上再包裹一层IRecord接口。存粹是为了为底层数据提供一个IRecord数据访问而已。 没有数据共享的思想。
+	 * 
+	 * @param values 值数据
+	 * @return ra 本身
+	 */
+	public ArrayRecord wrap(final Iterable<?> values) {
+		return this.setValues(Types.itr2array(values));
 	}
 
 	/**
@@ -429,8 +448,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param accessor 索引访问器 (t,i)->u
 	 * @return 索引序列
 	 */
-	public <T, U> Stream<Function<T, U>> generateS(final Integer[] index,
-			final BiFunction<T, Integer, U> accessor) {
+	public <T, U> Stream<Function<T, U>> generateS(final Integer[] index, final BiFunction<T, Integer, U> accessor) {
 		return (index == null ? Stream.iterate(0, i -> i + 1).limit(this.size()) : Stream.of(index))
 				.map(i -> (Function<T, U>) t -> accessor.apply(t, i));
 	}
@@ -545,6 +563,16 @@ public class ArrayRecord implements IRecord, Serializable {
 	 */
 	public static ArrayRecord ra(final String... keys) {
 		return ArrayRecord.of(keys);
+	}
+
+	/**
+	 * ArrayRecord
+	 * 
+	 * @param keys 键名序列
+	 * @return ArrayRecord
+	 */
+	public static ArrayRecord ra(final Iterable<String> keys) {
+		return ArrayRecord.of(Types.itr2array(keys));
 	}
 
 	/**
