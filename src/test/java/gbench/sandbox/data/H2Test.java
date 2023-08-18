@@ -61,10 +61,10 @@ public class H2Test {
 			final var line = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690610", "address",
 					REC("city", "shanghai", "district", "changning", "street", "fahuazhen", "nong", 101, "building",
 							REC("unit", 11, "room", 201)));
-			final var table = "t_individual";
-			sess.sql2execute(ctsql(table, line));
-			sess.sql2execute(insql(table, line));
-			final var p = sess.sql2x(String.format("select * from %s", table));
+			final var tblname = "t_individual";
+			sess.sql2execute(ctsql(tblname, line));
+			sess.sql2execute(insql(tblname, line));
+			final var p = sess.sql2x(String.format("select * from %s", tblname));
 			p.forEach(r -> r.compute("address", H2db::json)); // 地址类型转换
 			println(p);
 			println("unit", p.get(0).pathi4("address/building/unit"));
@@ -163,12 +163,12 @@ public class H2Test {
 		// 使用透视表作为并行计算的框架 & 分表的计算。利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
 		final var pvts = ndata.pivotTable(nds -> dataApps[db_id_f.apply(nds.head())].withTransaction(sess -> { // 分组计算
 			final var pvtkeys = pvt_key_f.apply(nds.head()); // 枢轴键值列表
-			final var table = String.format("t_%s%s", t_prefix, pvtkeys.get(1)); // 提取第2号位置作为表名索引后缀
-			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
-				sess.sqlexecute(ctsql(table, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
-			final var row_ids = sess.sql2executeS(insql(table, // 批量插入sql语句
-					nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0);
-			sess.setData(Tuple2.of(db_id_f.apply(nds.head()), Tuple2.of(table, row_ids))); // db索引,表名table,行索引row_ids
+			final var tblname = String.format("t_%s%s", t_prefix, pvtkeys.get(1)); // 提取第2号位置作为表名索引后缀
+			if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
+				sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
+			final var row_ids = sess.sql2executeS(insql(tblname, // 批量插入sql语句
+					nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0); // 插入数据的行记录索引row_ids
+			sess.setData(Tuple2.of(db_id_f.apply(nds.head()), Tuple2.of(tblname, row_ids))); // db索引,表名tblname,行记录索引row_ids
 		}), cfs); // 数据透视分阶层统计
 		final var rootNode = REC(pvts).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
@@ -176,7 +176,7 @@ public class H2Test {
 		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()) // 提取叶子节点,属性值value的结构为:(db索引,表名)
 				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1)))
 				.distinct().map(loc -> dataApps[loc._1] // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
-						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e)))
+						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e))) // 加入数据作为位置dbid,tbl
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(loc_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 

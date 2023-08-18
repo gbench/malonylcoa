@@ -38,11 +38,11 @@ public class H2db {
 	/**
 	 * 创建表
 	 * 
-	 * @param table 表名
+	 * @param tblname 表名
 	 * @param line  数据行
 	 * @return create table sql
 	 */
-	public static String ctsql(final String table, final IRecord line) {
+	public static String ctsql(final String tblname, final IRecord line) {
 		final var intpattern = "^\\d+$";
 		final var datepattern = "^[1-9]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\\s+(20|21|22|23|[0-1]\\d):[0-5]\\d:[0-5]\\d$";
 		final BiFunction<String, Object, String> typeof = (k, v) -> {
@@ -72,7 +72,7 @@ public class H2db {
 				return String.format("VARCHAR( %s )", size % 2 == 0 ? size : size + 1);
 			}
 		};
-		final var sql = String.format("create table %s ( %s )", table, line.tupleS()
+		final var sql = String.format("create table %s ( %s )", tblname, line.tupleS()
 				.map(e -> String.format("%s %s", e._1, typeof.apply(e._1, e._2))).collect(Collectors.joining(", ")));
 		return sql;
 	}
@@ -80,22 +80,22 @@ public class H2db {
 	/**
 	 * 插入数据
 	 * 
-	 * @param table 表名
+	 * @param tblname 表名
 	 * @param line  数据行
 	 * @return insert sql
 	 */
-	public static String insql(final String table, final IRecord line) {
-		return insql(table, Arrays.asList(line));
+	public static String insql(final String tblname, final IRecord line) {
+		return insql(tblname, Arrays.asList(line));
 	}
 
 	/**
 	 * 插入数据
 	 * 
-	 * @param table 表名
+	 * @param tblname 表名
 	 * @param line  数据行
 	 * @return insert sql
 	 */
-	public static String insql(final String table, final Iterable<IRecord> lines) {
+	public static String insql(final String tblname, final Iterable<IRecord> lines) {
 		final Function<Object, String> v2s = v -> {
 			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
 				return JSON.toJson(v);
@@ -113,7 +113,7 @@ public class H2db {
 
 		for (final var line : lines) {
 			if (sb.length() < 1) {// 第一行,开头部分
-				sb.append(String.format("insert into %s ( %s ) values ( %s )", table,
+				sb.append(String.format("insert into %s ( %s ) values ( %s )", tblname,
 						line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
 						value_part.apply(line)));
 			} else { // 剩余行,追加value部分
@@ -142,13 +142,13 @@ public class H2db {
 	/**
 	 * 导入数据表格
 	 * 
-	 * @param tables
+	 * @param tblnames
 	 * @return 数据表
 	 */
-	public static ExceptionalConsumer<DataApp.IJdbcSession<Object, DFrame>> imports(final String... tables) {
+	public static ExceptionalConsumer<DataApp.IJdbcSession<Object, DFrame>> imports(final String... tblnames) {
 		return sess -> {
-			for (final String table : tables) { // 遍历数据表
-				final var data = shtmx(table).collect(DFrame.dfmclc2);
+			for (final String tblname : tblnames) { // 遍历数据表
+				final var data = shtmx(tblname).collect(DFrame.dfmclc2);
 				final var line = REC();
 				data.cols().forEach((k, v) -> { // 提取最长行
 					v.stream().sorted((a, b) -> (b + "").length() - (a + "").length()).findFirst() //
@@ -156,11 +156,11 @@ public class H2db {
 								line.add(k, v1);
 							});
 				});
-				final var ctsql = ctsql(table, line);
+				final var ctsql = ctsql(tblname, line);
 				// System.err.println(ctsql);
 				sess.sql2execute(ctsql);
 				for (var ln : data) {
-					sess.sql2execute(insql(table, ln));
+					sess.sql2execute(insql(tblname, ln));
 				}
 			} // for
 		};
