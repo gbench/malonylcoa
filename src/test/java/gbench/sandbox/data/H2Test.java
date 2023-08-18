@@ -14,10 +14,12 @@ import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
 import static gbench.sandbox.data.h2.H2db.*;
 import static java.lang.Math.pow;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.summarizingDouble;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.HashMap;
 import java.util.function.Function;
@@ -144,48 +146,43 @@ public class H2Test {
 	 */
 	@Test
 	public void qux() {
-		final var n = 4;
-		final var dup = identity((Integer[]) null).andThen(INdarray::nd).andThen(INdarray::dupdata);
+		final var n = 4; // 数据行长度
+		final var dup = identity((Integer[]) null).andThen(INdarray::nd).andThen(INdarray::dupdata); // 数据复制函数
 		final var cfs = nats(n).reverse().head(n - 1)
-				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i)));
-		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n)));
+				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i))); // 枢轴计算序列
+		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
 		final var prototype = xra(n).wrap(ndata.get()); // 基础结构：数据原型
+		final var dataApp = new MyDataApp(h2_rec); // h2数据库客户端
 
-		new MyDataApp(h2_rec).withTransaction(sess -> {
-			// 使用透视表作为并行计算的框架 & 分表的计算。
-			final var pvt = ndata.pivotTable(nds -> { // 分组计算：利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
-				final var table = String.format("t_nd%s", //
-						cfs.map(e -> e.apply(nds.get()) + "").limit(1) // 提取首位前缀作为表后缀
-								.collect(Collectors.joining(""))); // 分表名
+		// 使用透视表作为并行计算的框架 & 分表的计算。
+		final var pvt = ndata.pivotTable(nds -> dataApp.withTransaction(sess -> { // 分组计算：利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
+			final var table = String.format("t_data%s", cfs.map(e -> e.apply(nds.head()) + "").limit(1) // 提取首位前缀作为表后缀
+					.collect(joining(""))); // 分表名
+			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
+				sess.sqlexecute(ctsql(table, ra2("ID", 0).add(prototype).toMap()));
+			sess.setData(Tuple2.of(table, nds.map(INdarray::data) // (表名,插入数据的主键)
+					.map(d -> insql(table, prototype.attach(d).toMap())) // 插入数据
+					.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) // 提取生成的主键不存在则放回-1
+					.toList()));
+		}), cfs); // 数据透视分阶层统计
 
-				if (!sess.isTablePresent(table)) { // 数据表不存在则创建表
-					final var ctsql = ctsql(table, ra2("ID", 0).add(prototype).toMap());
-					println(ctsql);
-					sess.sqlexecute(ctsql); // 创建数据表
-				} // if
-
-				return Tuple2.of(table, nds.map(INdarray::data) //
-						.map(d -> insql(table, prototype.attach(d).toMap())) // 插入数据
-						.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
-						.toList()); // (表名,插入数据的主键)
-			}, cfs);
-
+		dataApp.withTransaction(sess -> { // 分析分组计算结果
 			println("数据透视表:", pvt);
 			final var rootNode = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
 					ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
 			rootNode.forEach(e -> { // 显示分组计算结果
-				println(String.format("%s %s %s", " | ".repeat(e.getLevel()), e.getName(), e.attrval()));
-			});
-
-			final var sql = rootNode.stream().filter(e -> e.isLeaf())
+				println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(),
+						e.attrval(Optional::ofNullable).orElse(""))); // 树形结构显示
+			}); // forEach
+			final var unionsql = rootNode.stream().filter(e -> e.isLeaf()) // 提取叶子节点
 					.map(e -> e.attrval(Types.cast((Tuple2<String, List<Integer>>) null)))
 					.map(e -> FT("(select t.*,'$0' `TABLE` from $0 t)", e._1)) //
-					.collect(Collectors.joining(" union "));
+					.collect(Collectors.joining(" union ")); // 合并sql
+			println(sess.sql2x(unionsql));
+		}); // withTransaction
 
-			println(sess.sql2x(sql));
-		});
-
-		// println(ndata.nx(1));
+		println("原始数据:");
+		println(ndata.nx(1));
 	}
 
 	/**
