@@ -499,6 +499,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	/**
 	 * 构建一个键名键值序列 指定的 IRecord
 	 *
+	 * @param <T> 元素类型
 	 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
 	 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
 	 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
@@ -568,6 +569,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	/**
 	 * 构建一个键名键值序列 指定的 IRecord
 	 *
+	 * @param <T> 元素类型
 	 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
 	 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
 	 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列

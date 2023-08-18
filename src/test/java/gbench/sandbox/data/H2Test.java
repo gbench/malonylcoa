@@ -158,7 +158,7 @@ public class H2Test {
 								.collect(Collectors.joining("")));
 
 				if (!sess.isTablePresent(table)) { // 数据表不存在则创建表
-					final var ctsql = ctsql(table, ra2("ID", 0).add(prototype.toMap()).toMap());
+					final var ctsql = ctsql(table, ra2("ID", 0).add(prototype).toMap());
 					println(ctsql);
 					sess.sqlexecute(ctsql); // 创建数据表
 				} // if
