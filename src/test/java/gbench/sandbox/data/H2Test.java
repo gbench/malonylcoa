@@ -152,9 +152,9 @@ public class H2Test {
 		final var prototype = xra(n).wrap(ndata.get()); // 基础结构：数据原型
 
 		new MyDataApp(h2_rec).withTransaction(sess -> {
-			final var pvt = ndata.pivotTable(nds -> {
+			final var pvt = ndata.pivotTable(nds -> { // 分组计算
 				final var table = String.format("t_nd%s", //
-						cfs.map(e -> e.apply(nds.get()) + "").limit(1) // 提取首位前缀
+						cfs.map(e -> e.apply(nds.get()) + "").limit(1) // 提取首位前缀作为表后缀
 								.collect(Collectors.joining("")));
 
 				if (!sess.isTablePresent(table)) { // 数据表不存在则创建表
@@ -165,17 +165,17 @@ public class H2Test {
 
 				return Tuple2.of(table, nds.map(INdarray::data).map(d -> insql(table, prototype.attach(d).toMap())) // 插入数据
 						.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
-						.toList());
+						.toList()); // (表名,插入数据的主键)
 			}, cfs);
 
 			println("数据透视表:", pvt);
-			final var root = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
+			final var rootNode = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
 					ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
-			root.forEach(e -> {
+			rootNode.forEach(e -> { // 显示分组计算结果
 				println(String.format("%s %s %s", " | ".repeat(e.getLevel()), e.getName(), e.attrval()));
 			});
 
-			final var sql = root.stream().filter(e -> e.isLeaf())
+			final var sql = rootNode.stream().filter(e -> e.isLeaf())
 					.map(e -> e.attrval(Types.cast((Tuple2<String, List<Integer>>) null)))
 					.map(e -> FT("(select t.*,'$0' `TABLE` from $0 t)", e._1)) //
 					.collect(Collectors.joining(" union "));
