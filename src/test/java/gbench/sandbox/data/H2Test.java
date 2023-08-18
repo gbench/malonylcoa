@@ -13,7 +13,6 @@ import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
 import static gbench.sandbox.data.h2.H2db.*;
 import static java.lang.Math.pow;
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.summarizingDouble;
 
 import java.time.LocalDateTime;
@@ -58,7 +57,7 @@ public class H2Test {
 	 */
 	@Test
 	public void bar() {
-		new MyDataApp(h2_rec).withTransaction(sess -> {
+		new MyDataApp(h2_rec_1).withTransaction(sess -> {
 			final var line = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690610", "address",
 					REC("city", "shanghai", "district", "changning", "street", "fahuazhen", "nong", 101, "building",
 							REC("unit", 11, "room", 201)));
@@ -80,7 +79,7 @@ public class H2Test {
 		final var now = LocalDateTime.now();
 		final var rnd = new Random();
 
-		new MyDataApp(h2_rec).withTransaction(sess -> { // 准备数据
+		new MyDataApp(h2_rec_1).withTransaction(sess -> { // 准备数据
 			imports("t_company,t_product,t_company_product".split(",")).accept(sess);
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
 			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("id")), 10);
@@ -155,43 +154,64 @@ public class H2Test {
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
 		final var prototype = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
 		final var prototyperb = IRecord.rb(prototype.keys());
-		final var dataApp = new MyDataApp(h2_rec); // h2数据库客户端
+		final var dataApp1 = new MyDataApp(h2_rec_1); // h2数据库客户端
+		final var dataApp2 = new MyDataApp(h2_rec_2); // h2数据库客户端
+		final var dataApps = new MyDataApp[] { dataApp1, dataApp2 };
 
-		// 使用透视表作为并行计算的框架 & 分表的计算。
-		final var pvt = ndata.pivotTable(nds -> dataApp.withTransaction(sess -> { // 分组计算：利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
-			final var table = String.format("t_data%s", cfs.map(e -> e.apply(nds.head()) + "").limit(1) // 提取首位前缀作为表后缀
-					.collect(joining(""))); // 分表名
+		final Function<INdarray<Integer>, INdarray<Integer>> pvt_keys = nd -> cfs.map(f -> f.apply(nd))
+				.collect(INdarray.ndclc()); // 计算枢轴
+		final Function<INdarray<Integer>, Integer> dbid_of = e -> pvt_keys.apply(e).get() % dataApps.length;
+		// 使用透视表作为并行计算的框架 & 分表的计算。利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
+		final var pvt = ndata.pivotTable(nds -> dataApps[dbid_of.apply(nds.head())].withTransaction(sess -> { // 分组计算
+			final var pvtkeys = pvt_keys.apply(nds.head()); // 枢轴键值列表
+			final var table = String.format("t_data%s", pvtkeys.get(1)); // 提取第二位作为表名
 			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
 				sess.sqlexecute(ctsql(table, prototype.prepend("ID", 0).mutate2(IRecord::REC)));
 			final var ids = sess.sql2executeS(insql(table, // 批量插入sql语句
 					nds.fmap(e -> prototyperb.get(e)))).collect(DFrame.dfmclc).col(0);
-			sess.setData(Tuple2.of(table, ids));
+			sess.setData(Tuple2.of(dbid_of.apply(nds.head()), Tuple2.of(table, ids))); // db,table,ids
 		}), cfs); // 数据透视分阶层统计
 
-		dataApp.withTransaction(sess -> { // 分析分组计算结果
-			println("数据透视表:", pvt);
-			final var rootNode = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
-					ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
-			rootNode.forEach(e -> { // 显示分组计算结果
-				println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(),
-						e.attrvalOpt().orElse(""))); // 树形结构显示
-			}); // forEach
-			final var unionsql = rootNode.stream().filter(e -> e.isLeaf()) // 提取叶子节点
-					.map(e -> e.attrval(Types.cast((Tuple2<String, List<Integer>>) null)))
-					.map(e -> FT("(select t.*,'$0' `TABLE` from $0 t)", e._1)) //
-					.collect(Collectors.joining(" union ")); // 合并sql
-			println(sess.sql2x(unionsql));
-		}); // withTransaction
+		println("数据透视表:", pvt);
+		final var rootNode = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
+				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
+		final var dtrb = rb("DBID,TBL");
+		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()).map(e -> {
+			final var p = e.attrval(Types.cast((Tuple2<Integer, Tuple2<String, List<Integer>>>) null));
+			return Tuple2.of(p._1, p._2._1); // 数据库id,tablename
+		}).distinct().map(p -> dataApps[p._1] // 提取数据应用App
+				.sql2dframe(String.format("select * from %s", p._2)).fmap(e -> dtrb.get(p._1, p._2).add(e)))
+				.reduce(DFrame::rbind) // 归集各个数据库
+				.map(e -> e.sorted((a, b) -> a.filter(dtrb.keys()).compareTo(b.filter(dtrb.keys())))) //
+				.get();
+
+		rootNode.forEach(e -> { // 显示分组计算结果
+			println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(), e.attrvalOpt().orElse(""))); // 树形结构显示
+		}); // forEach
+		
+		println("tbls:\n", dfdata.sorted((a, b) -> a.filter("DBID,TBL").compareTo(b.filter("DBID,TBL"))));
+		println("size:", dfdata.size());
 
 		println("原始数据:");
-		println(ndata.nx(1));
+		println("nx:", ndata.nx(1));
+		println("nx.length:", ndata.nx(1).length());
 	}
+
+	final String db_prefix = "malonylcoadb";
 
 	/**
 	 * 数据库配置
 	 */
-	final IRecord h2_rec = IRecord.REC( //
-			"url", "jdbc:h2:mem:malonylcoadb;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", //
+	final IRecord h2_rec_1 = IRecord.REC( //
+			"url", String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", db_prefix), //
+			"driver", "org.h2.Driver", //
+			"user", "root", "password", "123456");
+
+	/**
+	 * 数据库配置
+	 */
+	final IRecord h2_rec_2 = IRecord.REC( //
+			"url", String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", db_prefix), //
 			"driver", "org.h2.Driver", //
 			"user", "root", "password", "123456");
 }
