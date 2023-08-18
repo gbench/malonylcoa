@@ -1931,7 +1931,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * IRecord 变换
 	 * 
 	 * @param <T>    结果类型
-	 * @param mapper (k,v)->t , 若 mapper 为 null 则返回 this
+	 * @param mapper [(k,v)]->t , 若 mapper 为 null 则返回 this
 	 * @return T 类型结果
 	 */
 	@SuppressWarnings("unchecked")

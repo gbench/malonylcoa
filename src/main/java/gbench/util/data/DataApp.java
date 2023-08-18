@@ -41,7 +41,7 @@ import java.util.stream.StreamSupport;
 import static gbench.util.data.DataApp.IRecord.REC;
 
 /**
- * 数据应用
+ * 数据应用: All In One 的版本的库文件
  *
  * @author xuqinghua
  */
@@ -1661,6 +1661,18 @@ public class DataApp {
 		 */
 		default <T> T mutate(final Function<? super Map<String, Object>, T> mapper) {
 			return mapper.apply(this.toMap());
+		}
+
+		/**
+		 * IRecord 变换
+		 * 
+		 * @param <T>    结果类型
+		 * @param mapper [(k,v)]->t , 若 mapper 为 null 则返回 this
+		 * @return T 类型结果
+		 */
+		@SuppressWarnings("unchecked")
+		default <T> T mutate2(final Function<? super Map<?, ?>, T> mapper) {
+			return mapper == null ? (T) this : mapper.apply(this.toMap());
 		}
 
 		/**
@@ -4091,8 +4103,8 @@ public class DataApp {
 
 			Object[] oo = objs; // 参数值
 			if (objs.length == 1) { // 单一值的情况
-				if (objs[0] instanceof Collection) {
-					oo = ((Collection<?>) objs[0]).stream().toArray();
+				if (objs[0] instanceof Iterable<?> itr) {
+					oo = StreamSupport.stream(itr.spliterator(), false).limit(MAX_SIZE).toArray();
 				} else if (objs[0] instanceof Stream) {
 					oo = ((Stream<?>) objs[0]).toArray();
 				} else {
@@ -5826,6 +5838,8 @@ public class DataApp {
 		System.out.println(line);
 		return line;
 	}
+
+	private static int MAX_SIZE = 1024 * 1024 * 1024; // 最大长度
 
 	private DataSource dataSource; // 注入系统的数据源
 } // JdbcApp

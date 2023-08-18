@@ -153,7 +153,8 @@ public class H2Test {
 		final var cfs = nats(n).reverse().head(n - 1)
 				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i))); // 枢轴计算序列
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
-		final var prototype = xra(n).wrap(ndata.get()); // 基础结构：数据原型
+		final var prototype = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
+		final var prototyperb = IRecord.rb(prototype.keys());
 		final var dataApp = new MyDataApp(h2_rec); // h2数据库客户端
 
 		// 使用透视表作为并行计算的框架 & 分表的计算。
@@ -163,7 +164,7 @@ public class H2Test {
 			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
 				sess.sqlexecute(ctsql(table, prototype.prepend("ID", 0).mutate2(IRecord::REC)));
 			final var ids = sess.sql2executeS(insql(table, // 批量插入sql语句
-					nds.fmap(e -> prototype.attach(e.data()).mutate2(IRecord::REC)))).collect(DFrame.dfmclc).col(0);
+					nds.fmap(e -> prototyperb.get(e)))).collect(DFrame.dfmclc).col(0);
 			sess.setData(Tuple2.of(table, ids));
 		}), cfs); // 数据透视分阶层统计
 
