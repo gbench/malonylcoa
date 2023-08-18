@@ -1015,7 +1015,7 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	/**
 	 * 返回所有的 叶子节点
 	 *
-	 * @return 叶子节点
+	 * @return 叶子节点列表
 	 */
 	public List<Node<T>> getAllLeaves() {
 		return this.getAllLeaveS().collect(Collectors.toList());
@@ -1024,7 +1024,7 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	/**
 	 * 返回所有的 叶子节点
 	 *
-	 * @return 叶子节点
+	 * @return 叶子节点流
 	 */
 	public Stream<Node<T>> getAllLeaveS() {
 		return this.flatNodeS().filter(Node::isLeaf);

@@ -773,6 +773,24 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	}
 
 	/**
+	 * 返回所有的 叶子节点
+	 *
+	 * @return 叶子节点列表
+	 */
+	public List<TrieNode<T>> getAllLeaves() {
+		return this.getAllLeaveS().toList();
+	}
+
+	/**
+	 * 返回所有的 叶子节点
+	 *
+	 * @return 叶子节点流
+	 */
+	public Stream<TrieNode<T>> getAllLeaveS() {
+		return this.stream().filter(TrieNode::isLeaf);
+	}
+
+	/**
 	 * 获取属性值
 	 * 
 	 * @param name 属性名
