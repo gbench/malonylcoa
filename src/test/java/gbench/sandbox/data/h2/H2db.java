@@ -107,17 +107,17 @@ public class H2db {
 				return (v + "").replace("'", "''");
 			}
 		}; // 值书写器
+		final Function<IRecord, String> value_part = line -> line.tupleS()
+				.map(e -> String.format("'%s'", v2s.apply(e._2))).collect(Collectors.joining(", "));
 		final StringBuilder sb = new StringBuilder(); // sql写入缓存
 
 		for (final var line : lines) {
-			if (sb.length() < 1) {// 第一行
+			if (sb.length() < 1) {// 第一行,开头部分
 				sb.append(String.format("insert into %s ( %s ) values ( %s )", table,
 						line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
-						line.tupleS().map(e -> String.format("'%s'", v2s.apply(e._2)))
-								.collect(Collectors.joining(", "))));
-			} else { // 剩余行
-				sb.append(String.format(", ( %s )", line.tupleS().map(e -> String.format("'%s'", v2s.apply(e._2)))
-						.collect(Collectors.joining(", "))));
+						value_part.apply(line)));
+			} else { // 剩余行,追加value部分
+				sb.append(String.format(", ( %s )", value_part.apply(line)));
 			} // if
 		} // for
 
