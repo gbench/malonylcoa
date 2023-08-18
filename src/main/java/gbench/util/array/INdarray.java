@@ -814,14 +814,14 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		while (key_itr.hasNext()) {
 			final Tuple2<K, Integer> e = key_itr.next(); // 提取
 			if (key != null && key != e._1) { // key 发生变化，将先前的数据合并一个区域分组。
-				groups.put(key, this.build(start, i));
+				groups.put(key, this.build(start, i)); // 注意要使用相对位置构造nd,即build不能create,以保证动态性
 				start = i; // 更新开始位置
 			} //
 			key = e._1; // 记录键值
 			this.set(i++, ndata.get(e._2)); // 对当前数据区域的数据进行排序
 		} // while
 		if (key != null && start < i) { // 记录索引结果
-			groups.put(key, this.build(start, i));
+			groups.put(key, this.build(start, i)); // 注意要使用相对位置构造nd,即build不能create,以保证动态性
 		} // if
 
 		return groups; // 返回分组
