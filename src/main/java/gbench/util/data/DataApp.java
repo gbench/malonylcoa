@@ -980,12 +980,28 @@ public class DataApp {
 		 * @param tupItr 元组列表
 		 * @return 对象本身
 		 */
-		default <T, U> IRecord add(final Iterable<Tuple2<T, U>> tupItr) {
+		default <T, U, TP extends Tuple2<T, U>> IRecord add(final Iterable<TP> tupItr) {
 			tupItr.forEach(e -> {
 				final Tuple2<String, ?> tup = Tuple2.of(e._1 + "", e._2);
 				this.add(tup);
 			});
 			return this;
+		}
+
+		/**
+		 * 批量添加键值列表 <br>
+		 * 元组信息添加到对象本身
+		 *
+		 * @param <T> 参数列表元素类型
+		 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
+		 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
+		 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
+		 * @return 新生成的IRecord
+		 * @return 对象本身
+		 */
+		@SuppressWarnings("unchecked")
+		default <T> IRecord add(final T... objs) {
+			return this.add(REC(objs));
 		}
 
 		/**
@@ -1001,6 +1017,22 @@ public class DataApp {
 				this.add(tup);
 			});
 			return this;
+		}
+
+		/**
+		 * 批量添加键值列表 <br>
+		 * 元组信息添加到对象本身
+		 *
+		 * @param <T> 参数列表元素类型
+		 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
+		 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
+		 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
+		 * @return 新生成的IRecord
+		 * @return 对象本身
+		 */
+		@SuppressWarnings("unchecked")
+		default <T> IRecord prepend(final T... objs) {
+			return REC(objs).add(this);
 		}
 
 		/**
@@ -5740,6 +5772,17 @@ public class DataApp {
 		 */
 		public DFrame rbind(final Iterable<IRecord> tt) {
 			tt.forEach(this::add);
+			return this;
+		}
+
+		/**
+		 * 使用指定比较器进行排序
+		 * 
+		 * @param c 比较器 (a,b)->{-1,0,1}
+		 * @return this 对象本身
+		 */
+		public DFrame sorted(final Comparator<? super IRecord> c) {
+			this.sort(c);
 			return this;
 		}
 
