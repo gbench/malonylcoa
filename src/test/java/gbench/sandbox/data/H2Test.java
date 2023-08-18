@@ -93,7 +93,7 @@ public class H2Test {
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), //
 							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
 							"create_time", now, "update_time", now); // 产品数据
-					sess.sql2maybe(insql("t_company_product", line)).map(e -> e.i4(0))
+					sess.sql2maybe2(insql("t_company_product", line)).map(e -> e.i4(0))
 							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
 				} // for
 			} // for
@@ -164,7 +164,7 @@ public class H2Test {
 			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
 				sess.sqlexecute(ctsql(table, prototype.prepend("ID", 0).mutate2(IRecord::REC)));
 			final var ids = sess.sql2executeS(insql(table, // 批量插入sql语句
-					nds.fmap(prototype::wrap).fmap(e -> e.mutate2(IRecord::REC)))).collect(DFrame.dfmclc).col(0);
+					nds.fmap(e -> prototype.attach(e.data()).mutate2(IRecord::REC)))).collect(DFrame.dfmclc).col(0);
 			sess.setData(Tuple2.of(table, ids));
 		}), cfs); // 数据透视分阶层统计
 
