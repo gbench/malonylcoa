@@ -6,7 +6,6 @@ import static gbench.util.array.INdarray.nats;
 import static gbench.util.array.INdarray.ndclc;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
-import static gbench.util.data.DataApp.IRecord.cmp;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
@@ -149,6 +148,7 @@ public class H2Test {
 	@Test
 	public void qux() {
 		final var n = 4; // 数据行长度
+		final var t_prefix = "t_data"; // 数据表名前缀
 		final var dup = identity((Integer[]) null).andThen(INdarray::nd).andThen(INdarray::dupdata); // 数据复制函数
 		final var cfs = nats(n).reverse().head(n - 1)
 				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i))); // 枢轴计算序列
@@ -163,22 +163,21 @@ public class H2Test {
 		// 使用透视表作为并行计算的框架 & 分表的计算。利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
 		final var pvts = ndata.pivotTable(nds -> dataApps[db_id_f.apply(nds.head())].withTransaction(sess -> { // 分组计算
 			final var pvtkeys = pvt_key_f.apply(nds.head()); // 枢轴键值列表
-			final var table = String.format("t_data%s", pvtkeys.get(1)); // 提取第二位作为表名
+			final var table = String.format("t_%s%s", t_prefix, pvtkeys.get(1)); // 提取第2号位置作为表名索引后缀
 			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
 				sess.sqlexecute(ctsql(table, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
-			final var ids = sess.sql2executeS(insql(table, // 批量插入sql语句
+			final var row_ids = sess.sql2executeS(insql(table, // 批量插入sql语句
 					nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0);
-			sess.setData(Tuple2.of(db_id_f.apply(nds.head()), Tuple2.of(table, ids))); // db,table,ids
+			sess.setData(Tuple2.of(db_id_f.apply(nds.head()), Tuple2.of(table, row_ids))); // db索引,表名table,行索引row_ids
 		}), cfs); // 数据透视分阶层统计
 		final var rootNode = REC(pvts).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
 		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
-		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()).map(e -> { // 提取叶子节点
-			final var p = e.attrval(Types.cast((Tuple2<Integer, Tuple2<String, List<Integer>>>) null)); // 提取数值value
-			return Tuple2.of(p._1, p._2._1); // 数据库id,tablename
-		}).distinct().map(loc -> dataApps[loc._1] // 提取数据应用App
-				.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e)))
-				.reduce(DFrame::rbind).map(e -> e.sorted(cmp(loc_rb.keys()))) // 归集并排序
+		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()) // 提取叶子节点,属性值value的结构为:(db索引,表名)
+				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1)))
+				.distinct().map(loc -> dataApps[loc._1] // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
+						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e)))
+				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(loc_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 
 		println("数据透视表:\n", pvts);
