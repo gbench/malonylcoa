@@ -9,7 +9,6 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
-import static gbench.util.lisp.ArrayRecord.ra2;
 import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
 import static gbench.sandbox.data.h2.H2db.*;
@@ -159,11 +158,9 @@ public class H2Test {
 			final var table = String.format("t_data%s", cfs.map(e -> e.apply(nds.head()) + "").limit(1) // 提取首位前缀作为表后缀
 					.collect(joining(""))); // 分表名
 			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
-				sess.sqlexecute(ctsql(table, ra2("ID", 0).add(prototype).mutate2(IRecord::REC)));
-
-			final var ids = sess
-					.sql2executeS(insql(table, nds.fmap(prototype::wrap).fmap(e -> e.mutate2(IRecord::REC))))
-					.collect(DFrame.dfmclc).col(0);
+				sess.sqlexecute(ctsql(table, prototype.prepend("ID", 0).mutate2(IRecord::REC)));
+			final var ids = sess.sql2executeS(insql(table, // 批量插入sql语句
+					nds.fmap(prototype::wrap).fmap(e -> e.mutate2(IRecord::REC)))).collect(DFrame.dfmclc).col(0);
 			sess.setData(Tuple2.of(table, ids));
 		}), cfs); // 数据透视分阶层统计
 
