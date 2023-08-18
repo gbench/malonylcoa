@@ -9,6 +9,7 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
+import static gbench.util.lisp.ArrayRecord.ra2;
 import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
 import static gbench.sandbox.data.h2.H2db.*;
@@ -148,7 +149,7 @@ public class H2Test {
 		final var cfs = nats(n).reverse().head(n - 1)
 				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i)));
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n)));
-		final var prototype = xra(n).wrap(ndata.get()); // 基础结构
+		final var prototype = xra(n).wrap(ndata.get()); // 基础结构：数据原型
 
 		new MyDataApp(h2_rec).withTransaction(sess -> {
 			final var pvt = ndata.pivotTable(nds -> {
@@ -157,12 +158,12 @@ public class H2Test {
 								.collect(Collectors.joining("")));
 
 				if (!sess.isTablePresent(table)) { // 数据表不存在则创建表
-					final var ctsql = ctsql(table, REC("ID", 0).add(prototype.toMap()).toMap());
+					final var ctsql = ctsql(table, ra2("ID", 0).add(prototype.toMap()).toMap());
 					println(ctsql);
 					sess.sqlexecute(ctsql); // 创建数据表
 				} // if
 
-				return Tuple2.of(table, nds.map(nd -> insql(table, prototype.attach(nd.data()).toMap())) // 插入数据
+				return Tuple2.of(table, nds.map(nd -> insql(table, prototype.wrap(nd).toMap())) // 插入数据
 						.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
 						.toList());
 			}, cfs);

@@ -464,6 +464,39 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 更新式添加<br>
+	 * 增加新键，若 key 与 老的 键 相同则 覆盖 老的值 <br>
+	 * 若 kvs 长度为 1 <br>
+	 * 1) IRecord 或 Map 类型 根据 (键,值) 序列给予 元素添加 <br>
+	 * 2) Iterable 类型 索引序号（从0开始）为 键名, 元素值 进行 (键,值)序列添加
+	 *
+	 * @param kvs 键名键值序列
+	 * @return 对象本身
+	 */
+	@Override
+	public IRecord add(final Object... kvs) {
+		if (kvs.length == 1) {
+			final Object obj = kvs[0];
+			if (obj instanceof IRecord) { // 记录类型
+				// 可迭代类型
+				((IRecord) obj).forEach((k, v) -> this.add(k, v));
+			} else if (obj instanceof Map) { // Map类型
+				return ((Map<?, ?>) obj).entrySet().stream().reduce((IRecord) this,
+						(acc, a) -> acc.add(a.getKey(), a.getValue()), IRecord::add);
+			} else if (obj instanceof Iterable<?> itr) { // 可迭代类型
+				return Types.itr2stream(itr).map(Tuple2.snb(0)).map(e -> e.fmap1(k -> k + "")).reduce((IRecord) this,
+						(acc, a) -> acc.add(a._1 + "", a._2), IRecord::add);
+			} else {
+				// do nothing
+			}
+		} else {
+			return IRecord.slidingS(kvs, 2, 2, true).map(wnd -> Tuple2.of(wnd.get(0) + "", wnd.get(1))) // // 窗口遍历
+					.reduce((IRecord) this, (acc, a) -> acc.add(a._1, a._2), IRecord::add);
+		}
+		return this;
+	}
+
+	/**
 	 * 构建一个键名键值序列 指定的 IRecord
 	 *
 	 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
@@ -473,20 +506,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 */
 	@SafeVarargs
 	public static <T> IRecord REC(final T... kvs) {
-		final int len = kvs.length; // 输入数据长度
-		final Object[] data = len % 2 == 0 ? kvs : Arrays.copyOf(kvs, len + 1);
-		final int size = data.length; // 新数据长度
-		final int n = size / 2; // 新IRecord长度
-		final String[] keys = new String[n];
-		final Object[] values = new Object[n];
-
-		for (int i = 0; i < n; i++) {
-			final Object key = data[2 * i];
-			keys[i] = key instanceof String k ? k : key + "";
-			values[i] = data[2 * i + 1];
-		} // for
-
-		return new ArrayRecord(keys, values);
+		return ra2(kvs);
 	}
 
 	/**
@@ -543,6 +563,32 @@ public class ArrayRecord implements IRecord, Serializable {
 	 */
 	public static ArrayRecord of(final Iterable<String> keys) {
 		return ArrayRecord.of(keys, null);
+	}
+
+	/**
+	 * 构建一个键名键值序列 指定的 IRecord
+	 *
+	 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
+	 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
+	 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
+	 * @return 新生成的IRecord
+	 */
+	@SafeVarargs
+	public static <T> ArrayRecord ra2(final T... kvs) {
+		final int len = kvs.length; // 输入数据长度
+		final Object[] data = len % 2 == 0 ? kvs : Arrays.copyOf(kvs, len + 1);
+		final int size = data.length; // 新数据长度
+		final int n = size / 2; // 新IRecord长度
+		final String[] keys = new String[n];
+		final Object[] values = new Object[n];
+
+		for (int i = 0; i < n; i++) {
+			final Object key = data[2 * i];
+			keys[i] = key instanceof String k ? k : key + "";
+			values[i] = data[2 * i + 1];
+		} // for
+
+		return new ArrayRecord(keys, values);
 	}
 
 	/**
