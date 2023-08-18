@@ -938,6 +938,9 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	/**
 	 * this.attrvalOpt().map(v -> mapper.apply((U) v)) 的简写
 	 * 
+	 * @param <U>    mapper 参数类型
+	 * @param <V>    mapper 结果类型
+	 * @param mapper u->v 值变换函数 对结果进行 mapper 变换
 	 * @return Optional的value属性, 是attributes属性key为value的值，注意不是 节点value
 	 */
 	@SuppressWarnings("unchecked")
