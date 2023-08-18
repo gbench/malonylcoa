@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
@@ -84,6 +85,17 @@ public class H2db {
 	 * @return insert sql
 	 */
 	public static String insql(final String table, final IRecord line) {
+		return insql(table, Arrays.asList(line));
+	}
+
+	/**
+	 * 插入数据
+	 * 
+	 * @param table 表名
+	 * @param line  数据行
+	 * @return insert sql
+	 */
+	public static String insql(final String table, final Iterable<IRecord> lines) {
 		final Function<Object, String> v2s = v -> {
 			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
 				return JSON.toJson(v);
@@ -94,32 +106,22 @@ public class H2db {
 			} else {
 				return (v + "").replace("'", "''");
 			}
-		};
-		return String.format("insert into %s ( %s ) values ( %s )", table,
-				line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
-				line.tupleS().map(e -> String.format("'%s'", v2s.apply(e._2))).collect(Collectors.joining(", ")));
-	}
+		}; // 值书写器
+		final StringBuilder sb = new StringBuilder(); // sql写入缓存
 
-	/**
-	 * 创建表
-	 * 
-	 * @param table 表名
-	 * @param line  数据行
-	 * @return create table sql
-	 */
-	public static String ctsql(final String table, final Map<?, ?> line) {
-		return ctsql(table, REC(line));
-	}
+		for (final var line : lines) {
+			if (sb.length() < 1) {// 第一行
+				sb.append(String.format("insert into %s ( %s ) values ( %s )", table,
+						line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
+						line.tupleS().map(e -> String.format("'%s'", v2s.apply(e._2)))
+								.collect(Collectors.joining(", "))));
+			} else { // 剩余行
+				sb.append(String.format(", ( %s )", line.tupleS().map(e -> String.format("'%s'", v2s.apply(e._2)))
+						.collect(Collectors.joining(", "))));
+			} // if
+		} // for
 
-	/**
-	 * 插入数据
-	 * 
-	 * @param table 表名
-	 * @param line  数据行
-	 * @return insert sql
-	 */
-	public static String insql(final String table, final Map<?, ?> line) {
-		return insql(table, REC(line));
+		return sb.toString();
 	}
 
 	/**

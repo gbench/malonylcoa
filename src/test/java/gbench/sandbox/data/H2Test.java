@@ -159,11 +159,12 @@ public class H2Test {
 			final var table = String.format("t_data%s", cfs.map(e -> e.apply(nds.head()) + "").limit(1) // 提取首位前缀作为表后缀
 					.collect(joining(""))); // 分表名
 			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
-				sess.sqlexecute(ctsql(table, ra2("ID", 0).add(prototype).toMap()));
-			sess.setData(Tuple2.of(table, nds.map(INdarray::data) // (表名,插入数据的主键)
-					.map(d -> insql(table, prototype.attach(d).toMap())) // 插入数据
-					.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) // 提取生成的主键不存在则放回-1
-					.toList()));
+				sess.sqlexecute(ctsql(table, ra2("ID", 0).add(prototype).mutate2(IRecord::REC)));
+
+			final var ids = sess
+					.sql2executeS(insql(table, nds.fmap(prototype::wrap).fmap(e -> e.mutate2(IRecord::REC))))
+					.collect(DFrame.dfmclc).col(0);
+			sess.setData(Tuple2.of(table, ids));
 		}), cfs); // 数据透视分阶层统计
 
 		dataApp.withTransaction(sess -> { // 分析分组计算结果
