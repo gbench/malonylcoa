@@ -162,7 +162,7 @@ public class H2Test {
 		// 使用透视表作为并行计算的框架 & 分表的计算。利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
 		final var pvts = ndata.pivotTable(nds -> dataApps[db_id_f.apply(nds.head())].withTransaction(sess -> { // 分组计算
 			final var pvtkeys = pvt_key_f.apply(nds.head()); // 枢轴键值列表
-			final var tblname = String.format("t_%s%s", t_prefix, pvtkeys.get(1)); // 提取第2号位置作为表名索引后缀
+			final var tblname = String.format("%s%s", t_prefix, pvtkeys.get(1)); // 提取第2号位置作为表名索引后缀
 			if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
 				sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
 			final var row_ids = sess.sql2executeS(insql(tblname, // 批量插入sql语句
