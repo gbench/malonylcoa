@@ -1353,7 +1353,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 				((Map<?, ?>) obj).forEach((k, v) -> this.add(k + "", v));
 			} else if (obj instanceof Iterable) { // 可迭代类型
 				int i = 0; //
-				for (Object x : (Iterable<?>) obj) {
+				for (final Object x : (Iterable<?>) obj) {
 					if (i > 10000) {
 						break;
 					} else {
