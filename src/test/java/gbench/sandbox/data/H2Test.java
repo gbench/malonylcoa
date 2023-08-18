@@ -93,7 +93,7 @@ public class H2Test {
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), //
 							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
 							"create_time", now, "update_time", now); // 产品数据
-					sess.sql2executeS(insql("t_company_product", line)).findFirst().map(e -> e.i4(0))
+					sess.sql2maybe(insql("t_company_product", line)).map(e -> e.i4(0))
 							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
 				} // for
 			} // for
@@ -116,7 +116,7 @@ public class H2Test {
 				} // for
 			} // for
 			final var orderids = sess.sql2executeS(insql(t_order, orderdatas)).collect(DFrame.dfmclc); // 插入订单数据
-			println("插入的订单ids:",orderids);
+			println("插入的订单ids:", orderids);
 
 			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream() // 订单分类统计
 					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 订单金额统计
