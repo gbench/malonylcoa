@@ -497,6 +497,21 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 前置添加<br>
+	 * 增加新键，若 key 与 老的 键 相同则 覆盖 老的值 <br>
+	 * 若 kvs 长度为 1 <br>
+	 * 1) IRecord 或 Map 类型 根据 (键,值) 序列给予 元素添加 <br>
+	 * 2) Iterable 类型 索引序号（从0开始）为 键名, 元素值 进行 (键,值)序列添加
+	 *
+	 * @param kvs 键名键值序列
+	 * @return 新创建的数据。
+	 */
+	@Override
+	public IRecord prepend(final Object... kvs) {
+		return REC(kvs).add(this);
+	}
+
+	/**
 	 * 构建一个键名键值序列 指定的 IRecord
 	 *
 	 * @param <T> 元素类型
