@@ -152,10 +152,11 @@ public class H2Test {
 		final var prototype = xra(n).wrap(ndata.get()); // 基础结构：数据原型
 
 		new MyDataApp(h2_rec).withTransaction(sess -> {
-			final var pvt = ndata.pivotTable(nds -> { // 分组计算
+			// 使用透视表作为并行计算的框架 & 分表的计算。
+			final var pvt = ndata.pivotTable(nds -> { // 分组计算：利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
 				final var table = String.format("t_nd%s", //
 						cfs.map(e -> e.apply(nds.get()) + "").limit(1) // 提取首位前缀作为表后缀
-								.collect(Collectors.joining("")));
+								.collect(Collectors.joining(""))); // 分表名
 
 				if (!sess.isTablePresent(table)) { // 数据表不存在则创建表
 					final var ctsql = ctsql(table, ra2("ID", 0).add(prototype).toMap());
@@ -163,7 +164,8 @@ public class H2Test {
 					sess.sqlexecute(ctsql); // 创建数据表
 				} // if
 
-				return Tuple2.of(table, nds.map(INdarray::data).map(d -> insql(table, prototype.attach(d).toMap())) // 插入数据
+				return Tuple2.of(table, nds.map(INdarray::data) //
+						.map(d -> insql(table, prototype.attach(d).toMap())) // 插入数据
 						.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
 						.toList()); // (表名,插入数据的主键)
 			}, cfs);

@@ -293,9 +293,8 @@ public class H2db {
 				@SuppressWarnings("unchecked")
 				public void accept(final N parent, final P tp) { // 递归方法
 					final var node = nodegen.apply(parent, tp._1);
-					final var o = tp._2 instanceof Map ? REC(tp._2) : tp._2;
 
-					if (o instanceof Iterable<?> ps) { // 可遍历类型
+					if ((tp._2 instanceof Map ? REC(tp._2) : tp._2) instanceof Iterable<?> ps) { // 可遍历类型,注意这里的技巧ps通过模式匹配实现了左值接收
 						final var ll = ps instanceof Collection cc ? cc
 								: StreamSupport.stream(ps.spliterator(), true).toList();
 						final var itr = ll.iterator();
