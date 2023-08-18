@@ -2,11 +2,17 @@ package gbench.sandbox.data;
 
 import org.junit.jupiter.api.Test;
 
+import static gbench.util.array.INdarray.nats;
+import static gbench.util.array.INdarray.ndclc;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
+import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
+import static gbench.util.lisp.Lisp.RPTA;
+import static gbench.util.lisp.Lisp.cph;
 import static gbench.sandbox.data.h2.H2db.*;
+import static java.lang.Math.pow;
 import static java.util.stream.Collectors.summarizingDouble;
 
 import java.time.LocalDateTime;
@@ -21,7 +27,10 @@ import gbench.sandbox.data.h2.H2db;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
+import gbench.util.lisp.Tuple2;
+import gbench.util.tree.TrieNode;
 import gbench.util.type.Types;
+import gbench.util.array.INdarray;
 import gbench.util.data.MyDataApp;
 
 /**
@@ -127,6 +136,43 @@ public class H2Test {
 						(sb, e) -> e.isLeaf() ? "}" : "]}"));
 			} // forEach(entity_id
 		}); // withTransaction
+	}
+
+	/**
+	 * 
+	 */
+	@Test
+	public void qux() {
+		final var n = 3;
+		final var dup = identity((Integer[]) null).andThen(INdarray::nd).andThen(INdarray::dupdata);
+		final var cfs = nats(n).reverse().head(n - 1)
+				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i)));
+		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n)));
+		final var prototype = xra(n).wrap(ndata.get()); // 基础结构
+		new MyDataApp(h2_rec).withTransaction(sess -> {
+			final var pvt = ndata.pivotTable(nds -> {
+				final var table = String.format("t_nd%s",
+						cfs.map(e -> e.apply(nds.get()) + "").collect(Collectors.joining("")));
+				sess.sqlexecute(ctsql(table, prototype.add("ID", 0).toMap())); // 创建数据表
+				return Tuple2.of(table, //
+						nds.map(nd -> insql(table, prototype.attach(nd.data()).toMap())) // 插入数据
+								.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
+								.toList());
+			}, cfs);
+			println(pvt);
+			final var root = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
+					ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
+			root.forEach(e -> {
+				println(String.format("%s %s %s", " | ".repeat(e.getLevel()), e.getName(), e.attrval()));
+			});
+			final var sql = root.stream().filter(e -> e.isLeaf())
+					.map(e -> e.attrval(Types.cast((Tuple2<String, List<Integer>>) null)))
+					.map(e -> FT("(select '$0' tname,t.* from $0 t)", e._1)) //
+					.collect(Collectors.joining(" union "));
+			println(sess.sql2x(sql));
+		});
+
+		// println(ndata.nx(1));
 	}
 
 	/**
