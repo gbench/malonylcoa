@@ -1,6 +1,8 @@
 package gbench.sandbox.data.h2;
 
+import static gbench.util.array.INdarray.nats;
 import static gbench.util.data.DataApp.IRecord.REC;
+import static gbench.util.lisp.ArrayRecord.ra;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,8 +25,10 @@ import gbench.util.data.DataApp.ExceptionalConsumer;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
 import gbench.util.data.DataApp.Tuple2;
+import gbench.util.data.xls.DataMatrix;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
+import gbench.util.lisp.ArrayRecord;
 import gbench.util.tree.Node;
 import gbench.util.tree.TrieNode;
 
@@ -93,6 +97,28 @@ public class H2db {
 		return String.format("insert into %s ( %s ) values ( %s )", table,
 				line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
 				line.tupleS().map(e -> String.format("'%s'", v2s.apply(e._2))).collect(Collectors.joining(", ")));
+	}
+
+	/**
+	 * 创建表
+	 * 
+	 * @param table 表名
+	 * @param line  数据行
+	 * @return create table sql
+	 */
+	public static String ctsql(final String table, final Map<?, ?> line) {
+		return ctsql(table, REC(line));
+	}
+
+	/**
+	 * 插入数据
+	 * 
+	 * @param table 表名
+	 * @param line  数据行
+	 * @return insert sql
+	 */
+	public static String insql(final String table, final Map<?, ?> line) {
+		return insql(table, REC(line));
 	}
 
 	/**
@@ -389,6 +415,16 @@ public class H2db {
 	 */
 	public static <U, V> Function<U, V> ifnull(final Function<U, V> notnull_branch, final Supplier<V> nullbranch) {
 		return u -> u != null ? notnull_branch.apply(u) : nullbranch.get();
+	}
+
+	/**
+	 * excel 命名发的
+	 * 
+	 * @param n 命名长度 大于0正整数。1:[A],2:[A,B],2:[A,B,C],...
+	 * @return {A:null,B:null,...,XXX:null} 的 IRecord
+	 */
+	public static ArrayRecord xra(final int n) {
+		return ra(nats(n).fmap(DataMatrix::index_to_excel_name));
 	}
 
 	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
