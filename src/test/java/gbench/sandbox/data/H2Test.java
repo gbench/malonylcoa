@@ -85,7 +85,7 @@ public class H2Test {
 			imports("t_company,t_product,t_company_product".split(",")).accept(sess);
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
 			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("id")), 10);
-			final var cps = new HashMap<Integer, IRecord>();
+			final var cps = new HashMap<Integer, IRecord>(); // 公司产品字典
 			for (final var cent : companies.entrySet()) {
 				final var c = cent.getValue();
 				for (final var pent : products.entrySet()) {
@@ -93,10 +93,10 @@ public class H2Test {
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), //
 							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
 							"create_time", now, "update_time", now); // 产品数据
-					sess.sql2maybe2(insql("t_company_product", line)).map(e -> e.i4(0))
-							.ifPresent(id -> cps.put(id, REC("id", id).derive(line)));
-				} // for
-			} // for
+					sess.sql2maybe2(insql("t_company_product", line)).map(e -> e.i4(0)) // 单个添加公司产品
+							.ifPresent(id -> cps.put(id, REC("id", id).derive(line))); // 使用回写后的公司产品id生成cps公司场频字典
+				} // for pent 产品项
+			} // for cent 公司项
 
 			final var cpdfms = cps.values().stream().collect(groupby("company_id", DFrame::new)); // 公司产品
 			final var t_order = "t_order"; // 订单表名
