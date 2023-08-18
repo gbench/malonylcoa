@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -292,11 +293,18 @@ public class H2db {
 				@SuppressWarnings("unchecked")
 				public void accept(final N parent, final P tp) { // 递归方法
 					final var node = nodegen.apply(parent, tp._1);
-					if (tp._2 instanceof Iterable<?> ps) {
-						StreamSupport.stream(ps.spliterator(), true).forEach(_tp -> accept(node, (P) _tp)); // accept递归循环
-					} else { // 值计算
-						leaf_handler.accept(node, tp);
-					} // if
+					final var o = tp._2 instanceof Map ? REC(tp._2) : tp._2;
+
+					if (o instanceof Iterable<?> ps) { // 可遍历类型
+						final var ll = ps instanceof Collection cc ? cc
+								: StreamSupport.stream(ps.spliterator(), true).toList();
+						final var itr = ll.iterator();
+						if (itr.hasNext() && itr.next() instanceof Tuple2) { // 首位元素为tuple2
+							ll.forEach(_tp -> accept(node, (P) _tp)); // accept递归循环
+							return; // 直接返回
+						} // // 首位元素为tuple2
+					} // ps
+					leaf_handler.accept(node, tp); // 叶子节点的处理
 				} // accept
 			}).accept(acc, a);// mountf
 			return acc;
