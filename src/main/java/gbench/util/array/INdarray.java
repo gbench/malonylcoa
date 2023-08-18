@@ -738,11 +738,12 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
-	 * 数据透视表
+	 * 数据透视表 & 递归分组计算的 指标框架
 	 * 
 	 * @param <K>         键名索引类型
 	 * @param <INDICATOR> 核算指标
-	 * @param evaluator   核算器[t]->indicator
+	 * @param evaluator   核算器[t]->indicator,
+	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
@@ -752,11 +753,12 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
-	 * 数据透视表
+	 * 数据透视表 & 递归分组计算的 指标框架
 	 * 
 	 * @param <K>         键名索引类型
 	 * @param <INDICATOR> 核算指标
-	 * @param evaluator   核算器[t]->indicator
+	 * @param evaluator   核算器[t]->indicator,
+	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
@@ -766,12 +768,13 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
-	 * 数据透视表
+	 * 数据透视表 & 递归分组计算的 指标框架
 	 * 
 	 * @param <K>         键名索引类型
 	 * @param <INDICATOR> 核算指标类型
 	 * @param <CF>        分类函数类型
-	 * @param evaluator   核算器[t]->x
+	 * @param evaluator   核算器[t]->indicator,
+	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
 	 * @param pvts        透视表结果
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。

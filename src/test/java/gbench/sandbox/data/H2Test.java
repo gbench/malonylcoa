@@ -163,7 +163,7 @@ public class H2Test {
 					sess.sqlexecute(ctsql); // 创建数据表
 				} // if
 
-				return Tuple2.of(table, nds.map(nd -> insql(table, prototype.wrap(nd).toMap())) // 插入数据
+				return Tuple2.of(table, nds.map(INdarray::data).map(d -> insql(table, prototype.attach(d).toMap())) // 插入数据
 						.map(sess::sqlexecuteS).map(e -> e.findFirst().map(r -> r.i4(0)).orElse(-1)) //
 						.toList());
 			}, cfs);
