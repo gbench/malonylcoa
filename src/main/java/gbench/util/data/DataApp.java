@@ -3509,8 +3509,9 @@ public class DataApp {
 		}
 
 		/**
+		 * sql2executeS 语法糖 <br>
 		 * 执行类:execute版本的sql2maybe<br>
-		 * sql2executeS
+		 * 采用sql2executeS提供基础实现
 		 *
 		 * @param sql sql 语句
 		 * @return execute的返回结果，一般用于获取自增长的id主键
