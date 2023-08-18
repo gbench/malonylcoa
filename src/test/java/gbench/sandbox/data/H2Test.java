@@ -92,7 +92,7 @@ public class H2Test {
 							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
 							"create_time", now, "update_time", now); // 产品数据
 					sess.sql2maybe2(insql("t_company_product", line)).map(e -> e.i4(0)) // 单个添加公司产品
-							.ifPresent(id -> cps.put(id, REC("id", id).derive(line))); // 使用回写后的公司产品id生成cps公司场频字典
+							.ifPresent(id -> cps.put(id, REC("id", id).derive(line))); // 使用回写后的公司产品id生成cps公司产品字典
 				} // for pent 产品项
 			} // for cent 公司项
 
@@ -159,7 +159,6 @@ public class H2Test {
 		final Function<INdarray<Integer>, INdarray<Integer>> pvt_key_f = nd -> cfs.map(f -> f.apply(nd))
 				.collect(ndclc()); // 枢轴key函数
 		final Function<INdarray<Integer>, Integer> db_id_f = nd -> pvt_key_f.apply(nd).get() % dataApps.length; // 数据库id生成函数
-
 		// 使用透视表作为并行计算的框架 & 分表的计算。利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
 		final var pvts = ndata.pivotTable(nds -> dataApps[db_id_f.apply(nds.head())].withTransaction(sess -> { // 分组计算
 			final var pvtkeys = pvt_key_f.apply(nds.head()); // 枢轴键值列表
@@ -173,8 +172,8 @@ public class H2Test {
 		final var rootNode = REC(pvts).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
 		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
-		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()) // 提取叶子节点,属性值value的结构为:(db索引,表名)
-				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1)))
+		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
+				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (db索引,表名)
 				.distinct().map(loc -> dataApps[loc._1] // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
 						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e))) // 加入数据作为位置dbid,tbl
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(loc_rb.keys()))) // 归集并排序
