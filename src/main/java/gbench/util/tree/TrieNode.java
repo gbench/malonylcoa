@@ -903,9 +903,18 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	}
 
 	/**
+	 * Optional.ofNullable(this.attributes.get("value")) 的简写
+	 * 
+	 * @return Optional的value属性, 是attributes属性key为value的值，注意不是 节点value
+	 */
+	public Optional<Object> attrvalOpt() {
+		return Optional.ofNullable(this.getAttribute("value"));
+	}
+
+	/**
 	 * this.getAttribute("value") 的简写
 	 * 
-	 * @return 属性key为value的值，注意不是 节点value
+	 * @return 是attributes属性key为value的值，注意不是 节点value
 	 */
 	public Object attrval() {
 		return this.getAttribute("value");
