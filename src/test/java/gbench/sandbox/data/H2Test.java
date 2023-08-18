@@ -103,9 +103,9 @@ public class H2Test {
 			final var orderb = rb("parta,partb,lines,create_time"); // 订单结构
 			final var orderdatas = new LinkedList<IRecord>(); // 订单数据
 			sess.sql2execute(ctsql(t_order, orderb.prepend("id").get(0, 0, 0, REC(), now))); // 创建订单表
-			for (final var partaent : shuffle(companies).entrySet()) {
+			for (final var partaent : shuffle(companies).entrySet()) { // partaent 甲方项
 				final var parta = partaent.getValue();
-				for (final var partbent : shuffle(companies).entrySet()) {
+				for (final var partbent : shuffle(companies).entrySet()) { // partbent 甲方项
 					final var partb = partbent.getValue();
 					final var lines = cpdfms.get(partb.i4("id")).stream().sorted((a, b) -> Math.random() > 0.5 ? 1 : -1) // 打乱次序
 							.map(e -> e.filter("id,company_id").add(
@@ -113,8 +113,8 @@ public class H2Test {
 							.collect(DFrame.dfmclc).head(5); // 订单行：公司产品
 					final var orderdata = orderb.get(parta.get("id"), partb.get("id"), lines, now);
 					orderdatas.add(orderdata); // 生成订单数据
-				} // for
-			} // for
+				} // for partbent 乙方项
+			} // for partaent 甲方项
 			final var orderids = sess.sql2executeS(insql(t_order, orderdatas)).collect(DFrame.dfmclc); // 插入订单数据
 			println("插入的订单ids:", orderids);
 
