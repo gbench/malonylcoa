@@ -1316,7 +1316,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 增加新键，若 key 与 老的 键 相同则 覆盖 老的值
 	 *
 	 * @param tup 待添加的键值对
-	 * @return 对象本身
+	 * @return 对象本身(根据具体实现的不同,也可能是新生成的数据对象)
 	 */
 	default IRecord add(final Tuple2<String, ?> tup) {
 		return this.add(tup._1, tup._2);
@@ -1329,9 +1329,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param tuples 待添加的键值对序列
 	 * @return 对象本身
 	 */
-	default IRecord add(Iterable<Tuple2<String, Object>> tuples) {
-		tuples.forEach(this::add);
-		return this;
+	default IRecord add(final Iterable<Tuple2<String, Object>> tuples) {
+		return StreamSupport.stream(tuples.spliterator(), false).reduce(this, IRecord::add, IRecord::add);
 	}
 
 	/**
