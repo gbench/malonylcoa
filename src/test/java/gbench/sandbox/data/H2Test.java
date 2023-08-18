@@ -18,7 +18,6 @@ import static java.util.stream.Collectors.summarizingDouble;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -86,9 +85,9 @@ public class H2Test {
 			final var companies = shuffle(sess.sql2x("select * from t_company").collect(mapby("id")), 10);
 			final var products = shuffle(sess.sql2x("select * from t_product").collect(mapby("id")), 10);
 			final var cps = new HashMap<Integer, IRecord>(); // 公司产品字典
-			for (final var cent : companies.entrySet()) {
+			for (final var cent : companies.entrySet()) { // cent 公司项
 				final var c = cent.getValue();
-				for (final var pent : products.entrySet()) {
+				for (final var pent : products.entrySet()) { // pent 产品项
 					final var p = pent.getValue();
 					final var line = REC("company_id", c.i4("id"), "product_id", p.i4("id"), //
 							"attrs", p.filter("id,name,price").add(REC("quantity", 1 + rnd.nextInt(10))), //
@@ -174,7 +173,7 @@ public class H2Test {
 					ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
 			rootNode.forEach(e -> { // 显示分组计算结果
 				println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(),
-						e.attrval(Optional::ofNullable).orElse(""))); // 树形结构显示
+						e.attrvalOpt().orElse(""))); // 树形结构显示
 			}); // forEach
 			final var unionsql = rootNode.stream().filter(e -> e.isLeaf()) // 提取叶子节点
 					.map(e -> e.attrval(Types.cast((Tuple2<String, List<Integer>>) null)))

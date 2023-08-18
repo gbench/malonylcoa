@@ -936,6 +936,16 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	}
 
 	/**
+	 * this.attrvalOpt().map(v -> mapper.apply((U) v)) 的简写
+	 * 
+	 * @return Optional的value属性, 是attributes属性key为value的值，注意不是 节点value
+	 */
+	@SuppressWarnings("unchecked")
+	public <U, V> Optional<V> attrvalOpt(final Function<U, V> mapper) {
+		return this.attrvalOpt().map(v -> mapper.apply((U) v));
+	}
+
+	/**
 	 * Optional.ofNullable(this.attributes.get("value")) 的简写
 	 * 
 	 * @return Optional的value属性, 是attributes属性key为value的值，注意不是 节点value
