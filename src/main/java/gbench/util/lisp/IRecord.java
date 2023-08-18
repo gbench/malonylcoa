@@ -1915,6 +1915,18 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
+	 * IRecord 变换
+	 * 
+	 * @param <T>    结果类型
+	 * @param mapper (k,v)->t , 若 mapper 为 null 则返回 this
+	 * @return T 类型结果
+	 */
+	@SuppressWarnings("unchecked")
+	default <T> T mutate2(final Function<? super Map<?, ?>, T> mapper) {
+		return mapper == null ? (T) this : mapper.apply(this.toMap());
+	}
+
+	/**
 	 * 生成 构建器
 	 *
 	 * @param n     键数量,正整数
