@@ -143,7 +143,7 @@ public class H2Test {
 	}
 
 	/**
-	 * 分表存取与查询
+	 * 分库&分表数据访问示例
 	 */
 	@Test
 	public void qux() {
@@ -155,7 +155,7 @@ public class H2Test {
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
 		final var proto = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
 		final var proto_rb = IRecord.rb(proto.keys()); // record 构建器
-		final var dataApps = Stream.of(h2_rec_1, h2_rec_2).map(MyDataApp::new).toArray(Types.aagen(MyDataApp.class)); // 数据应用客户端
+		final var dataApps = Stream.of(h2_rec_1, h2_rec_2).map(MyDataApp::new).toArray(MyDataApp[]::new); // 数据应用客户端
 		final Function<INdarray<Integer>, INdarray<Integer>> pvt_key_f = nd -> cfs.map(f -> f.apply(nd))
 				.collect(ndclc()); // 枢轴key函数
 		final Function<INdarray<Integer>, Integer> db_id_f = nd -> pvt_key_f.apply(nd).get() % dataApps.length; // 数据库id生成函数
