@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,6 +101,7 @@ public class H2Test {
 			final var cpdfms = cps.values().stream().collect(groupby("company_id", DFrame::new)); // 公司产品
 			final var t_order = "t_order"; // 订单表名
 			final var orderb = rb("parta,partb,lines,create_time"); // 订单结构
+			final var orderdatas = new LinkedList<IRecord>(); // 订单数据
 			sess.sql2execute(ctsql(t_order, orderb.prepend("id").get(0, 0, 0, REC(), now))); // 创建订单表
 			for (final var partaent : shuffle(companies).entrySet()) {
 				final var parta = partaent.getValue();
@@ -110,12 +112,14 @@ public class H2Test {
 									e.rec("attrs").alias("id,product_id,name,title,price,price,quantity,quantity")))
 							.collect(DFrame.dfmclc).head(5); // 订单行：公司产品
 					final var orderdata = orderb.get(parta.get("id"), partb.get("id"), lines, now);
-					sess.sql2execute(insql(t_order, orderdata));
+					orderdatas.add(orderdata); // 生成订单数据
 				} // for
 			} // for
+			final var orderids = sess.sql2executeS(insql(t_order, orderdatas)).collect(DFrame.dfmclc); // 插入订单数据
+			println("插入的订单ids:",orderids);
 
-			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream()
-					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 数据统计
+			final Function<List<IRecord>, Object> stats_evaluator = e -> e.stream() // 订单分类统计
+					.collect(summarizingDouble(r -> r.dbl("price") * r.dbl("quantity"))).getSum(); // 订单金额统计
 			final var entity_sql = String.format("select distinct k from ( %s ) t", Stream.of("parta,partb".split(","))
 					.map(k -> String.format("select %s k from %s", k, t_order)).collect(Collectors.joining(" union ")));
 			for (final var entity_id : sess.sql2recordS(entity_sql).map(e -> e.get(0)).toList()) { // 会计主体
