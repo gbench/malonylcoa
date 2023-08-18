@@ -6,6 +6,7 @@ import static gbench.util.array.INdarray.nats;
 import static gbench.util.array.INdarray.ndclc;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
+import static gbench.util.data.DataApp.IRecord.cmp;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
@@ -152,44 +153,40 @@ public class H2Test {
 		final var cfs = nats(n).reverse().head(n - 1)
 				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i))); // 枢轴计算序列
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
-		final var prototype = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
-		final var prototyperb = IRecord.rb(prototype.keys());
-		final var dataApp1 = new MyDataApp(h2_rec_1); // h2数据库客户端
-		final var dataApp2 = new MyDataApp(h2_rec_2); // h2数据库客户端
-		final var dataApps = new MyDataApp[] { dataApp1, dataApp2 };
+		final var proto = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
+		final var proto_rb = IRecord.rb(proto.keys()); // record 构建器
+		final var dataApps = Stream.of(h2_rec_1, h2_rec_2).map(MyDataApp::new).toArray(Types.aagen(MyDataApp.class)); // 数据应用客户端
+		final Function<INdarray<Integer>, INdarray<Integer>> pvt_key_f = nd -> cfs.map(f -> f.apply(nd))
+				.collect(ndclc()); // 枢轴key函数
+		final Function<INdarray<Integer>, Integer> db_id_f = nd -> pvt_key_f.apply(nd).get() % dataApps.length; // 数据库id生成函数
 
-		final Function<INdarray<Integer>, INdarray<Integer>> pvt_keys = nd -> cfs.map(f -> f.apply(nd))
-				.collect(INdarray.ndclc()); // 计算枢轴
-		final Function<INdarray<Integer>, Integer> dbid_of = e -> pvt_keys.apply(e).get() % dataApps.length;
 		// 使用透视表作为并行计算的框架 & 分表的计算。利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
-		final var pvt = ndata.pivotTable(nds -> dataApps[dbid_of.apply(nds.head())].withTransaction(sess -> { // 分组计算
-			final var pvtkeys = pvt_keys.apply(nds.head()); // 枢轴键值列表
+		final var pvts = ndata.pivotTable(nds -> dataApps[db_id_f.apply(nds.head())].withTransaction(sess -> { // 分组计算
+			final var pvtkeys = pvt_key_f.apply(nds.head()); // 枢轴键值列表
 			final var table = String.format("t_data%s", pvtkeys.get(1)); // 提取第二位作为表名
 			if (!sess.isTablePresent(table)) // 数据表不存在则创建表
-				sess.sqlexecute(ctsql(table, prototype.prepend("ID", 0).mutate2(IRecord::REC)));
+				sess.sqlexecute(ctsql(table, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
 			final var ids = sess.sql2executeS(insql(table, // 批量插入sql语句
-					nds.fmap(e -> prototyperb.get(e)))).collect(DFrame.dfmclc).col(0);
-			sess.setData(Tuple2.of(dbid_of.apply(nds.head()), Tuple2.of(table, ids))); // db,table,ids
+					nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0);
+			sess.setData(Tuple2.of(db_id_f.apply(nds.head()), Tuple2.of(table, ids))); // db,table,ids
 		}), cfs); // 数据透视分阶层统计
-		final var rootNode = REC(pvt).tupleS().parallel().reduce(TrieNode.of("root"),
-				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge);
-		final var sortby = "DBID,TBL"; // 排序标记
-		final var sbrb = rb(sortby); // 排序键构建器
-		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()).map(e -> {
-			final var p = e.attrval(Types.cast((Tuple2<Integer, Tuple2<String, List<Integer>>>) null));
+		final var rootNode = REC(pvts).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
+				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
+		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
+		final var dfdata = rootNode.getAllLeaveS().filter(e -> e.isLeaf()).map(e -> { // 提取叶子节点
+			final var p = e.attrval(Types.cast((Tuple2<Integer, Tuple2<String, List<Integer>>>) null)); // 提取数值value
 			return Tuple2.of(p._1, p._2._1); // 数据库id,tablename
-		}).distinct().map(p -> dataApps[p._1] // 提取数据应用App
-				.sql2dframe(String.format("select * from %s", p._2)).fmap(sbrb.get(p._1, p._2)::add))
-				.reduce(DFrame::rbind) // 归集各个数据库
-				.map(e -> e.sorted((a, b) -> a.filter(sortby).compareTo(b.filter(sortby)))) // 排序
-				.get();
+		}).distinct().map(loc -> dataApps[loc._1] // 提取数据应用App
+				.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e)))
+				.reduce(DFrame::rbind).map(e -> e.sorted(cmp(loc_rb.keys()))) // 归集并排序
+				.orElseGet(DFrame::new); // 提取归并结构
 
-		println("数据透视表:\n", pvt);
+		println("数据透视表:\n", pvts);
 		println("root:");
 		rootNode.forEach(e -> { // 显示分组计算结果
 			println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(), e.attrvalOpt().orElse(""))); // 树形结构显示
 		}); // forEach
-		println("tbls:\n", dfdata.sorted((a, b) -> a.filter("DBID,TBL").compareTo(b.filter("DBID,TBL"))));
+		println("tbls:\n", dfdata);
 		println("size:\n", dfdata.size());
 		println("原始数据:\n", ndata.nx(1));
 		println("nx.length:", ndata.nx(1).length());

@@ -5357,6 +5357,14 @@ public class DataApp {
 		}
 
 		/**
+		 * 默认构造函数
+		 * 
+		 */
+		public DFrame() {
+			super();
+		}
+
+		/**
 		 * 根据索引 提取键名
 		 *
 		 * @param idx 键名索引从0开始
