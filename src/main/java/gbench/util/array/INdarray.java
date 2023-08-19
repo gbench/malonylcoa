@@ -363,7 +363,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @return 提取子集合(生成了新的nd, 外部数据data不再是引用了源data, 内部data依旧保持引用源data),
 	 *         保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default <U> Stream<U> subsetS(final BiPredicate<Integer, V> predicate, Function<Integer, U> builder) {
+	default <U> Stream<U> subsetS(final BiPredicate<Integer, V> predicate, final Function<Integer, U> builder) {
 		return Stream.iterate(0, i -> i + 1).limit(this.length()).filter(i -> predicate.test(i, this.get(i)))
 				.map(builder);
 	}
