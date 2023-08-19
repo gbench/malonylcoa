@@ -187,8 +187,7 @@ public class H2Test {
 
 		println("数据透视表:\n", pvtdatas);
 		rootNode.forEach(e -> { // 显示分组计算结果
-			println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel() - 1), e.getName(),
-					e.attrvalOpt().orElse(""))); // 树形结构显示
+			println(FT("$0 $1 \t\t $2", " | ".repeat(e.getLevel() - 1), e.getName(), e.attrvalOpt().orElse(""))); // 树形结构显示
 		}); // forEach
 		println("tbls:\n", dfdata);
 		println("size:\n", dfdata.size());
