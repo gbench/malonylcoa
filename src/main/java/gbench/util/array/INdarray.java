@@ -2840,7 +2840,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param n   数据维度
 	 * @return ndarray
 	 */
-	static <T> INdarray<T> of(Function<Integer, T> gen, final int n) {
+	static <T> INdarray<T> of(final Function<Integer, T> gen, final int n) {
 		return Stream.iterate(0, i -> i + 1).limit(n).map(gen).collect(INdarray.ndclc(n));
 	}
 
@@ -2940,7 +2940,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param n   数据维度
 	 * @return ndarray
 	 */
-	static <T> INdarray<T> nd(Function<Integer, T> gen, final int n) {
+	static <T> INdarray<T> nd(final Function<Integer, T> gen, final int n) {
 		return INdarray.of(gen, n);
 	}
 
@@ -2952,7 +2952,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param dims_nd 维度向量
 	 * @return ndarray
 	 */
-	static <T> INdarray<T> nd(Function<Integer, T> gen, final INdarray<? extends Number> dims_nd) {
+	static <T> INdarray<T> nd(final Function<Integer, T> gen, final INdarray<? extends Number> dims_nd) {
 		return INdarray.of(gen, dims_nd.fmap(Number::intValue).product());
 	}
 
