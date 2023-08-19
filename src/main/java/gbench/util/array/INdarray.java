@@ -2349,7 +2349,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param nu  另一个矩阵: mod x n
 	 * @return ndarray
 	 */
-	default <U> INdarray<Double> mmult(final int mod, INdarray<U> nu) {
+	default <U> INdarray<Double> mmult(final int mod, final INdarray<U> nu) {
 		final int nrow = this.length() / mod;
 		final int ncol = nu.length() / mod;
 		final Double[] ts = this.dbls().data();
@@ -2537,7 +2537,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param kvs   nxfun 的各种属性,比如 mod 取模长度等。
 	 * @return nxfun 的返回值
 	 */
-	default <U> U withNX(final Function<INdarrayX<V>, U> nxfun, Object... kvs) {
+	default <U> U withNX(final Function<INdarrayX<V>, U> nxfun, final Object... kvs) {
 		final INdarray<V> self = this; // 定义别名，方便NdarrayX引用
 		// 私有类 矩阵化扩展的 Ndarray 的 实现：通过增加元数据metas来扩展,增加mod引入矩阵列数(行长度)来完成矩阵格式定义
 		class NdarrayX extends AbstractNdarray<V> implements INdarrayX<V> {
