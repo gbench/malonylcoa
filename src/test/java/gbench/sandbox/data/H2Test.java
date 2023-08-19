@@ -175,12 +175,12 @@ public class H2Test {
 		final var pivotLines = ndata.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
 		final var rootNode = REC(pivotLines).tupleS().parallel().reduce(TrieNode.of("root"), // 以REC形式分解成阶层元素(K,V)流,而后reduce成树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
-		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
+		final var coordinate_rb = rb("DBID,TBL"); // 位置标志rb : coordinate record builder
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
 				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (db索引,表名)
 				.distinct().map(loc -> db_f.apply(loc._1) // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
-						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e))) // 加入数据作为位置dbid,tbl
-				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(loc_rb.keys()))) // 归集并排序
+						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> coordinate_rb.get(loc._1, loc._2).add(e))) // 引入位置坐标:dbid,tbl
+				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(coordinate_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 
 		println("数据透视表:\n", pivotLines);
