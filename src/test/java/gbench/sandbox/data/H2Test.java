@@ -179,7 +179,7 @@ public class H2Test {
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
 				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (db索引,表名)
 				.distinct().map(loc -> db_f.apply(loc._1) // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
-						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> coordinate_rb.get(loc._1, loc._2).add(e))) // 引入位置坐标:dbid,tbl
+						.sqldframe(FT("select * from $0", loc._2)).fmap(e -> coordinate_rb.get(loc._1, loc._2).add(e))) // 引入位置坐标:dbid,tbl
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(coordinate_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 

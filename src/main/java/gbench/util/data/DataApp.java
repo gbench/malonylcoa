@@ -88,7 +88,7 @@ public class DataApp {
 	 * @return maybe 查询
 	 */
 	@SuppressWarnings("unchecked")
-	public Optional<IRecord> sql2maybe(final String sql) {
+	public Optional<IRecord> sqlmaybe(final String sql) {
 		return (Optional<IRecord>) this.withTransaction(sess -> {
 			final Optional<IRecord> opt = sess.sql2recordS(sql).findFirst();
 			sess.setData(opt);
@@ -101,7 +101,7 @@ public class DataApp {
 	 * @param sql sql 语句
 	 * @return DFrame
 	 */
-	public DFrame sql2dframe(final String sql) {
+	public DFrame sqldframe(final String sql) {
 		final Object obj = this.withTransaction(sess -> {
 			final DFrame dfm = sess.sql2x(sql);
 			sess.setData(dfm); // 设置返回值
@@ -122,8 +122,29 @@ public class DataApp {
 	 * @param sb sql 语句
 	 * @return DFrame
 	 */
-	public DFrame sql2dframe(final SqlBuilder sb) {
-		return this.sql2dframe(sb.toString());
+	public DFrame sqldframe(final SqlBuilder sb) {
+		return this.sqldframe(sb.toString());
+	}
+
+	/**
+	 * 执行类数据框
+	 *
+	 * @param sql sql 语句
+	 * @return DFrame
+	 */
+	public DFrame sqldframe2(final String sql) {
+		final Object obj = this.withTransaction(sess -> {
+			final DFrame dfm = sess.sql2executeS(sql).collect(DFrame.dfmclc);
+			sess.setData(dfm); // 设置返回值
+		});
+
+		if (obj instanceof DFrame) {
+			return (DFrame) obj;
+		} else if (obj instanceof IRecord) {
+			return DFrame.of(Arrays.asList((IRecord) obj));
+		} else {
+			return null;
+		}
 	}
 
 	/**
@@ -3537,7 +3558,7 @@ public class DataApp {
 		 * @return 查询结果集合
 		 * @throws SQLException
 		 */
-		default IRecord sql2one(String sql) throws SQLException {
+		default IRecord sql2one(final String sql) throws SQLException {
 			return this.sql2maybe(sql).orElse(null);
 		}
 
@@ -3548,7 +3569,7 @@ public class DataApp {
 		 * @return 查询结果集合
 		 * @throws SQLException
 		 */
-		default Optional<IRecord> sql2maybe(String sql) throws SQLException {
+		default Optional<IRecord> sql2maybe(final String sql) throws SQLException {
 			return this.sql2recordS(sql).findFirst();
 		}
 
@@ -3561,7 +3582,7 @@ public class DataApp {
 		 * @return execute的返回结果，一般用于获取自增长的id主键
 		 * @throws SQLException
 		 */
-		default Optional<IRecord> sql2maybe2(String sql) throws SQLException {
+		default Optional<IRecord> sql2maybe2(final String sql) throws SQLException {
 			return this.sql2executeS(sql).findFirst();
 		}
 
@@ -3579,6 +3600,24 @@ public class DataApp {
 				e.printStackTrace();
 			}
 			return x;
+		}
+
+		/**
+		 * sql2executeS 语法糖 <br>
+		 * 执行类:execute版本的sql2maybe<br>
+		 * 采用sql2executeS提供基础实现
+		 *
+		 * @param sql sql 语句
+		 * @return execute的返回结果，一般用于获取自增长的id主键
+		 */
+		default Optional<IRecord> sqlmaybe(final String sql) {
+			Optional<IRecord> maybe = Optional.empty();
+			try {
+				maybe = this.sql2executeS(sql).findFirst();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return maybe;
 		}
 
 		/**
@@ -3663,7 +3702,7 @@ public class DataApp {
 		 * @return 查询结果集合
 		 * @throws SQLException
 		 */
-		default Stream<IRecord> psql2recordS(String sql, Map<Integer, ?> params) throws SQLException {
+		default Stream<IRecord> psql2recordS(final String sql, final Map<Integer, ?> params) throws SQLException {
 			Stream<IRecord> stream = null;
 
 			try {
@@ -3686,7 +3725,7 @@ public class DataApp {
 		 * @return 更新结果集合函数有 generatedKeys 键值
 		 * @throws SQLException
 		 */
-		default Stream<IRecord> psql2updateS(String sql, Map<Integer, Object> params) throws SQLException {
+		default Stream<IRecord> psql2updateS(final String sql, final Map<Integer, Object> params) throws SQLException {
 			Stream<IRecord> stream = null;
 
 			try {
@@ -3843,66 +3882,6 @@ public class DataApp {
 		}
 
 		/**
-		 * 数据迭代输出
-		 *
-		 * @param <T>
-		 * @param seed    数据种子
-		 * @param hasNext 是否含所有下一个元素
-		 * @param next    求取下一个元素
-		 * @return T 类型的元素流
-		 */
-		static <T> Stream<T> iterate(T seed, Predicate<? super T> hasNext, UnaryOperator<T> next) {
-
-			Objects.requireNonNull(next);
-			Objects.requireNonNull(hasNext);
-			final Spliterator<T> spliterator = new Spliterators.AbstractSpliterator<T>(Long.MAX_VALUE,
-					Spliterator.ORDERED | Spliterator.IMMUTABLE) {
-				T prev;
-				boolean started, finished;
-
-				@Override
-				public boolean tryAdvance(final Consumer<? super T> action) {
-
-					Objects.requireNonNull(action);
-					if (finished)
-						return false;
-					T t;
-					if (started)
-						t = next.apply(prev);
-					else {
-						t = seed;
-						started = true;
-					}
-					if (!hasNext.test(t)) {
-						prev = null;
-						finished = true;
-						return false;
-					}
-					action.accept(prev = t);
-
-					return true;
-				}
-
-				@Override
-				public void forEachRemaining(final Consumer<? super T> action) {
-
-					Objects.requireNonNull(action);
-					if (finished)
-						return;
-					finished = true;
-					T t = started ? next.apply(prev) : seed;
-					prev = null;
-					while (hasNext.test(t)) {
-						action.accept(t);
-						t = next.apply(t);
-					}
-				}
-			};
-
-			return StreamSupport.stream(spliterator, false);
-		}
-
-		/**
 		 * @param <T>
 		 * @param exceptioncs
 		 * @return
@@ -3955,7 +3934,7 @@ public class DataApp {
 			final AtomicBoolean stopflag = new AtomicBoolean(false); // 是否达到末端
 			final Stream<IRecord> stream = !rs.next() // 检查是否存在有后继
 					? Stream.of() // 空列表
-					: IJdbcSession.iterate( // 生成流对象
+					: Stream.iterate( // 生成流对象
 							readline(rs, lbls), // 初始值
 							previous -> !stopflag.get(), // 是否到达末端
 							previous -> { // next
@@ -4619,8 +4598,8 @@ public class DataApp {
 				case '\n':
 				case '\r':
 				case '\t':
-//	                token.setType(TokenType.WS);
-//	                token.setVal(ch + "");
+					// token.setType(TokenType.WS);
+					// token.setVal(ch + "");
 					p++;
 					token = nextToken();
 					break;
