@@ -43,7 +43,7 @@ import static gbench.util.data.DataApp.IRecord.REC;
 /**
  * 数据应用: All In One 的版本的库文件
  *
- * @author xuqinghua
+ * @author gbench
  */
 public class DataApp {
 
@@ -762,6 +762,7 @@ public class DataApp {
 
 		public final T _1;
 		public final U _2;
+
 	}
 
 	/**
@@ -3281,6 +3282,7 @@ public class DataApp {
 				System.out.println(e);
 			});
 		}
+
 	}
 
 	/**
@@ -4036,6 +4038,7 @@ public class DataApp {
 					: IJdbcSession.readlineS(rs, closeHandler) // 读取数据行
 			).onClose(closeHandler); // 加入关闭处理子
 		}
+
 	}
 
 	/**
@@ -4055,9 +4058,8 @@ public class DataApp {
 		 * @throws Throwable 抛出物
 		 */
 		void accept(T t) throws Exception, Throwable;
-	}
 
-	;
+	}
 
 	/**
 	 * 带有抛出异常的函数
@@ -4221,6 +4223,7 @@ public class DataApp {
 		}
 
 		private ArrayList<String> keys = new ArrayList<>();
+
 	}
 
 	/**
@@ -4403,6 +4406,7 @@ public class DataApp {
 		public Iterator<Tuple2<String, Object>> iterator() {
 			return this.entrySet().stream().map(e -> new Tuple2<>(e.getKey(), e.getValue())).iterator();
 		}
+
 	}
 
 	/**
@@ -5164,6 +5168,7 @@ public class DataApp {
 		private D data;
 		private final IRecord attributes = IRecord.REC();
 		private final Set<Stream<?>> activeStreams = new LinkedHashSet<>();
+
 	}
 
 	/**
@@ -5254,9 +5259,6 @@ public class DataApp {
 			return this.format(this.buffer.toString());
 		}
 
-		final AtomicInteger ai = new AtomicInteger(0);
-		public Map<String, String> mappings = new HashMap<String, String>();
-
 		/**
 		 * 表连接
 		 *
@@ -5308,7 +5310,9 @@ public class DataApp {
 			return SqlBuilder.JOIN(path, null, null);
 		}
 
-		private StringBuilder buffer = new StringBuilder();
+		private final Map<String, String> mappings = new HashMap<String, String>();
+		private final StringBuilder buffer = new StringBuilder();
+
 	}
 
 	/**
@@ -5355,7 +5359,6 @@ public class DataApp {
 		 * @return 键名
 		 */
 		public String keyOf(final int idx) {
-
 			final List<String> kk = this.keys();
 			return idx < kk.size() ? kk.get(idx) : null;
 		}
@@ -5367,9 +5370,8 @@ public class DataApp {
 		 * @return 键名索引
 		 */
 		public int indexOf(final String key) {
-
 			int i = -1;
-			for (String _key : this.keys()) {
+			for (final String _key : this.keys()) {
 				i++;
 				if (_key.equals(key))
 					break;
@@ -5383,7 +5385,6 @@ public class DataApp {
 		 * @return 健名列表
 		 */
 		public List<String> keys() {
-
 			return new ArrayList<>(this.cols().keySet());
 		}
 
@@ -5393,7 +5394,6 @@ public class DataApp {
 		 * @return 健名列表
 		 */
 		public Stream<String> keyS() {
-
 			return this.cols().keySet().stream();
 		}
 
@@ -5403,7 +5403,6 @@ public class DataApp {
 		 * @return 行数据流 [rec]
 		 */
 		public Stream<IRecord> rowS() {
-
 			return this.stream();
 		}
 
@@ -5415,7 +5414,6 @@ public class DataApp {
 		 * @return 行数据流 [u]
 		 */
 		public <U> Stream<U> rowS(final Function<IRecord, U> mapper) {
-
 			return this.stream().map(mapper);
 		}
 
@@ -5446,7 +5444,6 @@ public class DataApp {
 		 * @return 列数据
 		 */
 		public Optional<List<Object>> colOpt(final int idx) {
-
 			return this.colOpt(this.keyOf(idx));
 		}
 
@@ -5457,7 +5454,6 @@ public class DataApp {
 		 * @return 列数据
 		 */
 		public List<Object> col(final int idx) {
-
 			return this.colOpt(idx).orElse(null);
 		}
 
@@ -5468,7 +5464,6 @@ public class DataApp {
 		 * @return 列数据
 		 */
 		public Optional<List<Object>> colOpt(final String name) {
-
 			return Optional.ofNullable(this.cols().get(name));
 		}
 
@@ -5479,7 +5474,6 @@ public class DataApp {
 		 * @return 列数据
 		 */
 		public List<Object> col(final String name) {
-
 			return this.colOpt(name).orElse(null);
 		}
 
@@ -5494,7 +5488,6 @@ public class DataApp {
 		 */
 		@SuppressWarnings("unchecked")
 		public <T, U> Stream<U> colS(final String name, final Function<T, U> mapper) {
-
 			return this.col(name).stream().map(e -> (T) e).map(mapper);
 		}
 
@@ -5508,7 +5501,6 @@ public class DataApp {
 		 * @return 列数据的列表
 		 */
 		public <T, U> List<U> cols(final String name, final Function<T, U> mapper) {
-
 			return this.colS(name, mapper).collect(Collectors.toList());
 		}
 
@@ -5518,7 +5510,6 @@ public class DataApp {
 		 * @return 列数据
 		 */
 		public LinkedHashMap<String, ArrayList<Object>> cols() {
-
 			if (this.colsData == null) {
 				final LinkedHashMap<String, ArrayList<Object>> _colsdata = new LinkedHashMap<String, ArrayList<Object>>();
 				this.forEach(e -> {
@@ -5541,7 +5532,6 @@ public class DataApp {
 		 * @return T类型的结果
 		 */
 		public <T> T collect(final Collector<? super IRecord, ?, T> collector) {
-
 			return this.rowS().collect(collector);
 		}
 
@@ -5553,7 +5543,6 @@ public class DataApp {
 		 * @return T类型的结果
 		 */
 		public <T> T collect2(final Collector<? super Map<String, Object>, ?, T> collector) {
-
 			return this.rowS().map(e -> e.toMap()).collect(collector);
 		}
 
@@ -5565,7 +5554,6 @@ public class DataApp {
 		 * @return T类型值
 		 */
 		public <T> T mutate(final Function<DFrame, T> mapper) {
-
 			return mapper.apply(this);
 		}
 
@@ -5576,7 +5564,6 @@ public class DataApp {
 		 * @return DFrame
 		 */
 		public DFrame fmap(final Function<IRecord, IRecord> mapper) {
-
 			return this.rowS().map(mapper).collect(DFrame.dfmclc);
 		}
 
@@ -5623,7 +5610,6 @@ public class DataApp {
 		 * @return DFrame
 		 */
 		public DFrame filter(final String keys) {
-
 			final List<String> _keys = Arrays.asList(keys.split(","));
 			return this.rowS().map(e -> e.filter(p -> _keys.contains(p._1))).collect(DFrame.dfmclc);
 		}
@@ -5635,7 +5621,6 @@ public class DataApp {
 		 * @return DFrame
 		 */
 		public DFrame filterNot(final String keys) {
-
 			final List<String> _keys = Arrays.asList(keys.split(","));
 			return this.rowS().map(e -> e.filter(p -> !_keys.contains(p._1))).collect(DFrame.dfmclc);
 		}
@@ -5738,7 +5723,6 @@ public class DataApp {
 		 * 刷新列数据
 		 */
 		public DFrame refresh() {
-
 			this.colsData = null;
 			return this;
 		}
@@ -5746,24 +5730,24 @@ public class DataApp {
 		/**
 		 * 增加元素
 		 *
-		 * @param i  index at which to insert the first elementfrom the specified
-		 *           collection
-		 * @param tt collection containing elements to be added to this list
+		 * @param i    index at which to insert the first elementfrom the specified
+		 *             collection
+		 * @param rows collection containing elements to be added to this list
 		 * @return this 对象本身
 		 */
-		public DFrame insert(final int i, final IRecord... tt) {
-			this.addAll(i, Arrays.asList(tt));
+		public DFrame insert(final int i, final IRecord... rows) {
+			this.addAll(i, Arrays.asList(rows));
 			return this;
 		}
 
 		/**
 		 * 增加元素
 		 *
-		 * @param tt collection containing elements to be added to this list
+		 * @param rows collection containing elements to be added to this list
 		 * @return this 对象本身
 		 */
-		public DFrame rbind(final Iterable<IRecord> tt) {
-			tt.forEach(this::add);
+		public DFrame rbind(final Iterable<IRecord> rows) {
+			rows.forEach(this::add);
 			return this;
 		}
 
@@ -5791,7 +5775,6 @@ public class DataApp {
 		 * 数据内容格式化
 		 */
 		public String toString() {
-
 			if (this.size() > 0) {
 				final StringBuffer buffer = new StringBuffer();
 				final IRecord first = this.get(0);
@@ -5810,11 +5793,11 @@ public class DataApp {
 		/**
 		 * 创建 DFrame
 		 *
-		 * @param data
+		 * @param data 数据序列
 		 * @return DFrame
 		 */
 		public static DFrame of(final Iterable<IRecord> data) {
-			List<IRecord> _data = data instanceof List //
+			final List<IRecord> _data = data instanceof List //
 					? (List<IRecord>) data
 					: StreamSupport.stream(data.spliterator(), false) //
 							.collect(Collectors.toList());
@@ -5849,6 +5832,7 @@ public class DataApp {
 				}, e -> {
 					return new DFrame(e);
 				});
+
 	}
 
 	/**
@@ -5868,7 +5852,6 @@ public class DataApp {
 	 * @return 格式化输出的文本
 	 */
 	public static String println(final Object... objects) {
-
 		final String line = Arrays.stream(objects).map(e -> "" + e).collect(Collectors.joining("\n"));
 		System.out.println(line);
 		return line;
@@ -5877,4 +5860,5 @@ public class DataApp {
 	private static int MAX_SIZE = 1024 * 1024 * 1024; // 最大长度
 
 	private DataSource dataSource; // 注入系统的数据源
+
 } // JdbcApp
