@@ -3329,6 +3329,20 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 
 	}
 
+	/**
+	 * 枢轴分类路径。
+	 * 
+	 * @param <CF>        分类函数类型 t->u
+	 * @param <T>         分类对象类型
+	 * @param <U>         分类路径的元素类型
+	 * @param classifiers 枢轴分类器序列，分类策略。比如按照：[国家,性别,年代,研究方向】的枢轴分类，<br>
+	 *                    牛顿的 枢轴分类路径是 英国/男/现代/物理学家, 鲁迅:中国/男/现代/文学家, 李清照中国/女/南宋/诗人。
+	 * @return 分类结果
+	 */
+	static <CF extends Function<T, U>, T, U> INdarray<U> pivotPath(final Iterable<CF> classifiers, final T object) {
+		return INdarray.of(classifiers).fmap(f -> f.apply(object));
+	}
+
 	Function<?, INdarray<Integer>> ndint = Types.cast((INdarray<Integer>) null);
 	Function<?, INdarray<Double>> nddbl = Types.cast((INdarray<Double>) null);
 	Function<?, INdarray<Float>> ndfloat = Types.cast((INdarray<Float>) null);
