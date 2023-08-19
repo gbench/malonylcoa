@@ -1898,7 +1898,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *         value:数据分区ndarray,index:分区索引Interger[],level:u所在层级:从0开始,isleaf:
 	 *         是否是叶子节点。
 	 */
-	default TrieNode<Integer> trieTree(LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides) {
+	default TrieNode<Integer> trieTree(final LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides) {
 		final Collector<? super Tuple2<List<Integer>, INdarray<V>>, ?, TrieNode<Integer>> collector = Partitioner
 				.trieclc();
 		return Optional.ofNullable(strides) //
@@ -2136,7 +2136,6 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 */
 	default <U extends Iterable<INdarray<V>>> Stream<Tuple2<INdarray<Integer>, INdarray<V>>> traverseS(
 			final Function<INdarray<V>, U> get_children) {
-
 		final Tuple2<INdarray<Integer>, INdarray<V>> root = Tuple2.of(INdarray.from(0), this); // 根节点
 		final Stack<Tuple2<INdarray<Integer>, INdarray<V>>> stack = new Stack<>();
 		stack.push(root);
