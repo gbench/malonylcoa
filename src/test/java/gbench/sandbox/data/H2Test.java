@@ -158,7 +158,7 @@ public class H2Test {
 		final var dataApps = Stream.of(h2_rec_1, h2_rec_2).map(MyDataApp::new).toArray(MyDataApp[]::new); // 数据应用客户端
 		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % dataApps.length; // 数据库id生成函数
 		final Function<Integer, MyDataApp> db_f = dbid -> dataApps[dbid]; // 根据数据库id获取数据库客户端DataApp
-		final Function<INdarray<Integer>, String> tblname_f = path -> String.format("%s%s", t_prefix, path.get(1)); // 数据库id生成函数
+		final Function<INdarray<Integer>, String> tblname_f = path -> String.format("%s%s", t_prefix, path.get(1)); // 表名生成函数
 		final Function<INdarray<INdarray<Integer>>, Object> evaluator = nds -> { // 分库分表的并行计算,以枢轴的分类序列path做为数据分片/分组的key,进而实现分表或分库
 			final var pvtpath = INdarray.pivotPath(classifiers, nds.head()); // 枢轴脸谱即枢轴的分类序列是由classifiers计算的分类key数组结构
 			final var dbid = dbid_f.apply(pvtpath); // 数据库索引
@@ -175,12 +175,12 @@ public class H2Test {
 		final var pivotLines = ndata.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
 		final var rootNode = REC(pivotLines).tupleS().parallel().reduce(TrieNode.of("root"), // 以REC形式分解成阶层元素(K,V)流,而后reduce成树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
-		final var coordinate_rb = rb("DBID,TBL"); // 位置标志rb : coordinate record builder
+		final var coordinates_rb = rb("DBID,TBL"); // 位置标志rb : coordinate record builder
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
-				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (db索引,表名)
-				.distinct().map(loc -> db_f.apply(loc._1) // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
-						.sqldframe(FT("select * from $0", loc._2)).fmap(e -> coordinate_rb.get(loc._1, loc._2).add(e))) // 引入位置坐标:dbid,tbl
-				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(coordinate_rb.keys()))) // 归集并排序
+				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (数据库id,表名)
+				.distinct().map(p -> db_f.apply(p._1) // 根据数据坐标信息:(数据库索引,表名) 从p中提取数据应用dataApp对象
+						.sqldframe(FT("select * from $0", p._2)).fmap(e -> coordinates_rb.get(p._1, p._2).add(e))) // 引入位置坐标:dbid,tbl
+				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(coordinates_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 
 		println("数据透视表:\n", pivotLines);
