@@ -172,8 +172,8 @@ public class H2Test {
 				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, rowids))); // (dbid:索引,tblname:表名,rowids:行记录索引)
 			}); // withTransaction
 		}; // 指标计算器
-		final var pvtdatas = ndata.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
-		final var rootNode = REC(pvtdatas).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
+		final var pivotLines = ndata.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
+		final var rootNode = REC(pivotLines).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
 		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
@@ -183,7 +183,7 @@ public class H2Test {
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(loc_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 
-		println("数据透视表:\n", pvtdatas);
+		println("数据透视表:\n", pivotLines);
 		rootNode.forEach(e -> { // 显示分组计算结果
 			println(FT("$0 $1 \t\t $2", " | ".repeat(e.getLevel() - 1), e.getName(), e.attrvalOpt().orElse(""))); // 树形结构显示
 		}); // forEach
