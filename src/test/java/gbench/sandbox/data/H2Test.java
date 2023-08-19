@@ -149,7 +149,7 @@ public class H2Test {
 	public void qux() {
 		final var n = 4; // 数据行长度
 		final var t_prefix = "t_data"; // 数据表名前缀
-		final var dup = identity((Integer[]) null).andThen(INdarray::nd).andThen(INdarray::dupdata); // 数据复制函数
+		final var dup = identity(Integer[].class).andThen(INdarray::nd).andThen(INdarray::dupdata); // 数据复制函数
 		final var classifiers = nats(n).reverse().initial()
 				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i))); // 枢轴计算序列
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
