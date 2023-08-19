@@ -755,7 +755,11 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
 	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
 	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
-	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
+	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴的数据透视表的树形式(共享前缀式)。 <br>
+	 *         注意：树形式：(A,(A1,(A11,A12),(A2,(A21,A22)))) 等价于 列表/矩阵形式:
+	 *         [(A,A1,A11),(A,A1,A12),(A,A2,A21),(A,A2,A22)] <br>
+	 *         即 树(A,(A1,A2))是一种精简化的 列表的列表
+	 *         [[A,A1],[A,A2]]即【矩阵】，或者说树结构是矩阵的转置并施加共享前缀的表达方式,一句话列表代表一切结构。
 	 */
 	default <K extends Comparable<K>, VS extends INdarray<V>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
 			final Function<VS, PV> pvteval, final Iterable<Function<V, K>> classifiers) {
@@ -780,7 +784,11 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
 	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
 	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
-	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
+	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴的数据透视表的树形式(共享前缀式)。 <br>
+	 *         注意：树形式：(A,(A1,(A11,A12),(A2,(A21,A22)))) 等价于 列表/矩阵形式:
+	 *         [(A,A1,A11),(A,A1,A12),(A,A2,A21),(A,A2,A22)] <br>
+	 *         即 树(A,(A1,A2))是一种精简化的 列表的列表
+	 *         [[A,A1],[A,A2]]即【矩阵】，或者说树结构是矩阵的转置并施加共享前缀的表达方式,一句话列表代表一切结构。
 	 */
 	default <K extends Comparable<K>, VS extends INdarray<V>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
 			final Function<VS, PV> pvteval, final Stream<Function<V, K>> classifiers) {
@@ -805,7 +813,11 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
 	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
 	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
-	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
+	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴的数据透视表的树形式(共享前缀式)。 <br>
+	 *         注意：树形式：(A,(A1,(A11,A12),(A2,(A21,A22)))) 等价于 列表/矩阵形式:
+	 *         [(A,A1,A11),(A,A1,A12),(A,A2,A21),(A,A2,A22)] <br>
+	 *         即 树(A,(A1,A2))是一种精简化的 列表的列表
+	 *         [[A,A1],[A,A2]]即【矩阵】，或者说树结构是矩阵的转置并施加共享前缀的表达方式,一句话列表代表一切结构。
 	 */
 	default <K extends Comparable<K>, VS extends INdarray<V>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
 			final Function<VS, PV> pvteval, final CF[] classifiers) {

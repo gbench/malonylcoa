@@ -173,7 +173,7 @@ public class H2Test {
 			}); // withTransaction
 		}; // 指标计算器
 		final var pivotLines = ndata.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
-		final var rootNode = REC(pivotLines).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
+		final var rootNode = REC(pivotLines).tupleS().parallel().reduce(TrieNode.of("root"), // 通过REC分解成阶层元素(K,V),而后reduce树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
 		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
