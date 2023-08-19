@@ -748,7 +748,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
 	 * @param <PV>        PivotValue类型
-	 * @param evaluator     pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
+	 * @param evaluator   pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
 	 *                    vs核算器: vs->pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
@@ -777,7 +777,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
 	 * @param <PV>        PivotValue类型
-	 * @param evaluator     pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
+	 * @param evaluator   pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
 	 *                    vs核算器: vs->pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
@@ -806,7 +806,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
 	 * @param <PV>        PivotValue类型
-	 * @param evaluator     pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
+	 * @param evaluator   pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
 	 *                    vs核算器: vs->pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
@@ -3390,7 +3390,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	static <CF extends Function<V, K>, V, K> INdarray<K> pivotPath(final Iterable<CF> classifiers, final V value) {
 		return INdarray.of(classifiers).fmap(f -> f.apply(value));
 	}
-	
+
 	/**
 	 * 枢轴脸谱函数、枢轴分类路径<br>
 	 * 枢轴分类路径函数。(为一个值value赋予多个键即多键序列也就是键路径就是pivotPath，这里称它为枢轴脸谱: <br>
