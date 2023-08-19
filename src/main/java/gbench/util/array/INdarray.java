@@ -176,7 +176,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @return 复制品,进行data的有效范围复制,即只复制[start,end) 之间的数据空间。 深拷贝
 	 */
 	default INdarray<V> dupdata() {
-		return this.arrayOf(data -> this.create(data, 0, this.length()));
+		return this.arrayOf(data -> this.create(data, 0, data.length));
 	}
 
 	/**
