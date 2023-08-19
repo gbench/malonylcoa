@@ -180,15 +180,15 @@ public class H2Test {
 		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
 				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (db索引,表名)
-				.distinct().map(loc -> dataApps[loc._1] // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
+				.distinct().map(loc -> db_f.apply(loc._1) // 根据数据坐标信息:(数据库索引,表名) 从loc中提取数据应用dataApp对象
 						.sql2dframe(FT("select * from $0", loc._2)).fmap(e -> loc_rb.get(loc._1, loc._2).add(e))) // 加入数据作为位置dbid,tbl
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(loc_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 
 		println("数据透视表:\n", pvtdatas);
-		println("root:");
 		rootNode.forEach(e -> { // 显示分组计算结果
-			println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(), e.attrvalOpt().orElse(""))); // 树形结构显示
+			println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel() - 1), e.getName(),
+					e.attrvalOpt().orElse(""))); // 树形结构显示
 		}); // forEach
 		println("tbls:\n", dfdata);
 		println("size:\n", dfdata.size());
