@@ -162,10 +162,7 @@ public class DataApp {
 	 * @return true 存在,false 不存在。
 	 */
 	public Boolean tblExists(final String tbl) {
-		return (Boolean) this.withTransaction(sess -> {
-			final Boolean b = sess.isTablePresent(tbl);
-			sess.setData(b); // 设置返回值
-		});
+		return (Boolean) this.withTransaction(sess -> sess.setData(sess.isTablePresent(tbl)));
 	}
 
 	/**
