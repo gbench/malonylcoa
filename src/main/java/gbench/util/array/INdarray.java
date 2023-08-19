@@ -743,7 +743,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <V>         基础值value元素的数据类型
+	 * @param <V>         基础数据值value的数据类型
 	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
@@ -768,7 +768,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <V>         基础值value元素的数据类型
+	 * @param <V>         基础数据值value的数据类型
 	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
@@ -793,7 +793,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <V>         基础值value元素的数据类型
+	 * @param <V>         基础数据值value的数据类型
 	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
@@ -3367,11 +3367,12 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求 <br>
 	 * pivotPath就像一张脸谱，为value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。<br>
 	 * 
-	 * @param <V>         基础值value元素的数据类型
+	 * @param <V>         基础数据值value的数据类型
 	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
-	 * @param classifiers 枢轴脸谱绘制函数:枢轴分类器序列，分类策略。比如按照：[国家,性别,年代,研究方向】的枢轴分类，<br>
-	 *                    牛顿的 枢轴分类路径是 英国/男/现代/物理学家, 鲁迅:中国/男/现代/文学家, 李清照中国/女/南宋/诗人。
+	 * @param classifiers 枢轴脸谱绘制函数:枢轴分类器序列，分类策略。比如按照：[国家,性别,年代,研究方向】的枢轴分类， 牛顿的
+	 *                    枢轴分类路径是 英国/男/现代/物理学家, 鲁迅:中国/男/现代/文学家, 李清照中国/女/南宋/诗人。
+	 * @param value       基础数据值value，拟被用于进行多级分类即脸谱化的对象
 	 * @return pivotPath:[k]
 	 */
 	static <CF extends Function<V, K>, V, K> INdarray<K> pivotPath(final Iterable<CF> classifiers, final V value) {
