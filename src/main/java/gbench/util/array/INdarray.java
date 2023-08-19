@@ -776,23 +776,22 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param evaluator   核算器[t]->indicator,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
-	 * @param pvts        透视表结果
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
 	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
 			final Function<INdarray<T>, INDICATOR> evaluator, final CF[] classifiers) {
-		final Map<K, Object> pvts = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
+		final Map<K, Object> pvtdatas = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
 
-		if (null != classifiers && classifiers.length > 0) { // 分类函数非空
-			final Consumer<Function<INdarray<T>, ?>> cs = f -> this.groupBy(classifiers[0]).entrySet().stream() // 提取枢轴上的首位分类函数进行分组计算
-					.parallel().forEach(e -> pvts.put(e.getKey(), null == f ? e.getValue() : f.apply(e.getValue()))); // 分类指标核算:分别为每个键建立一个指标计算线程做并发计算。
-
+		if (null != classifiers && classifiers.length > 0) { // 分类函数非空,
+			final Consumer<Function<INdarray<T>, ?>> cs = f -> this.groupBy(classifiers[0]) // 提取枢轴上的首位分类函数进行分组计算
+					.entrySet().stream().parallel() // 为每个键建立一个指标计算线程 进行 并发计算。
+					.forEach(e -> pvtdatas.put(e.getKey(), null == f ? e.getValue() : f.apply(e.getValue()))); // 分类指标核算
 			cs.accept(classifiers.length == 1 // 枢轴(分类函数序列)长度评估:是否抵达枢轴末端即枢轴长度递减至1
 					? evaluator // 抵达枢轴末端则执行指标计算
 					: nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, classifiers.length))); // 未抵达枢轴末尾,继续沿着枢轴计算,递归进入下一阶层做分类统计。
 		} // if classifiers
 
-		return pvts;
+		return pvtdatas;
 	}
 
 	/**

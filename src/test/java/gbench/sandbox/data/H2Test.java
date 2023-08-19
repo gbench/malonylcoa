@@ -150,26 +150,32 @@ public class H2Test {
 		final var n = 4; // 数据行长度
 		final var t_prefix = "t_data"; // 数据表名前缀
 		final var dup = identity((Integer[]) null).andThen(INdarray::nd).andThen(INdarray::dupdata); // 数据复制函数
-		final var cfs = nats(n).reverse().head(n - 1)
+		final var classifiers = nats(n).reverse().head(n - 1)
 				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i))); // 枢轴计算序列
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
 		final var proto = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
 		final var proto_rb = IRecord.rb(proto.keys()); // record 构建器
 		final var dataApps = Stream.of(h2_rec_1, h2_rec_2).map(MyDataApp::new).toArray(MyDataApp[]::new); // 数据应用客户端
-		final Function<INdarray<Integer>, INdarray<Integer>> pvt_key_f = nd -> cfs.map(f -> f.apply(nd))
-				.collect(ndclc()); // 枢轴key函数
-		final Function<INdarray<Integer>, Integer> db_id_f = nd -> pvt_key_f.apply(nd).get() % dataApps.length; // 数据库id生成函数
-		// 使用透视表作为并行计算的框架 & 分表的计算。利用枢轴的分类key做为数据分片/分组的key,进而实现分表或分库
-		final var pvts = ndata.pivotTable(nds -> dataApps[db_id_f.apply(nds.head())].withTransaction(sess -> { // 分组计算
-			final var pvtkeys = pvt_key_f.apply(nds.head()); // 枢轴键值列表
-			final var tblname = String.format("%s%s", t_prefix, pvtkeys.get(1)); // 提取第2号位置作为表名索引后缀
-			if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
-				sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
-			final var row_ids = sess.sql2executeS(insql(tblname, // 批量插入sql语句
-					nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0); // 插入数据的行记录索引row_ids
-			sess.setData(Tuple2.of(db_id_f.apply(nds.head()), Tuple2.of(tblname, row_ids))); // db索引,表名tblname,行记录索引row_ids
-		}), cfs); // 数据透视分阶层统计
-		final var rootNode = REC(pvts).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
+		final Function<INdarray<Integer>, INdarray<Integer>> path_f = nd -> classifiers.map(f -> f.apply(nd)) // 枢轴的分类序列
+				.collect(ndclc()); // 获取枢轴keys即path的函数
+		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % dataApps.length; // 数据库id生成函数
+		final Function<Integer, MyDataApp> db_f = dbid -> dataApps[dbid]; // 根据数据库id获取数据库客户端DataApp
+		final Function<INdarray<Integer>, String> tblname_f = path -> String.format("%s%s", t_prefix, path.get(1)); // 数据库id生成函数
+		final Function<INdarray<INdarray<Integer>>, Object> evaluator = nds -> { // 分库分表的并行计算,以枢轴的分类序列path做为数据分片/分组的key,进而实现分表或分库
+			final var path = path_f.apply(nds.head()); // 枢轴的分类序列path即classifiers计算的分类key的数组。
+			final var dbid = dbid_f.apply(path); // 数据库索引
+			final var tblname = tblname_f.apply(path); // 分表:提取第2号位置作为表名索引后缀
+			final var dataApp = db_f.apply(dbid); // 分库：提取指定数据库库id位置的数据库
+			return dataApp.withTransaction(sess -> { // 分库分表的指标计算:(db_id:索引,表名:tblname,row_ids:行记录索引)
+				if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
+					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
+				final var row_ids = sess.sql2executeS(insql(tblname, // 批量插入sql语句
+						nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0); // 插入数据的行记录索引row_ids
+				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, row_ids))); // db索引,表名tblname,行记录索引row_ids
+			}); // withTransaction
+		}; // 指标计算器
+		final var pvtdatas = ndata.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
+		final var rootNode = REC(pvtdatas).tupleS().parallel().reduce(TrieNode.of("root"), // 构建阶层的树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
 		final var loc_rb = rb("DBID,TBL"); // 位置标志rb
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
@@ -179,7 +185,7 @@ public class H2Test {
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(loc_rb.keys()))) // 归集并排序
 				.orElseGet(DFrame::new); // 提取归并结构
 
-		println("数据透视表:\n", pvts);
+		println("数据透视表:\n", pvtdatas);
 		println("root:");
 		rootNode.forEach(e -> { // 显示分组计算结果
 			println(String.format("%s %s \t\t %s", " | ".repeat(e.getLevel()), e.getName(), e.attrvalOpt().orElse(""))); // 树形结构显示
