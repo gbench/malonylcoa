@@ -166,12 +166,12 @@ public class H2Test {
 			final var dbid = dbid_f.apply(path); // 数据库索引
 			final var tblname = tblname_f.apply(path); // 分表:提取第2号位置作为表名索引后缀
 			final var dataApp = db_f.apply(dbid); // 分库：提取指定数据库库id位置的数据库
-			return dataApp.withTransaction(sess -> { // 分库分表的指标计算:(db_id:索引,表名:tblname,row_ids:行记录索引)
+			return dataApp.withTransaction(sess -> { // 分库分表的指标计算: (dbid:索引,tblname:表名,rowids:行记录索引)
 				if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
 					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
-				final var row_ids = sess.sql2executeS(insql(tblname, // 批量插入sql语句
-						nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0); // 插入数据的行记录索引row_ids
-				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, row_ids))); // db索引,表名tblname,行记录索引row_ids
+				final var rowids = sess.sql2executeS(insql(tblname, // 批量插入数据的sql语句
+						nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0); // 插入数据的行记录索引rowids
+				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, rowids))); // (dbid:索引,tblname:表名,rowids:行记录索引)
 			}); // withTransaction
 		}; // 指标计算器
 		final var pvtdatas = ndata.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
