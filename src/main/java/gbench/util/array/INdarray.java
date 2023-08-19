@@ -42,11 +42,10 @@ import static gbench.util.function.Functions.identity;
  * 相对访问 <br>
  * ***需要注意长度为1的INdarray就是一个对数组元素的引用: <br>
  * 这是一个与C语言pointer等同的该概念,这里称为IPoint*** <br>
- * <br>
  * <p>
- * 为了这点醋才包的这顿饺子 <br>
+ * 为了这点醋才包的这顿饺子
  * <p>
- * 为了项目索引访问而创建的类 <br>
+ * 为了项目索引访问而创建的类
  * <p>
  * 多维数据数组（用于展示数组的一部分，视图式封装），受到一定的numpy启发<br>
  * (data:连续区域的数据块,start:开始位置索引inclusive,end:结束位置索引exlusive) 去操作数据 <br>
