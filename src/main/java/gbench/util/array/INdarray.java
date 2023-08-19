@@ -738,7 +738,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 数据透视表 & 递归分组计算的 指标框架 <br>
+	 * 数据透视表 & 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
 	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
@@ -763,7 +763,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 数据透视表 & 递归分组计算的 指标框架 <br>
+	 * 数据透视表 & 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
 	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
@@ -788,7 +788,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 数据透视表 & 递归分组计算的 指标框架 <br>
+	 * 数据透视表 & 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
 	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
