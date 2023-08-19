@@ -3409,6 +3409,9 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 		return INdarray.of(classifiers).fmap(f -> f.apply(value));
 	}
 
+	/**
+	 * 类型强转函数
+	 */
 	Function<?, INdarray<Integer>> ndint = Types.cast((INdarray<Integer>) null);
 	Function<?, INdarray<Double>> nddbl = Types.cast((INdarray<Double>) null);
 	Function<?, INdarray<Float>> ndfloat = Types.cast((INdarray<Float>) null);
@@ -3419,5 +3422,18 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	Function<?, INdarray<Character>> ndchar = Types.cast((INdarray<Character>) null);
 	Function<?, INdarray<String>> ndstr = Types.cast((INdarray<String>) null);
 	Function<?, INdarray<Short>> ndshort = Types.cast((INdarray<Short>) null);
+
+	/**
+	 * 基础类型的空值常量
+	 */
+	INdarray<Byte> NBYT_NULL = (INdarray<Byte>) null; // 空值占位符
+	INdarray<Boolean> NBOO_NULL = (INdarray<Boolean>) null; // 空值占位符
+	INdarray<Character> NCHR_NULL = (INdarray<Character>) null; // 空值占位符
+	INdarray<Short> NSHT_NULL = (INdarray<Short>) null; // 空值占位符
+	INdarray<Float> NFLT_NULL = (INdarray<Float>) null; // 空值占位符
+	INdarray<Integer> NINT_NULL = (INdarray<Integer>) null; // 空值占位符
+	INdarray<Long> NILNG_NULL = (INdarray<Long>) null; // 空值占位符
+	INdarray<Double> NIDBL_NULL = (INdarray<Double>) null; // 空值占位符
+	INdarray<String> NISTR_NULL = (INdarray<String>) null; // 空值占位符
 
 }

@@ -2,6 +2,7 @@ package gbench.sandbox.data;
 
 import org.junit.jupiter.api.Test;
 
+import static gbench.util.array.INdarray.NINT_NULL;
 import static gbench.util.array.INdarray.nats;
 import static gbench.util.array.INdarray.ndclc;
 import static gbench.util.data.DataApp.IRecord.FT;
@@ -150,23 +151,22 @@ public class H2Test {
 		final var n = 4; // 数据行长度
 		final var t_prefix = "t_data"; // 数据表名前缀
 		final var dup = identity(Integer[].class).andThen(INdarray::nd).andThen(INdarray::dupdata); // 数据复制函数
-		final var classifiers = nats(n).reverse().initial()
-				.fmap(i -> identity((INdarray<Integer>) null).andThen(e -> e.get(i))); // 枢轴计算序列
+		final var classifiers = nats(n).tail().reverse().fmap(i -> identity(NINT_NULL).andThen(e -> e.get(i))); // 枢轴计算序列
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据
 		final var proto = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
 		final var proto_rb = IRecord.rb(proto.keys()); // record 构建器
 		final var dataApps = Stream.of(h2_rec_1, h2_rec_2).map(MyDataApp::new).toArray(MyDataApp[]::new); // 数据应用客户端
-		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % dataApps.length; // 数据库id生成函数
+		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % dataApps.length; // 数据库索引生成函数
 		final Function<Integer, MyDataApp> db_f = dbid -> dataApps[dbid]; // 根据数据库id获取数据库客户端DataApp
 		final Function<INdarray<Integer>, String> tblname_f = path -> String.format("%s%s", t_prefix, path.get(1)); // 表名生成函数
 		final Function<INdarray<INdarray<Integer>>, Object> evaluator = nds -> { // 分库分表的并行计算,以枢轴的分类序列path做为数据分片/分组的key,进而实现分表或分库
 			final var pvtpath = INdarray.pivotPath(classifiers, nds.head()); // 枢轴脸谱即枢轴的分类序列是由classifiers计算的分类key数组结构
 			final var dbid = dbid_f.apply(pvtpath); // 数据库索引
 			final var tblname = tblname_f.apply(pvtpath); // 分表:提取第2号位置作为表名索引后缀
-			final var dataApp = db_f.apply(dbid); // 分库：提取指定数据库库id位置的数据库
-			return dataApp.withTransaction(sess -> { // 分库分表的指标计算: (dbid:索引,tblname:表名,rowids:行记录索引)
+			final var dataApp = db_f.apply(dbid); // 分库：提取指定数据库索引所标记的数据库
+			return dataApp.withTransaction(sess -> { // 分库分表的指标计算: (dbid:数据库索引,tblname:表名,rowids:行记录索引)
 				if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
-					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列
+					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列ID
 				final var rowids = sess.sql2executeS(insql(tblname, // 批量插入数据的sql语句
 						nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0); // 插入数据的行记录索引rowids
 				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, rowids))); // (dbid:索引,tblname:表名,rowids:行记录索引)
@@ -176,8 +176,8 @@ public class H2Test {
 		final var rootNode = REC(pivotLines).tupleS().parallel().reduce(TrieNode.of("root"), // 以REC形式分解成阶层元素(K,V)流,而后reduce成树形结构
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
 		final var coordinates_rb = rb("DBID,TBL"); // 位置标志rb : coordinate record builder
-		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(db索引,表名)
-				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (数据库id,表名)
+		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(数据库索引,表名)
+				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (数据库索引,表名)
 				.distinct().map(p -> db_f.apply(p._1) // 根据数据坐标信息:(数据库索引,表名) 从p中提取数据应用dataApp对象
 						.sqldframe(FT("select * from $0", p._2)).fmap(e -> coordinates_rb.get(p._1, p._2).add(e))) // 引入位置坐标:dbid,tbl
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(coordinates_rb.keys()))) // 归集并排序
