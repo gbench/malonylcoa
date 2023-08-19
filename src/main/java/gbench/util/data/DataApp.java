@@ -57,7 +57,7 @@ public class DataApp {
 	/**
 	 * 数据应用
 	 *
-	 * @param dataSource
+	 * @param dataSource 数据源
 	 */
 	public DataApp(final DataSource dataSource) {
 		this.dataSource = dataSource;
@@ -89,10 +89,18 @@ public class DataApp {
 	 */
 	@SuppressWarnings("unchecked")
 	public Optional<IRecord> sqlmaybe(final String sql) {
-		return (Optional<IRecord>) this.withTransaction(sess -> {
-			final Optional<IRecord> opt = sess.sql2recordS(sql).findFirst();
-			sess.setData(opt);
-		});
+		return (Optional<IRecord>) this.withTransaction(sess -> sess.setData(sess.sql2maybe(sql)));
+	}
+
+	/**
+	 * maybe结果: 执行类
+	 *
+	 * @param sql SQL语句
+	 * @return maybe结果: 执行类
+	 */
+	@SuppressWarnings("unchecked")
+	public Optional<IRecord> sqlmaybe2(final String sql) {
+		return (Optional<IRecord>) this.withTransaction(sess -> sess.setData(sess.sql2maybe2(sql)));
 	}
 
 	/**
