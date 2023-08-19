@@ -739,14 +739,17 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 数据透视表 & 递归分组计算的 指标框架 <br>
-	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构.
-	 * pivotPath 就像一张脸谱，为 value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
+	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
+	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
+	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <K>         键名索引类型
-	 * @param <PV>        核算指标类型
-	 * @param <CF>        分类函数类型
-	 * @param pvteval     pivotValue的计算函数，pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求
-	 *                    核算器[t]->indicator,
+	 * @param <V>         基础值value元素的数据类型
+	 * @param <K>         PivotPath的Key的元素类型
+	 * @param <CF>        分类函数类型:V->K
+	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
+	 * @param <PV>        PivotValue类型
+	 * @param pvteval     pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
+	 *                    vs核算器: vs->pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
@@ -754,21 +757,24 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
-	default <K extends Comparable<K>, PV> Map<K, Object> pivotTable(final Function<INdarray<V>, PV> pvteval,
-			final Iterable<Function<V, K>> classifiers) {
+	default <K extends Comparable<K>, VS extends INdarray<V>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
+			final Function<VS, PV> pvteval, final Iterable<Function<V, K>> classifiers) {
 		return this.pivotTable(pvteval, Types.itr2array(classifiers));
 	}
 
 	/**
 	 * 数据透视表 & 递归分组计算的 指标框架 <br>
-	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构.
-	 * pivotPath 就像一张脸谱，为 value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
+	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
+	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
+	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <K>         键名索引类型
-	 * @param <PV>        核算指标类型
-	 * @param <CF>        分类函数类型
-	 * @param pvteval     pivotValue的计算函数，pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求
-	 *                    核算器[t]->indicator,
+	 * @param <V>         基础值value元素的数据类型
+	 * @param <K>         PivotPath的Key的元素类型
+	 * @param <CF>        分类函数类型:V->K
+	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
+	 * @param <PV>        PivotValue类型
+	 * @param pvteval     pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
+	 *                    vs核算器: vs->pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
@@ -776,21 +782,24 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
-	default <K extends Comparable<K>, PV> Map<K, Object> pivotTable(final Function<INdarray<V>, PV> evaluator,
-			final Stream<Function<V, K>> classifiers) {
-		return this.pivotTable(evaluator, Types.stream2array(classifiers));
+	default <K extends Comparable<K>, VS extends INdarray<V>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
+			final Function<VS, PV> pvteval, final Stream<Function<V, K>> classifiers) {
+		return this.pivotTable(pvteval, Types.stream2array(classifiers));
 	}
 
 	/**
 	 * 数据透视表 & 递归分组计算的 指标框架 <br>
-	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构.
-	 * pivotPath 就像一张脸谱，为 value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
+	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
+	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
+	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <K>         PivotPath的元素类型
-	 * @param <PV>        PivotValue类型
+	 * @param <V>         基础值value元素的数据类型
+	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
-	 * @param pvteval     pivotValue的计算函数，pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求
-	 *                    核算器: vlaue->pivotValue,
+	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
+	 * @param <PV>        PivotValue类型
+	 * @param pvteval     pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
+	 *                    vs核算器: vs->pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
@@ -798,14 +807,15 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
-	default <K extends Comparable<K>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
-			final Function<INdarray<V>, PV> pvteval, final CF[] classifiers) {
+	default <K extends Comparable<K>, VS extends INdarray<V>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
+			final Function<VS, PV> pvteval, final CF[] classifiers) {
 		final Map<K, Object> pivotLines = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空,
-			final Consumer<Function<INdarray<V>, ?>> cs = f -> this.groupBy(classifiers[0]) // 提取枢轴上的首位分类函数进行分组计算
+			@SuppressWarnings("unchecked")
+			final Consumer<Function<VS, ?>> cs = f -> this.groupBy(classifiers[0]) // 提取枢轴上的首位分类函数进行分组计算
 					.entrySet().stream().parallel() // 为每个键建立一个指标计算线程 进行 并发计算。
-					.forEach(e -> pivotLines.put(e.getKey(), null == f ? e.getValue() : f.apply(e.getValue()))); // 分类指标核算
+					.forEach(e -> pivotLines.put(e.getKey(), null == f ? e.getValue() : f.apply((VS) e.getValue()))); // 分类指标核算
 			cs.accept(classifiers.length == 1 // 枢轴(分类函数序列)长度评估:是否抵达枢轴末端即枢轴长度递减至1
 					? pvteval // 抵达枢轴末端则执行指标计算
 					: nd -> nd.pivotTable(pvteval, Arrays.copyOfRange(classifiers, 1, classifiers.length))); // 未抵达枢轴末尾,继续沿着枢轴计算,递归进入下一阶层做分类统计。
@@ -3357,12 +3367,12 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求 <br>
 	 * pivotPath就像一张脸谱，为value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。<br>
 	 * 
-	 * @param <CF>        分类函数类型 t->u
-	 * @param <V>         分类对象类型
-	 * @param <K>         分类路径的元素类型
+	 * @param <V>         基础值value元素的数据类型
+	 * @param <K>         PivotPath的Key的元素类型
+	 * @param <CF>        分类函数类型:V->K
 	 * @param classifiers 枢轴脸谱绘制函数:枢轴分类器序列，分类策略。比如按照：[国家,性别,年代,研究方向】的枢轴分类，<br>
 	 *                    牛顿的 枢轴分类路径是 英国/男/现代/物理学家, 鲁迅:中国/男/现代/文学家, 李清照中国/女/南宋/诗人。
-	 * @return 分类结果
+	 * @return pivotPath:[k]
 	 */
 	static <CF extends Function<V, K>, V, K> INdarray<K> pivotPath(final Iterable<CF> classifiers, final V value) {
 		return INdarray.of(classifiers).fmap(f -> f.apply(value));
