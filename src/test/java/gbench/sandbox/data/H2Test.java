@@ -160,7 +160,7 @@ public class H2Test {
 		final Function<Integer, MyDataApp> db_f = dbid -> dataApps[dbid]; // 根据数据库id获取数据库客户端DataApp
 		final Function<INdarray<Integer>, String> tblname_f = path -> String.format("%s%s", t_prefix, path.get(1)); // 数据库id生成函数
 		final Function<INdarray<INdarray<Integer>>, Object> evaluator = nds -> { // 分库分表的并行计算,以枢轴的分类序列path做为数据分片/分组的key,进而实现分表或分库
-			final var pvtpath = INdarray.pivotPath(classifiers, nds.head()); // 枢轴的分类序列path即classifiers计算的分类key的数组。
+			final var pvtpath = INdarray.pivotPath(classifiers, nds.head()); // 枢轴脸谱即枢轴的分类序列是由classifiers计算的分类key数组结构
 			final var dbid = dbid_f.apply(pvtpath); // 数据库索引
 			final var tblname = tblname_f.apply(pvtpath); // 分表:提取第2号位置作为表名索引后缀
 			final var dataApp = db_f.apply(dbid); // 分库：提取指定数据库库id位置的数据库

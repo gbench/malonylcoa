@@ -54,10 +54,10 @@ import static gbench.util.function.Functions.identity;
  * !!!主要不要在INdarray直接操作data数组。请使用get和set函数处理数据。以保证INdarray可以正确设置 <br>
  * !!!必要的拦截和回调函数。
  *
- * @param <T> 元素类型
+ * @param <V> 元素类型
  * @author gbench
  */
-public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStream<T> {
+public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStream<V> {
 
 	/**
 	 * 源数据 <br>
@@ -66,7 +66,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 数据数组
 	 */
-	T[] data();
+	V[] data();
 
 	/**
 	 * 开始索引 inclusive
@@ -98,7 +98,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param strides 分区索引跨度
 	 * @return ndarray
 	 */
-	INdarray<T> create(final T[] data, final int start, final int end,
+	INdarray<V> create(final V[] data, final int start, final int end,
 			final LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides);
 
 	/**
@@ -106,7 +106,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 数据数组,[start,end)之间的数据
 	 */
-	default T[] mydata() {
+	default V[] mydata() {
 		return this.arrayOf(identity());
 	}
 
@@ -118,7 +118,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param end   data的绝对索引,结束位置索引 exclusive
 	 * @return ndarray
 	 */
-	default INdarray<T> create(final T[] data, final int start, final int end) {
+	default INdarray<V> create(final V[] data, final int start, final int end) {
 		return this.create(data, start, end, this.strides());
 	}
 
@@ -128,7 +128,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param partitioner 索引分区器
 	 * @return ndarray
 	 */
-	default INdarray<T> create(final Partitioner partitioner) {
+	default INdarray<V> create(final Partitioner partitioner) {
 		return this.create(partitioner.strides());
 	}
 
@@ -140,7 +140,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param end   data的绝对索引,位置索引终点 exclusive
 	 * @return ndarray
 	 */
-	default INdarray<T> create(final int start, final int end) {
+	default INdarray<V> create(final int start, final int end) {
 		return this.create(this.data(), start, end, this.strides());
 	}
 
@@ -150,7 +150,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param start data的绝对索引,start 位置索引起点,从0开始 inclusive, end 默认为当前分段的结束位置
 	 * @return ndarray
 	 */
-	default INdarray<T> create(final int start) {
+	default INdarray<V> create(final int start) {
 		return this.create(this.data(), start, this.end(), this.strides());
 	}
 
@@ -158,7 +158,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param strides 分区索引跨度
 	 * @return ndarray
 	 */
-	default INdarray<T> create(final LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides) {
+	default INdarray<V> create(final LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides) {
 		return this.create(this.data(), this.start(), this.end(), strides);
 	}
 
@@ -167,7 +167,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 复制品, data不进行复制，仅复制start与end索引位置，浅拷贝
 	 */
-	default INdarray<T> duplicate() {
+	default INdarray<V> duplicate() {
 		return this.create(this.start());
 	}
 
@@ -176,7 +176,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 复制品,进行data的有效范围复制,即只复制[start,end) 之间的数据空间。 深拷贝
 	 */
-	default INdarray<T> dupdata() {
+	default INdarray<V> dupdata() {
 		return this.arrayOf(data -> this.create(data, 0, this.length()));
 	}
 
@@ -185,8 +185,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 复制品,进行整个data的完全复制,深拷贝
 	 */
-	default INdarray<T> dupdata2() {
-		final T[] data = this.data();
+	default INdarray<V> dupdata2() {
+		final V[] data = this.data();
 		return this.create(Arrays.copyOf(data, data.length), this.start(), this.end(), this.strides());
 	}
 
@@ -216,7 +216,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param size  生成的nd长度
 	 * @return ndarray
 	 */
-	default INdarray<T> build1(final int start, final int size) {
+	default INdarray<V> build1(final int start, final int size) {
 		return this.subarray(start, Math.min(start + size, this.length()));
 	}
 
@@ -234,7 +234,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param size 生成的nd长度
 	 * @return ndarray
 	 */
-	default INdarray<T> build2(final int end, final int size) {
+	default INdarray<V> build2(final int end, final int size) {
 		return this.subarray(Math.max(0, end - size), Math.min(end, this.length()));
 	}
 
@@ -246,7 +246,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param j 结束索引,相对于this.start的偏移,从0开始,exclusive
 	 * @return ndarray
 	 */
-	default INdarray<T> build(final int i, final int j) {
+	default INdarray<V> build(final int i, final int j) {
 		return this.subarray(i, j);
 	}
 
@@ -257,7 +257,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i 开始索引,相对于this.start的偏移,从0开始,inclusive
 	 * @return ndarray
 	 */
-	default INdarray<T> build(final int i) {
+	default INdarray<V> build(final int i) {
 		return this.build(i, this.end());
 	}
 
@@ -267,7 +267,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i 开始索引,相对于this.start的偏移,从0开始,inclusive
 	 * @return point
 	 */
-	default IPoint<T> point(final int i) {
+	default IPoint<V> point(final int i) {
 		return INdarray.point(this.data(), this.start() + i);
 	}
 
@@ -276,7 +276,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return point head
 	 */
-	default IPoint<T> point() {
+	default IPoint<V> point() {
 		return this.point(0);
 	}
 
@@ -287,7 +287,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param j 结束索引,相对于this.start的偏移,从0开始,exclusive
 	 * @return ndarray
 	 */
-	default INdarray<T> subarray(final int i, final int j) {
+	default INdarray<V> subarray(final int i, final int j) {
 		final int _start = this.start() + i;
 		final int n = this.length();
 		final int _end = this.start() + Math.min(j, n);
@@ -302,7 +302,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *          n<0 向左侧拉长,以 0为限度
 	 * @return ndarray
 	 */
-	default INdarray<T> resize(final int n) {
+	default INdarray<V> resize(final int n) {
 		final int s = this.start();
 		return n > 0 // 正数右侧，负数左侧
 				? this.create(s, Math.min(n + s, this.datalen())) // 右侧拉伸
@@ -315,7 +315,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param offset 左右平移动,保持length不变, 负数左移，正数右移动
 	 * @return ndarray
 	 */
-	default INdarray<T> shift(final int offset) {
+	default INdarray<V> shift(final int offset) {
 		final int s = this.start() + offset;
 		final int e = this.end() + offset;
 
@@ -329,7 +329,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *          this.legnth(); 默认为 j 结束索引,相对于this.start的偏移,从0开始,exclusive
 	 * @return ndarray
 	 */
-	default INdarray<T> subarray(final int i) {
+	default INdarray<V> subarray(final int i) {
 		return this.subarray(i, this.length());
 	}
 
@@ -339,7 +339,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 提取子集合（生成了新的nd,数据data不再是引用了)
 	 */
-	default INdarray<INdarray<T>> entries() {
+	default INdarray<INdarray<V>> entries() {
 		return this.entrieS().collect(ndndclc(this.length()));
 	}
 
@@ -349,7 +349,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 提取子集合（生成了新的nd,数据data不再是引用了)
 	 */
-	default Stream<INdarray<T>> entrieS() {
+	default Stream<INdarray<V>> entrieS() {
 		final int len = this.length();
 		return Stream.iterate(0, i -> i + 1).limit(len).map(i -> this.build(i, Math.min(i + 1, len)));
 	}
@@ -363,7 +363,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return 提取子集合(生成了新的nd, 外部数据data不再是引用了源data, 内部data依旧保持引用源data),
 	 *         保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default <U> Stream<U> subsetS(final BiPredicate<Integer, T> predicate, Function<Integer, U> builder) {
+	default <U> Stream<U> subsetS(final BiPredicate<Integer, V> predicate, Function<Integer, U> builder) {
 		return Stream.iterate(0, i -> i + 1).limit(this.length()).filter(i -> predicate.test(i, this.get(i)))
 				.map(builder);
 	}
@@ -376,7 +376,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n         选取的nd的长度
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default Stream<INdarray<T>> subsetS(final BiPredicate<Integer, T> predicate, final int n) {
+	default Stream<INdarray<V>> subsetS(final BiPredicate<Integer, V> predicate, final int n) {
 		return this.subsetS(predicate, i -> this.build(i, Math.min(i + n, this.length())));
 	}
 
@@ -388,7 +388,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n         选取的nd的长度
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default Stream<INdarray<T>> subsetS(final Predicate<Integer> predicate, final int n) {
+	default Stream<INdarray<V>> subsetS(final Predicate<Integer> predicate, final int n) {
 		return this.subsetS((i, t) -> predicate.test(i), n);
 	}
 
@@ -399,7 +399,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param predicate (i:索引从0开始)->bool
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default Stream<IPoint<T>> subsetS(final Predicate<Integer> predicate) {
+	default Stream<IPoint<V>> subsetS(final Predicate<Integer> predicate) {
 		return this.subsetS((i, t) -> predicate.test(i), this::point);
 	}
 
@@ -411,7 +411,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n         选取的nd的长度
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default INdarray<INdarray<T>> subset(final BiPredicate<Integer, T> predicate, final int n) {
+	default INdarray<INdarray<V>> subset(final BiPredicate<Integer, V> predicate, final int n) {
 		return this.subsetS(predicate, n).collect(ndndclc(this.length()));
 	}
 
@@ -423,7 +423,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n         选取的nd的长度
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default INdarray<INdarray<T>> subset(final Predicate<Integer> predicate, final int n) {
+	default INdarray<INdarray<V>> subset(final Predicate<Integer> predicate, final int n) {
 		return this.subsetS(predicate, n).collect(ndndclc(this.length()));
 	}
 
@@ -434,7 +434,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param predicate (i:索引从0开始)->bool
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default INdarray<IPoint<T>> subset(final Predicate<Integer> predicate) {
+	default INdarray<IPoint<V>> subset(final Predicate<Integer> predicate) {
 		return this.subsetS((i, t) -> predicate.test(i), this::point).collect(ndptclc(this.length()));
 	}
 
@@ -445,7 +445,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param indices 切分索引，切分长度为1的INdarray, 保留indices顺序，保留重复索引值
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序
 	 */
-	default INdarray<INdarray<T>> subset2(final int... indices) {
+	default INdarray<INdarray<V>> subset2(final int... indices) {
 		return IntStream.of(indices).mapToObj(this::point).collect(ndndclc(this.length()));
 	}
 
@@ -456,7 +456,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param indices 切分索引，切分长度为1的INdarray
 	 * @return 提取子集合(生成了新的nd,外部数据data不再是引用了源data,内部data依旧保持引用源data),保留引用顺序，忽略重复值，重复索引按照最后出现的索引循序。
 	 */
-	default INdarray<IPoint<T>> subset(final int... indices) {
+	default INdarray<IPoint<V>> subset(final int... indices) {
 		final TreeMap<Integer, Integer> m1 = new TreeMap<>();
 		final Map<Integer, Integer> m2 = new TreeMap<>();
 		final List<Integer> _indices = IntStream.of(indices).boxed().collect(Collectors.toList());
@@ -480,7 +480,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 提取子集合（生成了新的nd,数据data不再是引用了)
 	 */
-	default INdarray<IPoint<T>> subset() {
+	default INdarray<IPoint<V>> subset() {
 		return this.subset(t -> true);
 	}
 
@@ -495,8 +495,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的费不满足大小的小窗口。
 	 * @return 滑动窗口元素流
 	 */
-	default Stream<INdarray<T>> slidingS(final int step, final int size, final boolean flag) {
-		final Stream<INdarray<T>> ndS = size < 1 ? Stream.empty() : this.subsetS(i -> i % step == 0, size);
+	default Stream<INdarray<V>> slidingS(final int step, final int size, final boolean flag) {
+		final Stream<INdarray<V>> ndS = size < 1 ? Stream.empty() : this.subsetS(i -> i % step == 0, size);
 		return flag ? ndS.filter(e -> e.length() == size) : ndS;
 	}
 
@@ -511,7 +511,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param size 窗口大小
 	 * @return 滑动窗口元素流
 	 */
-	default Stream<INdarray<T>> slidingS(final int step, final int size) {
+	default Stream<INdarray<V>> slidingS(final int step, final int size) {
 		return this.slidingS(step, size, false);
 	}
 
@@ -527,7 +527,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param size 窗口大小
 	 * @return 滑动窗口元素流
 	 */
-	default Stream<INdarray<T>> slidingS(final int size) {
+	default Stream<INdarray<V>> slidingS(final int size) {
 		return this.slidingS(1, size);
 	}
 
@@ -542,7 +542,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的费不满足大小的小窗口。
 	 * @return 滑动窗口集合
 	 */
-	default INdarray<INdarray<T>> slidings(final int step, final int size, final boolean flag) {
+	default INdarray<INdarray<V>> slidings(final int step, final int size, final boolean flag) {
 		return this.slidingS(step, size, flag).collect(ndndclc(this.length()));
 	}
 
@@ -557,7 +557,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param size 窗口大小
 	 * @return 滑动窗口集合
 	 */
-	default INdarray<INdarray<T>> slidings(final int step, final int size) {
+	default INdarray<INdarray<V>> slidings(final int step, final int size) {
 		return this.slidingS(step, size, false).collect(ndclc());
 	}
 
@@ -573,7 +573,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param size 窗口大小
 	 * @return 滑动窗口集合
 	 */
-	default INdarray<INdarray<T>> slidings(final int size) {
+	default INdarray<INdarray<V>> slidings(final int size) {
 		return this.slidingS(1, size).collect(ndndclc(this.length()));
 	}
 
@@ -590,7 +590,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的费不满足大小的小窗口。
 	 * @return 滑动窗口集合
 	 */
-	default INdarray<INdarray<T>> cuts(final int n, final boolean flag) {
+	default INdarray<INdarray<V>> cuts(final int n, final boolean flag) {
 		return this.slidings(n, n, flag);
 	}
 
@@ -604,7 +604,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n 移动步长 与 窗口大小 , 大于等于1的整数
 	 * @return 滑动窗口集合
 	 */
-	default INdarray<INdarray<T>> cuts(final int n) {
+	default INdarray<INdarray<V>> cuts(final int n) {
 		return this.slidings(n, n, false);
 	}
 
@@ -639,8 +639,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return ndarry map
 	 */
-	default Map<List<Integer>, INdarray<T>> partitions() {
-		final Map<List<Integer>, INdarray<T>> ndarrays = new LinkedHashMap<>();
+	default Map<List<Integer>, INdarray<V>> partitions() {
+		final Map<List<Integer>, INdarray<V>> ndarrays = new LinkedHashMap<>();
 		if (this.strides() != null) {
 			this.strides().forEach((index, range) -> ndarrays.put(index, this.create(range._1, range._2)));
 		} // if
@@ -654,7 +654,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return ndarray 数据流
 	 */
-	default Stream<INdarray<T>> partitionS() {
+	default Stream<INdarray<V>> partitionS() {
 		return this.strides().values().stream().map(Tuple2.bifun(this::create));
 	}
 
@@ -664,7 +664,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param breaks 相对索引， 分割点不包含0,与length [...,i,i+n,...,]
 	 * @return 分区点
 	 */
-	default List<INdarray<T>> partitions(final int... breaks) {
+	default List<INdarray<V>> partitions(final int... breaks) {
 		return this.splits(breaks);
 	}
 
@@ -674,7 +674,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param breaks 相对索引，分割点不包含0,与length [...,i,i+n,...,]
 	 * @return 分区点
 	 */
-	default Stream<INdarray<T>> partitionS(final int... breaks) {
+	default Stream<INdarray<V>> partitionS(final int... breaks) {
 		return this.splitS(breaks);
 	}
 
@@ -685,7 +685,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i 相对索引，拆分索引大于0小于length,i位于 第二即 _2位置的第一个元素。
 	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
 	 */
-	default Tuple2<INdarray<T>, INdarray<T>> partition(final int i) {
+	default Tuple2<INdarray<V>, INdarray<V>> partition(final int i) {
 		return this.split(i);
 	}
 
@@ -711,7 +711,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i 拆分索引大于0小于length,i位于 第二即 _2位置的第一个元素。
 	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
 	 */
-	default Tuple2<INdarray<T>, INdarray<T>> split(final int i) {
+	default Tuple2<INdarray<V>, INdarray<V>> split(final int i) {
 		return Tuple2.of(this.subarray(0, i), this.subarray(i));
 	}
 
@@ -721,7 +721,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
 	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
 	 */
-	default List<INdarray<T>> splits(final int... breaks) {
+	default List<INdarray<V>> splits(final int... breaks) {
 		return this.splitS(breaks).collect(Collectors.toList());
 	}
 
@@ -731,7 +731,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
 	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
 	 */
-	default Stream<INdarray<T>> splitS(final int... breaks) {
+	default Stream<INdarray<V>> splitS(final int... breaks) {
 		return this.breakS(breaks).filter(e -> e._1 < this.end()) //
 				.map(t -> t.fmap2(_2 -> Math.min(_2, this.end()))) //
 				.map(Tuple2.bifun(this::create));
@@ -739,62 +739,76 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 
 	/**
 	 * 数据透视表 & 递归分组计算的 指标框架 <br>
-	 * pivort table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构. <br>
+	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构.
 	 * pivotPath 就像一张脸谱，为 value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
 	 * @param <K>         键名索引类型
-	 * @param <INDICATOR> 核算指标
-	 * @param evaluator   核算器[t]->indicator,
+	 * @param <PV>        核算指标类型
+	 * @param <CF>        分类函数类型
+	 * @param pvteval     pivotValue的计算函数，pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求
+	 *                    核算器[t]->indicator,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
-	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
+	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
+	 *                    classifiers即是把一个value映射成一组标识[k]<br>
+	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
+	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
-	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
-			final Function<INdarray<T>, INDICATOR> evaluator, final Iterable<Function<T, K>> classifiers) {
-		return this.pivotTable(evaluator, Types.itr2array(classifiers));
+	default <K extends Comparable<K>, PV> Map<K, Object> pivotTable(final Function<INdarray<V>, PV> pvteval,
+			final Iterable<Function<V, K>> classifiers) {
+		return this.pivotTable(pvteval, Types.itr2array(classifiers));
 	}
 
 	/**
 	 * 数据透视表 & 递归分组计算的 指标框架 <br>
-	 * pivort table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构. <br>
+	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构.
 	 * pivotPath 就像一张脸谱，为 value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
 	 * @param <K>         键名索引类型
-	 * @param <INDICATOR> 核算指标
-	 * @param evaluator   核算器[t]->indicator,
+	 * @param <PV>        核算指标类型
+	 * @param <CF>        分类函数类型
+	 * @param pvteval     pivotValue的计算函数，pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求
+	 *                    核算器[t]->indicator,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
-	 * @param classifiers 枢轴：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
+	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
+	 *                    classifiers即是把一个value映射成一组标识[k]<br>
+	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
+	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
-	default <K extends Comparable<K>, INDICATOR> Map<K, Object> pivotTable(
-			final Function<INdarray<T>, INDICATOR> evaluator, final Stream<Function<T, K>> classifiers) {
+	default <K extends Comparable<K>, PV> Map<K, Object> pivotTable(final Function<INdarray<V>, PV> evaluator,
+			final Stream<Function<V, K>> classifiers) {
 		return this.pivotTable(evaluator, Types.stream2array(classifiers));
 	}
 
 	/**
 	 * 数据透视表 & 递归分组计算的 指标框架 <br>
-	 * pivort table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构.
+	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,v:value):pivotLine] 结构.
 	 * pivotPath 就像一张脸谱，为 value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <K>         键名索引类型
-	 * @param <INDICATOR> 核算指标类型
-	 * @param <CF>        分类函数类型
-	 * @param evaluator   核算器[t]->indicator,
+	 * @param <K>         PivotPath的元素类型
+	 * @param <PV>        PivotValue类型
+	 * @param <CF>        分类函数类型:V->K
+	 * @param pvteval     pivotValue的计算函数，pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求
+	 *                    核算器: vlaue->pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
-	 * @param classifiers 枢轴脸谱函数：分类函数序列 [cf1,cf2,...], 分类函数cf,把一组t元素映射成键名索引k:[t]->k
+	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
+	 *                    classifiers即是把一个value映射成一组标识[k]<br>
+	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
+	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴。
 	 */
-	default <K extends Comparable<K>, INDICATOR, CF extends Function<T, K>> Map<K, Object> pivotTable(
-			final Function<INdarray<T>, INDICATOR> evaluator, final CF[] classifiers) {
+	default <K extends Comparable<K>, PV, CF extends Function<V, K>> Map<K, Object> pivotTable(
+			final Function<INdarray<V>, PV> pvteval, final CF[] classifiers) {
 		final Map<K, Object> pivotLines = new ConcurrentHashMap<>(); // 透视表结果，用于结果返回。
 
 		if (null != classifiers && classifiers.length > 0) { // 分类函数非空,
-			final Consumer<Function<INdarray<T>, ?>> cs = f -> this.groupBy(classifiers[0]) // 提取枢轴上的首位分类函数进行分组计算
+			final Consumer<Function<INdarray<V>, ?>> cs = f -> this.groupBy(classifiers[0]) // 提取枢轴上的首位分类函数进行分组计算
 					.entrySet().stream().parallel() // 为每个键建立一个指标计算线程 进行 并发计算。
 					.forEach(e -> pivotLines.put(e.getKey(), null == f ? e.getValue() : f.apply(e.getValue()))); // 分类指标核算
 			cs.accept(classifiers.length == 1 // 枢轴(分类函数序列)长度评估:是否抵达枢轴末端即枢轴长度递减至1
-					? evaluator // 抵达枢轴末端则执行指标计算
-					: nd -> nd.pivotTable(evaluator, Arrays.copyOfRange(classifiers, 1, classifiers.length))); // 未抵达枢轴末尾,继续沿着枢轴计算,递归进入下一阶层做分类统计。
+					? pvteval // 抵达枢轴末端则执行指标计算
+					: nd -> nd.pivotTable(pvteval, Arrays.copyOfRange(classifiers, 1, classifiers.length))); // 未抵达枢轴末尾,继续沿着枢轴计算,递归进入下一阶层做分类统计。
 		} // if classifiers
 
 		return pivotLines;
@@ -807,9 +821,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param classifier 分类器 把T转换成分组键名
 	 * @return {(k,nd)}
 	 */
-	default <K extends Comparable<K>> Map<K, INdarray<T>> groupBy(final Function<T, K> classifier) {
-		final Map<K, INdarray<T>> groups = new LinkedHashMap<>(); // 分组结果
-		final INdarray<T> ndata = this.dupdata(); // 备份当前数据区域已作为后续的索引排序的数据源。
+	default <K extends Comparable<K>> Map<K, INdarray<V>> groupBy(final Function<V, K> classifier) {
+		final Map<K, INdarray<V>> groups = new LinkedHashMap<>(); // 分组结果
+		final INdarray<V> ndata = this.dupdata(); // 备份当前数据区域已作为后续的索引排序的数据源。
 		final Iterator<Tuple2<K, Integer>> key_itr = this.map(classifier) // 计算键值（索引排序的键索引）
 				.map(Tuple2.snb2(0)).sorted().iterator(); // 计算键值并排序
 
@@ -841,7 +855,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 位置索引的元素值
 	 */
-	default T get() {
+	default V get() {
 		return this.get(0);
 	}
 
@@ -853,7 +867,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i 位置索引从0开始
 	 * @return 位置索引的元素值
 	 */
-	default T get(final int i) {
+	default V get(final int i) {
 		return this.checkStatus(i, _i -> this.data()[_i]);
 	}
 
@@ -863,7 +877,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param index 位置索引向量[_index:nd索引,i:元素偏移]
 	 * @return 位置索引的元素值
 	 */
-	default T get(final int... index) {
+	default V get(final int... index) {
 		if (index.length < 1) {
 			return null;
 		} else if (index.length < 2) {
@@ -884,7 +898,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper 数据映射
 	 * @return U 类型结果
 	 */
-	default <U> U get(final Function<INdarray<T>, U> mapper) {
+	default <U> U get(final Function<INdarray<V>, U> mapper) {
 		return this.mutate(mapper);
 	}
 
@@ -894,7 +908,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i 位置索引从0开始
 	 * @return 位置索引的元素值
 	 */
-	default Optional<T> getopt(final int i) {
+	default Optional<V> getopt(final int i) {
 		return Optional.ofNullable(this.get(i));
 	}
 
@@ -904,7 +918,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param index 区间索引
 	 * @return INdarray
 	 */
-	default INdarray<T> getnd(final int... index) {
+	default INdarray<V> getnd(final int... index) {
 		final List<Integer> _index = IntStream.of(index).boxed().collect(Collectors.toList());
 		return this.getnd(_index);
 	}
@@ -915,7 +929,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param index 区间索引
 	 * @return INdarray
 	 */
-	default INdarray<T> getnd(final Integer[] index) {
+	default INdarray<V> getnd(final Integer[] index) {
 		return this.getnd(Arrays.asList(index));
 	}
 
@@ -925,7 +939,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param index 区间索引
 	 * @return INdarray
 	 */
-	default INdarray<T> getnd(final List<Integer> index) {
+	default INdarray<V> getnd(final List<Integer> index) {
 		final LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides = this.strides();
 		return Optional.ofNullable(strides) //
 				.map(_strides -> _strides.get(index)).map(Tuple2.bifun(this::create)).orElse(null);
@@ -937,7 +951,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param index 区间索引
 	 * @return INdarray
 	 */
-	default INdarray<T> getndi(final int[] index) {
+	default INdarray<V> getndi(final int[] index) {
 		return this.getnd(index);
 	}
 
@@ -947,7 +961,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param index 区间索引
 	 * @return INdarray
 	 */
-	default INdarray<T> getndI(final Integer[] index) {
+	default INdarray<V> getndI(final Integer[] index) {
 		return this.getnd(index);
 	}
 
@@ -957,7 +971,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param index 区间索引
 	 * @return INdarray
 	 */
-	default INdarray<T> getndl(final List<Integer> index) {
+	default INdarray<V> getndl(final List<Integer> index) {
 		return this.getnd(index);
 	}
 
@@ -968,7 +982,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param t 元素值， 索引位置默认为0
 	 * @return 区段对象
 	 */
-	default INdarray<T> set(final T t) {
+	default INdarray<V> set(final V t) {
 		return this.set(0, t);
 	}
 
@@ -979,7 +993,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param t 元素值
 	 * @return 区段对象
 	 */
-	default INdarray<T> set(final int i, final T t) {
+	default INdarray<V> set(final int i, final V t) {
 		return this.checkStatus(i, index -> {
 			this.data()[index] = t;
 			return this;
@@ -999,7 +1013,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return ndarray this对象本身
 	 */
 	@SuppressWarnings("unchecked")
-	default <ND extends INdarray<T>> INdarray<T> assign(final TriConsumer<ND, Integer, T> setter) {
+	default <ND extends INdarray<V>> INdarray<V> assign(final TriConsumer<ND, Integer, V> setter) {
 		for (int i = 0; i < this.length(); i++) {
 			setter.accept((ND) this, i, this.get(i));
 		}
@@ -1017,7 +1031,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param setter 设置方法:(i:索引,t:原先的值)->{}
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final BiConsumer<Integer, T> setter) {
+	default INdarray<V> assign(final BiConsumer<Integer, V> setter) {
 		for (int i = 0; i < this.length(); i++) {
 			setter.accept(i, this.get(i));
 		}
@@ -1035,7 +1049,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param setter 设置方法:(t:原先的值)->{}
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final Consumer<T> setter) {
+	default INdarray<V> assign(final Consumer<V> setter) {
 		for (int i = 0; i < this.length(); i++) {
 			setter.accept(this.get(i));
 		}
@@ -1050,9 +1064,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param setter 根据索引设置值的函数,(i,t)->this.set(i,t);
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final Iterable<T> data, final int offset, final BiConsumer<Integer, T> setter) {
+	default INdarray<V> assign(final Iterable<V> data, final int offset, final BiConsumer<Integer, V> setter) {
 		if (data != null) {
-			final Iterator<T> itr = data.iterator();
+			final Iterator<V> itr = data.iterator();
 			for (int i = 0; i < this.length(); i++) {
 				if (!itr.hasNext()) {
 					break;
@@ -1074,7 +1088,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param offset starting position in this data. 从0开始
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final Iterable<T> data, final int offset) {
+	default INdarray<V> assign(final Iterable<V> data, final int offset) {
 		return this.assign(data, offset, null);
 	}
 
@@ -1085,7 +1099,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param setter 根据索引设置值的函数,(i,t)->this.set(i,t);
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final Iterable<T> data, final BiConsumer<Integer, T> setter) {
+	default INdarray<V> assign(final Iterable<V> data, final BiConsumer<Integer, V> setter) {
 		return this.assign(data, 0, setter);
 	}
 
@@ -1095,7 +1109,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param data 数据源
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final Iterable<T> data) {
+	default INdarray<V> assign(final Iterable<V> data) {
 		return this.assign(data, 0);
 	}
 
@@ -1106,7 +1120,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param offset starting position in this data. 从0开始
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final T[] data, final int offset) {
+	default INdarray<V> assign(final V[] data, final int offset) {
 		this.assign(Arrays.asList(data), offset);
 		return this;
 	}
@@ -1117,7 +1131,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param data 数据源
 	 * @return ndarray this对象本身
 	 */
-	default INdarray<T> assign(final T[] data) {
+	default INdarray<V> assign(final V[] data) {
 		return this.assign(data, 0);
 	}
 
@@ -1130,11 +1144,11 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param biop   数据操作 (t,u)->u
 	 * @return ndarray this对象本身
 	 */
-	default <U> INdarray<T> assign2(final Iterable<U> us, final int offset, final BiFunction<T, U, T> biop) {
+	default <U> INdarray<V> assign2(final Iterable<U> us, final int offset, final BiFunction<V, U, V> biop) {
 		final INdarray<U> _us = us instanceof INdarray ? (INdarray<U>) us
 				: StreamSupport.stream(us.spliterator(), false).collect(INdarray.ndclc(this.length()));
 		this.subarray(offset).subset().assign((i, t) -> {
-			final T _t = biop.apply(t.get(), _us.get(i % _us.length()));
+			final V _t = biop.apply(t.get(), _us.get(i % _us.length()));
 			t.set(_t);
 		});
 		return this;
@@ -1148,7 +1162,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param biop 数据操作 (t,u)->u
 	 * @return ndarray this对象本身
 	 */
-	default <U> INdarray<T> assign2(final Iterable<U> us, final BiFunction<T, U, T> biop) {
+	default <U> INdarray<V> assign2(final Iterable<U> us, final BiFunction<V, U, V> biop) {
 		return this.assign2(us, 0, biop);
 	}
 
@@ -1157,7 +1171,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return (head, tail)
 	 */
-	default Tuple2<T, INdarray<T>> carcdr() {
+	default Tuple2<V, INdarray<V>> carcdr() {
 		return Tuple2.of(this.head(), this.tail());
 	}
 
@@ -1166,7 +1180,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return head
 	 */
-	default T head() {
+	default V head() {
 		return this.length() > 0 ? this.get(0) : null;
 	}
 
@@ -1176,7 +1190,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n 长度
 	 * @return head
 	 */
-	default INdarray<T> head(final int n) {
+	default INdarray<V> head(final int n) {
 		final int _n = Math.min(this.length(), n);
 		return this.create(this.start(), this.start() + _n);
 	}
@@ -1186,7 +1200,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return headS
 	 */
-	default Stream<INdarray<T>> headS() {
+	default Stream<INdarray<V>> headS() {
 		return Stream.iterate(1, i -> i <= this.length(), i -> i + 1).map(this::head);
 	}
 
@@ -1197,7 +1211,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return heads
 	 */
-	default INdarray<INdarray<T>> heads() {
+	default INdarray<INdarray<V>> heads() {
 		return this.headS().collect(ndndclc(this.length()));
 	}
 
@@ -1206,7 +1220,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return tail
 	 */
-	default INdarray<T> tail() {
+	default INdarray<V> tail() {
 		if (this.start() + 1 < this.end())
 			return this.create(this.start() + 1);
 		else
@@ -1219,7 +1233,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n 长度
 	 * @return tail
 	 */
-	default INdarray<T> tail(final int n) {
+	default INdarray<V> tail(final int n) {
 		final int s = this.start() + (this.length() > n ? (this.length() - n) : 0);
 		return this.create(s, this.end());
 	}
@@ -1229,7 +1243,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return tailS
 	 */
-	default Stream<INdarray<T>> tailS() {
+	default Stream<INdarray<V>> tailS() {
 		return Stream.iterate(1, i -> i <= this.length(), i -> i + 1).map(this::tail);
 	}
 
@@ -1241,7 +1255,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return tails
 	 */
-	default INdarray<INdarray<T>> tails() {
+	default INdarray<INdarray<V>> tails() {
 		return this.tailS().collect(ndndclc(this.length()));
 	}
 
@@ -1250,7 +1264,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return last
 	 */
-	default T last() {
+	default V last() {
 		return this.get(this.end() - 1);
 	}
 
@@ -1260,7 +1274,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n 最后末尾的n个元素
 	 * @return ndarray
 	 */
-	default INdarray<T> last(final int n) {
+	default INdarray<V> last(final int n) {
 		return this.tail(n);
 	}
 
@@ -1269,7 +1283,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return initial 除掉最后一个元素所剩余的元素
 	 */
-	default INdarray<T> initial() {
+	default INdarray<V> initial() {
 		if (this.end() - 1 > this.start())
 			return this.create(this.start(), this.end() - 1);
 		else
@@ -1282,7 +1296,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param n 前部的哥哥元素
 	 * @return initial 除掉最后一个元素所剩余的元素
 	 */
-	default INdarray<T> intial(final int n) {
+	default INdarray<V> intial(final int n) {
 		if (this.end() - n > this.start())
 			return this.create(this.start(), this.start() + n);
 		else
@@ -1294,12 +1308,12 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 首尾顺序调转(start位于最后, end - 1位于第一)
 	 */
-	default INdarray<T> reverse() {
+	default INdarray<V> reverse() {
 		if (this.start() >= this.end()) {
 			// do nothing
 		} else {
 			for (int i = 0, j = this.length() - 1; i < j; i++, j--) {
-				final T t = this.get(i);
+				final V t = this.get(i);
 				this.set(i, this.get(j));
 				this.set(j, t);
 			} // for
@@ -1312,7 +1326,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return 数据流
 	 */
-	default Stream<T> stream() {
+	default Stream<V> stream() {
 		return Stream.iterate(0, i -> i + 1).limit(this.length()).map(this::get);
 	}
 
@@ -1323,7 +1337,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper t->u
 	 * @return ndarray
 	 */
-	default <U> INdarray<U> fmap(final Function<T, U> mapper) {
+	default <U> INdarray<U> fmap(final Function<V, U> mapper) {
 		return this.map(mapper).collect(INdarray.ndclc(this.length()));
 	}
 
@@ -1338,7 +1352,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper (i:索引从0开始,t:元素内容)->u
 	 * @return ndarray
 	 */
-	default <U> INdarray<U> fmap(final BiFunction<Integer, T, U> mapper) {
+	default <U> INdarray<U> fmap(final BiFunction<Integer, V, U> mapper) {
 		return this.map(mapper).collect(INdarray.ndclc(this.length()));
 	}
 
@@ -1350,7 +1364,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param streamer t->[x]
 	 * @return ndarray,返回对rawdata复制
 	 */
-	default <X, U extends Iterable<X>> INdarray<X> fflat(final Function<T, U> streamer) {
+	default <X, U extends Iterable<X>> INdarray<X> fflat(final Function<V, U> streamer) {
 		final X[] us = this.flatMap(e -> StreamSupport.stream(streamer.apply(e).spliterator(), false))
 				.collect(Types.arrayclc());
 		return of(us);
@@ -1375,7 +1389,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param streamer t->[x]
 	 * @return ndarray
 	 */
-	default <X, U extends Stream<X>> INdarray<X> fflatMap(final Function<T, U> streamer) {
+	default <X, U extends Stream<X>> INdarray<X> fflatMap(final Function<V, U> streamer) {
 		final X[] us = this.flatMap(e -> StreamSupport.stream(streamer.apply(e).spliterator(), false))
 				.collect(Types.arrayclc());
 		return of(us);
@@ -1388,7 +1402,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param us  第二元素
 	 * @return 拉链后的ndarray
 	 */
-	default <U> INdarray<Tuple2<T, U>> zip(final INdarray<U> us) {
+	default <U> INdarray<Tuple2<V, U>> zip(final INdarray<U> us) {
 		return INdarray.zip(this, us);
 	}
 
@@ -1399,7 +1413,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper nd->u
 	 * @return 左侧扫描
 	 */
-	default <U> Stream<U> scanlS(final Function<INdarray<T>, U> mapper) {
+	default <U> Stream<U> scanlS(final Function<INdarray<V>, U> mapper) {
 		final int n = this.length();
 		return Stream.iterate(0, i -> i < n, i -> i + 1).map(i -> this.head(i + 1)).map(mapper);
 	}
@@ -1411,7 +1425,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper nd->u
 	 * @return 左侧扫描
 	 */
-	default <U> INdarray<U> scanls(final Function<INdarray<T>, U> mapper) {
+	default <U> INdarray<U> scanls(final Function<INdarray<V>, U> mapper) {
 		return this.scanlS(mapper).collect(ndclc());
 	}
 
@@ -1422,7 +1436,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper nd->u
 	 * @return 右侧扫描
 	 */
-	default <U> Stream<U> scanrS(final Function<INdarray<T>, U> mapper) {
+	default <U> Stream<U> scanrS(final Function<INdarray<V>, U> mapper) {
 		final int n = this.length();
 		return Stream.iterate(0, i -> i < n, i -> i + 1).map(i -> this.tail(i + 1)).map(mapper);
 	}
@@ -1434,7 +1448,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper nd->u
 	 * @return 右侧扫描
 	 */
-	default <U> INdarray<U> scanrs(final Function<INdarray<T>, U> mapper) {
+	default <U> INdarray<U> scanrs(final Function<INdarray<V>, U> mapper) {
 		return this.scanrS(mapper).collect(ndclc());
 	}
 
@@ -1446,7 +1460,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return 数字向量
 	 */
 	@SuppressWarnings("unchecked")
-	default <N extends Number> INdarray<N> nums(final Function<T, N> mapper) {
+	default <N extends Number> INdarray<N> nums(final Function<V, N> mapper) {
 		final INdarray<N> nums = this.fmap(mapper);
 		return Arrays.equals(nums.data(), this.data()) ? (INdarray<N>) this : nums;
 	}
@@ -1475,7 +1489,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (Objects.equals(this.dtype(), Integer.class))
 			return (INdarray<Integer>) this;
 		else
-			return this.nums((Function<T, Integer>) e -> //
+			return this.nums((Function<V, Integer>) e -> //
 			(e instanceof Integer ? (Integer) e : ((Number) e).intValue()));
 	}
 
@@ -1489,7 +1503,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (Objects.equals(this.dtype(), Long.class))
 			return (INdarray<Long>) this;
 		else
-			return this.nums((Function<T, Long>) e -> //
+			return this.nums((Function<V, Long>) e -> //
 			(e instanceof Long ? (Long) e : ((Number) e).longValue()));
 	}
 
@@ -1503,7 +1517,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (this.dtype() == Double.class) {
 			return (INdarray<Double>) this;
 		} else {
-			return this.nums((Function<T, Double>) o -> //
+			return this.nums((Function<V, Double>) o -> //
 			Optional.of(o).map(p -> p instanceof INdarray ? ((INdarray<Object>) p).fflat().get() : p)
 					.map(e -> (e instanceof Double //
 							? (Double) e
@@ -1522,7 +1536,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (Objects.equals(this.dtype(), Float.class))
 			return (INdarray<Float>) this;
 		else
-			return this.nums((Function<T, Float>) e -> //
+			return this.nums((Function<V, Float>) e -> //
 			(e instanceof Float ? (Float) e : ((Number) e).floatValue()));
 	}
 
@@ -1536,7 +1550,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (Objects.equals(this.dtype(), Short.class))
 			return (INdarray<Short>) this;
 		else
-			return this.nums((Function<T, Short>) e -> //
+			return this.nums((Function<V, Short>) e -> //
 			(e instanceof Short ? (Short) e : ((Number) e).shortValue()));
 	}
 
@@ -1550,7 +1564,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 		if (Objects.equals(this.dtype(), Byte.class))
 			return (INdarray<Byte>) this;
 		else
-			return this.nums((Function<T, Byte>) e -> //
+			return this.nums((Function<V, Byte>) e -> //
 			(e instanceof Byte ? (Byte) e : ((Number) e).byteValue()));
 	}
 
@@ -1560,8 +1574,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return 数据元素类型
 	 */
 	@SuppressWarnings("unchecked")
-	default Class<T> dtype() {
-		return (Class<T>) this.data().getClass().getComponentType();
+	default Class<V> dtype() {
+		return (Class<V>) this.data().getClass().getComponentType();
 	}
 
 	/**
@@ -1605,7 +1619,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return T 类型数字，非数字返回null
 	 */
-	default T sum() {
+	default V sum() {
 		final Double dbl = Optional.ofNullable(this.dbls()) //
 				.flatMap(e -> e.filter(Objects::nonNull).reduce(Double::sum)) //
 				.orElse(null);
@@ -1617,7 +1631,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 * @return T 类型数字，非数字返回null
 	 */
-	default T product() {
+	default V product() {
 		final Double dbl = Optional.ofNullable(this.dbls()) //
 				.flatMap(e -> e.filter(Objects::nonNull).reduce((a, b) -> a * b)) //
 				.orElse(null);
@@ -1631,7 +1645,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return 类型数字，非数字返回null
 	 */
 	@SuppressWarnings("unchecked")
-	default T asNum(final Object obj) {
+	default V asNum(final Object obj) {
 		final Object value = Optional.ofNullable(obj).map(_value -> {
 			if (_value instanceof String) {
 				try {
@@ -1656,22 +1670,22 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 
 		if (Number.class.isAssignableFrom(dtype)) { // 尝试根据dtype 提取争取元素类型
 			if (Integer.class == dtype) {
-				return (T) (Integer) num.intValue();
+				return (V) (Integer) num.intValue();
 			} else if (Long.class == dtype) {
-				return (T) (Long) num.longValue();
+				return (V) (Long) num.longValue();
 			} else if (Double.class == dtype) {
-				return (T) (Double) num.doubleValue();
+				return (V) (Double) num.doubleValue();
 			} else if (Float.class == dtype) {
-				return (T) (Float) num.floatValue();
+				return (V) (Float) num.floatValue();
 			} else if (Short.class == dtype) {
-				return (T) (Short) num.shortValue();
+				return (V) (Short) num.shortValue();
 			} else if (Byte.class == dtype) {
-				return (T) (Byte) num.byteValue();
+				return (V) (Byte) num.byteValue();
 			} else { // Number 类型
-				return (T) num;
+				return (V) num;
 			}
 		} else {
-			return (T) num;
+			return (V) num;
 		} // if
 	}
 
@@ -1684,7 +1698,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param keyer t->k 排序键转换器,排序算法
 	 * @return 排序后的数据
 	 */
-	default <K extends Comparable<K>> INdarray<T> sortBy(final Function<T, K> keyer) {
+	default <K extends Comparable<K>> INdarray<V> sortBy(final Function<V, K> keyer) {
 		return this.sortBy(keyer, true);
 	}
 
@@ -1698,7 +1712,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param flag  排序标记,true:升序,false:降序
 	 * @return 排序后的数据
 	 */
-	default <K extends Comparable<K>> INdarray<T> sortBy(final Function<T, K> keyer, final boolean flag) {
+	default <K extends Comparable<K>> INdarray<V> sortBy(final Function<V, K> keyer, final boolean flag) {
 		return flag ? this.sorted((a, b) -> keyer.apply(a).compareTo(keyer.apply(b)))
 				: this.sorted((a, b) -> keyer.apply(b).compareTo(keyer.apply(a)));
 	}
@@ -1711,8 +1725,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return 排序后的数据
 	 */
 	@SuppressWarnings("unchecked")
-	default INdarray<T> sorted() {
-		return this.sorted((a, b) -> ((Comparable<T>) a).compareTo(b));
+	default INdarray<V> sorted() {
+		return this.sorted((a, b) -> ((Comparable<V>) a).compareTo(b));
 	}
 
 	/**
@@ -1721,12 +1735,12 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param comparator Compares its two arguments for order.
 	 * @return 排序后的数据
 	 */
-	default INdarray<T> sorted(final Comparator<T> comparator) {
+	default INdarray<V> sorted(final Comparator<V> comparator) {
 		final int n = this.length();
 		for (int i = 0; i < n - 1; i++) {
 			for (int j = i + 1; j < n; j++) {
 				if (comparator.compare(this.get(i), this.get(j)) > 0) { // 前面的大于后面的，掉转
-					final T t = this.get(i);
+					final V t = this.get(i);
 					this.set(i, this.get(j));
 					this.set(j, t);
 				} // if
@@ -1739,7 +1753,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *
 	 */
 	@Override
-	default int compareTo(final INdarray<T> o) {
+	default int compareTo(final INdarray<V> o) {
 		return INdarray.compareTo(this.data(), o.data());
 	}
 
@@ -1750,9 +1764,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param end   结束位置
 	 * @return iterator
 	 */
-	default Iterator<T> iterator(final int start, final int end) {
+	default Iterator<V> iterator(final int start, final int end) {
 
-		return new Iterator<T>() {
+		return new Iterator<V>() {
 			private int i = start;
 
 			@Override
@@ -1761,7 +1775,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 			}
 
 			@Override
-			public T next() {
+			public V next() {
 				return data()[i++];
 			}
 		};
@@ -1771,7 +1785,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * 迭代器
 	 */
 	@Override
-	default Iterator<T> iterator() {
+	default Iterator<V> iterator() {
 		return this.iterator(this.start(), this.end());
 	}
 
@@ -1782,8 +1796,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper 结果变换类型 [t]->u, [t] 为 复制数组
 	 * @return U类型的结果
 	 */
-	default <U> U arrayOf(final Function<T[], U> mapper) {
-		final T[] ts = Arrays.copyOfRange(this.data(), this.start(), this.end());
+	default <U> U arrayOf(final Function<V[], U> mapper) {
+		final V[] ts = Arrays.copyOfRange(this.data(), this.start(), this.end());
 		return mapper.apply(ts);
 	}
 
@@ -1832,8 +1846,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *         value:数据分区ndarray,index:分区索引Interger[],level:u所在层级:从0开始,isleaf:
 	 *         是否是叶子节点。
 	 */
-	default INdarray<INdarray<T>> trieNodes() {
-		return this.trieNodes(e -> e.attrval(Types.cast((INdarray<T>) null)));
+	default INdarray<INdarray<V>> trieNodes() {
+		return this.trieNodes(e -> e.attrval(Types.cast((INdarray<V>) null)));
 	}
 
 	/**
@@ -1863,7 +1877,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 *         是否是叶子节点。
 	 */
 	default TrieNode<Integer> trieTree(LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides) {
-		final Collector<? super Tuple2<List<Integer>, INdarray<T>>, ?, TrieNode<Integer>> collector = Partitioner
+		final Collector<? super Tuple2<List<Integer>, INdarray<V>>, ?, TrieNode<Integer>> collector = Partitioner
 				.trieclc();
 		return Optional.ofNullable(strides) //
 				.orElse(Optional.ofNullable(this.strides()).orElse(new LinkedHashMap<>())) //
@@ -1924,7 +1938,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param p 结构划分
 	 * @return key->ndarray
 	 */
-	default Getter<String, INdarray<T>> struct(final Partitioner p) {
+	default Getter<String, INdarray<V>> struct(final Partitioner p) {
 		return key -> with_key(p, this).apply(key).orElse(null);
 	}
 
@@ -1934,7 +1948,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param kvs 划分的键名，键值列表
 	 * @return key->ndarray
 	 */
-	default Getter<String, INdarray<T>> struct(final Object... kvs) {
+	default Getter<String, INdarray<V>> struct(final Object... kvs) {
 		return this.struct(Partitioner.P2(kvs));
 	}
 
@@ -1946,7 +1960,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return U类型的结果
 	 */
 	@SuppressWarnings("unchecked")
-	default <SELF extends INdarray<T>, TARGET> TARGET mutate(final Function<SELF, TARGET> mapper) {
+	default <SELF extends INdarray<V>, TARGET> TARGET mutate(final Function<SELF, TARGET> mapper) {
 		return mapper.apply((SELF) this);
 	}
 
@@ -1957,7 +1971,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mapper   结果变换类型 this->u, this 为当前ISeq对象
 	 * @return U类型的结果
 	 */
-	default <TARGET> TARGET dataOf(final Function<T[], TARGET> mapper) {
+	default <TARGET> TARGET dataOf(final Function<V[], TARGET> mapper) {
 		return mapper.apply(this.data());
 	}
 
@@ -1967,7 +1981,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param fmt 格式化输出
 	 * @return 格式化输出
 	 */
-	default String toString(final Function<T, String> fmt) {
+	default String toString(final Function<V, String> fmt) {
 		return String.format("[ %s ]", this.stream().map(fmt).collect(Collectors.joining(", ")));
 	}
 
@@ -1991,8 +2005,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param size 提取数据的长度
 	 * @return i:提取周期，从0开始、行号索引 -> 提取第i个mod周期开始后的size长度的数据。(row)
 	 */
-	default Getter<Integer, INdarray<T>> modgets(final int mod, final int size) {
-		final INdarray<INdarray<T>> rows = this.subset(is_modrem(mod, 0), size);
+	default Getter<Integer, INdarray<V>> modgets(final int mod, final int size) {
+		final INdarray<INdarray<V>> rows = this.subset(is_modrem(mod, 0), size);
 		return i -> rows.get(i);
 	}
 
@@ -2003,7 +2017,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mod 行长度
 	 * @return 行数据流
 	 */
-	default Stream<INdarray<T>> rowS(final int mod) {
+	default Stream<INdarray<V>> rowS(final int mod) {
 		return this.subsetS(is_modrem(mod, 0), mod);
 	}
 
@@ -2013,7 +2027,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mod 取模长度
 	 * @return (i:行号索引,从0开始i)->row
 	 */
-	default Getter<Integer, INdarray<T>> rows(final int mod) {
+	default Getter<Integer, INdarray<V>> rows(final int mod) {
 		return this.modgets(mod, mod);
 	}
 
@@ -2024,7 +2038,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mod 行长度
 	 * @return 列数据流
 	 */
-	default Stream<INdarray<IPoint<T>>> colS(final int mod) {
+	default Stream<INdarray<IPoint<V>>> colS(final int mod) {
 		final int n = this.length();
 		return Stream.iterate(0, i -> i + 1).limit(mod) //
 				.map(i -> Stream.iterate(0, j -> j + i < n, j -> j + mod)//
@@ -2043,7 +2057,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mod 取模长度,行长度
 	 * @return i:列号索引，从0开始->col，返回列cell引用向量，每个cell为一个长度为1的ndarray,即entry et
 	 */
-	default Getter<Integer, INdarray<IPoint<T>>> cols(final int mod) {
+	default Getter<Integer, INdarray<IPoint<V>>> cols(final int mod) {
 		return i -> this.subset(is_modrem(mod, i));
 	}
 
@@ -2053,7 +2067,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mod 取模长度，行长度
 	 * @return i:列号索引，从0开始->col,返回列数据向量
 	 */
-	default Getter<Integer, INdarray<T>> cols2(final int mod) {
+	default Getter<Integer, INdarray<V>> cols2(final int mod) {
 		int n = this.length() / mod;
 		return i -> this.subsetS(is_modrem(mod, i)).map(e -> e.get()).collect(INdarray.ndclc(n));
 	}
@@ -2065,7 +2079,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i   行号索引从0开始
 	 * @return i:行号索引，从0开始->row
 	 */
-	default INdarray<T> row(final int mod, final int i) {
+	default INdarray<V> row(final int mod, final int i) {
 		return this.rows(mod).get(i);
 	}
 
@@ -2076,7 +2090,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i   列号索引从0开始
 	 * @return 返回列cell引用向量，每个cell为一个长度为1的ndarray,即entry et，引用原始data数据
 	 */
-	default INdarray<IPoint<T>> col(final int mod, final int i) {
+	default INdarray<IPoint<V>> col(final int mod, final int i) {
 		return this.cols(mod).get(i);
 	}
 
@@ -2087,7 +2101,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param i   列号索引从0开始
 	 * @return 返回列数据向量,不再引用原始data数据
 	 */
-	default INdarray<T> col2(final int mod, final int i) {
+	default INdarray<V> col2(final int mod, final int i) {
 		return this.cols2(mod).get(i);
 	}
 
@@ -2098,18 +2112,18 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param get_children 求取子节点方法
 	 * @return 子节点的数据流 [(path,nd)]
 	 */
-	default <U extends Iterable<INdarray<T>>> Stream<Tuple2<INdarray<Integer>, INdarray<T>>> traverseS(
-			final Function<INdarray<T>, U> get_children) {
+	default <U extends Iterable<INdarray<V>>> Stream<Tuple2<INdarray<Integer>, INdarray<V>>> traverseS(
+			final Function<INdarray<V>, U> get_children) {
 
-		final Tuple2<INdarray<Integer>, INdarray<T>> root = Tuple2.of(INdarray.from(0), this); // 根节点
-		final Stack<Tuple2<INdarray<Integer>, INdarray<T>>> stack = new Stack<>();
+		final Tuple2<INdarray<Integer>, INdarray<V>> root = Tuple2.of(INdarray.from(0), this); // 根节点
+		final Stack<Tuple2<INdarray<Integer>, INdarray<V>>> stack = new Stack<>();
 		stack.push(root);
 
 		return Stream.iterate(root, e -> !stack.empty(), e -> {
-			final Tuple2<INdarray<Integer>, INdarray<T>> p = stack.pop();
+			final Tuple2<INdarray<Integer>, INdarray<V>> p = stack.pop();
 
 			if (p._2 != null) { // 尚未结束
-				final Iterable<INdarray<T>> children = get_children.apply(p._2);
+				final Iterable<INdarray<V>> children = get_children.apply(p._2);
 				final INdarray<Integer> path = p._1;
 				if (children != null) { // 子节点有效
 					Types.itr2stream(children).map(Tuple2.snb(0)).collect(Lisp.llclc(true)).forEach(tup -> {
@@ -2134,8 +2148,8 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param get_children 求取子节点方法
 	 * @return 子节点的nd [(path,nd)]
 	 */
-	default <U extends Iterable<INdarray<T>>> INdarray<Tuple2<INdarray<Integer>, INdarray<T>>> traverses(
-			final Function<INdarray<T>, U> get_children) {
+	default <U extends Iterable<INdarray<V>>> INdarray<Tuple2<INdarray<Integer>, INdarray<V>>> traverses(
+			final Function<INdarray<V>, U> get_children) {
 		return this.traverseS(get_children).collect(ndclc());
 	}
 
@@ -2146,7 +2160,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param nd 另一个ndarray
 	 * @return 连接以后的ndarray
 	 */
-	default INdarray<T> concat(final Iterable<T> nd) {
+	default INdarray<V> concat(final Iterable<V> nd) {
 		return INdarray.of(INdarray.concat(this.mydata(), INdarray.of(nd).mydata()));
 	}
 
@@ -2158,7 +2172,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @return 连接以后的ndarray,新生成的nd对象
 	 */
 	@SuppressWarnings("unchecked")
-	default INdarray<T> concat(final T... ts) {
+	default INdarray<V> concat(final V... ts) {
 		return INdarray.of(INdarray.concat(this.mydata(), ts));
 	}
 
@@ -2171,16 +2185,16 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param nus   另一个向量序列序列
 	 * @return ndarray 保持this形状的累加值
 	 */
-	default <U, NU extends INdarray<U>> INdarray<T> accum(final BiFunction<T, U, T> tuacc, final List<NU> nus) {
-		final INdarray<T> nt = this.dupdata();
+	default <U, NU extends INdarray<U>> INdarray<V> accum(final BiFunction<V, U, V> tuacc, final List<NU> nus) {
+		final INdarray<V> nt = this.dupdata();
 		final int tlen = nt.length();
 
 		for (final NU nu : nus) {
 			final int ulen = nu.length();
 			for (int i = 0; i < tlen; i++) {
-				final T t = nt.get(i);
+				final V t = nt.get(i);
 				final U u = nu.get(i % ulen);
-				final T _t = tuacc.apply(t, u);
+				final V _t = tuacc.apply(t, u);
 				nt.set(i, _t);
 			} // i
 		} // nu
@@ -2197,7 +2211,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param nu    另一个向量
 	 * @return ndarray ndarray 保持this形状的累加值
 	 */
-	default <U, NU extends INdarray<U>> INdarray<T> accum(final BiFunction<T, U, T> tuacc, final NU nu) {
+	default <U, NU extends INdarray<U>> INdarray<V> accum(final BiFunction<V, U, V> tuacc, final NU nu) {
 		return this.accum(tuacc, Arrays.asList(nu));
 	}
 
@@ -2272,7 +2286,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param nd  另一个ndarray
 	 * @return i:列号索引，从0开始->col,返回列数据向量
 	 */
-	default <U> T dot(final INdarray<U> nd) {
+	default <U> V dot(final INdarray<U> nd) {
 		return this.asNum(INdarray.dot(this.dbls(), nd.dbls()));
 	}
 
@@ -2282,7 +2296,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param nd 另一个ndarray
 	 * @return i:列号索引，从0开始->col,返回列数据向量
 	 */
-	default Number dotNum(final INdarray<T> nd) {
+	default Number dotNum(final INdarray<V> nd) {
 		return this.dotDbl(nd);
 	}
 
@@ -2292,7 +2306,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param nd 另一个ndarray
 	 * @return i:列号索引，从0开始->col,返回列数据向量
 	 */
-	default double dotDbl(final INdarray<T> nd) {
+	default double dotDbl(final INdarray<V> nd) {
 		return INdarray.dot(this.dbls(), nd.dbls());
 	}
 
@@ -2302,7 +2316,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param nd 另一个ndarray
 	 * @return i:列号索引，从0开始->col,返回列数据向量
 	 */
-	default int dotInt(final INdarray<T> nd) {
+	default int dotInt(final INdarray<V> nd) {
 		return this.dotNum(nd).intValue();
 	}
 
@@ -2480,7 +2494,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param kvs nx 元数据的 key,value 序列,比如: mod,1,表示构建1维列向量
 	 * @return nx 对象
 	 */
-	default INdarrayX<T> nx(final Object... kvs) {
+	default INdarrayX<V> nx(final Object... kvs) {
 		return this.withNX(e -> e, kvs);
 	}
 
@@ -2490,7 +2504,7 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param mod 指定mod行宽列数量,大于等于1的正整数。
 	 * @return nx 对象
 	 */
-	default INdarrayX<T> nx(final int mod) {
+	default INdarrayX<V> nx(final int mod) {
 		return this.nx(MetaKey.mod, mod);
 	}
 
@@ -2502,10 +2516,10 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	 * @param kvs   nxfun 的各种属性,比如 mod 取模长度等。
 	 * @return nxfun 的返回值
 	 */
-	default <U> U withNX(final Function<INdarrayX<T>, U> nxfun, Object... kvs) {
-		final INdarray<T> self = this; // 定义别名，方便NdarrayX引用
+	default <U> U withNX(final Function<INdarrayX<V>, U> nxfun, Object... kvs) {
+		final INdarray<V> self = this; // 定义别名，方便NdarrayX引用
 		// 私有类 矩阵化扩展的 Ndarray 的 实现：通过增加元数据metas来扩展,增加mod引入矩阵列数(行长度)来完成矩阵格式定义
-		class NdarrayX extends AbstractNdarray<T> implements INdarrayX<T> {
+		class NdarrayX extends AbstractNdarray<V> implements INdarrayX<V> {
 			// 构造函数
 			public NdarrayX() {
 				super(self.data(), Math.min(self.start(), self.datalen()), Math.min(self.end(), self.datalen()),
