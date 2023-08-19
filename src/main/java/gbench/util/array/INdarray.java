@@ -3330,8 +3330,9 @@ public interface INdarray<T> extends Comparable<INdarray<T>>, Iterable<T>, IStre
 	}
 
 	/**
-	 * 枢轴分类路径。(为一个值 赋与 多个键,这个 多个键序列 或者说 键路径 就是pivotPath: <br>
-	 * pivotTable就是由pivotPath,于值value构成键(pivotPath)值(value)对儿结合: [(pivotPath,value)]
+	 * 枢轴分类路径。(为一个值 赋予 多个键,这个 多个键序列 或者说 键路径 就是pivotPath: <br>
+	 * pivotTable就是由pivotPath,于值value构成键(pivotPath)值(value)对儿结合:
+	 * [(pivotPath,value):pivortLines]
 	 * 
 	 * @param <CF>        分类函数类型 t->u
 	 * @param <V>         分类对象类型
