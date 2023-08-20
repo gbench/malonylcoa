@@ -41,7 +41,7 @@ import gbench.util.tree.TrieNode;
 
 public class H2db {
 	/**
-	 * 创建表
+	 * 创建表sql
 	 * 
 	 * @param tblname 表名
 	 * @param line    数据行
@@ -83,7 +83,7 @@ public class H2db {
 	}
 
 	/**
-	 * 插入数据
+	 * 插入数据sql
 	 * 
 	 * @param tblname 表名
 	 * @param line    数据行
@@ -94,7 +94,7 @@ public class H2db {
 	}
 
 	/**
-	 * 插入数据
+	 * 插入数据sql
 	 * 
 	 * @param tblname 表名
 	 * @param line    数据行
@@ -120,7 +120,7 @@ public class H2db {
 	}
 
 	/**
-	 * 插入数据
+	 * 插入数据sql
 	 * 
 	 * @param tblname 表名
 	 * @param lines   数据行(keys:[k],values:[v])
