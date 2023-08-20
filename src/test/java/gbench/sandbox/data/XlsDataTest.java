@@ -8,7 +8,7 @@ import gbench.util.data.xls.SimpleExcel;
 /**
  * 
  */
-public class DataTest {
+public class XlsDataTest {
 
 	@Test
 	public void foo() {

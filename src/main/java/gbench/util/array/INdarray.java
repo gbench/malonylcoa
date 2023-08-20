@@ -997,6 +997,20 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * get的别名函数 <br>
+	 * 用于 编译器无法对get进行类型类型推导额情况 <br>
+	 * <b>关键的类:相对访问的终点实现</br>
+	 * 读取位置索引的元素值 <br>
+	 * 非法索引会抛出 ArrayIndexOutOfBoundsException
+	 *
+	 * @param i 位置索引从0开始
+	 * @return 位置索引的元素值
+	 */
+	default V at(final int i) {
+		return this.checkStatus(i, _i -> this.data()[_i]);
+	}
+
+	/**
 	 * 设置指定索引位置的元素值. <br>
 	 * this.set(0,t)的简写，方便对长度为1的INdarray进行处理。
 	 *
