@@ -155,8 +155,8 @@ public class H2Test {
 		final var ndatas = cph(RPTA(nats(n).data(), n)).map(e -> nd(e).dupdata()).collect(ndclc((int) pow(n, n))); // dataset,构造全排列的模拟数据集
 		final var xrb = rb(nats(n).fmap(DataMatrix::index_to_excel_name)); // 采用excel列命名模式的IRecord构建器
 		final var proto = xrb.get(ndatas.head().data()); // 基础结构：数据原型
-		final var identity = identity(ndatas.head()); // 数据行恒等函数，用于标识类型，这里只想ndatas的数据项类型
-		final var nd2rec = identity.andThen(xrb::get); // 数据行IRecord构建起
+		final var identity = identity(ndatas.head()); // 数据行恒等函数，用于标识类型，这里指向ndatas的数据项类型
+		final var nd2rec = identity.andThen(xrb::get); // 数据行IRecord构建器
 		final var classifiers = nats(n).tail().reverse().fmap(i -> identity.andThen(nd -> nd.get(i))); // 枢轴脸谱函数
 		final var ndapps = INdarray.from(h2_rec_1, h2_rec_2).fmap(MyDataApp::new); // 数据应用客户端
 		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % ndapps.length(); // 数据库索引生成函数
@@ -170,7 +170,7 @@ public class H2Test {
 			return dataApp.withTransaction(sess -> { // 分库分表的指标计算: (dbid:数据库索引,tblname:表名,rowids:行记录索引)
 				if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
 					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列ID
-				final var rowids = sess.sql2executeS(insql(tblname, nds.fmap(nd2rec))).collect(dfmclc).col(0); // 匹狼插入&获得行记录索引rowids
+				final var rowids = sess.sql2executeS(insql(tblname, nds.fmap(nd2rec))).collect(dfmclc).col(0); // 匹量插入&获得行记录索引rowids
 				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, rowids))); // (dbid:索引,tblname:表名,rowids:行记录索引)
 			}); // withTransaction
 		}; // 指标计算器
