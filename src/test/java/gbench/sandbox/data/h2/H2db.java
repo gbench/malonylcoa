@@ -444,9 +444,13 @@ public class H2db {
 	 * 手动触发关 语句和结果集
 	 */
 	public static final SQLExceptionalBiConsumer<Statement, ResultSet> hand_close = (stmt, rs) -> {
-		println("hand_close", LocalDateTime.now());
-		stmt.close();
-		rs.close();
+		println("hand_close", REC("stmt", stmt, "rs", rs, "time", LocalDateTime.now()));
+		if (null != stmt && !stmt.isClosed()) {
+			stmt.close();
+		}
+		if (null != rs && !rs.isClosed()) {
+			rs.close();
+		}
 	};
 
 	public static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
