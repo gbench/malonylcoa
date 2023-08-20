@@ -74,7 +74,7 @@ public class DataApp {
 
 		try {
 			conn = this.dataSource.getConnection();
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			e.printStackTrace();
 		}
 
@@ -195,7 +195,7 @@ public class DataApp {
 				debug.accept(String.format("%s", IRecord.rb("msg").get("tx:conn.close")));
 				conn.commit();
 			}
-		} catch (Throwable e) {
+		} catch (final Exception e) {
 			System.err.println("sess attributes" + session.getAttributes()); // 打印会话属性
 			e.printStackTrace();
 
@@ -208,7 +208,7 @@ public class DataApp {
 
 			try { // 数据回滚
 				conn.rollback();
-			} catch (SQLException e1) {
+			} catch (final SQLException e1) {
 				e1.printStackTrace();
 			}
 		} finally {
@@ -218,7 +218,7 @@ public class DataApp {
 					conn.close();
 					// System.err.println("连接关闭");
 				} // if
-			} catch (SQLException e) {
+			} catch (final SQLException e) {
 				e.printStackTrace();
 			} // try
 		} // try
@@ -1673,7 +1673,7 @@ public class DataApp {
 			} else {
 				try {
 					b = Boolean.parseBoolean(o + "");
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					// do nothing
 				} // try
 			} // if
@@ -1759,7 +1759,7 @@ public class DataApp {
 			U u = null;
 			try {
 				u = mapper.apply((T[]) oo);
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				// do nothing
 			} // try
 
@@ -2220,7 +2220,7 @@ public class DataApp {
 
 						try {
 							ret = ta.compareTo(tb);// 进行元素比较
-						} catch (Exception e) {
+						} catch (final Exception e) {
 							final String[] aa = Stream.of(ta, tb)
 									.map(o -> o != null ? o.getClass().getName() + o : "null").toArray(String[]::new);
 							ret = aa[0].compareTo(aa[1]);// 进行元素比较
@@ -2415,7 +2415,7 @@ public class DataApp {
 				while (i < line.length()) {
 					sb.append(line.charAt(i++));
 				} //
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				// e.printStackTrace();
 				sb.append(line);
 			}
@@ -2543,7 +2543,7 @@ public class DataApp {
 				Double dbl = Optional.ofNullable(defaultValue).map(Number::doubleValue).orElse(null);
 				try {
 					dbl = Double.parseDouble(obj.toString());
-				} catch (Exception e) { //
+				} catch (final Exception e) { //
 					// do nothing
 				} // try
 
@@ -2580,7 +2580,7 @@ public class DataApp {
 				for (String format : "HH:mm:ss,HH:mm,HHmmss,HHmm,HH".split("[,]+")) {
 					try {
 						lt = LocalTime.parse(line, DateTimeFormatter.ofPattern(format));
-					} catch (Exception ex) {
+					} catch (final Exception ex) {
 						// do nothing
 					}
 					if (lt != null)
@@ -2594,7 +2594,7 @@ public class DataApp {
 				for (String format : "yyyy-MM-dd,yyyy-M-d,yyyy/MM/dd,yyyy/M/d,yyyyMMdd".split("[,]+")) {
 					try {
 						ld = LocalDate.parse(line, DateTimeFormatter.ofPattern(format));
-					} catch (Exception ex) {
+					} catch (final Exception ex) {
 						// do nothing
 					}
 					if (ld != null)
@@ -2634,7 +2634,7 @@ public class DataApp {
 				for (String format : patterns.split("[,]+")) {
 					try {
 						ldt = LocalDateTime.parse(line, DateTimeFormatter.ofPattern(format));
-					} catch (Exception ex) {
+					} catch (final Exception ex) {
 						// do nothing
 					}
 					if (ldt != null)
@@ -2782,7 +2782,7 @@ public class DataApp {
 			}, (aa, bb) -> {
 				try {
 					throw new Exception("slidingclc 不支持并发 的流处理模式！");
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
 				}
 				aa.addAll(bb);
@@ -3374,12 +3374,12 @@ public class DataApp {
 				final String[] JDBC_METADATA_TABLE_TYPES = { "TABLE" };
 				tables = databaseMetaData.getTables(catalog, schema, tableName, JDBC_METADATA_TABLE_TYPES);
 				flag = tables.next();
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 			} finally {
 				try {
 					tables.close();
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					System.err.println("Error closing meta data tables:" + e);
 					e.printStackTrace();
 				}
@@ -3624,7 +3624,7 @@ public class DataApp {
 			Optional<IRecord> maybe = Optional.empty();
 			try {
 				maybe = this.sql2executeS(sql).findFirst();
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 			}
 			return maybe;
@@ -3695,7 +3695,7 @@ public class DataApp {
 		 * @throws SQLException
 		 */
 		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql,
-				BiConsumer<Statement, ResultSet> close_callback) throws SQLException {
+				final SQLExceptionalBiConsumer<Statement, ResultSet> close_callback) throws SQLException {
 			return this.sql2pdS(sql, t -> close_callback.accept(t._2._1, t._2._2));
 		}
 
@@ -3708,12 +3708,21 @@ public class DataApp {
 		 * @throws SQLException
 		 */
 		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql,
-				Consumer<Tuple2<Connection, Tuple2<Statement, ResultSet>>> close_callback) throws SQLException {
+				final ExceptionalConsumer<Tuple2<Connection, Tuple2<Statement, ResultSet>>> close_callback)
+				throws SQLException {
 			final var conn = this.getConnection();
 			final var stmt = conn.createStatement();
 			final var rs = stmt.executeQuery(sql);
-			final var data = IJdbcSession.readDataS(rs,
-					t -> close_callback.accept(Tuple2.of(conn, Tuple2.of(stmt, rs))));
+			final var ar = new AtomicReference<Exception>();
+			final Runnable close = () -> {
+				try {
+					close_callback.accept(Tuple2.of(conn, Tuple2.of(stmt, rs)));
+				} catch (Exception e) {
+					ar.set(e);
+				}
+			};
+			final var data = IJdbcSession.readDataS(rs, t -> close.run());
+			this.add(data._2.onClose(close)); // 等级数据流，以便在关闭流的时候触发close_callback
 			return data;
 		}
 
@@ -3731,7 +3740,7 @@ public class DataApp {
 			X x = null;
 			try {
 				x = this.path2x(path, flds, tail_clause);
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 			}
 
@@ -3751,7 +3760,7 @@ public class DataApp {
 			X x = null;
 			try {
 				x = this.path2x(path, flds);
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 			}
 
@@ -3789,7 +3798,7 @@ public class DataApp {
 			try {
 				stream = IJdbcSession.psql2recordS(getConnection(), sql, params, SQL_MODE.QUERY, false);
 				this.add(stream);
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				final IRecord line = REC("name", "psql2recordS", "sql", sql, "params", params);
 				this.getAttributes().add(UUID.randomUUID().toString(), line); // 随机生成异常key
 				throw e; // 再次抛出异常
@@ -3811,7 +3820,7 @@ public class DataApp {
 
 			try {
 				stream = IJdbcSession.psql2recordS(this.getConnection(), sql, params, SQL_MODE.UPDATE, false);
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				final IRecord line = REC("name", "psql2updateS", "sql", sql, "params", params);
 				this.getAttributes().add(UUID.randomUUID().toString(), line); // 随机生成异常key
 				throw e;
@@ -3918,7 +3927,7 @@ public class DataApp {
 							.map(v -> v instanceof Clob ? (Object) clob2str((Clob) v) : null).orElse(value);
 					rec.add(name, _value);
 				} // for
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				e.printStackTrace();
 			} // try
 
@@ -3955,7 +3964,7 @@ public class DataApp {
 					char[] buffer = new char[(int) n];
 					reader.read(buffer);
 					line = new String(buffer);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
 				} // try
 				return line;
@@ -3972,7 +3981,7 @@ public class DataApp {
 			return t -> {
 				try {
 					exceptioncs.accept(t);
-				} catch (Throwable e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
 				}
 			};
@@ -3989,11 +3998,9 @@ public class DataApp {
 			return t -> {
 				try {
 					return exceptionFunction.apply(t);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
-				} catch (Throwable e) {
-					e.printStackTrace();
-				} // try// try
+				}
 
 				return null;
 			};// 返回一个Function
@@ -4062,7 +4069,7 @@ public class DataApp {
 									} else { // 已经读取到了最后一条数据,返回null
 										try { // 执行回调函数
 											close_callback.accept(IRecord.rb("rs").get(rs));
-										} catch (Throwable e) {
+										} catch (final Exception e) {
 											e.printStackTrace();
 										} // 执行回调函数
 										stopflag.set(true); // 设置结束标志
@@ -4132,7 +4139,7 @@ public class DataApp {
 							debug.accept(String.format("%s", IRecord.rb("msg").get("conn.close")));
 							conn.close();
 						} // close_conn && !connection.isClosed()
-					} catch (Exception e) {
+					} catch (final Exception e) {
 						e.printStackTrace();
 					} // try
 				}; // 关闭操作的回调函数
@@ -4203,10 +4210,28 @@ public class DataApp {
 		 * @param t 函数参数
 		 * @return U类型的函数
 		 * @throws Exception 异常
-		 * @throws Throwable 抛出物
 		 */
-		void accept(T t) throws Exception, Throwable;
+		void accept(T t) throws Exception;
+	}
 
+	/**
+	 * 可以抛出异常的消费函数
+	 *
+	 * @param <T> 源数据类型
+	 * @param <U> 源数据类型
+	 * @author gbench
+	 */
+	@FunctionalInterface
+	public interface ExceptionalBiConsumer<T, U> {
+		/**
+		 * 数据消费函数
+		 *
+		 * @param t 函数参数
+		 * @param u 函数参数
+		 * @return U类型的函数
+		 * @throws Exception 异常
+		 */
+		void accept(final T t, final U u) throws Exception;
 	}
 
 	/**
@@ -4229,6 +4254,26 @@ public class DataApp {
 	 */
 	public interface SQLExceptionalFunction<T, U> {
 		U apply(T t) throws SQLException;
+	}
+
+	/**
+	 * 可以抛出异常的消费函数
+	 *
+	 * @param <T> 源数据类型
+	 * @param <U> 源数据类型
+	 * @author gbench
+	 */
+	@FunctionalInterface
+	public interface SQLExceptionalBiConsumer<T, U> {
+		/**
+		 * 数据消费函数
+		 *
+		 * @param t 函数参数
+		 * @param u 函数参数
+		 * @return U类型的函数
+		 * @throws SQLException 异常
+		 */
+		void accept(final T t, final U u) throws SQLException;
 	}
 
 	/**
@@ -4584,11 +4629,11 @@ public class DataApp {
 			public JsonException() {
 			}
 
-			public JsonException(String message) {
+			public JsonException(final String message) {
 				super(message);
 			}
 
-			public JsonException(String message, Throwable cause) {
+			public JsonException(final String message, final Throwable cause) {
 				super(message, cause);
 			}
 		}
@@ -5212,7 +5257,7 @@ public class DataApp {
 				try {
 					final Object value = fld.get(obj);
 					lhm.put(key, value);
-				} catch (Exception e) {
+				} catch (final Exception e) {
 					e.printStackTrace();
 				}
 			} // for
@@ -5232,7 +5277,7 @@ public class DataApp {
 				if (obj != null && !o.getClass().isPrimitive() && !(o instanceof Number)) {
 					flag = true;
 				} // if
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				//
 			}
 			return flag;
@@ -5252,7 +5297,7 @@ public class DataApp {
 			Object o = null;
 			try {
 				o = parser.parseValue();
-			} catch (Exception e) {
+			} catch (final Exception e) {
 				final int p = tokenizer.getPoint();
 				final int endIndex = Math.min(p + 20, line.length());
 				final String errMsg = "格式不正确位置:" + line.substring(p, endIndex) + ";" + e.getMessage();
