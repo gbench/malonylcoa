@@ -2,16 +2,12 @@ package gbench.sandbox.data;
 
 import org.junit.jupiter.api.Test;
 
+import static gbench.sandbox.data.h2.H2db.hand_close;
 import static gbench.util.array.INdarray.ndclc;
 import static gbench.util.data.MyDataApp.ds;
 import static gbench.util.io.Output.println;
 
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.time.LocalDateTime;
-
 import gbench.util.data.DataApp.IRecord;
-import gbench.util.data.DataApp.SQLExceptionalBiConsumer;
 import gbench.util.data.MyDataApp;
 
 /**
@@ -54,9 +50,9 @@ public class MySQLTest {
 	public void qux() {
 		MyDataApp.debug = System.out::println;
 		new MyDataApp(ds(mysql_rec)).withTransaction(sess -> {
-			final var pd = sess.sql2pdS("select 11 a, 12 b union select 21 a, 22 b", close);
+			final var pd = sess.sql2pdS("select 11 a, 12 b union select 21 a, 22 b", hand_close); // 手动触发
 			final var nd = pd._2.limit(2).collect(ndclc()).cuts(pd._1.length).collect(ndclc());// 二维化
-			pd._2.close(); // 触发close 回调
+			pd._2.close(); // 手动触发close 回调
 			println(pd._1);
 			println(nd.nx(1));
 		});
@@ -69,12 +65,4 @@ public class MySQLTest {
 			"url", "jdbc:mysql://127.0.0.1:3309/hitler?serverTimezone=UTC", //
 			"driver", "com.mysql.cj.jdbc.Driver", //
 			"user", "root", "password", "123456");
-	/**
-	 * 
-	 */
-	final SQLExceptionalBiConsumer<Statement, ResultSet> close = (stmt, rs) -> {
-		println("myclose", LocalDateTime.now());
-		stmt.close();
-		rs.close();
-	};
 }

@@ -2,8 +2,11 @@ package gbench.sandbox.data.h2;
 
 import static gbench.util.array.INdarray.nats;
 import static gbench.util.data.DataApp.IRecord.REC;
+import static gbench.util.io.Output.println;
 import static gbench.util.lisp.ArrayRecord.ra;
 
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -26,6 +29,7 @@ import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.ExceptionalConsumer;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
+import gbench.util.data.DataApp.SQLExceptionalBiConsumer;
 import gbench.util.data.DataApp.Tuple2;
 import gbench.util.data.xls.DataMatrix;
 import gbench.util.data.xls.SimpleExcel;
@@ -39,7 +43,7 @@ public class H2db {
 	 * 创建表
 	 * 
 	 * @param tblname 表名
-	 * @param line  数据行
+	 * @param line    数据行
 	 * @return create table sql
 	 */
 	public static String ctsql(final String tblname, final IRecord line) {
@@ -81,7 +85,7 @@ public class H2db {
 	 * 插入数据
 	 * 
 	 * @param tblname 表名
-	 * @param line  数据行
+	 * @param line    数据行
 	 * @return insert sql
 	 */
 	public static String insql(final String tblname, final IRecord line) {
@@ -92,7 +96,7 @@ public class H2db {
 	 * 插入数据
 	 * 
 	 * @param tblname 表名
-	 * @param line  数据行
+	 * @param line    数据行
 	 * @return insert sql
 	 */
 	public static String insql(final String tblname, final Iterable<IRecord> lines) {
@@ -436,5 +440,15 @@ public class H2db {
 		return ra(nats(n).fmap(DataMatrix::index_to_excel_name));
 	}
 
-	public static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	/**
+	 * 手动触发关 语句和结果集
+	 */
+	public static final SQLExceptionalBiConsumer<Statement, ResultSet> hand_close = (stmt, rs) -> {
+		println("手动触发myclose", LocalDateTime.now());
+		stmt.close();
+		rs.close();
+	};
+
+	public static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
 }
