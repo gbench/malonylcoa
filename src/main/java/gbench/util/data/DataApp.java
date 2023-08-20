@@ -3713,16 +3713,22 @@ public class DataApp {
 			final var conn = this.getConnection();
 			final var stmt = conn.createStatement();
 			final var rs = stmt.executeQuery(sql);
-			final var ar = new AtomicReference<Exception>();
+			final var ar = new AtomicReference<SQLException>(); // 内部异常缓存
 			final Runnable close = () -> {
 				try {
 					close_callback.accept(Tuple2.of(conn, Tuple2.of(stmt, rs)));
-				} catch (Exception e) {
+				} catch (SQLException e) {
 					ar.set(e);
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
-			};
+			}; // close
 			final var data = IJdbcSession.readDataS(rs, t -> close.run());
 			this.add(data._2.onClose(close)); // 等级数据流，以便在关闭流的时候触发close_callback
+			if (ar.get() != null) {
+				throw ar.get();
+			}
+
 			return data;
 		}
 
