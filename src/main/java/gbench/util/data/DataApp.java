@@ -4028,16 +4028,17 @@ public class DataApp {
 
 			final String[] lbls = IJdbcSession.labels(rs);
 			final AtomicBoolean stopflag = new AtomicBoolean(false); // 是否达到末端
+			final Supplier<Stream<Object>> readline = () -> Stream.iterate(0, i -> i < lbls.length, i -> i + 1)
+					.map(trycatch((Integer i) -> rs.getObject(i + 1)));
 			final Stream<Object> stream = !rs.next() // 检查是否存在有后继
 					? Stream.of() // 空列表
 					: Stream.iterate( // 生成流对象
-							Stream.empty(), // 初始值
+							readline.get(), // 初始值
 							previous -> !stopflag.get(), // 是否到达末端
 							previous -> { // next
 								return trycatch((ResultSet r) -> { // 读取 resultset
 									if (r.next()) { // 先移动然后读取
-										return Stream.iterate(0, i -> i < lbls.length, i -> i + 1)
-												.map(trycatch((Integer i) -> rs.getObject(i + 1)));
+										return readline.get();
 									} else { // 已经读取到了最后一条数据,返回null
 										try { // 执行回调函数
 											close_callback.accept(IRecord.rb("rs").get(rs));
