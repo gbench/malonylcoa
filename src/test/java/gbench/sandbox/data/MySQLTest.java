@@ -38,7 +38,7 @@ public class MySQLTest {
 	public void quz() {
 		MyDataApp.debug = System.out::println;
 		new MyDataApp(ds(mysql_rec)).withTransaction(sess -> {
-			final var pd = sess.sql2dataS("select 11 a, 12 b union select 21 a, 22 b");
+			final var pd = sess.sql2pdS("select 11 a, 12 b union select 21 a, 22 b");
 			final var nd = pd._2.collect(ndclc()).cuts(pd._1.length).collect(ndclc());// 二维化
 			println(pd._1);
 			println(nd.nx(1));

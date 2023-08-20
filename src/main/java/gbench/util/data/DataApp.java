@@ -3647,17 +3647,17 @@ public class DataApp {
 		}
 
 		/**
-		 * 直接查询数据
+		 * 直接查询数据 Pair Data(表头:字符串数组,dataS:行顺序的数据元素流)
 		 * 
 		 * @param sql 结果集合
 		 * @return 结果集数据(列名序列:[s],值序列[d])
 		 * @throws SQLException
 		 */
-		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql) throws SQLException {
+		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql) throws SQLException {
 			final AtomicReference<SQLException> ar = new AtomicReference<>();
 			Tuple2<String[], Stream<Object>> data = null;
 			try {
-				data = this.sql2dataS(sql, t -> {
+				data = this.sql2pdS(sql, t -> {
 					// final Connection conn = t._1;
 					final Statement stmt = t._2._1;
 					final ResultSet rs = t._2._2;
@@ -3687,27 +3687,27 @@ public class DataApp {
 		}
 
 		/**
-		 * 直接查询数据
+		 * 直接查询数据 Pair Data(表头:字符串数组,dataS:行顺序的数据元素流)
 		 * 
 		 * @param sql            结果集合
 		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据(列名序列:[s],值序列[d])
 		 * @throws SQLException
 		 */
-		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql,
+		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql,
 				BiConsumer<Statement, ResultSet> close_callback) throws SQLException {
-			return this.sql2dataS(sql, t -> close_callback.accept(t._2._1, t._2._2));
+			return this.sql2pdS(sql, t -> close_callback.accept(t._2._1, t._2._2));
 		}
 
 		/**
-		 * 直接查询数据
+		 * 直接查询数据 Pair Data(表头:字符串数组,dataS:行顺序的数据元素流)
 		 * 
 		 * @param sql            结果集合
 		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据(列名序列:[s],值序列[d])
 		 * @throws SQLException
 		 */
-		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql,
+		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql,
 				Consumer<Tuple2<Connection, Tuple2<Statement, ResultSet>>> close_callback) throws SQLException {
 			final var conn = this.getConnection();
 			final var stmt = conn.createStatement();
