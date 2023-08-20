@@ -581,7 +581,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * nd=[1,2,3,4,5]的 <br>
 	 * nd.slidings(1,2) -> [0,1],[1,2],[2,3],[3,4],[4,5]] <br>
 	 * nd.slidings(2, 3) -> [[0,1,2],[2,3,4],[4]] <br>
-	 * <br>
+	 * nd.cuts(2) -> [[1,2],[3,4], [5]] <br>
+	 * nd.cuts(2,true) [[1,2],[3,4]] <br>
 	 * <p>
 	 * step 滑动步长 默认为1
 	 *
@@ -598,7 +599,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * nd=[1,2,3,4,5]的 <br>
 	 * nd.slidings(1,2) -> [0,1],[1,2],[2,3],[3,4],[4,5]] <br>
 	 * nd.slidings(2, 3) -> [[0,1,2],[2,3,4],[4]] <br>
-	 * <br>
+	 * nd.cuts(2) -> [[1,2],[3,4], [5]] <br>
+	 * nd.cuts(2,true) [[1,2],[3,4]] <br>
 	 *
 	 * @param n 移动步长 与 窗口大小 , 大于等于1的整数
 	 * @return 滑动窗口集合

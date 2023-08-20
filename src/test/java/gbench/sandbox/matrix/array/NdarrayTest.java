@@ -183,4 +183,11 @@ public class NdarrayTest {
 		println(nd3);
 	}
 
+	@Test
+	public void cuts() {
+		final var nd = INdarray.nd(1, 2, 3, 4, 5);
+		println("nd.cuts(2)", nd.cuts(2));
+		println("nd.cuts(2,true)", nd.cuts(2, true));
+	}
+
 }

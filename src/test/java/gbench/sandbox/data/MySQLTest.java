@@ -43,7 +43,6 @@ public class MySQLTest {
 			println(pd._1);
 			println(nd.nx(1));
 		});
-		// 最后关闭数据库连接
 	}
 
 	/**
