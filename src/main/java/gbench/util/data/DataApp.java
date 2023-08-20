@@ -192,7 +192,9 @@ public class DataApp {
 			conn.setAutoCommit(false);
 			action.accept(session);
 			if (!conn.isClosed()) {
-				debug.accept(String.format("%s", IRecord.rb("msg").get("tx:conn.close")));
+				if (null != debug) {
+					debug.accept(String.format("%s", IRecord.rb("msg").get("tx:conn.close")));
+				}
 				conn.commit();
 			}
 		} catch (final Exception e) {
