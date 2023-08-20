@@ -3663,7 +3663,13 @@ public class DataApp {
 					final ResultSet rs = t._2._2;
 					try {
 						stmt.close();
+						if (null != debug) {
+							debug.accept(String.format("%s", IRecord.rb("msg").get("stmt.close")));
+						}
 						rs.close();
+						if (null != debug) {
+							debug.accept(String.format("%s", IRecord.rb("msg").get("rs.close")));
+						}
 						// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
 					} catch (SQLException e) {
 						ar.set(e); // 记录内部异常

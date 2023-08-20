@@ -2,10 +2,10 @@ package gbench.sandbox.data;
 
 import org.junit.jupiter.api.Test;
 
+import static gbench.util.array.INdarray.ndclc;
 import static gbench.util.data.MyDataApp.ds;
 import static gbench.util.io.Output.println;
 
-import gbench.util.array.INdarray;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.MyDataApp;
 
@@ -39,7 +39,7 @@ public class MySQLTest {
 		MyDataApp.debug = System.out::println;
 		new MyDataApp(ds(mysql_rec)).withTransaction(sess -> {
 			final var pd = sess.sql2dataS("select 11 a, 12 b union select 21 a, 22 b");
-			final var nd = INdarray.of(pd._2.limit(2).toArray()).cuts(pd._1.length).collect(INdarray.ndclc());
+			final var nd = pd._2.collect(ndclc()).cuts(pd._1.length).collect(ndclc());// 二维化
 			println(pd._1);
 			println(nd.nx(1));
 		});
