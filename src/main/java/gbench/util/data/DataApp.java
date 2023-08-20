@@ -3655,19 +3655,26 @@ public class DataApp {
 		 */
 		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql) throws SQLException {
 			final AtomicReference<SQLException> ar = new AtomicReference<>();
-			final Tuple2<String[], Stream<Object>> data = this.sql2dataS(sql, t -> {
-				// final Connection conn = t._1;
-				final Statement stmt = t._2._1;
-				final ResultSet rs = t._2._2;
-				try {
-					stmt.close();
-					rs.close();
-					// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
-				} catch (SQLException e) {
-					ar.set(e); // 记录内部异常
-				}
-			});
+			Tuple2<String[], Stream<Object>> data = null;
+			try {
+				data = this.sql2dataS(sql, t -> {
+					// final Connection conn = t._1;
+					final Statement stmt = t._2._1;
+					final ResultSet rs = t._2._2;
+					try {
+						stmt.close();
+						rs.close();
+						// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
+					} catch (SQLException e) {
+						ar.set(e); // 记录内部异常
+					}
+				});
+			} catch (SQLException e) {
+				ar.set(e);
+			}
 			if (ar.get() != null) { // 抛出内部异常
+				final IRecord line = REC("name", "sql2dataS", "sql", sql);
+				this.getAttributes().add(UUID.randomUUID().toString(), line); // 随机生成异常key
 				throw ar.get();
 			}
 			return data;
@@ -3685,7 +3692,7 @@ public class DataApp {
 				Consumer<Tuple2<Connection, Tuple2<Statement, ResultSet>>> callback) throws SQLException {
 			final var conn = this.getConnection();
 			final var stmt = conn.createStatement();
-			final var rs = stmt.executeQuery("show tables");
+			final var rs = stmt.executeQuery(sql);
 			final var data = IJdbcSession.readDataS(rs, t -> callback.accept(Tuple2.of(conn, Tuple2.of(stmt, rs))));
 			return data;
 		}
