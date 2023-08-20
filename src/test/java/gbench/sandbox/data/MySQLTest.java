@@ -11,7 +11,7 @@ import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.MyDataApp;
 
 /**
- * 
+ * MySQL 的数据库使用示例
  */
 public class MySQLTest {
 
@@ -35,6 +35,9 @@ public class MySQLTest {
 		// 最后关闭数据库连接
 	}
 
+	/**
+	 * 自动触发
+	 */
 	@Test
 	public void quz() {
 		MyDataApp.debug = System.out::println;
@@ -46,13 +49,16 @@ public class MySQLTest {
 		});
 	}
 
+	/**
+	 * 手动触发
+	 */
 	@Test
 	public void qux() {
 		MyDataApp.debug = System.out::println;
 		new MyDataApp(ds(mysql_rec)).withTransaction(sess -> {
 			final var pd = sess.sql2pdS("select 11 a, 12 b union select 21 a, 22 b", hand_close); // 手动触发
-			final var nd = pd._2.limit(2).collect(ndclc()).cuts(pd._1.length).collect(ndclc());// 二维化
-			pd._2.close(); // 手动触发close 回调
+			final var nd = pd._2.limit(1 * 2).collect(ndclc()).cuts(pd._1.length).collect(ndclc());// 提取一行,构造短路流。
+			pd._2.close(); // 对于短路流需要使用手动触发close回调.不然结果集rs和语句stmt会一直处于打开状态直到会话被关闭。
 			println(pd._1);
 			println(nd.nx(1));
 		});
