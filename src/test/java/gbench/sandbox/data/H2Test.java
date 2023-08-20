@@ -157,7 +157,7 @@ public class H2Test {
 		final var proto = xrb.get(ndata.head().data()); // 基础结构：数据原型
 		final var nint_identity = identity(ndata.head()); // 数据行恒等函数用于标识类型:INdarray<Integer>
 		final var nd2rec = nint_identity.andThen(xrb::get); // 数据行IRecord构建起
-		final var classifiers = nats(n).tail().reverse().fmap(i -> nint_identity.andThen(INdarray::get)); // 枢轴脸谱函数
+		final var classifiers = nats(n).tail().reverse().fmap(i -> nint_identity.andThen(nd -> nd.get(i))); // 枢轴脸谱函数
 		final var ndapps = INdarray.from(h2_rec_1, h2_rec_2).fmap(MyDataApp::new); // 数据应用客户端
 		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % ndapps.length(); // 数据库索引生成函数
 		final Function<Integer, MyDataApp> db_f = ndapps::at; // 根据数据库索引获取数据库客户端DataApp
