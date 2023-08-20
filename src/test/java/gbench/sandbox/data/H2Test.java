@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static gbench.util.array.INdarray.NINT_NULL;
 import static gbench.util.array.INdarray.nats;
+import static gbench.util.array.INdarray.nd;
 import static gbench.util.array.INdarray.ndclc;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
@@ -150,9 +151,8 @@ public class H2Test {
 	public void qux() {
 		final var n = 4; // 数据行长度
 		final var t_prefix = "t_data"; // 数据表名前缀
-		final var dup = identity(Integer[].class).andThen(INdarray::nd).andThen(INdarray::dupdata); // 数据复制函数
-		final var classifiers = nats(n).tail().reverse().fmap(i -> identity(NINT_NULL).andThen(e -> e.get(i))); // 枢轴脸谱函数
-		final var ndata = cph(RPTA(nats(n).data(), n)).map(dup).collect(ndclc((int) pow(n, n))); // 原始数据，构造全排列模拟数据源
+		final var classifiers = nats(n).tail().reverse().fmap(i -> identity(NINT_NULL).andThen(INdarray::get)); // 枢轴脸谱函数
+		final var ndata = cph(RPTA(nats(n).data(), n)).map(e -> nd(e).dupdata()).collect(ndclc((int) pow(n, n))); // 原始数据，构造全排列模拟数据源
 		final var proto = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
 		final var proto_rb = IRecord.rb(proto.keys()); // record 构建器
 		final var ndapps = INdarray.from(h2_rec_1, h2_rec_2).fmap(MyDataApp::new); // 数据应用客户端
