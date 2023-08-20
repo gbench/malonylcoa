@@ -198,7 +198,7 @@ public class H2Test {
 
 	@Test
 	public void sql() {
-		println(insql2("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
+		println(insql("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
 	}
 
 	final String db_prefix = "malonylcoadb";

@@ -684,11 +684,13 @@ public class DataApp {
 		}
 
 		/**
-		 * @param <T>
-		 * @param <U>
-		 * @param t
-		 * @param u
-		 * @return
+		 * 二元组(t,u)
+		 * 
+		 * @param <T> 第一元素类型
+		 * @param <U> 第二元素类型
+		 * @param t   第一元素
+		 * @param u   第二元素
+		 * @return 二元组(t,u)
 		 */
 		public static <T, U> Tuple2<T, U> of(final T t, final U u) {
 			return new Tuple2<>(t, u);

@@ -123,10 +123,10 @@ public class H2db {
 	 * 插入数据
 	 * 
 	 * @param tblname 表名
-	 * @param line    数据行
+	 * @param lines   数据行(keys:[k],values:[v])
 	 * @return insert sql
 	 */
-	public static String insql2(final String tblname, Tuple2<? extends String[], ? extends Object[]> lines) {
+	public static String insql(final String tblname, Tuple2<? extends String[], ? extends Object[]> lines) {
 		final var keys = Arrays.stream(lines._1).collect(Collectors.joining(","));
 		final var rows = INdarray.of(lines._2).cuts(lines._1.length, true);
 		final Function<INdarray<?>, String> value_part = line -> line.map(e -> String.format("'%s'", v2s.apply(e)))
@@ -472,6 +472,10 @@ public class H2db {
 	};
 
 	public static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+	/**
+	 * 值变换函数
+	 */
 	private final static Function<Object, String> v2s = v -> {
 		if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
 			return JSON.toJson(v);
