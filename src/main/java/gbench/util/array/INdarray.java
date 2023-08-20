@@ -998,7 +998,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * get的别名函数 <br>
-	 * 用于 编译器无法对get进行类型类型推导的情况 <br>
+	 * 用于 编译器无法对get进行类型推导的情况 <br>
 	 * <b>关键的类:相对访问的终点实现</br>
 	 * 读取位置索引的元素值 <br>
 	 * 非法索引会抛出 ArrayIndexOutOfBoundsException
