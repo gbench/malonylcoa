@@ -445,12 +445,15 @@ public class H2db {
 	 */
 	public static final SQLExceptionalBiConsumer<Statement, ResultSet> hand_close = (stmt, rs) -> {
 		println("hand_close", REC("stmt", stmt, "rs", rs, "time", LocalDateTime.now()));
-		if (null != stmt && !stmt.isClosed()) {
-			stmt.close();
-		}
+
 		if (null != rs && !rs.isClosed()) {
 			rs.close();
 		}
+
+		if (null != stmt && !stmt.isClosed()) {
+			stmt.close();
+		}
+
 	};
 
 	public static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

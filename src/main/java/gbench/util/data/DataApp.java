@@ -3664,6 +3664,16 @@ public class DataApp {
 					final Statement stmt = t._2._1;
 					final ResultSet rs = t._2._2;
 					try {
+						/**
+						 * 需要注意 rs结果集需要在语句stmt之前给予关闭,因为rs依赖于stmt,即:stmt关闭，结果集定然会关闭。
+						 */
+						if (null != rs && !rs.isClosed()) {
+							rs.close();
+							if (null != debug) {
+								debug.accept(String.format("%s", IRecord.rb("msg").get("rs.close")));
+							}
+						} // rs
+
 						if (null != stmt && !stmt.isClosed()) {
 							stmt.close();
 							if (null != debug) {
@@ -3671,13 +3681,7 @@ public class DataApp {
 							}
 						} // stmt
 
-						if (null != rs && !rs.isClosed()) {
-							rs.close();
-							if (null != debug) {
-								debug.accept(String.format("%s", IRecord.rb("msg").get("rs.close")));
-							}
-						} // rs
-							// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
+						// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
 					} catch (SQLException e) {
 						ar.set(e); // 记录内部异常
 					}
