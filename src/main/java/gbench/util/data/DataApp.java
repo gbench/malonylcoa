@@ -3664,15 +3664,20 @@ public class DataApp {
 					final Statement stmt = t._2._1;
 					final ResultSet rs = t._2._2;
 					try {
-						stmt.close();
-						if (null != debug) {
-							debug.accept(String.format("%s", IRecord.rb("msg").get("stmt.close")));
-						}
-						rs.close();
-						if (null != debug) {
-							debug.accept(String.format("%s", IRecord.rb("msg").get("rs.close")));
-						}
-						// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
+						if (null != stmt && !stmt.isClosed()) {
+							stmt.close();
+							if (null != debug) {
+								debug.accept(String.format("%s", IRecord.rb("msg").get("stmt.close")));
+							}
+						} // stmt
+
+						if (null != rs && !rs.isClosed()) {
+							rs.close();
+							if (null != debug) {
+								debug.accept(String.format("%s", IRecord.rb("msg").get("rs.close")));
+							}
+						} // rs
+							// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
 					} catch (SQLException e) {
 						ar.set(e); // 记录内部异常
 					}
