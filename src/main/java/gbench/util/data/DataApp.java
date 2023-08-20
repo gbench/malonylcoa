@@ -3650,7 +3650,7 @@ public class DataApp {
 		 * 直接查询数据
 		 * 
 		 * @param sql 结果集合
-		 * @return
+		 * @return 结果集数据(列名序列:[s],值序列[d])
 		 * @throws SQLException
 		 */
 		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql) throws SQLException {
@@ -3685,7 +3685,7 @@ public class DataApp {
 		 * 
 		 * @param sql      结果集合
 		 * @param callback close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
-		 * @return
+		 * @return 结果集数据(列名序列:[s],值序列[d])
 		 * @throws SQLException
 		 */
 		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql,
