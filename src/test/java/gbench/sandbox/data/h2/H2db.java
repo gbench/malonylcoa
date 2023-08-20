@@ -24,6 +24,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import gbench.util.array.INdarray;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.ExceptionalConsumer;
@@ -100,17 +101,7 @@ public class H2db {
 	 * @return insert sql
 	 */
 	public static String insql(final String tblname, final Iterable<IRecord> lines) {
-		final Function<Object, String> v2s = v -> {
-			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
-				return JSON.toJson(v);
-			} else if (v instanceof LocalDateTime ldt) {
-				return ldt.format(dtf);
-			} else if (v instanceof DFrame dfm) {
-				return JSON.toJson(dfm);
-			} else {
-				return (v + "").replace("'", "''");
-			}
-		}; // 值书写器
+
 		final Function<IRecord, String> value_part = line -> line.tupleS()
 				.map(e -> String.format("'%s'", v2s.apply(e._2))).collect(Collectors.joining(", "));
 		final StringBuilder sb = new StringBuilder(); // sql写入缓存
@@ -120,6 +111,30 @@ public class H2db {
 				sb.append(String.format("insert into %s ( %s ) values ( %s )", tblname,
 						line.tupleS().map(e -> String.format("%s", e._1)).collect(Collectors.joining(", ")),
 						value_part.apply(line)));
+			} else { // 剩余行,追加value部分
+				sb.append(String.format(", ( %s )", value_part.apply(line)));
+			} // if
+		} // for
+
+		return sb.toString();
+	}
+
+	/**
+	 * 插入数据
+	 * 
+	 * @param tblname 表名
+	 * @param line    数据行
+	 * @return insert sql
+	 */
+	public static String insql2(final String tblname, Tuple2<? extends String[], ? extends Object[]> lines) {
+		final var keys = Arrays.stream(lines._1).collect(Collectors.joining(","));
+		final var rows = INdarray.of(lines._2).cuts(lines._1.length, true);
+		final Function<INdarray<?>, String> value_part = line -> line.map(e -> String.format("'%s'", v2s.apply(e)))
+				.collect(Collectors.joining(", "));
+		final StringBuilder sb = new StringBuilder(); // sql写入缓存
+		for (final var line : rows) {
+			if (sb.length() < 1) {// 第一行,开头部分
+				sb.append(String.format("insert into %s ( %s ) values ( %s )", tblname, keys, value_part.apply(line)));
 			} else { // 剩余行,追加value部分
 				sb.append(String.format(", ( %s )", value_part.apply(line)));
 			} // if
@@ -457,5 +472,16 @@ public class H2db {
 	};
 
 	public static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	private final static Function<Object, String> v2s = v -> {
+		if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
+			return JSON.toJson(v);
+		} else if (v instanceof LocalDateTime ldt) {
+			return ldt.format(dtf);
+		} else if (v instanceof DFrame dfm) {
+			return JSON.toJson(dfm);
+		} else {
+			return (v + "").replace("'", "''");
+		}
+	}; // 值书写器
 
 }

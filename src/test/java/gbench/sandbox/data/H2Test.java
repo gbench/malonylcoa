@@ -30,8 +30,9 @@ import gbench.sandbox.data.h2.H2db;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
+import gbench.util.data.DataApp.Tuple2;
 import gbench.util.data.xls.DataMatrix;
-import gbench.util.lisp.Tuple2;
+import gbench.util.lisp.Lisp;
 import gbench.util.tree.TrieNode;
 import gbench.util.type.Types;
 import gbench.util.array.INdarray;
@@ -193,6 +194,11 @@ public class H2Test {
 		println("size:\n", dfdata.size());
 		println("原始数据:\n", ndatas.nx(1));
 		println("nx.length:", ndatas.nx(1).length());
+	}
+
+	@Test
+	public void sql() {
+		println(insql2("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
 	}
 
 	final String db_prefix = "malonylcoadb";
