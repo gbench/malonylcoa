@@ -3960,6 +3960,42 @@ public class DataApp {
 		}
 
 		/**
+		 * 从当前游标开始 (不包含)依次向后读取数据 <br>
+		 * <br>
+		 * Record 的key 采用rs.getMetaData().getColumnLabel(索引）来获取。<br>
+		 *
+		 * @param rs       结果集合
+		 * @param callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
+		 * @return 结果集数据(列名序列:[s],值序列[d])
+		 * @throws SQLException
+		 */
+		static Tuple2<String[], Stream<Object>> readDataS(final ResultSet rs, final Runnable callback)
+				throws SQLException {
+
+			final String[] lbls = IJdbcSession.labels(rs);
+			final AtomicBoolean stopflag = new AtomicBoolean(false); // 是否达到末端
+			final Stream<Object> stream = !rs.next() // 检查是否存在有后继
+					? Stream.of() // 空列表
+					: Stream.iterate( // 生成流对象
+							Stream.empty(), // 初始值
+							previous -> !stopflag.get(), // 是否到达末端
+							previous -> { // next
+								return trycatch((ResultSet r) -> { // 读取 resultset
+									if (r.next()) { // 先移动然后读取
+										return Stream.iterate(0, i -> i < lbls.length, i -> i + 1)
+												.map(trycatch((Integer i) -> rs.getObject(i)));
+									} else { // 已经读取到了最后一条数据,返回null
+										callback.run(); // 执行回调函数
+										stopflag.set(true); // 设置结束标志
+										return Stream.empty(); // 返回空值
+									} // if
+								}).apply(rs); // trycatch
+							}).flatMap(e -> e); // iterate
+
+			return Tuple2.of(lbls, stream);
+		}
+
+		/**
 		 * 查询结果集合 <br>
 		 * <p>
 		 * 对于短路的流，注意调用 stream.close() 来释放数据库连接, 或者 是 调用 sess.clear 来给与清空。<br>
@@ -3992,6 +4028,59 @@ public class DataApp {
 		@SuppressWarnings("unchecked")
 		static Stream<IRecord> psql2recordS(final Connection connection, final String sql, final Map<Integer, ?> params,
 				final SQL_MODE sqlmode, final boolean close_conn) throws SQLException {
+			final AtomicReference<Runnable> ar = new AtomicReference<>(); // 回调关闭函数
+			return psql2t(connection, sql, params, sqlmode, close_conn, param -> {
+				final Connection conn = param._1;
+				final PreparedStatement pstmt = param._2._1;
+				final ResultSet rs = param._2._2;
+				final Runnable closeHandler = () -> { // 关闭操作的回调函数
+					try {
+						if (null != rs && !rs.isClosed()) { // 关闭结果集
+							if (null != debug) {
+								debug.accept(String.format("%s", IRecord.rb("msg").get("rs.close")));
+							}
+							rs.close();
+						} // !rs.isClosed()
+
+						if (null != pstmt && !pstmt.isClosed()) { // 关闭语句集合
+							if (null != debug) {
+								debug.accept(String.format("%s", IRecord.rb("msg").get("pstmt.close")));
+							}
+							pstmt.close();
+						} // !pstmt.isClosed())
+
+						if (null != conn && close_conn && !conn.isClosed()) { // 关闭数据库连接
+							debug.accept(String.format("%s", IRecord.rb("msg").get("conn.close")));
+							conn.close();
+						} // close_conn && !connection.isClosed()
+					} catch (Exception e) {
+						e.printStackTrace();
+					} // try
+				}; // 关闭操作的回调函数
+				ar.set(closeHandler);
+				return rs == null // 结果集检查
+						? (Stream<IRecord>) (Object) Stream.empty() // 空结果
+						: IJdbcSession.readlineS(rs, closeHandler); // 读取数据行
+			}).onClose(ar.get()); // 加入关闭处理子
+		}
+
+		/**
+		 * 查询结果集合 <br>
+		 * <p>
+		 * 对于短路的流，注意调用 stream.close() 来释放数据库连接, 或者 是 调用 sess.clear 来给与清空。<br>
+		 *
+		 * @param connection 数据库连接
+		 * @param sql        查询或更新语句
+		 * @param params     sql的占位参数, params 为空的时候 不予 进行 sql 语句填充
+		 * @param sqlmode    sql的模式，更新还是查询
+		 * @param close_conn 结束时候是否关闭 connection 数据连接
+		 * @return IRecord 的 数据流 [rec]
+		 * @throws SQLException
+		 */
+		static <T> T psql2t(final Connection connection, final String sql, final Map<Integer, ?> params,
+				final SQL_MODE sqlmode, final boolean close_conn,
+				final SQLExceptionalFunction<Tuple2<Connection, Tuple2<PreparedStatement, ResultSet>>, T> mapper)
+				throws SQLException {
 
 			final PreparedStatement pstmt = IJdbcSession.pstmt(connection, sqlmode, sql, params); // 创建查询语句
 
@@ -4015,28 +4104,8 @@ public class DataApp {
 			} // if // if
 
 			final ResultSet rs = _rs;
-			final Runnable closeHandler = () -> { // 关闭操作的回调函数
-				try {
-					if (null != rs && !rs.isClosed()) { // 关闭结果集
-						rs.close();
-					} // !rs.isClosed()
 
-					if (null != pstmt && !pstmt.isClosed()) { // 关闭语句集合
-						pstmt.close();
-					} // !pstmt.isClosed())
-
-					if (null != connection && close_conn && !connection.isClosed()) { // 关闭数据库连接
-						connection.close();
-					} // close_conn && !connection.isClosed()
-				} catch (Exception e) {
-					e.printStackTrace();
-				} // try
-			}; // 关闭操作的回调函数
-
-			return (rs == null // 结果集检查
-					? (Stream<IRecord>) (Object) Stream.empty() // 空结果
-					: IJdbcSession.readlineS(rs, closeHandler) // 读取数据行
-			).onClose(closeHandler); // 加入关闭处理子
+			return mapper.apply(Tuple2.of(connection, Tuple2.of(pstmt, rs))); // 加入关闭处理子
 		}
 
 	}
@@ -4070,6 +4139,17 @@ public class DataApp {
 	 */
 	public interface ExceptionalFunction<T, U> {
 		U apply(T t) throws Exception;
+	}
+
+	/**
+	 * 带有抛出异常的函数
+	 *
+	 * @param <T> 参数类型
+	 * @param <U> 返回类型
+	 * @author xuqinghua
+	 */
+	public interface SQLExceptionalFunction<T, U> {
+		U apply(T t) throws SQLException;
 	}
 
 	/**
@@ -5858,6 +5938,7 @@ public class DataApp {
 	}
 
 	private static int MAX_SIZE = 1024 * 1024 * 1024; // 最大长度
+	public static Consumer<String> debug;
 
 	private DataSource dataSource; // 注入系统的数据源
 

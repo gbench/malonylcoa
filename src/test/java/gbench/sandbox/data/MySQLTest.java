@@ -21,6 +21,18 @@ public class MySQLTest {
 		});
 	}
 
+	@Test
+	public void bar() {
+		MyDataApp.debug = System.out::println;
+		new MyDataApp(ds(mysql_rec)).withTransaction(sess -> {
+			final var tableS = sess.sql2recordS("show tables");
+			final var opt = tableS.findAny();
+			println(opt); // 此时statement,resultSet并没有关闭
+			tableS.close(); // 此时resultSet才给予关闭
+		});
+		// 最后关闭数据库连接
+	}
+
 	/**
 	 * 
 	 */
