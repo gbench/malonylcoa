@@ -2,10 +2,10 @@ package gbench.sandbox.data;
 
 import org.junit.jupiter.api.Test;
 
-import static gbench.util.array.INdarray.NINT_NULL;
 import static gbench.util.array.INdarray.nats;
 import static gbench.util.array.INdarray.nd;
 import static gbench.util.array.INdarray.ndclc;
+import static gbench.util.data.DataApp.DFrame.dfmclc;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
@@ -30,6 +30,7 @@ import gbench.sandbox.data.h2.H2db;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
+import gbench.util.data.xls.DataMatrix;
 import gbench.util.lisp.Tuple2;
 import gbench.util.tree.TrieNode;
 import gbench.util.type.Types;
@@ -149,12 +150,14 @@ public class H2Test {
 	 */
 	@Test
 	public void qux() {
-		final var n = 4; // 数据行长度
+		final var n = 4; // 数据行长度(数据集/矩阵的列宽度)
 		final var t_prefix = "t_data"; // 数据表名前缀
-		final var classifiers = nats(n).tail().reverse().fmap(i -> identity(NINT_NULL).andThen(INdarray::get)); // 枢轴脸谱函数
 		final var ndata = cph(RPTA(nats(n).data(), n)).map(e -> nd(e).dupdata()).collect(ndclc((int) pow(n, n))); // 原始数据，构造全排列模拟数据源
-		final var proto = xra(n).attach(ndata.head().data()); // 基础结构：数据原型
-		final var proto_rb = IRecord.rb(proto.keys()); // record 构建器
+		final var xrb = rb(nats(n).fmap(DataMatrix::index_to_excel_name)); // 采用excel列命名模式的IRecord构建器
+		final var proto = xrb.get(ndata.head().data()); // 基础结构：数据原型
+		final var nint_identity = identity(ndata.head()); // 数据行恒等函数用于标识类型:INdarray<Integer>
+		final var nd2rec = nint_identity.andThen(xrb::get); // 数据行IRecord构建起
+		final var classifiers = nats(n).tail().reverse().fmap(i -> nint_identity.andThen(INdarray::get)); // 枢轴脸谱函数
 		final var ndapps = INdarray.from(h2_rec_1, h2_rec_2).fmap(MyDataApp::new); // 数据应用客户端
 		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % ndapps.length(); // 数据库索引生成函数
 		final Function<Integer, MyDataApp> db_f = ndapps::at; // 根据数据库索引获取数据库客户端DataApp
@@ -167,8 +170,7 @@ public class H2Test {
 			return dataApp.withTransaction(sess -> { // 分库分表的指标计算: (dbid:数据库索引,tblname:表名,rowids:行记录索引)
 				if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
 					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列ID
-				final var rowids = sess.sql2executeS(insql(tblname, // 批量插入数据的sql语句
-						nds.fmap(e -> proto_rb.get(e)))).collect(DFrame.dfmclc).col(0); // 插入数据的行记录索引rowids
+				final var rowids = sess.sql2executeS(insql(tblname, nds.fmap(nd2rec))).collect(dfmclc).col(0); // 匹狼插入&获得行记录索引rowids
 				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, rowids))); // (dbid:索引,tblname:表名,rowids:行记录索引)
 			}); // withTransaction
 		}; // 指标计算器

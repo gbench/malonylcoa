@@ -4092,7 +4092,7 @@ public class DataApp {
 		/**
 		 * @param <T> 参数列表元素类型
 		 * @param kvs 键值序列 key1,value1,key2,value2,...
-		 * @return
+		 * @return IRecord 对象
 		 */
 		@SafeVarargs
 		final public <T> IRecord build(final T... kvs) {
