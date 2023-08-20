@@ -444,7 +444,7 @@ public class H2db {
 	 * 手动触发关 语句和结果集
 	 */
 	public static final SQLExceptionalBiConsumer<Statement, ResultSet> hand_close = (stmt, rs) -> {
-		println("手动触发myclose", LocalDateTime.now());
+		println("hand_close", LocalDateTime.now());
 		stmt.close();
 		rs.close();
 	};
