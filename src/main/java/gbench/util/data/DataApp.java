@@ -191,7 +191,10 @@ public class DataApp {
 		try {
 			conn.setAutoCommit(false);
 			action.accept(session);
-			conn.commit();
+			if (!conn.isClosed()) {
+				debug.accept(String.format("%s", IRecord.rb("msg").get("tx:conn.close")));
+				conn.commit();
+			}
 		} catch (Throwable e) {
 			System.err.println("sess attributes" + session.getAttributes()); // 打印会话属性
 			e.printStackTrace();
@@ -3644,6 +3647,50 @@ public class DataApp {
 		}
 
 		/**
+		 * 直接查询数据
+		 * 
+		 * @param sql 结果集合
+		 * @return
+		 * @throws SQLException
+		 */
+		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql) throws SQLException {
+			final AtomicReference<SQLException> ar = new AtomicReference<>();
+			final Tuple2<String[], Stream<Object>> data = this.sql2dataS(sql, t -> {
+				// final Connection conn = t._1;
+				final Statement stmt = t._2._1;
+				final ResultSet rs = t._2._2;
+				try {
+					stmt.close();
+					rs.close();
+					// conn.close(); /*连接不予关闭以便在同一个会话中重复使用*/
+				} catch (SQLException e) {
+					ar.set(e); // 记录内部异常
+				}
+			});
+			if (ar.get() != null) { // 抛出内部异常
+				throw ar.get();
+			}
+			return data;
+		}
+
+		/**
+		 * 直接查询数据
+		 * 
+		 * @param sql      结果集合
+		 * @param callback close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
+		 * @return
+		 * @throws SQLException
+		 */
+		default Tuple2<String[], Stream<Object>> sql2dataS(final String sql,
+				Consumer<Tuple2<Connection, Tuple2<Statement, ResultSet>>> callback) throws SQLException {
+			final var conn = this.getConnection();
+			final var stmt = conn.createStatement();
+			final var rs = stmt.executeQuery("show tables");
+			final var data = IJdbcSession.readDataS(rs, t -> callback.accept(Tuple2.of(conn, Tuple2.of(stmt, rs))));
+			return data;
+		}
+
+		/**
 		 * X 查询(不抛异常)
 		 *
 		 * @param path        连接列表
@@ -3930,12 +3977,12 @@ public class DataApp {
 		 * <br>
 		 * Record 的key 采用rs.getMetaData().getColumnLabel(索引）来获取。<br>
 		 *
-		 * @param rs       结果集合
-		 * @param callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
+		 * @param rs             结果集合
+		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据的record的流 [rec]
 		 * @throws SQLException
 		 */
-		static Stream<IRecord> readlineS(final ResultSet rs, final Runnable callback) throws SQLException {
+		static Stream<IRecord> readlineS(final ResultSet rs, final Runnable close_callback) throws SQLException {
 
 			final String[] lbls = IJdbcSession.labels(rs);
 			final AtomicBoolean stopflag = new AtomicBoolean(false); // 是否达到末端
@@ -3949,7 +3996,7 @@ public class DataApp {
 									if (r.next()) { // 先移动然后读取
 										return readline(r, lbls); // 读取结果集
 									} else { // 已经读取到了最后一条数据,返回null
-										callback.run(); // 执行回调函数
+										close_callback.run(); // 执行回调函数
 										stopflag.set(true); // 设置结束标志
 										return null; // 返回空值
 									} // if
@@ -3964,13 +4011,13 @@ public class DataApp {
 		 * <br>
 		 * Record 的key 采用rs.getMetaData().getColumnLabel(索引）来获取。<br>
 		 *
-		 * @param rs       结果集合
-		 * @param callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
+		 * @param rs             结果集合
+		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据(列名序列:[s],值序列[d])
 		 * @throws SQLException
 		 */
-		static Tuple2<String[], Stream<Object>> readDataS(final ResultSet rs, final Runnable callback)
-				throws SQLException {
+		static Tuple2<String[], Stream<Object>> readDataS(final ResultSet rs,
+				final ExceptionalConsumer<IRecord> close_callback) throws SQLException {
 
 			final String[] lbls = IJdbcSession.labels(rs);
 			final AtomicBoolean stopflag = new AtomicBoolean(false); // 是否达到末端
@@ -3983,9 +4030,13 @@ public class DataApp {
 								return trycatch((ResultSet r) -> { // 读取 resultset
 									if (r.next()) { // 先移动然后读取
 										return Stream.iterate(0, i -> i < lbls.length, i -> i + 1)
-												.map(trycatch((Integer i) -> rs.getObject(i)));
+												.map(trycatch((Integer i) -> rs.getObject(i + 1)));
 									} else { // 已经读取到了最后一条数据,返回null
-										callback.run(); // 执行回调函数
+										try { // 执行回调函数
+											close_callback.accept(IRecord.rb("rs").get(rs));
+										} catch (Throwable e) {
+											e.printStackTrace();
+										} // 执行回调函数
 										stopflag.set(true); // 设置结束标志
 										return Stream.empty(); // 返回空值
 									} // if
