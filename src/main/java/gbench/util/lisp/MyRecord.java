@@ -16,6 +16,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -304,6 +306,38 @@ public class MyRecord implements IRecord, Serializable {
 			} else { // 其他情况尝试做javabean分解
 				data.putAll(IRecord.obj2lhm(single));
 			} // if
+		} else if (n == 2) { // 仅有两个值的情况
+			AtomicReference<Iterable<?>> arkeys = new AtomicReference<>();
+			AtomicReference<Iterable<?>> arvalues = new AtomicReference<>();
+			Optional.ofNullable(kvs[0]).flatMap(kk -> Optional.ofNullable(kvs[1]) //
+					.map(vv -> { // (键名序列,键值序列的情况), 对键,值序列给予展开,注意仅对于都是序列的情况才给予展开，只有一个是序列的情况就不展开了。
+						if (kk.getClass().isArray()) {
+							arkeys.set(Arrays.asList((Object[]) kk)); // 注意需要之名参数为数组类型这里是静态编译的。
+						} else if (kk instanceof Iterable<?> kitr) {
+							arkeys.set(kitr);
+						}
+
+						if (vv.getClass().isArray()) {
+							arvalues.set(Arrays.asList((Object[]) vv)); // 注意需要之名参数为数组类型这里是静态编译的。
+						} else if (vv instanceof Iterable<?> vitr) {
+							arvalues.set(vitr);
+						}
+
+						if (arkeys.get() != null && arvalues.get() != null) { // 都是序列的情况
+							final Iterator<?> vitr = arvalues.get().iterator();
+							final Map<String, Object> _data = new HashMap<String, Object>();
+							for (final Object key : arkeys.get()) {
+								final Object value = vitr.hasNext() ? vitr.next() : null;
+								_data.put((key instanceof String k) ? k : key + "", value);
+
+							}
+							return _data;
+						} else { // 至少由一个不是序列的情况就不展开了
+							return null;
+						}
+					})).ifPresentOrElse(data::putAll, () -> { // 其他的情况
+						data.put((kvs[0] instanceof String k) ? k : kvs[0] + "", kvs[1]);
+					});
 		} else { // 键名减值序列
 			for (int i = 0; i < n - 1; i += 2) {
 				final String key = kvs[i] instanceof String ? kvs[i].toString() : kvs[i] + "";

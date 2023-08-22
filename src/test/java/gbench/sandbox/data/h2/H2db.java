@@ -40,6 +40,7 @@ import gbench.util.tree.Node;
 import gbench.util.tree.TrieNode;
 
 public class H2db {
+
 	/**
 	 * 创建表sql
 	 * 
@@ -52,13 +53,15 @@ public class H2db {
 		final var datepattern = "^[1-9]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\\s+(20|21|22|23|[0-1]\\d):[0-5]\\d:[0-5]\\d$";
 		final BiFunction<String, Object, String> typeof = (k, v) -> {
 			final String inttype = String.format("%s %s", "INT", "id".equalsIgnoreCase(k) ? "AUTO_INCREMENT" : "");
-			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable) {
+			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable || v == Map.class
+					|| v == IRecord.class
+					|| ((v instanceof Class<?>) && Iterable.class.isAssignableFrom(((Class<?>) v)))) {
 				return "JSON";
-			} else if (v instanceof Integer) {
+			} else if (v instanceof Integer || v == Integer.class) {
 				return inttype;
-			} else if (v instanceof Long) {
+			} else if (v instanceof Long || v == Long.class) {
 				return "BIGINT";
-			} else if (v instanceof Double) {
+			} else if (v instanceof Double || v == Double.class || v == Float.class) {
 				return "DEC";
 			} else if (v instanceof String s && s.matches(intpattern)) {
 				final var lng = Long.parseLong(s);
@@ -80,6 +83,18 @@ public class H2db {
 		final var sql = String.format("create table %s ( %s )", tblname, line.tupleS()
 				.map(e -> String.format("%s %s", e._1, typeof.apply(e._1, e._2))).collect(Collectors.joining(", ")));
 		return sql;
+	}
+
+	/**
+	 * 创建表sql
+	 * 
+	 * @param tblname 表名
+	 * @param line    数据行
+	 * @return create table sql
+	 */
+	public static String ctsql(final String tblname, final Tuple2<? extends String[], ? extends Object[]> lines) {
+		return ctsql(tblname, REC(lines._1, lines._2));
+
 	}
 
 	/**

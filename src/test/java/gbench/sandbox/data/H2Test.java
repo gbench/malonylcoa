@@ -44,6 +44,22 @@ import gbench.util.data.MyDataApp;
 public class H2Test {
 
 	@Test
+	public void sqlgen() {
+		final var proto = rb("id,name,password,sex,phone,address") //
+				.get(1, "zhangsan", 123456, "男", 18601690610l,
+						REC("city", "shanghai", "district", "changing", "street", "fahuazhenlu"));
+		println("ctsql t_user", ctsql("t_user", proto));
+		println("insql t_user", insql("t_user", proto));
+		println("insql t_tbl ", ctsql("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
+		println("insql t_tbl ", insql("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
+		// REC的双值展开
+		println(REC("nums", nats(4)));
+		println(REC("nums", nats(4).data()));
+		println(REC("nums", nats(4)));
+		println(REC(nats(4), nats(4)));
+	}
+
+	@Test
 	public void foo() {
 		println(JSON.isJson("1243.4"));
 		final var rec = rb("id,name,sex").get("1,zhangsan,man".split(",")).add("address",
@@ -194,11 +210,6 @@ public class H2Test {
 		println("size:\n", dfdata.size());
 		println("原始数据:\n", ndatas.nx(1));
 		println("nx.length:", ndatas.nx(1).length());
-	}
-
-	@Test
-	public void sql() {
-		println(insql("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
 	}
 
 	final String db_prefix = "malonylcoadb";
