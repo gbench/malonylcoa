@@ -4411,7 +4411,11 @@ public class DataApp {
 			Object[] oo = objs; // 参数值
 			if (objs.length == 1) { // 单一值的情况
 				if (objs[0] instanceof Iterable<?> itr) {
-					oo = StreamSupport.stream(itr.spliterator(), false).limit(MAX_SIZE).toArray();
+					if(itr instanceof Collection coll) {
+						oo = coll.toArray();
+					} else {
+						oo = StreamSupport.stream(itr.spliterator(), false).limit(MAX_SIZE).toArray();
+					} // if
 				} else if (objs[0] instanceof Stream) {
 					oo = ((Stream<?>) objs[0]).toArray();
 				} else {

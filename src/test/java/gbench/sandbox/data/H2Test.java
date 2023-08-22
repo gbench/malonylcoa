@@ -173,7 +173,7 @@ public class H2Test {
 		final var xrb = rb(nats(n).fmap(DataMatrix::index_to_excel_name)); // 采用excel列命名模式的IRecord构建器
 		final var proto = xrb.get(ndatas.head().data()); // 基础结构：数据原型
 		final var identity = identity(ndatas.head()); // 数据行恒等函数，用于标识类型，这里指向ndatas的数据项类型
-		final var nd2rec = identity.andThen(xrb::get); // 数据行IRecord构建器
+		final var nd2rec = identity.andThen(INdarray::data).andThen(xrb::get); // 数据行IRecord构建器
 		final var classifiers = nats(n).tail().reverse().fmap(i -> identity.andThen(nd -> nd.get(i))); // 枢轴脸谱函数
 		final var ndapps = INdarray.from(h2_rec_1, h2_rec_2).fmap(MyDataApp::new); // 数据应用客户端
 		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % ndapps.length(); // 数据库索引生成函数
