@@ -186,7 +186,7 @@ public class H2Test {
 			final var dataApp = db_f.apply(dbid); // 数据库客户端dataApp：提取指定数据库索引所标记的数据库
 			return dataApp.withTransaction(sess -> { // 分库分表的指标计算: (dbid:数据库索引,tblname:表名,rowids:行记录索引)
 				if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
-					sess.sqlexecute(ctsql(tblname, (IRecord) proto.prepend("ID", 0).mutate2(IRecord::REC))); // 增加一个自增长列ID
+					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0))); // 增加一个自增长列ID
 				final var rowids = sess.sql2executeS(insql(tblname, nds.fmap(nd2rec))).collect(dfmclc).col(0); // 匹量插入&获得行记录索引rowids
 				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, rowids))); // (dbid:索引,tblname:表名,rowids:行记录索引)
 			}); // withTransaction
