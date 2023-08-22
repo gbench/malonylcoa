@@ -393,6 +393,23 @@ public class DataApp {
 		}
 
 		@Override
+		public int hashCode() {
+			return Objects.hash(this._1, this._2);
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (obj instanceof Tuple2) {
+				final BiPredicate<Object, Object> eql = (a, b) -> a != null ? a.equals(b) : b == null;
+				@SuppressWarnings("unchecked")
+				final Tuple2<Object, Object> another = (Tuple2<Object, Object>) obj;
+				return eql.test(this._1, another._1) && eql.test(this._2, another._2);
+			} else {
+				return false;
+			}
+		}
+
+		@Override
 		@SuppressWarnings("unchecked")
 		public int compareTo(final Tuple2<T, U> o) {
 			if (o == null)
@@ -765,6 +782,55 @@ public class DataApp {
 		 */
 		public static <X, Y, Z> Function<Tuple2<X, Y>, Z> bifun(final BiFunction<X, Y, Z> mapper) {
 			return tup -> mapper.apply(tup._1, tup._2);
+		}
+
+		/**
+		 * 生成一个 (x,y) 类型的 comparator <br>
+		 * (升顺序,先比较第一元素键名,然后比较键值)
+		 *
+		 * @param <X> 第一元素类型
+		 * @param <Y> 第二元素类型
+		 * @return 生成一个 comparator
+		 */
+		public static <X, Y> Comparator<Tuple2<X, Y>> defaultComparator() {
+			@SuppressWarnings("unchecked")
+			final BiFunction<Object, Object, Integer> cmp = (a, b) -> { // 生成比较函数
+				if (a == null && b == null)
+					return 0;
+				else if (a == null) {
+					return -1;
+				} else if (b == null) {
+					return 1;
+				} else { // a b 均为 非空
+					int ret = -1; // 默认返回值
+					try {
+						if (a instanceof String || b instanceof String) {
+							throw new Exception("字符串比较,设计的跳转异常，并非错误，这是一条类似于goto 的跳转语句写法");
+						} else {
+							ret = ((Comparable<Object>) a).compareTo(b);
+						} // if
+					} catch (final Exception e) {
+						final String _a = a.toString();
+						final String _b = b.toString();
+						try { // 尝试做数字解析
+							ret = Double.compare(Double.parseDouble(_a), Double.parseDouble(_b));
+						} catch (Exception p) {
+							ret = _a.compareTo(_b);
+						} // try
+					} // try
+
+					return ret; // 返回比较结果
+				} // if
+			}; // cmp 比较函数
+
+			return (tup1, tup2) -> {
+				final int a = cmp.apply(tup1._1, tup2._1);
+				if (a == 0) {
+					return cmp.apply(tup1._2, tup2._2);
+				} else {
+					return a;
+				} // if
+			};
 		}
 
 		public final T _1;
