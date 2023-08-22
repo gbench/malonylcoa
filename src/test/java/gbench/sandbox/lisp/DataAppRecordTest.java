@@ -18,6 +18,8 @@ public class DataAppRecordTest {
 		println(REC("nums", nats(4).data()));
 		println(REC("nums", nats(4)));
 		println(REC(nats(4), nats(4)));
+		println(REC("nums", nats(4),"name","zhangsan"));
+		println(REC("nums", nats(4),"name"));
 	}
 
 }
