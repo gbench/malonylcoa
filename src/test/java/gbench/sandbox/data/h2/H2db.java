@@ -89,12 +89,11 @@ public class H2db {
 	 * 创建表sql
 	 * 
 	 * @param tblname 表名
-	 * @param line    数据行
+	 * @param lines   数据行(keys:[k],values:[v])
 	 * @return create table sql
 	 */
 	public static String ctsql(final String tblname, final Tuple2<? extends String[], ? extends Object[]> lines) {
 		return ctsql(tblname, REC(lines._1, lines._2));
-
 	}
 
 	/**
@@ -116,7 +115,6 @@ public class H2db {
 	 * @return insert sql
 	 */
 	public static String insql(final String tblname, final Iterable<IRecord> lines) {
-
 		final Function<IRecord, String> value_part = line -> line.tupleS()
 				.map(e -> String.format("'%s'", v2s.apply(e._2))).collect(Collectors.joining(", "));
 		final StringBuilder sb = new StringBuilder(); // sql写入缓存
@@ -475,7 +473,6 @@ public class H2db {
 	 */
 	public static final SQLExceptionalBiConsumer<Statement, ResultSet> hand_close = (stmt, rs) -> {
 		println("hand_close", REC("stmt", stmt, "rs", rs, "time", LocalDateTime.now()));
-
 		if (null != rs && !rs.isClosed()) {
 			rs.close();
 		}
@@ -483,9 +480,11 @@ public class H2db {
 		if (null != stmt && !stmt.isClosed()) {
 			stmt.close();
 		}
-
 	};
 
+	/**
+	 * 时间日期格式化器
+	 */
 	public static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 	/**
