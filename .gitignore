@@ -2,3 +2,5 @@
 .idea/
 .settings
 /**/*.exe
+.classpath
+.project
