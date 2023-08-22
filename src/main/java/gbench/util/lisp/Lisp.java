@@ -455,12 +455,12 @@ public class Lisp {
 		final var _prefix = Optional.ofNullable(prefix).orElse("");
 		final var _delim = Optional.ofNullable(delim).orElse("");
 		final var _suffix = Optional.ofNullable(suffix).orElse("");
-		final var _gap = Optional.ofNullable(lndelim).orElse("");
+		final var _lndelim = Optional.ofNullable(lndelim).orElse("");
 		final var _empty = String.format("%s%s", _prefix, _suffix);
 		return Collector.of(() -> new StringJoiner(_delim, _prefix, _suffix), (acc, a) -> acc.add(a + ""), (a, b) -> {
 			final var _b = b.toString();
 			return _empty.equals(_b) ? a : // b是一个空串直接返回a
-					a.add(_gap + _b.substring(_prefix.length(), _b.length() - _suffix.length()));
+					a.add(_lndelim + _b.substring(_prefix.length(), _b.length() - _suffix.length()));
 		}, e -> Optional.ofNullable(e.toString()).map(p -> p.endsWith(_suffix) ? p : p + _suffix).get());
 	}
 
