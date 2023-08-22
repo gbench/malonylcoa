@@ -427,4 +427,41 @@ public class Lisp {
 		}, e -> finisher.apply((Stream<T>) e.stream()));
 	}
 
+	/**
+	 * 将所有元素串连字符串的归集器[t]->s
+	 * 
+	 * @param <T>    归集元素类型
+	 * @param params 串联参数设置为null表示采用默认"",
+	 *               prefix:前缀,delim:分片内元素分隔,suffix:后缀,lndelim:分片间隔
+	 * @return 将所有元素串连字符串的归集器[t]->s
+	 */
+	public static <T> Collector<T, ?, String> joinclc(final String... params) {
+		final var _params = null == params ? new String[4] : Arrays.copyOf(params, 4); // 转换成长度为4的数组形式
+		return Lisp.joinclc(_params[0], _params[1], _params[2], _params[3]);
+	}
+
+	/**
+	 * 将所有元素串连字符串的归集器[t]->s
+	 * 
+	 * @param <T>     归集元素类型
+	 * @param prefix  前缀
+	 * @param delim   同一一个执行分片之间的元素间分隔符
+	 * @param suffix  后缀
+	 * @param lndelim 并发计算的时候 分片之间的间隔,line delimeter.注意对于非并发流采用单分片机制不会用到lndelim
+	 * @return 将所有元素串连字符串的归集器[t]->s
+	 */
+	public static <T> Collector<T, ?, String> joinclc(final String prefix, final String delim, final String suffix,
+			final String lndelim) {
+		final var _prefix = Optional.ofNullable(prefix).orElse("");
+		final var _delim = Optional.ofNullable(delim).orElse("");
+		final var _suffix = Optional.ofNullable(suffix).orElse("");
+		final var _gap = Optional.ofNullable(lndelim).orElse("");
+		final var _empty = String.format("%s%s", _prefix, _suffix);
+		return Collector.of(() -> new StringJoiner(_delim, _prefix, _suffix), (acc, a) -> acc.add(a + ""), (a, b) -> {
+			final var _b = b.toString();
+			return _empty.equals(_b) ? a : // b是一个空串直接返回a
+					a.add(_gap + _b.substring(_prefix.length(), _b.length() - _suffix.length()));
+		}, e -> Optional.ofNullable(e.toString()).map(p -> p.endsWith(_suffix) ? p : p + _suffix).get());
+	}
+
 }

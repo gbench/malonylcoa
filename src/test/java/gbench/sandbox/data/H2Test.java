@@ -162,7 +162,7 @@ public class H2Test {
 		final var ndapps = INdarray.from(h2_rec_1, h2_rec_2).fmap(MyDataApp::new); // 数据应用客户端
 		final Function<INdarray<Integer>, Integer> dbid_f = path -> path.head() % ndapps.length(); // 数据库索引生成函数
 		final Function<Integer, MyDataApp> db_f = ndapps::at; // 根据数据库索引获取数据库客户端DataApp
-		final Function<INdarray<Integer>, String> tblname_f = path -> String.format("%s%s", t_prefix, path.get(1)); // 表名生成函数
+		final Function<INdarray<Integer>, String> tblname_f = path -> path.build1(1, 1).join(t_prefix, ""); // 表名生成函数
 		final Function<INdarray<INdarray<Integer>>, Object> evaluator = nds -> { // 分库分表的并行计算,以枢轴的分类序列path做为数据分片/分组的key,进而实现分表或分库
 			final var pvtpath = INdarray.pivotPath(classifiers, nds.head()); // 枢轴脸谱即枢轴的分类序列是由classifiers计算的分类key数组结构
 			final var dbid = dbid_f.apply(pvtpath); // 数据库索引:依据枢轴脸谱确定数据库

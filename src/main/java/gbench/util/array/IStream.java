@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
+import gbench.util.lisp.Lisp;
 import gbench.util.lisp.Tuple2;
 import gbench.util.type.Types;
 
@@ -197,6 +198,28 @@ public interface IStream<T> extends Iterable<T> {
 	default <R, A> R collect(final Supplier<R> supplier, final BiConsumer<R, ? super T> accumulator,
 			final BiConsumer<R, R> combiner) {
 		return this.stream().collect(supplier, accumulator, combiner);
+	}
+
+	/**
+	 * 使用param将各个元素给串联成字符串(各元素使用toString转换成字符串)
+	 * 
+	 * @param params 串联参数设置为null表示采用默认"",
+	 *               prefix:前缀,delim:分片内元素分隔,suffix:后缀,lndelim:分片间隔
+	 *               分隔,注意对于非并发流采用单分片机制不会用到lndelim
+	 * @return 元素被串联后的字符串
+	 */
+	default String join(final String... params) {
+		return this.collect(Lisp.joinclc(params));
+	}
+
+	/**
+	 * 使用param将各个元素给串联成字符串(各元素使用toString转换成字符串)
+	 * 
+	 * @param delim 分片内元素分隔
+	 * @return 元素被串联后的字符串
+	 */
+	default String join(final String delim) {
+		return this.join(null, delim);
 	}
 
 	/**
