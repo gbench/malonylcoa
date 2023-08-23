@@ -37,6 +37,7 @@ public class MathTest {
 			println(Math.sin(x));
 			println("---------------------------");
 		}
-		println(nats(10).add(1).fmap(n->3.1415926/n),nats(10).add(1).fmap(n->3.14/n).fmap(x->Tuple2.of(sin.apply(x), Math.sin(x))));
+		println(nats(10).add(1).fmap(n -> 3.1415926 / n),
+				nats(10).add(1).fmap(n -> 3.14 / n).fmap(x -> Tuple2.of(sin.apply(x), Math.sin(x))));
 	}
 }
