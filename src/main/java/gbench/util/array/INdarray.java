@@ -2892,7 +2892,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
-	 * @reutrn nd 对象
+	 * @return nd 对象
 	 */
 	static INdarray<Character> nd(final char... data) {
 		return INdarray.of(Types.chars2Chars.apply(data), 0, data.length, null);
@@ -2902,7 +2902,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
-	 * @reutrn nd 对象
+	 * @return nd 对象
 	 */
 	static INdarray<Byte> nd(final byte... data) {
 		return INdarray.of(Types.bytes2Bytes.apply(data), 0, data.length, null);
@@ -2912,7 +2912,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
-	 * @reutrn nd 对象
+	 * @return nd 对象
 	 */
 	static INdarray<Integer> nd(final int... data) {
 		return INdarray.of(Types.ints2Ints.apply(data), 0, data.length, null);
@@ -2922,7 +2922,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
-	 * @reutrn nd 对象
+	 * @return nd 对象
 	 */
 	static INdarray<Short> nd(final short... data) {
 		return INdarray.of(Types.shorts2Shorts.apply(data), 0, data.length, null);
@@ -2932,7 +2932,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
-	 * @reutrn nd 对象
+	 * @return nd 对象
 	 */
 	static INdarray<Long> nd(final long... data) {
 		return INdarray.of(Types.lngs2Lngs.apply(data), 0, data.length, null);
@@ -2942,7 +2942,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
-	 * @reutrn nd 对象
+	 * @return nd 对象
 	 */
 	static INdarray<Float> nd(final float... data) {
 		return INdarray.of(Types.floats2Floats.apply(data), 0, data.length, null);
@@ -2952,7 +2952,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
-	 * @reutrn nd 对象
+	 * @return nd 对象
 	 */
 	static INdarray<Double> nd(final double... data) {
 		return INdarray.of(Types.dbls2Dbls.apply(data), 0, data.length, null);
@@ -3032,7 +3032,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	/**
 	 * 点对象
 	 *
-	 * @param <T>
+	 * @param <T> 元素类型
 	 * @param ts  点值
 	 * @return 长度为1的点对象
 	 */
