@@ -53,7 +53,7 @@ dataApp2.sqldframe("select * from t_user");
 // pivotTable
 cph(RPTA(nats(2).data(),10)).map(INdarray::nd).map(INdarray::dupdata).collect(ndclc()).pivotTable(INdarray::length,nats(10).reverse().head(4).fmap(i->(Function<INdarray<Integer>,Integer>)nd->nd.get(i)));
 // 泰勒级数
-final var sin = identity(0d).andThen(x->nats(10).fmap(n->(n%2==0?1:-1)*1d/fact(2*n+1)*pow(x,2*n+1)).sum());
+final var sin = identity(0d).andThen(x->nats(7).fmap(n->(n%2==0?1:-1)*1d/fact(2*n+1)*pow(x,2*n+1)).sum());
 nats(10).add(1).fmap(n->3.1415926/n).fmap(sin);
 
 ```
