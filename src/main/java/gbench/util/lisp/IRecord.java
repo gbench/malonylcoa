@@ -3669,7 +3669,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 			Object[] oo = objs; // 参数值
 			if (objs.length == 1) { // 单一值的情况
 				if (objs[0] instanceof Iterable<?> itr) {
-					if (itr instanceof Collection coll) {
+					if (itr instanceof Collection<?> coll) {
 						oo = coll.toArray();
 					} else {
 						oo = StreamSupport.stream(itr.spliterator(), false).limit(MAX_SIZE).toArray();

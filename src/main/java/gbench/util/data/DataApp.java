@@ -286,6 +286,8 @@ public class DataApp {
 	}
 
 	/**
+	 * Tuple2
+	 * 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
 	 * @author xuqinghua
@@ -839,6 +841,8 @@ public class DataApp {
 	}
 
 	/**
+	 * IRecord
+	 * 
 	 * @author xuqinghua
 	 */
 	public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IRecord> {
@@ -4411,7 +4415,7 @@ public class DataApp {
 			Object[] oo = objs; // 参数值
 			if (objs.length == 1) { // 单一值的情况
 				if (objs[0] instanceof Iterable<?> itr) {
-					if (itr instanceof Collection coll) {
+					if (itr instanceof Collection<?> coll) {
 						oo = coll.toArray();
 					} else {
 						oo = StreamSupport.stream(itr.spliterator(), false).limit(MAX_SIZE).toArray();
@@ -4780,6 +4784,8 @@ public class DataApp {
 	public static class JSON {
 
 		/**
+		 * JsonException
+		 * 
 		 * @author gbench
 		 */
 		public static class JsonException extends RuntimeException {
@@ -5364,6 +5370,8 @@ public class DataApp {
 		} // JsonParser
 
 		/**
+		 * TokenType
+		 * 
 		 * @author gbench
 		 */
 		public static enum TokenType {
@@ -5371,11 +5379,11 @@ public class DataApp {
 		}
 
 		/**
+		 * Token
+		 * 
 		 * @author gbench
 		 */
 		public static class Token {
-			private TokenType type;
-			private String val;
 
 			public Token() {
 			}
@@ -5400,6 +5408,10 @@ public class DataApp {
 			public void setVal(String val) {
 				this.val = val;
 			}
+
+			private TokenType type;
+			private String val;
+
 		}
 
 		/**
@@ -5488,9 +5500,12 @@ public class DataApp {
 	}
 
 	/**
+	 * AbstractJdbcSession
+	 * 
+	 * @author gbench
+	 *
 	 * @param <D> 数据类型
 	 * @param <X> 归集类型
-	 * @author xuqinghua
 	 */
 	public static abstract class AbstractJdbcSession<D, X> implements IJdbcSession<D, X> {
 
