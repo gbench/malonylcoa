@@ -14,15 +14,41 @@
 3.  xxxx
 
 #### 使用说明
-
-jshell --class-path D:/sliced/mvn_repos/gbench/pubchem/malonylcoa/0.0.1-SNAPSHOT/malonylcoa-0.0.1-SNAPSHOT.jar
+#启动 jshell
+set mvn_repos_home=D:/sliced/mvn_repos
+jshell --class-path %mvn_repos_home%/gbench/pubchem/malonylcoa/0.0.1-SNAPSHOT/malonylcoa-0.0.1-SNAPSHOT.jar;%mvn_repos_home%/mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar;%mvn_repos_home%/com/h2database/h2/2.2.220/h2-2.2.220.jar
 ``` java
-import gbench.util.array.*
+// 导入数据库
+import gbench.util.array.*;
+import gbench.util.data.MyDataApp;
 import static gbench.util.lisp.Lisp.*
 import static gbench.util.array.INdarray.*
+import static gbench.util.data.DataApp.*;
+import static gbench.util.data.DataApp.IRecord.REC;
+import static gbench.util.data.DataApp.Tuple2.*;
+import static java.lang.Math.*;
 
-cph(RPTA(nats(2).data(),10)).map(INdarray::nd).map(INdarray::dupdata).collect(ndclc()).pivotTable(INdarray::length,nats(10).reverse().head(4).fmap(i->(Function<INdarray<Integer>,Integer>)nd->nd.get(i)))
+// 数据库配置
+final var mysql_rec = REC("url", "jdbc:mysql://127.0.0.1:3309/hitler?serverTimezone=UTC", "driver", "com.mysql.cj.jdbc.Driver", "user", "root", "password", "123456");
+final var h2_rec = IRecord.REC("url", String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", "malonylcoa"), "driver", "org.h2.Driver","user", "root", "password", "123456");
+
+// 查看数据表
+final var dataApp = new MyDataApp(mysql_rec);
+dataApp.sqldframe("show tables");
+dataApp.withTransaction(sess->sess.setData(sess.sql2pdS("show tables").fmap2(t->nd(t.toList()))));
+
+//h2数据库
+final var dataApp2 = new MyDataApp(h2_rec);
+dataApp2.sqldframe2("create table t_user(id int auto_increment,name varchar(128),password varchar(32),phone varchar(64),sex varchar)");
+dataApp2.sqldframe2("insert into t_user(name,password,phone,sex) values ('zhangsan','123456','18120751773','man')");
+dataApp2.sqldframe("select * from t_user");
+
+// pivotTable
+cph(RPTA(nats(2).data(),10)).map(INdarray::nd).map(INdarray::dupdata).collect(ndclc()).pivotTable(INdarray::length,nats(10).reverse().head(4).fmap(i->(Function<INdarray<Integer>,Integer>)nd->nd.get(i)));
 ```
+# 启动H2控制台 : 在eclipse debugshell
+org.h2.tools.Server.createWebServer("-web").start()
+
 #### 参与贡献
 
 1.  Fork 本仓库
