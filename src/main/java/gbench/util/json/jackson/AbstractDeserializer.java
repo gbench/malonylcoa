@@ -27,8 +27,9 @@ public abstract class AbstractDeserializer<T> extends StdDeserializer<T> {
 	private static final long serialVersionUID = 637227298143614828L;
 
 	/**
-	 * 反序列化 <br>
-	 * 构造函数
+	 * 反序列化 构造函数
+	 * 
+	 * @param tclass 目标类名
 	 */
 	public AbstractDeserializer(final Class<T> tclass) {
 		super(tclass);
@@ -37,7 +38,7 @@ public abstract class AbstractDeserializer<T> extends StdDeserializer<T> {
 	/**
 	 * 单层节点转换的ObjectNode变为IRecord
 	 * 
-	 * @param node
+	 * @param node 节点对象
 	 * @return IRecord 对象
 	 */
 	public T objnode2t(final ObjectNode node) {

@@ -9,6 +9,10 @@ import gbench.util.data.DataApp.Tuple2;
 
 /**
  * 节点书写器
+ * 
+ * @author gbench
+ *
+ * @param <N> 节点类型
  */
 public interface INodeWriter<N> {
 

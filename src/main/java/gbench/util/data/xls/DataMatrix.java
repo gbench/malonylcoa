@@ -33,7 +33,10 @@ import java.util.stream.StreamSupport;
 import gbench.util.lisp.Tuple2;
 
 /**
- * @author xuqinghua
+ * DataMatrix
+ * @author gbench
+ *
+ * @param <T> 矩阵元素类型
  */
 public class DataMatrix<T> implements Iterable<T[]> {
 

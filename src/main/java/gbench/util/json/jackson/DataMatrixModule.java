@@ -33,6 +33,8 @@ public class DataMatrixModule extends SimpleModule {
 	private static final long serialVersionUID = -7266350024200887114L;
 
 	/**
+	 * MySerializer
+	 * 
 	 * @param <T> Iterable的类型结构
 	 */
 	public static class MySerializer<T extends Iterable<?>> extends StdSerializer<T> {
@@ -82,6 +84,8 @@ public class DataMatrixModule extends SimpleModule {
 	}
 
 	/**
+	 * MyDeserializer
+	 * 
 	 * @param <T> Iterable的类型结构
 	 */
 	public static abstract class MyDeserializer<T extends Iterable<?>> extends StdDeserializer<T> {

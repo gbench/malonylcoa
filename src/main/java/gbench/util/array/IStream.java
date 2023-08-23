@@ -107,7 +107,6 @@ public interface IStream<T> extends Iterable<T> {
 	 * given predicate.
 	 * <p>
 	 * This is an intermediateoperation.
-	 * <p>
 	 * 
 	 * @param predicate a non-interfering, statelesspredicate to apply to each
 	 *                  element to determine if itshould be included
@@ -122,7 +121,6 @@ public interface IStream<T> extends Iterable<T> {
 	 * given predicate.
 	 * <p>
 	 * This is an intermediateoperation.
-	 * <p>
 	 * 
 	 * @param predicate a non-interfering, statelesspredicate to apply to each
 	 *                  element to determine if itshould be included
@@ -134,30 +132,30 @@ public interface IStream<T> extends Iterable<T> {
 	}
 
 	/**
-	 * 规约
+	 * 规约函数
 	 * 
 	 * @param accumulator an associative, non-interfering, statelessfunction for
 	 *                    combining two values
-	 * @return Optional
+	 * @return Optional T类型的 Optional
 	 */
 	default Optional<T> reduce(final BinaryOperator<T> accumulator) {
 		return this.stream().reduce(accumulator);
 	}
 
 	/**
-	 * 规约
+	 * 规约函数
 	 * 
 	 * @param identity    the identity value for the accumulating function
 	 * @param accumulator an associative, non-interfering, statelessfunction for
 	 *                    combining two values
-	 * @return T
+	 * @return T the result of the reduction
 	 */
 	default T reduce(final T identity, final BinaryOperator<T> accumulator) {
 		return this.stream().reduce(identity, accumulator);
 	}
 
 	/**
-	 * 规约
+	 * 规约函数
 	 * 
 	 * @param <U>         The type of the result
 	 * @param identity    the identity value for the combiner function
@@ -174,7 +172,7 @@ public interface IStream<T> extends Iterable<T> {
 	}
 
 	/**
-	 * 归集
+	 * 归集函数
 	 * 
 	 * @param <R>       结果类型
 	 * @param <A>       累加类型
@@ -186,7 +184,7 @@ public interface IStream<T> extends Iterable<T> {
 	}
 
 	/**
-	 * 归集
+	 * 归集函数
 	 * 
 	 * @param <R>         结果类型
 	 * @param <A>         累加类型

@@ -154,6 +154,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * 创建分区
+	 * 
 	 * @param strides 分区索引跨度
 	 * @return ndarray
 	 */
@@ -297,8 +299,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 尝试保持开始位置不变拉伸至size为n
 	 *
 	 * @param n 拉伸的nd长度,若超过了data的长度则给予截取。<br>
-	 *          n>0 向右侧拉长,以 datalen为限度<br>
-	 *          n<0 向左侧拉长,以 0为限度
+	 *          n &gt; 0 向右侧拉长,以 datalen为限度<br>
+	 *          n &lt; 0 向左侧拉长,以 0为限度
 	 * @return ndarray
 	 */
 	default INdarray<V> resize(final int n) {
@@ -357,6 +359,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 这是一个把非连续转换为连续空间的关键方法(思想) <br>
 	 * 提取指定predicate位置：这个一种把非连续变为连续的思想。用间接来构造连续比邻。
 	 *
+	 * @param <U>       结果流的元素类型
 	 * @param predicate (i:索引从0开始,t:数据元素)->bool
 	 * @param builder   i ：索引从0开始->u 索引构造函数
 	 * @return 提取子集合(生成了新的nd, 外部数据data不再是引用了源data, 内部data依旧保持引用源data),
@@ -613,10 +616,12 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 相对索引访问 <br>
 	 * 检查所索引并运行
 	 *
+	 * @param <U>       结果类型
 	 * @param i         位置(相对)索引从0开始,大于等于0,小于length,<br>
 	 *                  否则会抛出 ArrayIndexOutOfBoundsException
 	 * @param evaluator 计算器
 	 * @throws ArrayIndexOutOfBoundsException i:相对位置索引,index:绝对索引,length:ndarray的长度
+	 * @return i 位置的元素引用,U 类型
 	 */
 	default <U> U checkStatus(final int i, final Function<Integer, U> evaluator) {
 		final int index = this.start() + i;
@@ -739,12 +744,11 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 数据透视表 & 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
+	 * 数据透视表 &amp; 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
 	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <V>         基础数据值value的数据类型
 	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
@@ -768,12 +772,11 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 数据透视表 & 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
+	 * 数据透视表 &amp; 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
 	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <V>         基础数据值value的数据类型
 	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
@@ -797,12 +800,11 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 数据透视表 & 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
+	 * 数据透视表 &amp; 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
 	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
 	 * pivotPath 就像一张脸谱，为values指定有某种角色身份，进而方便构造另一些而更高级的数据结构。
 	 * 
-	 * @param <V>         基础数据值value的数据类型
 	 * @param <K>         PivotPath的Key的元素类型
 	 * @param <CF>        分类函数类型:V->K
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
@@ -838,7 +840,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 分组 &排序
+	 * 分组 &amp; 排序
 	 * 
 	 * @param <K>        分类键类型
 	 * @param classifier 分类器 把T转换成分组键名
@@ -870,7 +872,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * <b>关键的类:相对访问的终点实现</br>
+	 * 关键的类:相对访问的终点实现<br>
 	 * this.get(0)的简写，方便对长度为1的INdarray进行处; 读取位置索引的元素值 <br>
 	 * 非法索引会抛出 ArrayIndexOutOfBoundsException <br>
 	 * <p>
@@ -883,8 +885,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * <b>关键的类:相对访问的终点实现</br>
-	 * 读取位置索引的元素值 <br>
+	 * 关键的类:相对访问的终点实现<br>
+	 * 读取位置索引的元素值<br>
 	 * 非法索引会抛出 ArrayIndexOutOfBoundsException
 	 *
 	 * @param i 位置索引从0开始
@@ -918,6 +920,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	/**
 	 * mutate 函数别名
 	 *
+	 * @param <U>    mapper变换的结果类型
 	 * @param mapper 数据映射
 	 * @return U 类型结果
 	 */
@@ -1001,7 +1004,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	/**
 	 * get的别名函数 <br>
 	 * 用于 编译器无法对get进行类型推导的情况 <br>
-	 * <b>关键的类:相对访问的终点实现</br>
+	 * 关键的类:相对访问的终点实现<br>
 	 * 读取位置索引的元素值 <br>
 	 * 非法索引会抛出 ArrayIndexOutOfBoundsException
 	 *
@@ -1617,6 +1620,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 是否为空
+	 * 
+	 * @return 是否为空 true:空,false:非空
 	 */
 	default boolean empty() {
 		return this.start() >= this.end();
@@ -1840,7 +1845,6 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 生成 TrieTree 即 多维键名单值列表 [([int],ndarray)],根节点为null
-	 * <p>
 	 *
 	 * @param <U>    映射结果
 	 * @param mapper 节点映射函数 trienode->u
@@ -1857,7 +1861,6 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 生成 TrieTree 即 多维键名单值列表 [([int],ndarray)],根节点为null
-	 * <p>
 	 *
 	 * @param <U>    映射结果
 	 * @param mapper 节点映射函数 trienode->u
@@ -1874,7 +1877,6 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 生成 TrieTree 即 多维键名单值列表 [([int],ndarray)],根节点为null
-	 * <p>
 	 *
 	 * @return 生成TrieTree,根节点为null, (多维键名单值-键值对儿) 列表 即 [([int],ndarray]) 亦即
 	 *         TrieNode&lt;Integer&gt; <br>
@@ -1889,7 +1891,6 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 生成 TrieTree 即 多维键名单值列表 [([int],ndarray)],根节点为null
-	 * <p>
 	 *
 	 * @return 生成TrieTree,根节点为null, (多维键名单值-键值对儿) 列表 即 [([int],ndarray]) 亦即
 	 *         TrieNode&lt;Integer&gt; <br>
@@ -1992,6 +1993,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	/**
 	 * 数组应用
 	 * 
+	 * @param <SELF>   当前对象类型
 	 * @param <TARGET> 目标结果类型
 	 * @param mapper   结果变换类型 this->u, this 为当前ISeq对象
 	 * @return U类型的结果
@@ -2084,7 +2086,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 将ndarray视为一个行长为mod的二维矩阵，给予提取指定列方法:可视为动态的列集合。以时间表示空间的思想 <br>
-	 * INdarray&ltIPoint&ltT&gt;&gt; 把不连续的列数据IPoint&lt;T&gt;构造曾INdarray的连续区间。<br>
+	 * INdarray&lt;IPoint&lt;T&gt;&gt; 把不连续的列数据IPoint&lt;T&gt;构造曾INdarray的连续区间。<br>
 	 * 也就是说外层的INdarray此时相当于一个 算法结果的缓存:<br>
 	 * i->i*mod,并将 [0*mod,1*mod,2*mod,...,] <br>
 	 * 以缓存的方式,保存起来,于是 动态的算法这里给予静态的数据结构化了，<br>
@@ -2586,7 +2588,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	/**
 	 * 把数组ts1 和 ts2 连接到一起
 	 *
-	 * @param <T>
+	 * @param <T> 元素类型
 	 * @param ts1 数组1
 	 * @param ts2 数组2
 	 * @return 连接后的数组
@@ -2609,7 +2611,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * y.compareTo(x) throws an exception.)
 	 * <p>
 	 * The implementor must also ensure that the relation is transitive:
-	 * (x.compareTo(y)>0 && y.compareTo(z)>0) implies x.compareTo(z)>0.
+	 * (x.compareTo(y)&gt;0 &amp;&amp; y.compareTo(z)&gt;0) implies
+	 * x.compareTo(z)>0.
 	 * <p>
 	 * Finally, the implementor must ensure that x.compareTo(y)==0implies that
 	 * sgn(x.compareTo(z)) == sgn(y.compareTo(z)), forall z.
@@ -2801,6 +2804,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *
 	 * @param <T>  元素类型
 	 * @param data 源数据
+	 * @return nd 对象
 	 */
 	@SafeVarargs
 	static <T> INdarray<T> from(final T... data) {
@@ -2888,6 +2892,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
+	 * @reutrn nd 对象
 	 */
 	static INdarray<Character> nd(final char... data) {
 		return INdarray.of(Types.chars2Chars.apply(data), 0, data.length, null);
@@ -2897,6 +2902,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
+	 * @reutrn nd 对象
 	 */
 	static INdarray<Byte> nd(final byte... data) {
 		return INdarray.of(Types.bytes2Bytes.apply(data), 0, data.length, null);
@@ -2906,6 +2912,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
+	 * @reutrn nd 对象
 	 */
 	static INdarray<Integer> nd(final int... data) {
 		return INdarray.of(Types.ints2Ints.apply(data), 0, data.length, null);
@@ -2915,6 +2922,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
+	 * @reutrn nd 对象
 	 */
 	static INdarray<Short> nd(final short... data) {
 		return INdarray.of(Types.shorts2Shorts.apply(data), 0, data.length, null);
@@ -2924,6 +2932,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
+	 * @reutrn nd 对象
 	 */
 	static INdarray<Long> nd(final long... data) {
 		return INdarray.of(Types.lngs2Lngs.apply(data), 0, data.length, null);
@@ -2933,6 +2942,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
+	 * @reutrn nd 对象
 	 */
 	static INdarray<Float> nd(final float... data) {
 		return INdarray.of(Types.floats2Floats.apply(data), 0, data.length, null);
@@ -2942,6 +2952,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * INdarray 生成函数
 	 *
 	 * @param data 源数据
+	 * @reutrn nd 对象
 	 */
 	static INdarray<Double> nd(final double... data) {
 		return INdarray.of(Types.dbls2Dbls.apply(data), 0, data.length, null);

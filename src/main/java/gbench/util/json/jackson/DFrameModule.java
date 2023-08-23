@@ -33,6 +33,8 @@ public class DFrameModule extends SimpleModule {
 	private static final long serialVersionUID = -7266350024200887114L;
 
 	/**
+	 * IterableSerializer
+	 * 
 	 * @param <T> Iterable的类型结构
 	 */
 	public static class IterableSerializer<T extends Iterable<?>> extends StdSerializer<T> {
@@ -64,6 +66,8 @@ public class DFrameModule extends SimpleModule {
 	}
 
 	/**
+	 * IterableDeserializer
+	 * 
 	 * @param <T> Iterable的类型结构
 	 */
 	public static abstract class IterableDeserializer<T extends Iterable<?>> extends StdDeserializer<T> {
