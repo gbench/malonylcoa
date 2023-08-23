@@ -21,6 +21,7 @@ public abstract class AbstractNdarray<T> implements INdarray<T> {
 	/**
 	 * 构造函数
 	 *
+	 * @param data    源数据数值
 	 * @param start   开始索引从0开始,inclusive
 	 * @param end     结束索引，exlusive
 	 * @param strides 分区索引跨度
@@ -156,6 +157,9 @@ public abstract class AbstractNdarray<T> implements INdarray<T> {
 	private final int start;
 	private final int end;
 	private final LinkedHashMap<List<Integer>, Tuple2<Integer, Integer>> strides; // 分区索引跨度
+	/**
+	 * 方法拦截器
+	 */
 	protected final Map<String, BiConsumer<INdarray<T>, Object[]>> interceptors = new LinkedHashMap<>(); // 方法拦截器
 
 }
