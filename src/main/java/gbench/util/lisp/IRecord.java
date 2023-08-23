@@ -3639,7 +3639,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		/**
 		 * @param <T> 参数列表元素类型
 		 * @param kvs 键值序列 key1,value1,key2,value2,...
-		 * @return
+		 * @return IRecord 对象
 		 */
 		@SafeVarargs
 		final public <T> IRecord build(final T... kvs) {
@@ -3707,6 +3707,24 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		}
 
 		/**
+		 * 健名列表
+		 *
+		 * @return 健名列表
+		 */
+		public Stream<String> keyS() {
+			return this.keys().stream();
+		}
+
+		/**
+		 * 健名列表
+		 *
+		 * @return 健名列表
+		 */
+		public String[] keyA() {
+			return this.toArray();
+		}
+
+		/**
 		 * 注意这是一个修改Builder的方法。<br>
 		 * Inserts the specified element at the specified position in thislist. Shifts
 		 * the element currently at that position (if any) andany subsequent elements to
@@ -3750,15 +3768,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		}
 
 		/**
-		 * 健名列表
-		 *
-		 * @return 健名列表
-		 */
-		public Stream<String> keyS() {
-			return this.keys().stream();
-		}
-
-		/**
 		 * 构造复制品
 		 */
 		public Builder duplicate() {
@@ -3773,7 +3782,37 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 			return new Builder(this.keys);
 		}
 
+		/**
+		 * 键列表keys长度
+		 * 
+		 * @return 键列表keys长度
+		 */
+		public int size() {
+			return this.keys.size();
+		}
+
+		/**
+		 * 对keys进行变换
+		 * 
+		 * @param <T>    映射的结果类型
+		 * @param mapper keys:[k] -> T 变换函数
+		 * @return T 类型的结果
+		 */
+		public <T> T arrayOf(final Function<String[], T> mapper) {
+			return mapper.apply(keys.toArray(String[]::new));
+		}
+
+		/**
+		 * 键名列表
+		 * 
+		 * @return keys 的数组结果
+		 */
+		public String[] toArray() {
+			return this.arrayOf(e -> e);
+		}
+
 		private ArrayList<String> keys = new ArrayList<>();
+
 	}
 
 }

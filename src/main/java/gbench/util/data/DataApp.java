@@ -4411,7 +4411,7 @@ public class DataApp {
 			Object[] oo = objs; // 参数值
 			if (objs.length == 1) { // 单一值的情况
 				if (objs[0] instanceof Iterable<?> itr) {
-					if(itr instanceof Collection coll) {
+					if (itr instanceof Collection coll) {
 						oo = coll.toArray();
 					} else {
 						oo = StreamSupport.stream(itr.spliterator(), false).limit(MAX_SIZE).toArray();
@@ -4446,6 +4446,24 @@ public class DataApp {
 		 */
 		public List<String> keys() {
 			return this.keys;
+		}
+
+		/**
+		 * 健名列表
+		 *
+		 * @return 健名列表
+		 */
+		public Stream<String> keyS() {
+			return this.keys().stream();
+		}
+
+		/**
+		 * 健名列表
+		 *
+		 * @return 健名列表
+		 */
+		public String[] keyA() {
+			return this.toArray();
 		}
 
 		/**
@@ -4492,15 +4510,6 @@ public class DataApp {
 		}
 
 		/**
-		 * 健名列表
-		 *
-		 * @return 健名列表
-		 */
-		public Stream<String> keyS() {
-			return this.keys().stream();
-		}
-
-		/**
 		 * 构造复制品
 		 */
 		public Builder duplicate() {
@@ -4513,6 +4522,35 @@ public class DataApp {
 		@Override
 		public Builder clone() {
 			return new Builder(this.keys);
+		}
+
+		/**
+		 * 键列表keys长度
+		 * 
+		 * @return 键列表keys长度
+		 */
+		public int size() {
+			return this.keys.size();
+		}
+
+		/**
+		 * 对keys进行变换
+		 * 
+		 * @param <T>    映射的结果类型
+		 * @param mapper keys:[k] -> T 变换函数
+		 * @return T 类型的结果
+		 */
+		public <T> T arrayOf(final Function<String[], T> mapper) {
+			return mapper.apply(keys.toArray(String[]::new));
+		}
+
+		/**
+		 * 键名列表
+		 * 
+		 * @return keys 的数组结果
+		 */
+		public String[] toArray() {
+			return this.arrayOf(e -> e);
 		}
 
 		private ArrayList<String> keys = new ArrayList<>();
