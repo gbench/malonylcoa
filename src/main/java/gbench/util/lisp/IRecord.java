@@ -3639,7 +3639,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 
 		/**
 		 * 构造IRecord构造器
-		 *
+		 * 
+		 * @param <T>  参数元素类型
 		 * @param keys 键名列表的迭代器
 		 */
 		public <T> Builder(final Iterable<T> keys) {
