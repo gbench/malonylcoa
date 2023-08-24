@@ -71,7 +71,6 @@ public class SimpleExcel implements AutoCloseable {
 	 * 简单的EXCEL, try to load a excel file
 	 * 
 	 * @param excelfile excel文件对象
-	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public SimpleExcel(final File excelfile) {
 		this.load(excelfile, true);
@@ -82,7 +81,6 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @param inputStream 数据流
 	 * @param extension   文件扩展名 xls,xlsx,或者 xlsm等等。
-	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public SimpleExcel(final InputStream inputStream, final String extension) {
 		if (extension == null || !extension.trim().toLowerCase().startsWith("xls")) {
@@ -426,7 +424,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param <U>    目标类型
 	 * @param shtid  表单引号,从0开始
 	 * @param mapper 值变换函数 row->u
-	 * @returnU类型的数据流
+	 * @return U类型的数据流
 	 */
 	public <U> Stream<U> autoDetectS(final int shtid, final Function<LinkedHashMap<String, String>, U> mapper) {
 		return this.autoDetect(shtid).rowS(mapper);
@@ -1677,7 +1675,6 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @param<T> 元素类型
 	 * @param dmx    数据框
-	 * @param mapper 数据转换函数 obj->t
 	 * @return 数据框
 	 */
 	public static <T> DFrame dmx2dfm(final DataMatrix<T> dmx) {
@@ -1689,7 +1686,6 @@ public class SimpleExcel implements AutoCloseable {
 	 * 数据框转数据矩阵
 	 * 
 	 * @param dfm    数据框
-	 * @param mapper 数据转换函数 obj->t
 	 * @return 数据矩阵
 	 */
 	public static DataMatrix<Object> dfm2dmx(final DFrame dfm) {
@@ -1848,9 +1844,7 @@ public class SimpleExcel implements AutoCloseable {
 		/**
 		 * 当前活动Cell
 		 * 
-		 * @param offset_x 行偏移
-		 * @param offset_y 列偏移
-		 * @return 右下角的 偏移位置
+		 * @return 当前活动Cell
 		 */
 		public Cell activeCell() {
 			// 下一行 相同列。
@@ -1860,9 +1854,7 @@ public class SimpleExcel implements AutoCloseable {
 		/**
 		 * 当前活动Cell的地址
 		 * 
-		 * @param offset_x 行偏移
-		 * @param offset_y 列偏移
-		 * @return 右下角的 偏移位置
+		 * @return 当前活动Cell的地址
 		 */
 		public String activeAddress() {
 			return Optional.ofNullable(this.activeCell()).map(e -> e.getAddress().toString()) //

@@ -281,6 +281,7 @@ public class Matrix<T> extends Tensor<T> {
 
 	/**
 	 * cbind
+	 * 
 	 * @param m m
 	 * @return Matrix
 	 */
@@ -289,7 +290,7 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * rbind 
+	 * rbind
 	 * 
 	 * @param m m
 	 * @return Matrix
@@ -378,16 +379,18 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 生成数值矩阵
 	 *
-	 * @return
+	 * @return dblx
 	 */
 	public Matrix<Double> dblx() {
 		return this.numx(e -> ((Number) e).doubleValue());
 	}
 
 	/**
-	 * @param <U>
-	 * @param mu
-	 * @return
+	 * mmult
+	 * 
+	 * @param <U> U
+	 * @param mu mu
+	 * @return  Matrix
 	 */
 	public <U> Matrix<List<Tuple2<T, U>>> mmult(final Matrix<U> mu) {
 		return this.mmult(mu, Tuple2::new, Collectors.toList());
@@ -396,11 +399,11 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 矩阵计算
 	 *
-	 * @param <U>
-	 * @param <N>
+	 * @param <U>   U
+	 * @param <N>   N
 	 * @param tonum 转换成数值
-	 * @param mu
-	 * @return
+	 * @param mu    右侧矩阵
+	 * @return Matrix
 	 */
 	@SuppressWarnings("unchecked")
 	public <U extends Number, N extends Number> Matrix<Double> mmult(final Function<T, N> tonum, final Matrix<U> mu) {
@@ -408,13 +411,15 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param mu
-	 * @param biop
-	 * @param collector
-	 * @param <U>
-	 * @param <X>
-	 * @param <Y>
-	 * @return
+	 * mmult
+	 * 
+	 * @param mu        右侧矩阵
+	 * @param biop      二元操作
+	 * @param collector 轨迹其
+	 * @param <U>       右侧矩阵类型
+	 * @param <X>       X 类型
+	 * @param <Y>       Y类型
+	 * @return Y类型的矩阵
 	 */
 	@SuppressWarnings("unchecked")
 	public <U, X, Y> Matrix<Y> mmult(final Matrix<U> mu, BiFunction<T, U, X> biop, Collector<X, ?, Y> collector) {
@@ -431,10 +436,10 @@ public class Matrix<T> extends Tensor<T> {
 	 * @param biop      (t,u)->元素归集
 	 * @param collector [x]->y 结果类归集器
 	 * @param yclass    结果类名
-	 * @param <U>
-	 * @param <X>
-	 * @param <Y>
-	 * @return
+	 * @param <U> U
+	 * @param <X> X
+	 * @param <Y> Y
+	 * @return Matrix
 	 */
 	public <U, X, Y> Matrix<Y> mmult(final Matrix<U> mu, BiFunction<T, U, X> biop, Collector<X, ?, Y> collector,
 			final Class<Y> yclass) {
@@ -455,8 +460,8 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 数据点乘积
 	 *
-	 * @param <U>
-	 * @param <X>
+	 * @param <U> U
+	 * @param <X> X
 	 * @param mu   右侧矩阵
 	 * @param biop 数据城府 (t,u)->x
 	 * @return 数据矩阵
@@ -469,7 +474,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 数据点乘积
 	 *
-	 * @param <U>
+	 * @param <U> U
 	 * @param mu  右侧矩阵
 	 * @return 数据矩阵
 	 */
@@ -480,8 +485,8 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 数据点乘积
 	 *
-	 * @param <U>
-	 * @param <N>
+	 * @param <U> U 
+	 * @param <N> N
 	 * @param mu  右侧矩阵
 	 * @return 数据矩阵
 	 */

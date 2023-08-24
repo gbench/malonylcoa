@@ -46,7 +46,6 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	/**
 	 * 前缀树的节点
 	 * 
-	 * @param name 节点字符
 	 */
 	public TrieNode() {
 		this(null, null, null);
@@ -314,9 +313,9 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * root.getNode("/a/b") 获得 b 节点 <br>
 	 * root.getNode("a/b") 则返回 null, 因为路径 tt 没有包含 根节点名称 <br>
 	 * 
-	 * @param path_adjusted 路径信息 包含有当前节点(根节点名称) 字符的序列 比如：<br>
-	 *                      当前节点 this 是 根节点 "/": this.pathOf("/a/b/c") 返回 c 节点 <br>
-	 *                      当前节点 this 是 根节点 "a" :this.pathOf("a/b/c") 返回 c 节点
+	 * @param path 路径信息 包含有当前节点(根节点名称) 字符的序列 比如：<br>
+	 *             当前节点 this 是 根节点 "/": this.pathOf("/a/b/c") 返回 c 节点 <br>
+	 *             当前节点 this 是 根节点 "a" :this.pathOf("a/b/c") 返回 c 节点
 	 * @return trie节点
 	 */
 	@SuppressWarnings("unchecked")
@@ -595,7 +594,7 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	/**
 	 * mutate the current node
 	 * 
-	 * @param <U>    the result type
+	 * @param <U>     the result type
 	 * @param mutator the mutator trienode->u
 	 * @return U type result
 	 */
@@ -866,8 +865,8 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	/**
 	 * 节点属性
 	 * 
-	 * @param <X>    源数据类型
-	 * @param path   属性路径
+	 * @param <X>  源数据类型
+	 * @param path 属性路径
 	 * @return Double 结果 类型
 	 */
 	public <X> Double attrPathget2dbl(final String path) {
@@ -877,8 +876,8 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	/**
 	 * 节点属性
 	 * 
-	 * @param <X>    源数据类型
-	 * @param path   属性路径
+	 * @param <X>  源数据类型
+	 * @param path 属性路径
 	 * @return Double 结果 类型
 	 */
 	public <X> Integer attrPathget2int(final String path) {
