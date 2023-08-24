@@ -1081,6 +1081,9 @@ public class DataApp {
 		 * 批量添加键值列表 <br>
 		 * 元组信息添加到对象本身
 		 *
+		 * @param <T>    第一元素类型
+		 * @param <U>    第二元素类型
+		 * @param <TP>   元组类型
 		 * @param tupItr 元组列表
 		 * @return 对象本身
 		 */
@@ -1096,12 +1099,11 @@ public class DataApp {
 		 * 批量添加键值列表 <br>
 		 * 元组信息添加到对象本身
 		 *
-		 * @param <T> 参数列表元素类型
-		 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
-		 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
-		 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
-		 * @return 新生成的IRecord
-		 * @return 对象本身
+		 * @param <T>  参数列表元素类型
+		 * @param objs Map结构(IRecord也是Map结构) 或是 键名,键值 序列。即 build(map) 或是
+		 *             build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
+		 *             kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
+		 * @return 依据实现不同可以为新生成的IRecord或者是对象本身
 		 */
 		@SuppressWarnings("unchecked")
 		default <T> IRecord add(final T... objs) {
@@ -1127,12 +1129,11 @@ public class DataApp {
 		 * 批量添加键值列表 <br>
 		 * 元组信息添加到对象本身
 		 *
-		 * @param <T> 参数列表元素类型
-		 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
-		 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
-		 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
-		 * @return 新生成的IRecord
-		 * @return 对象本身
+		 * @param <T>  参数列表元素类型
+		 * @param objs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
+		 *             build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
+		 *             kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
+		 * @return 新生成的IRecord 或 对象本身
 		 */
 		@SuppressWarnings("unchecked")
 		default <T> IRecord prepend(final T... objs) {
@@ -1143,6 +1144,8 @@ public class DataApp {
 		 * 批量添加键值列表 <br>
 		 * 元组信息添加到复制的对象
 		 *
+		 * @param <T>    第一元素类型
+		 * @param <U>    第二元素类型
 		 * @param tupItr 元组列表
 		 * @return 复制的新的对象
 		 */
@@ -1328,7 +1331,7 @@ public class DataApp {
 		 * @param path 键名路径 如 a/b/c
 		 * @return U类型的值
 		 */
-		default <T, U> Integer pathi4(final String path) {
+		default Integer pathi4(final String path) {
 			return this.pathget(path,
 					e -> Optional.ofNullable(IRecord.obj2dbl(null).apply(e)).map(Number::intValue).orElse(null));
 		}
@@ -1361,7 +1364,7 @@ public class DataApp {
 		 * @param path 键名路径 如 a/b/c
 		 * @return U类型的值
 		 */
-		default <T, U> Double pathdbl(final String path) {
+		default Double pathdbl(final String path) {
 			return this.pathget(path, IRecord.obj2dbl(null));
 		}
 
@@ -1793,7 +1796,7 @@ public class DataApp {
 		 *
 		 * @param mapper this->t
 		 *
-		 * @return t
+		 * @return t T 类型的结果
 		 */
 		default <T> T mutate(final Function<? super Map<String, Object>, T> mapper) {
 			return mapper.apply(this.toMap());
@@ -2365,6 +2368,7 @@ public class DataApp {
 		/**
 		 * 生成 构建器
 		 *
+		 * @param <T>  键名列表元素类型
 		 * @param keys 键名序列
 		 * @return keys 为格式的 构建器
 		 */
@@ -2810,11 +2814,13 @@ public class DataApp {
 		 * 滑动窗口的T元素归集器
 		 *
 		 * @param <T>      流元素类型
-		 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+		 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt; 变换
+		 *                 List&lt;DFrame&gt; 这样的类型
 		 * @param size     窗口长度 大于0的整数
 		 * @param step     移动步长 大于0的整数
 		 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
-		 * @param finisher 最终结果处理器,比如 把 List<List<T> 变换 List&lt;DFrame&gt; 这样的类型函数
+		 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt;
+		 *                 这样的类型函数
 		 * @return 滑动窗口的T元素归集器，归集成U类型的窗口集合
 		 */
 		public static <T, U> Collector<T, ?, U> slidingclc(final int size, final int step, final boolean flag,
@@ -2827,7 +2833,8 @@ public class DataApp {
 		 *
 		 * @param <F>      帧框类型
 		 * @param <T>      流元素类型
-		 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+		 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt; 变换
+		 *                 List&lt;DFrame&gt; 这样的类型
 		 * @param size     窗口长度 大于0的整数
 		 * @param step     移动步长 大于0的整数
 		 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
@@ -2890,7 +2897,7 @@ public class DataApp {
 		 *
 		 * @param <X>   元素数据类型
 		 * @param <K>   键名类型
-		 * @param keyer 键名函数,分类规则&依据 x->key
+		 * @param keyer 键名函数,分类规则&amp;依据 x-&gt;key
 		 * @return Map:{(K,U)}
 		 */
 		public static <X, K> Collector<X, ?, Map<K, List<X>>> grpclc2(final Function<X, K> keyer) {
@@ -2905,9 +2912,9 @@ public class DataApp {
 		 * @param <K>     键名类型
 		 * @param <V>     键值类型
 		 * @param <U>     中间结果类型
-		 * @param keyer   键名函数,分类规则&依据 x->key
-		 * @param valueer 键值创建函数 x->value
-		 * @param uclc    键值元素集合包装函数 vv->u
+		 * @param keyer   键名函数,分类规则&amp;依据 x-&gt;key
+		 * @param valueer 键值创建函数 x-&gt;value
+		 * @param uclc    键值元素集合包装函数 vv-&gt;u
 		 * @return Map:{(K,U)}
 		 */
 		public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
@@ -2923,9 +2930,9 @@ public class DataApp {
 		 * @param <K>        键名类型
 		 * @param <V>        键值类型
 		 * @param <U>        中间结果类型
-		 * @param keyer      键名函数,分类规则&依据 x->key
-		 * @param valueer    键值创建函数 x->value
-		 * @param u_finisher 键值元素集合包装函数 vv->u
+		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
+		 * @param valueer    键值创建函数 x-&gt;value
+		 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
 		 * @return Map:{(K,U)}
 		 */
 		public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
@@ -2940,7 +2947,7 @@ public class DataApp {
 		 * @param <X>        元素数据类型
 		 * @param <K>        键名类型
 		 * @param <Z>        最终结果类型
-		 * @param keyer      键名函数,分类规则&依据 x->key
+		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
 		 * @param z_finisher 最终结果包装函数 {(k,v)}->z
 		 * @return Z类型的结果
 		 */
@@ -2957,7 +2964,7 @@ public class DataApp {
 		 * @param <K>        键名类型
 		 * @param <V>        键名值
 		 * @param <Z>        最终结果类型
-		 * @param keyer      键名函数,分类规则&依据 x->key
+		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
 		 * @param valuerer   键值函数 x->value
 		 * @param z_finisher 最终结果包装函数 {(k,v)}->z
 		 * @return Z类型的结果
@@ -2976,10 +2983,10 @@ public class DataApp {
 		 * @param <V>        键值类型
 		 * @param <U>        中间结果类型
 		 * @param <Z>        结果类型
-		 * @param keyer      键名函数,分类规则&依据 x->key
-		 * @param valueer    键值创建函数 x->value
-		 * @param uclc       键值元素集合归集器 vv->u
-		 * @param z_finisher 最终结果的生成函数 {(k,u)}->z
+		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
+		 * @param valueer    键值创建函数 x-&gt;value
+		 * @param uclc       键值元素集合归集器 vv-&gt;u
+		 * @param z_finisher 键值元素集合包装函数 vv-&gt;z
 		 * @return U 结果类型
 		 */
 		public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer,
@@ -2996,10 +3003,9 @@ public class DataApp {
 		 * @param <V>        键值类型
 		 * @param <U>        中间结果类型
 		 * @param <Z>        结果类型
-		 * @param keyer      键名函数,分类规则&依据 x->key
-		 * @param valueer    键值创建函数 x->value
-		 * @param u_finisher 键值元素集合包装函数 vv->u
-		 * @param z_finisher 最终结果的生成函数 {(k,u)}->z
+		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
+		 * @param valueer    键值创建函数 x-&gt;value
+		 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
 		 * @return U 结果类型
 		 */
 		public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer,
@@ -4312,7 +4318,6 @@ public class DataApp {
 		 * 数据消费函数
 		 *
 		 * @param t 函数参数
-		 * @return U类型的函数
 		 * @throws Exception 异常
 		 */
 		void accept(T t) throws Exception;
@@ -4332,7 +4337,6 @@ public class DataApp {
 		 *
 		 * @param t 函数参数
 		 * @param u 函数参数
-		 * @return U类型的函数
 		 * @throws Exception 异常
 		 */
 		void accept(final T t, final U u) throws Exception;
@@ -4346,6 +4350,13 @@ public class DataApp {
 	 * @author xuqinghua
 	 */
 	public interface ExceptionalFunction<T, U> {
+		/**
+		 * apply
+		 * 
+		 * @param t 函数参数
+		 * @return U 类型的结果
+		 * @throws Exception 异常
+		 */
 		U apply(T t) throws Exception;
 	}
 
@@ -4811,18 +4822,32 @@ public class DataApp {
 		 * @author gbench
 		 */
 		public static class JsonException extends RuntimeException {
-			private static final long serialVersionUID = 7557947611199812472L;
-
+			/**
+			 * JsonException
+			 */
 			public JsonException() {
 			}
 
+			/**
+			 * JsonException
+			 * 
+			 * @param message message
+			 */
 			public JsonException(final String message) {
 				super(message);
 			}
 
+			/**
+			 * JsonException
+			 * 
+			 * @param message message
+			 * @param cause   cause
+			 */
 			public JsonException(final String message, final Throwable cause) {
 				super(message, cause);
 			}
+
+			private static final long serialVersionUID = 7557947611199812472L;
 		}
 
 		/**
@@ -4842,13 +4867,19 @@ public class DataApp {
 			}
 
 			/**
+			 * hasNext
 			 * 
-			 * @return
+			 * @return 是否还有下一个元素
 			 */
 			public final boolean hasNext() {
 				return p < line.length();
 			}
 
+			/**
+			 * nextToken
+			 * 
+			 * @return Token
+			 */
 			public final Token nextToken() {
 				Token token = new Token();
 				char ch = line.charAt(p);
@@ -5010,8 +5041,9 @@ public class DataApp {
 			}
 
 			/**
+			 * lookAhead
 			 * 
-			 * @return
+			 * @return Token
 			 */
 			public Token lookAhead() {
 				final int p1 = p;
@@ -5021,17 +5053,19 @@ public class DataApp {
 			}
 
 			/**
+			 * isDigit
 			 * 
-			 * @param ch
-			 * @return
+			 * @param ch ch
+			 * @return Boolean
 			 */
 			private Boolean isDigit(char ch) {
 				return ch >= 48 || ch <= 57 || ch >= 65 || ch <= 70 || ch >= 97 || ch <= 102;
 			}
 
 			/**
+			 * getPoint
 			 * 
-			 * @return
+			 * @return point
 			 */
 			public int getPoint() {
 				return p;
@@ -5524,12 +5558,17 @@ public class DataApp {
 	/**
 	 * AbstractJdbcSession
 	 * 
-	 * @author gbench
-	 *
+	 * @author gbench AbstractJdbcSession
 	 * @param <D> 数据类型
 	 * @param <X> 归集类型
 	 */
 	public static abstract class AbstractJdbcSession<D, X> implements IJdbcSession<D, X> {
+
+		/**
+		 * 默认构造函数
+		 */
+		public AbstractJdbcSession() {
+		}
 
 		@Override
 		public Set<Stream<?>> getActiveStreams() {
@@ -5579,10 +5618,12 @@ public class DataApp {
 	public static class SqlBuilder {
 
 		/**
-		 * @param path
-		 * @param flds
-		 * @param mode
-		 * @return
+		 * 左连接
+		 * 
+		 * @param path 连接路径
+		 * @param flds 连接字段
+		 * @param mode 连接模式
+		 * @return SqlBuilder
 		 */
 		public SqlBuilder join(final String path, final String flds, final String mode) {
 			final String sql = SqlBuilder.JOIN(path, flds, mode);
@@ -5591,9 +5632,11 @@ public class DataApp {
 		}
 
 		/**
-		 * @param path
-		 * @param flds
-		 * @return
+		 * 左连接
+		 * 
+		 * @param path 路径
+		 * @param flds 字段列表
+		 * @return SqlBuilder
 		 */
 		public SqlBuilder leftjoin(final String path, final String flds) {
 			final String sql = SqlBuilder.LEFTJOIN(path, flds);
@@ -5602,9 +5645,9 @@ public class DataApp {
 		}
 
 		/**
-		 * @param path
-		 * @param flds
-		 * @return
+		 * @param path 路径
+		 * @param flds 连接字段
+		 * @return SqlBuilder
 		 */
 		public SqlBuilder rightjoin(final String path, final String flds) {
 			final String sql = SqlBuilder.JOIN(path, flds, "right");
@@ -5616,7 +5659,7 @@ public class DataApp {
 		 * 增加数据行
 		 *
 		 * @param line 数据行
-		 * @return
+		 * @return SqlBuilder
 		 */
 		public SqlBuilder append(final Object line) {
 			buffer.append(line);
@@ -5624,8 +5667,10 @@ public class DataApp {
 		}
 
 		/**
-		 * @param alias
-		 * @return
+		 * 别名
+		 * 
+		 * @param alias 别名列表
+		 * @return SqlBuilder
 		 */
 		public SqlBuilder as(final String alias) {
 			this.push(alias, this.toString());
@@ -5636,8 +5681,9 @@ public class DataApp {
 		/**
 		 * 加入变量别名
 		 *
-		 * @param line
-		 * @return
+		 * @param name 名称
+		 * @param line 数据行
+		 * @return SqlBuilder
 		 */
 		public SqlBuilder push(final String name, final String line) {
 			mappings.put(name, line);
@@ -5645,8 +5691,10 @@ public class DataApp {
 		}
 
 		/**
-		 * @param template
-		 * @return
+		 * 格式化输出
+		 * 
+		 * @param template 模板
+		 * @return 格式化输出
 		 */
 		public String format(final String template) {
 			return IRecord.FT(template, REC(this.mappings), true);
@@ -5984,7 +6032,8 @@ public class DataApp {
 		/**
 		 * 二维对象数组
 		 *
-		 * @param mapper rec->rec_new
+		 * @param <T>    数组元素类型
+		 * @param mapper rec-&gt;rec_new
 		 * @return 二维对象数组
 		 */
 		@SuppressWarnings("unchecked")
@@ -6121,6 +6170,8 @@ public class DataApp {
 
 		/**
 		 * 刷新列数据
+		 * 
+		 * @return DFrame
 		 */
 		public DFrame refresh() {
 			this.colsData = null;
