@@ -4391,7 +4391,7 @@ public class DataApp {
 		 * 
 		 * @param t 参数类型
 		 * @return U类型的结果
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		U apply(final T t) throws SQLException;
 	}

@@ -501,7 +501,7 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 列拆分
 	 * 
-	 * @param keys 键值列表
+	 * @param int 键名索引位置从0开始(df1 exclusiv,df2 inclusive)
 	 * @return (df1,df2)
 	 */
 	public Tuple2<DFrame, DFrame> split2(final int n) {
@@ -547,9 +547,8 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * IRecord的归集器
 	 * 
-	 * @param <U>       结果类型
 	 * @param collector [r] -> U
-	 * @return U
+	 * @return 对象数组
 	 */
 	public Object[][] toArray() {
 		return this.arrayOf((hh, oo) -> oo);
@@ -857,7 +856,13 @@ public class DFrame implements Iterable<IRecord> {
 				return new DFrame(e);
 			});
 
+	/**
+	 * 列数据
+	 */
 	protected transient LinkedHashMap<String, ArrayList<Object>> colsData = null; // 列数据
+	/**
+	 * 行数据
+	 */
 	protected final IRecord[] rowsData; // 行数据
 
 }

@@ -34,6 +34,7 @@ import gbench.util.lisp.Tuple2;
 
 /**
  * DataMatrix
+ * 
  * @author gbench
  *
  * @param <T> 矩阵元素类型
@@ -65,7 +66,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 *
 	 * @param cells 数据:
 	 * @param keys  表头定义，null 则首行为表头,对于keys短与width的时候, 使用编号的excel名称,名称用“_”作为开头。
-	 * @return DataMatrix<T> 对象自身
+	 * @return DataMatrix&lt;T&gt; 对象自身
 	 */
 	public DataMatrix<T> initialize(final T[][] cells, final Iterable<String> keys) {
 		final List<String> final_keys = new LinkedList<>();
@@ -102,7 +103,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param n         列数
 	 * @param cellClass 元素类型：null 默认为Object.class
 	 * @param keys      列名序列,null 使用excelname 进行默认构造
-	 * @return DataMatrix<T> 对象自身
+	 * @return DataMatrix&lt;T&gt; 对象自身
 	 */
 	@SuppressWarnings("unchecked")
 	public DataMatrix<T> initialize(final int m, final int n, final Class<T> cellClass, final List<String> keys) {
@@ -173,10 +174,11 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * map
 	 * 
-	 * @param <U>
-	 * @param mapper
-	 * @return
+	 * @param <U>    U
+	 * @param mapper mapper [t]-&gt;u
+	 * @return U 类型的类型的流
 	 */
 	public <U> Stream<U> map(final Function<T[], U> mapper) {
 		return Arrays.stream(this.data()).map(mapper);
@@ -265,7 +267,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 按照行进行映射
 	 *
 	 * @param <U>    目标行记录{(String,T)} 所变换成的结果类型
-	 * @param mapper 行数据映射 LinkedHashMap<String,T>的结构, key->value
+	 * @param mapper 行数据映射 LinkedHashMap&lt;String,T&gt;的结构, key-&gt;value
 	 * @return U 类型的流
 	 */
 	public <U> Stream<U> rowS(final Function<LinkedHashMap<String, T>, U> mapper) {
@@ -274,8 +276,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		@SuppressWarnings("unchecked")
 		Function<LinkedHashMap<String, T>, U> final_mapper = mapper == null ? e -> (U) e : mapper;
 		return this.rows().stream().map(row -> {
-			int n = row.size();
-			LinkedHashMap<String, T> mm = new LinkedHashMap<>();
+			final int n = row.size();
+			final LinkedHashMap<String, T> mm = new LinkedHashMap<>();
 			for (int i = 0; i < n; i++)
 				mm.put(keys[i % hn], row.get(i));
 			return final_mapper.apply(mm);
@@ -285,7 +287,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 行列表
 	 *
-	 * @param mapper 行元素变换器: [t]->u
+	 * @param <U>    结果流的元素类型
+	 * @param mapper 行元素变换器: [t]-&gt;u
 	 * @return 行列表 流
 	 */
 	public <U> Stream<U> row2S(final Function<T[], U> mapper) {
@@ -672,7 +675,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			}
 			return MessageFormat.format(line, e);
 		}// 默认的格式化
-		: cell_formatter;
+				: cell_formatter;
 
 		if (cells == null || cells.length < 1 || cells[0] == null || cells[0].length < 1)
 			return "";
@@ -730,7 +733,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 增加数据预处理函数，只改变数据内容并改变数据形状shape:比如 无效非法值，缺失值，数字格式化等功能。
 	 *
-	 * @param handler 行数据映射 LinkedHashMap<String,T>的结构, key->value
+	 * @param handler 行数据映射 LinkedHashMap&lt;String,T&gt;的结构, key->value
 	 */
 	public DataMatrix<T> preProcess(final Consumer<T[]> handler) {
 		for (int i = 0; i < this.height(); i++)
@@ -749,7 +752,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 
 		return DataMatrix.mmult(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl),
 				(Double a, Double b) -> Optional.ofNullable(a)
-				.map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null),
+						.map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null),
 				Collectors.summingDouble(e -> e));
 	}
 
@@ -906,6 +909,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * submx
+	 * 
 	 * @param rangeName 区域名称,比如, A1:C10
 	 * @return DataMatrix 对象
 	 */
@@ -1575,15 +1580,16 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	public static String adjust_formula(final String formula, final Tuple2<Integer, Integer> origin_offset) {
 
 		// JAVA 9 的API这里不适用
-		//		final Matcher matcher = Pattern.compile("([A-Z]+)([0-9]+)", Pattern.CASE_INSENSITIVE).matcher(formula);
-		//		final String _line = matcher.replaceAll(e -> {
-		//			final var term = e.group();
-		//			final var offset = DataMatrix.addr2offset(term) //
-		//					.map1(p -> p + origin_offset._1) //
-		//					.map2(p -> p + origin_offset._2); //
-		//			return DataMatrix.offset2addr(offset);
-		//		});
-		//		return _line;
+		// final Matcher matcher = Pattern.compile("([A-Z]+)([0-9]+)",
+		// Pattern.CASE_INSENSITIVE).matcher(formula);
+		// final String _line = matcher.replaceAll(e -> {
+		// final var term = e.group();
+		// final var offset = DataMatrix.addr2offset(term) //
+		// .map1(p -> p + origin_offset._1) //
+		// .map2(p -> p + origin_offset._2); //
+		// return DataMatrix.offset2addr(offset);
+		// });
+		// return _line;
 
 		final String pattern = "([A-Z]+)([0-9]+)";
 		final String line = pattern_replace_all(formula, pattern, term -> {
@@ -1597,6 +1603,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * pattern_replace_all
+	 * 
 	 * @param line     数据行
 	 * @param pattern  模板式样
 	 * @param replacer 变换函数 The function to be applied to the match result of this
@@ -1653,8 +1661,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	public static <T> DataMatrix<T> build(final Iterable<String> keys, final T[][] datas) {
 		final DataMatrix<T> dm = new DataMatrix<T>(datas,
 				keys == null
-				? Stream.iterate(0, i -> i + 1).limit(datas[0].length).map(DataMatrix::index_to_excel_name)
-						.collect(Collectors.toList())
+						? Stream.iterate(0, i -> i + 1).limit(datas[0].length).map(DataMatrix::index_to_excel_name)
+								.collect(Collectors.toList())
 						: StreamSupport.stream(keys.spliterator(), false).collect(Collectors.toList()));
 		return dm;
 	}
@@ -1841,11 +1849,11 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		final AtomicInteger ai = new AtomicInteger(0); // 数组长度
 		@SuppressWarnings("unchecked")
 		final T[][] tt = StreamSupport.stream(rows.spliterator(), false).filter(Objects::nonNull)
-		.map(row -> DataMatrix.row2aa(tclass, row)).peek(e -> { // 计算元素(数组)长度
-			if (e.length > ai.get()) { // 保持长度为最长元素（数组）的长度
-				ai.set(e.length); // 更新数组长度
-			} // if
-		}).toArray(n -> (T[][]) Array.newInstance(tclass, n, ai.get()));
+				.map(row -> DataMatrix.row2aa(tclass, row)).peek(e -> { // 计算元素(数组)长度
+					if (e.length > ai.get()) { // 保持长度为最长元素（数组）的长度
+						ai.set(e.length); // 更新数组长度
+					} // if
+				}).toArray(n -> (T[][]) Array.newInstance(tclass, n, ai.get()));
 		return tt;
 	}
 

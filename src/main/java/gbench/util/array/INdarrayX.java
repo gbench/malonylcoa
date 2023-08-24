@@ -51,6 +51,7 @@ public interface INdarrayX<T> extends INdarray<T> {
 	/**
 	 * 写入元数据：读取参数
 	 *
+	 * @param <V> 结果类型
 	 * @param key 键名
 	 * @return 读取指定键值的属性值
 	 */
@@ -72,6 +73,7 @@ public interface INdarrayX<T> extends INdarray<T> {
 	 * 设置行长度 返回取模长度，<br>
 	 * 这是矩阵的行长度，也是周期与进制计算的基本属性。
 	 *
+	 * @param mod 参数取模
 	 * @return nx 对象本身，便于实现链式编程
 	 */
 	default INdarrayX<T> mod(final int mod) {
@@ -210,9 +212,10 @@ public interface INdarrayX<T> extends INdarray<T> {
 	/**
 	 * 转换成 nx 对象
 	 *
-	 * @param <U> 元数据类型
-	 * @param nd  元数据矩阵
-	 * @param mod 行宽度，列数
+	 * @param <ND> INdarray 类型
+	 * @param <U>  元数据类型
+	 * @param nd   元数据矩阵
+	 * @param mod  行宽度，列数
 	 * @return INdarrayX
 	 */
 	default <U, ND extends INdarray<U>> INdarrayX<U> asNx(final ND nd, final Integer mod) {
@@ -222,8 +225,9 @@ public interface INdarrayX<T> extends INdarray<T> {
 	/**
 	 * 转换成 nx 对象
 	 *
-	 * @param <U> 元数据类型
-	 * @param nd  元数据矩阵
+	 * @param <ND> INdarray 类型
+	 * @param <U>  元数据类型
+	 * @param nd   元数据矩阵
 	 * @return INdarrayX
 	 */
 	default <U, ND extends INdarray<U>> INdarrayX<U> asNx(final ND nd) {
@@ -701,7 +705,7 @@ public interface INdarrayX<T> extends INdarray<T> {
 	 * Converts a class vector (integers) to binary class matrix.
 	 * 
 	 * @param <T>     数字类型
-	 * @param <T>     数字类型
+	 * @param <U>     结果类型
 	 * @param onehot  独热编码向量
 	 * @param origins 独热编码解析字典
 	 * @return 独热编码解析
@@ -735,6 +739,9 @@ public interface INdarrayX<T> extends INdarray<T> {
 	 *
 	 */
 	enum MetaKey {
+		/**
+		 * 取模长度,矩阵的行长度即列的数据:ncol与mod函数返回mod参数对应的值（合法有效值为一个大于0正整数)
+		 */
 		mod // 取模长度,矩阵的行长度即列的数据:ncol与mod函数返回mod参数对应的值（合法有效值为一个大于0正整数)
 	}
 }

@@ -3439,28 +3439,103 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	/**
 	 * 类型强转函数
 	 */
+	/**
+	 * ndint
+	 */
 	Function<?, INdarray<Integer>> ndint = Types.cast((INdarray<Integer>) null);
+
+	/**
+	 * nddbl
+	 */
 	Function<?, INdarray<Double>> nddbl = Types.cast((INdarray<Double>) null);
+
+	/**
+	 * ndfloat
+	 */
 	Function<?, INdarray<Float>> ndfloat = Types.cast((INdarray<Float>) null);
+
+	/**
+	 * ndlng
+	 */
 	Function<?, INdarray<Long>> ndlng = Types.cast((INdarray<Long>) null);
+
+	/**
+	 * ndnum
+	 */
 	Function<?, INdarray<Number>> ndnum = Types.cast((INdarray<Number>) null);
+
+	/**
+	 * ndbyte
+	 */
 	Function<?, INdarray<Byte>> ndbyte = Types.cast((INdarray<Byte>) null);
+
+	/**
+	 * ndbool
+	 */
 	Function<?, INdarray<Boolean>> ndbool = Types.cast((INdarray<Boolean>) null);
+
+	/**
+	 * ndchar
+	 */
 	Function<?, INdarray<Character>> ndchar = Types.cast((INdarray<Character>) null);
+
+	/**
+	 * ndstr
+	 */
 	Function<?, INdarray<String>> ndstr = Types.cast((INdarray<String>) null);
+
+	/**
+	 * ndshort
+	 */
 	Function<?, INdarray<Short>> ndshort = Types.cast((INdarray<Short>) null);
 
 	/**
 	 * 基础类型的空值常量
 	 */
+
+	/**
+	 * NBYT_NULL
+	 */
 	INdarray<Byte> NBYT_NULL = (INdarray<Byte>) null; // 空值占位符
+
+	/**
+	 * NBOO_NULL
+	 */
 	INdarray<Boolean> NBOO_NULL = (INdarray<Boolean>) null; // 空值占位符
+
+	/**
+	 * NCHR_NULL
+	 */
 	INdarray<Character> NCHR_NULL = (INdarray<Character>) null; // 空值占位符
+
+	/**
+	 * NSHT_NULL
+	 */
 	INdarray<Short> NSHT_NULL = (INdarray<Short>) null; // 空值占位符
+
+	/**
+	 * NFLT_NULL
+	 */
 	INdarray<Float> NFLT_NULL = (INdarray<Float>) null; // 空值占位符
+
+	/**
+	 * NINT_NULL
+	 */
 	INdarray<Integer> NINT_NULL = (INdarray<Integer>) null; // 空值占位符
+
+	/**
+	 * NILNG_NULL
+	 */
 	INdarray<Long> NILNG_NULL = (INdarray<Long>) null; // 空值占位符
+
+	/**
+	 * NIDBL_NULL
+	 */
 	INdarray<Double> NIDBL_NULL = (INdarray<Double>) null; // 空值占位符
+
+	/**
+	 * NISTR_NULL
+	 */
 	INdarray<String> NISTR_NULL = (INdarray<String>) null; // 空值占位符
 
 }

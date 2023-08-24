@@ -3142,10 +3142,12 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 返回非齐次窗口长度<br>
 	 *
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame;&gt; 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换
+	 *                 List&lt;DFrame;&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
-	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型函数
+	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt;
+	 *                 这样的类型函数
 	 * @return 滑动窗口的T元素归集器，归集成U类型的窗口集合
 	 */
 	public static <T, U> Collector<T, ?, U> slidingclc(final int size, final int step,
@@ -3170,11 +3172,13 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 滑动窗口的T元素归集器
 	 *
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换
+	 *                 List&lt;DFrame&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
 	 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
-	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型函数
+	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt;
+	 *                 这样的类型函数
 	 * @return 滑动窗口的T元素归集器，归集成U类型的窗口集合
 	 */
 	public static <T, U> Collector<T, ?, U> slidingclc(final int size, final int step, final boolean flag,
@@ -3187,7 +3191,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 *
 	 * @param <F>      帧框类型
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换
+	 *                 List&lt;DFrame&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
 	 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
@@ -3643,6 +3648,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		}
 
 		/**
+		 * build
+		 * 
 		 * @param <T> 参数列表元素类型
 		 * @param kvs 键值序列 key1,value1,key2,value2,...
 		 * @return IRecord 对象
@@ -3775,6 +3782,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 
 		/**
 		 * 构造复制品
+		 * 
+		 * @return Builder
 		 */
 		public Builder duplicate() {
 			return this.clone();

@@ -19,7 +19,6 @@ public interface INodeWriter<N> {
 	/**
 	 * 节点转换成Json
 	 * 
-	 * @param <N>            节点类型
 	 * @param node           树形元素节点
 	 * @param get_children   获取子节点
 	 * @param pre_processor  前处理 (sb:操作缓存,e:节点元素)->s

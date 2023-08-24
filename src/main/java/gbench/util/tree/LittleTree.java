@@ -33,6 +33,7 @@ public class LittleTree {
 	 * 构建一棵树
 	 *
 	 * @param <T>          节点元素的值类型
+	 * @param root         根节点
 	 * @param sup_root     根节点函数 <br>
 	 * @param get_children 子节点函数 <br>
 	 * @return 树形结构的根节点： Node &lt;T&gt; 类型的根节点

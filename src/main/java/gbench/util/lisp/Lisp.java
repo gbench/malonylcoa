@@ -17,6 +17,13 @@ import java.util.stream.*;
 public class Lisp {
 
 	/**
+	 * 默认构造函数
+	 */
+	public Lisp() {
+
+	}
+
+	/**
 	 * 起始序列
 	 *
 	 * @param <T> 元素类型
@@ -218,6 +225,7 @@ public class Lisp {
 	 *
 	 * @param <T>      归集器元素类型
 	 * @param <U>      结果类型
+	 * @param tclazz   t类型类
 	 * @param finisher 完成归集器 ll->u
 	 * @return [t]->u 链表归集器
 	 */
