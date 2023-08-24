@@ -1791,15 +1791,15 @@ public class DataApp {
 			return mapper.apply((T) this.get(key));
 		}
 
-		/*
+		/**
 		 * 值变换
 		 *
-		 * @param mapper this->t
-		 *
-		 * @return t T 类型的结果
+		 * @param <T>    映射结果类型
+		 * @param mapper this-&gt;t
+		 * @return T 类型的结果
 		 */
-		default <T> T mutate(final Function<? super Map<String, Object>, T> mapper) {
-			return mapper.apply(this.toMap());
+		default <T> T mutate(final Function<IRecord, T> mapper) {
+			return mapper.apply(this);
 		}
 
 		/**
@@ -2948,7 +2948,7 @@ public class DataApp {
 		 * @param <K>        键名类型
 		 * @param <Z>        最终结果类型
 		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
-		 * @param z_finisher 最终结果包装函数 {(k,v)}->z
+		 * @param z_finisher 最终结果包装函数 [(k,v)]->z
 		 * @return Z类型的结果
 		 */
 		public static <X, K, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer,
@@ -2966,7 +2966,7 @@ public class DataApp {
 		 * @param <Z>        最终结果类型
 		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
 		 * @param valuerer   键值函数 x->value
-		 * @param z_finisher 最终结果包装函数 {(k,v)}->z
+		 * @param z_finisher 最终结果包装函数 [(k,v)]->z
 		 * @return Z类型的结果
 		 */
 		public static <X, K, V, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valuerer,
@@ -2986,7 +2986,7 @@ public class DataApp {
 		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
 		 * @param valueer    键值创建函数 x-&gt;value
 		 * @param uclc       键值元素集合归集器 vv-&gt;u
-		 * @param z_finisher 键值元素集合包装函数 vv-&gt;z
+		 * @param z_finisher 键值元素集合包装函数 [(k,v)]-&gt;z
 		 * @return U 结果类型
 		 */
 		public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer,
@@ -3006,6 +3006,7 @@ public class DataApp {
 		 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
 		 * @param valueer    键值创建函数 x-&gt;value
 		 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
+		 * @param z_finisher 键值元素集合包装函数 [(k,v)]-&gt;z
 		 * @return U 结果类型
 		 */
 		public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer,
@@ -4817,6 +4818,12 @@ public class DataApp {
 	public static class JSON {
 
 		/**
+		 * 默认构造函数
+		 */
+		public JSON() {
+		}
+
+		/**
 		 * JsonException
 		 * 
 		 * @author gbench
@@ -5289,8 +5296,9 @@ public class DataApp {
 			}
 
 			/**
+			 * parseValue
 			 * 
-			 * @return
+			 * @return 解析后对象
 			 */
 			public Object parseValue() {
 				final Token token = jsonTokenizer.nextToken();
@@ -5326,8 +5334,9 @@ public class DataApp {
 			}
 
 			/**
+			 * parseObj
 			 * 
-			 * @return
+			 * @return Map对象
 			 */
 			private Map<?, ?> parseObj() {
 				final Token lookAhead = jsonTokenizer.lookAhead();
@@ -5343,8 +5352,9 @@ public class DataApp {
 			}
 
 			/**
+			 * parseMembers
 			 * 
-			 * @return
+			 * @return Map对现象
 			 */
 			private Map<?, ?> parseMembers() {
 				final Map<Object, Object> map = new LinkedHashMap<>();
@@ -5362,6 +5372,11 @@ public class DataApp {
 				return map;
 			}
 
+			/**
+			 * parseMember
+			 * 
+			 * @return 数组对象
+			 */
 			private Object[] parseMember() {
 				final Token key = jsonTokenizer.nextToken();
 				if (key.getType() != TokenType.STRING) {
@@ -5378,8 +5393,9 @@ public class DataApp {
 			}
 
 			/**
+			 * parseArray
 			 * 
-			 * @return
+			 * @return 列表对象
 			 */
 			private List<?> parseArray() {
 				final Token lookAhead = jsonTokenizer.lookAhead();
@@ -5393,8 +5409,9 @@ public class DataApp {
 			}
 
 			/**
+			 * parseValues
 			 * 
-			 * @return
+			 * @return 列表对象
 			 */
 			private List<?> parseValues() {
 				final List<Object> list = new ArrayList<>();
@@ -5413,11 +5430,12 @@ public class DataApp {
 			}
 
 			/**
+			 * prettyToken
 			 * 
-			 * @param token
-			 * @return
+			 * @param token token
+			 * @return 格式化字符串
 			 */
-			private String prettyToken(Token token) {
+			private String prettyToken(final Token token) {
 				final String s = " type:" + token.getType() + ",value:" + token.getVal();
 				return s;
 			}
@@ -5493,9 +5511,10 @@ public class DataApp {
 		}
 
 		/**
+		 * 判断对象是否是json格式
 		 * 
-		 * @param obj
-		 * @return
+		 * @param obj 目标对象
+		 * @return 是否是json格式
 		 */
 		public static boolean isJson(final String obj) {
 			boolean flag = false;
@@ -5545,8 +5564,10 @@ public class DataApp {
 		}
 
 		/**
-		 * @param line
-		 * @return
+		 * 把一个json字符串转换成Map对象
+		 * 
+		 * @param line json 字符串
+		 * @return Map对象
 		 */
 		@SuppressWarnings("unchecked")
 		public static Map<String, Object> asMap(final String line) {
