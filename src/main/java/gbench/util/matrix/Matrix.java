@@ -389,8 +389,8 @@ public class Matrix<T> extends Tensor<T> {
 	 * mmult
 	 * 
 	 * @param <U> U
-	 * @param mu mu
-	 * @return  Matrix
+	 * @param mu  mu
+	 * @return Matrix
 	 */
 	public <U> Matrix<List<Tuple2<T, U>>> mmult(final Matrix<U> mu) {
 		return this.mmult(mu, Tuple2::new, Collectors.toList());
@@ -436,9 +436,9 @@ public class Matrix<T> extends Tensor<T> {
 	 * @param biop      (t,u)->元素归集
 	 * @param collector [x]->y 结果类归集器
 	 * @param yclass    结果类名
-	 * @param <U> U
-	 * @param <X> X
-	 * @param <Y> Y
+	 * @param <U>       U
+	 * @param <X>       X
+	 * @param <Y>       Y
 	 * @return Matrix
 	 */
 	public <U, X, Y> Matrix<Y> mmult(final Matrix<U> mu, BiFunction<T, U, X> biop, Collector<X, ?, Y> collector,
@@ -460,8 +460,8 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 数据点乘积
 	 *
-	 * @param <U> U
-	 * @param <X> X
+	 * @param <U>  U
+	 * @param <X>  X
 	 * @param mu   右侧矩阵
 	 * @param biop 数据城府 (t,u)->x
 	 * @return 数据矩阵
@@ -485,7 +485,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 数据点乘积
 	 *
-	 * @param <U> U 
+	 * @param <U> U
 	 * @param <N> N
 	 * @param mu  右侧矩阵
 	 * @return 数据矩阵
@@ -713,9 +713,11 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param <N>
-	 * @param another
-	 * @return
+	 * mul
+	 * 
+	 * @param <N>     N
+	 * @param another 另一个矩阵
+	 * @return Matrix
 	 */
 	public <N extends Number> Matrix<Double> mul(final Matrix<N> another) {
 		return this.dblx().fmap(another, (a, b) -> Optional.ofNullable(a)
@@ -723,9 +725,11 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param <N>
-	 * @param another
-	 * @return
+	 * div
+	 * 
+	 * @param <N>     N
+	 * @param another 另一个矩阵
+	 * @return Matrix
 	 */
 	public <N extends Number> Matrix<Double> div(final Matrix<N> another) {
 		return this.dblx().fmap(another, (a, b) -> Optional.ofNullable(a)
@@ -733,9 +737,9 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param <N>
-	 * @param another
-	 * @return
+	 * @param <N>     N
+	 * @param another 另一个矩阵
+	 * @return Matrix
 	 */
 	public <N extends Number> Matrix<Double> minus(final Matrix<N> another) {
 		return this.dblx().fmap(another, (a, b) -> Optional.ofNullable(a)

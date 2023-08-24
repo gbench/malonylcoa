@@ -61,7 +61,6 @@ public class SimpleExcel implements AutoCloseable {
 	 * 简单的EXCEL, try to load a excel file
 	 * 
 	 * @param path 文件路径
-	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public SimpleExcel(final String path) {
 		this.load(path);
@@ -1674,7 +1673,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 数据矩阵转数据框
 	 * 
 	 * @param<T> 元素类型
-	 * @param dmx    数据框
+	 * @param dmx 数据框
 	 * @return 数据框
 	 */
 	public static <T> DFrame dmx2dfm(final DataMatrix<T> dmx) {
@@ -1685,7 +1684,7 @@ public class SimpleExcel implements AutoCloseable {
 	/**
 	 * 数据框转数据矩阵
 	 * 
-	 * @param dfm    数据框
+	 * @param dfm 数据框
 	 * @return 数据矩阵
 	 */
 	public static DataMatrix<Object> dfm2dmx(final DFrame dfm) {
