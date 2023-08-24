@@ -2016,6 +2016,9 @@ public class SimpleExcel implements AutoCloseable {
 		 */
 		private Cell ltCell;
 		private Tuple2<Integer, Integer> shape;
+		/**
+		 * excel
+		 */
 		public final SimpleExcel excel = SimpleExcel.this;
 
 	}
