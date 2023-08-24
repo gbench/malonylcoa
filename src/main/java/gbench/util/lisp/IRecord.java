@@ -469,7 +469,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param path 键名路径 如 a/b/c
 	 * @return U类型的值
 	 */
-	default <T, U> Integer pathi4(final String path) {
+	default Integer pathi4(final String path) {
 		return this.pathget(path, IRecord.obj2int());
 	}
 
@@ -499,7 +499,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param path 键名路径 如 a/b/c
 	 * @return U类型的值
 	 */
-	default <T, U> Double pathdbl(final String path) {
+	default Double pathdbl(final String path) {
 		return this.pathget(path, IRecord.obj2dbl());
 	}
 
@@ -842,16 +842,17 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param key 键名
 	 * @return key 所标定的 值
 	 */
-	default Double dbl(String key) {
+	default Double dbl(final String key) {
 		return IRecord.obj2dbl().apply(this.get(key));
 	}
 
 	/**
 	 * 返回 key 所对应的 键值, Double 类型
 	 *
-	 * @return idx 所标定的 值
+	 * @param key 键名
+	 * @return key 所标定的 值
 	 */
-	default Double dbl(int key) {
+	default Double dbl(final int key) {
 		return this.dbl(this.keyOf(key));
 	}
 
@@ -1176,6 +1177,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 *
 	 * @param <T>    键值变换函数的源类型
 	 * @param <U>    键值变换函数的目标类型
+	 * @param idx    键名索引从0开始
 	 * @param mapper 键值变换函数 t->u
 	 * @return U类型的 元素列表
 	 */
@@ -1991,6 +1993,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 生成 构建器
 	 *
+	 * @param <T>  keys 元素类型
 	 * @param keys 键名序列
 	 * @return keys 为格式的 构建器
 	 */
@@ -2005,11 +2008,12 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * IRecord.FT2("${0}+${1}=${2}",1,2,3) 替换后的结果为 1+2=3 <br>
 	 * 健名使用${} 括起来避免对于模式串里的 "$11"出现混淆 是 $1后跟1 还是 就是$11的情况 <br>
 	 *
+	 * @param <T>      参数列表元素类型
 	 * @param template 模版字符串，占位符${0},${1},${2},...
 	 * @param tt       模版参数序列
 	 * @return template 被模版参数替换后的字符串
 	 */
-	public static String FT2(final String template, final Object... tt) {
+	public static <T> String FT2(final String template, final Object... tt) {
 
 		final IRecord rec = IRecord.rb(tt.length, i -> "${" + i + "}").get(tt);
 		return fill_template(template, rec);
@@ -2195,6 +2199,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 构建一个键名键值序列 指定的 IRecord
 	 *
+	 * @param <T> Map结构的参数列表元素类型
 	 * @param kvs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
 	 *            build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
 	 *            kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
@@ -2453,7 +2458,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * flag true: [1, 2][2, 3][3, 4][4, 5] <br>
 	 * 按照 width=2, step=2 进行滑动 <br>
 	 * flag false: [1, 2][3, 4] <br>
-	 * flag true: [1, 2][3, 4] <br》
+	 * flag true: [1, 2][3, 4] <br>
 	 *
 	 * @param <T>  数据元素类型
 	 * @param aa   数据集合
@@ -2474,7 +2479,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * flag true: [1, 2][2, 3][3, 4][4, 5] <br>
 	 * 按照 width=2, step=2 进行滑动 <br>
 	 * flag false: [1, 2][3, 4] <br>
-	 * flag true: [1, 2][3, 4] <br》
+	 * flag true: [1, 2][3, 4] <br>
 	 *
 	 * @param <T>        数据元素类型
 	 * @param collection 数据集合
@@ -2872,7 +2877,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 把 一个 Iterable 对象 转换成 flat List 结构
 	 *
-	 * @param itr 可遍历结构
+	 * @param itr    可遍历结构
+	 * @param mapper 元素变换器 o->o
 	 * @return ArrayList结构的数据
 	 */
 	static List<Object> itr2flatlist(final Iterable<?> itr, final Function<Object, Object> mapper) {
@@ -3136,10 +3142,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 返回非齐次窗口长度<br>
 	 *
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame;&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
-	 * @param finisher 最终结果处理器,比如 把 List<List<T> 变换 List&lt;DFrame&gt; 这样的类型函数
+	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型函数
 	 * @return 滑动窗口的T元素归集器，归集成U类型的窗口集合
 	 */
 	public static <T, U> Collector<T, ?, U> slidingclc(final int size, final int step,
@@ -3164,11 +3170,11 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 滑动窗口的T元素归集器
 	 *
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
 	 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
-	 * @param finisher 最终结果处理器,比如 把 List<List<T> 变换 List&lt;DFrame&gt; 这样的类型函数
+	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型函数
 	 * @return 滑动窗口的T元素归集器，归集成U类型的窗口集合
 	 */
 	public static <T, U> Collector<T, ?, U> slidingclc(final int size, final int step, final boolean flag,
@@ -3181,7 +3187,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 *
 	 * @param <F>      帧框类型
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
 	 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
@@ -3244,7 +3250,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 *
 	 * @param <X>   元素数据类型
 	 * @param <K>   键名类型
-	 * @param keyer 键名函数,分类规则&依据 x->key
+	 * @param keyer 键名函数,分类规则&amp;依据 x-&gt;key
 	 * @return Map:{(K,U)}
 	 */
 	public static <X, K> Collector<X, ?, Map<K, List<X>>> grpclc2(final Function<X, K> keyer) {
@@ -3259,9 +3265,9 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param <K>     键名类型
 	 * @param <V>     键值类型
 	 * @param <U>     中间结果类型
-	 * @param keyer   键名函数,分类规则&依据 x->key
-	 * @param valueer 键值创建函数 x->value
-	 * @param uclc    键值元素集合包装函数 vv->u
+	 * @param keyer   键名函数,分类规则&amp;依据 x-&gt;key
+	 * @param valueer 键值创建函数 x-&gt;value
+	 * @param uclc    键值元素集合包装函数 vv-&gt;u
 	 * @return Map:{(K,U)}
 	 */
 	public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
@@ -3277,9 +3283,9 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param <K>        键名类型
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
-	 * @param valueer    键值创建函数 x->value
-	 * @param u_finisher 键值元素集合包装函数 vv->u
+	 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
+	 * @param valueer    键值创建函数 x-&gt;value
+	 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
 	 * @return Map:{(K,U)}
 	 */
 	public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
@@ -3294,7 +3300,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param <X>        元素数据类型
 	 * @param <K>        键名类型
 	 * @param <Z>        最终结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
+	 * @param keyer      键名函数,分类规则&amp;依据 x->key
 	 * @param z_finisher 最终结果包装函数 {(k,v)}->z
 	 * @return Z类型的结果
 	 */
@@ -3311,9 +3317,9 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param <K>        键名类型
 	 * @param <V>        键名值
 	 * @param <Z>        最终结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
-	 * @param valuerer   键值函数 x->value
-	 * @param z_finisher 最终结果包装函数 {(k,v)}->z
+	 * @param keyer      键名函数,分类规则&amp;依据 x->key
+	 * @param valuerer   键值函数 x-&gt;value
+	 * @param z_finisher 最终结果包装函数 {(k,v)}-&gt;z
 	 * @return Z类型的结果
 	 */
 	public static <X, K, V, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valuerer,
@@ -3330,10 +3336,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
 	 * @param <Z>        结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
-	 * @param valueer    键值创建函数 x->value
-	 * @param uclc       键值元素集合归集器 vv->u
-	 * @param z_finisher 最终结果的生成函数 {(k,u)}->z
+	 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
+	 * @param valueer    键值创建函数 x-&gt;value
+	 * @param uclc       键值元素集合归集器 vv-&gt;u
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @return U 结果类型
 	 */
 	public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valueer,
@@ -3350,10 +3356,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
 	 * @param <Z>        结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
-	 * @param valueer    键值创建函数 x->value
-	 * @param u_finisher 键值元素集合包装函数 vv->u
-	 * @param z_finisher 最终结果的生成函数 {(k,u)}->z
+	 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
+	 * @param valueer    键值创建函数 x-&gt;value
+	 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @return U 结果类型
 	 */
 	public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valueer,

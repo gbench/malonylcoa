@@ -24,9 +24,9 @@ public abstract class AbstractSerializer<T> extends StdSerializer<T> {
 	/**
 	 * 构造函数
 	 * 
-	 * @param tclass
+	 * @param tclass 目标类
 	 */
-	protected AbstractSerializer(Class<T> tclass) {
+	protected AbstractSerializer(final Class<T> tclass) {
 		super(tclass);
 	}
 

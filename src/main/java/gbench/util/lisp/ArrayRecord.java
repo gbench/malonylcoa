@@ -174,7 +174,9 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
-	 * @应用mapper作用于值数组
+	 * 应用mapper作用于值数组
+	 * 
+	 * @param mapper 元素变换器 [t]-&gt;u
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
@@ -251,16 +253,18 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 键名列表
 	 * 
-	 * @return
+	 * @return 键名列表
 	 */
 	public String[] getKeys() {
 		return keys;
 	}
 
 	/**
+	 * 设置键名列表
 	 * 
-	 * @param keys
+	 * @param keys 键名列表
 	 * @return ra 本身
 	 */
 	public ArrayRecord setKeys(final String[] keys) {
@@ -311,8 +315,9 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 设置键名列表
 	 * 
-	 * @param keys
+	 * @param keys 键名列表
 	 * @return ra 本身
 	 */
 	public ArrayRecord setKeys(final Iterable<String> keys) {
@@ -321,19 +326,21 @@ public class ArrayRecord implements IRecord, Serializable {
 	}
 
 	/**
+	 * 获取值列表
 	 * 
-	 * @return
+	 * @return 值列表
 	 */
 	public Object[] getValues() {
 		return values;
 	}
 
 	/**
+	 * 设置值列表
 	 * 
-	 * @param values
+	 * @param values 值列表
 	 * @return ra 本身
 	 */
-	public ArrayRecord setValues(Object[] values) {
+	public ArrayRecord setValues(final Object[] values) {
 		this.values = values;
 		return this;
 	}
@@ -419,7 +426,10 @@ public class ArrayRecord implements IRecord, Serializable {
 	/**
 	 * 生成一个索引访问器序列
 	 * 
-	 * @param keys 键名序列
+	 * @param <T>    参数类型
+	 * @param <U>    结果类型
+	 * @param keys   键名序列
+	 * @param mapper 索引变换函数 (t,idx)-&gt;U
 	 * @return 索引序列
 	 */
 	public <T, U> Stream<Function<T, U>> generateS(final String[] keys, final BiFunction<T, Integer, U> mapper) {
@@ -432,7 +442,7 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * @param <T>      参数类型
 	 * @param <U>      结果类型
 	 * @param keys     键名序列,逗号[,;/\\]进行分割
-	 * @param accessor 索引访问器 (t,i)->u
+	 * @param accessor 索引访问器 (t,i)-&gt;u
 	 * @return 索引序列
 	 */
 	public <T, U> Stream<Function<T, U>> generateS(final String keys, final BiFunction<T, Integer, U> accessor) {
@@ -444,20 +454,22 @@ public class ArrayRecord implements IRecord, Serializable {
 	 * 
 	 * @param <T>      参数类型
 	 * @param <U>      结果类型
-	 * @param keys     键名序列,
-	 * @param accessor 索引访问器 (t,i)->u
-	 * @return 索引序列
+	 * @param indices  键名序列
+	 * @param accessor 索引访问器 (t,i)-&gt;u
+	 * @return 索引访问器序列
 	 */
-	public <T, U> Stream<Function<T, U>> generateS(final Integer[] index, final BiFunction<T, Integer, U> accessor) {
-		return (index == null ? Stream.iterate(0, i -> i + 1).limit(this.size()) : Stream.of(index))
+	public <T, U> Stream<Function<T, U>> generateS(final Integer[] indices, final BiFunction<T, Integer, U> accessor) {
+		return (indices == null ? Stream.iterate(0, i -> i + 1).limit(this.size()) : Stream.of(indices))
 				.map(i -> (Function<T, U>) t -> accessor.apply(t, i));
 	}
 
 	/**
 	 * 生成一个索引访问器序列
 	 * 
-	 * @param accessor 索引访问器 (t,i)->u
-	 * @return 索引序列
+	 * @param <T>      参数类型
+	 * @param <U>      结果类型
+	 * @param accessor 索引访问器 (t,i)-&gt;u
+	 * @return 索引访问器序列
 	 */
 	public <T, U> Stream<Function<T, U>> generateS(final BiFunction<T, Integer, U> accessor) {
 		return this.generateS((Integer[]) null, accessor);
