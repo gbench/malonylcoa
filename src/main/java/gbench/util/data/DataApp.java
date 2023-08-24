@@ -3345,19 +3345,24 @@ public class DataApp {
 		 * @param stream 托管的流对象
 		 * @return IManagedStreams 本身 便于 实现链式编程
 		 */
-		default void add(final Stream<?> stream) {
+		default IManagedStreams add(final Stream<?> stream) {
 
 			this.getActiveStreams().add(stream);
+			return this;
 		}
 
 		/**
 		 * 把所有的活动的流都给予清空
+		 * 
+		 * @return IManagedStreams 本身 便于 实现链式编程
 		 */
-		default void dump() {
+		default IManagedStreams dump() {
 
 			this.getActiveStreams().forEach(e -> {
 				System.out.println(e);
 			});
+
+			return this;
 		}
 
 	}
@@ -4252,12 +4257,14 @@ public class DataApp {
 		 * <p>
 		 * 对于短路的流，注意调用 stream.close() 来释放数据库连接, 或者 是 调用 sess.clear 来给与清空。<br>
 		 *
+		 * @param <T>        结果类型
 		 * @param connection 数据库连接
 		 * @param sql        查询或更新语句
 		 * @param params     sql的占位参数, params 为空的时候 不予 进行 sql 语句填充
 		 * @param sqlmode    sql的模式，更新还是查询
 		 * @param close_conn 结束时候是否关闭 connection 数据连接
-		 * @return IRecord 的 数据流 [rec]
+		 * @param mapper     索引参数
+		 * @return T 类型的结果
 		 * @throws SQLException SQLException
 		 */
 		static <T> T psql2t(final Connection connection, final String sql, final Map<Integer, ?> params,
@@ -4383,6 +4390,7 @@ public class DataApp {
 		/**
 		 * 构造IRecord构造器
 		 *
+		 * @param <T>  键名序列类型
 		 * @param keys 键名列表的迭代器
 		 */
 		public <T> Builder(final Iterable<T> keys) {
@@ -4391,6 +4399,8 @@ public class DataApp {
 		}
 
 		/**
+		 * 构建IRecord
+		 * 
 		 * @param <T> 参数列表元素类型
 		 * @param kvs 键值序列 key1,value1,key2,value2,...
 		 * @return IRecord 对象
@@ -4523,6 +4533,8 @@ public class DataApp {
 
 		/**
 		 * 构造复制品
+		 * 
+		 * @return 对象复制品
 		 */
 		public Builder duplicate() {
 			return this.clone();
@@ -4530,6 +4542,8 @@ public class DataApp {
 
 		/**
 		 * 复制品
+		 * 
+		 * @return 对象复制品
 		 */
 		@Override
 		public Builder clone() {
