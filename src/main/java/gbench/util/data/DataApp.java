@@ -3406,7 +3406,7 @@ public class DataApp {
 		/**
 		 * 会话属性
 		 *
-		 * @return
+		 * @return 会话属性
 		 */
 		IRecord getAttributes();
 
@@ -3468,8 +3468,8 @@ public class DataApp {
 		 * @param path        连接列表
 		 * @param flds        字段列表
 		 * @param tail_clause 尾部从句
-		 * @return X
-		 * @throws SQLException
+		 * @return X 结果类型
+		 * @throws SQLException SQLException
 		 */
 		default X path2x(final String path, final String flds, final String tail_clause) throws SQLException {
 			final String head_clause = SqlBuilder.LEFTJOIN(path, flds); // 头部从句
@@ -3486,8 +3486,8 @@ public class DataApp {
 		 *
 		 * @param path 连接列表
 		 * @param flds 字段列表
-		 * @return X
-		 * @throws SQLException
+		 * @return X 结果类型
+		 * @throws SQLException SQLException
 		 */
 		default X path2x(final String path, final String flds) throws SQLException {
 
@@ -3501,7 +3501,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return X 结果类型，比如 DFrame 由 this.collectorX 定义
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default X sql2x(final String sql) throws SQLException {
 
@@ -3513,8 +3513,8 @@ public class DataApp {
 		 * X 查询
 		 *
 		 * @param sb SQL 语句
-		 * @return X
-		 * @throws SQLException
+		 * @return X 结果类型
+		 * @throws SQLException SQLException
 		 */
 		default X sql2x(final SqlBuilder sb) throws SQLException {
 
@@ -3523,12 +3523,14 @@ public class DataApp {
 		}
 
 		/**
-		 * @param <U>
-		 * @param sqlpattern
-		 * @param params
-		 * @param collector
-		 * @return
-		 * @throws SQLException
+		 * sql查询
+		 * 
+		 * @param <U>        结果类型
+		 * @param sqlpattern sqlpattern SQL 语句模式
+		 * @param params     参数泪飙
+		 * @param collector  collector 归集器
+		 * @return u 类型结果
+		 * @throws SQLException SQLException
 		 */
 		default <U> U sql2u(final String sqlpattern, final IRecord params, final Collector<IRecord, ?, U> collector)
 				throws SQLException {
@@ -3538,11 +3540,13 @@ public class DataApp {
 		}
 
 		/**
-		 * @param <U>
-		 * @param sql
-		 * @param collector
-		 * @return
-		 * @throws SQLException
+		 * SQL语句查询
+		 * 
+		 * @param <U>       结果类型
+		 * @param sql       sql语句
+		 * @param collector collector 归集器
+		 * @return u 类型结果
+		 * @throws SQLException SQLException
 		 */
 		default <U> U sql2u(final String sql, final Collector<IRecord, ?, U> collector) throws SQLException {
 
@@ -3559,7 +3563,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return IRecord类型的流
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Stream<IRecord> sql2recordS(final String sql) throws SQLException {
 
@@ -3577,7 +3581,7 @@ public class DataApp {
 		 *
 		 * @param sb sql 语句
 		 * @return IRecord类型的流
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Stream<IRecord> sql2recordS(final SqlBuilder sb) throws SQLException {
 
@@ -3595,7 +3599,7 @@ public class DataApp {
 		 *             ur;roleid=id;t_role r 语句
 		 * @param flds 返回列
 		 * @return IRecord类型的流
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Stream<IRecord> sql2recordS(final String path, final String flds) throws SQLException {
 
@@ -3607,7 +3611,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return IRecord 的 数据流
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Stream<IRecord> sql2updateS(final String sql) throws SQLException {
 			return this.psql2updateS(sql, null);
@@ -3618,7 +3622,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return IRecord 的 数据列表
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Stream<IRecord> sql2executeS(final String sql) throws SQLException {
 			return this.sql2updateS(sql);
@@ -3629,7 +3633,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return IRecord 的 数据列表
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default List<IRecord> sql2execute(final String sql) throws SQLException {
 			return this.sql2updateS(sql).collect(Collectors.toList());
@@ -3640,7 +3644,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return 查询结果集合
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default IRecord sql2one(final String sql) throws SQLException {
 			return this.sql2maybe(sql).orElse(null);
@@ -3651,7 +3655,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return 查询结果集合
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Optional<IRecord> sql2maybe(final String sql) throws SQLException {
 			return this.sql2recordS(sql).findFirst();
@@ -3664,7 +3668,7 @@ public class DataApp {
 		 *
 		 * @param sql sql 语句
 		 * @return execute的返回结果，一般用于获取自增长的id主键
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Optional<IRecord> sql2maybe2(final String sql) throws SQLException {
 			return this.sql2executeS(sql).findFirst();
@@ -3725,7 +3729,7 @@ public class DataApp {
 		 * 
 		 * @param sql 结果集合
 		 * @return 结果集数据(列名序列:[s],值序列[d])
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql) throws SQLException {
 			final AtomicReference<SQLException> ar = new AtomicReference<>();
@@ -3775,7 +3779,7 @@ public class DataApp {
 		 * @param sql            结果集合
 		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据(列名序列:[s],值序列[d])
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql,
 				final SQLExceptionalBiConsumer<Statement, ResultSet> close_callback) throws SQLException {
@@ -3788,7 +3792,7 @@ public class DataApp {
 		 * @param sql            结果集合
 		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据(列名序列:[s],值序列[d])
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql,
 				final ExceptionalConsumer<Tuple2<Connection, Tuple2<Statement, ResultSet>>> close_callback)
@@ -3821,8 +3825,7 @@ public class DataApp {
 		 * @param path        连接列表
 		 * @param flds        字段列表
 		 * @param tail_clause 尾部从句
-		 * @return X
-		 * @throws SQLException
+		 * @return X 结果类型
 		 */
 		default X pathx(final String path, final String flds, final String tail_clause) {
 
@@ -3841,8 +3844,7 @@ public class DataApp {
 		 *
 		 * @param path 连接列表
 		 * @param flds 字段列表
-		 * @return X
-		 * @throws SQLException
+		 * @return X 结果类型
 		 */
 		default X pathx(final String path, final String flds) {
 
@@ -3879,7 +3881,7 @@ public class DataApp {
 		 * @param sql    prepared sql 语句
 		 * @param params prepared sql 语句中占位符参数的值集合，位置从1开始
 		 * @return 查询结果集合
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Stream<IRecord> psql2recordS(final String sql, final Map<Integer, ?> params) throws SQLException {
 			Stream<IRecord> stream = null;
@@ -3902,7 +3904,7 @@ public class DataApp {
 		 * @param sql    prepared sql 语句
 		 * @param params 占位符的对应值的Map,位置从1开始
 		 * @return 更新结果集合函数有 generatedKeys 键值
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		default Stream<IRecord> psql2updateS(final String sql, final Map<Integer, Object> params) throws SQLException {
 			Stream<IRecord> stream = null;
@@ -3927,7 +3929,7 @@ public class DataApp {
 		 * @param params sql 参数: {Key:Integer-Value:Object},Key 从1开始。 params
 		 *               为null时候不予进行sql语句填充
 		 * @return PreparedStatement
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		static PreparedStatement pstmt(final Connection conn, final SQL_MODE mode, final String sql,
 				final Map<Integer, ?> params) throws SQLException {
@@ -3971,7 +3973,7 @@ public class DataApp {
 		 *
 		 * @param rs 结果集合
 		 * @return 标签数组
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		static String[] labels(final ResultSet rs) throws SQLException {
 
@@ -4061,15 +4063,17 @@ public class DataApp {
 		}
 
 		/**
-		 * @param <T>
-		 * @param exceptioncs
-		 * @return
+		 * 移除异常信息 ExceptionalConsumer 转 Consumer
+		 * 
+		 * @param <T> 参数类型
+		 * @param cs  回调函数
+		 * @return Consumer
 		 */
-		static <T> Consumer<T> trycatch(final ExceptionalConsumer<T> exceptioncs) {
+		static <T> Consumer<T> trycatch(final ExceptionalConsumer<T> cs) {
 
 			return t -> {
 				try {
-					exceptioncs.accept(t);
+					cs.accept(t);
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
@@ -4077,16 +4081,20 @@ public class DataApp {
 		}
 
 		/**
-		 * @param <T>
-		 * @param <U>
-		 * @param exceptionFunction
-		 * @return
+		 * 移除异常信息 <br>
+		 * 
+		 * ExceptionalFunction 转 Function
+		 * 
+		 * @param <T>  参数类型
+		 * @param <U>  结果类型
+		 * @param func 异常函数类型
+		 * @return Function
 		 */
-		static <T, U> Function<T, U> trycatch(final ExceptionalFunction<T, U> exceptionFunction) {
+		static <T, U> Function<T, U> trycatch(final ExceptionalFunction<T, U> func) {
 
 			return t -> {
 				try {
-					return exceptionFunction.apply(t);
+					return func.apply(t);
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
@@ -4103,7 +4111,7 @@ public class DataApp {
 		 * @param rs             结果集合
 		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据的record的流 [rec]
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		static Stream<IRecord> readlineS(final ResultSet rs, final Runnable close_callback) throws SQLException {
 
@@ -4137,7 +4145,7 @@ public class DataApp {
 		 * @param rs             结果集合
 		 * @param close_callback 执行结束的回调函数，比如 关闭 数据集、语句、连接 之类的 收尾操作。
 		 * @return 结果集数据(列名序列:[s],值序列[d])
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		static Tuple2<String[], Stream<Object>> readDataS(final ResultSet rs,
 				final ExceptionalConsumer<IRecord> close_callback) throws SQLException {
@@ -4180,7 +4188,7 @@ public class DataApp {
 		 * @param sqlmode    sql的模式，更新还是查询
 		 * @param close_conn 结束时候是否关闭 connection 数据连接
 		 * @return IRecord 的 数据流 [rec]
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		static Stream<IRecord> psql2recordS(final Connection connection, final String sql, final SQL_MODE sqlmode,
 				final boolean close_conn) throws SQLException {
@@ -4198,7 +4206,7 @@ public class DataApp {
 		 * @param sqlmode    sql的模式，更新还是查询
 		 * @param close_conn 结束时候是否关闭 connection 数据连接
 		 * @return IRecord 的 数据流 [rec]
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		@SuppressWarnings("unchecked")
 		static Stream<IRecord> psql2recordS(final Connection connection, final String sql, final Map<Integer, ?> params,
@@ -4250,7 +4258,7 @@ public class DataApp {
 		 * @param sqlmode    sql的模式，更新还是查询
 		 * @param close_conn 结束时候是否关闭 connection 数据连接
 		 * @return IRecord 的 数据流 [rec]
-		 * @throws SQLException
+		 * @throws SQLException SQLException
 		 */
 		static <T> T psql2t(final Connection connection, final String sql, final Map<Integer, ?> params,
 				final SQL_MODE sqlmode, final boolean close_conn,
@@ -6236,7 +6244,10 @@ public class DataApp {
 	}
 
 	private static int MAX_SIZE = 1024 * 1024 * 1024; // 最大长度
-	public static Consumer<String> debug;
+	/**
+	 * 调试输出函数
+	 */
+	public static Consumer<String> debug; // 调试输出函数
 
 	private DataSource dataSource; // 注入系统的数据源
 
