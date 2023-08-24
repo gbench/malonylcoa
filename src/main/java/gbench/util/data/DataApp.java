@@ -336,6 +336,8 @@ public class DataApp {
 		}
 
 		/**
+		 * flatS 扁平化
+		 * 
 		 * @return 对象数据流
 		 */
 		public Stream<Object> flatS() {
@@ -462,16 +464,20 @@ public class DataApp {
 		}
 
 		/**
-		 * @param tup
-		 * @return
+		 * 扁平化
+		 * 
+		 * @param tup 二元组
+		 * @return 对象流
 		 */
 		public static Stream<Object> flatS(final Tuple2<?, ?> tup) {
 			return flat(tup).stream();
 		}
 
 		/**
-		 * @param tup
-		 * @return
+		 * 扁平化
+		 * 
+		 * @param tup 二元组
+		 * @return 列表
 		 */
 		public static List<Object> flat(final Tuple2<?, ?> tup) {
 			final List<Object> ll = new LinkedList<Object>();
@@ -498,7 +504,8 @@ public class DataApp {
 		/**
 		 * 健名，键值 序列
 		 *
-		 * @param tt 健名，键值 序列
+		 * @param <T> tt的元素类型
+		 * @param tt  健名，键值 序列
 		 * @return 健名，键值 序列
 		 */
 		@SafeVarargs
@@ -837,7 +844,14 @@ public class DataApp {
 			};
 		}
 
+		/**
+		 * 1#元素
+		 */
 		public final T _1;
+
+		/**
+		 * 2#元素
+		 */
 		public final U _2;
 
 	}
@@ -4356,7 +4370,8 @@ public class DataApp {
 		/**
 		 * apply
 		 * 
-		 * @param t 函数参数
+		 * @param <U> U类型的结果
+		 * @param t   函数参数
 		 * @return U 类型的结果
 		 * @throws Exception 异常
 		 */
