@@ -294,10 +294,12 @@ public class DataApp {
 	 */
 	public static class Tuple2<T, U> implements Comparable<Tuple2<T, U>> {
 		/**
+		 * 构造函数
+		 * 
 		 * @param _1 第一元素
 		 * @param _2 第二元素
 		 */
-		public Tuple2(T _1, U _2) {
+		public Tuple2(final T _1, final U _2) {
 			this._1 = _1;
 			this._2 = _2;
 		}
@@ -325,7 +327,7 @@ public class DataApp {
 		/**
 		 * 扁平化
 		 *
-		 * @param <X>
+		 * @param <X>    元素类型
 		 * @param mapper 值变换函数 o->x
 		 * @return X类型额数据流
 		 */
@@ -345,7 +347,7 @@ public class DataApp {
 		 *
 		 * @param <X>     变化函数值类型
 		 * @param mapper1 t->x 一号元素变换函数
-		 * @return (x, u)
+		 * @return (x, u) 元组类型
 		 */
 		public <X> Tuple2<X, U> fmap1(final Function<T, X> mapper1) {
 			return Tuple2.of(mapper1.apply(_1), _2);
@@ -4386,7 +4388,6 @@ public class DataApp {
 		 *
 		 * @param t 函数参数
 		 * @param u 函数参数
-		 * @return U类型的函数
 		 * @throws SQLException 异常
 		 */
 		void accept(final T t, final U u) throws SQLException;
@@ -5090,6 +5091,13 @@ public class DataApp {
 		public static class JsonWriter {
 
 			/**
+			 * 默认构造函数
+			 */
+			public JsonWriter() {
+
+			}
+
+			/**
 			 * 把一个对象转换成json 字符串
 			 * 
 			 * @param obj 目标对象
@@ -5146,6 +5154,7 @@ public class DataApp {
 
 			/**
 			 * 列表对象
+			 * 
 			 * @param list 列表对象
 			 * @return json 字符串
 			 */
@@ -5166,6 +5175,7 @@ public class DataApp {
 
 			/**
 			 * 数组对象 转json对象
+			 * 
 			 * @param array 数组对象
 			 * @return json 对象
 			 */
@@ -5186,6 +5196,7 @@ public class DataApp {
 
 			/**
 			 * Map转json对象
+			 * 
 			 * @param map Map对象
 			 * @return json对象
 			 */
@@ -5208,6 +5219,7 @@ public class DataApp {
 
 			/**
 			 * 集合对象 转 json 对象
+			 * 
 			 * @param set 集合对象
 			 * @return json 对象
 			 */
@@ -5228,6 +5240,7 @@ public class DataApp {
 
 			/**
 			 * 字符串 转 json 对象
+			 * 
 			 * @param line 字符串
 			 * @return json 对象
 			 */
@@ -5449,7 +5462,51 @@ public class DataApp {
 		 * @author gbench
 		 */
 		public static enum TokenType {
-			BEGIN_OBJECT, END_OBJECT, BEGIN_ARRAY, END_ARRAY, STRING, NUMBER, BOOLEN, NULL, SEP_COLON, SEP_COMMA, WS
+			/**
+			 * BEGIN_OBJECT
+			 */
+			BEGIN_OBJECT,
+			/**
+			 * END_OBJECT
+			 */
+			END_OBJECT,
+
+			/**
+			 * BEGIN_ARRAY
+			 */
+			BEGIN_ARRAY,
+			/**
+			 * END_ARRAY
+			 */
+			END_ARRAY,
+			/**
+			 * STRING
+			 */
+			STRING,
+			/**
+			 * NUMBER
+			 */
+			NUMBER,
+			/**
+			 * BOOLEN
+			 */
+			BOOLEN,
+			/**
+			 * NULL
+			 */
+			NULL,
+			/**
+			 * SEP_COLON
+			 */
+			SEP_COLON,
+			/**
+			 * SEP_COMMA
+			 */
+			SEP_COMMA,
+			/**
+			 * WS
+			 */
+			WS
 		}
 
 		/**
@@ -5459,27 +5516,56 @@ public class DataApp {
 		 */
 		public static class Token {
 
+			/**
+			 * 默认构造函数
+			 */
 			public Token() {
 			}
 
-			public Token(TokenType type, String val) {
+			/**
+			 * 参数构造函数
+			 * 
+			 * @param type type
+			 * @param val  val
+			 */
+			public Token(final TokenType type, final String val) {
 				this.type = type;
 				this.val = val;
 			}
 
+			/**
+			 * getType
+			 * 
+			 * @return TokenType
+			 */
 			public TokenType getType() {
 				return type;
 			}
 
-			public void setType(TokenType type) {
+			/**
+			 * setType
+			 * 
+			 * @param type type
+			 */
+			public void setType(final TokenType type) {
 				this.type = type;
 			}
 
+			/**
+			 * getVal
+			 * 
+			 * @return 符号值
+			 */
 			public String getVal() {
 				return val;
 			}
 
-			public void setVal(String val) {
+			/**
+			 * 设置符号值
+			 * 
+			 * @param val 符号值
+			 */
+			public void setVal(final String val) {
 				this.val = val;
 			}
 
@@ -5639,6 +5725,13 @@ public class DataApp {
 	public static class SqlBuilder {
 
 		/**
+		 * 默认构造函数
+		 */
+		public SqlBuilder() {
+
+		}
+
+		/**
 		 * 左连接
 		 * 
 		 * @param path 连接路径
@@ -5666,6 +5759,8 @@ public class DataApp {
 		}
 
 		/**
+		 * rightjoin
+		 * 
 		 * @param path 路径
 		 * @param flds 连接字段
 		 * @return SqlBuilder
@@ -6311,9 +6406,21 @@ public class DataApp {
 	 * 请求模式
 	 */
 	public enum SQL_MODE {
+		/**
+		 * 查询模式
+		 */
 		QUERY, // 查询模式
+		/**
+		 * 更新模式
+		 */
 		UPDATE, // 更新模式
+		/**
+		 * 执行模式
+		 */
 		EXECUTE, // 执行模式
+		/**
+		 * 带有滚动的查询模式
+		 */
 		QUERY_SCROLL // 带有滚动的查询模式
 	}
 
