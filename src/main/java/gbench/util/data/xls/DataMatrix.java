@@ -1325,6 +1325,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 删除数组的第一行
 	 *
+	 * @param <U>   U 元素类型
 	 * @param cells 数据矩阵
 	 * @return U类型的数据矩阵
 	 */
@@ -1387,7 +1388,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 
 	/**
 	 * 创建子矩阵
-	 *
+	 * 
+	 * @param <U>   cells数组中的元素的数据类型。
 	 * @param cells 对象二维数组
 	 * @param i0    起点行索引 从0开始 行坐标
 	 * @param j0    起点行索引 从0开始 列坐标
@@ -1723,7 +1725,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 生成一条行向量
 	 *
-	 * @param <T>
+	 * @param <T>      矩阵元素
 	 * @param dataline 行向量
 	 * @return 行向量
 	 */
@@ -1735,7 +1737,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 生成一条行向量
 	 *
-	 * @param <T>
+	 * @param <T>  矩阵元素
 	 * @param line 行向量
 	 * @return 行向量
 	 */
@@ -1746,12 +1748,13 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 生成一条列向量
 	 *
-	 * @param <T>
+	 * @param <T>  矩阵元素
+	 * @param keys 列名序列
 	 * @param line 列向量
 	 * @return 列向量
 	 */
-	public static <T> DataMatrix<T> of(final String name, final T[] line) {
-		return of(Arrays.asList(line)).transpose().setKeys(name);
+	public static <T> DataMatrix<T> of(final String keys, final T[] line) {
+		return of(Arrays.asList(line)).transpose().setKeys(keys);
 	}
 
 	/**
@@ -1768,7 +1771,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 数据矩阵(行向量),ROW matriX
 	 *
-	 * @param <T>   元素类型
+	 * @param <T>   矩阵元素
 	 * @param cells 数据行元素
 	 * @return 数据矩阵
 	 */
@@ -1942,6 +1945,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 *
 	 * @param <T>  元素类型
 	 * @param <LN> 行类型
+	 * @param keys 键名列表
 	 * @return 矩阵归集器
 	 */
 	public static <T, LN extends Iterable<T>> Collector<LN, ?, DataMatrix<T>> dmxclc(final Iterable<String> keys) {
@@ -1954,6 +1958,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param <LN>       行类型
 	 * @param <T>        元素类型
 	 * @param linemapper 行转换器
+	 * @param keys       键名列表
 	 * @return 矩阵归集器
 	 */
 	@SuppressWarnings("unchecked")
@@ -2022,8 +2027,9 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 矩阵归集器
 	 *
-	 * @param <T> 元素类型
-	 * @param n   行长度
+	 * @param <T>  元素类型
+	 * @param n    行长度
+	 * @param keys 键名列表
 	 * @return 矩阵归集器
 	 */
 	public static <T> Collector<T, ?, DataMatrix<T>> dmxclc(final int n, final Iterable<String> keys) {

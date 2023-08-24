@@ -130,7 +130,7 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 转换成列数据数组
 	 * 
-	 * @return
+	 * @return LinkedHashMap
 	 */
 	public LinkedHashMap<String, ArrayList<Object>> initialize() {
 
@@ -373,7 +373,7 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 数据数组
 	 * 
-	 * @param mapper obj->t
+	 * @param mapper obj-&gt;t
 	 * @return 数据数组
 	 */
 	public Object[][] data() {
@@ -385,8 +385,8 @@ public class DFrame implements Iterable<IRecord> {
 	 * 
 	 * @param <T>    元素类型
 	 * @param <U>    结果类型
-	 * @param mapper 变换函数 obj->t
-	 * @param gen    生成函数 (kk,tt)->u
+	 * @param mapper 变换函数 obj-&gt;t
+	 * @param gen    生成函数 (kk,tt)-&gt;u
 	 * @return U数据类型
 	 */
 	public <T, U> U arrayOf(final Function<Object, T> mapper,
@@ -399,8 +399,8 @@ public class DFrame implements Iterable<IRecord> {
 	 * 
 	 * @param <T>    元素类型
 	 * @param <U>    结果类型
-	 * @param mapper 变换函数 obj->t
-	 * @param gen    生成函数 tt->u
+	 * @param mapper 变换函数 obj-&gt;t
+	 * @param gen    生成函数 tt-&gt;u
 	 * @return U数据类型
 	 */
 	public <T, U> U arrayOf(final Function<Object, T> mapper, final Function<T[][], U> gen) {
@@ -411,7 +411,7 @@ public class DFrame implements Iterable<IRecord> {
 	 * 数组类型变换
 	 * 
 	 * @param <U> 结果类型
-	 * @param gen 生成函数 tt->u
+	 * @param gen 生成函数 tt-&gt;u
 	 * @return U数据类型
 	 */
 	public <U> U arrayOf(final BiFunction<? super Iterable<String>, Object[][], U> gen) {
@@ -422,7 +422,7 @@ public class DFrame implements Iterable<IRecord> {
 	 * 数组类型变换
 	 * 
 	 * @param <U> 结果类型
-	 * @param gen 生成函数 tt->u
+	 * @param gen 生成函数 tt-&gt;u
 	 * @return U数据类型
 	 */
 	public <U> U arrayOf(final Function<Object[][], U> gen) {
