@@ -6,6 +6,13 @@ package gbench.util.math;
 public class Maths {
 
 	/**
+	 * 默认构造函数
+	 */
+	private Maths() {
+
+	}
+
+	/**
 	 * 阶乘
 	 * 
 	 * @param n 大于等于0的整数

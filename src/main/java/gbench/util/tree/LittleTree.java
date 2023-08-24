@@ -41,7 +41,6 @@ public class LittleTree {
 	 *
 	 * @param <T>          节点元素的值类型
 	 * @param root         根节点
-	 * @param sup_root     根节点函数 <br>
 	 * @param get_children 子节点函数 <br>
 	 * @return 树形结构的根节点： Node &lt;T&gt; 类型的根节点
 	 */
@@ -107,7 +106,7 @@ public class LittleTree {
 	 * @param <K>    健名类型
 	 * @param <V>    键值类型
 	 * @param rootid 根节点ID
-	 * @return [a] -> rootnode
+	 * @return [a] -&gt; rootnode
 	 */
 	public static <K, V> Collector<Map<K, V>, ?, Node<Map<K, V>>> mtreeclc(final Object rootid) {
 		return LittleTree.treeclc(Node.get_one(p -> p.get("id").equals(rootid)),

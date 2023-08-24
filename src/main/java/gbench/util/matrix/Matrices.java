@@ -223,6 +223,8 @@ public class Matrices<T> {
 	}
 
 	/**
+	 * vcolx
+	 * 
 	 * @param i 行索引 从0开始
 	 * @return Matrix
 	 */
@@ -348,6 +350,8 @@ public class Matrices<T> {
 	}
 
 	/**
+	 * 矩阵数据长度
+	 * 
 	 * @return 矩阵数据长度
 	 */
 	public int length() {
@@ -466,8 +470,9 @@ public class Matrices<T> {
 
 	/**
 	 * 单位矩阵
-	 *
-	 * @param ts 方阵长度
+	 * 
+	 * @param <T> 矩阵元素类型
+	 * @param ts  方阵长度
 	 * @return 单位矩阵
 	 */
 	@SafeVarargs
@@ -550,7 +555,8 @@ public class Matrices<T> {
 	/**
 	 * PA=LU分解
 	 *
-	 * @param ms 源矩阵:{L,U,P}
+	 * @param ms 源矩阵
+	 * @return PA=LU分解:{L,U,P}
 	 */
 	public static IRecord qr(final Matrices<Double> ms) {
 		return qr(ms.toMatrix());

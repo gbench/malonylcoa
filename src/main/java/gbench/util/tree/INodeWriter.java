@@ -19,7 +19,6 @@ public interface INodeWriter<N> {
 	/**
 	 * 节点转换成Json
 	 * 
-	 * @param get_children   获取子节点
 	 * @param pre_processor  前处理 (sb:操作缓存,e:节点元素)->s
 	 * @param post_processor 后处理 (sb:操作缓存,e:节点元素)->s
 	 * @return json字符串

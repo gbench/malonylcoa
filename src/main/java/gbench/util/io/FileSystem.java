@@ -193,6 +193,7 @@ public class FileSystem {
 	 * write
 	 * 
 	 * @param file           文件对象
+	 * @param encoding       文件编码
 	 * @param contentSuppler 文件书写内容
 	 * @return boolean
 	 */
