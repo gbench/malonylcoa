@@ -561,7 +561,7 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	/**
 	 * 张量T类型的元素个数，dims的乘积。
 	 *
-	 * @param 维度序列
+	 * @param dims 维度序列
 	 * @return 元素个数
 	 */
 	public static int length(final int... dims) {
@@ -572,6 +572,7 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	/**
 	 * 格式化
 	 *
+	 * @param <T>       元素类型
 	 * @param ts        数据数组
 	 * @param formatter 元素格式化
 	 * @param dims      空间维度

@@ -265,6 +265,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * 
 	 * @param target nd 对象
 	 * @param index  向量偏移位置,从0开始
+	 * @return Matrix
 	 */
 	@SuppressWarnings("unchecked")
 	public Matrix<T> add_nd_interceptor_method_set(final Object target, final int index) {
@@ -299,6 +300,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 列向量
 	 *
+	 * @param <U>    结果的流的元素类型
 	 * @param i      行索引从0开始
 	 * @param mapper t-&gt;u 列变换函数
 	 * @return U类型的流
@@ -351,7 +353,8 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 计算 占比(ai/total)
 	 *
-	 * @param mapper 变换器
+	 * @param <U>    结果矩阵的元素类型
+	 * @param mapper 变换器 (u,t)-&gt;u
 	 * @param u      起始规约值
 	 * @return 频率矩阵
 	 */
