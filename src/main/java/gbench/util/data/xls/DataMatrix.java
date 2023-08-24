@@ -646,10 +646,11 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * <br>
 	 * 垂直方向:第一维度 i 增长方向 从上到下 <br>
 	 * 水平方向:第二维度 j 增长方向 从左到右 <br>
-	 *
+	 * 
+	 * @param cell_formatter 单元格格式化
 	 * @return 格式化输出
 	 */
-	public String toString(Function<Object, String> cell_formatter) {
+	public String toString(final Function<Object, String> cell_formatter) {
 		return toString("\t", "\n", cell_formatter);
 	}
 
@@ -733,7 +734,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 增加数据预处理函数，只改变数据内容并改变数据形状shape:比如 无效非法值，缺失值，数字格式化等功能。
 	 *
-	 * @param handler 行数据映射 LinkedHashMap&lt;String,T&gt;的结构, key->value
+	 * @param handler 行数据映射 LinkedHashMap&lt;String,T&gt;的结构, key-&gt;value
+	 * @return DataMatrix
 	 */
 	public DataMatrix<T> preProcess(final Consumer<T[]> handler) {
 		for (int i = 0; i < this.height(); i++)
@@ -749,7 +751,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return [[dbl]]
 	 */
 	public <U> DataMatrix<Double> mmult(final DataMatrix<U> uu) {
-
 		return DataMatrix.mmult(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl),
 				(Double a, Double b) -> Optional.ofNullable(a)
 						.map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null),
@@ -764,7 +765,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return [[dbl]]
 	 */
 	public <U> DataMatrix<Double> add(final DataMatrix<U> uu) {
-
 		return DataMatrix.binaryOp(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl), (a, b) -> Optional
 				.ofNullable(a).map(_a -> Optional.ofNullable(b).map(_b -> _a + _b).orElse(null)).orElse(null));
 	}
@@ -788,7 +788,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return [[dbl]]
 	 */
 	public <U> DataMatrix<Double> sub(final DataMatrix<U> uu) {
-
 		return DataMatrix.binaryOp(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl), (a, b) -> Optional
 				.ofNullable(a).map(_a -> Optional.ofNullable(b).map(_b -> _a - _b).orElse(null)).orElse(null));
 	}
@@ -812,7 +811,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return [[dbl]]
 	 */
 	public <U> DataMatrix<Double> mul(final DataMatrix<U> uu) {
-
 		return DataMatrix.binaryOp(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl), (a, b) -> Optional
 				.ofNullable(a).map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null));
 	}
@@ -1143,7 +1141,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param <T>  矩阵的元素类型
 	 * @param dmx1 第一个矩阵
 	 * @param dmx2 第二个矩阵
-	 * @return
+	 * @return DataMatrix
 	 */
 	public static <T> DataMatrix<T> rbind(DataMatrix<T> dmx1, DataMatrix<T> dmx2) {
 		return Stream.concat(dmx1.row2S(Arrays::asList), dmx2.row2S(Arrays::asList)).collect(dmxclc());
@@ -1155,7 +1153,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param <T>  矩阵的元素类型
 	 * @param dmx1 第一个矩阵
 	 * @param dmx2 第二个矩阵
-	 * @return
+	 * @return DataMatrix
 	 */
 	public static <T> DataMatrix<T> cbind(DataMatrix<T> dmx1, DataMatrix<T> dmx2) {
 		final List<String> keys = Stream.concat(dmx1.keyS(), dmx2.keyS()).distinct().collect(Collectors.toList());
@@ -1172,7 +1170,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param tt  左矩阵
 	 * @param uu  右矩阵
 	 * @param bop 元素乘法 (t,u)->v
-	 * @return
+	 * @return DataMatrix
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T, U, V, X> DataMatrix<V> binaryOp(final DataMatrix<T> tt, final DataMatrix<U> uu,
@@ -1217,7 +1215,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param uu       右矩阵
 	 * @param mul      元素乘法 (t,u)->v
 	 * @param sigmaclc 求和归集器
-	 * @return
+	 * @return DataMatrix
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T, U, V, X> DataMatrix<X> mmult(final DataMatrix<T> tt, final DataMatrix<U> uu,

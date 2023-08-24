@@ -1,11 +1,15 @@
 package gbench.util.math;
 
+/**
+ * Maths
+ */
 public class Maths {
 
 	/**
+	 * 阶乘
 	 * 
 	 * @param n 大于等于0的整数
-	 * @return
+	 * @return 阶乘
 	 */
 	public static int fact(final Number n) {
 		final int _n = n.intValue();

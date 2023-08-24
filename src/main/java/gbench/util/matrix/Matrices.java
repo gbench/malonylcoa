@@ -32,6 +32,8 @@ import gbench.util.lisp.Tuple2;
 public class Matrices<T> {
 
 	/**
+	 * Matrices
+	 * 
 	 * @param matrix 矩阵
 	 */
 	public Matrices(final Matrix<T> matrix) {
@@ -39,6 +41,8 @@ public class Matrices<T> {
 	}
 
 	/**
+	 * mmult
+	 * 
 	 * @param mu  右边乘矩阵
 	 * @param <U> 矩阵元素类型
 	 * @return Matrices
@@ -48,6 +52,8 @@ public class Matrices<T> {
 	}
 
 	/**
+	 * mmult
+	 * 
 	 * @param matrices 右乘元素
 	 * @param <U>      院所类型
 	 * @return Matrices
@@ -473,6 +479,7 @@ public class Matrices<T> {
 	 * PA=LU分解
 	 *
 	 * @param mx 源矩阵:{L,U,P}
+	 * @return {L,U,P}
 	 */
 	public static IRecord lu(final Matrix<? extends Number> mx) {
 		return lu(mx.toMatrices());
@@ -482,6 +489,7 @@ public class Matrices<T> {
 	 * PA=LU分解
 	 *
 	 * @param ms 源矩阵:{L,U,P}
+	 * @return {L,U,P}
 	 */
 	public static IRecord lu(final Matrices<? extends Number> ms) {
 		final int[] shape = ms.shape(); // 矩阵尺寸
