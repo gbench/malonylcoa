@@ -4370,12 +4370,11 @@ public class DataApp {
 		/**
 		 * apply
 		 * 
-		 * @param <U> U类型的结果
-		 * @param t   函数参数
+		 * @param t 函数参数
 		 * @return U 类型的结果
 		 * @throws Exception 异常
 		 */
-		U apply(T t) throws Exception;
+		U apply(final T t) throws Exception;
 	}
 
 	/**
@@ -4386,7 +4385,15 @@ public class DataApp {
 	 * @author xuqinghua
 	 */
 	public interface SQLExceptionalFunction<T, U> {
-		U apply(T t) throws SQLException;
+
+		/**
+		 * apply
+		 * 
+		 * @param t 参数类型
+		 * @return U类型的结果
+		 * @throws SQLException
+		 */
+		U apply(final T t) throws SQLException;
 	}
 
 	/**
