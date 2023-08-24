@@ -95,7 +95,7 @@ public class Types {
 	/**
 	 * 获取共同父类
 	 * 
-	 * @param classes 类列表
+	 * @param clazzS 类元素流
 	 * @return 共同父类
 	 */
 	public static List<Class<?>> getSharedSuperClasses(final Stream<Class<?>> clazzS) {
@@ -179,7 +179,6 @@ public class Types {
 	 * 
 	 * @param <T>     元素类型
 	 * @param itr     元素迭代器
-	 * @param maxSize 最大数组容量
 	 * @return T类型的数组
 	 */
 	public static <T> Stream<T> itr2stream(final Iterable<T> itr) {
@@ -259,9 +258,7 @@ public class Types {
 	 *
 	 * @param <T>          函数的参数类型
 	 * @param defaultValue 非法的数字类型 返回 的默认值
-	 * @param timeflag     是否对时间类型数据进行转换, true 表示 开启,'1970-01-01 08:00:01'将会被解析为
-	 *                     1000,false 不开启 时间类型将会返回defaultValue
-	 * @return t->dbl
+	 * @return t-&gt;dbl
 	 */
 	public static <T> Function<T, Double> obj2dbl(final Number defaultValue) {
 		return (T obj) -> {
@@ -420,19 +417,21 @@ public class Types {
 	}
 
 	/**
+	 * 布尔转字节数组
 	 * 
-	 * @param dbl
-	 * @return
+	 * @param b 布尔标记
+	 * @return 字节数组
 	 */
-	public static byte[] bool2bytes(final boolean flag) {
+	public static byte[] bool2bytes(final boolean b) {
 
-		return new byte[] { (byte) (flag ? 0x01 : 0x00) };
+		return new byte[] { (byte) (b ? 0x01 : 0x00) };
 	}
 
 	/**
+	 * 布尔转字节数组
 	 * 
-	 * @param b
-	 * @return
+	 * @param b 布尔转字节数组
+	 * @return 字节数组
 	 */
 	public static Byte[] bool2Bytes(final boolean b) {
 
@@ -440,9 +439,10 @@ public class Types {
 	}
 
 	/**
+	 * bytes2bool
 	 * 
-	 * @param dbl
-	 * @return
+	 * @param bytes bytes
+	 * @return bool
 	 */
 	public static boolean bytes2bool(final byte[] bytes) {
 
@@ -450,9 +450,10 @@ public class Types {
 	}
 
 	/**
+	 * bytes2char
 	 * 
-	 * @param bytes
-	 * @return
+	 * @param bytes bytes
+	 * @return bytes2char
 	 */
 	public static char bytes2char(final byte[] bytes) {
 		final int hi = (bytes[0] & 0xff) << 8;
@@ -461,9 +462,10 @@ public class Types {
 	}
 
 	/**
+	 * char2bytes
 	 * 
-	 * @param dbl
-	 * @return
+	 * @param c c
+	 * @return char2bytes
 	 */
 	public static byte[] char2bytes(char c) {
 		final byte[] bytes = new byte[2];
@@ -473,18 +475,20 @@ public class Types {
 	}
 
 	/**
+	 * dbl2Bytes
 	 * 
-	 * @param dbl
-	 * @return
+	 * @param dbl dbl
+	 * @return dbl2Bytes
 	 */
 	public static Byte[] dbl2Bytes(final double dbl) {
 		return Dbl2Bytes.apply(dbl);
 	}
 
 	/**
+	 * char2Bytes
 	 * 
-	 * @param c
-	 * @return
+	 * @param c c
+	 * @return char2Bytes
 	 */
 	public static Byte[] char2Bytes(char c) {
 		return Char2Bytes.apply(c);
@@ -506,9 +510,10 @@ public class Types {
 	}
 
 	/**
+	 * lng2bytes
 	 * 
-	 * @param lng
-	 * @return
+	 * @param lng lng
+	 * @return lng2bytes
 	 */
 	public static byte[] lng2bytes(final long lng) {
 		ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
@@ -517,9 +522,10 @@ public class Types {
 	}
 
 	/**
+	 * bytes2lngs
 	 * 
-	 * @param bytes
-	 * @return
+	 * @param bytes bytes
+	 * @return bytes2lngs
 	 */
 	public static long bytes2lngs(final byte[] bytes) {
 		ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
@@ -529,9 +535,10 @@ public class Types {
 	}
 
 	/**
+	 * bytes2dbls
 	 * 
-	 * @param bytes
-	 * @return
+	 * @param bytes bytes
+	 * @return bytes2dbls
 	 */
 	public static double bytes2dbls(final byte[] bytes) {
 		long value = 0;
@@ -542,6 +549,7 @@ public class Types {
 	}
 
 	/**
+	 * str2Bytes
 	 * 
 	 * @param line 行内容
 	 * @return Byte[]

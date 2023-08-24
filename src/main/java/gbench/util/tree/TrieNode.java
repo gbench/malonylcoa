@@ -314,7 +314,7 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * root.getNode("/a/b") 获得 b 节点 <br>
 	 * root.getNode("a/b") 则返回 null, 因为路径 tt 没有包含 根节点名称 <br>
 	 * 
-	 * @param path_adjusted 路径信息 包含有当前节点（根节点名称) 字符的序列 比如：<br>
+	 * @param path_adjusted 路径信息 包含有当前节点(根节点名称) 字符的序列 比如：<br>
 	 *                      当前节点 this 是 根节点 "/": this.pathOf("/a/b/c") 返回 c 节点 <br>
 	 *                      当前节点 this 是 根节点 "a" :this.pathOf("a/b/c") 返回 c 节点
 	 * @return trie节点
@@ -437,7 +437,7 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	/**
 	 * 获取子节点
 	 * 
-	 * @param i 子节点的偏移序列,偏移从0开始
+	 * @param indices 子节点的偏移序列,偏移从0开始
 	 * @return 获取节点
 	 */
 	public TrieNode<T> childAt(final int... indices) {
@@ -596,7 +596,7 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * mutate the current node
 	 * 
 	 * @param <U>    the result type
-	 * @param mapper the mutator trienode->u
+	 * @param mutator the mutator trienode->u
 	 * @return U type result
 	 */
 	public <U> U mutate(final Function<TrieNode<T>, U> mutator) {
@@ -856,7 +856,7 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * @param <X>    源数据类型
 	 * @param <U>    目标数据类型
 	 * @param path   属性路径
-	 * @param mapper 数值值映射 x->u
+	 * @param mapper 数值值映射 x-&lt;u
 	 * @return U 结果 类型
 	 */
 	public <X, U> U attrPathget(final String path, final Function<X, U> mapper) {
@@ -868,7 +868,6 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * 
 	 * @param <X>    源数据类型
 	 * @param path   属性路径
-	 * @param mapper 数值值映射 x->u
 	 * @return Double 结果 类型
 	 */
 	public <X> Double attrPathget2dbl(final String path) {
@@ -880,7 +879,6 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * 
 	 * @param <X>    源数据类型
 	 * @param path   属性路径
-	 * @param mapper 数值值映射 x->u
 	 * @return Double 结果 类型
 	 */
 	public <X> Integer attrPathget2int(final String path) {
@@ -1191,10 +1189,10 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * 
 	 * @param <T> 元素值类型
 	 * @param t   元素的值
-	 * @return TrieNode<T> 类型的节点
+	 * @return TrieNode&lt;T&gt; 类型的节点
 	 */
 	public static <T> TrieNode<T> of(final T t) {
-		return new TrieNode<T>(t);
+		return new TrieNode<>(t);
 	}
 
 	/**
@@ -1266,9 +1264,8 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * @param <T>    TrieNode的元素值类型
 	 * @param <A>    属性值类型
 	 * @param <U>    变换函数类型
-	 * @param name   属性名称
-	 * @param mapper a->v 值变换函数 对结果进行 mapper 变换
-	 * @return node->U
+	 * @param mapper a-&lt;v 值变换函数 对结果进行 mapper 变换
+	 * @return node-&lt;U
 	 */
 	public static <T, A, U> Function<TrieNode<T>, U> attr_of(final Function<A, U> mapper) {
 		return node -> node.attrval(mapper);

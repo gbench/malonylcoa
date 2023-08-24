@@ -280,16 +280,19 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param m
-	 * @return
+	 * cbind
+	 * @param m m
+	 * @return Matrix
 	 */
 	public Matrix<T> cbind(final Matrix<T> m) {
 		return Stream.concat(this.columnS(), m.columnS()).collect(cmxclc());
 	}
 
 	/**
-	 * @param m
-	 * @return
+	 * rbind 
+	 * 
+	 * @param m m
+	 * @return Matrix
 	 */
 	public Matrix<T> rbind(final Matrix<T> m) {
 		return Stream.concat(this.rowS(), m.rowS()).collect(rmxclc());
