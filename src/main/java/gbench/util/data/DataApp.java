@@ -5093,7 +5093,7 @@ public class DataApp {
 			 * 把一个对象转换成json 字符串
 			 * 
 			 * @param obj 目标对象
-			 * @return
+			 * @return json 字符串
 			 */
 			public static String toJson(final Object obj) {
 				final StringBuilder json = new StringBuilder();
@@ -5145,9 +5145,9 @@ public class DataApp {
 			}
 
 			/**
-			 * 
-			 * @param list
-			 * @return
+			 * 列表对象
+			 * @param list 列表对象
+			 * @return json 字符串
 			 */
 			public static String list2json(final List<?> list) {
 				final StringBuilder json = new StringBuilder();
@@ -5165,9 +5165,9 @@ public class DataApp {
 			}
 
 			/**
-			 * 
-			 * @param array
-			 * @return
+			 * 数组对象 转json对象
+			 * @param array 数组对象
+			 * @return json 对象
 			 */
 			public static String array2json(final Object[] array) {
 				final StringBuilder json = new StringBuilder();
@@ -5185,9 +5185,9 @@ public class DataApp {
 			}
 
 			/**
-			 * 
-			 * @param map
-			 * @return
+			 * Map转json对象
+			 * @param map Map对象
+			 * @return json对象
 			 */
 			public static String map2json(final Map<?, ?> map) {
 				final StringBuilder json = new StringBuilder();
@@ -5207,9 +5207,9 @@ public class DataApp {
 			}
 
 			/**
-			 * 
-			 * @param set
-			 * @return
+			 * 集合对象 转 json 对象
+			 * @param set 集合对象
+			 * @return json 对象
 			 */
 			public static String set2json(final Set<?> set) {
 				final StringBuilder json = new StringBuilder();
@@ -5227,16 +5227,16 @@ public class DataApp {
 			}
 
 			/**
-			 * 
-			 * @param s
-			 * @return
+			 * 字符串 转 json 对象
+			 * @param line 字符串
+			 * @return json 对象
 			 */
-			public static String string2json(final String s) {
-				if (s == null)
+			public static String string2json(final String line) {
+				if (line == null)
 					return "";
 				final StringBuilder sb = new StringBuilder();
-				for (int i = 0; i < s.length(); i++) {
-					char ch = s.charAt(i);
+				for (int i = 0; i < line.length(); i++) {
+					char ch = line.charAt(i);
 					switch (ch) {
 					case '"':
 						sb.append("\\\"");
@@ -5289,7 +5289,7 @@ public class DataApp {
 			/**
 			 * JsonParser
 			 * 
-			 * @param jsonTokenizer
+			 * @param jsonTokenizer jsonTokenizer
 			 */
 			public JsonParser(final JsonTokenizer jsonTokenizer) {
 				this.jsonTokenizer = jsonTokenizer;
