@@ -101,7 +101,7 @@ public class LittleTree {
 
 	/**
 	 * 树形结构归结器(Map类型) <br>
-	 * Map<K,V> 的 结构 (id:节点id,name:节点名称,pid:父节点id)
+	 * Map&lt;K,V&gt; 的 结构 (id:节点id,name:节点名称,pid:父节点id)
 	 * 
 	 * @param <K>    健名类型
 	 * @param <V>    键值类型

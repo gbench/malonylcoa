@@ -704,6 +704,7 @@ public class Matrices<T> {
 	/**
 	 * 生成列向量
 	 *
+	 * @param <T> 元素类型
 	 * @param ts 行数
 	 * @return 数据矩阵
 	 */
@@ -725,7 +726,8 @@ public class Matrices<T> {
 	/**
 	 * 生成行向量:[0,1,...]
 	 *
-	 * @param ts 行数
+	 * @param <T> 元素类型
+	 * @param ts  行数
 	 * @return 数据矩阵
 	 */
 	@SafeVarargs
@@ -734,6 +736,8 @@ public class Matrices<T> {
 	}
 
 	/**
+	 * 创建矩阵
+	 * 
 	 * @param <T>  元素类型
 	 * @param data 矩阵数据
 	 * @param nrow 行数
@@ -745,6 +749,8 @@ public class Matrices<T> {
 	}
 
 	/**
+	 * 矩阵生成函数
+	 * 
 	 * @param <T>  元素类型
 	 * @param data 矩阵元素
 	 * @return 矩阵对象
@@ -768,7 +774,7 @@ public class Matrices<T> {
 	 * double matrix
 	 *
 	 * @param index 键名索引从0开始
-	 * @return rec->dblx
+	 * @return rec-&gt;dblx
 	 */
 	@SuppressWarnings("unchecked")
 	public static Function<IRecord, Matrices<Double>> dblx(final int index) {

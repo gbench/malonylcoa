@@ -287,8 +287,9 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 列向量
 	 *
+	 * @param <U>    结果流元素类型
 	 * @param i      列索引从0开始
-	 * @param mapper t->u 元素变换
+	 * @param mapper t-&gt;u 元素变换
 	 * @return U类型的流
 	 */
 	public <U> Stream<U> colS(final int i, final Function<T, U> mapper) {
@@ -1353,8 +1354,8 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 列归集器
 	 *
-	 * @param <T>
-	 * @return
+	 * @param <T> 元素类型
+	 * @return 矩阵归集器
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Collector<Iterable<T>, ?, Matrix<T>> cmxclc2() {
@@ -1373,8 +1374,10 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param <T>
-	 * @return
+	 * 列归集器
+	 * 
+	 * @param <T> 元素类型
+	 * @return 矩阵归集器
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Collector<T, ?, Matrix<T>> mxclc() {
@@ -1418,7 +1421,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * 对于 非法的数字类型 返回 null
 	 *
 	 * @param <T> 函数的参数类型
-	 * @return t->dbl
+	 * @return t-&gt;dbl
 	 */
 	public static <T> Function<T, Double> obj2dbl() {
 		return IRecord.obj2dbl(null);
@@ -1452,7 +1455,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * @param defaultValue 非法的数字类型 返回 的默认值
 	 * @param timeflag     是否对时间类型数据进行转换, true 表示 开启,'1970-01-01 08:00:01'将会被解析为
 	 *                     1000,false 不开启 时间类型将会返回defaultValue
-	 * @return t->dbl
+	 * @return t-&gt;dbl
 	 */
 	public static <T> Function<T, Double> obj2dbl(final Number defaultValue, final boolean timeflag) {
 		return (T obj) -> {
@@ -1481,7 +1484,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * @param <T> 元素类型
 	 * @param ts  元素列表
-	 * @return defaultValue->diag
+	 * @return defaultValue-&gt;diag
 	 */
 	@SafeVarargs
 	@SuppressWarnings("unchecked")
@@ -1500,8 +1503,10 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * 对角矩阵
+	 * 
 	 * @param <T> 元素类型
-	 * @param ts
+	 * @param ts  元素序列
 	 * @return defaultValue->diag
 	 */
 	@SafeVarargs
@@ -1513,7 +1518,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * I 矩阵
 	 *
 	 * @param n 方阵维度
-	 * @return
+	 * @return I 矩阵
 	 */
 	public static Matrix<Double> eye(final int n) {
 		return diagonal(Stream.iterate(1, i -> i + 1).limit(n).map(e -> 1d).toArray(Double[]::new)).apply(0d);
@@ -1535,7 +1540,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * @param <T>  元素类型
 	 * @param ts   一维数组
 	 * @param ncol 列宽度
-	 * @return
+	 * @return bireader
 	 */
 	public static <T> BiFunction<Integer, Integer, T> bireader(final T[] ts, final int ncol) {
 		return (i, j) -> ts[i * ncol + j];

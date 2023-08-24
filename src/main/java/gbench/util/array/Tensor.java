@@ -46,6 +46,8 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	}
 
 	/**
+	 * Tensor
+	 * 
 	 * @param data 矩阵数据，行顺序
 	 * @param dims 维度向量
 	 */
@@ -86,8 +88,9 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	/**
 	 * 生成索引键值对儿
 	 *
+	 * @param <K>   键名类型
 	 * @param keyer 索引变换函数
-	 *              index->key,注意index为共享式，如需要持久保存请进行复制，例如：Arrays.copyOf,Arrays.asList等
+	 *              index-&gt;key,注意index为共享式，如需要持久保存请进行复制，例如：Arrays.copyOf,Arrays.asList等
 	 * @return [(k, t)] 的 流数据
 	 */
 	public <K> Stream<Tuple2<K, T>> tupleS(final Function<Integer[], K> keyer) {
@@ -175,6 +178,7 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	 * 读取指定索引位置的元素
 	 *
 	 * @param index 索引向量,元素值从0开始
+	 * @param t     T类型的元素
 	 * @return 对象本身用于实现链式编程
 	 */
 	public Tensor<T> set(final int[] index, final T t) {
@@ -306,7 +310,7 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	/**
 	 * U类型张量,保留原有shape
 	 *
-	 * @param mapper 元素变换器 t->u
+	 * @param mapper 元素变换器 t-&gt;u
 	 * @param <U>    元素类型
 	 * @return U类型的元素流 [u]
 	 */
@@ -317,7 +321,7 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	/**
 	 * 判断是否为一阶向量
 	 *
-	 * @return dims 长度<2 为1级向量,否则为非叶子节点。
+	 * @return dims 长度&lt;2 为1级向量,否则为非叶子节点。
 	 */
 	public boolean isLeaf() {
 		return this.dims.length < 2;
@@ -329,7 +333,7 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	 * @param <U>    参数类型
 	 * @param <V>    结果元素类型
 	 * @param tu     二号参数
-	 * @param mapper 二元运行 (t,u)->v
+	 * @param mapper 二元运行 (t,u)-&gt;v
 	 * @return tv
 	 */
 	public <U, V> Tensor<V> op(final Tensor<U> tu, final BiFunction<T, U, V> mapper) {
@@ -521,8 +525,9 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	/**
 	 * 数组应用
 	 * 
+	 * @param <SELF>   本身类型
 	 * @param <TARGET> 目标结果类型
-	 * @param mapper   结果变换类型 this->u, this 为当前ISeq对象
+	 * @param mapper   结果变换类型 this-&gt;u, this 为当前ISeq对象
 	 * @return U类型的结果
 	 */
 	@SuppressWarnings("unchecked")
@@ -556,6 +561,7 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	/**
 	 * 张量T类型的元素个数，dims的乘积。
 	 *
+	 * @param 维度序列
 	 * @return 元素个数
 	 */
 	public static int length(final int... dims) {
@@ -606,6 +612,8 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	}
 
 	/**
+	 * ts 中的第offset_index位置上的元素
+	 * 
 	 * @param <T>          元素类型
 	 * @param ts           数据源
 	 * @param offset_index 偏移索引 从0开始
@@ -616,6 +624,8 @@ public class Tensor<T> implements Comparable<Tensor<T>>, IStream<T> {
 	}
 
 	/**
+	 * ts 中的第offset_index位置上的元素 Optional类型
+	 * 
 	 * @param <T>          元素类型
 	 * @param ts           数据源
 	 * @param offset_index 从0开始
