@@ -530,11 +530,11 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 矩阵二元运算 cellwise 运算
 	 *
-	 * @param <U>
-	 * @param <X>
+	 * @param <U>         U
+	 * @param <X>         X
 	 * @param mu          另一个矩阵
 	 * @param pair_mapper (t,u)-&gt;x
-	 * @return
+	 * @return Matrix
 	 */
 	public <U, X> Matrix<X> fmap(final Matrix<U> mu, BiFunction<T, U, X> pair_mapper) {
 		return this.fmap(mu.pairf((pair_mapper)));
@@ -543,10 +543,10 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 矩阵二元运算 cellwise 运算
 	 *
-	 * @param <U>
-	 * @param <X>
+	 * @param <U> U
+	 * @param <X> X
 	 * @param mu  另一个矩阵
-	 * @return
+	 * @return Matrix
 	 */
 	public <U, X> Matrix<Tuple2<T, U>> fmap(final Matrix<U> mu) {
 		return this.fmap(mu.pairf((Tuple2::of)));
@@ -574,9 +574,11 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param <U>
+	 * fmap
+	 * 
+	 * @param <U>    U
 	 * @param mapper 元素映射 t-&gt;u
-	 * @return
+	 * @return Matrix
 	 */
 	public <U> Matrix<U> fmap(final Function<T, U> mapper) {
 		return this.fmap((index, t) -> mapper.apply(t));
@@ -694,6 +696,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * cell(i,0,t) 的别名
 	 *
 	 * @param i 元素索引
+	 * @param t 元素t
 	 * @return 矩阵对象本身
 	 */
 	public Matrix<T> set(final int i, final T t) {
@@ -732,7 +735,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 数据尺寸大小 应该与 ncol*nrow一样大小
 	 *
-	 * @return
+	 * @return 数据尺寸大小
 	 */
 	public int size() {
 		return this.data.length;
@@ -797,7 +800,9 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @return
+	 * sum
+	 * 
+	 * @return 求和
 	 */
 	public Double sum() {
 		return this.sum(null);
@@ -817,7 +822,9 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @return Double
+	 * 乘积
+	 * 
+	 * @return 乘积
 	 */
 	public Double product() {
 		return this.product(null);
@@ -828,7 +835,7 @@ public class Matrix<T> extends Tensor<T> {
 	 *
 	 * @param <N>   节点值的变换类型
 	 * @param tonum 数值变换
-	 * @return
+	 * @return 乘积
 	 */
 	@SuppressWarnings("unchecked")
 	public <N extends Number> Double product(final Function<T, N> tonum) {
