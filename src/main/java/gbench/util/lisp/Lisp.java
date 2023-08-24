@@ -19,7 +19,7 @@ public class Lisp {
 	/**
 	 * 默认构造函数
 	 */
-	public Lisp() {
+	private Lisp() {
 
 	}
 

@@ -2,7 +2,17 @@ package gbench.util.function;
 
 import java.util.function.*;
 
+/**
+ * Functions
+ */
 public class Functions {
+
+	/**
+	 * 默认构造函数
+	 */
+	private Functions() {
+
+	}
 
 	/**
 	 * argument-insensitive

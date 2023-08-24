@@ -24,6 +24,13 @@ import java.util.stream.Stream;
 public class FileSystem {
 
 	/**
+	 * 默认构造函数
+	 */
+	private FileSystem() {
+
+	}
+
+	/**
 	 * 把path路径转传承文件 对象 <br>
 	 * 
 	 * 生成当前类的默认数据存放路径：用于规范文件系统资源。<br>
@@ -166,6 +173,7 @@ public class FileSystem {
 	 * 
 	 * @param file           文件绝对路径
 	 * @param contentSuppler 文件书写内容
+	 * @return boolean
 	 */
 	public static boolean utf8write(final String file, final Supplier<String> contentSuppler) {
 		return write(new File(file), "utf8", contentSuppler);
@@ -186,6 +194,7 @@ public class FileSystem {
 	 * 
 	 * @param file           文件对象
 	 * @param contentSuppler 文件书写内容
+	 * @return boolean
 	 */
 	public static boolean write(final File file, final String encoding, final Supplier<String> contentSuppler) {
 		if (contentSuppler == null || file == null)

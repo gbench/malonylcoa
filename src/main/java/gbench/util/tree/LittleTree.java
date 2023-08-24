@@ -17,6 +17,13 @@ import gbench.util.lisp.IRecord;
  * 树形结构
  */
 public class LittleTree {
+	
+	/**
+	 * 默认构造函数
+	 */
+	private LittleTree() {
+		
+	}
 
 	/**
 	 * 重复 ws(words) n次

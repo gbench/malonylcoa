@@ -395,7 +395,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 生成数值矩阵
 	 *
-	 * @param <N> 数字元素类型
+	 * @param <N>    数字元素类型
 	 * @param mapper 数值变换函数
 	 * @return 数字矩阵
 	 */
@@ -1239,37 +1239,45 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * 整型流
+	 * 
 	 * @param n 矩阵数据流
-	 * @return
+	 * @return 整型流
 	 */
 	public static Stream<Integer> intS(final int n) {
 		return Stream.iterate(0, i -> i + 1).limit(n);
 	}
 
 	/**
-	 * @param n
-	 * @return
+	 * intA
+	 * 
+	 * @param n 长度
+	 * @return 整型数组
 	 */
 	public static Integer[] intA(final int n) {
 		return intS(n).toArray(Integer[]::new);
 	}
 
 	/**
-	 * @param tclass
-	 * @param n
-	 * @param <T>
-	 * @return
+	 * 创建指定长度的数组
+	 * 
+	 * @param tclass 类型类
+	 * @param n      数组长度
+	 * @param <T>    元素类型
+	 * @return T类型的数组
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T[] newArray(Class<T> tclass, final int n) {
+	public static <T> T[] newArray(final Class<T> tclass, final int n) {
 		return (T[]) Array.newInstance(tclass, n);
 	}
 
 	/**
-	 * @param <T>
-	 * @param ncol
-	 * @param nrow
-	 * @return
+	 * 矩阵归集器
+	 * 
+	 * @param <T>  元素类型
+	 * @param ncol 列数,大于0的整数
+	 * @param nrow 行数木,大于0的整数
+	 * @return 矩阵归集器
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Collector<T, ?, Matrix<T>> mxclc(final int nrow, final int ncol) {
@@ -1282,8 +1290,10 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param <T>
-	 * @return
+	 * rmxclc
+	 * 
+	 * @param <T> 元素类型
+	 * @return Collector
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Collector<T[], ?, Matrix<T>> rmxclc() {
