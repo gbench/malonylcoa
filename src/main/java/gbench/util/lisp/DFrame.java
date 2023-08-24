@@ -373,7 +373,6 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 数据数组
 	 * 
-	 * @param mapper obj-&gt;t
 	 * @return 数据数组
 	 */
 	public Object[][] data() {
@@ -501,7 +500,7 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 列拆分
 	 * 
-	 * @param int 键名索引位置从0开始(df1 exclusiv,df2 inclusive)
+	 * @param n 键名索引位置,从0开始(df1 exclusiv,df2 inclusive)
 	 * @return (df1,df2)
 	 */
 	public Tuple2<DFrame, DFrame> split2(final int n) {
@@ -547,7 +546,6 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * IRecord的归集器
 	 * 
-	 * @param collector [r] -> U
 	 * @return 对象数组
 	 */
 	public Object[][] toArray() {
@@ -557,7 +555,7 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 头部元素
 	 * 
-	 * @return
+	 * @return IRecord
 	 */
 	public IRecord head() {
 		final IRecord[] dd = this.rowsData;
@@ -755,20 +753,20 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 创建一个 DFrame 对象
 	 * 
-	 * @param data
-	 * @return
+	 * @param data 源数据
+	 * @return DFrame
 	 */
-	public static DFrame of(List<IRecord> data) {
+	public static DFrame of(final List<IRecord> data) {
 		return new DFrame(data);
 	}
 
 	/**
 	 * DFrame 數據的格式化
 	 * 
-	 * @param records
-	 * @return
+	 * @param records 源数据
+	 * @return 數據的格式化
 	 */
-	public static String fmt(List<IRecord> records) {
+	public static String fmt(final 	List<IRecord> records) {
 		if (records.size() > 0) {
 			final StringBuffer buffer = new StringBuffer();
 			final IRecord first = records.get(0);
@@ -789,7 +787,7 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * LinkedList clc
 	 * 
-	 * @param <T>
+	 * @param <T> 归集元素类型
 	 * @return LinkedList clc
 	 */
 	public static <T> Collector<T, ?, LinkedList<T>> llclc() {
@@ -802,11 +800,10 @@ public class DFrame implements Iterable<IRecord> {
 	 * DFrame 归集器 (IRecord 类型)
 	 * 
 	 * @param <T>    归集的元素类型
-	 * @param mapper t->rec
-	 * @return [o]->dfm
+	 * @param mapper t-&gt;rec
+	 * @return [o]-&gt;dfm
 	 */
 	public static <T> Collector<T, ?, DFrame> dfmclc(final Function<T, IRecord> mapper) {
-
 		return Collector.of((Supplier<List<IRecord>>) ArrayList::new, (acc, t) -> acc.add(mapper.apply(t)),
 				(left, right) -> {
 					left.addAll(right);
@@ -820,8 +817,8 @@ public class DFrame implements Iterable<IRecord> {
 	 * DFrame 归集器 ( Map 类型 )
 	 * 
 	 * @param <T>    归集的元素类型
-	 * @param mapper t->map
-	 * @return [o]->dfm
+	 * @param mapper t-&gt;map
+	 * @return [o]-&gt;dfm
 	 */
 	public static <T> Collector<T, ?, DFrame> dfmclc2(final Function<T, Map<?, ?>> mapper) {
 

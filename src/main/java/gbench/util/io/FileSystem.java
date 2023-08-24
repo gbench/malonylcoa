@@ -18,6 +18,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * FileSystem
+ */
 public class FileSystem {
 
 	/**
@@ -150,20 +153,21 @@ public class FileSystem {
 	 * @param fullname 文件全路径名，例如c:/a/b/c.jpg
 	 * @return 文件的简单名，不包含路径,例如 c.jpg
 	 */
-	public static String extensionpicker(String fullname) {
-		fullname = unixpath(fullname);
-		if (fullname.indexOf(".") <= 0)
+	public static String extensionpicker(final String fullname) {
+		final String _fullname = unixpath(fullname);
+		if (_fullname.indexOf(".") <= 0)
 			return "";
-		Matcher matcher = Pattern.compile("([^\\\\.]+$)").matcher(fullname);
+		Matcher matcher = Pattern.compile("([^\\\\.]+$)").matcher(_fullname);
 		return matcher.find() ? matcher.group(1) : null;
 	}
 
 	/**
+	 * utf8write
 	 * 
 	 * @param file           文件绝对路径
 	 * @param contentSuppler 文件书写内容
 	 */
-	public static boolean utf8write(String file, Supplier<String> contentSuppler) {
+	public static boolean utf8write(final String file, final Supplier<String> contentSuppler) {
 		return write(new File(file), "utf8", contentSuppler);
 	}
 
@@ -178,11 +182,12 @@ public class FileSystem {
 	}
 
 	/**
+	 * write
 	 * 
 	 * @param file           文件对象
 	 * @param contentSuppler 文件书写内容
 	 */
-	public static boolean write(File file, String encoding, Supplier<String> contentSuppler) {
+	public static boolean write(final File file, final String encoding, final Supplier<String> contentSuppler) {
 		if (contentSuppler == null || file == null)
 			return false;
 		BufferedWriter bw = null;

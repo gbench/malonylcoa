@@ -1761,6 +1761,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 生成一条列向量
 	 *
 	 * @param <T> 矩阵元素
+	 * @param <V> 第二元素类型
 	 * @param tup (name,列向量数据)
 	 * @return 列向量
 	 */
@@ -1925,6 +1926,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 
 	 * @param <T> 元素
 	 * @param <V> 列元素
+	 * @param tclass 元素类型类
 	 * @return 矩阵归集器
 	 */
 	public static <T, V extends Iterable<T>> Collector<Tuple2<String, V>, ?, DataMatrix<T>> dmxclc2(

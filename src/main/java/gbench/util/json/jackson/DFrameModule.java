@@ -125,6 +125,9 @@ public class DFrameModule extends SimpleModule {
 		public abstract T create(final Object[] dd);
 	}
 
+	/**
+	 * objM
+	 */
 	public static ObjectMapper objM = new ObjectMapper();
 
 	/**

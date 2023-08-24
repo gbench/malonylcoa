@@ -146,6 +146,9 @@ public class DataMatrixModule extends SimpleModule {
 		public abstract T create(final String[] keys, final Object[][] datas);
 	}
 
+	/**
+	 * objM
+	 */
 	public static ObjectMapper objM = new ObjectMapper();
 
 	/**

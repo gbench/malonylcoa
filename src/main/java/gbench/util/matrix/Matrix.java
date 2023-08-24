@@ -39,7 +39,10 @@ import java.util.stream.StreamSupport;
  * @author xuqinghua
  */
 public class Matrix<T> extends Tensor<T> {
+
 	/**
+	 * Matrix
+	 * 
 	 * @param data 矩阵数据，行顺序
 	 * @param nrow 行长度
 	 * @param ncol 列宽度
@@ -49,17 +52,21 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * Matrix
+	 * 
 	 * @param data   矩阵数据，行顺序
 	 * @param tclass 矩阵元素类型
 	 * @param nrow   行长度
 	 * @param ncol   列宽度
 	 */
 	@SuppressWarnings("unchecked")
-	public Matrix(final Stream<T> data, Class<T> tclass, final int nrow, final int ncol) {
+	public Matrix(final Stream<T> data, final Class<T> tclass, final int nrow, final int ncol) {
 		super(data.toArray(n -> (T[]) Array.newInstance(tclass, n)), nrow, ncol);
 	}
 
 	/**
+	 * Matrix
+	 * 
 	 * @param data 矩阵数据，行顺序
 	 * @param nrow 行数
 	 * @param ncol 列宽度
@@ -69,6 +76,8 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * Matrix
+	 * 
 	 * @param data 矩阵数据，行顺序
 	 */
 	public Matrix(final T[] data) {
@@ -76,6 +85,8 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * Matrix
+	 * 
 	 * @param tensor 矩阵数据，行顺序
 	 */
 	public Matrix(final Tensor<T> tensor) {
@@ -83,7 +94,9 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @return
+	 * tclass
+	 * 
+	 * @return 元素类型
 	 */
 	@SuppressWarnings("unchecked")
 	public Class<T> tclass() {
@@ -91,6 +104,8 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * ncol
+	 * 
 	 * @return 列数
 	 */
 	public int ncol() {
@@ -98,6 +113,8 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * nrow
+	 * 
 	 * @return 行数
 	 */
 	public int nrow() {
@@ -105,8 +122,10 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
+	 * row
+	 * 
 	 * @param i 行索引从0开始
-	 * @return
+	 * @return row
 	 */
 	public T[] row(final int i) {
 		return Arrays.copyOfRange(this.data, this.ncol() * i, this.ncol() * (i + 1));
@@ -149,14 +168,18 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @return
+	 * rowS
+	 * 
+	 * @return rowS
 	 */
 	public Stream<T[]> rowS() {
 		return Stream.iterate(0, i -> i + 1).limit(this.nrow()).map(i -> this.row(i));
 	}
 
 	/**
-	 * @return
+	 * rows
+	 * 
+	 * @return rows
 	 */
 	@SuppressWarnings("unchecked")
 	public T[][] rows() {
@@ -166,7 +189,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 转置
 	 *
-	 * @return
+	 * @return transpose
 	 */
 	public Matrix<T> transpose() {
 		final int ncol = this.ncol();
@@ -182,14 +205,18 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @return
+	 * columnS
+	 * 
+	 * @return columnS
 	 */
 	public Stream<T[]> columnS() {
 		return Stream.iterate(0, i -> i + 1).limit(this.ncol()).map(i -> this.column(i));
 	}
 
 	/**
-	 * @return
+	 * columns
+	 * 
+	 * @return columns
 	 */
 	public List<T[]> columns() {
 		return this.columnS().collect(Collectors.toList());
@@ -272,7 +299,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * 列向量
 	 *
 	 * @param i      行索引从0开始
-	 * @param mapper t->u 列变换函数
+	 * @param mapper t-&gt;u 列变换函数
 	 * @return U类型的流
 	 */
 	public <U> Stream<U> rowS(final int i, final Function<T, U> mapper) {
@@ -282,7 +309,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * cbind
 	 * 
-	 * @param m m
+	 * @param m 另一个矩阵
 	 * @return Matrix
 	 */
 	public Matrix<T> cbind(final Matrix<T> m) {
@@ -292,7 +319,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * rbind
 	 * 
-	 * @param m m
+	 * @param m 另一个矩阵
 	 * @return Matrix
 	 */
 	public Matrix<T> rbind(final Matrix<T> m) {
@@ -338,6 +365,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 计算 占比(ai/total)
 	 *
+	 * @param <U>    mapper 结果类型
 	 * @param mapper 变换函数
 	 * @return 频率矩阵
 	 */
@@ -367,9 +395,9 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 生成数值矩阵
 	 *
-	 * @param <N>
+	 * @param <N> 数字元素类型
 	 * @param mapper 数值变换函数
-	 * @return
+	 * @return 数字矩阵
 	 */
 	@SuppressWarnings("unchecked")
 	public <N extends Number> Matrix<N> numx(final Function<T, N> mapper) {
@@ -379,7 +407,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 生成数值矩阵
 	 *
-	 * @return dblx
+	 * @return 双精度矩阵
 	 */
 	public Matrix<Double> dblx() {
 		return this.numx(e -> ((Number) e).doubleValue());
