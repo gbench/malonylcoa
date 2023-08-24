@@ -306,7 +306,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param maxSize 检索范围边界
 	 * @return 可用的 sheetid 页面的数据区域
 	 */
-	public StrMatrix autoDetect(int shtid, Integer firstRowIndex, Integer maxSize) {
+	public StrMatrix autoDetect(final int shtid, final Integer firstRowIndex, final Integer maxSize) {
 		if (shtid >= this.sheets().size()) {
 			return null;
 		}
@@ -408,7 +408,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @param <U>    目标类型
 	 * @param sht    表单对象
-	 * @param mapper 值变换函数 row->u
+	 * @param mapper 值变换函数 row-&gt;u
 	 * @return U类型的数据流
 	 */
 	public <U> Stream<U> autoDetectS(final Sheet sht, final Function<LinkedHashMap<String, String>, U> mapper) {
@@ -436,7 +436,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @param <U>     目标类型
 	 * @param shtname 表单名称
-	 * @param mapper  值变换函数 row->u
+	 * @param mapper  值变换函数 row-&gt;u
 	 * @return U类型的数据流
 	 */
 	public <U> Stream<U> autoDetectS(final String shtname, final Function<LinkedHashMap<String, String>, U> mapper) {
@@ -455,10 +455,11 @@ public class SimpleExcel implements AutoCloseable {
 	 * a21 a22 a23 :行数据 ----> b2i b2j b2k <br>
 	 * ... ... ... ----> ... ... ... <br>
 	 * 
+	 * @param <T>       元素类型
 	 * @param sht       sheet 名
 	 * @param rangeName 区域名称
 	 * @param keys      表头名称
-	 * @param mapper    数据变换操作: o->t 完成 aij->bij的变换
+	 * @param mapper    数据变换操作: o-&gt;t 完成 aij->bij的变换
 	 * @return 新数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final Sheet sht, final String rangeName, final List<String> keys,
@@ -479,9 +480,10 @@ public class SimpleExcel implements AutoCloseable {
 	 * a21 a22 a23 :行数据 ----> b2i b2j b2k <br>
 	 * ... ... ... ----> ... ... ... <br>
 	 * 
+	 * @param <T>       元素类型
 	 * @param sht       表单名
 	 * @param rangeName 区域名称
-	 * @param mapper    数据变换操作: o->t 完成 aij->bij的变换
+	 * @param mapper    数据变换操作: o-&gt;t 完成 aij->bij的变换
 	 * @return 新数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final Sheet sht, final String rangeName, final Function<Object, T> mapper) {
@@ -500,9 +502,10 @@ public class SimpleExcel implements AutoCloseable {
 	 * a21 a22 a23 :行数据 ----> b2i b2j b2k <br>
 	 * ... ... ... ----> ... ... ... <br>
 	 * 
+	 * @param <T>    元素类型
 	 * @param name   区域全名称比如sheet2!A1:B100
 	 * @param keys   列名序列,即选择那些列数据 这就点类似于 select mapper(keys) from name 这样的数据操作。
-	 * @param mapper 数据变换操作: o->t 完成 aij->bij的变换
+	 * @param mapper 数据变换操作: o-&gt;t 完成 aij->bij的变换
 	 * @return 重新计算后的新的数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final String name, final List<String> keys, final Function<Object, T> mapper) {
@@ -531,8 +534,9 @@ public class SimpleExcel implements AutoCloseable {
 	 * a21 a22 a23 :行数据 ----> b2i b2j b2k <br>
 	 * ... ... ... ----> ... ... ... <br>
 	 * 
+	 * @param <T>    元素类型
 	 * @param name   区域全名称比如sheet2!A1:B100
-	 * @param mapper 数据变换操作: o->t 完成 aij->bij的变换
+	 * @param mapper 数据变换操作: o-&gt;t 完成 aij->bij的变换
 	 * @return 重新计算后的新的数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final String name, final Function<Object, T> mapper) {
@@ -551,8 +555,9 @@ public class SimpleExcel implements AutoCloseable {
 	 * a21 a22 a23 :行数据 ----> b2i b2j b2k <br>
 	 * ... ... ... ----> ... ... ... <br>
 	 * 
+	 * @param <T>    元素类型
 	 * @param sht    表单数据
-	 * @param mapper 数据变换操作: o->t 完成 aij->bij的变换
+	 * @param mapper 数据变换操作: o-&gt;t 完成 aij->bij的变换
 	 * @param keys   null,表示数据中包含表头,第一行就是表头
 	 * @return 新数据矩阵
 	 */

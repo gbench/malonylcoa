@@ -495,7 +495,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * @param <U>  U
 	 * @param <X>  X
 	 * @param mu   右侧矩阵
-	 * @param biop 数据城府 (t,u)->x
+	 * @param biop 数据城府 (t,u)-&gt;x
 	 * @return 数据矩阵
 	 */
 	public <U, X, Y> Y dot(final Matrix<U> mu, BiFunction<T, U, X> biop, Collector<X, ?, Y> collector) {
@@ -533,7 +533,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * @param <U>
 	 * @param <X>
 	 * @param mu          另一个矩阵
-	 * @param pair_mapper (t,u)->x
+	 * @param pair_mapper (t,u)-&gt;x
 	 * @return
 	 */
 	public <U, X> Matrix<X> fmap(final Matrix<U> mu, BiFunction<T, U, X> pair_mapper) {
@@ -556,7 +556,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * 数据变换
 	 *
 	 * @param <U>    元素类型
-	 * @param mapper 元素映射 (i,j),t -> u
+	 * @param mapper 元素映射 (i,j),t -&gt; u
 	 * @return U类型数据矩阵
 	 */
 	public <U> Matrix<U> fmap(final BiFunction<Tuple2<Integer, Integer>, T, U> mapper) {
@@ -575,7 +575,7 @@ public class Matrix<T> extends Tensor<T> {
 
 	/**
 	 * @param <U>
-	 * @param mapper 元素映射 t->u
+	 * @param mapper 元素映射 t-&gt;u
 	 * @return
 	 */
 	public <U> Matrix<U> fmap(final Function<T, U> mapper) {
@@ -602,17 +602,21 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param n
-	 * @return
+	 * newArray
+	 * 
+	 * @param n n
+	 * @return [t]
 	 */
 	public T[] newArray(final int n) {
 		return newArray(this.tclass(), n);
 	}
 
 	/**
-	 * @param m
-	 * @param n
-	 * @return
+	 * newArray
+	 * 
+	 * @param m m
+	 * @param n n
+	 * @return [[t]]
 	 */
 	@SuppressWarnings("unchecked")
 	public T[][] newArray(final int m, final int n) {
@@ -623,7 +627,7 @@ public class Matrix<T> extends Tensor<T> {
 	 * 矩阵变形
 	 *
 	 * @param ncol 列数据
-	 * @return
+	 * @return [[t]]
 	 */
 	public Matrix<T> reshape(final int ncol) {
 		final int size = this.ncol() * this.nrow();
@@ -633,7 +637,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 垂直化 成 一条列向量 [1 2;3;4] -> [1,3,2,4]
 	 *
-	 * @return
+	 * @return [[t]]
 	 */
 	public Matrix<T> veriticalize() {
 		return this.transpose().reshape(1);
@@ -641,9 +645,9 @@ public class Matrix<T> extends Tensor<T> {
 
 	/**
 	 * 水平化车一条行行向量 <br>
-	 * [1 2;3;4] -> t([1,2,3,4])
+	 * [1 2;3;4] -&gt; t([1,2,3,4])
 	 *
-	 * @return
+	 * @return [[t]]
 	 */
 	public Matrix<T> horizontalize() {
 		return this.reshape(this.size());
@@ -678,8 +682,8 @@ public class Matrix<T> extends Tensor<T> {
 	 * <p>
 	 * cell(i,0) 的别名
 	 *
-	 * @param i
-	 * @return
+	 * @param i 元素索引
+	 * @return T类型的元素
 	 */
 	public T get(final int i) {
 		return this.cell(i, 0);
@@ -689,8 +693,8 @@ public class Matrix<T> extends Tensor<T> {
 	 * 向量操作函数<br>
 	 * cell(i,0,t) 的别名
 	 *
-	 * @param i
-	 * @return
+	 * @param i 元素索引
+	 * @return 矩阵对象本身
 	 */
 	public Matrix<T> set(final int i, final T t) {
 		return this.cell(i, 0, t);
@@ -708,7 +712,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 复制函数
 	 *
-	 * @return
+	 * @return 复制品
 	 */
 	public Matrix<T> duplicate() {
 		final T[] dd = Arrays.copyOf(this.data, this.data.length);
@@ -718,7 +722,7 @@ public class Matrix<T> extends Tensor<T> {
 	/**
 	 * 复制函数
 	 *
-	 * @return
+	 * @return 复制品
 	 */
 	@Override
 	public Matrix<T> clone() {
@@ -735,9 +739,11 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @param <N>
-	 * @param another
-	 * @return
+	 * 矩阵按位加法
+	 * 
+	 * @param <N>     数值形元素类型
+	 * @param another 另一个矩阵
+	 * @return [[db]] 矩阵
 	 */
 	public <N extends Number> Matrix<Double> plus(final Matrix<N> another) {
 		return this.dblx().fmap(another, (a, b) -> Optional.ofNullable(a)
@@ -802,7 +808,7 @@ public class Matrix<T> extends Tensor<T> {
 	 *
 	 * @param <N>   节点值的变换类型
 	 * @param tonum 数值变换
-	 * @return
+	 * @return Double
 	 */
 	@SuppressWarnings("unchecked")
 	public <N extends Number> Double sum(final Function<T, N> tonum) {
@@ -811,7 +817,7 @@ public class Matrix<T> extends Tensor<T> {
 	}
 
 	/**
-	 * @return
+	 * @return Double
 	 */
 	public Double product() {
 		return this.product(null);
@@ -835,7 +841,7 @@ public class Matrix<T> extends Tensor<T> {
 	 *
 	 * @param <N>  节点值的变换类型
 	 * @param biop 数值变换
-	 * @return
+	 * @return T 类型的 Optional
 	 */
 	public <N extends Number> Optional<T> reduceOpt(final BinaryOperator<T> biop) {
 		return this.stream().reduce(biop);
