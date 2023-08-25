@@ -4804,7 +4804,7 @@ public class DataApp {
 
 							if (arkeys.get() != null && arvalues.get() != null) { // 都是序列的情况
 								final Iterator<?> vitr = arvalues.get().iterator();
-								final Map<String, Object> _data = new HashMap<String, Object>();
+								final Map<String, Object> _data = new LinkedHashMap<String, Object>();
 								for (final Object key : arkeys.get()) {
 									final Object value = vitr.hasNext() ? vitr.next() : null;
 									_data.put((key instanceof String k) ? k : key + "", value);
