@@ -53,9 +53,9 @@ public class DemoTest {
 		// 实际利率
 		final var pmts = nd(59, 59, 59, 59, 59 + 1250); // 现金流
 		final var price = 1000; // 现值(价格)
-		final var rate_f = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(1 + i))))
+		final var formula = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(1 + i))))
 				.andThen(pvs -> pvs.sum() - price); // 实际利率
-		final var eff_rate = bisect(rate_f, 0d, 1, pow(10, -6)); // 实际利率
+		final var eff_rate = bisect(formula, 0d, 1, pow(10, -6)); // 实际利率
 		System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));
 
 	}
