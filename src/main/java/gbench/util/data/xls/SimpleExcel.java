@@ -459,7 +459,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param sht       sheet 名
 	 * @param rangeName 区域名称
 	 * @param keys      表头名称
-	 * @param mapper    数据变换操作: o-&gt;t 完成 aij->bij的变换
+	 * @param mapper    数据变换操作: o-&gt;t 完成 aij-&gt;bij的变换
 	 * @return 新数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final Sheet sht, final String rangeName, final List<String> keys,
@@ -771,7 +771,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param name sheet 名称 默认数据首行为标题：
 	 * @return 把 sheet名称转换成sheetdi
 	 */
-	public Integer shtname2shtid(String name) {
+	public Integer shtname2shtid(final String name) {
 		return this.sheets().stream().map(Sheet::getSheetName).collect(Collectors.toList()).indexOf(name);
 	}
 
@@ -846,7 +846,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param cell excel的输出结构
 	 * @return 字符串输出
 	 */
-	public String format(Cell cell) {
+	public String format(final Cell cell) {
 		return this.evaluate(cell) + "";
 	}
 
@@ -858,7 +858,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param keys     表头列表,null表示数据中包含表头,第一行数据作为表头列表。
 	 * @return 数据区域的数据内容
 	 */
-	public StrMatrix range(Sheet sht, RangeDef rangedef, List<String> keys) {
+	public StrMatrix range(final Sheet sht, final RangeDef rangedef, final List<String> keys) {
 		if (rangedef == null) {
 			println("无法获得rangedef数据,rangedef 为空数据");
 			return null;
@@ -926,9 +926,10 @@ public class SimpleExcel implements AutoCloseable {
 	 * 读取指定区域的数据内容
 	 * 
 	 * @param rangedef 数据区域
+	 * @param keys 键名列表
 	 * @return 数据区域的数据内容
 	 */
-	public StrMatrix range(RangeDef rangedef, List<String> keys) {
+	public StrMatrix range(final RangeDef rangedef, final List<String> keys) {
 		return range(activesht, rangedef, keys);
 	}
 
@@ -938,7 +939,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param name 获得数据区域,比如 Sheet2!A1:B10
 	 * @return excel 范围数据
 	 */
-	public StrMatrix range(String name) {
+	public StrMatrix range(final String name) {
 		return range(name, (List<String>) null);
 	}
 
@@ -951,7 +952,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @return excel 范围数据
 	 */
-	public StrMatrix range(String name, String[] keys) {
+	public StrMatrix range(final String name, final String[] keys) {
 		if (keys == null) {
 			return range(name, (List<String>) null);
 		}
@@ -960,12 +961,13 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
+	 * s range
 	 * 
 	 * @param name 获得数据区域：range 全名用比如sheet1!A1:B10
 	 * @param keys null,表示数据中包含表头,第一行就是表头
 	 * @return excel 范围数据
 	 */
-	public StrMatrix range(String name, List<String> keys) {
+	public StrMatrix range(final String name, final List<String> keys) {
 		if (name.contains("!")) {// 名称中包含有表单名
 			String ss[] = name.split("!");
 			if (ss.length > 1) {
@@ -2023,7 +2025,13 @@ public class SimpleExcel implements AutoCloseable {
 
 	}
 
+	/**
+	 * 最大处理行数
+	 */
 	public static final Integer MAX_SIZE = 1000000;// 最大处理行数
+	/**
+	 * 最小的数字精度
+	 */
 	public static Double EPSILON = 1e-20;// 最小的数字精度
 	private static FormulaEvaluator FORMULA_EVALUATOR;
 	private static String DEFAULT_WRITE_CELL_ADDRESS = "Sheet1!A1";
