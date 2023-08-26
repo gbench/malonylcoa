@@ -6386,11 +6386,7 @@ public class DataApp {
 		 * @return DFrame
 		 */
 		public static DFrame of(final Iterable<IRecord> data) {
-			final List<IRecord> _data = data instanceof List //
-					? (List<IRecord>) data
-					: StreamSupport.stream(data.spliterator(), false) //
-							.collect(Collectors.toList());
-			return new DFrame(_data);
+			return new DFrame(data == null ? new ArrayList<>() : data);
 		}
 
 		private LinkedHashMap<String, ArrayList<Object>> colsData;
