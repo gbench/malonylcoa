@@ -9,7 +9,6 @@ import static gbench.util.lisp.Lisp.A;
 import static gbench.util.math.Maths.fact;
 import static java.lang.Math.pow;
 
-import java.util.LinkedList;
 import java.util.function.Function;
 
 import static gbench.util.array.INdarray.nats;
@@ -17,7 +16,6 @@ import static gbench.util.array.INdarray.nats;
 import org.junit.jupiter.api.Test;
 
 import gbench.util.array.INdarray;
-import gbench.util.data.DataApp.IRecord;
 import gbench.util.function.Functions;
 import gbench.util.lisp.Tuple2;
 
@@ -57,10 +55,11 @@ public class MathTest {
 	@Test
 	public void qux() {
 		final var pmts = INdarray.nd(59, 59, 59, 59, 59 + 1250).dbls(); // 现金流
-		final var ratef = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(i + 1))).sum())
+		final var ratef = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -5)).sum())
 				.andThen(x -> x - 1000); // 实际利率
-		final var rate = bisect(ratef, 0d, 1, 0.00005);
+		final var rate = bisect(ratef, 0d, 1, pow(10, -6));
 		println("rate", rate);
+		println(ratef.apply(rate) + 1000);
 	}
 
 	/**
@@ -105,11 +104,11 @@ public class MathTest {
 			throw new RuntimeException(String.format("f(a)[%s]*f(b)[%s] not satisfied! (%s,%s)", fa, fb, _a, _b));
 		}
 		var i = 0;
-		final var dataf = new LinkedList<IRecord>();
+		final var logdfm = DFrame.of(); // logs
 		while ((_b - _a) / 2 > tol) {
 			var c = (_a + _b) / 2;
 			var fc = f.apply(c);
-			dataf.add(REC("i,a0,fai,ci,fci,bi,fbi".split(","), A(i++, _a, fa, c, fc, _b, fb)));
+			logdfm.add(REC("i,ai,fai,ci,fci,bi,fbi".split(","), A(i++, _a, fa, c, fc, _b, fb)));
 			if (fc == 0)
 				break;
 			if (sign(fc) * sign(fa) < 0) {
@@ -118,10 +117,10 @@ public class MathTest {
 			} else {
 				_a = c;
 				fa = fc;
-			}
+			} // if
 		} // while
 
-		println(DFrame.of(dataf));
+		println(logdfm);
 
 		return (_a + _b) / 2;
 	}

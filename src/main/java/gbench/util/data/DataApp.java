@@ -6394,7 +6394,7 @@ public class DataApp {
 		 *
 		 * @param data 源数据
 		 */
-		public DFrame of(final IRecord... data) {
+		public static DFrame of(final IRecord... data) {
 			return new DFrame(data);
 		}
 
