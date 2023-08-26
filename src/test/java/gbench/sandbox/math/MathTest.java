@@ -57,9 +57,9 @@ public class MathTest {
 	@Test
 	public void qux() {
 		final var pmts = INdarray.nd(59, 59, 59, 59, 59 + 1250).dbls(); // 现金流
-		final var effect_rate = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(i + 1))).sum())
+		final var ratef = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(i + 1))).sum())
 				.andThen(x -> x - 1000); // 实际利率
-		final var rate = bisect(effect_rate, 0d, 1, 0.00005);
+		final var rate = bisect(ratef, 0d, 1, 0.00005);
 		println("rate", rate);
 	}
 
@@ -120,7 +120,7 @@ public class MathTest {
 				fa = fc;
 			}
 		} // while
-		
+
 		println(DFrame.of(dataf));
 
 		return (_a + _b) / 2;
