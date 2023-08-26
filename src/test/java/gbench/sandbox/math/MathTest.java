@@ -54,13 +54,13 @@ public class MathTest {
 	 */
 	@Test
 	public void qux() {
-		final var pmts = INdarray.nd(559, 159, 759, 659, 559 + 1250).dbls(); // 现金流
-		final var price = 1000; // 现值
-		final var ratef = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(1 + i))).sum())
-				.andThen(x -> x - price); // 实际利率
-		final var rate = bisect(ratef, 0d, 1, pow(10, -6));
-		println("rate", rate);
-		println(ratef.apply(rate));
+		final var pmts = nd(59, 59, 59, 59, 59 + 1250); // 现金流
+		final var price = 1000; // 现值(价格)
+		final var rate_f = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(1 + i))))
+				.andThen(pvs -> pvs.sum() - price); // 实际利率
+		final var eff_rate = bisect(rate_f, 0d, 1, pow(10, -6)); // 实际利率
+		System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));
+		println("diffs", rate_f.apply(eff_rate));
 	}
 
 	/**
