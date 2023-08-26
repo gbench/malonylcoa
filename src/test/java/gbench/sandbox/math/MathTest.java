@@ -54,12 +54,13 @@ public class MathTest {
 	 */
 	@Test
 	public void qux() {
-		final var pmts = INdarray.nd(59, 59, 59, 59, 59 + 1250).dbls(); // 现金流
-		final var ratef = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -5)).sum())
-				.andThen(x -> x - 1000); // 实际利率
+		final var pmts = INdarray.nd(559, 159, 759, 659, 559 + 1250).dbls(); // 现金流
+		final var price = 1000; // 现值
+		final var ratef = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(1 + i))).sum())
+				.andThen(x -> x - price); // 实际利率
 		final var rate = bisect(ratef, 0d, 1, pow(10, -6));
 		println("rate", rate);
-		println(ratef.apply(rate) + 1000);
+		println(ratef.apply(rate));
 	}
 
 	/**
@@ -108,7 +109,8 @@ public class MathTest {
 		while ((_b - _a) / 2 > tol) {
 			var c = (_a + _b) / 2;
 			var fc = f.apply(c);
-			logdfm.add(REC("i,ai,fai,ci,fci,bi,fbi".split(","), A(i++, _a, fa, c, fc, _b, fb)));
+			logdfm.add(REC("i,ai,fai,ci,fci,bi,fbi,(b-a)/2".split(","), //
+					A(i++, _a, fa, c, fc, _b, fb, (_b - _a) / 2)));
 			if (fc == 0)
 				break;
 			if (sign(fc) * sign(fa) < 0) {
