@@ -51,7 +51,7 @@ dataApp2.sqldframe2("insert into t_user(name,password,phone,sex) values ('zhangs
 dataApp2.sqldframe("select * from t_user");
 
 // pivotTable
-cph(RPTA(nats(2).data(),10)).map(INdarray::nd).map(INdarray::dupdata).collect(ndclc()).pivotTable(INdarray::length,nats(10).reverse().head(4).fmap(i->(Function<INdarray<Integer>,Integer>)nd->nd.get(i)));
+cph(RPTA(nats(2).data(), 10)).map(INdarray::nd).map(INdarray::dupdata).collect(ndclc()).pivotTable(INdarray::length, nats(10).reverse().head(4).fmap(i -> (Function<INdarray<Integer>, Integer>) nd -> nd.get(i)));
 
 // 泰勒级数
 final var mysin = identity(0d).andThen(x->nats(7).fmap(n->(n%2==0?1:-1)*1d/fact(2*n+1)*pow(x,2*n+1)).sum());
@@ -62,9 +62,10 @@ z1.sub(z2);
 // 实际利率
 final var pmts = nd(59, 59, 59, 59, 59 + 1250); // 现金流
 final var price = 1000; // 现值(价格)
-final var rate_f = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(1 + i)))).andThen(pvs -> pvs.sum() - price); // 实际利率
-final var eff_rate = bisect(rate_f, 0d, 1, pow(10, -6)); // 实际利率
-System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));
+final var formula = identity(0d).andThen(rate->pmts.fmap((i,pmt)->pmt*pow(1+rate,-(1+i)))).andThen(pvs->pvs.sum()-price); // 实际利率
+final var eps = pow(10, -6); // 最小值
+final var eff_rate = bisect(formula, 0d, 1, eps); // 实际利率
+System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));	
 ```
 # 启动H2控制台 : 在eclipse debugshell
 org.h2.tools.Server.createWebServer("-web").start()
