@@ -15,7 +15,6 @@ import static gbench.util.array.INdarray.nats;
 
 import org.junit.jupiter.api.Test;
 
-import gbench.util.array.INdarray;
 import gbench.util.function.Functions;
 import gbench.util.lisp.Tuple2;
 
