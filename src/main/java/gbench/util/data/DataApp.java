@@ -5926,7 +5926,7 @@ public class DataApp {
 		 *
 		 * @param data 源数据
 		 */
-		public DFrame(final IRecord[] data) {
+		public DFrame(final IRecord... data) {
 			this(Arrays.asList(data));
 		}
 
@@ -6387,6 +6387,15 @@ public class DataApp {
 		 */
 		public static DFrame of(final Iterable<IRecord> data) {
 			return new DFrame(data == null ? new ArrayList<>() : data);
+		}
+
+		/**
+		 * 构造函数
+		 *
+		 * @param data 源数据
+		 */
+		public DFrame of(final IRecord... data) {
+			return new DFrame(data);
 		}
 
 		private LinkedHashMap<String, ArrayList<Object>> colsData;
