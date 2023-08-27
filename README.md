@@ -32,6 +32,7 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.data.DataApp.Tuple2.*;
 import static gbench.util.function.Functions.*;
+import static gbench.util.io.Output.println;
 import static gbench.util.math.Maths.*;
 import static java.lang.Math.*;
 
