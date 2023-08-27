@@ -1230,6 +1230,15 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * 头部元素(head的别名)
+	 *
+	 * @return head
+	 */
+	default V first() {
+		return this.head();
+	}
+
+	/**
 	 * 头部元素
 	 *
 	 * @return head
