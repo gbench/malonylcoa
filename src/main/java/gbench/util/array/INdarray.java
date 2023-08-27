@@ -3120,12 +3120,44 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 
 	/**
 	 * 自然数序列,Natural number
+	 * 
+	 * @param from 开始位置 inclusive
+	 * @param to   结束位置 exclusive
+	 * @return [from,from+11,...,to-1]
+	 */
+	static INdarray<Integer> nats(final int from, final int to) {
+		return nd(IntStream.iterate(from, i -> i < to, i -> i + 1).toArray());
+	}
+
+	/**
+	 * 自然数序列,Natural number
+	 * 
+	 * @param from 开始位置 inclusive
+	 * @param to   结束位置 exclusive
+	 * @return [0,1,...,n-1]
+	 */
+	static INdarray<Integer> nats(final Number from, final Number to) {
+		return nats(from.intValue(), to.intValue());
+	}
+
+	/**
+	 * 自然数序列,Natural number
 	 *
 	 * @param n 序列大小
 	 * @return [0,1,...,n-1]
 	 */
 	static INdarray<Integer> nats(final int n) {
-		return nd(Stream.iterate(0, i -> i + 1).limit(n).toArray(Integer[]::new));
+		return nats(0, n);
+	}
+
+	/**
+	 * 自然数序列,Natural number
+	 *
+	 * @param n 序列大小
+	 * @return [0,1,...,n-1]
+	 */
+	static INdarray<Integer> nats(final Number n) {
+		return nats(n.intValue());
 	}
 
 	/**

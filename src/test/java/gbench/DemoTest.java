@@ -2,10 +2,12 @@ package gbench;
 
 import gbench.util.array.*;
 import gbench.util.data.MyDataApp;
+
 import static gbench.util.lisp.Lisp.*;
 import static gbench.util.array.INdarray.*;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.function.Functions.*;
+import static gbench.util.io.Output.println;
 import static gbench.util.math.Maths.*;
 import static java.lang.Math.*;
 
@@ -57,6 +59,9 @@ public class DemoTest {
 				.andThen(pvs -> pvs.sum() - price); // 实际利率
 		final var eff_rate = bisect(formula, 0d, 1, pow(10, -6)); // 实际利率
 		System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));
+
+		// 序列分解
+		nd(i -> pow(2, i), 10).fmap(n -> nats(n, 2 * n));
 
 	}
 

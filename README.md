@@ -65,6 +65,10 @@ final var formula = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow
 final var eps = pow(10, -6); // 最小值
 final var eff_rate = bisect(formula, 0d, 1, eps); // 实际利率
 System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));	
+
+// 序列分解
+nd(i -> pow(2, i), 10).fmap(n -> nats(n, 2 * n));;
+
 ```
 # 启动H2控制台 : 在eclipse debugshell
 org.h2.tools.Server.createWebServer("-web").start()
