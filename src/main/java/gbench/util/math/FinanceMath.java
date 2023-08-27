@@ -37,7 +37,6 @@ public class FinanceMath {
 	 *              to be 0 (the future value of a loan, for example, is 0). If fv
 	 *              is omitted, you must include the pmt argument.
 	 * @param type  Optional. The number 0 or 1 and indicates when payments are due.
-	 * @param guess Guess Optional. Your guess for what the rate will be.
 	 * @return Double 非收敛返回null
 	 */
 	public static Double rate(final Number nper, final Number pmt, final Number pv, final Number fv,
