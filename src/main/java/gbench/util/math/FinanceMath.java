@@ -36,7 +36,7 @@ public class FinanceMath {
 	 *             to be 0 (the future value of a loan, for example, is 0). If fv is
 	 *             omitted, you must include the pmt argument.
 	 * @param type Optional. The number 0 or 1 and indicates when payments are due.
-	 * @return
+	 * @return [0,100] 之间的利率估计
 	 */
 	public static double rate(final Number nper, final Number pmt, final Number pv, final Number fv,
 			final Number type) {
@@ -47,9 +47,11 @@ public class FinanceMath {
 		final int _type = Optional.ofNullable(type).map(Number::intValue).orElse(0); // 默认起初
 		final INdarray<Double> cashflows = INdarray.nd(i -> (Double) _pmt, _nper);
 		final Function<Double, Double> formula = identity(0d).andThen(rate -> { // 实际利率
-			final double p = _pv;
-			final double _p = cashflows.fmap((i, cf) -> cf * pow(1 + rate, _type == 1 ? -i : -(1 + i))).sum();
-			return _p + p + _fv * pow(1 + rate, -_nper);
+			final boolean flag = _type == 1; // 是否是期末支付
+			final double p = _pv; // 现价 price
+			final double p_adjust = _fv * pow(1 + rate, -_nper); // 现价：收入于支出平衡调节
+			final double _p = cashflows.fmap((i, cf) -> cf * pow(1 + rate, -(flag ? i : 1 + i))).sum(); // 折现现价
+			return _p + p + p_adjust;
 		}); // 实际利率
 		final double eff_rate = bisect(formula, 0d, 100, EPSILON);
 
