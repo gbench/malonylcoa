@@ -1041,6 +1041,20 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * 方法对 hashMap 中指定 key 的值进行重新计算，前提是该 key 存在于 hashMap 中。
+	 * 
+	 * @param i                 键索引从0开始
+	 * @param remappingFunction 重新映射函数，用于重新计算值
+	 * @return 如果 i 对应的 value 不存在，则返回该 null，如果存在，则返回通过 remappingFunction 重新计算后的值。
+	 */
+	default V computeIfPrsent(final int i, BiFunction<Integer, V, V> remappingFunction) {
+		return this.getopt(i).map(v -> {
+			final V _v = remappingFunction.apply(i, v);
+			return _v;
+		}).orElse(null);
+	}
+
+	/**
 	 * 修改INdarray元素的内容<br>
 	 * <p>
 	 * assign 可以使用 subset 对INdarray 进行过滤选择，而后通过TriConsumer的setter进行修改数据 <br>
@@ -2855,7 +2869,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 创建多维数组
 	 *
 	 * @param <T> 元素类型
-	 * @param gen i->t
+	 * @param gen i-&gt;t
 	 * @param n   数据维度
 	 * @return ndarray
 	 */
@@ -2962,12 +2976,24 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 创建多维数组:INdarray.of的别名
 	 *
 	 * @param <T> 元素类型
-	 * @param gen i->t
+	 * @param gen i-&gt;t
 	 * @param n   数据维度
 	 * @return ndarray
 	 */
 	static <T> INdarray<T> nd(final Function<Integer, T> gen, final int n) {
 		return INdarray.of(gen, n);
+	}
+
+	/**
+	 * 创建多维数组:INdarray.of的别名
+	 *
+	 * @param <T> 元素类型
+	 * @param gen i-&gt;t
+	 * @param n   数据维度
+	 * @return ndarray
+	 */
+	static <T> INdarray<T> nd(final Function<Integer, T> gen, final Number n) {
+		return INdarray.of(gen, n.intValue());
 	}
 
 	/**
