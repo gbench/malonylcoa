@@ -17,7 +17,9 @@ public class FinanceMathTest {
 	public void foo() {
 		println(0, rate(10, 100, -1000, 1000, null));
 		println(0, rate(10, 100, -1000, 1000, 0));
-		println(1, rate(10, 100, -1000, 1000, 1));
+		// 非收敛，返回null
+		println("非收敛", 1, rate(10, 100, -1000, 1000, 1));
+		println("调整收敛", 1, rate(10, 100, -1000, 1000, 1, 1.5));
 	}
 
 }
