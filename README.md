@@ -34,6 +34,7 @@ import static gbench.util.data.DataApp.Tuple2.*;
 import static gbench.util.function.Functions.*;
 import static gbench.util.io.Output.println;
 import static gbench.util.math.Maths.*;
+import static gbench.util.math.FinanceMaths.*;
 import static java.lang.Math.*;
 
 // 数据库配置,请指定正确的数据库url,driver,user和password
