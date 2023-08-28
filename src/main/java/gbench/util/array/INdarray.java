@@ -844,7 +844,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 
 	 * @param <K>        分类键类型
 	 * @param classifier 分类器 把T转换成分组键名
-	 * @return {(k,nd)}
+	 * @return 分类分组:[(k,nd)]
 	 */
 	default <K extends Comparable<K>> Map<K, INdarray<V>> groupBy(final Function<V, K> classifier) {
 		final Map<K, INdarray<V>> groups = new LinkedHashMap<>(); // 分组结果
@@ -1047,7 +1047,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param remappingFunction 重新映射函数，用于重新计算值
 	 * @return 如果 i 对应的 value 不存在，则返回该 null，如果存在，则返回通过 remappingFunction 重新计算后的值。
 	 */
-	default V computeIfPrsent(final int i, BiFunction<Integer, V, V> remappingFunction) {
+	default V computeIfPresent(final int i, BiFunction<Integer, V, V> remappingFunction) {
 		return this.getopt(i).map(v -> {
 			final V _v = remappingFunction.apply(i, v);
 			return _v;
