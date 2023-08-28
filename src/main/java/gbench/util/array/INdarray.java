@@ -1041,9 +1041,22 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * computeIfPresent 包裹函数 <br>
 	 * 方法对 hashMap 中指定 key 的值进行重新计算，前提是该 key 存在于 hashMap 中。
 	 * 
-	 * @param i                 键索引从0开始
+	 * @param i                 键索引从0开始,对于非法的索引不予处理。
+	 * @param remappingFunction 重新映射函数，用于重新计算值
+	 * @return this 对象本身
+	 */
+	default INdarray<V> update(final int i, BiFunction<Integer, V, V> remappingFunction) {
+		this.computeIfPresent(i, remappingFunction);
+		return this;
+	}
+
+	/**
+	 * 方法对 hashMap 中指定 key 的值进行重新计算，前提是该 key 存在于 hashMap 中。
+	 * 
+	 * @param i                 键索引从0开始，,对于非法的索引不予处理。
 	 * @param remappingFunction 重新映射函数，用于重新计算值
 	 * @return 如果 i 对应的 value 不存在，则返回该 null，如果存在，则返回通过 remappingFunction 重新计算后的值。
 	 */
