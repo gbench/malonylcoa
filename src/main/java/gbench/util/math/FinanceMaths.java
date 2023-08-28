@@ -13,12 +13,12 @@ import static java.lang.Math.*;
 /**
  * 金融数学
  */
-public class FinanceMath {
+public class FinanceMaths {
 
 	/**
 	 * 构造哈桑怒
 	 */
-	private FinanceMath() {
+	private FinanceMaths() {
 
 	}
 

@@ -1,7 +1,7 @@
 package gbench.sandbox.math;
 
 import static gbench.util.io.Output.println;
-import static gbench.util.math.FinanceMath.rate;
+import static gbench.util.math.FinanceMaths.rate;
 
 import org.junit.jupiter.api.Test;
 
