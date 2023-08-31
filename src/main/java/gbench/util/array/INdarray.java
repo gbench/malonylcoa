@@ -744,6 +744,28 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * 枢轴脸谱函数、枢轴分类路径<br>
+	 * 枢轴分类路径函数。(为一个值value赋予多个键即多键序列也就是键路径就是pivotPath，这里称它为枢轴脸谱: <br>
+	 * pivotTable就是由枢轴脸谱pivotPath和枢轴值pivotValue构成的(pivotPath,pivotValue)键值对儿结合: <br>
+	 * [(pivotPath,pivotValue):pivotLines]. <br>
+	 * pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求 <br>
+	 * pivotPath就像一张脸谱，为value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。<br>
+	 * 
+	 * @param <ND>        INdarray&lt;V&gt;的子类型
+	 * @param <K>         PivotPath的Key的元素类型
+	 * @param <CF>        分类函数类型:V-&gt;K
+	 * @param classifiers 枢轴脸谱绘制函数:枢轴分类器序列，分类策略。比如按照：[国家,性别,年代,研究方向】的枢轴分类， 牛顿的
+	 *                    枢轴分类路径是 英国/男/现代/物理学家, 鲁迅:中国/男/现代/文学家, 李清照中国/女/南宋/诗人。
+	 * @param value       基础数据值value，拟被用于进行多级分类即脸谱化的对象
+	 * @return pivotPath:[k]
+	 */
+	@SuppressWarnings("unchecked")
+	default <ND extends INdarray<V>, CF extends Function<ND, K>, K> INdarray<K> pivotPath(
+			final Iterable<CF> classifiers) {
+		return INdarray.pivotPath(classifiers, (ND) this);
+	}
+
+	/**
 	 * 数据透视表 &amp; 递归分组计算的 指标框架: 数据透视表的数据结构本质是一种多级分类的树形结构或是树形结构化 <br>
 	 * pivot table 是一个动态的键值对儿集合,是一个 [([k]:pivotPath,vs:pivotValue):pivotLine] 结构.
 	 * vs是一个value集合，是共享同一个pivotPath的value集合。 <br>
@@ -2580,28 +2602,6 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 */
 	default INdarrayX<V> nx(final int mod) {
 		return this.nx(MetaKey.mod, mod);
-	}
-
-	/**
-	 * 枢轴脸谱函数、枢轴分类路径<br>
-	 * 枢轴分类路径函数。(为一个值value赋予多个键即多键序列也就是键路径就是pivotPath，这里称它为枢轴脸谱: <br>
-	 * pivotTable就是由枢轴脸谱pivotPath和枢轴值pivotValue构成的(pivotPath,pivotValue)键值对儿结合: <br>
-	 * [(pivotPath,pivotValue):pivotLines]. <br>
-	 * pivotValue是对value的某种封装或者就是value本身，取决于具体应用要求 <br>
-	 * pivotPath就像一张脸谱，为value指定有某种角色身份，进而方便构造另一些而更高级的数据结构。<br>
-	 * 
-	 * @param <ND>        INdarray&lt;V&gt;的子类型
-	 * @param <K>         PivotPath的Key的元素类型
-	 * @param <CF>        分类函数类型:V-&gt;K
-	 * @param classifiers 枢轴脸谱绘制函数:枢轴分类器序列，分类策略。比如按照：[国家,性别,年代,研究方向】的枢轴分类， 牛顿的
-	 *                    枢轴分类路径是 英国/男/现代/物理学家, 鲁迅:中国/男/现代/文学家, 李清照中国/女/南宋/诗人。
-	 * @param value       基础数据值value，拟被用于进行多级分类即脸谱化的对象
-	 * @return pivotPath:[k]
-	 */
-	@SuppressWarnings("unchecked")
-	default <ND extends INdarray<V>, CF extends Function<ND, K>, K> INdarray<K> pivotPath(
-			final Iterable<CF> classifiers) {
-		return INdarray.pivotPath(classifiers, (ND) this);
 	}
 
 	/**
