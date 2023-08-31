@@ -691,7 +691,7 @@ public class DataApp {
 		public static <T, U> Tuple2<T, U> TUP2(final T _1, final U _2) {
 			return Tuple2.of(_1, _2);
 		}
-		
+
 		/**
 		 * 构造一个二元组 <br>
 		 * 提取tt前两个元素组成 Tuple2
@@ -712,21 +712,7 @@ public class DataApp {
 		}
 
 		/**
-		 * TUP2的别名
-		 * 构造一个二元组
-		 *
-		 * @param _1  第一元素
-		 * @param _2  第二元素
-		 * @param <T> 第一元素类型
-		 * @param <U> 第二元素类型
-		 * @return 二元组对象的构造
-		 */
-		public static <T, U> Tuple2<T, U> P(final T _1, final U _2) {
-			return Tuple2.of(_1, _2);
-		}
-
-		/**
-		 * 二元组(t,u)
+		 * 二元组(t,u) 生成
 		 * 
 		 * @param <T> 第一元素类型
 		 * @param <U> 第二元素类型
@@ -736,6 +722,20 @@ public class DataApp {
 		 */
 		public static <T, U> Tuple2<T, U> of(final T t, final U u) {
 			return new Tuple2<>(t, u);
+		}
+
+		/**
+		 * Pair 成对儿函数 <br>
+		 * 二元组(t,u) 生成
+		 * 
+		 * @param <T> 第一元素类型
+		 * @param <U> 第二元素类型
+		 * @param t   第一元素
+		 * @param u   第二元素
+		 * @return 二元组(t,u)
+		 */
+		public static <T, U> Tuple2<T, U> P(final T t, final U u) {
+			return Tuple2.of(t, u);
 		}
 
 		/**

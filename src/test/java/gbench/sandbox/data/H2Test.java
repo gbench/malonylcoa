@@ -51,8 +51,8 @@ public class H2Test {
 						REC("city", "shanghai", "district", "changing", "street", "fahuazhenlu"));
 		println("ctsql t_user", ctsql("t_user", proto));
 		println("insql t_user", insql("t_user", proto));
-		println("insql t_tbl ", ctsql("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
-		println("insql t_tbl ", insql("t_tbl", Tuple2.of("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
+		println("insql t_tbl ", ctsql("t_tbl", P("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
+		println("insql t_tbl ", insql("t_tbl", P("abc".split(""), Lisp.A(1, 2, 3, 4, 5, 6))));
 		// REC的双值展开
 		println(REC("nums", nats(4)));
 		println(REC("nums", nats(4).data()));
@@ -197,7 +197,7 @@ public class H2Test {
 				ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
 		final var coordinates_rb = rb("DBID,TBL"); // 位置标志rb : coordinate record builder
 		final var dfdata = rootNode.getAllLeaveS() // 提取叶子节点,属性值value的结构为:(数据库索引,表名)
-				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> Tuple2.of(p._1, p._2._1))) // (数据库索引,表名)
+				.map(e -> e.attrval((Tuple2<Integer, Tuple2<String, List<Integer>>> p) -> P(p._1, p._2._1))) // (数据库索引,表名)
 				.distinct().map(p -> db_f.apply(p._1) // 根据数据坐标信息:(数据库索引,表名) 从p中提取数据应用dataApp对象
 						.sqldframe(FT("select * from $0", p._2)).fmap(e -> coordinates_rb.get(p._1, p._2).add(e))) // 引入位置坐标:dbid,tbl
 				.reduce(DFrame::rbind).map(e -> e.sorted(IRecord.cmp(coordinates_rb.keys()))) // 归集并排序
