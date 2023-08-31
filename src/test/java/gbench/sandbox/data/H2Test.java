@@ -9,6 +9,7 @@ import static gbench.util.data.DataApp.DFrame.dfmclc;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
+import static gbench.util.data.DataApp.Tuple2.P;
 import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.RPTA;
@@ -188,7 +189,7 @@ public class H2Test {
 				if (!sess.isTablePresent(tblname)) // 数据表不存在则创建表
 					sess.sqlexecute(ctsql(tblname, proto.prepend("ID", 0))); // 增加一个自增长列ID
 				final var rowids = sess.sql2executeS(insql(tblname, nds.fmap(nd2rec))).collect(dfmclc).col(0); // 匹量插入&获得行记录索引rowids
-				sess.setData(Tuple2.of(dbid, Tuple2.of(tblname, rowids))); // (dbid:索引,tblname:表名,rowids:行记录索引)
+				P(dbid, P(tblname, rowids)).mutate(sess::setData); // (dbid:索引,tblname:表名,rowids:行记录索引)
 			}); // withTransaction
 		}; // 指标计算器
 		final var pivotLines = ndatas.pivotTable(evaluator, classifiers); // 使用透视表作为分库分表的并行计算的框架
