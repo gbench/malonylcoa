@@ -756,7 +756,6 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param <CF>        分类函数类型:V-&gt;K
 	 * @param classifiers 枢轴脸谱绘制函数:枢轴分类器序列，分类策略。比如按照：[国家,性别,年代,研究方向】的枢轴分类， 牛顿的
 	 *                    枢轴分类路径是 英国/男/现代/物理学家, 鲁迅:中国/男/现代/文学家, 李清照中国/女/南宋/诗人。
-	 * @param value       基础数据值value，拟被用于进行多级分类即脸谱化的对象
 	 * @return pivotPath:[k]
 	 */
 	@SuppressWarnings("unchecked")
