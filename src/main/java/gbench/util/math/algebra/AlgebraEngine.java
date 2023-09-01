@@ -2860,8 +2860,21 @@ public class AlgebraEngine {
 	 * @return T类型的运算结果
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> T evaluate(final String line, final Object... ts) {
-		return (T) new AlgebraEngine().analyze(line).evaluate(ts);
+	public static <T> T evaluate(final String line, final Object... bindings) {
+		return (T) new AlgebraEngine().analyze(line).evaluate(bindings);
+	}
+
+	/**
+	 * 结果运算
+	 * 
+	 * @param <T>      结果类型
+	 * @param line     计算表达式
+	 * @param bindings 变量参数的数据绑定.
+	 * @return T类型的运算结果
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T evaluate(final String line, final Map<String, Object> bindings) {
+		return (T) new AlgebraEngine().analyze(line).evaluate(bindings);
 	}
 
 	final static BiPredicate<Node, Node> name_eq = (a, b) -> a.getName().equals(b.getName()); // 名字相等
