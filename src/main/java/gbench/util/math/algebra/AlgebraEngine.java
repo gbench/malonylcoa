@@ -783,7 +783,7 @@ class BinaryOp<T, U> extends Tuple2<String, Tuple2<T, U>> {
 	 * @return 返回叶子节点的Set,没有重复
 	 */
 	@SuppressWarnings("unchecked")
-	public <X extends Collection<Object>> X getLeafs(final Supplier<X> sup) {
+	public <X extends Collection<Object>> X getLeaves(final Supplier<X> sup) {
 		final X leafs = sup.get();
 		final var stack = new Stack<Object>();
 
@@ -791,7 +791,7 @@ class BinaryOp<T, U> extends Tuple2<String, Tuple2<T, U>> {
 		while (!stack.empty()) {
 			final var o = Node.UNPACK(stack.pop());
 			if (o instanceof BinaryOp) {
-				((BinaryOp<Object, Object>) o).getLeafs(sup).forEach(leafs::add);
+				((BinaryOp<Object, Object>) o).getLeaves(sup).forEach(leafs::add);
 			} else if (Objects.nonNull(o)) {
 				leafs.add(o);
 			} // if
