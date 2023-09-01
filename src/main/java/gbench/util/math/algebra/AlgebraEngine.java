@@ -1905,13 +1905,13 @@ class Node implements gbench.util.math.algebra.AlgebraEngine.INode {
 	 * 从 Node 中脱壳 <br>
 	 * 所谓 脱壳 就是 从 Node 中给 拆解出 value, <br>
 	 * 若 target 不是 Node类型 则保持不变 <br>
-	 * 尝试接续解包的次数为100
+	 * 尝试接续解包的次数为Integer.MAX_VALUE
 	 * 
 	 * @param target 目标对象
 	 * @return 脱壳后的对象
 	 */
 	public static Object UNPACK(final Object target) {
-		return UNPACK(target, 100);
+		return UNPACK(target, Integer.MAX_VALUE);
 	}
 
 	/**
@@ -1964,91 +1964,91 @@ class Node implements gbench.util.math.algebra.AlgebraEngine.INode {
  */
 class Ops {
 
-	public static <T, U> BinaryOp<T, U> ADD(T t, U u) {
+	public static <T, U> BinaryOp<T, U> ADD(final T t, final U u) {
 		return new Add<>(t, u);
 	}
 
-	public static <T, U> BinaryOp<T, U> MINUS(T t, U u) {
+	public static <T, U> BinaryOp<T, U> MINUS(final T t, final U u) {
 		return new Minus<>(t, u);
 	}
 
-	public static <U> BinaryOp<Double, U> MINUS(U u) {
+	public static <U> BinaryOp<Double, U> MINUS(final U u) {
 		return new Minus<>(0d, u);
 	}
 
-	public static <T, U> BinaryOp<T, U> MUL(T t, U u) {
+	public static <T, U> BinaryOp<T, U> MUL(final T t, final U u) {
 		return new Mul<>(t, u);
 	}
 
-	public static <T, U> BinaryOp<T, U> DIV(T t, U u) {
+	public static <T, U> BinaryOp<T, U> DIV(final T t, final U u) {
 		return new Div<>(t, u);
 	}
 
-	public static <T, U> BinaryOp<T, U> POW(T t, U u) {
+	public static <T, U> BinaryOp<T, U> POW(final T t, final U u) {
 		return new Pow<>(t, u);
 	}
 
-	public static <T, U> BinaryOp<T, U> COMMA(T t, U u) {
+	public static <T, U> BinaryOp<T, U> COMMA(final T t, final U u) {
 		return new Comma<>(t, u);
 	}
 
-	public static <T, U> BinaryOp<T, U> LOG(T t, U u) {
+	public static <T, U> BinaryOp<T, U> LOG(final T t, final U u) {
 		return new Log<>(t, u);
 	}
 
-	public static <T> UnaryOp<T> SIN(T t) {
+	public static <T> UnaryOp<T> SIN(final T t) {
 		return new Sin<>(t);
 	}
 
-	public static <T> UnaryOp<T> SINH(T t) {
+	public static <T> UnaryOp<T> SINH(final T t) {
 		return new Sinh<>(t);
 	}
 
-	public static <T> UnaryOp<T> CSC(T t) {
+	public static <T> UnaryOp<T> CSC(final T t) {
 		return new Csc<>(t);
 	}
 
-	public static <T> UnaryOp<T> COS(T t) {
+	public static <T> UnaryOp<T> COS(final T t) {
 		return new Cos<>(t);
 	}
 
-	public static <T> UnaryOp<T> COSH(T t) {
+	public static <T> UnaryOp<T> COSH(final T t) {
 		return new Cosh<>(t);
 	}
 
-	public static <T> UnaryOp<T> SEC(T t) {
+	public static <T> UnaryOp<T> SEC(final T t) {
 		return new Sec<>(t);
 	}
 
-	public static <T> UnaryOp<T> TAN(T t) {
+	public static <T> UnaryOp<T> TAN(final T t) {
 		return new Tan<>(t);
 	}
 
-	public static <T> UnaryOp<T> COT(T t) {
+	public static <T> UnaryOp<T> COT(final T t) {
 		return new Cot<>(t);
 	}
 
-	public static <T> UnaryOp<T> NEG(T t) {
+	public static <T> UnaryOp<T> NEG(final T t) {
 		return new Neg<>(t);
 	}
 
-	public static <T> UnaryOp<T> EXP(T t) {
+	public static <T> UnaryOp<T> EXP(final T t) {
 		return new Exp<>(t);
 	}
 
-	public static <T> UnaryOp<T> ID(T t) {
+	public static <T> UnaryOp<T> ID(final T t) {
 		return new Identity<>(t);
 	}
 
-	public static <T> UnaryOp<T> LN(T t) {
+	public static <T> UnaryOp<T> LN(final T t) {
 		return new Ln<>(t);
 	}
 
-	public static <T> UnaryOp<T> SQRT(T t) {
+	public static <T> UnaryOp<T> SQRT(final T t) {
 		return new Sqrt<>(t);
 	}
 
-	public static <T> UnaryOp<T> SQUARE(T t) {
+	public static <T> UnaryOp<T> SQUARE(final T t) {
 		return new Square<>(t);
 	}
 
@@ -2059,7 +2059,7 @@ class Ops {
 	 * @return 当name所指定的运算不存在的时候，返回null
 	 */
 	@SuppressWarnings("unchecked")
-	public static BinaryOp<Object, Object> of(String name) {
+	public static BinaryOp<Object, Object> of(final String name) {
 		return (BinaryOp<Object, Object>) registry.get(name);
 	}
 
@@ -2069,7 +2069,7 @@ class Ops {
 	 * @param name 运算对象的名称
 	 * @return optional 的 运算对象
 	 */
-	public static Optional<BinaryOp<Object, Object>> lookup(String name) {
+	public static Optional<BinaryOp<Object, Object>> lookup(final String name) {
 		return Optional.ofNullable(of(name));
 	}
 
