@@ -1622,17 +1622,9 @@ class Node implements gbench.util.math.algebra.AlgebraEngine.INode {
 	 * @param bindings 变量参数的数据绑定
 	 * @return 节点计算后的结果
 	 */
+	@Override
 	public Object evaluate(final Map<String, Object> bindings) {
 		return this.isOp() ? this.getOp().evaluate(bindings) : this.tokenValue();
-	}
-
-	/**
-	 * 按照x变量进行方法求导
-	 * 
-	 * @return 求导之后的语法树结构
-	 */
-	public Node derivate() {
-		return this.derivate("x");
 	}
 
 	/**
@@ -1641,6 +1633,7 @@ class Node implements gbench.util.math.algebra.AlgebraEngine.INode {
 	 * @param variable 求导变量
 	 * @return 求导之后的计算结构
 	 */
+	@Override
 	public Node derivate(final String variable) {
 		if (this.isToken()) { // 词素类型节点
 			if (predicate_var.test(this.value)) { // 变量检测
@@ -1787,6 +1780,7 @@ class Node implements gbench.util.math.algebra.AlgebraEngine.INode {
 	 * | | | | | | 4 <br>
 	 * | | | | | | 6 <br>
 	 */
+	@Override
 	public String dumpAST() {
 
 		/**
@@ -2771,7 +2765,7 @@ public class AlgebraEngine {
 	}
 
 	/**
-	 * 
+	 * INode 计算节点对外公布的接口
 	 */
 	public interface INode {
 		/**
@@ -2811,6 +2805,14 @@ public class AlgebraEngine {
 		String dumpAST();
 
 		/**
+		 * 结构求导 (尚未把求导规则补充完成)
+		 * 
+		 * @param variable 求导变量
+		 * @return 求导之后的计算结构
+		 */
+		INode derivate(final String variable);
+
+		/**
 		 * 节点计算
 		 * 
 		 * @param bindings 变量参数的数据绑定,参数名，参数值 序列，即:key1,value,key2,value2,...
@@ -2822,6 +2824,16 @@ public class AlgebraEngine {
 				lhm.put(bindings[0] + "", bindings[i + 1]);
 			}
 			return this.evaluate(lhm);
+		}
+
+		/**
+		 * 结构求导 (尚未把求导规则补充完成)
+		 * 
+		 * @param variable 求导变量
+		 * @return 求导之后的计算结构
+		 */
+		default INode derivate() {
+			return this.derivate("x");
 		}
 	}
 
