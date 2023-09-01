@@ -36,6 +36,7 @@ import static gbench.util.io.Output.println;
 import static gbench.util.math.Maths.*;
 import static gbench.util.math.FinanceMaths.*;
 import static java.lang.Math.*;
+import static gbench.util.math.algebra.AlgebraEngine.evaluate;
 
 // 数据库配置,请指定正确的数据库url,driver,user和password
 final var mysql_rec = REC("url", "jdbc:mysql://127.0.0.1:3309/hitler?serverTimezone=UTC", "driver", "com.mysql.cj.jdbc.Driver", "user", "root", "password", "123456");

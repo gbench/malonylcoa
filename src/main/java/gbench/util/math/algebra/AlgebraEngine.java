@@ -2154,7 +2154,9 @@ class Ops {
 	public static <T> String println(final T... objs) {
 
 		final var line = print(objs);
-		System.out.println();
+		if (AlgebraEngine.debug) {
+			System.out.println(line);
+		}
 		return line;
 	}
 
@@ -2178,7 +2180,9 @@ class Ops {
 			}
 		}).collect(Collectors.joining("\t")).replaceAll("\n\\s+", "\n"); // 把换行符之后的空格给取消掉,即顶格显示
 
-		System.out.print(line);
+		if (AlgebraEngine.debug) {
+			System.out.print(line);
+		}
 		return line;
 	}
 
@@ -2847,8 +2851,23 @@ public class AlgebraEngine {
 		return new ArrayList<Node>(collection);
 	}
 
+	/**
+	 * 结果运算
+	 * 
+	 * @param <T>      结果类型
+	 * @param line     计算表达式
+	 * @param bindings 变量参数的数据绑定,参数名，参数值 序列，即:key1,value,key2,value2,...
+	 * @return T类型的运算结果
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T evaluate(final String line, final Object... ts) {
+		return (T) new AlgebraEngine().analyze(line).evaluate(ts);
+	}
+
 	final static BiPredicate<Node, Node> name_eq = (a, b) -> a.getName().equals(b.getName()); // 名字相等
 	final static Node LEFT_PARENT = REC("type", "op", "value", "(").mutate(Node::PACK);
 	final static Node RIGHT_PARENT = REC("type", "op", "value", ")").mutate(Node::PACK);
+
+	public static boolean debug = false; // 调试标志
 
 }

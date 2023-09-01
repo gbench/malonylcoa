@@ -50,4 +50,10 @@ public class AlgebraEngineTest {
 		}); // forEach
 	}
 
+	@Test
+	public void bar() {
+		double d = AlgebraEngine.evaluate("1+2*3");
+		println(d);
+	}
+
 }
