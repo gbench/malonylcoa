@@ -2833,7 +2833,6 @@ public class AlgebraEngine {
 		/**
 		 * 结构求导 (尚未把求导规则补充完成)
 		 * 
-		 * @param variable 求导变量
 		 * @return 求导之后的计算结构
 		 */
 		default INode derivate() {
