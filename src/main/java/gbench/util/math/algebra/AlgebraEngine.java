@@ -537,7 +537,7 @@ class BinaryOp<T, U> extends Tuple2<String, Tuple2<T, U>> {
 	 * @param name 操作符的名称
 	 * @param args 操作符的参数 (left, right)
 	 */
-	public BinaryOp(String name, Tuple2<T, U> args) {
+	public BinaryOp(final String name, final Tuple2<T, U> args) {
 		super(name, args);
 	}
 
@@ -1053,7 +1053,7 @@ class BinaryOp<T, U> extends Tuple2<String, Tuple2<T, U>> {
  */
 class UnaryOp<T> extends BinaryOp<T, Object> {
 
-	public UnaryOp(String _1, T t) {
+	public UnaryOp(final String _1, final T t) {
 		super(_1, TUP2(t, null));
 	}
 
@@ -1171,7 +1171,7 @@ class UnaryOp<T> extends BinaryOp<T, Object> {
  */
 class Add<T, U> extends BinaryOp<T, U> {
 
-	public Add(T t, U u) {
+	public Add(final T t, final U u) {
 		super("+", TUP2(t, u));
 	}
 
@@ -1186,7 +1186,7 @@ class Add<T, U> extends BinaryOp<T, U> {
  */
 class Minus<T, U> extends BinaryOp<T, U> {
 
-	public Minus(T t, U u) {
+	public Minus(final T t, final U u) {
 		super("-", TUP2(t, u));
 	}
 
@@ -1201,7 +1201,7 @@ class Minus<T, U> extends BinaryOp<T, U> {
  */
 class Mul<T, U> extends BinaryOp<T, U> {
 
-	public Mul(T t, U u) {
+	public Mul(final T t, final U u) {
 		super("*", TUP2(t, u));
 	}
 
@@ -1216,7 +1216,7 @@ class Mul<T, U> extends BinaryOp<T, U> {
  */
 class Div<T, U> extends BinaryOp<T, U> {
 
-	public Div(T t, U u) {
+	public Div(final T t, final U u) {
 		super("/", TUP2(t, u));
 	}
 
@@ -1231,7 +1231,7 @@ class Div<T, U> extends BinaryOp<T, U> {
  */
 class Pow<T, U> extends BinaryOp<T, U> {
 
-	public Pow(T t, U u) {
+	public Pow(final T t, final U u) {
 		super("pow", TUP2(t, u));
 	}
 
@@ -1246,7 +1246,7 @@ class Pow<T, U> extends BinaryOp<T, U> {
  */
 class Comma<T, U> extends BinaryOp<T, U> {
 
-	public Comma(T t, U u) {
+	public Comma(final T t, final U u) {
 		super(",", TUP2(t, u));
 	}
 
@@ -1270,7 +1270,7 @@ class Comma<T, U> extends BinaryOp<T, U> {
  */
 class Log<T, U> extends BinaryOp<T, U> {
 
-	public Log(T t, U u) {
+	public Log(final T t, final U u) {
 		super("log", TUP2(t, u));
 	}
 
@@ -1284,7 +1284,7 @@ class Log<T, U> extends BinaryOp<T, U> {
  */
 class Sin<T> extends UnaryOp<T> {
 
-	public Sin(T t) {
+	public Sin(final T t) {
 		super("sin", t);
 	}
 
@@ -1298,7 +1298,7 @@ class Sin<T> extends UnaryOp<T> {
  */
 class Sinh<T> extends UnaryOp<T> {
 
-	public Sinh(T t) {
+	public Sinh(final T t) {
 		super("sinh", t);
 	}
 
@@ -1312,7 +1312,7 @@ class Sinh<T> extends UnaryOp<T> {
  */
 class Csc<T> extends UnaryOp<T> {
 
-	public Csc(T t) {
+	public Csc(final T t) {
 		super("csc", t);
 	}
 
@@ -1326,7 +1326,7 @@ class Csc<T> extends UnaryOp<T> {
  */
 class Cos<T> extends UnaryOp<T> {
 
-	public Cos(T t) {
+	public Cos(final T t) {
 		super("cos", t);
 	}
 
@@ -1340,7 +1340,7 @@ class Cos<T> extends UnaryOp<T> {
  */
 class Cosh<T> extends UnaryOp<T> {
 
-	public Cosh(T t) {
+	public Cosh(final T t) {
 		super("cosh", t);
 	}
 
@@ -1354,7 +1354,7 @@ class Cosh<T> extends UnaryOp<T> {
  */
 class Sec<T> extends UnaryOp<T> {
 
-	public Sec(T t) {
+	public Sec(final T t) {
 		super("sec", t);
 	}
 
@@ -1368,7 +1368,7 @@ class Sec<T> extends UnaryOp<T> {
  */
 class Tan<T> extends UnaryOp<T> {
 
-	public Tan(T t) {
+	public Tan(final T t) {
 		super("tan", t);
 	}
 
@@ -1382,7 +1382,7 @@ class Tan<T> extends UnaryOp<T> {
  */
 class Cot<T> extends UnaryOp<T> {
 
-	public Cot(T t) {
+	public Cot(final T t) {
 		super("cot", t);
 	}
 
@@ -1396,7 +1396,7 @@ class Cot<T> extends UnaryOp<T> {
  */
 class Neg<T> extends UnaryOp<T> {
 
-	public Neg(T t) {
+	public Neg(final T t) {
 		super("neg", t);
 	}
 
@@ -1410,7 +1410,7 @@ class Neg<T> extends UnaryOp<T> {
  */
 class Exp<T> extends UnaryOp<T> {
 
-	public Exp(T t) {
+	public Exp(final T t) {
 		super("exp", t);
 	}
 
@@ -1424,7 +1424,7 @@ class Exp<T> extends UnaryOp<T> {
  */
 class Sqrt<T> extends UnaryOp<T> {
 
-	public Sqrt(T t) {
+	public Sqrt(final T t) {
 		super("sqrt", t);
 	}
 
@@ -1438,7 +1438,7 @@ class Sqrt<T> extends UnaryOp<T> {
  */
 class Square<T> extends UnaryOp<T> {
 
-	public Square(T t) {
+	public Square(final T t) {
 		super("square", t);
 	}
 
@@ -1452,7 +1452,7 @@ class Square<T> extends UnaryOp<T> {
  */
 class Identity<T> extends UnaryOp<T> {
 
-	public Identity(T t) {
+	public Identity(final T t) {
 		super("identity", t);
 	}
 
@@ -1466,7 +1466,7 @@ class Identity<T> extends UnaryOp<T> {
  */
 class Ln<T> extends UnaryOp<T> {
 
-	public Ln(T t) {
+	public Ln(final T t) {
 		super("ln", t);
 	}
 
@@ -1495,7 +1495,7 @@ class Node implements gbench.util.math.algebra.AlgebraEngine.INode {
 	 * 
 	 * @param value
 	 */
-	public Node(Object value) {
+	public Node(final Object value) {
 		this.value = value;
 	}
 
