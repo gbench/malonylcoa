@@ -116,7 +116,6 @@ public class Node {
      * 若 target 不是 Node类型 则保持不变 <br>
      * 尝试接续解包的次数为100
      * 
-     * @param target 目标对象
      * @return 脱壳后的对象
      */
     public Object unpack() {
@@ -128,7 +127,6 @@ public class Node {
      * 所谓 脱壳 就是 从 Node 中给 拆解出 value, <br>
      * 若 target 不是 Node类型 则保持不变
      * 
-     * @param target 目标对象
      * @param n      尝试继续解包的次数
      * @return 脱壳后的对象
      */
@@ -152,7 +150,7 @@ public class Node {
     /**
      * 值的变换
      * 
-     * @param mapper 数值的变换 op0 -> op1
+     * @param mapper 数值的变换 op0 -&gt; op1
      * 
      * @return 变换后的 Node
      */
@@ -173,7 +171,7 @@ public class Node {
     /**
      * 值的变换
      * 
-     * @param mapper 数值的变换 op0 -> op1
+     * @param mapper 数值的变换 op0 -&gt; op1
      * 
      * @return 变换后的 Node
      */
@@ -303,12 +301,12 @@ public class Node {
 
     /**
      * 绑定值函数: fb 是 function Boolean 的缩写 <br>
-     * fb 是 function Boolean 的缩写 代表 结果是返回一个 Predicate<IRecord> <br>
-     * 相当于 bindings->predicate.apply(this.evaluate(bindings)); <br>
+     * fb 是 function Boolean 的缩写 代表 结果是返回一个 Predicate&lt;IRecord&gt; <br>
+     * 相当于 bindings-&gt;predicate.apply(this.evaluate(bindings)); <br>
      * 
      * @param <T>       predicate 的 参数类型
-     * @param predicate 值判断谓词 t -> boolean 值类型判断
-     * @return bindings:变量参数的数据绑定 -> boolean
+     * @param predicate 值判断谓词 t -&gt; boolean 值类型判断
+     * @return bindings:变量参数的数据绑定 -&gt; boolean
      */
     @SuppressWarnings("unchecked")
     public <T> Predicate<IRecord> fb(final Predicate<T> predicate) {
@@ -317,13 +315,13 @@ public class Node {
 
     /**
      * 绑定值函数:Fx 是 Function X vlaue 的缩写<br>
-     * fx 是 function X value 的缩写 代表 结果是返回一个 Function<T,U> <br>
-     * 相当于 bindings->fx.apply(this.evaluate(bindings)); <br>
+     * fx 是 function X value 的缩写 代表 结果是返回一个 Function&lt;T,U&gt; <br>
+     * 相当于 bindings-&gt;fx.apply(this.evaluate(bindings)); <br>
      * 
      * @param <T> fx 的 参数类型
      * @param <U> fx 的 结果类型
-     * @param fx  计算规则函数 t -> u 值类型判断
-     * @return bindings:变量参数的数据绑定 -> t
+     * @param fx  计算规则函数 t -&gt; u 值类型判断
+     * @return bindings:变量参数的数据绑定 -&gt; t
      */
     @SuppressWarnings("unchecked")
     public <T, U> Function<IRecord, U> fx(final Function<T, U> fx) {
@@ -332,7 +330,7 @@ public class Node {
 
     /**
      * 绑定值函数: fb 是 function Boolean 的缩写 <br>
-     * fb 是 function Boolean 的缩写 代表 结果是返回一个 Predicate<IRecord> <br>
+     * fb 是 function Boolean 的缩写 代表 结果是返回一个 Predicate&lt;IRecord&gt; <br>
      * 相当于 bindings->predicate.apply(this.evaluate(bindings)); <br>
      * 
      * @param <T>       predicate 的 参数类型
@@ -346,13 +344,13 @@ public class Node {
 
     /**
      * 绑定值函数:Fx 是 Function X vlaue 的缩写<br>
-     * fx 是 function X value 的缩写 代表 结果是返回一个 Function<T,U> <br>
-     * 相当于 bindings->fx.apply(this.evaluate(bindings)); <br>
+     * fx 是 function X value 的缩写 代表 结果是返回一个 Function&lt;T,U&gt; <br>
+     * 相当于 bindings-&gt;fx.apply(this.evaluate(bindings)); <br>
      * 
      * @param <T> fx 的 参数类型
      * @param <U> fx 的 结果类型
-     * @param fx  计算规则函数 t -> u 值类型判断
-     * @return bindings:变量参数的数据绑定 -> t
+     * @param fx  计算规则函数 t -&gt; u 值类型判断
+     * @return bindings:变量参数的数据绑定 -&gt; t
      */
     @SuppressWarnings("unchecked")
     public <T, U> Function<Map<String, Object>, U> fx2(final Function<T, U> fx) {
@@ -535,22 +533,22 @@ public class Node {
      * 类似于如下结构： <br>
      * (5*pow(2,5)*tan(45.6/255-cos(4/6))) <br>
      * 
-     * * ----> (*,5,(*,(pow,(',',2,5),null),(tan,(-,(/,45.6,255),(cos,(/,4,6))))))
+     * * ----&gt; (*,5,(*,(pow,(',',2,5),null),(tan,(-,(/,45.6,255),(cos,(/,4,6))))))
      * <br>
      * | 5 <br>
-     * | * ----> (*,(pow,(',',2,5),null),(tan,(-,(/,45.6,255),(cos,(/,4,6))))) <br>
-     * | | pow ----> (pow,(',',2,5),null) <br>
-     * | | | , ----> (',',2,5) <br>
+     * | * ----&gt; (*,(pow,(',',2,5),null),(tan,(-,(/,45.6,255),(cos,(/,4,6))))) <br>
+     * | | pow ----&gt; (pow,(',',2,5),null) <br>
+     * | | | , ----&gt; (',',2,5) <br>
      * | | | | 2 <br>
      * | | | | 5 <br>
      * | | | null <br>
-     * | | tan ----> (tan,(-,(/,45.6,255),(cos,(/,4,6)))) <br>
-     * | | | - ----> (-,(/,45.6,255),(cos,(/,4,6))) <br>
-     * | | | | / ----> (/,45.6,255) <br>
+     * | | tan ----&gt; (tan,(-,(/,45.6,255),(cos,(/,4,6)))) <br>
+     * | | | - ----&gt; (-,(/,45.6,255),(cos,(/,4,6))) <br>
+     * | | | | / ----&gt; (/,45.6,255) <br>
      * | | | | | 45.6 <br>
      * | | | | | 255 <br>
-     * | | | | cos ----> (cos,(/,4,6)) <br>
-     * | | | | | / ----> (/,4,6) <br>
+     * | | | | cos ----&gt; (cos,(/,4,6)) <br>
+     * | | | | | / ----&gt; (/,4,6) <br>
      * | | | | | | 4 <br>
      * | | | | | | 6 <br>
      */

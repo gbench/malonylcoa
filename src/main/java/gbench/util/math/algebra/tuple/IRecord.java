@@ -5067,7 +5067,7 @@ public interface IRecord // 记录结构
 	 * @param <T>      元素类型
 	 * @param <U>      目标结果类型
 	 * @param rootnode 待遍历的 IRecord
-	 * @param mapper   值变换函数 节点变换函数 (path:路径,node:T类型的节点值)->u:U 类型的变换结果
+	 * @param mapper   值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
 	 * @return 深度遍历的结果序列 [u]
 	 */
 	@SuppressWarnings("unchecked")
@@ -5156,7 +5156,6 @@ public interface IRecord // 记录结构
 	 * 对于 集合类型：数组类型，Collection,Iterable 类型 则逐个元素进行处理 进行递归处理,并 给予 拼装成 ArrayList 结构
 	 * 
 	 * @param obj    元素类型
-	 * @param mapper map 的变换函数 {(key,value)}->new_value
 	 * @return 处理后的元素类型
 	 */
 	public static Object tidy(final Object obj) {
@@ -5169,7 +5168,7 @@ public interface IRecord // 记录结构
 	 * 对于 集合类型：数组类型，Collection,Iterable 类型 则逐个元素进行处理 进行递归处理,并 给予 拼装成 ArrayList 结构
 	 * 
 	 * @param obj         元素数值
-	 * @param deep_mapper 深度深度变换函数,元素值的变换函数 {obj:非集合类型}->new_value
+	 * @param deep_mapper 深度深度变换函数,元素值的变换函数 {obj:非集合类型}-&gt;new_value
 	 * @return 扁平化处理后数据
 	 */
 	public static Object tidy(final Object obj, final Function<Object, Object> deep_mapper) {
