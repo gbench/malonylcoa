@@ -13,7 +13,7 @@ import gbench.util.math.algebra.AlgebraEngine;
  * @author gbench
  *
  */
-public class AlgebraEngineTest {
+public class Algebra3Test {
 
 	/**
 	 * 语法树的生成与计算
