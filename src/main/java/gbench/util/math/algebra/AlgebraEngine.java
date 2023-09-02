@@ -164,7 +164,7 @@ public class AlgebraEngine {
 	 * @return (1:目标比较分组, 2:比较分组集合[(1:比较分组结果,2:比较分组元素集合[(1:元素索引位置,2:第二比较元素)]] ) <br>
 	 *         比较分组元素集合[左侧比较元素 a,比较元素 b] 即 代表 a <比较> b 的 结构形式
 	 */
-	Tuple2<Integer, List<Tuple2<Integer, List<Tuple2<Integer, Node>>>>> compareGroups(final List<Node> nodes,
+	public Tuple2<Integer, List<Tuple2<Integer, List<Tuple2<Integer, Node>>>>> compareGroups(final List<Node> nodes,
 			final Predicate<Node> predicate_data_node) {
 
 		final var opnodes = new ArrayList<Tuple2<Integer, Node>>(); // 算符 的 节点序列
