@@ -234,9 +234,9 @@ public class AlgebraEngine {
 
 				// 紧挨着的两个比较组出现了优先级的递增梯度 , 出现了 3 * sin cos x 这样的情况 '*'<'sin'='cos',并且sin的右侧紧挨着cos
 				final var transit = (group_1._1() < 0 && group_2._1() < 0); // 优先级在算符从前向后依次递增的状态
-				final boolean ajacent = tup1_index2 == tup2_index1; // 算符是否比邻: 1#比较对儿的2#位符号 与 2#比较对儿的1#位符号 相同
+				final boolean adjacent = tup1_index2 == tup2_index1; // 算符是否比邻: 1#比较对儿的2#位符号 与 2#比较对儿的1#位符号 相同
 				final boolean composed = tup2_index1 + 1 == tup2_index2; // 出现sin cos tan ... 这样的循环嵌套的情况，即 符号一个接一个的出现
-				if (transit && ajacent) { // 优先级 传递 以及 高级别算符 出现了 比邻显现 3 + sin cos x 需要把优先级 从 sin 传递到 cos
+				if (transit && adjacent) { // 优先级 传递 以及 高级别算符 出现了 比邻显现 3 + sin cos x 需要把优先级 从 sin 传递到 cos
 					i++; //
 				} else if (composed) { // 参数被复合， 出现sin cos tan ... 这样的循环嵌套的情况，即 符号一个接一个的出现
 					i++;
