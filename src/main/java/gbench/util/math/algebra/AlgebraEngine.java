@@ -4,7 +4,6 @@ import static gbench.util.math.algebra.op.Comma.COMMA_TEST;
 import static gbench.util.math.algebra.op.Ops.TOKEN;
 import static gbench.util.math.algebra.op.Ops.kvp_int;
 import static gbench.util.math.algebra.op.Ops.println;
-import static gbench.util.math.algebra.tuple.IRecord.FT;
 import static gbench.util.math.algebra.tuple.MyRecord.REC;
 import static gbench.util.math.algebra.tuple.Node.PACK;
 import static gbench.util.math.algebra.tuple.Node.UNPACK;
@@ -76,6 +75,12 @@ public class AlgebraEngine {
 		return this;
 	}
 
+	/**
+	 * 分词器
+	 * 
+	 * @param line 表达式行
+	 * @return 分词
+	 */
 	public List<IRecord> tokenize(final String line) {
 
 		println(line);
@@ -83,10 +88,10 @@ public class AlgebraEngine {
 
 		final var letters = "[_\\.a-z0-9\\u4e00-\\u9fa5]"; // 基础字母+中文
 		final var digits = Pattern.compile("[\\.0-9]+", Pattern.CASE_INSENSITIVE);
-		final var pattern = Pattern.compile(FT("[$0]+", letters), Pattern.CASE_INSENSITIVE);
-		final var pattern1 = Pattern.compile(FT("^[$0]+.*", letters), Pattern.CASE_INSENSITIVE);
-		final var pattern2 = Pattern.compile(FT(".*[$0]$", letters), Pattern.CASE_INSENSITIVE);
-		final var pattern3 = Pattern.compile(FT("[^$0]+", letters), Pattern.CASE_INSENSITIVE);
+		final var pattern = Pattern.compile(String.format("[%s]+", letters), Pattern.CASE_INSENSITIVE);
+		final var pattern1 = Pattern.compile(String.format("^[%s]+.*", letters), Pattern.CASE_INSENSITIVE);
+		final var pattern2 = Pattern.compile(String.format(".*[%s]$", letters), Pattern.CASE_INSENSITIVE);
+		final var pattern3 = Pattern.compile(String.format("[^%s]+", letters), Pattern.CASE_INSENSITIVE);
 		final var buffer = new StringBuffer();
 		final var rb = IRecord.rb("type,value");
 		final Function<String, Stream<IRecord>> keyword_handler = keyword -> {
