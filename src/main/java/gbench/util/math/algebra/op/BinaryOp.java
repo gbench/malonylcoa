@@ -30,17 +30,18 @@ import gbench.util.math.algebra.tuple.Tuple2;
  * 
  * 需要 注意 结构不是 功能, 结构（或者说形式） 是一种组织方式，<br>
  * 其内容（这里是说它的组织办法）是 并不代表 什么意义，<br>
- * 意义是一种 映射关系 a->b, 它是 把一个对象a与另一个对象b 之间 进行的 关联绑定（约定，
+ * 意义是一种 映射关系 a-&gt;b, 它是 把一个对象a与另一个对象b 之间 进行的 关联绑定（约定，
  * 或是约定俗成的习惯，或是理解认识，也就是文化观念上对总形式/结构的限制，XX形式代表了YY 意义）, 换句话说 <br>
- * 意义的常见解释 就是 把 结构 -> 实现特定目的功能用途 ，这里的 ‘->’ 读作 映射到 . <br>
+ * 意义的常见解释 就是 把 结构 -&gt; 实现特定目的功能用途 ，这里的 ‘-&gt;’ 读作 映射到 . <br>
  * 所以 意义 是一种 在 什么情况下 使用 某种（些）结构 的 习惯约定。 它由设计 决定。 <br>
  * 就像 房子 可以 使用 砖木结构 也可以 钢筋结构 两种不同的 结构 却常常用来完成 同样的 功能 <br>
  * 对应形同的意义。同样 的 钢筋结构 不仅可以 建房子 还可以 键大船, 也就是 同样的 结构 可以用于实现不同的 功能 <br>
  * 即 结构 和 功能 是一种 多对多的 关系。 <br>
- * 意义 强调 某种 价值、思想、意识 上的 认识&评估，而 结构 则 强调 某种 里 资源，材料，素材，物质层面 的表达。<br>
- * 即 用结构（也就是形式，物质）表达意义（意识），也可以说 物质决定意识，意识反作用于物质，这里的反作用是指 优化，在
- * 意义的的特定维度，也就是主观期望 或是 业务方面的需求诉求上对物质形式进行 
- * 符合当前实际的 A&A(实事) 和 E&E（求是，效率效益）替换和选择（Affordable&Attainable,Effectiveness&Efficiency) 。
+ * 意义 强调 某种 价值、思想、意识 上的 认识&amp;评估，而 结构 则 强调 某种 里 资源，材料，素材，物质层面 的表达。<br>
+ * 即 用结构（也就是形式，物质）表达意义（意识），也可以说 物质决定意识，意识反作用于物质，这里的反作用是指 优化，在 意义的的特定维度，也就是主观期望
+ * 或是 业务方面的需求诉求上对物质形式进行 符合当前实际的 A&amp;A(实事) 和
+ * E&amp;E（求是，效率效益）替换和选择（Affordable&amp;Attainable,Effectiveness&amp;Efficiency)
+ * 。
  * 
  * BinaryOp 不仅可以 用来 当做 运算对象 来使用 还可以 当做 存储结构 即 数据节点(二叉树的节点来使用) <br>
  * 比如：求导 操作 的时候 就是把 BinaryOp 当作 数据节点来 用的。<br>
@@ -53,7 +54,7 @@ import gbench.util.math.algebra.tuple.Tuple2;
  * 意义是不关心的，这也是说明它是黑盒的原因,相反 意义 对 Input 和 Output 到是 极为 有兴趣， <br>
  * 即 什么样 Input 可以 得到 Output, Output 出现的时机，形态，方式，和 性质有哪些 ， 这就像 一位 美食家 <br>
  * 他对食材和菜肴极为注重 但是 对 烹饪 却 不慎 关心（比如如何颠大勺,切黄瓜之类 的 厨艺功夫他是不理会的) 。<br>
- * 所以 意义 是一种 强调 结果 的 概念 而  结构 是一种强调过程 或者说 机制 的概念。
+ * 所以 意义 是一种 强调 结果 的 概念 而 结构 是一种强调过程 或者说 机制 的概念。
  * 
  * 代数(符号计算)的 基本算符 <br>
  * 灵感来源于 LISP 的 CONS,CAR,CDR 的设计 <br>
@@ -62,7 +63,7 @@ import gbench.util.math.algebra.tuple.Tuple2;
  * 列表以 CONS 为基本单元, 如果 一个不行，那就 多来几个，特别是 递归一下 的 多来几个<br>
  * (LIST是一个 以CONS:(CAR,CDR) 为基本单元的结构,CONS通过CDR进行彼此串联，<br>
  * 数据存放在CAR中或是由CAR指向)<br>
- 
+ * 
  * <br>
  * 所谓 CONS 是一个列表元素结构, <br>
  * 简单说就是一个二元组:第一个元素是 CAR,第二个元素是 CDR. <br>
@@ -80,9 +81,9 @@ import gbench.util.math.algebra.tuple.Tuple2;
  * 
  * <br>
  * 
- * BinaryOp 结构性 合理理解 是 一种 类似于 抗体 的 Y型结构 (Fab,(a,b)) 而不是
- * 把作为一种二元函数结构，因为 有时候 我们 可以 仅仅使用 Fab 的值得功能，比如 把 BinaryOp <br>
- * 作为一种常量容器，即 常量函数来使用。或者 运算的 结果 就是保持 Fab 不变 <br> 
+ * BinaryOp 结构性 合理理解 是 一种 类似于 抗体 的 Y型结构 (Fab,(a,b)) 而不是 把作为一种二元函数结构，因为 有时候 我们 可以
+ * 仅仅使用 Fab 的值得功能，比如 把 BinaryOp <br>
+ * 作为一种常量容器，即 常量函数来使用。或者 运算的 结果 就是保持 Fab 不变 <br>
  * 
  * @author gbench
  *
@@ -91,710 +92,707 @@ import gbench.util.math.algebra.tuple.Tuple2;
  */
 public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 
-    /**
-     * 二元算符的结构
-     * 
-     * @param name 操作符的名称
-     * @param args 操作符的参数 (left, right)
-     */
-    public BinaryOp(final Object name, final Tuple2<T, U> args) {
-        super(name, args);
-    }
+	/**
+	 * 二元算符的结构
+	 * 
+	 * @param name 操作符的名称
+	 * @param args 操作符的参数 (left, right)
+	 */
+	public BinaryOp(final Object name, final Tuple2<T, U> args) {
+		super(name, args);
+	}
 
-    /**
-     * 操作的名称
-     * 
-     * @return 操作名称
-     */
-    public String getName() {
-        return this._1+"";
-    }
+	/**
+	 * 操作的名称
+	 * 
+	 * @return 操作名称
+	 */
+	public String getName() {
+		return this._1 + "";
+	}
 
-    /**
-     * 默认返回null,表示采用计算引擎提供的算符优先级
-     * 
-     * @return 算符优先级,算符优先级可以为小数，使用小数的原因就是为了方便进行新的算符的插入
-     */
-    public Number getPriority() {
-        return null;
-    }
+	/**
+	 * 默认返回null,表示采用计算引擎提供的算符优先级
+	 * 
+	 * @return 算符优先级,算符优先级可以为小数，使用小数的原因就是为了方便进行新的算符的插入
+	 */
+	public Number getPriority() {
+		return null;
+	}
 
-    /**
-     * 算符的参数
-     * 
-     * @return 算符参数
-     */
-    public Tuple2<T, U> getArgs() {
-        return this._2;
-    }
-    
-    /**
-     * 把参数组装成流式结构
-     * 
-     * @return [_1:第一个参数,_2:第二个参数]
-     */
-    public Stream<Object> getArgsS() {
-        if (this._2 == null) {
-            return Stream.of();
-        } else if (this.getAry() == 1) { // 一元函数
-            return Stream.of(this._2._1);
-        } else if (this.getAry() == 2) { // 二元函数
-            return Stream.of(this._2._1, this._2._2);
-        } else { // 其他 情形 返回空流
-            return Stream.of();
-        } // if
-    }
-    
-    /**
-     * 把把参数扁平化之后的 流 
-     * 
-     * 比如 (a,(b,(c,d)),(e,(f,g))) 扁平化 之后 返回 [b,c,d,e,f,g]
-     * 
-     * @return 把把参数扁平化之后的 流 
-     */
-    public Stream<Object> flatArgsS(){
-        return flat(this.getArgs()).stream();
-    }
-    
-    /**
-     * 运算的元数<br>
-     * 一个参数返回为一元运算,比如 正弦函数 sin(x)<br>
-     * 两个参数为二元运算,比如幂函数pow(x,n)
-     * 
-     * @return 运算的元数
-     */
-    public int getAry() {
-        return 2;
-    }
-    
-    /**
-     * 是否是一个常量, 常量 没有参数 只有 一个 _1 位置的值。
-     * 
-     * @return true 是常量,false 不是常量
-     */
-    public boolean isConstant() {
-        return this._2 == null;
-    }
+	/**
+	 * 算符的参数
+	 * 
+	 * @return 算符参数
+	 */
+	public Tuple2<T, U> getArgs() {
+		return this._2;
+	}
 
-    /**
-     * 1#参数位置组合 <br>
-     * 
-     * 一元函数继承的时候 需要 实现 自己的compose1, 另外compose1是设计为二元函数使用的函数，<br>
-     * 一元函数请使用自己的一元compose <br>
-     * 当然 一元函数可以自己先实现compose1，<br>
-     * 然后用自己compose调用自己先实现compose1
-     * 
-     * @param <X> 参数类型
-     * @param x   被组合的参数
-     * @return 新生成的组合形式
-     */
-    public <X> BinaryOp<X, U> compose1(final X x) {
-        return  this._2 == null 
-            ? null
-            : new BinaryOp<>(this._1, TUP2(x, this._2._2()));
-    }
+	/**
+	 * 把参数组装成流式结构
+	 * 
+	 * @return [_1:第一个参数,_2:第二个参数]
+	 */
+	public Stream<Object> getArgsS() {
+		if (this._2 == null) {
+			return Stream.of();
+		} else if (this.getAry() == 1) { // 一元函数
+			return Stream.of(this._2._1);
+		} else if (this.getAry() == 2) { // 二元函数
+			return Stream.of(this._2._1, this._2._2);
+		} else { // 其他 情形 返回空流
+			return Stream.of();
+		} // if
+	}
 
-    /**
-     * 2#参数位置组合 <br>
-     * 
-     * 二元函数继承的时候 需要 实现 compose
-     * 
-     * @param <X> 参数类型
-     * @param x 被组合的参数
-     * @return 新生成的组合形式
-     */
-    public <X> BinaryOp<T, X> compose2(final X x) {
-        return this._2 == null 
-            ? null
-            : new BinaryOp<>(this._1, TUP2(this._2._1(), x));
-    }
+	/**
+	 * 把把参数扁平化之后的 流
+	 * 
+	 * 比如 (a,(b,(c,d)),(e,(f,g))) 扁平化 之后 返回 [b,c,d,e,f,g]
+	 * 
+	 * @return 把把参数扁平化之后的 流
+	 */
+	public Stream<Object> flatArgsS() {
+		return flat(this.getArgs()).stream();
+	}
 
-    /**
-     * 1#,2#位置的参数组合 <br>
-     * 
-     * 二元函数继承的时候 需要 实现 compose
-     * 
-     * @param <X> 1#参数的类型
-     * @param <Y> 2#参数的类型
-     * @param x 1#参数
-     * @param y 2#参数
-     * @return 新生成的组合形式
-     */
-    public <X, Y> BinaryOp<X, Y> compose(final X x, final Y y) {
-        return this._2 == null 
-            ? null
-            : new BinaryOp<>(this._1, TUP2(x, y));
-    }
-    
-    /**
-     * 二元函数的求值
-     * 
-     * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
-     */
-    public Object evaluate() {
-        return this.evaluate(new HashMap<>());
-    }
-    
-    /**
-     * 二元函数的求值
-     * 
-     * @param bindings 变量参数的数据绑定, 键,值序列:key0,value0,key1,value1,....
-     * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
-     */
-    public Object evaluate(final Object ... bindings) {
-        return this.evaluate(REC(bindings));
-    }
-    
-    /**
-     * 二元函数的求值
-     * 
-     * @param bindings 变量参数的数据绑定
-     * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
-     */
-    public Object evaluate(final IRecord bindings) {
-        return this.evaluate(bindings.toMap());
-    }
-    
-    /**
-     * 二元函数的求值
-     * 
-     * @param bindings 变量参数的数据绑定
-     * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
-     */
-    public Object evaluate(final Map<String,Object> bindings) {
-        
-        final var dataStream = this.getArgsS().map(e -> {
-            if (e instanceof BinaryOp ) { // op 算符类型
-                return ((BinaryOp<?, ?>) e).evaluate(bindings);
-            } else if (e instanceof Node) { // node 数据糖衣类型
-                try {
-                    /**
-                     * 正常情况 生成运算对象会 进行 unpack , 需要 运算时移除糖衣的情况很少， 但是还要给予保留，<br>
-                     * 以应对不测 比如 要保证 某些不经意的,没有剔除干净掉数据糖衣的代码，恶意运行 <br>
-                     */
-                    throw new Exception("语句中出现了数据糖衣，请检查运算的数据生成逻辑,在运算执行前给予糖衣unpack\n" + e);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                } // try
+	/**
+	 * 运算的元数<br>
+	 * 一个参数返回为一元运算,比如 正弦函数 sin(x)<br>
+	 * 两个参数为二元运算,比如幂函数pow(x,n)
+	 * 
+	 * @return 运算的元数
+	 */
+	public int getAry() {
+		return 2;
+	}
 
-                final var node = (Node) e;
-                return node.getValue().evaluate(bindings);
-            } else { // 值类型
-                return e;
-            } // if
-        }).map(e -> { // 上下文数据绑定
-            if (e instanceof String) { // 字符串类型的数据 尝试 使用 绑定上下文 进行内容解析
-                final var key = (String) e; // 把 参数值 解析为 变量符号(bindings 中的键名)
-                final var value = bindings.getOrDefault(key, e); // 尝试从 bindings数据集合中提取符号的的具体的值
-                return value; // 返回解析后的结果
-            } else { // 返回原来的值
-                return e;
-            } // if
-        }); // dataStream
-        
-        if (COMMA_TEST(this.getName())) { // 逗号表达式
-            final var dd = dataStream.toArray();
-            final var ret = TUP2(dd[0], dd[1]);
-            return ret;
-        } else { // 非 逗号表达式
-            final var args = new LinkedList<Object>(); // 参数值
-            final var dbls = dataStream.peek(args::add).map(IRecord.obj2dbl()).toArray(Double[]::new); // 数值参数
-            final var nary = this.getAry(); // 函数的参数数量
-            
-            // 二元函数的参数调整
-            if (nary == 2 && Stream.of(dbls).filter(Objects::nonNull).count() < 2) {
-                final var _dbls = args.stream().filter(Objects::nonNull)
-                    .flatMap(e -> e instanceof Tuple2 ? flatS((Tuple2<?, ?>) e) : Stream.of(e))
-                    .map(IRecord.obj2dbl()).toArray(Double[]::new);
-                for (int i = 0; i < Math.min(dbls.length, _dbls.length); i++) { // 拷贝数据到 dbls
-                    dbls[i] = _dbls[i];
-                } // for
-            } // if
-            
-            final var x = dbls.length < 1 ? null : dbls[0]; // 1#参数数值
-            final var y = dbls.length < 2 ? null : dbls[1]; // 2#参数数值
-            final var left = dbls.length < 1 ? null : args.get(0); // 1#参数
-            final var right = dbls.length < 2 ? null : args.get(1); // 2#参数
-            final var opName = this.getName(); // 提取函数名称
-            final var theOp = this.duplicate(); // 符号复制
-    
-            if (this instanceof ConstantOp) { // 常量函数
-                return theOp; // 常量函数
-            } else if (this instanceof UnaryOp && x != null) { // 一元函数
-                switch (opName) { // 1 元运算
-                    case "sinh":
-                        return Math.sinh(x);
-                    case "sin":
-                        return Math.sin(x);
-                    case "csc":
-                        return 1d / Math.sin(x);
-                    case "cosh":
-                        return Math.cosh(x);
-                    case "cos":
-                        return Math.cos(x);
-                    case "sec":
-                        return 1d / Math.cos(x);
-                    case "tan":
-                        return Math.tan(x);
-                    case "cot":
-                        return 1d / Math.tan(x);
-                    case "arcsin":
-                        return Math.asin(x);
-                    case "arccos":
-                        return Math.acos(x);
-                    case "arctan":
-                        return Math.atan(x);
-                    case "arccot":
-                        return Math.atan2(1,x);
-                    case "exp":
-                        return Math.exp(x);
-                    case "neg":
-                        return - x;
-                    case "identity":
-                        return x;
-                    case "ln":
-                        return Math.log(x);
-                    case "sqrt":
-                        return Math.sqrt(x);
-                    case "square":
-                        return Math.pow(x, 2);
-                    case "!" : case "fact":
-                        return x <= 0 ? 1d : Stream.iterate(1d, i -> i <= x, i -> i + 1d)
-                            .reduce((a, b) -> a * b).orElse(0d);
-                    default:
-                        return theOp.compose1(x);
-                } // switch
-            } else if (this instanceof BinaryOp && x != null && y != null) { // 二元运算
-                switch (opName) { // 算符名称
-                    case "+": // 加法
-                        return x + y;
-                    case "-": // 减法
-                        return x - y;
-                    case "*": // 乘法
-                        return x * y;
-                    case "/": // 除法
-                        return x / y;
-                    case "expa": case "^": case "pow": // expa指数函数，^/pow幂函数
-                        return Math.pow(x, y);
-                    case "log": // 对数函数
-                        return Math.log(y) / Math.log(x);
-                    default: // 默认函数
-                        return theOp.compose(x, y);
-                } // switch
-            } else { // 其余情况,参数非法的情况
-                switch (nary) { // 函数的参数元数
-                    case 1: // 一元函数
-                        return theOp.compose1(left);
-                    case 2: // 二元函数
-                        return theOp.compose(left, right);
-                    default:// 默认值,0 元函数,Token
-                        return theOp;
-                }// switch
-            } // if  其余函数
-        }// if 逗号表达式
-    }
-    
-    /**
-     * 参数计算
-     * 
-     * @param bindings 变量参数的数据绑定
-     * @return 二元数组[left,right]:二元函数BinaryOp情况;<br>
-     *         一元数组[arg]:一元函数UnaryOp情况;<br>
-     *         空数组[],长度为0:常量函数ConstantOp情况
-     */
-    public Object[] argsEval(final Map<String, ?> bindings) {
-        @SuppressWarnings("unchecked")
-        final var args = this.getArgsS().map(Node::PACK) // 参数包装
-                // 一定要强转否则会出现对应到Node.evaluate(Object ... oo)
-                .map(node -> node.evaluate((Map<String, Object>) bindings)) // 数值计算,
-                .toArray(Object[]::new);
-        return args;
-    }
+	/**
+	 * 是否是一个常量, 常量 没有参数 只有 一个 _1 位置的值。
+	 * 
+	 * @return true 是常量,false 不是常量
+	 */
+	public boolean isConstant() {
+		return this._2 == null;
+	}
 
-    /**
-     * 提取所有的叶端元素
-     * 
-     * @param <X> 结果类型
-     * @param sup 结果容器的构建函数
-     * @return X 结果容器
-     */
-    @SuppressWarnings("unchecked")
-    public <X extends Collection<Object>> X getLeafs(final Supplier<X> sup) {
-        final X leafs = sup.get();
-        final var stack = new Stack<Object>();
-        
-        this.getArgsS().forEach(stack::push);
-        while (!stack.empty()) {
-            final var o = Node.UNPACK(stack.pop());
-            if (o instanceof BinaryOp) {
-                final var op = ((BinaryOp<Object, Object>) o);
-                if (!op.isConstant()) {
-                    op.getLeafs(sup).forEach(leafs::add);
-                } else {
-                    final var name = ((ConstantOp) op).getName();
-                    leafs.add(name);
-                } // if
-            } else if (Objects.nonNull(o)) {
-                leafs.add(o);
-            } // if
-        } // while
-        
-        return leafs;
-    }
-    
-    /**
-     * 结构化简
-     * 
-     * @return 结构化简
-     */
-    @SuppressWarnings("unchecked")
-    public BinaryOp<Object, Object> simplify() {
-        final var zero = PACK(0);
-        final var one = PACK(1);
-        final var ai_one = new AtomicInteger(-1); // 1 乘法的 幺元
-        final var ai_zero = new AtomicInteger(-1); // 0 加法的 幺元，乘法的 零元
-        final var args = this.getArgsS()
-            .filter(Objects::nonNull) // 过滤掉空值
-            .map(Node::PACK)
-            .map(e -> e.fmap(BinaryOp::simplify))
-            .map(kvp_int())
-            .peek(e -> {
-                if (e._2.equals(one)) ai_one.set(e._1);
-                else if (e._2.equals(zero)) ai_zero.set(e._1);
-            }).map(e->e._2)
-            .toArray(Node[]::new);
-        final BiFunction<Double[], BinaryOp<Object, Object>, BinaryOp<Object, Object>> cascade_handler = // 级联算符
-            (argdbls, op) -> {  // argdbls 浮点数类型的 args, op 级联算符名称
-                final var name = op.getName(); // 算符名称
-                for (int i = 0; i < 2; i++) { // 外层的 * 的 参数
-                    if (args[i].getName().equals(name)) { // 发现存在内层*结构。
-                        final var coef_i = argdbls[i == 0 ? 1 : 0]; // 外层系数
-                        if (coef_i != null) { // 外层系数有效
-                            final var op_i = args[i].getOp(); // 外层的运算对象
-                            final var op_i_args = op_i.getArgsS().map(Node::PACK).toArray(Node[]::new); // 外层运算的参数
-                            for (int j = 0; j < 2; j++) { // 内层运算的各个参数
-                                final var arg_j = op_i_args[j].isToken() // token 检测
-                                    ? op_i_args[j].getToken() // 转换为 token
-                                    : null; //
-                                final var coef_j = arg_j == null ? null : arg_j.dbl(); // 内层运算的系数
-                                if (coef_j != null) { // 确定了内层运算的参数
-                                    final var left = op.compose(coef_i, coef_j).evaluate(); // 左为参数，右位的系数
-                                    final var right = op_i_args[j == 0 ? 1 : 0].unpack(); // 右位参数
-                                    return op.compose(left, right); // 级联运算成功
-                                } // if coef_j
-                            } // for j 内层
-                        } // coef_i 外层
-                    } // if 发现存在内层*结构。
-                } // for i 外层
-                
-                return null; // 返回 空 表示 级联运算尝试 失败
-            }; // cascadeOp , argdbls 浮点数类型的 args, op 级联算符名称
-        final var theOp = this.duplicate(); // 复制操作符
-        final var opName = theOp.getName(); // 操作符名称
-        final var left = args != null && args.length > 0 ? args[0].unpack() : null; // 左位参数
-        final var right = args != null && args.length > 1 ? args[1].unpack() : null; // 右位参数
-        final var handle = Optional.of(this.getAry()).map(nary -> {
-            switch (nary) { // 算符类型的判断
-                case 1: { // 一元算符
-                    return theOp.compose1(left); // 一元算符的组合，一元算符 只有一个参数 即 左位参数
-                }
-                case 2: { // 二元算符
-                    final var zero_i = ai_zero.getAndIncrement(); // 0值 的 位置索引
-                    final var one_i = ai_one.getAndIncrement(); // 1值 的 位置索引
-                    final var dbls = Stream.of(args) // 提取参数
-                        .map(e -> !e.isToken() ? null : e.getToken() == null ? null : e.getToken().dbl())
-                        .toArray(Double[]::new); // 浮点数类型的数据值
-                    final var flag = (dbls[0] != null) && (dbls[1] != null); // 是否是数值计算
-                    
-                    if (opName.equals("+")) { // 加法
-                        if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变
-                            return zero_i == 0 ? right : left;
-                        } else if (flag) {
-                            return PACK(dbls[0] + dbls[1]).unpack();
-                        } else { // 连加情形 把 (+,coef_i,(+,coef_j,c)) 转成 (+,coef_i+coef_j,c) 的结构，降低一个阶层 以 提升效率
-                            final var h = cascade_handler.apply(dbls, ADD(null, null)); // 计算连加
-                            if (h != null) return h;
-                        } // else 连加情形 
-                    } else if (opName.equals("*")) { // 乘法
-                        if (one_i >= 0) { // 存在1参数，1 是 乘法的 幺元 即 1 乘以 任何数 的结果 仍旧是 任何数，也就是乘以幺元 保持不变
-                            return one_i == 0 ? right : left;
-                        } else if (zero_i >= 0) { // 存在 0 参数 0 是乘法的 零元 即 任何数 乘以 零元 结构都是零元
-                            return PACK(0).unpack();
-                        } else if (flag) {
-                            return PACK(dbls[0] * dbls[1]).unpack();
-                        } else { // 连乘情形 把 (*,coef_i,(*,coef_j,c)) 转成 (*,coef_i*coef_j,c) 的结构，降低一个阶层 以 提升效率
-                            final var h = cascade_handler.apply(dbls, MUL(null, null)); // 计算连乘
-                            if (h != null) return h;
-                        } // else 连乘的情形
-                    } else if (opName.equals("-")) { // 减法
-                        if (zero_i == 1) return left;
-                        if (flag) return PACK(dbls[0] - dbls[1]).unpack();
-                    } else if (opName.equals("/")) { // 除法
-                        if (one_i == 1) return left;
-                        if (flag) return PACK(dbls[0] / dbls[1]).unpack();
-                    } // if
-                    
-                    return theOp.compose(left, right); // 重新组合数据
-                }
-                default: {
-                    return theOp;
-                } // default
-            } // switch
-        }).map(o -> (BinaryOp<Object, Object>) o) // 转换成算符类型
-        .orElse(null); // handle
+	/**
+	 * 1#参数位置组合 <br>
+	 * 
+	 * 一元函数继承的时候 需要 实现 自己的compose1, 另外compose1是设计为二元函数使用的函数，<br>
+	 * 一元函数请使用自己的一元compose <br>
+	 * 当然 一元函数可以自己先实现compose1，<br>
+	 * 然后用自己compose调用自己先实现compose1
+	 * 
+	 * @param <X> 参数类型
+	 * @param x   被组合的参数
+	 * @return 新生成的组合形式
+	 */
+	public <X> BinaryOp<X, U> compose1(final X x) {
+		return this._2 == null ? null : new BinaryOp<>(this._1, TUP2(x, this._2._2()));
+	}
 
-        return handle;
-    }
-    
-    /**
-     * 
-     * @param variable
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    public boolean hasLeaf(final Object variable) {
-        final var stack = new Stack<Object>();
-        this.getArgsS().forEach(stack::push);
-        while (!stack.empty()) {
-            final var o = Node.UNPACK(stack.pop());
-            if (o instanceof BinaryOp) {
-                final var binaryOp = ((BinaryOp<Object, Object>) o);
-                if (binaryOp.isConstant()) {
-                    final var constantOp = (ConstantOp) binaryOp;
-                    if (constantOp.getName().equals(variable)) return true;
-                } else if (binaryOp.hasLeaf(variable)) {
-                    return true;
-                }// if
-            } else if (Objects.nonNull(o)) {
-                if (o.equals(variable))
-                    return true;
-            } // if
-        } // while
+	/**
+	 * 2#参数位置组合 <br>
+	 * 
+	 * 二元函数继承的时候 需要 实现 compose
+	 * 
+	 * @param <X> 参数类型
+	 * @param x   被组合的参数
+	 * @return 新生成的组合形式
+	 */
+	public <X> BinaryOp<T, X> compose2(final X x) {
+		return this._2 == null ? null : new BinaryOp<>(this._1, TUP2(this._2._1(), x));
+	}
 
-        return false;
-    }
-    
-    /**
-     * 构造一个复制品
-     * 
-     * @return BinaryOp 浅层拷贝
-     */
-    public BinaryOp<T, U> duplicate() {
-        return  this._2 == null
-            ? BinaryOp.of(_1, null )
-            : BinaryOp.of(_1, this._2._1(), this._2._2());
-    }
-    
-    /**
-     * 运算节点的遍历<br>
-     * 需要注意：forEach 方法 只遍历 算符结构 对于 非 算符结构，即 算符的参数数据 并不给予 遍历 <br>
-     * 如果需要 遍历 算符的参数 数据，需要 利用 binaryop 的实际情况 来 进行处理 <br>
-     * 
-     * @param cons 回调函数 (level:层级从0开始, binaryop:运算节点)->{}
-     */
-    @SuppressWarnings("unchecked")
-    public void forEach(final BiConsumer<Integer, BinaryOp<?, ?>> cons) {
-        final var stack = new Stack<BinaryOp<?,?>>();
-        final Map<Object,Integer> stateLevel = new HashMap<>();
-        
-        stateLevel.put(this, 0); // 层级初始化
-        stack.push(this); // 根节点如栈
-        
-        while (!stack.empty()) {
-            final var binaryop = stack.pop();
-            final var level = stateLevel.get(binaryop);
-            
-            cons.accept(level,binaryop); // 方法回调
-            
-            binaryop.getArgsS() // 一次处理 餐数节点
-                .map(Node::UNPACK) // Node 类型去包装
-                .filter(e -> e instanceof BinaryOp) // 仅提取 BinaryOp 类型的数据
-                .filter(Objects::nonNull) // 过滤掉空值
-                .map(e -> (BinaryOp<Object, Object>) e) // 统一声明为 BinaryOp
-                .forEach(e -> { // 计算层级加入 stack
-                    stateLevel.put(e, level + 1);
-                    stack.push(e);
-                }); // forEach
-        } // while
-    }
+	/**
+	 * 1#,2#位置的参数组合 <br>
+	 * 
+	 * 二元函数继承的时候 需要 实现 compose
+	 * 
+	 * @param <X> 1#参数的类型
+	 * @param <Y> 2#参数的类型
+	 * @param x   1#参数
+	 * @param y   2#参数
+	 * @return 新生成的组合形式
+	 */
+	public <X, Y> BinaryOp<X, Y> compose(final X x, final Y y) {
+		return this._2 == null ? null : new BinaryOp<>(this._1, TUP2(x, y));
+	}
 
-    /**
-     * 转换成中缀表达式
-     * 
-     * @return 中缀表达式
-     */
-    @SuppressWarnings("unchecked")
-    public String infix() {
-        final var buffer = new StringBuffer();
-        final var stack = new Stack<Object>();
-        final var LEFT_PARENT = "("; // 左括号
-        final var RIGHT_PARENT = ")"; // 右括号
-        final var SPACE = " "; // 空白
-    
-        stack.push(this);
-        while (!stack.empty()) {
-            final var p = stack.pop();
-            if (p instanceof BinaryOp) {
-                final var binaryOp = (BinaryOp<Object, Object>) p;
-                final var nary = binaryOp.getAry(); // 算符的参数个数
-                final var opname = binaryOp.getName(); // 算符名称
-                final Function<Object, Stream<Object>> arg_formatter = obj -> {
-                    return obj instanceof BinaryOp && ((BinaryOp<Object, Object>) obj).getAry() > 0
-                            ? Stream.of(RIGHT_PARENT, obj, LEFT_PARENT)
-                            : Stream.of(obj);
-                };
-                switch (nary) {
-                case 1: {
-                    final var arg = binaryOp._2._1; // 唯一参数
-                    Stream.of(arg, SPACE, opname).flatMap(arg_formatter).forEach(stack::push);
-                    break;
-                }
-                case 2: {
-                    final var left_arg = binaryOp._2._1; // 1#参数
-                    final var right_arg = binaryOp._2._2; // 2#参数
-                    Stream.of(right_arg, SPACE, opname, SPACE, left_arg).flatMap(arg_formatter).forEach(stack::push);
-                    break;
-                }
-                default:
-                    buffer.append(p);
-                } // switch
-            } else {
-                buffer.append(p);
-            } // if
-        } // while
-    
-        return buffer.toString();
-    }
+	/**
+	 * 二元函数的求值
+	 * 
+	 * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
+	 */
+	public Object evaluate() {
+		return this.evaluate(new HashMap<>());
+	}
 
-    /**
-     * 数据格式化
-     */
-    public String toString() {
-        if(this._2!=null) { // 函数类
-            final String s1 = this._2._1() == null ? "null" : this._2._1().toString();
-            final String s2 = this._2._2() == null ? "null" : this._2._2().toString();
-            final var op = COMMA_TEST(this._1) ? "'" + this._1 + "'" : this._1;
-            
-            return this.getAry() == 2
-                ? MessageFormat.format("({0},{1},{2})", op, s1, s2)
-                : MessageFormat.format("({0},{1})", op, s1);
-        }else { // 常量类
-            return this.getName();
-        }
-    }
-    
-    /**
-     * 考虑到 BinaryOp 会覆盖掉name类派生类的特性，比如 一元函数 sin , 转换成 二元 函数 的情况 <br>
-     * 因此 建议 实际使用中 尽量不用 BinaryOp.of ， 可以的化 使用 BinaryOp.duplicate().compose 系列函数<br>
-     * 
-     * @param <T>   参数区第一元素类型
-     * @param <U>   参数区第二元素类型
-     * @param name  名称
-     * @param left  参数区第一元素类型 left参数
-     * @param right 参数区第二元素类型 right参数
-     * @return BinaryOp
-     */
-    public static <T, U> BinaryOp<T, U> of(final Object name, final T left, final U right) {
-        return of(name, TUP2(left, right));
-    }
+	/**
+	 * 二元函数的求值
+	 * 
+	 * @param bindings 变量参数的数据绑定, 键,值序列:key0,value0,key1,value1,....
+	 * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
+	 */
+	public Object evaluate(final Object... bindings) {
+		return this.evaluate(REC(bindings));
+	}
 
-    /**
-     * 考虑到 BinaryOp 会覆盖掉name类派生类的特性，比如 一元函数 sin , 转换成 二元 函数 的情况 <br>
-     * 因此 建议 实际使用中 尽量不用 BinaryOp.of ， 可以的化 使用 BinaryOp.duplicate().compose 系列函数<br>
-     * 
-     * @param <T>  参数区第一元素类型
-     * @param <U>  参数区第二元素类型
-     * @param name 算符名称
-     * @param args 算符的参数
-     * @return BinaryOp
-     */
-    public static <T, U> BinaryOp<T, U> of(final Object name, Tuple2<T, U> args) {
-        return new BinaryOp<T, U>(name, args);
-    }
+	/**
+	 * 二元函数的求值
+	 * 
+	 * @param bindings 变量参数的数据绑定
+	 * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
+	 */
+	public Object evaluate(final IRecord bindings) {
+		return this.evaluate(bindings.toMap());
+	}
 
-    /**
-     * 判断t 是否是运算符
-     */
-    @SuppressWarnings("unchecked")
-    final static Predicate<Object> predicate_op = t -> {
-        if ((t instanceof BinaryOp)) {
-            return ! ((BinaryOp<Object, Object>) t).isConstant();
-        } else if (t instanceof Node) {
-            return ((Node) t).isOp();
-        } else {
-            return false;
-        }
-    };
-    
-    /**
-     * 当 t 为 null 的时候 返回 false
-     * 判断t 是否是词素 是 predicate_op 的 取反
-     */
-    public final static Predicate<Object> predicate_token = t -> {
-        return t == null ? false : !predicate_op.test(t);
-    };
-    
-    /**
-     * 判断是否是变量
-     */
-    public final static Predicate<Object> predicate_var = t -> {
-        Object _t = Node.UNPACK(t);
-        if (_t instanceof BinaryOp) {
-            @SuppressWarnings("unchecked")
-            final var op = ((BinaryOp<Object, Object>) t);
-            if (op.isConstant()) {
-                final var name = op.getName();
-                return IRecord.obj2dbl().apply(name) == null;
-            }
-            return false;
-        } else if (_t instanceof String) {
-            return IRecord.obj2dbl().apply(_t) == null;
-        } else
-            return false;
-    };
+	/**
+	 * 二元函数的求值
+	 * 
+	 * @param bindings 变量参数的数据绑定
+	 * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
+	 */
+	public Object evaluate(final Map<String, Object> bindings) {
 
-    /**
-     * 判断t是否是常量
-     */
-    @SuppressWarnings("unchecked")
-    public final static Predicate<Object> predicate_const = t -> {
-        Object _t = Node.UNPACK(t);
-        if (t instanceof BinaryOp) {
-            final var op = ((BinaryOp<Object, Object>) t);
-            if (!((BinaryOp<Object, Object>) t).isConstant()) {
-                return false;
-            } else {
-                _t = op.getName();
-            }
-        }
-        return IRecord.obj2dbl().apply(_t) != null;
-    };
-    
-    /**
-     * 获取 指定节点 op 的 在parent中的家庭排行,即 是 parent 的 第几个子节点。 <br>
-     * 当 parent 为 null 的 时候 返回 0 <br>
-     * 需要注意:对于 op 即是 parent的第一个参数也是第二个参数的时候, 即 parent(op,op) <br>
-     * rank_eval 是无法区分的具体排行的，同一返回最小的排行。<br>
-     * 此时 rank_eval 排行计算就会出现混乱，即 op 即是老大也是老二, <br>
-     * 会造成 相关方法比如: Node.dumpAST方法计算换乱, 为了避难 此种情况发生，<br>
-     * 请在构造节点的时候 对op 做一个浅拷贝。比如:parent(op,op.duplicate) <br>
-     * 参见 Node.derivate 方法的 微分的除法法则部分。 <br>
-     *  MUL( ynode, ynode.duplicate() ) <br>
-     * <br>
-     * 
-     * return 排行序号从0开始,非子节点返回-1 <br>
-     */
-    public final static BiFunction<BinaryOp<?, ?>, BinaryOp<?, ?>, Integer> rank_eval = (parent, op) -> {
-        if (parent == null) {
-            return 0;
-        } else {
-            final var optional = parent.getArgsS().map(kvp_int()).map(sibling -> { // 添加序号并脱壳
-                final var o = Node.UNPACK(sibling._2()); // 对象脱壳
-                return TUP2(sibling._1(), o instanceof BinaryOp ? o : null);
-            }).filter(e -> e._2() == op).findAny(); // 尝试从脱壳之后的args中查询结果项为op的节点
+		final var dataStream = this.getArgsS().map(e -> {
+			if (e instanceof BinaryOp) { // op 算符类型
+				return ((BinaryOp<?, ?>) e).evaluate(bindings);
+			} else if (e instanceof Node) { // node 数据糖衣类型
+				try {
+					/**
+					 * 正常情况 生成运算对象会 进行 unpack , 需要 运算时移除糖衣的情况很少， 但是还要给予保留，<br>
+					 * 以应对不测 比如 要保证 某些不经意的,没有剔除干净掉数据糖衣的代码，恶意运行 <br>
+					 */
+					throw new Exception("语句中出现了数据糖衣，请检查运算的数据生成逻辑,在运算执行前给予糖衣unpack\n" + e);
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				} // try
 
-            return optional.map(e -> e._1()).orElse(-1);
-        } // if
-    };
-    
+				final var node = (Node) e;
+				return node.getValue().evaluate(bindings);
+			} else { // 值类型
+				return e;
+			} // if
+		}).map(e -> { // 上下文数据绑定
+			if (e instanceof String) { // 字符串类型的数据 尝试 使用 绑定上下文 进行内容解析
+				final var key = (String) e; // 把 参数值 解析为 变量符号(bindings 中的键名)
+				final var value = bindings.getOrDefault(key, e); // 尝试从 bindings数据集合中提取符号的的具体的值
+				return value; // 返回解析后的结果
+			} else { // 返回原来的值
+				return e;
+			} // if
+		}); // dataStream
+
+		if (COMMA_TEST(this.getName())) { // 逗号表达式
+			final var dd = dataStream.toArray();
+			final var ret = TUP2(dd[0], dd[1]);
+			return ret;
+		} else { // 非 逗号表达式
+			final var args = new LinkedList<Object>(); // 参数值
+			final var dbls = dataStream.peek(args::add).map(IRecord.obj2dbl()).toArray(Double[]::new); // 数值参数
+			final var nary = this.getAry(); // 函数的参数数量
+
+			// 二元函数的参数调整
+			if (nary == 2 && Stream.of(dbls).filter(Objects::nonNull).count() < 2) {
+				final var _dbls = args.stream().filter(Objects::nonNull)
+						.flatMap(e -> e instanceof Tuple2 ? flatS((Tuple2<?, ?>) e) : Stream.of(e))
+						.map(IRecord.obj2dbl()).toArray(Double[]::new);
+				for (int i = 0; i < Math.min(dbls.length, _dbls.length); i++) { // 拷贝数据到 dbls
+					dbls[i] = _dbls[i];
+				} // for
+			} // if
+
+			final var x = dbls.length < 1 ? null : dbls[0]; // 1#参数数值
+			final var y = dbls.length < 2 ? null : dbls[1]; // 2#参数数值
+			final var left = dbls.length < 1 ? null : args.get(0); // 1#参数
+			final var right = dbls.length < 2 ? null : args.get(1); // 2#参数
+			final var opName = this.getName(); // 提取函数名称
+			final var theOp = this.duplicate(); // 符号复制
+
+			if (this instanceof ConstantOp) { // 常量函数
+				return theOp; // 常量函数
+			} else if (this instanceof UnaryOp && x != null) { // 一元函数
+				switch (opName) { // 1 元运算
+				case "sinh":
+					return Math.sinh(x);
+				case "sin":
+					return Math.sin(x);
+				case "csc":
+					return 1d / Math.sin(x);
+				case "cosh":
+					return Math.cosh(x);
+				case "cos":
+					return Math.cos(x);
+				case "sec":
+					return 1d / Math.cos(x);
+				case "tan":
+					return Math.tan(x);
+				case "cot":
+					return 1d / Math.tan(x);
+				case "arcsin":
+					return Math.asin(x);
+				case "arccos":
+					return Math.acos(x);
+				case "arctan":
+					return Math.atan(x);
+				case "arccot":
+					return Math.atan2(1, x);
+				case "exp":
+					return Math.exp(x);
+				case "neg":
+					return -x;
+				case "identity":
+					return x;
+				case "ln":
+					return Math.log(x);
+				case "sqrt":
+					return Math.sqrt(x);
+				case "square":
+					return Math.pow(x, 2);
+				case "!":
+				case "fact":
+					return x <= 0 ? 1d
+							: Stream.iterate(1d, i -> i <= x, i -> i + 1d).reduce((a, b) -> a * b).orElse(0d);
+				default:
+					return theOp.compose1(x);
+				} // switch
+			} else if (this instanceof BinaryOp && x != null && y != null) { // 二元运算
+				switch (opName) { // 算符名称
+				case "+": // 加法
+					return x + y;
+				case "-": // 减法
+					return x - y;
+				case "*": // 乘法
+					return x * y;
+				case "/": // 除法
+					return x / y;
+				case "expa":
+				case "^":
+				case "pow": // expa指数函数，^/pow幂函数
+					return Math.pow(x, y);
+				case "log": // 对数函数
+					return Math.log(y) / Math.log(x);
+				default: // 默认函数
+					return theOp.compose(x, y);
+				} // switch
+			} else { // 其余情况,参数非法的情况
+				switch (nary) { // 函数的参数元数
+				case 1: // 一元函数
+					return theOp.compose1(left);
+				case 2: // 二元函数
+					return theOp.compose(left, right);
+				default:// 默认值,0 元函数,Token
+					return theOp;
+				}// switch
+			} // if 其余函数
+		} // if 逗号表达式
+	}
+
+	/**
+	 * 参数计算
+	 * 
+	 * @param bindings 变量参数的数据绑定
+	 * @return 二元数组[left,right]:二元函数BinaryOp情况;<br>
+	 *         一元数组[arg]:一元函数UnaryOp情况;<br>
+	 *         空数组[],长度为0:常量函数ConstantOp情况
+	 */
+	public Object[] argsEval(final Map<String, ?> bindings) {
+		@SuppressWarnings("unchecked")
+		final var args = this.getArgsS().map(Node::PACK) // 参数包装
+				// 一定要强转否则会出现对应到Node.evaluate(Object ... oo)
+				.map(node -> node.evaluate((Map<String, Object>) bindings)) // 数值计算,
+				.toArray(Object[]::new);
+		return args;
+	}
+
+	/**
+	 * 提取所有的叶端元素
+	 * 
+	 * @param <X> 结果类型
+	 * @param sup 结果容器的构建函数
+	 * @return X 结果容器
+	 */
+	@SuppressWarnings("unchecked")
+	public <X extends Collection<Object>> X getLeafs(final Supplier<X> sup) {
+		final X leafs = sup.get();
+		final var stack = new Stack<Object>();
+
+		this.getArgsS().forEach(stack::push);
+		while (!stack.empty()) {
+			final var o = Node.UNPACK(stack.pop());
+			if (o instanceof BinaryOp) {
+				final var op = ((BinaryOp<Object, Object>) o);
+				if (!op.isConstant()) {
+					op.getLeafs(sup).forEach(leafs::add);
+				} else {
+					final var name = ((ConstantOp) op).getName();
+					leafs.add(name);
+				} // if
+			} else if (Objects.nonNull(o)) {
+				leafs.add(o);
+			} // if
+		} // while
+
+		return leafs;
+	}
+
+	/**
+	 * 结构化简
+	 * 
+	 * @return 结构化简
+	 */
+	@SuppressWarnings("unchecked")
+	public BinaryOp<Object, Object> simplify() {
+		final var zero = PACK(0);
+		final var one = PACK(1);
+		final var ai_one = new AtomicInteger(-1); // 1 乘法的 幺元
+		final var ai_zero = new AtomicInteger(-1); // 0 加法的 幺元，乘法的 零元
+		final var args = this.getArgsS().filter(Objects::nonNull) // 过滤掉空值
+				.map(Node::PACK).map(e -> e.fmap(BinaryOp::simplify)).map(kvp_int()).peek(e -> {
+					if (e._2.equals(one))
+						ai_one.set(e._1);
+					else if (e._2.equals(zero))
+						ai_zero.set(e._1);
+				}).map(e -> e._2).toArray(Node[]::new);
+		final BiFunction<Double[], BinaryOp<Object, Object>, BinaryOp<Object, Object>> cascade_handler = // 级联算符
+				(argdbls, op) -> { // argdbls 浮点数类型的 args, op 级联算符名称
+					final var name = op.getName(); // 算符名称
+					for (int i = 0; i < 2; i++) { // 外层的 * 的 参数
+						if (args[i].getName().equals(name)) { // 发现存在内层*结构。
+							final var coef_i = argdbls[i == 0 ? 1 : 0]; // 外层系数
+							if (coef_i != null) { // 外层系数有效
+								final var op_i = args[i].getOp(); // 外层的运算对象
+								final var op_i_args = op_i.getArgsS().map(Node::PACK).toArray(Node[]::new); // 外层运算的参数
+								for (int j = 0; j < 2; j++) { // 内层运算的各个参数
+									final var arg_j = op_i_args[j].isToken() // token 检测
+											? op_i_args[j].getToken() // 转换为 token
+											: null; //
+									final var coef_j = arg_j == null ? null : arg_j.dbl(); // 内层运算的系数
+									if (coef_j != null) { // 确定了内层运算的参数
+										final var left = op.compose(coef_i, coef_j).evaluate(); // 左为参数，右位的系数
+										final var right = op_i_args[j == 0 ? 1 : 0].unpack(); // 右位参数
+										return op.compose(left, right); // 级联运算成功
+									} // if coef_j
+								} // for j 内层
+							} // coef_i 外层
+						} // if 发现存在内层*结构。
+					} // for i 外层
+
+					return null; // 返回 空 表示 级联运算尝试 失败
+				}; // cascadeOp , argdbls 浮点数类型的 args, op 级联算符名称
+		final var theOp = this.duplicate(); // 复制操作符
+		final var opName = theOp.getName(); // 操作符名称
+		final var left = args != null && args.length > 0 ? args[0].unpack() : null; // 左位参数
+		final var right = args != null && args.length > 1 ? args[1].unpack() : null; // 右位参数
+		final var handle = Optional.of(this.getAry()).map(nary -> {
+			switch (nary) { // 算符类型的判断
+			case 1: { // 一元算符
+				return theOp.compose1(left); // 一元算符的组合，一元算符 只有一个参数 即 左位参数
+			}
+			case 2: { // 二元算符
+				final var zero_i = ai_zero.getAndIncrement(); // 0值 的 位置索引
+				final var one_i = ai_one.getAndIncrement(); // 1值 的 位置索引
+				final var dbls = Stream.of(args) // 提取参数
+						.map(e -> !e.isToken() ? null : e.getToken() == null ? null : e.getToken().dbl())
+						.toArray(Double[]::new); // 浮点数类型的数据值
+				final var flag = (dbls[0] != null) && (dbls[1] != null); // 是否是数值计算
+
+				if (opName.equals("+")) { // 加法
+					if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变
+						return zero_i == 0 ? right : left;
+					} else if (flag) {
+						return PACK(dbls[0] + dbls[1]).unpack();
+					} else { // 连加情形 把 (+,coef_i,(+,coef_j,c)) 转成 (+,coef_i+coef_j,c) 的结构，降低一个阶层 以 提升效率
+						final var h = cascade_handler.apply(dbls, ADD(null, null)); // 计算连加
+						if (h != null)
+							return h;
+					} // else 连加情形
+				} else if (opName.equals("*")) { // 乘法
+					if (one_i >= 0) { // 存在1参数，1 是 乘法的 幺元 即 1 乘以 任何数 的结果 仍旧是 任何数，也就是乘以幺元 保持不变
+						return one_i == 0 ? right : left;
+					} else if (zero_i >= 0) { // 存在 0 参数 0 是乘法的 零元 即 任何数 乘以 零元 结构都是零元
+						return PACK(0).unpack();
+					} else if (flag) {
+						return PACK(dbls[0] * dbls[1]).unpack();
+					} else { // 连乘情形 把 (*,coef_i,(*,coef_j,c)) 转成 (*,coef_i*coef_j,c) 的结构，降低一个阶层 以 提升效率
+						final var h = cascade_handler.apply(dbls, MUL(null, null)); // 计算连乘
+						if (h != null)
+							return h;
+					} // else 连乘的情形
+				} else if (opName.equals("-")) { // 减法
+					if (zero_i == 1)
+						return left;
+					if (flag)
+						return PACK(dbls[0] - dbls[1]).unpack();
+				} else if (opName.equals("/")) { // 除法
+					if (one_i == 1)
+						return left;
+					if (flag)
+						return PACK(dbls[0] / dbls[1]).unpack();
+				} // if
+
+				return theOp.compose(left, right); // 重新组合数据
+			}
+			default: {
+				return theOp;
+			} // default
+			} // switch
+		}).map(o -> (BinaryOp<Object, Object>) o) // 转换成算符类型
+				.orElse(null); // handle
+
+		return handle;
+	}
+
+	/**
+	 * 
+	 * @param variable
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public boolean hasLeaf(final Object variable) {
+		final var stack = new Stack<Object>();
+		this.getArgsS().forEach(stack::push);
+		while (!stack.empty()) {
+			final var o = Node.UNPACK(stack.pop());
+			if (o instanceof BinaryOp) {
+				final var binaryOp = ((BinaryOp<Object, Object>) o);
+				if (binaryOp.isConstant()) {
+					final var constantOp = (ConstantOp) binaryOp;
+					if (constantOp.getName().equals(variable))
+						return true;
+				} else if (binaryOp.hasLeaf(variable)) {
+					return true;
+				} // if
+			} else if (Objects.nonNull(o)) {
+				if (o.equals(variable))
+					return true;
+			} // if
+		} // while
+
+		return false;
+	}
+
+	/**
+	 * 构造一个复制品
+	 * 
+	 * @return BinaryOp 浅层拷贝
+	 */
+	public BinaryOp<T, U> duplicate() {
+		return this._2 == null ? BinaryOp.of(_1, null) : BinaryOp.of(_1, this._2._1(), this._2._2());
+	}
+
+	/**
+	 * 运算节点的遍历<br>
+	 * 需要注意：forEach 方法 只遍历 算符结构 对于 非 算符结构，即 算符的参数数据 并不给予 遍历 <br>
+	 * 如果需要 遍历 算符的参数 数据，需要 利用 binaryop 的实际情况 来 进行处理 <br>
+	 * 
+	 * @param cons 回调函数 (level:层级从0开始, binaryop:运算节点)->{}
+	 */
+	@SuppressWarnings("unchecked")
+	public void forEach(final BiConsumer<Integer, BinaryOp<?, ?>> cons) {
+		final var stack = new Stack<BinaryOp<?, ?>>();
+		final Map<Object, Integer> stateLevel = new HashMap<>();
+
+		stateLevel.put(this, 0); // 层级初始化
+		stack.push(this); // 根节点如栈
+
+		while (!stack.empty()) {
+			final var binaryop = stack.pop();
+			final var level = stateLevel.get(binaryop);
+
+			cons.accept(level, binaryop); // 方法回调
+
+			binaryop.getArgsS() // 一次处理 餐数节点
+					.map(Node::UNPACK) // Node 类型去包装
+					.filter(e -> e instanceof BinaryOp) // 仅提取 BinaryOp 类型的数据
+					.filter(Objects::nonNull) // 过滤掉空值
+					.map(e -> (BinaryOp<Object, Object>) e) // 统一声明为 BinaryOp
+					.forEach(e -> { // 计算层级加入 stack
+						stateLevel.put(e, level + 1);
+						stack.push(e);
+					}); // forEach
+		} // while
+	}
+
+	/**
+	 * 转换成中缀表达式
+	 * 
+	 * @return 中缀表达式
+	 */
+	@SuppressWarnings("unchecked")
+	public String infix() {
+		final var buffer = new StringBuffer();
+		final var stack = new Stack<Object>();
+		final var LEFT_PARENT = "("; // 左括号
+		final var RIGHT_PARENT = ")"; // 右括号
+		final var SPACE = " "; // 空白
+
+		stack.push(this);
+		while (!stack.empty()) {
+			final var p = stack.pop();
+			if (p instanceof BinaryOp) {
+				final var binaryOp = (BinaryOp<Object, Object>) p;
+				final var nary = binaryOp.getAry(); // 算符的参数个数
+				final var opname = binaryOp.getName(); // 算符名称
+				final Function<Object, Stream<Object>> arg_formatter = obj -> {
+					return obj instanceof BinaryOp && ((BinaryOp<Object, Object>) obj).getAry() > 0
+							? Stream.of(RIGHT_PARENT, obj, LEFT_PARENT)
+							: Stream.of(obj);
+				};
+				switch (nary) {
+				case 1: {
+					final var arg = binaryOp._2._1; // 唯一参数
+					Stream.of(arg, SPACE, opname).flatMap(arg_formatter).forEach(stack::push);
+					break;
+				}
+				case 2: {
+					final var left_arg = binaryOp._2._1; // 1#参数
+					final var right_arg = binaryOp._2._2; // 2#参数
+					Stream.of(right_arg, SPACE, opname, SPACE, left_arg).flatMap(arg_formatter).forEach(stack::push);
+					break;
+				}
+				default:
+					buffer.append(p);
+				} // switch
+			} else {
+				buffer.append(p);
+			} // if
+		} // while
+
+		return buffer.toString();
+	}
+
+	/**
+	 * 数据格式化
+	 */
+	public String toString() {
+		if (this._2 != null) { // 函数类
+			final String s1 = this._2._1() == null ? "null" : this._2._1().toString();
+			final String s2 = this._2._2() == null ? "null" : this._2._2().toString();
+			final var op = COMMA_TEST(this._1) ? "'" + this._1 + "'" : this._1;
+
+			return this.getAry() == 2 ? MessageFormat.format("({0},{1},{2})", op, s1, s2)
+					: MessageFormat.format("({0},{1})", op, s1);
+		} else { // 常量类
+			return this.getName();
+		}
+	}
+
+	/**
+	 * 考虑到 BinaryOp 会覆盖掉name类派生类的特性，比如 一元函数 sin , 转换成 二元 函数 的情况 <br>
+	 * 因此 建议 实际使用中 尽量不用 BinaryOp.of ， 可以的化 使用 BinaryOp.duplicate().compose 系列函数<br>
+	 * 
+	 * @param <T>   参数区第一元素类型
+	 * @param <U>   参数区第二元素类型
+	 * @param name  名称
+	 * @param left  参数区第一元素类型 left参数
+	 * @param right 参数区第二元素类型 right参数
+	 * @return BinaryOp
+	 */
+	public static <T, U> BinaryOp<T, U> of(final Object name, final T left, final U right) {
+		return of(name, TUP2(left, right));
+	}
+
+	/**
+	 * 考虑到 BinaryOp 会覆盖掉name类派生类的特性，比如 一元函数 sin , 转换成 二元 函数 的情况 <br>
+	 * 因此 建议 实际使用中 尽量不用 BinaryOp.of ， 可以的化 使用 BinaryOp.duplicate().compose 系列函数<br>
+	 * 
+	 * @param <T>  参数区第一元素类型
+	 * @param <U>  参数区第二元素类型
+	 * @param name 算符名称
+	 * @param args 算符的参数
+	 * @return BinaryOp
+	 */
+	public static <T, U> BinaryOp<T, U> of(final Object name, Tuple2<T, U> args) {
+		return new BinaryOp<T, U>(name, args);
+	}
+
+	/**
+	 * 判断t 是否是运算符
+	 */
+	@SuppressWarnings("unchecked")
+	final static Predicate<Object> predicate_op = t -> {
+		if ((t instanceof BinaryOp)) {
+			return !((BinaryOp<Object, Object>) t).isConstant();
+		} else if (t instanceof Node) {
+			return ((Node) t).isOp();
+		} else {
+			return false;
+		}
+	};
+
+	/**
+	 * 当 t 为 null 的时候 返回 false 判断t 是否是词素 是 predicate_op 的 取反
+	 */
+	public final static Predicate<Object> predicate_token = t -> {
+		return t == null ? false : !predicate_op.test(t);
+	};
+
+	/**
+	 * 判断是否是变量
+	 */
+	public final static Predicate<Object> predicate_var = t -> {
+		Object _t = Node.UNPACK(t);
+		if (_t instanceof BinaryOp) {
+			@SuppressWarnings("unchecked")
+			final var op = ((BinaryOp<Object, Object>) t);
+			if (op.isConstant()) {
+				final var name = op.getName();
+				return IRecord.obj2dbl().apply(name) == null;
+			}
+			return false;
+		} else if (_t instanceof String) {
+			return IRecord.obj2dbl().apply(_t) == null;
+		} else
+			return false;
+	};
+
+	/**
+	 * 判断t是否是常量
+	 */
+	@SuppressWarnings("unchecked")
+	public final static Predicate<Object> predicate_const = t -> {
+		Object _t = Node.UNPACK(t);
+		if (t instanceof BinaryOp) {
+			final var op = ((BinaryOp<Object, Object>) t);
+			if (!((BinaryOp<Object, Object>) t).isConstant()) {
+				return false;
+			} else {
+				_t = op.getName();
+			}
+		}
+		return IRecord.obj2dbl().apply(_t) != null;
+	};
+
+	/**
+	 * 获取 指定节点 op 的 在parent中的家庭排行,即 是 parent 的 第几个子节点。 <br>
+	 * 当 parent 为 null 的 时候 返回 0 <br>
+	 * 需要注意:对于 op 即是 parent的第一个参数也是第二个参数的时候, 即 parent(op,op) <br>
+	 * rank_eval 是无法区分的具体排行的，同一返回最小的排行。<br>
+	 * 此时 rank_eval 排行计算就会出现混乱，即 op 即是老大也是老二, <br>
+	 * 会造成 相关方法比如: Node.dumpAST方法计算换乱, 为了避难 此种情况发生，<br>
+	 * 请在构造节点的时候 对op 做一个浅拷贝。比如:parent(op,op.duplicate) <br>
+	 * 参见 Node.derivate 方法的 微分的除法法则部分。 <br>
+	 * MUL( ynode, ynode.duplicate() ) <br>
+	 * <br>
+	 * 
+	 * return 排行序号从0开始,非子节点返回-1 <br>
+	 */
+	public final static BiFunction<BinaryOp<?, ?>, BinaryOp<?, ?>, Integer> rank_eval = (parent, op) -> {
+		if (parent == null) {
+			return 0;
+		} else {
+			final var optional = parent.getArgsS().map(kvp_int()).map(sibling -> { // 添加序号并脱壳
+				final var o = Node.UNPACK(sibling._2()); // 对象脱壳
+				return TUP2(sibling._1(), o instanceof BinaryOp ? o : null);
+			}).filter(e -> e._2() == op).findAny(); // 尝试从脱壳之后的args中查询结果项为op的节点
+
+			return optional.map(e -> e._1()).orElse(-1);
+		} // if
+	};
+
 }

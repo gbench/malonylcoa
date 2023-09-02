@@ -702,7 +702,6 @@ public interface IterableOps<A, C extends IterableOps<A, C>> extends Iterable<A>
 	 * 
 	 * @param size 窗口大小
 	 * @param step 步长
-	 * @param flag 是否返回等长记录 true 数据等长 剔除 尾部的 不齐整（小于 size） 的元素,false 包含不齐整
 	 * @return 子IRecord的流 [rec]
 	 */
 	default Stream<C> slidingS(final int size, final int step) {
@@ -728,7 +727,8 @@ public interface IterableOps<A, C extends IterableOps<A, C>> extends Iterable<A>
 
 	/**
 	 * Selects an interval of elements. The returned iterable collection is made up
-	 * of all elements x which satisfy the invariant: from &lt;= indexOf(x) < until
+	 * of all elements x which satisfy the invariant: from &lt;= indexOf(x) &lt;
+	 * until
 	 * 
 	 * @param from  the lowest index to include from this iterable collection.
 	 * @param until the lowest index to EXCLUDE from this iterable collection.

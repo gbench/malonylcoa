@@ -323,7 +323,7 @@ public interface IRecord // 记录结构
 	 * @param <X>      原值类型
 	 * @param <T>      新值类型
 	 * @param idx      键名索引从0开始
-	 * @param mapper   映射函数 x->t
+	 * @param mapper   映射函数 x-&gt;t
 	 * @param defaultX 默认值
 	 * @return 变换后的值
 	 */
@@ -337,7 +337,7 @@ public interface IRecord // 记录结构
 	 * @param <X>      原值类型
 	 * @param <T>      新值类型
 	 * @param key      键名
-	 * @param mapper   映射函数 x->t
+	 * @param mapper   映射函数 x-&gt;t
 	 * @param defaultX 默认值
 	 * @return 变换后的值
 	 */
@@ -366,8 +366,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <X>      原值类型,Boolean,Integer,Long,Double,Short,LocalDate,LocalTime,LocalDateTime,String,IRecord,Object
 	 * @param <T>      新值类型
-	 * @param key      键名
-	 * @param mapper   映射函数 x->t
+	 * @param idx      键名索引从0开始
+	 * @param mapper   映射函数 x-&gt;t
 	 * @param xclass   类型参照类的类名
 	 * @param defaultX 默认值
 	 * @return 变换后的值
@@ -382,7 +382,7 @@ public interface IRecord // 记录结构
 	 * @param <X>      原值类型，包括:Boolean,Integer,Long,Double,Short,LocalDate,LocalTime,LocalDateTime,String,IRecord,Object
 	 * @param <T>      新值类型
 	 * @param key      键名
-	 * @param mapper   映射函数 x->t
+	 * @param mapper   映射函数 x-&gt;t
 	 * @param xclass   类型参照类的类名
 	 * @param defaultX 默认值
 	 * @return 变换后的值
@@ -1205,7 +1205,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <T>    键值变换函数的源类型
 	 * @param <U>    键值变换函数的目标类型
-	 * @param key    键名索引 从0开始
+	 * @param idx    键名索引 从0开始
 	 * @param mapper 键值变换函数 t->u
 	 * @return U类型的元素对象流
 	 */
@@ -1581,7 +1581,6 @@ public interface IRecord // 记录结构
 	 * @param <T>    新值类型
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示 y是x的函数,其值由x决定。,
 	 * @param mapper 值计算函数 (x)->t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLt(final String keys, final Function<LocalTime, T> mapper) {
@@ -1597,7 +1596,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLts(final String keys, final BiFunction<LocalTime, LocalTime, T> mapper) {
@@ -1611,7 +1609,6 @@ public interface IRecord // 记录结构
 	 * @param <T>    新值类型
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示 y是x的函数,其值由x决定。,
 	 * @param mapper 值计算函数 (x)->t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLd(final String keys, final Function<LocalDate, T> mapper) {
@@ -1627,7 +1624,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLds(final String keys, final BiFunction<LocalDate, LocalDate, T> mapper) {
@@ -1641,7 +1637,6 @@ public interface IRecord // 记录结构
 	 * @param <T>    新值类型
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示 y是x的函数,其值由x决定。
 	 * @param mapper 值计算函数 (x)->t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLdt(final String keys, final Function<LocalDateTime, T> mapper) {
@@ -1657,7 +1652,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLdts(final String keys, final BiFunction<LocalDateTime, LocalDateTime, T> mapper) {
@@ -1671,7 +1665,6 @@ public interface IRecord // 记录结构
 	 * @param <T>    新值类型
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示 y是x的函数,其值由x决定。
 	 * @param mapper 值计算函数 (x)->t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeInt(final String keys, final Function<Integer, T> mapper) {
@@ -1687,7 +1680,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeInts(final String keys, final BiFunction<Integer, Integer, T> mapper) {
@@ -1701,7 +1693,6 @@ public interface IRecord // 记录结构
 	 * @param <T>    新值类型
 	 * @param keys   键名
 	 * @param mapper 值计算函数 (x)->t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLng(final String keys, final Function<Long, T> mapper) {
@@ -1717,7 +1708,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeLngs(final String keys, final BiFunction<Long, Long, T> mapper) {
@@ -1733,7 +1723,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeDbl(final String keys, final Function<Double, T> mapper) {
@@ -1749,7 +1738,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeDbls(final String keys, final BiFunction<Double, Double, T> mapper) {
@@ -1765,7 +1753,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeStr(final String keys, final Function<String, T> mapper) {
@@ -1781,7 +1768,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeStrs(final String keys, final BiFunction<String, String, T> mapper) {
@@ -1797,7 +1783,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeIntDbl(final String keys, final BiFunction<Integer, Double, T> mapper) {
@@ -1813,7 +1798,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeIntLt(final String keys, final BiFunction<Integer, LocalTime, T> mapper) {
@@ -1829,7 +1813,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeIntLd(final String keys, final BiFunction<Integer, LocalDate, T> mapper) {
@@ -1845,7 +1828,6 @@ public interface IRecord // 记录结构
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
 	 * @param mapper 值计算函数 (x,y)-&gt;t
-	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
 	default <T> IRecord computeIntLdt(final String keys, final BiFunction<Integer, LocalDateTime, T> mapper) {
@@ -2234,7 +2216,7 @@ public interface IRecord // 记录结构
 	/**
 	 * 肯定过滤
 	 * 
-	 * @param keys 保留的键名索引序列，键名索引从0开始
+	 * @param idices 保留的键名索引序列，键名索引从0开始
 	 * @return 新生的IRecord
 	 */
 	default IRecord filter(final Integer... idices) {
@@ -2393,7 +2375,6 @@ public interface IRecord // 记录结构
 	 * @param rec the reference object with which to compare.
 	 * @return {@code true} if this object is the same as the obj argument;
 	 *         {@code false} otherwise.
-	 * @see #hashCode()
 	 * @see java.util.HashMap
 	 */
 	default boolean equals(final IRecord rec) {
@@ -2611,7 +2592,8 @@ public interface IRecord // 记录结构
 	/**
 	 * 树形遍历
 	 * 
-	 * @param action 回调函数( level:层级从0开始时且0标识根节点层级,node:(path:从根节点开始,value:节点值)) ->{}
+	 * @param action 回调函数( level:层级从0开始时且0标识根节点层级,node:(path:从根节点开始,value:节点值))
+	 *               -&gt;{}
 	 */
 	default void forEach(final BiConsumer<Integer, Tuple2<String, Object>> action) {
 		IRecord.forEach(this, action);
@@ -2673,7 +2655,6 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <T>    元素类型
 	 * @param <U>    目标结果类型
-	 * @param rec    待遍历的 IRecord
 	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
 	 * @return 深度遍历的结果序列
 	 */
@@ -2687,9 +2668,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <T>       元素类型
 	 * @param <U>       目标结果类型
-	 * @param rec       待遍历的 IRecord
-	 * @param mapper    值变换函数 节点变换函数 (path:路径,node:T类型的节点值)->u:U 类型的变换结果
-	 * @param predicate 节点过滤函数, u -> bool
+	 * @param mapper    值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
+	 * @param predicate 节点过滤函数, u -&gt; bool
 	 * @return 深度遍历的结果序列
 	 */
 	default <T, U> List<U> hierachizes(final BiFunction<List<String>, T, U> mapper, final Predicate<U> predicate) {
@@ -2700,8 +2680,6 @@ public interface IRecord // 记录结构
 	 * 视rootnode(this)为一个树形结构的根节点,即每个 键值元组(K,V) 的 值V可以是一个 递归 嵌套的IRecord <br>
 	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List&lt;U&gt; 结果之中 <br>
 	 * 
-	 * @param rec    待遍历的 IRecord
-	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
 	 * @return 深度遍历的结果序列 [([string],obj)]
 	 */
 	default Stream<Tuple2<List<String>, Object>> hierachizeS() {
@@ -2714,7 +2692,6 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <T>    元素类型
 	 * @param <U>    目标结果类型
-	 * @param rec    待遍历的 IRecord
 	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
 	 * @return 深度遍历的结果序列 [u]
 	 */
@@ -2728,9 +2705,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <T>       元素类型
 	 * @param <U>       目标结果类型
-	 * @param rec       待遍历的 IRecord
-	 * @param mapper    值变换函数 节点变换函数 (path:路径,node:T类型的节点值)->u:U 类型的变换结果
-	 * @param predicate 节点过滤函数, u -> bool
+	 * @param mapper    值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
+	 * @param predicate 节点过滤函数, u -&gt; bool
 	 * @return 深度遍历的结果序列 [u]
 	 */
 	default <T, U> Stream<U> hierachizeS(final BiFunction<List<String>, T, U> mapper, final Predicate<U> predicate) {
@@ -2934,7 +2910,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param key_formatter  键名内容初始化
 	 * @param cell_formatter 键值元素内容初始化
-	 * @Return 格式化字符串
+	 * @return 格式化字符串
 	 */
 	default String toString2(final Function<Object, String> key_formatter,
 			final Function<Object, String> cell_formatter) {
@@ -2973,7 +2949,7 @@ public interface IRecord // 记录结构
 	 * 按照列进行展示 对DataFrame进行初始化
 	 * 
 	 * @param cell_formatter 元素内容初始化
-	 * @Return 格式化字符串
+	 * @return 格式化字符串
 	 */
 	default String toString2(final Function<Object, String> cell_formatter) {
 
@@ -3002,7 +2978,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * 按照列进行展示 对DataFrame进行初始化
 	 * 
-	 * @Return 格式化字符串
+	 * @return 格式化字符串
 	 */
 	default String toString2() {
 
@@ -3589,8 +3565,8 @@ public interface IRecord // 记录结构
 	 * 树形遍历
 	 * 
 	 * @param root   根节点
-	 * @param action 回调函数( level:层级从0开始时且0标识根节点层级,node:(path:从根节点开始,value:节点值)) ->{}
-	 * @param level  阶层位置
+	 * @param action 回调函数( level:层级从0开始时且0标识根节点层级,node:(path:从根节点开始,value:节点值))
+	 *               -&gt;{}
 	 */
 	public static void forEach(final IRecord root, final BiConsumer<Integer, Tuple2<String, Object>> action) {
 		final var parents = new TreeMap<Integer, Tuple2<String, Object>>(); // 层级注册表
@@ -3606,7 +3582,8 @@ public interface IRecord // 记录结构
 	 * 树形遍历
 	 * 
 	 * @param root   根节点
-	 * @param action 回调函数( level:层级从0开始时且0标识根节点层级,node:(path:从根节点开始,value:节点值)) ->{}
+	 * @param action 回调函数( level:层级从0开始时且0标识根节点层级,node:(path:从根节点开始,value:节点值))
+	 *               -&gt;{}
 	 * @param level  阶层位置,从 1 开始，因为根节点已经预先装入
 	 */
 	static void forEach(final IRecord root, final BiConsumer<Integer, Tuple2<String, Object>> action, final int level,
@@ -3638,7 +3615,6 @@ public interface IRecord // 记录结构
 	 * 也会被转换成一个 0时区 的 从1970年1月1 即 epoch time 以来的毫秒数<br>
 	 * 对于 中国 而言 位于+8时区, '1970-01-01 08:00:01' 会被解析为1000
 	 * 
-	 * @param <T> 函数的参数类型
 	 * @return t->dbl
 	 */
 	static ToDoubleFunction<?> todbl(final Number default_value) {
@@ -3748,7 +3724,6 @@ public interface IRecord // 记录结构
 	/**
 	 * 生成 构建器
 	 * 
-	 * @param K    元素类型
 	 * @param keys 键名序列
 	 * @return keys 为格式的 构建器
 	 */
@@ -3766,7 +3741,7 @@ public interface IRecord // 记录结构
 	 * flag true: [1, 2][2, 3][3, 4][4, 5] <br>
 	 * 按照 width=2, step=2 进行滑动 <br>
 	 * flag false: [1, 2][3, 4] <br>
-	 * flag true: [1, 2][3, 4] <br》
+	 * flag true: [1, 2][3, 4] <br>
 	 * 
 	 * @param <T>  数据元素类型
 	 * @param aa   数据集合
@@ -3787,7 +3762,7 @@ public interface IRecord // 记录结构
 	 * flag true: [1, 2][2, 3][3, 4][4, 5] <br>
 	 * 按照 width=2, step=2 进行滑动 <br>
 	 * flag false: [1, 2][3, 4] <br>
-	 * flag true: [1, 2][3, 4] <br》
+	 * flag true: [1, 2][3, 4] <br>
 	 * 
 	 * @param <T>        数据元素类型
 	 * @param collection 数据集合
@@ -3829,7 +3804,6 @@ public interface IRecord // 记录结构
 	 * @param <K>     键名类型
 	 * @param <V>     键值类型
 	 * @param <U>     中间结果类型
-	 * @param <Z>     结果类型
 	 * @param keyer   键名函数,分类规则&amp;依据 x-&gt;key
 	 * @param valueer 键值创建函数 x-&gt;value
 	 * @param uclc    键值元素集合包装函数 vv-&gt;u
@@ -3848,7 +3822,6 @@ public interface IRecord // 记录结构
 	 * @param <K>        键名类型
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
-	 * @param <Z>        结果类型
 	 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
 	 * @param valueer    键值创建函数 x-&gt;value
 	 * @param u_finisher 键值元素集合包装函数 vv-&gt;u

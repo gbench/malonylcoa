@@ -606,7 +606,6 @@ public class AlgebraEngine {
 	 * 2) reduce 过程 : 无优先级差异的 节点规约 对应 算法 reduce <br>
 	 * 
 	 * @param tokens 符号流
-	 * @param flag   标记节点
 	 * @return 语法树结构 AST, 当 tokens 长度为0 返回null
 	 */
 	public Node analyze(final List<IRecord> tokens) {
@@ -699,8 +698,8 @@ public class AlgebraEngine {
 	 * 
 	 * 圆括号 是 天然分组 不需要添加
 	 * 
-	 * @param brace 括号对儿比如：("(",")"), ("[","]"), ("{","}"), ("‘","’"), ("<",">"),
-	 *              ("《","》") 等
+	 * @param brace 括号对儿比如：("(",")"), ("[","]"), ("{","}"), ("‘","’"),
+	 *              ("&lt;","&gt;"), ("《","》") 等
 	 * @return AlgebraEngine 对象本身 以便实现链式编程。
 	 */
 	public AlgebraEngine addBrace(final Tuple2<Node, Node> brace) {
@@ -716,8 +715,8 @@ public class AlgebraEngine {
 	 * 
 	 * 圆括号 是 天然分组 不需要添加
 	 * 
-	 * @param brace 括号对儿比如：("(",")"), ("[","]"), ("{","}"), ("‘","’"), ("<",">"),
-	 *              ("《","》") 等
+	 * @param brace 括号对儿比如：("(",")"), ("[","]"), ("{","}"), ("‘","’"),
+	 *              ("&lt;","&gt;"), ("《","》") 等
 	 * @return AlgebraEngine 对象本身 以便实现链式编程。
 	 */
 	public AlgebraEngine addBrace(final String brace[]) {
