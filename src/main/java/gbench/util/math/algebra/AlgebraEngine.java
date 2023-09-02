@@ -392,7 +392,7 @@ public class AlgebraEngine {
 	 * 
 	 * @param data         词法节点序列
 	 * @param stack        运行堆栈，当为 null 的时候进行自我规约
-	 * @param reduceAction 规约算法，是一种 肖分组规约 契机, 在 reduceAction 中 算符 按照 同一优先级 从左到右 依次规约
+	 * @param reduceAction 规约算法，是一种 小分组规约 契机, 在 reduceAction 中 算符 按照 同一优先级 从左到右 依次规约
 	 * @return AST 语法树
 	 */
 	public Node handle(final List<Node> data, final Stack<Node> stack, final Function<List<Node>, Node> reduceAction) {
