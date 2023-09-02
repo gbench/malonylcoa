@@ -3570,7 +3570,7 @@ public interface IRecord // 记录结构
 	 */
 	public static void forEach(final IRecord root, final BiConsumer<Integer, Tuple2<String, Object>> action) {
 		final var parents = new TreeMap<Integer, Tuple2<String, Object>>(); // 层级注册表
-		final var rootNode = Tuple2.P("", (Object) root); // 根节点的名称为空
+		final var rootNode = P("", (Object) root); // 根节点的名称为空
 
 		parents.put(0, rootNode); // 根节点
 		action.accept(0, rootNode); // 遍历根节点
@@ -3597,7 +3597,7 @@ public interface IRecord // 记录结构
 					.collect(Collectors.joining("/")); // 汇总阶层标识key连接成阶层前缀
 			final var value = node._2(); // 层级节点的值
 			final var path = base + "/" + node._1; // 当前节点路径
-			final var valueNode = Tuple2.P(path, value); // 当前的值节点
+			final var valueNode = P(path, value); // 当前的值节点
 
 			action.accept(level, valueNode); // 处理当前节点
 
@@ -4214,7 +4214,7 @@ public interface IRecord // 记录结构
 					final var i = ai.getAndIncrement(); // 记录键名索引
 					final var left = (T) record_left.get(k);
 					final var right = (U) record_right.get(k);
-					value = bifunc.apply(Tuple2.P(i, k), Tuple2.P(left, right)); // 返回结果
+					value = bifunc.apply(P(i, k), P(left, right)); // 返回结果
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -4925,7 +4925,7 @@ public interface IRecord // 记录结构
 
 		final Function<T, Tuple2<String, Object>> mapper = t -> {
 			final var i = ai.getAndIncrement();
-			return Tuple2.P(idx2name.apply(i), t);
+			return P(idx2name.apply(i), t);
 		};
 
 		return IRecord.recclc(mapper);

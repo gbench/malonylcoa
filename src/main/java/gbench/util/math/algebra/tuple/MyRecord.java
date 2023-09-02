@@ -92,7 +92,7 @@ public class MyRecord implements IRecord {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Tuple2<String, Object>[] data() {
-		return (Tuple2<String, Object>[]) this.data.entrySet().stream().map(e -> Tuple2.P(e.getKey(), e.getValue()))
+		return (Tuple2<String, Object>[]) this.data.entrySet().stream().map(e -> P(e.getKey(), e.getValue()))
 				.toArray(Tuple2[]::new);
 	}
 

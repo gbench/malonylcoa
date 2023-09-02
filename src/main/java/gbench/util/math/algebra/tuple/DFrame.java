@@ -242,7 +242,7 @@ public class DFrame implements IterableOps<IRecord, DFrame> {
 	 * @return 列集数据的流
 	 */
 	public synchronized Stream<Tuple2<String, ArrayList<Object>>> colS() {
-		return this.cols().entrySet().stream().map(e -> Tuple2.P(e.getKey(), e.getValue()));
+		return this.cols().entrySet().stream().map(e -> P(e.getKey(), e.getValue()));
 	}
 
 	/**
