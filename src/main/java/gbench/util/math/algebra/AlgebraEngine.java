@@ -107,7 +107,7 @@ public class AlgebraEngine {
 		};
 
 		final var tokens = new LinkedList<IRecord>();
-		final var wordS = Stream.of(line.strip().split("")).flatMap(c -> {
+		final var wordS = line.strip().chars().mapToObj(c -> Character.valueOf((char) c)).flatMap(c -> {
 			final var word = buffer.append(c).toString();
 			final var matcher = pattern.matcher(buffer);
 			final var n = word.length();
