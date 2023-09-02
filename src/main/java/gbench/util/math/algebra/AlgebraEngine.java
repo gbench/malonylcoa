@@ -86,7 +86,7 @@ public class AlgebraEngine {
 		println(line);
 		println();
 
-		final var letters = "[_\\.a-z0-9\\u4e00-\\u9fa5]"; // 基础字母+中文
+		final var letters = "_\\.a-z0-9\\u4e00-\\u9fa5"; // 基础字母+中文
 		final var digits = Pattern.compile("[\\.0-9]+", Pattern.CASE_INSENSITIVE);
 		final var pattern = Pattern.compile(String.format("[%s]+", letters), Pattern.CASE_INSENSITIVE);
 		final var pattern1 = Pattern.compile(String.format("^[%s]+.*", letters), Pattern.CASE_INSENSITIVE);
@@ -103,11 +103,12 @@ public class AlgebraEngine {
 		}; // keyword_handler
 
 		final Function<String, Stream<IRecord>> op_handler = op -> {
-			return Stream.of(op.split("")).filter(e -> !e.matches("s*")).map(e -> rb.get("op", e));
+			return op.chars().mapToObj(c -> String.valueOf((char) c)) //
+					.filter(e -> !e.matches("s*")).map(e -> rb.get("op", e));
 		};
 
 		final var tokens = new LinkedList<IRecord>();
-		final var wordS = line.strip().chars().mapToObj(c -> Character.valueOf((char) c)).flatMap(c -> {
+		final var wordS = line.strip().chars().mapToObj(c -> String.valueOf((char) c)).flatMap(c -> {
 			final var word = buffer.append(c).toString();
 			final var matcher = pattern.matcher(buffer);
 			final var n = word.length();
@@ -488,8 +489,7 @@ public class AlgebraEngine {
 			final var name = term.getName(); // term 项目的名称
 			final var i = ai.getAndIncrement(); // 下标索引
 			final Optional<BinaryOp<Object, Object>> opOptional = // 尝试从 term 中 提取 算符，算符 只能只能 从 token 里提取，handle 不可以。
-					term.isToken() // term.isToken() 用来保证 规约掉的handle(handle可以视为一种复合数据term) 不会被重复计算，即 只能从 纯token中
-									// 提取算符。
+					term.isToken() // term.isToken()用来保证规约掉的handle(handle可以视为一种复合数据term)不会被重复计算，即只能从纯token中提取算符。
 							? this.getOpByName(name) // 尝试根据term的name提取 Ops 对象
 							: Optional.empty(); // 无效的算符
 
@@ -502,8 +502,7 @@ public class AlgebraEngine {
 
 			if (opOptional.isPresent()) { // 算符项分支:term词素所代表的名称是一个有效的运算操作, 读取到 算符，记录到算符栈, 等待 被数据项目term唤醒。
 				opStack.push(opOptional.get()); // 加入 运算堆栈
-			} else {// 数据项分支:读取到了数据元素,计算 规约关键 是通过 数据项目term 来触发 算符栈 中的 算符 来进行的。数据是 动力, 算符是 本质。 尝试 唤醒
-					// 算符
+			} else {// 数据项分支:读取到了数据元素,计算规约的关键是通过数据项目term来触发算符栈中的算符来进行的,数据是动力,算符是本质。尝试唤醒算符
 				if (!opStack.isEmpty()) { // 算符栈 含有 算符 表明 该term项目可能触发出 计算规约 即 生成 计算句柄 handle 的 可能。
 					final BinaryOp<Object, Object> binaryOp = opStack.peek(); // 查看栈定元素
 					final var nary = binaryOp.getAry();
