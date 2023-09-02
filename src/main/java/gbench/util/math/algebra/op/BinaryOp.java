@@ -6,6 +6,7 @@ import static gbench.util.math.algebra.tuple.MyRecord.REC;
 import static gbench.util.math.algebra.tuple.Node.*;
 
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -667,8 +668,25 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	}
 
 	/**
+	 * hashCode
+	 */
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(new Object[] { BinaryOp.class, this._1, this._2() });
+	}
+
+	/**
+	 * equals
+	 */
+	@Override
+	public boolean equals(final Object obj) {
+		return obj instanceof BinaryOp<?, ?> bop ? Tuple2.defaultComparator().equals(bop) : false;
+	}
+
+	/**
 	 * 数据格式化
 	 */
+	@Override
 	public String toString() {
 		if (this._2 != null) { // 函数类
 			final String s1 = this._2._1() == null ? "null" : this._2._1().toString();

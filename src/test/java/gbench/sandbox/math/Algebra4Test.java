@@ -655,7 +655,8 @@ public class Algebra4Test {
 				"a : (5*3)", // 赋值表达式, 由于 : 的优先级与 * 相同 所以 需要为 5*3加括号
 
 				// for循环的使用演示,':','sin' 使用了优先级传到导的功能，所以省略了括号
-				"5 * for(i:0, i<10, i:i+1, x:sin(x+(y:sin(y)))) $ x" // 返回 bindings中的x的参数值
+				"5 * for(i:0, i<10, i:i+1, x:sin(x+(y:sin(y)))) $ x", // 返回 bindings中的x的参数值
+				"5 * for((x:0,i:0), i<10, i:i+1, x:(x+i)) $ x" // 返回 bindings中的x的参数值
 		).forEach(line -> {
 			final var node = engine.analyze(line); // 表达式的解析
 
@@ -664,6 +665,40 @@ public class Algebra4Test {
 			println("结点计算值 x:5,y:2", node.evaluate("x", 5, "y", 2));
 			println("结点计算值 x:4,y:2", node.evaluate("x", 4, "y", 2));
 			println("结点计算值 x:1,y:2", node.evaluate("x", 1, "y", 2));
+		});
+	}
+
+	/**
+	 * for 循环函数的示例: <br>
+	 * 累计求和 <br>
+	 * for loop: {x=0, i=0} <br>
+	 * for loop: {x=1.0, i=1.0} <br>
+	 * for loop: {x=3.0, i=2.0} <br>
+	 * for loop: {x=6.0, i=3.0} <br>
+	 * for loop: {x=10.0, i=4.0} <br>
+	 * for loop: {x=15.0, i=5.0} <br>
+	 * for loop: {x=21.0, i=6.0} <br>
+	 * for loop: {x=28.0, i=7.0} <br>
+	 * for loop: {x=36.0, i=8.0} <br>
+	 * for loop: {x=45.0, i=9.0} <br>
+	 * for loop result: {x=55.0, i=10.0} <br>
+	 * result: 275.0
+	 * 
+	 */
+	@Test
+	public void bar() {
+
+		final var engine = new AlgebraEngine();
+
+		Stream.of(JOIN(null, null), SUM(null), MOD(null, null), GT(null, null), LT(null, null), EQ(null, null),
+				IF(null), FOR(null), ASSIGN(null, null), GET(null, null)).forEach(engine::add);
+		// 返回 bindings中的x的参数值
+		Stream.of("5 * for(i:0, i<10, i:i+1, x:(x+i+1)) $ x").forEach(line -> {
+			final var node = engine.analyze(line); // 表达式的解析
+
+			println("infix", node.map(BinaryOp::infix));
+			println("ast:\n", node.dumpAST());
+			println("result:", node.evaluate("x", 0)); // 从外界注入x
 		});
 	}
 }

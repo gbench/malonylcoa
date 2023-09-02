@@ -7,6 +7,7 @@ import static gbench.util.math.algebra.tuple.MyRecord.REC;
 import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +135,11 @@ public class Node {
 		return UNPACK(this, n);
 	}
 
+	/**
+	 * 提取运算符
+	 * 
+	 * @return BinaryOp
+	 */
 	public BinaryOp<Object, Object> getOp() {
 		return this.isOp() ? (BinaryOp<Object, Object>) value : null;
 	}
@@ -141,7 +147,7 @@ public class Node {
 	/**
 	 * 生成词素对象
 	 * 
-	 * @return
+	 * @return Token
 	 */
 	public Token getToken() {
 		return this.isToken() ? (Token) this.value : null;
@@ -667,6 +673,18 @@ public class Node {
 		return PACK(_value);
 	}
 
+	/**
+	 * hashCode
+	 */
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(new Object[] { Node.class, this.getValue() });
+	}
+
+	/**
+	 * equals
+	 */
+	@Override
 	public boolean equals(final Object obj) {
 
 		if (obj instanceof Node) {
@@ -681,6 +699,7 @@ public class Node {
 	/**
 	 * 数据格式化
 	 */
+	@Override
 	public String toString() {
 		if (this.value == null)
 			return "Null";
