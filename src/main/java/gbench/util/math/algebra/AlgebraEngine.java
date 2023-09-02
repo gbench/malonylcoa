@@ -59,7 +59,7 @@ public class AlgebraEngine {
 	public AlgebraEngine initialize() {
 
 		Ops.priorities.forEach(tup -> { // 合并优先级
-			this.LocalPriorities.compute(tup._1, (k, v) -> {
+			this.localPriorities.compute(tup._1, (k, v) -> {
 				return v == null ? tup._2 : v;
 			}); // compute
 		}); // forEach
@@ -691,7 +691,7 @@ public class AlgebraEngine {
 
 		final var _priority = Optional.ofNullable(priority).orElse(bop.getPriority()); // 提取算符优先级
 		if (null != _priority) { // 注册优先级
-			this.LocalPriorities.add(bop.getName(), _priority);
+			this.localPriorities.add(bop.getName(), _priority);
 		} // if
 
 		return this;
@@ -759,7 +759,7 @@ public class AlgebraEngine {
 	 */
 	public int priorityCompare(final String op1, final String op2) {
 
-		final var n = LocalPriorities.keys().stream().map(LocalPriorities::get) // 提取最大的优先级数
+		final var n = localPriorities.keys().stream().map(localPriorities::get) // 提取最大的优先级数
 				.collect(Collectors.summarizingDouble(e -> IRecord.obj2dbl().apply(e))).getMax() + 1;
 
 		return Double.compare(priorityOf(op1, n), priorityOf(op2, n));
@@ -774,7 +774,7 @@ public class AlgebraEngine {
 	 */
 	public Double priorityOf(final String name, final Number defaultValue) {
 
-		return LocalPriorities.dbl(name, defaultValue.doubleValue());
+		return localPriorities.dbl(name, defaultValue.doubleValue());
 	}
 
 	/**
@@ -840,7 +840,7 @@ public class AlgebraEngine {
 	/**
 	 * 本地算符优先级注册表 {（String,Number) }
 	 */
-	protected IRecord LocalPriorities = REC();
+	protected IRecord localPriorities = REC();
 
 	/**
 	 * 层级标识的注册 <br>
