@@ -656,7 +656,8 @@ public class Algebra4Test {
 
 				// for循环的使用演示,':','sin' 使用了优先级传到导的功能，所以省略了括号
 				"5 * for(i:0, i<10, i:i+1, x:sin(x+(y:sin(y)))) $ x", // 返回 bindings中的x的参数值
-				"5 * for((x:0,i:0), i<10, i:i+1, x:(x+i)) $ x" // 返回 bindings中的x的参数值
+				"x:10,5 * for(i:0, i<10, i:i+1, x:(x+i+1)) $ x", // 返回 bindings中的x的参数值
+				"5 * for(i:0, i<10, i:i+1, x:(x+i+1)) $ x" // 返回 bindings中的x的参数值
 		).forEach(line -> {
 			final var node = engine.analyze(line); // 表达式的解析
 
