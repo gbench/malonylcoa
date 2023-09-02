@@ -66,8 +66,8 @@ public class AlgebraEngine {
 
 		Stream.of( // 添加括号符号
 				P(LEFT_PARENT, RIGHT_PARENT) // 圆括号
-//            ,TUP2(PACK(TOKEN("[")), PACK(PACK(TOKEN("]")))) // 方括号
-//            ,TUP2(PACK(TOKEN("{")), PACK(PACK(TOKEN("}")))) // 花括号
+//				, P(PACK(TOKEN("[")), PACK(PACK(TOKEN("]")))) // 方括号
+//				, P(PACK(TOKEN("{")), PACK(PACK(TOKEN("}")))) // 花括号
 		).forEach(brace -> { // 括号的匹配
 			this.addBrace(brace);
 		}); // forEach
