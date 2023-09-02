@@ -642,6 +642,18 @@ public class DFrame implements IterableOps<IRecord, DFrame> {
 		return this.fmap(e -> e.filterNot(flds));
 	}
 
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(new Object[] { DFrame.class, this.rowsData });
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		return obj == this || (obj instanceof DFrame dfm
+				? Objects.equals(this.rowsData, dfm.rowsData) && Objects.equals(this.colsData, dfm.colsData)
+				: false);
+	}
+
 	/**
 	 * 数据内容格式化
 	 */

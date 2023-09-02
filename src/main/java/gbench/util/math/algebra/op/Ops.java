@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -257,10 +256,8 @@ public class Ops {
 	}
 
 	/**
-	 * 判断两个对象是否等价
+	 * flat_mapper
 	 */
-	public final static BiPredicate<Object, Object> eql = (a, b) -> a != null ? a.equals(b) : b == null;
-
 	public final static Function<Object, Stream<?>> flat_mapper = o -> Optional.of(o).map(e -> {
 		if (e instanceof Collection) {
 			return ((Collection<?>) e).stream();

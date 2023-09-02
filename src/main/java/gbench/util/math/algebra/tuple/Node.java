@@ -687,9 +687,8 @@ public class Node {
 	@Override
 	public boolean equals(final Object obj) {
 
-		if (obj instanceof Node) {
-			final var another = (Node) obj;
-			return eql.test(this.getValue(), another.getValue());
+		if (obj instanceof Node another) {
+			return Objects.equals(this.getValue(), another.getValue());
 		} else {
 			return false;
 		}

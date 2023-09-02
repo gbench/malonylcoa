@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -521,6 +522,18 @@ public class ArrayRecord implements IRecord, Serializable {
 	@Override
 	public IRecord prepend(final Object... kvs) {
 		return REC(kvs).add(this);
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(new Object[] { ArrayRecord.class, this.keys, this.values });
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		return obj == this || (obj instanceof ArrayRecord ra
+				? Objects.equals(ra.keys, this.keys) && Objects.equals(ra.values, this.values)
+				: false);
 	}
 
 	/**

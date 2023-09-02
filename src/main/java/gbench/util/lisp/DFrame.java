@@ -742,6 +742,18 @@ public class DFrame implements Iterable<IRecord> {
 		return this.rows().iterator();
 	}
 
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(new Object[] { DFrame.class, this.rowsData });
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		return obj == this
+				|| (obj instanceof DFrame dfm ? this.rowsData.equals(dfm.rowsData) && this.colsData.equals(dfm.colsData)
+						: false);
+	}
+
 	/**
 	 * 格式化
 	 */
@@ -766,7 +778,7 @@ public class DFrame implements Iterable<IRecord> {
 	 * @param records 源数据
 	 * @return 數據的格式化
 	 */
-	public static String fmt(final 	List<IRecord> records) {
+	public static String fmt(final List<IRecord> records) {
 		if (records.size() > 0) {
 			final StringBuffer buffer = new StringBuffer();
 			final IRecord first = records.get(0);

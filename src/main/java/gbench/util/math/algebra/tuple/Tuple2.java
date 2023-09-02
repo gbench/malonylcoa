@@ -1,7 +1,5 @@
 package gbench.util.math.algebra.tuple;
 
-import static gbench.util.math.algebra.op.Ops.eql;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -257,7 +255,7 @@ public class Tuple2<T, U> {
 		} else if (obj instanceof Tuple2) { // 同类类型
 			@SuppressWarnings("unchecked")
 			final var another = (Tuple2<Object, Object>) obj;
-			return eql.test(this._1, another._1) && eql.test(this._2, another._2);
+			return Objects.equals(this._1, another._1) && Objects.equals(this._2, another._2);
 		} else {
 			return false;
 		} // if
