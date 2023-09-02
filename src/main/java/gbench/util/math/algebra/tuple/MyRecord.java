@@ -1,7 +1,7 @@
 package gbench.util.math.algebra.tuple;
 
 import static gbench.util.math.algebra.tuple.IRecord.FT;
-import static gbench.util.math.algebra.tuple.Tuple2.TUP2;
+import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,13 +86,13 @@ public class MyRecord implements IRecord {
 
 	@Override
 	public Iterator<Tuple2<String, Object>> iterator() {
-		return this.data.entrySet().stream().map(e -> TUP2(e.getKey(), e.getValue())).iterator();
+		return this.data.entrySet().stream().map(e -> P(e.getKey(), e.getValue())).iterator();
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public Tuple2<String, Object>[] data() {
-		return (Tuple2<String, Object>[]) this.data.entrySet().stream().map(e -> Tuple2.TUP2(e.getKey(), e.getValue()))
+		return (Tuple2<String, Object>[]) this.data.entrySet().stream().map(e -> Tuple2.P(e.getKey(), e.getValue()))
 				.toArray(Tuple2[]::new);
 	}
 

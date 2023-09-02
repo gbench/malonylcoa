@@ -9,8 +9,8 @@ package gbench.util.math.algebra.op;
  */
 public class Log<T, U> extends BinaryOp<T, U> {
 
-    public Log(T t, U u) {
-        super("log", TUP2(t, u));
-    }
+	public Log(T t, U u) {
+		super("log", P(t, u));
+	}
 
 }

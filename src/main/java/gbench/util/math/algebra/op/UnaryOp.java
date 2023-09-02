@@ -11,7 +11,7 @@ import java.text.MessageFormat;
 public class UnaryOp<T> extends BinaryOp<T, Object> {
 
     public UnaryOp(final Object _1, final T t) {
-        super(_1, TUP2(t, null));
+        super(_1, P(t, null));
     }
 
     /**

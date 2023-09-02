@@ -15,7 +15,7 @@ import gbench.util.math.algebra.tuple.Node;
 public class Comma<T, U> extends BinaryOp<T, U> {
 
     public Comma(T t, U u) {
-        super(",", TUP2(t, u));
+        super(",", P(t, u));
     }
     
     /**

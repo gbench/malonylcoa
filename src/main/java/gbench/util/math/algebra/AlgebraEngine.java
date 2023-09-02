@@ -7,7 +7,7 @@ import static gbench.util.math.algebra.op.Ops.println;
 import static gbench.util.math.algebra.tuple.MyRecord.REC;
 import static gbench.util.math.algebra.tuple.Node.PACK;
 import static gbench.util.math.algebra.tuple.Node.UNPACK;
-import static gbench.util.math.algebra.tuple.Tuple2.TUP2;
+import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,7 +65,7 @@ public class AlgebraEngine {
 		}); // forEach
 
 		Stream.of( // 添加括号符号
-				TUP2(LEFT_PARENT, RIGHT_PARENT) // 圆括号
+				P(LEFT_PARENT, RIGHT_PARENT) // 圆括号
 //            ,TUP2(PACK(TOKEN("[")), PACK(PACK(TOKEN("]")))) // 方括号
 //            ,TUP2(PACK(TOKEN("{")), PACK(PACK(TOKEN("}")))) // 花括号
 		).forEach(brace -> { // 括号的匹配
@@ -174,7 +174,7 @@ public class AlgebraEngine {
 					final var node = tup._2(); // 提取node结构
 					if (!predicate_data_node.test(node)) { // 仅 数据类型的节点 才 给予 进行 算符归集
 						final var opnode = this.getOpByName(tup._2().getName()).get(); // 算符原型的对象
-						opnodes.add(TUP2(tup._1(), PACK(opnode))); // 转换成算符队形给予保存
+						opnodes.add(P(tup._1(), PACK(opnode))); // 转换成算符队形给予保存
 					} // if
 				});
 
@@ -196,7 +196,7 @@ public class AlgebraEngine {
 			final var opnode1 = opnode_pair.get(0)._2(); // 运算符的 Node结构
 			final var opnode2 = opnode_pair.get(1)._2(); // 运算符的 Node结构
 			final var result = this.priorityCompare(opnode1, opnode2); // 运算符的比较等级
-			return TUP2(result, opnode_pair);
+			return P(result, opnode_pair);
 		}).collect(Collectors.toList()); // compare_groups
 
 		// 结果排序后查看
@@ -205,8 +205,8 @@ public class AlgebraEngine {
 			final var opnode_pair = e._2;
 			final var opnode1 = opnode_pair.get(0)._2(); // 运算符的 Node结构
 			final var opnode2 = opnode_pair.get(1)._2(); // 运算符的 Node结构
-			println("算符优先级比较记录:compare", TUP2(opnode_pair.get(0)._1(), opnode1.getName()),
-					TUP2(opnode_pair.get(1)._1(), opnode2.getName()), "--->", result);
+			println("算符优先级比较记录:compare", P(opnode_pair.get(0)._1(), opnode1.getName()),
+					P(opnode_pair.get(1)._1(), opnode2.getName()), "--->", result);
 		}); // while
 
 		/**
@@ -249,7 +249,7 @@ public class AlgebraEngine {
 			println("目标算符优级分组 传转 到 索引位置:", i, "最优比较组 为:", compare_groups.get(i));
 		} // if
 
-		return TUP2(i, compare_groups);
+		return P(i, compare_groups);
 	}
 
 	/**
@@ -729,7 +729,7 @@ public class AlgebraEngine {
 			return null;
 		}
 
-		return this.addBrace(TUP2(PACK(brace[0]), PACK(brace[1])));
+		return this.addBrace(P(PACK(brace[0]), PACK(brace[1])));
 	}
 
 	/**

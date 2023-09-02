@@ -1,6 +1,6 @@
 package gbench.util.math.algebra.tuple;
 
-import static gbench.util.math.algebra.tuple.Tuple2.TUP2;
+import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.lang.reflect.Array;
 import java.sql.Timestamp;
@@ -1862,7 +1862,7 @@ public interface IRecord // 记录结构
 	 */
 	@SuppressWarnings("unchecked")
 	default <T, U> Stream<Tuple2<String, U>> tupleS(final Function<T, U> value_mapper) {
-		return this.stream(tup -> TUP2(tup._1, value_mapper.apply((T) tup._2)));
+		return this.stream(tup -> P(tup._1, value_mapper.apply((T) tup._2)));
 	}
 
 	/**
@@ -2634,7 +2634,7 @@ public interface IRecord // 记录结构
 
 		return !flag // 是否递归处理
 				? this.toMap() // 非递归处理
-				: this.map(e -> e.map2(deep_mapper)).collect(IRecord.recclc()) // 转换成IReord
+				: this.map(e -> e.fmap2(deep_mapper)).collect(IRecord.recclc()) // 转换成IReord
 						.mutate(e -> e.toMap()); // 转换成 Map
 	}
 
@@ -3570,7 +3570,7 @@ public interface IRecord // 记录结构
 	 */
 	public static void forEach(final IRecord root, final BiConsumer<Integer, Tuple2<String, Object>> action) {
 		final var parents = new TreeMap<Integer, Tuple2<String, Object>>(); // 层级注册表
-		final var rootNode = Tuple2.TUP2("", (Object) root); // 根节点的名称为空
+		final var rootNode = Tuple2.P("", (Object) root); // 根节点的名称为空
 
 		parents.put(0, rootNode); // 根节点
 		action.accept(0, rootNode); // 遍历根节点
@@ -3597,7 +3597,7 @@ public interface IRecord // 记录结构
 					.collect(Collectors.joining("/")); // 汇总阶层标识key连接成阶层前缀
 			final var value = node._2(); // 层级节点的值
 			final var path = base + "/" + node._1; // 当前节点路径
-			final var valueNode = Tuple2.TUP2(path, value); // 当前的值节点
+			final var valueNode = Tuple2.P(path, value); // 当前的值节点
 
 			action.accept(level, valueNode); // 处理当前节点
 
@@ -4214,7 +4214,7 @@ public interface IRecord // 记录结构
 					final var i = ai.getAndIncrement(); // 记录键名索引
 					final var left = (T) record_left.get(k);
 					final var right = (U) record_right.get(k);
-					value = bifunc.apply(Tuple2.TUP2(i, k), Tuple2.TUP2(left, right)); // 返回结果
+					value = bifunc.apply(Tuple2.P(i, k), Tuple2.P(left, right)); // 返回结果
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -4596,7 +4596,7 @@ public interface IRecord // 记录结构
 					Optional.ofNullable(tups[0] instanceof Map ? tups[0] : null).map(IRecord::REC)
 							.orElse((IRecord) tups[0]).forEach(p -> rec.add(p));
 				} else if (tups[0] != null && tups[0] instanceof Tuple2) {// if
-					rec.add(((Tuple2<Object, Object>) tups[0]).map1(Object::toString));
+					rec.add(((Tuple2<Object, Object>) tups[0]).fmap1(Object::toString));
 				} else if (tups[0] != null && tups[0] instanceof Iterable) {// if 集合类的 数据连接
 					return StreamSupport.stream(((Iterable<Object>) tups[0]).spliterator(), true)
 							.map(e -> e instanceof IRecord ? (IRecord) e : IRecord.REC(e)) //
@@ -4622,7 +4622,7 @@ public interface IRecord // 记录结构
 	 * @return 滑动窗口的T元素归集器
 	 */
 	public static <T> Collector<T, ?, Stream<Tuple2<T, T>>> tup2slidingclcS(final boolean flag) {
-		return IRecord.slidingclc(2, 1, flag, List::stream, Tuple2::TUP2);
+		return IRecord.slidingclc(2, 1, flag, List::stream, Tuple2::P);
 	}
 
 	/**
@@ -4769,7 +4769,7 @@ public interface IRecord // 记录结构
 	 */
 	@SuppressWarnings("unchecked")
 	static Stream<Tuple2<String, List<Object>>> rows2tupleS(final List<IRecord> recs) {
-		return IRecord.ROWS2COLS(recs).map(e -> e.map2(x -> (List<Object>) x));
+		return IRecord.ROWS2COLS(recs).map(e -> e.fmap2(x -> (List<Object>) x));
 	}
 
 	/**
@@ -4855,7 +4855,7 @@ public interface IRecord // 记录结构
 	 * @return IRecord类型的T元素归集器
 	 */
 	public static <T, U, X> Collector<T, ?, IRecord> rclc(final Function<T, Tuple2<U, X>> mapper) {
-		return IRecord.recclc(e -> mapper.apply(e).map1(o -> o + ""));
+		return IRecord.recclc(e -> mapper.apply(e).fmap1(o -> o + ""));
 	}
 
 	/**
@@ -4925,7 +4925,7 @@ public interface IRecord // 记录结构
 
 		final Function<T, Tuple2<String, Object>> mapper = t -> {
 			final var i = ai.getAndIncrement();
-			return Tuple2.TUP2(idx2name.apply(i), t);
+			return Tuple2.P(idx2name.apply(i), t);
 		};
 
 		return IRecord.recclc(mapper);

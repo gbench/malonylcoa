@@ -10,7 +10,7 @@ package gbench.util.math.algebra.op;
 public class Expa<T, U> extends BinaryOp<T, U> {
 
     public Expa(T t, U u) {
-        super("expa", TUP2(t, u));
+        super("expa", P(t, u));
     }
 
 }

@@ -10,7 +10,7 @@ package gbench.util.math.algebra.op;
 public class Mul<T, U> extends BinaryOp<T, U> {
 
     public Mul(T t, U u) {
-        super("*", TUP2(t, u));
+        super("*", P(t, u));
     }
 
 }

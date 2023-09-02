@@ -1,7 +1,7 @@
 package gbench.util.math.algebra.op;
 
 import static gbench.util.math.algebra.tuple.MyRecord.REC;
-import static gbench.util.math.algebra.tuple.Tuple2.TUP2;
+import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -253,7 +253,7 @@ public class Ops {
 	public final static <T, K> Function<T, Tuple2<K, T>> kvp_int(final Number start,
 			final Function<Integer, K> key_generator) {
 		final var atom = new AtomicInteger(start.intValue());// 状态缓存：用于生成序号
-		return t -> TUP2(key_generator.apply(atom.getAndIncrement()), t);
+		return t -> P(key_generator.apply(atom.getAndIncrement()), t);
 	}
 
 	/**

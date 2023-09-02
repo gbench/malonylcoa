@@ -10,7 +10,7 @@ package gbench.util.math.algebra.op;
 public class Pow<T, U> extends BinaryOp<T, U> {
 
     public Pow(T t, U u) {
-        super("pow", TUP2(t, u));
+        super("pow", P(t, u));
     }
 
 }

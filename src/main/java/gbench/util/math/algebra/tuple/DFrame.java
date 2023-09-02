@@ -1,6 +1,6 @@
 package gbench.util.math.algebra.tuple;
 
-import static gbench.util.math.algebra.tuple.Tuple2.TUP2;
+import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -242,7 +242,7 @@ public class DFrame implements IterableOps<IRecord, DFrame> {
 	 * @return 列集数据的流
 	 */
 	public synchronized Stream<Tuple2<String, ArrayList<Object>>> colS() {
-		return this.cols().entrySet().stream().map(e -> Tuple2.TUP2(e.getKey(), e.getValue()));
+		return this.cols().entrySet().stream().map(e -> Tuple2.P(e.getKey(), e.getValue()));
 	}
 
 	/**
@@ -526,7 +526,7 @@ public class DFrame implements IterableOps<IRecord, DFrame> {
 	 * @return (行的数量,列的数量)
 	 */
 	public Tuple2<Integer, Integer> shape() {
-		return TUP2(this.rowsData.length, this.cols().size());
+		return P(this.rowsData.length, this.cols().size());
 	}
 
 	@Override

@@ -56,8 +56,8 @@ public class Tuple2<T, U> {
 	 * @param mapper 元素变化函数 t-x
 	 * @return 变换后的 元素 (x,u)
 	 */
-	public <X> Tuple2<X, U> map1(final Function<T, X> mapper) {
-		return TUP2(mapper.apply(this._1), this._2);
+	public <X> Tuple2<X, U> fmap1(final Function<T, X> mapper) {
+		return P(mapper.apply(this._1), this._2);
 	}
 
 	/**
@@ -67,8 +67,8 @@ public class Tuple2<T, U> {
 	 * @param mapper 元素变化函数 u-x
 	 * @return 变换后的 元素 (t,x)
 	 */
-	public <X> Tuple2<T, X> map2(final Function<U, X> mapper) {
-		return TUP2(this._1, mapper.apply(this._2));
+	public <X> Tuple2<T, X> fmap2(final Function<U, X> mapper) {
+		return P(this._1, mapper.apply(this._2));
 	}
 
 	/**
@@ -78,15 +78,15 @@ public class Tuple2<T, U> {
 	 * @param x   默认值，类型强制转换失败后的默认值
 	 * @return 变换后的 元素 (t,x)
 	 */
-	@SuppressWarnings({ "unused", "unchecked" })
-	public <X> Tuple2<X, U> map1(final X x) {
+	@SuppressWarnings({ "unchecked" })
+	public <X> Tuple2<X, U> fmap1(final X x) {
 		X _x = x;
 		try {
 			_x = (X) this._1;
 		} catch (Exception e) {
 			// do nothing
 		}
-		return TUP2(_x, this._2);
+		return P(_x, this._2);
 	}
 
 	/**
@@ -96,15 +96,15 @@ public class Tuple2<T, U> {
 	 * @param x   默认值，类型强制转换失败后的默认值
 	 * @return 变换后的 元素 (t,x)
 	 */
-	@SuppressWarnings({ "unused", "unchecked" })
-	public <X> Tuple2<T, X> map2(final X x) {
+	@SuppressWarnings({ "unchecked" })
+	public <X> Tuple2<T, X> fmap2(final X x) {
 		X _x = x;
 		try {
 			_x = (X) this._2;
 		} catch (Exception e) {
 			// do nothing
 		}
-		return TUP2(this._1, _x);
+		return P(this._1, _x);
 	}
 
 	/**
@@ -113,7 +113,7 @@ public class Tuple2<T, U> {
 	 * @return 复制的对象
 	 */
 	public Tuple2<T, U> duplicate() {
-		return TUP2(this._1, this._2);
+		return P(this._1, this._2);
 	}
 
 	/**
@@ -122,7 +122,7 @@ public class Tuple2<T, U> {
 	 * @return (u,t)
 	 */
 	public Tuple2<U, T> swap() {
-		return TUP2(this._2, this._1);
+		return P(this._2, this._1);
 	}
 
 	/**
@@ -229,7 +229,7 @@ public class Tuple2<T, U> {
 	 * @return (x,y) -> (x1,y)
 	 */
 	public static <X, Y, X1> Function<Tuple2<X, Y>, Tuple2<X1, Y>> mapperOf1(final Function<X, X1> mapper) {
-		return tup -> tup.map1(mapper);
+		return tup -> tup.fmap1(mapper);
 	}
 
 	/**
@@ -242,7 +242,7 @@ public class Tuple2<T, U> {
 	 * @return (x,y) -> (x,y1)
 	 */
 	public static <X, Y, Y1> Function<Tuple2<X, Y>, Tuple2<X, Y1>> mapperOf2(final Function<Y, Y1> mapper) {
-		return tup -> tup.map2(mapper);
+		return tup -> tup.fmap2(mapper);
 	}
 
 	@Override
@@ -388,7 +388,7 @@ public class Tuple2<T, U> {
 	 * @param <U> 第二元素类型
 	 * @return 二元组对象的构造
 	 */
-	public static <T, U> Tuple2<T, U> TUP2(final T _1, final U _2) {
+	public static <T, U> Tuple2<T, U> P(final T _1, final U _2) {
 		return Tuple2.of(_1, _2);
 	}
 
@@ -400,7 +400,7 @@ public class Tuple2<T, U> {
 	 * @param <T> 第一元素类型,第二元素类型
 	 * @return 二元组对象的构造
 	 */
-	public static <T> Tuple2<T, T> TUP2(final T[] tt) {
+	public static <T> Tuple2<T, T> P(final T[] tt) {
 		if (tt == null || tt.length < 1) {
 			return null;
 		}
@@ -419,7 +419,7 @@ public class Tuple2<T, U> {
 	 * @param <T> 第一元素类型,第二元素类型
 	 * @return 二元组对象的构造
 	 */
-	public static <T> Tuple2<T, T> TUP2(final List<T> tt) {
+	public static <T> Tuple2<T, T> P(final List<T> tt) {
 		final var _1 = tt.size() >= 1 ? tt.get(0) : null;
 		final var _2 = tt.size() >= 2 ? tt.get(1) : null;
 
@@ -436,7 +436,7 @@ public class Tuple2<T, U> {
 	 */
 	public static <T> Function<T, Tuple2<Integer, T>> snbuilder(final int start) {
 		final var sn = new AtomicInteger(start);
-		return t -> TUP2(sn.getAndIncrement(), t);
+		return t -> P(sn.getAndIncrement(), t);
 	}
 
 	/**

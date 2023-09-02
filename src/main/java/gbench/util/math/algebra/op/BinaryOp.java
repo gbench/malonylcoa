@@ -190,7 +190,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 新生成的组合形式
 	 */
 	public <X> BinaryOp<X, U> compose1(final X x) {
-		return this._2 == null ? null : new BinaryOp<>(this._1, TUP2(x, this._2._2()));
+		return this._2 == null ? null : new BinaryOp<>(this._1, P(x, this._2._2()));
 	}
 
 	/**
@@ -203,7 +203,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 新生成的组合形式
 	 */
 	public <X> BinaryOp<T, X> compose2(final X x) {
-		return this._2 == null ? null : new BinaryOp<>(this._1, TUP2(this._2._1(), x));
+		return this._2 == null ? null : new BinaryOp<>(this._1, P(this._2._1(), x));
 	}
 
 	/**
@@ -218,7 +218,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 新生成的组合形式
 	 */
 	public <X, Y> BinaryOp<X, Y> compose(final X x, final Y y) {
-		return this._2 == null ? null : new BinaryOp<>(this._1, TUP2(x, y));
+		return this._2 == null ? null : new BinaryOp<>(this._1, P(x, y));
 	}
 
 	/**
@@ -289,7 +289,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 
 		if (COMMA_TEST(this.getName())) { // 逗号表达式
 			final var dd = dataStream.toArray();
-			final var ret = TUP2(dd[0], dd[1]);
+			final var ret = P(dd[0], dd[1]);
 			return ret;
 		} else { // 非 逗号表达式
 			final var args = new LinkedList<Object>(); // 参数值
@@ -417,7 +417,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return X 结果容器
 	 */
 	@SuppressWarnings("unchecked")
-	public <X extends Collection<Object>> X getLeafs(final Supplier<X> sup) {
+	public <X extends Collection<Object>> X getLeaves(final Supplier<X> sup) {
 		final X leafs = sup.get();
 		final var stack = new Stack<Object>();
 
@@ -427,7 +427,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 			if (o instanceof BinaryOp) {
 				final var op = ((BinaryOp<Object, Object>) o);
 				if (!op.isConstant()) {
-					op.getLeafs(sup).forEach(leafs::add);
+					op.getLeaves(sup).forEach(leafs::add);
 				} else {
 					final var name = ((ConstantOp) op).getName();
 					leafs.add(name);
@@ -694,7 +694,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return BinaryOp
 	 */
 	public static <T, U> BinaryOp<T, U> of(final Object name, final T left, final U right) {
-		return of(name, TUP2(left, right));
+		return of(name, P(left, right));
 	}
 
 	/**
@@ -788,7 +788,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 		} else {
 			final var optional = parent.getArgsS().map(kvp_int()).map(sibling -> { // 添加序号并脱壳
 				final var o = Node.UNPACK(sibling._2()); // 对象脱壳
-				return TUP2(sibling._1(), o instanceof BinaryOp ? o : null);
+				return P(sibling._1(), o instanceof BinaryOp ? o : null);
 			}).filter(e -> e._2() == op).findAny(); // 尝试从脱壳之后的args中查询结果项为op的节点
 
 			return optional.map(e -> e._1()).orElse(-1);

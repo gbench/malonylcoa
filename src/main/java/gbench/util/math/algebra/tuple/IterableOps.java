@@ -661,7 +661,7 @@ public interface IterableOps<A, C extends IterableOps<A, C>> extends Iterable<A>
 		final var left = this.takeWhile(a -> p.test(a));
 		final var len = this.count();
 		final var right = this.takeRight((int) (len - left.count()));
-		return Tuple2.TUP2(left, right);
+		return Tuple2.P(left, right);
 	}
 
 	/**
@@ -676,7 +676,7 @@ public interface IterableOps<A, C extends IterableOps<A, C>> extends Iterable<A>
 		final var left = this.take(n);
 		final var pos = Optional.of(this.count() - n).map(e -> e == 0 ? 0 : e).get().intValue();
 		final var right = this.takeRight(pos);
-		return Tuple2.TUP2(left, right);
+		return Tuple2.P(left, right);
 	}
 
 	/**
