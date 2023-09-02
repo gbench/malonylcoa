@@ -1557,7 +1557,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1596,7 +1596,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1626,7 +1626,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1656,7 +1656,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1686,7 +1686,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1716,7 +1716,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1732,7 +1732,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1748,7 +1748,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1764,7 +1764,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1780,7 +1780,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1796,7 +1796,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1812,7 +1812,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1828,7 +1828,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1844,7 +1844,7 @@ public interface IRecord // 记录结构
 	 * @param keys   键名,键名列表用逗号分隔,最后一个键名用于最后接收计算值的键,，比如x,y 表示
 	 *               y是x的函数,其值由x决定。,又比如x,y,z 相当于 set("z",t) ,其中 t 是 x,y 的计算结果,t =
 	 *               mapper.apply(x,y);
-	 * @param mapper 值计算函数 (x,y)->t
+	 * @param mapper 值计算函数 (x,y)-&gt;t
 	 * @param xclass 类型参照类的类名
 	 * @return 计算后的新值
 	 */
@@ -1935,7 +1935,7 @@ public interface IRecord // 记录结构
 	 * 把 IRecord 转换 另一种结构的 数据 <br>
 	 * 
 	 * @param <T>    目标类型结构
-	 * @param mapper 结构变换函数 rec->T
+	 * @param mapper 结构变换函数 rec-&gt;T
 	 * @return T 类型的结构
 	 */
 	default <T> T mutate(final Function<IRecord, T> mapper) {
@@ -1948,7 +1948,7 @@ public interface IRecord // 记录结构
 	 * 把 IRecord 转换 另一种结构的 数据 <br>
 	 * 
 	 * @param <T>    目标类型结构
-	 * @param mapper 结构变换函数 {(key,value):toMap递归处理后的结果}->T
+	 * @param mapper 结构变换函数 {(key,value):toMap递归处理后的结果}-&gt;T
 	 * @return T 类型的结构
 	 */
 	default <T> T mutate2(final Function<? super Map<String, Object>, T> mapper) {
@@ -2669,12 +2669,12 @@ public interface IRecord // 记录结构
 
 	/**
 	 * 视rootnode(this)为一个树形结构的根节点,即每个 键值元组(K,V) 的 值V可以是一个 递归 嵌套的IRecord <br>
-	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List<U> 结果之中 <br>
+	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List&lt;U&gt; 结果之中 <br>
 	 * 
 	 * @param <T>    元素类型
 	 * @param <U>    目标结果类型
 	 * @param rec    待遍历的 IRecord
-	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)->u:U 类型的变换结果
+	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
 	 * @return 深度遍历的结果序列
 	 */
 	default <T, U> List<U> hierachizes(final BiFunction<List<String>, T, U> mapper) {
@@ -2683,7 +2683,7 @@ public interface IRecord // 记录结构
 
 	/**
 	 * 视rootnode(this)为一个树形结构的根节点,即每个 键值元组(K,V) 的 值V可以是一个 递归 嵌套的IRecord <br>
-	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List<U> 结果之中 <br>
+	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List&lt;U&gt; 结果之中 <br>
 	 * 
 	 * @param <T>       元素类型
 	 * @param <U>       目标结果类型
@@ -2698,10 +2698,10 @@ public interface IRecord // 记录结构
 
 	/**
 	 * 视rootnode(this)为一个树形结构的根节点,即每个 键值元组(K,V) 的 值V可以是一个 递归 嵌套的IRecord <br>
-	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List<U> 结果之中 <br>
+	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List&lt;U&gt; 结果之中 <br>
 	 * 
 	 * @param rec    待遍历的 IRecord
-	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)->u:U 类型的变换结果
+	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
 	 * @return 深度遍历的结果序列 [([string],obj)]
 	 */
 	default Stream<Tuple2<List<String>, Object>> hierachizeS() {
@@ -2710,12 +2710,12 @@ public interface IRecord // 记录结构
 
 	/**
 	 * 视rootnode(this)为一个树形结构的根节点,即每个 键值元组(K,V) 的 值V可以是一个 递归 嵌套的IRecord <br>
-	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List<U> 结果之中 <br>
+	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List&lt;U&gt; 结果之中 <br>
 	 * 
 	 * @param <T>    元素类型
 	 * @param <U>    目标结果类型
 	 * @param rec    待遍历的 IRecord
-	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)->u:U 类型的变换结果
+	 * @param mapper 值变换函数 节点变换函数 (path:路径,node:T类型的节点值)-&gt;u:U 类型的变换结果
 	 * @return 深度遍历的结果序列 [u]
 	 */
 	default <T, U> Stream<U> hierachizeS(final BiFunction<List<String>, T, U> mapper) {
@@ -2724,7 +2724,7 @@ public interface IRecord // 记录结构
 
 	/**
 	 * 视rootnode(this)为一个树形结构的根节点,即每个 键值元组(K,V) 的 值V可以是一个 递归 嵌套的IRecord <br>
-	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List<U> 结果之中 <br>
+	 * 对rootnode(this)做深度遍历,并把遍历结果 写入 到一个 List&lt;U&gt; 结果之中 <br>
 	 * 
 	 * @param <T>       元素类型
 	 * @param <U>       目标结果类型
@@ -3814,7 +3814,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <X>   元素数据类型
 	 * @param <K>   键名类型
-	 * @param keyer 键名函数,分类规则&依据 x->key
+	 * @param keyer 键名函数,分类规则&amp;依据 x-&gt;key
 	 * @return Map:{(K,U)}
 	 */
 	public static <X, K> Collector<X, ?, Map<K, List<X>>> grpclc2(final Function<X, K> keyer) {
@@ -3830,7 +3830,7 @@ public interface IRecord // 记录结构
 	 * @param <V>     键值类型
 	 * @param <U>     中间结果类型
 	 * @param <Z>     结果类型
-	 * @param keyer   键名函数,分类规则&依据 x-&gt;key
+	 * @param keyer   键名函数,分类规则&amp;依据 x-&gt;key
 	 * @param valueer 键值创建函数 x-&gt;value
 	 * @param uclc    键值元素集合包装函数 vv-&gt;u
 	 * @return Map:{(K,U)}
@@ -3849,7 +3849,7 @@ public interface IRecord // 记录结构
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
 	 * @param <Z>        结果类型
-	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
+	 * @param keyer      键名函数,分类规则&amp;依据 x-&gt;key
 	 * @param valueer    键值创建函数 x-&gt;value
 	 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
 	 * @return Map:{(K,U)}
@@ -4018,7 +4018,6 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)-&gt;v
 	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> divide() {
@@ -4031,7 +4030,6 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)-&gt;v
 	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> multiply() {
@@ -4044,7 +4042,6 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)-&gt;v
 	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> subtract() {
@@ -4057,7 +4054,6 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)-&gt;v
 	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> plus() {
@@ -4084,11 +4080,11 @@ public interface IRecord // 记录结构
 	/**
 	 * 生成一个左侧一元运算符(右侧值采用rightAtom提供) <br>
 	 * 
-	 * @param <L>       左参数类型
-	 * @param <R>       右参数类型
-	 * @param <V>       结果值类型
-	 * @param rightAtom 右侧值生成器
-	 * @param op        归并器 (l,r)-&gt;v
+	 * @param <L>           左参数类型
+	 * @param <R>           右参数类型
+	 * @param <V>           结果值类型
+	 * @param rightSupplier 右侧值生成器
+	 * @param op            归并器 (l,r)-&gt;v
 	 * @return l -&gt; op.apply(l,r)
 	 */
 	public static <L, R, V> Function<IRecord, IRecord> leftUnaryOp(final Supplier<IRecord> rightSupplier,
@@ -4275,7 +4271,6 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <T>      元素类型
 	 * @param iterable 可枚举类
-	 * @param maxSize  最大的元素数量
 	 * @return 元素列表
 	 */
 	public static <T> List<T> itr2list(final Iterable<T> iterable) {
@@ -4797,7 +4792,6 @@ public interface IRecord // 记录结构
 	 * 行形式转换成列形式。即每一元素为列向量的IRecord
 	 * 
 	 * @param recs 行形式的Record集合
-	 * @param keys 字段键名序列，键名间用逗号分隔,如果为null, 采用recs 的一个元素的键名集合。
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
 	@SuppressWarnings("unchecked")
@@ -4809,7 +4803,6 @@ public interface IRecord // 记录结构
 	 * 行形式转换成列形式。即每一元素为列向量的IRecord
 	 * 
 	 * @param recs 行形式的Record集合
-	 * @param keys 字段键名序列，键名间用逗号分隔,如果为null, 采用recs 的一个元素的键名集合。
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
 	static IRecord ROWS2COLS(final List<IRecord> recs) {
@@ -4865,7 +4858,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <T>    元素类型
 	 * @param <U>    元组的1#位置占位符元素类型
-	 * @param mapper Tuple2 类型的元素生成器 t->(str,u)
+	 * @param mapper Tuple2 类型的元素生成器 t-&gt;(str,u)
 	 * @return IRecord类型的T元素归集器
 	 */
 	public static <T, U> Collector<T, ?, IRecord> recclc(final Function<T, Tuple2<String, U>> mapper) {
@@ -4885,7 +4878,7 @@ public interface IRecord // 记录结构
 	 * @param <T>    归集的元素类型
 	 * @param <U>    元组的1#位置占位符元素类型
 	 * @param <X>    元组的2#位置占位符元素元素类型
-	 * @param mapper Tuple2 类型的元素生成器 t->(u,x)
+	 * @param mapper Tuple2 类型的元素生成器 t-&gt;(u,x)
 	 * @return IRecord类型的T元素归集器
 	 */
 	public static <T, U, X> Collector<T, ?, IRecord> rclc(final Function<T, Tuple2<U, X>> mapper) {
@@ -5030,9 +5023,8 @@ public interface IRecord // 记录结构
 	/**
 	 * Map类型的T元素归集器
 	 * 
-	 * @param <K>    键类型
-	 * @param <T>    元素类型
-	 * @param mapper Tuple2 类型的元素生成器 t-&gt;(k,u)
+	 * @param <K> 键类型
+	 * @param <T> 元素类型
 	 * @return IRecord类型的T元素归集器
 	 */
 	public static <K, T> Collector<? super Tuple2<K, T>, ?, Map<K, T>> mapclc2() {
