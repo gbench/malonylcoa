@@ -3849,9 +3849,9 @@ public interface IRecord // 记录结构
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
 	 * @param <Z>        结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
-	 * @param valueer    键值创建函数 x->value
-	 * @param u_finisher 键值元素集合包装函数 vv->u
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
+	 * @param valueer    键值创建函数 x-&gt;value
+	 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
 	 * @return Map:{(K,U)}
 	 */
 	public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
@@ -3866,7 +3866,7 @@ public interface IRecord // 记录结构
 	 * @param <X>        元素数据类型
 	 * @param <K>        键名类型
 	 * @param <Z>        最终结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @param z_finisher 最终结果包装函数 {(k,v)}->z
 	 * @return Z类型的结果
 	 */
@@ -3883,7 +3883,7 @@ public interface IRecord // 记录结构
 	 * @param <K>        键名类型
 	 * @param <V>        键名值
 	 * @param <Z>        最终结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @param valuerer   键值函数 x->value
 	 * @param z_finisher 最终结果包装函数 {(k,v)}->z
 	 * @return Z类型的结果
@@ -3902,10 +3902,10 @@ public interface IRecord // 记录结构
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
 	 * @param <Z>        结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
-	 * @param valueer    键值创建函数 x->value
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
+	 * @param valueer    键值创建函数 x-&gt;value
 	 * @param uclc       键值元素集合归集器 vv->u
-	 * @param z_finisher 最终结果的生成函数 {(k,u)}->z
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @return U 结果类型
 	 */
 	public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valueer,
@@ -3922,10 +3922,10 @@ public interface IRecord // 记录结构
 	 * @param <V>        键值类型
 	 * @param <U>        中间结果类型
 	 * @param <Z>        结果类型
-	 * @param keyer      键名函数,分类规则&依据 x->key
-	 * @param valueer    键值创建函数 x->value
-	 * @param u_finisher 键值元素集合包装函数 vv->u
-	 * @param z_finisher 最终结果的生成函数 {(k,u)}->z
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
+	 * @param valueer    键值创建函数 x-&gt;value
+	 * @param u_finisher 键值元素集合包装函数 vv-&gt;u
+	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @return U 结果类型
 	 */
 	public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valueer,
@@ -3982,7 +3982,7 @@ public interface IRecord // 记录结构
 	 * 把 [IRecord] 集合数据 归集到 由 keys 所标识的 路径集合中，并 调用evaluator 做集合数据额演算。
 	 * 
 	 * @param <T>       路径集合的函数的计算值类型
-	 * @param evaluator 路径集合计算函数 ([r]:IRecord列表)->t
+	 * @param evaluator 路径集合计算函数 ([r]:IRecord列表)-&gt;t
 	 * @param keys      归集的键名序列,键名间采用英文半角','分隔,keys 长度为0则统一归key类别之下
 	 * @return 数据透视表
 	 */
@@ -3996,7 +3996,7 @@ public interface IRecord // 记录结构
 	 * 把 [IRecord] 集合数据 归集到 由 keys 所标识的 路径集合中，并 调用evaluator 做集合数据额演算。
 	 * 
 	 * @param <T>       路径集合的函数的计算值类型
-	 * @param evaluator 路径集合计算函数 ([r]:IRecord列表)->t
+	 * @param evaluator 路径集合计算函数 ([r]:IRecord列表)-&gt;t
 	 * @param keys      归集的键名序列,keys 长度为0则统一归key类别之下
 	 * @return 数据透视表
 	 */
@@ -4018,8 +4018,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)->v
-	 * @return (record0,record1)->record2
+	 * @param biop 归并器 (t,u)-&gt;v
+	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> divide() {
 
@@ -4031,8 +4031,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)->v
-	 * @return (record0,record1)->record2
+	 * @param biop 归并器 (t,u)-&gt;v
+	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> multiply() {
 
@@ -4044,8 +4044,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)->v
-	 * @return (record0,record1)->record2
+	 * @param biop 归并器 (t,u)-&gt;v
+	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> subtract() {
 
@@ -4057,8 +4057,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (t,u)->v
-	 * @return (record0,record1)->record2
+	 * @param biop 归并器 (t,u)-&gt;v
+	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> plus() {
 
@@ -4088,8 +4088,8 @@ public interface IRecord // 记录结构
 	 * @param <R>       右参数类型
 	 * @param <V>       结果值类型
 	 * @param rightAtom 右侧值生成器
-	 * @param op        归并器 (l,r)->v
-	 * @return l -> op.apply(l,r)
+	 * @param op        归并器 (l,r)-&gt;v
+	 * @return l -&gt; op.apply(l,r)
 	 */
 	public static <L, R, V> Function<IRecord, IRecord> leftUnaryOp(final Supplier<IRecord> rightSupplier,
 			final BiFunction<L, R, V> op) {
@@ -4102,8 +4102,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * 非数字 则 返回第一个值
 	 * 
-	 * @param biop 归并器 (d,d)->d
-	 * @return (record0,record1)->record2
+	 * @param biop 归并器 (d,d)-&gt;d
+	 * @return (record0,record1)-&gt;record2
 	 */
 	public static BinaryOperator<IRecord> binaryOp(final BinaryOperator<Double> biop) {
 
@@ -4125,7 +4125,7 @@ public interface IRecord // 记录结构
 	 * @param <T>    归并元素类型
 	 * @param biop   归并器 (t,t)->t
 	 * @param tclass 占位符的元素类型
-	 * @return (record0,record1)->record2
+	 * @return (record0,record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> BinaryOperator<IRecord> binaryOp(final BinaryOperator<T> biop, final Class<T> tclass) {
@@ -4144,8 +4144,8 @@ public interface IRecord // 记录结构
 	 * 生成一个 IRecord的二元运算法。 最大值
 	 * 
 	 * @param <T>       度量器的数据类型
-	 * @param quantizer 度量器 t->number
-	 * @return (record0,record1)->record2
+	 * @param quantizer 度量器 t-&gt;number
+	 * @return (record0,record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> BinaryOperator<IRecord> max(final Function<T, Number> quantizer) {
@@ -4161,8 +4161,8 @@ public interface IRecord // 记录结构
 	 * 生成一个 IRecord的二元运算法。最小值
 	 * 
 	 * @param <T>       度量器的数据类型
-	 * @param quantizer 度量器 t->number
-	 * @return (record0,record1)->record2
+	 * @param quantizer 度量器 t-&gt;number
+	 * @return (record0,record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> BinaryOperator<IRecord> min(final Function<T, Number> quantizer) {
@@ -4180,8 +4180,8 @@ public interface IRecord // 记录结构
 	 * @param <T> 第一参数类型
 	 * @param <U> 第二参数类型
 	 * @param <V> 结果类型
-	 * @param op  归并器 (t,u)->v
-	 * @return (record0,record1)->record2
+	 * @param op  归并器 (t,u)-&gt;v
+	 * @return (record0,record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, U, V> BinaryOperator<IRecord> combine(final BiFunction<T, U, V> op) {
@@ -4195,8 +4195,8 @@ public interface IRecord // 记录结构
 	 * @param <T> 第一参数类型
 	 * @param <U> 第二参数类型
 	 * @param <V> 结果类型
-	 * @param op  归并器 (k:键名,(t:左侧元素,u:右侧元素))->v
-	 * @return (record0,record1)->record2
+	 * @param op  归并器 (k:键名,(t:左侧元素,u:右侧元素))-&gt;v
+	 * @return (record0,record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, U, V> BinaryOperator<IRecord> combine2(final BiFunction<String, Tuple2<T, U>, V> op) {
@@ -4211,7 +4211,7 @@ public interface IRecord // 记录结构
 	 * @param <U> 第二参数类型
 	 * @param <V> 结果类型
 	 * @param op  归并器 (i:键名索引,(t:左侧元素,u:右侧元素))->v
-	 * @return (record0,record1)->record2
+	 * @return (record0,record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, U, V> BinaryOperator<IRecord> combine3(final BiFunction<Integer, Tuple2<T, U>, V> op) {
@@ -4225,8 +4225,8 @@ public interface IRecord // 记录结构
 	 * @param <T>    第一参数类型
 	 * @param <U>    第二参数类型
 	 * @param <V>    结果类型
-	 * @param bifunc 归并器 ((i:键名索引,k:键名),(t:左侧元素,u:右侧元素))->v
-	 * @return (record0,record1)->record2
+	 * @param bifunc 归并器 ((i:键名索引,k:键名),(t:左侧元素,u:右侧元素))-&gt;v
+	 * @return (record0,record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, U, V> BinaryOperator<IRecord> combine4(
@@ -4675,10 +4675,12 @@ public interface IRecord // 记录结构
 	 * 返回非齐次窗口长度<br>
 	 * 
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt;变换
+	 *                 List&lt;DFrame&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
-	 * @param finisher 最终结果处理器,比如 把 List<List<T> 变换 List&lt;DFrame&gt; 这样的类型函数
+	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt;
+	 *                 这样的类型函数
 	 * @return 滑动窗口的T元素归集器，归集成U类型的窗口集合
 	 */
 	public static <T, U> Collector<T, ?, U> slidingclc(final int size, final int step,
@@ -4703,11 +4705,13 @@ public interface IRecord // 记录结构
 	 * 滑动窗口的T元素归集器
 	 * 
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt;变换
+	 *                 List&lt;DFrame&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
 	 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
-	 * @param finisher 最终结果处理器,比如 把 List<List<T> 变换 List&lt;DFrame&gt; 这样的类型函数
+	 * @param finisher 最终结果处理器,比如 把 List&lt;List&lt;T&gt;&gt; 变换 List&lt;DFrame&gt;
+	 *                 这样的类型函数
 	 * @return 滑动窗口的T元素归集器，归集成U类型的窗口集合
 	 */
 	public static <T, U> Collector<T, ?, U> slidingclc(final int size, final int step, final boolean flag,
@@ -4720,7 +4724,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <F>      帧框类型
 	 * @param <T>      流元素类型
-	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List<List<T> 变换 List<DFrame> 这样的类型
+	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt;变换
+	 *                 List&lt;DFrame&gt; 这样的类型
 	 * @param size     窗口长度 大于0的整数
 	 * @param step     移动步长 大于0的整数
 	 * @param flag     是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
@@ -4782,7 +4787,6 @@ public interface IRecord // 记录结构
 	 * 行形式转换成列形式。即每一元素为列向量的IRecord
 	 * 
 	 * @param recs 行形式的Record集合
-	 * @param keys 字段键名序列，键名间用逗号分隔,如果为null, 采用recs 的一个元素的键名集合。
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
 	static List<Tuple2<String, List<Object>>> rows2tuples(final List<IRecord> recs) {
@@ -4967,7 +4971,7 @@ public interface IRecord // 记录结构
 	 * @param <K>    键类型
 	 * @param <T>    元素类型
 	 * @param <U>    元组的1#位置占位符元素类型
-	 * @param mapper Tuple2 类型的元素生成器 t->(k,u)
+	 * @param mapper Tuple2 类型的元素生成器 t-&gt;(k,u)
 	 * @return IRecord类型的T元素归集器
 	 */
 	public static <T, K, U> Collector<T, ?, Map<K, List<U>>> mapclc(final Function<T, Tuple2<K, U>> mapper) {
@@ -4988,7 +4992,7 @@ public interface IRecord // 记录结构
 	 * @param <K>    键类型
 	 * @param <T>    元素类型
 	 * @param <U>    元组的1#位置占位符元素类型
-	 * @param mapper Tuple2 类型的元素生成器 t->(k,u)
+	 * @param mapper Tuple2 类型的元素生成器 t-&gt;(k,u)
 	 * @param biop   二元运算算子 (u,u)->u
 	 * @return IRecord类型的T元素归集器 (LinkedHashMap结构,以保持健名顺序)
 	 */
@@ -5016,7 +5020,7 @@ public interface IRecord // 记录结构
 	 * @param <K>    键类型
 	 * @param <T>    元素类型
 	 * @param <U>    元组的1#位置占位符元素类型
-	 * @param mapper Tuple2 类型的元素生成器 t->(k,u)
+	 * @param mapper Tuple2 类型的元素生成器 t-&gt;(k,u)
 	 * @return IRecord类型的T元素归集器
 	 */
 	public static <T, K, U> Collector<T, ?, Map<K, U>> mapclc2(final Function<T, Tuple2<K, U>> mapper) {
@@ -5028,8 +5032,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <K>    键类型
 	 * @param <T>    元素类型
-	 * @param <U>    元组的1#位置占位符元素类型
-	 * @param mapper Tuple2 类型的元素生成器 t->(k,u)
+	 * @param mapper Tuple2 类型的元素生成器 t-&gt;(k,u)
 	 * @return IRecord类型的T元素归集器
 	 */
 	public static <K, T> Collector<? super Tuple2<K, T>, ?, Map<K, T>> mapclc2() {
@@ -5041,8 +5044,8 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param <K>   键名类型
 	 * @param <T>   值类型
-	 * @param keyer 键名生成函数,t->k
-	 * @return record->(k,t)
+	 * @param keyer 键名生成函数,t-&gt;k
+	 * @return record-&gt;(k,t)
 	 */
 	public static <T, K> Function<T, Tuple2<K, T>> keyit(final Function<T, K> keyer) {
 		return r -> Tuple2.of(keyer.apply(r), r);
@@ -5062,7 +5065,7 @@ public interface IRecord // 记录结构
 
 	/**
 	 * 视rootnode为一个树形结构的根节点,即每个 键值元组(K,V) 的 值V可以是一个 递归 嵌套的IRecord <br>
-	 * 对rootnode做深度遍历,并把遍历结果 写入 到一个 List<U> 结果之中 <br>
+	 * 对rootnode做深度遍历,并把遍历结果 写入 到一个 List&lt;U&gt; 结果之中 <br>
 	 * 
 	 * @param <T>      元素类型
 	 * @param <U>      目标结果类型
@@ -5155,7 +5158,7 @@ public interface IRecord // 记录结构
 	 * 对于 非集合类型: 不做变换 <br>
 	 * 对于 集合类型：数组类型，Collection,Iterable 类型 则逐个元素进行处理 进行递归处理,并 给予 拼装成 ArrayList 结构
 	 * 
-	 * @param obj    元素类型
+	 * @param obj 元素类型
 	 * @return 处理后的元素类型
 	 */
 	public static Object tidy(final Object obj) {
