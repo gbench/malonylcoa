@@ -3015,7 +3015,7 @@ public interface IRecord // 记录结构
 	 * @param <T>       第一参数类型
 	 * @param keys      参数名列表，保留的键名序列，键名之间采用半角逗号分隔
 	 * @param predicate 参数测试函数 t->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T> Predicate<IRecord> test(final String keys, final Predicate<T> predicate) {
 		return IRecord.test(keys.split("[,]"), predicate);
@@ -3027,7 +3027,7 @@ public interface IRecord // 记录结构
 	 * @param <T>       第一参数类型
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 t->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Predicate<IRecord> test(final String[] keys, final Predicate<T> predicate) {
@@ -3045,7 +3045,7 @@ public interface IRecord // 记录结构
 	 * @param <U>         第二参数类型
 	 * @param keys        参数名列表，保留的键名序列，键名之间采用半角逗号分隔
 	 * @param bipredicate 参数测试函数 (t,u)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> test(final String keys, final BiPredicate<T, U> bipredicate) {
 		return IRecord.test(keys.split("[,]+"), bipredicate);
@@ -3058,7 +3058,7 @@ public interface IRecord // 记录结构
 	 * @param <U>         第二参数类型
 	 * @param keys        参数名列表
 	 * @param bipredicate 参数测试函数 (t,u)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T, U> Predicate<IRecord> test(final String keys[], final BiPredicate<T, U> bipredicate) {
@@ -3078,7 +3078,7 @@ public interface IRecord // 记录结构
 	 * @param keys        参数名列表
 	 * @param bipredicate 参数测试函数 (u,u)->bool
 	 * @param mapper      参数值变换函数 (t)->u
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T, U> Predicate<IRecord> test(final String keys[], final BiPredicate<U, U> bipredicate,
@@ -3098,7 +3098,7 @@ public interface IRecord // 记录结构
 	 * @param keys      参数名列表，保留的键名序列，键名之间采用半角逗号分隔
 	 * @param predicate 参数测试函数 (u)->bool
 	 * @param mapper    参数值变换函数 [o]->u
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <U> Predicate<IRecord> test(final String keys, final Predicate<U> predicate,
 			final Function<Object[], U> mapper) {
@@ -3113,7 +3113,7 @@ public interface IRecord // 记录结构
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 (u)->bool
 	 * @param mapper    参数值变换函数 [o]->u
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> test(final String keys[], final Predicate<U> predicate,
 			final Function<Object[], U> mapper) {
@@ -3128,7 +3128,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表，保留的键名序列，键名之间采用半角逗号分隔
 	 * @param predicate 参数测试函数 [o]->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> testa(final String keys, final Predicate<Object[]> predicate) {
 		return IRecord.test(keys.split("[,]+"), predicate, e -> e);
@@ -3139,7 +3139,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 [o]->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> testa(final String keys[], final Predicate<Object[]> predicate) {
 		return rec -> {
@@ -3153,7 +3153,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 (int)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> int_test(final String keys[], final Predicate<Integer> predicate) {
 		return IRecord.test(keys, (x, y) -> predicate.test(x), a -> IRecord.obj2dbl().apply(a).intValue());
@@ -3164,7 +3164,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 (int)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> int_test(final String keys, final Predicate<Integer> predicate) {
 		return IRecord.test(keys.split("[,]+"), (x, y) -> predicate.test(x),
@@ -3178,7 +3178,7 @@ public interface IRecord // 记录结构
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
 	 * @param bipredicate 参数测试函数 (int,int)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> int_test(final String keys,
 			final BiPredicate<Integer, Integer> bipredicate) {
@@ -3192,7 +3192,7 @@ public interface IRecord // 记录结构
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
 	 * @param bipredicate 参数测试函数 (t,u)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> int_test(final String keys[],
 			final BiPredicate<Integer, Integer> bipredicate) {
@@ -3204,7 +3204,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 (lng)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> lng_test(final String keys, final Predicate<Long> predicate) {
 		return IRecord.test(keys.split("[,]+"), (x, y) -> predicate.test(x),
@@ -3216,7 +3216,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 (lng)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> lng_test(final String keys[], final Predicate<Long> predicate) {
 		return IRecord.test(keys, (x, y) -> predicate.test(x), a -> IRecord.obj2dbl().apply(a).longValue());
@@ -3229,7 +3229,7 @@ public interface IRecord // 记录结构
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
 	 * @param bipredicate 参数测试函数 (lng,lng)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> lng_test(final String keys, final BiPredicate<Long, Long> bipredicate) {
 		return IRecord.test(keys.split("[,]+"), bipredicate, a -> IRecord.obj2dbl().apply(a).longValue());
@@ -3242,7 +3242,7 @@ public interface IRecord // 记录结构
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
 	 * @param bipredicate 参数测试函数 (dbl,dbl)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> lng_test(final String keys[], final BiPredicate<Long, Long> bipredicate) {
 		return IRecord.test(keys, bipredicate, a -> IRecord.obj2dbl().apply(a).longValue());
@@ -3253,7 +3253,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 (dbl)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> dbl_test(final String keys, final Predicate<Double> predicate) {
 		return IRecord.test(keys.split("[,]+"), (x, y) -> predicate.test(x), IRecord.obj2dbl());
@@ -3264,7 +3264,7 @@ public interface IRecord // 记录结构
 	 * 
 	 * @param keys      参数名列表
 	 * @param predicate 参数测试函数 (dbl)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> dbl_test(final String keys[], final Predicate<Double> predicate) {
 		return IRecord.test(keys, (x, y) -> predicate.test(x), a -> IRecord.obj2dbl().apply(a));
@@ -3277,7 +3277,7 @@ public interface IRecord // 记录结构
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
 	 * @param bipredicate 参数测试函数 (dbl,dbl)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> dbl_test(final String keys[],
 			final BiPredicate<Double, Double> bipredicate) {
@@ -3288,8 +3288,8 @@ public interface IRecord // 记录结构
 	 * 结果值的测试
 	 * 
 	 * @param keys      参数名列表
-	 * @param predicate 参数测试函数 (ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param predicate 参数测试函数 (ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> ldt_test(final String keys, final Predicate<LocalDateTime> predicate) {
 		return IRecord.test(keys.split("[,]+"), (x, y) -> predicate.test(x), IRecord::asLocalDateTime);
@@ -3299,8 +3299,8 @@ public interface IRecord // 记录结构
 	 * 结果值的测试
 	 * 
 	 * @param keys      参数名列表
-	 * @param predicate 参数测试函数 (ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param predicate 参数测试函数 (ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> ldt_test(final String keys[], final Predicate<LocalDateTime> predicate) {
 		return IRecord.test(keys, (x, y) -> predicate.test(x), a -> IRecord.asLocalDateTime(a));
@@ -3312,8 +3312,8 @@ public interface IRecord // 记录结构
 	 * @param <T>         源参数类型
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
-	 * @param bipredicate 参数测试函数 (ldt,ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param bipredicate 参数测试函数 (ldt,ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> ldt_test(final String keys,
 			final BiPredicate<LocalDateTime, LocalDateTime> bipredicate) {
@@ -3326,8 +3326,8 @@ public interface IRecord // 记录结构
 	 * @param <T>         源参数类型
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
-	 * @param bipredicate 参数测试函数 (ldt,ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param bipredicate 参数测试函数 (ldt,ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> ldt_test(final String keys[],
 			final BiPredicate<LocalDateTime, LocalDateTime> bipredicate) {
@@ -3338,8 +3338,8 @@ public interface IRecord // 记录结构
 	 * 结果值的测试
 	 * 
 	 * @param keys      参数名列表
-	 * @param predicate 参数测试函数 (ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param predicate 参数测试函数 (ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> ld_test(final String keys, final Predicate<LocalDate> predicate) {
 		return IRecord.test(keys.split("[,]+"), (x, y) -> predicate.test(x), IRecord::asLocalDate);
@@ -3349,8 +3349,8 @@ public interface IRecord // 记录结构
 	 * 结果值的测试
 	 * 
 	 * @param keys      参数名列表
-	 * @param predicate 参数测试函数 (ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param predicate 参数测试函数 (ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> ld_test(final String keys[], final Predicate<LocalDate> predicate) {
 		return IRecord.test(keys, (x, y) -> predicate.test(x), a -> IRecord.asLocalDate(a));
@@ -3362,8 +3362,8 @@ public interface IRecord // 记录结构
 	 * @param <T>         源参数类型
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
-	 * @param bipredicate 参数测试函数 (ldt,ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param bipredicate 参数测试函数 (ldt,ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> ld_test(final String keys,
 			final BiPredicate<LocalDate, LocalDate> bipredicate) {
@@ -3376,8 +3376,8 @@ public interface IRecord // 记录结构
 	 * @param <T>         源参数类型
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
-	 * @param bipredicate 参数测试函数 (ldt,ldt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param bipredicate 参数测试函数 (ldt,ldt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> ld_test(final String keys[],
 			final BiPredicate<LocalDate, LocalDate> bipredicate) {
@@ -3388,8 +3388,8 @@ public interface IRecord // 记录结构
 	 * 结果值的测试
 	 * 
 	 * @param keys      参数名列表
-	 * @param predicate 参数测试函数 (lt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param predicate 参数测试函数 (lt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> lt_test(final String keys, final Predicate<LocalTime> predicate) {
 		return IRecord.test(keys.split("[,]+"), (x, y) -> predicate.test(x), IRecord::asLocalTime);
@@ -3399,8 +3399,8 @@ public interface IRecord // 记录结构
 	 * 结果值的测试
 	 * 
 	 * @param keys      参数名列表
-	 * @param predicate 参数测试函数 (lt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param predicate 参数测试函数 (lt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static Predicate<IRecord> lt_test(final String keys[], final Predicate<LocalTime> predicate) {
 		return IRecord.test(keys, (x, y) -> predicate.test(x), a -> IRecord.asLocalTime(a));
@@ -3412,8 +3412,8 @@ public interface IRecord // 记录结构
 	 * @param <T>         源参数类型
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
-	 * @param bipredicate 参数测试函数 (lt,lt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param bipredicate 参数测试函数 (lt,lt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> lt_test(final String keys,
 			final BiPredicate<LocalTime, LocalTime> bipredicate) {
@@ -3426,8 +3426,8 @@ public interface IRecord // 记录结构
 	 * @param <T>         源参数类型
 	 * @param <U>         目标参数类型
 	 * @param keys        参数名列表
-	 * @param bipredicate 参数测试函数 (lt,lt)->bool
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @param bipredicate 参数测试函数 (lt,lt)-&gt;bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> lt_test(final String keys[],
 			final BiPredicate<LocalTime, LocalTime> bipredicate) {
@@ -3440,7 +3440,7 @@ public interface IRecord // 记录结构
 	 * @param <T>  第一参数类型
 	 * @param <U>  第二参数类型
 	 * @param keys 参数名列表
-	 * @return IRecord 的谓词测试函数 rec->bool
+	 * @return IRecord 的谓词测试函数 rec-&gt;bool
 	 */
 	public static <T, U> Predicate<IRecord> eql(final String keys) {
 		return IRecord.test(keys, (a, b) -> {
@@ -3490,7 +3490,7 @@ public interface IRecord // 记录结构
 	 * @param <T>    元素类型
 	 * @param <U>    具有比较能力的类型
 	 * @param keys   keys 键名序列
-	 * @param mapper (key:键名,t:键值)->u 比较能力变换器
+	 * @param mapper (key:键名,t:键值)-&gt;u 比较能力变换器
 	 * @param asc    是否升序,true 表示升序,小值在前,false 表示降序,大值在前
 	 * @return keys 序列的比较器
 	 */
@@ -3526,7 +3526,7 @@ public interface IRecord // 记录结构
 	 * @param <T>    元素类型
 	 * @param <U>    具有比较能力的类型
 	 * @param keys   键名序列
-	 * @param mapper (key:键名,t:键值)->u 比较能力变换器
+	 * @param mapper (key:键名,t:键值)-&gt;u 比较能力变换器
 	 * @param asc    是否升序,true 表示升序,小值在前,false 表示降序,大值在前
 	 * @return keys 序列的比较器
 	 */
@@ -3736,7 +3736,7 @@ public interface IRecord // 记录结构
 	 * 生成 构建器
 	 * 
 	 * @param n     键数量,正整数
-	 * @param keyer 键名生成器 (i:从0开始)->key
+	 * @param keyer 键名生成器 (i:从0开始)-&gt;key
 	 * @return IRecord 构造器
 	 */
 	public static Builder rb(final int n, Function<Integer, ?> keyer) {
@@ -3830,9 +3830,9 @@ public interface IRecord // 记录结构
 	 * @param <V>     键值类型
 	 * @param <U>     中间结果类型
 	 * @param <Z>     结果类型
-	 * @param keyer   键名函数,分类规则&依据 x->key
-	 * @param valueer 键值创建函数 x->value
-	 * @param uclc    键值元素集合包装函数 vv->u
+	 * @param keyer   键名函数,分类规则&依据 x-&gt;key
+	 * @param valueer 键值创建函数 x-&gt;value
+	 * @param uclc    键值元素集合包装函数 vv-&gt;u
 	 * @return Map:{(K,U)}
 	 */
 	public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
@@ -3867,7 +3867,7 @@ public interface IRecord // 记录结构
 	 * @param <K>        键名类型
 	 * @param <Z>        最终结果类型
 	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
-	 * @param z_finisher 最终结果包装函数 {(k,v)}->z
+	 * @param z_finisher 最终结果包装函数 {(k,v)}-&gt;z
 	 * @return Z类型的结果
 	 */
 	public static <X, K, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer,
@@ -3885,7 +3885,7 @@ public interface IRecord // 记录结构
 	 * @param <Z>        最终结果类型
 	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @param valuerer   键值函数 x->value
-	 * @param z_finisher 最终结果包装函数 {(k,v)}->z
+	 * @param z_finisher 最终结果包装函数 {(k,v)}-&gt;z
 	 * @return Z类型的结果
 	 */
 	public static <X, K, V, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valuerer,
@@ -3904,7 +3904,7 @@ public interface IRecord // 记录结构
 	 * @param <Z>        结果类型
 	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @param valueer    键值创建函数 x-&gt;value
-	 * @param uclc       键值元素集合归集器 vv->u
+	 * @param uclc       键值元素集合归集器 vv-&gt;u
 	 * @param z_finisher 最终结果的生成函数 {(k,u)}-&gt;z
 	 * @return U 结果类型
 	 */
