@@ -442,6 +442,23 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	}
 
 	/**
+	 * 强制转换成系数
+	 * 
+	 * @return ConstantOp
+	 */
+	public final Optional<ConstantOp> factorOpt() {
+		return BinaryOp.factorOpt(this);
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public Optional<BinaryOp<Object, Object>> termOpt() {
+		return BinaryOp.termOpt(this);
+	}
+
+	/**
 	 * 结构化简
 	 * 
 	 * @return 结构化简
@@ -487,8 +504,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 				}; // cascadeOp , argdbls 浮点数类型的 args, op 级联算符名称
 		final var theOp = this.duplicate(); // 复制操作符
 		final var opName = theOp.getName(); // 操作符名称
-		final var left = args != null && args.length > 0 ? args[0].unpack() : null; // 左位参数
-		final var right = args != null && args.length > 1 ? args[1].unpack() : null; // 右位参数
+		final var left = Optional.ofNullable(args != null && args.length > 0 ? args[0].unpack() : null).orElse(null); // 左位参数
+		final var right = Optional.ofNullable(args != null && args.length > 1 ? args[1].unpack() : null).orElse(null); // 右位参数
 		final var handle = Optional.of(this.getAry()).map(nary -> {
 			switch (nary) { // 算符类型的判断
 			case 1: { // 一元算符
@@ -501,19 +518,42 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 						.map(e -> !e.isToken() ? null : e.getToken() == null ? null : e.getToken().dbl())
 						.toArray(Double[]::new); // 浮点数类型的数据值
 				final var flag = (dbls[0] != null) && (dbls[1] != null); // 是否是数值计算
+				final Function<Object, BinaryOp<?, ?>> to_token = obj -> obj instanceof BinaryOp bop ? bop
+						: TOKEN(String.valueOf(obj));
 
 				if (opName.equals("+")) { // 加法
-					if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变
+					final var termLeft = BinaryOp.termOpt(left);
+					if (termLeft.isPresent()) {
+						final var a = to_token.apply(termLeft.get()._2._2);
+						final var b = to_token.apply(right);
+						if (Objects.equals(a, b)) { // 合并 2x+x
+							final var x = termLeft.get();
+							return MUL(dbl(x._2._1) + 1, x._2._2);
+						} else { // 合并 2x+3x
+							final var termRight = BinaryOp.termOpt(right);
+							final var _b = to_token.apply(termRight.get()._2._2);
+							if (termRight.isPresent() && Objects.equals(a, _b)) {
+								final var x = termLeft.get();
+								final var y = termRight.get();
+								return MUL(dbl(x._2._1) + dbl(y._2._1), x._2._2);
+							} // if
+						} // if
+					} else if (Objects.equals(left, right)) { // 合并同类项
+						return MUL(2, right);
+					} else if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变
 						return zero_i == 0 ? right : left;
 					} else if (flag) {
 						return PACK(dbls[0] + dbls[1]).unpack();
 					} else { // 连加情形 把 (+,coef_i,(+,coef_j,c)) 转成 (+,coef_i+coef_j,c) 的结构，降低一个阶层 以 提升效率
 						final var h = cascade_handler.apply(dbls, ADD(null, null)); // 计算连加
-						if (h != null)
+						if (h != null) {
 							return h;
+						} // if
 					} // else 连加情形
 				} else if (opName.equals("*")) { // 乘法
-					if (one_i >= 0) { // 存在1参数，1 是 乘法的 幺元 即 1 乘以 任何数 的结果 仍旧是 任何数，也就是乘以幺元 保持不变
+					if (Objects.equals(right, left)) { // 合并同类项
+						return POW(right, 2);
+					} else if (one_i >= 0) { // 存在1参数，1 是 乘法的 幺元 即 1 乘以 任何数 的结果 仍旧是 任何数，也就是乘以幺元 保持不变
 						return one_i == 0 ? right : left;
 					} else if (zero_i >= 0) { // 存在 0 参数 0 是乘法的 零元 即 任何数 乘以 零元 结构都是零元
 						return PACK(0).unpack();
@@ -525,15 +565,23 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 							return h;
 					} // else 连乘的情形
 				} else if (opName.equals("-")) { // 减法
-					if (zero_i == 1)
+					if (Objects.equals(right, left)) // 合并同类项
+						return TOKEN(0);
+					else if (zero_i == 1)
 						return left;
-					if (flag)
+					else if (flag)
 						return PACK(dbls[0] - dbls[1]).unpack();
 				} else if (opName.equals("/")) { // 除法
-					if (one_i == 1)
+					if (Objects.equals(right, left)) // 合并同类项
+						return TOKEN(1);
+					else if (one_i == 1)
 						return left;
-					if (flag)
+					else if (flag)
 						return PACK(dbls[0] / dbls[1]).unpack();
+				} else if (opName.equals("pow")) { // 高次幂
+					if (Objects.equals(1d, IRecord.obj2dbl().apply(right))) {
+						return left;
+					}
 				} // if
 
 				return theOp.compose(left, right); // 重新组合数据
@@ -678,9 +726,14 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	/**
 	 * equals
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equals(final Object obj) {
-		return obj instanceof BinaryOp<?, ?> bop ? Tuple2.defaultComparator().equals(bop) : false;
+		return obj instanceof BinaryOp<?, ?> bop //
+				? Tuple2.defaultComparator().compare( //
+						(Tuple2<Object, Object>) (Object) bop, //
+						(Tuple2<Object, Object>) (Object) this) == 0 //
+				: false;
 	}
 
 	/**
@@ -697,6 +750,46 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 					: MessageFormat.format("({0},{1})", op, s1);
 		} else { // 常量类
 			return this.getName();
+		}
+	}
+
+	/**
+	 * 强制转换成系数
+	 * 
+	 * @param object
+	 * @return
+	 */
+	public static final Optional<ConstantOp> factorOpt(final Object object) {
+		if (UNPACK(object) instanceof ConstantOp constOp) {
+			return dblOpt(constOp.evaluate()).map(Ops::TOKEN);
+		} else if (UNPACK(object) instanceof Number num) {
+			return Optional.ofNullable(TOKEN(num));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	/**
+	 * 
+	 * @param object
+	 * @return
+	 */
+	public static Optional<BinaryOp<Object, Object>> termOpt(final Object object) {
+
+		if (UNPACK(object) instanceof BinaryOp<?, ?> bop) {
+			if (bop._2 != null) {
+				final var left = bop._2._1;
+				final var right = bop._2._2;
+				if (Objects.equals("*", bop._1)) { // 乘项
+					final var leftopt = factorOpt(left);
+					return leftopt.isEmpty() //
+							? factorOpt(right).map(v -> MUL(v, left)) //
+							: leftopt.map(v -> MUL(v, right));
+				}
+			}
+			return Optional.empty();
+		} else {
+			return Optional.empty();
 		}
 	}
 
@@ -727,6 +820,26 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 */
 	public static <T, U> BinaryOp<T, U> of(final Object name, Tuple2<T, U> args) {
 		return new BinaryOp<T, U>(name, args);
+	}
+
+	/**
+	 * 强转为浮点数
+	 * 
+	 * @param obj 目标对象
+	 * @return 浮点数Opt
+	 */
+	public static Optional<Double> dblOpt(final Object obj) {
+		return Optional.ofNullable(dbl(obj));
+	}
+
+	/**
+	 * 强转为浮点数
+	 * 
+	 * @param obj 目标对象
+	 * @return 浮点数Opt
+	 */
+	public static Double dbl(final Object obj) {
+		return IRecord.obj2dbl().apply(obj);
 	}
 
 	/**

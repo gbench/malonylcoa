@@ -11,7 +11,7 @@ import java.util.Map;
  * @author gbench
  *
  */
-class ConstantOp extends BinaryOp<Object, Object> {
+public class ConstantOp extends BinaryOp<Object, Object> {
 
     /**
      * 

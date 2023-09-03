@@ -7,6 +7,8 @@ import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
+import static gbench.util.math.algebra.AlgebraEngine.parse;
+import static gbench.util.math.algebra.op.Ops.*;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,6 +41,35 @@ public class AlgebraTest {
 				.forEach(e -> {
 					println(ar.get(), e);
 				});
+	}
+
+	@Test
+	public void foo() {
+		println(parse("(sin x)* sin x").dx().simplify().dumpAST());
+		println(parse("x+x+x").simplify());
+		println(parse("x-x").simplify());
+		println(parse("x/x").simplify());
+		println(parse("(sin cos (x+x)) * (sin cos (x+x))").simplify());
+		println(SIN("x").equals(SIN("x")));
+		println(parse("x").isToken());
+	}
+
+	@Test
+	public void bar() {
+		println("", parse("4").map(e -> e.factorOpt()));
+		println("", parse("4*sin x").map(e -> e.termOpt()));
+		println("", parse("sin x * 4 ").map(e -> e.termOpt()));
+	}
+
+	/**
+	 * 因子式化简
+	 */
+	@Test
+	public void quz() {
+		println("", parse("2*x").map(e -> e.termOpt()));
+		println(parse("x+x+x+x").simplify());
+		println(parse("sin x + sin x + sin x ").simplify());
+		println(parse("x+x+x+2*x").simplify());
 	}
 
 }
