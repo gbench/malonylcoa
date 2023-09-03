@@ -526,8 +526,6 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 					final BinaryOp<?, ?> arg1; // 第一参数
 					final BinaryOp<?, ?> arg2; // 第二参数
 					final boolean share_flag; // 共享项标志
-					final Optional<Tuple2<?, ?>> opt1;
-					final Optional<Tuple2<?, ?>> opt2;
 					final var _termLeft = BinaryOp.termOpt(left);
 					final var _left = _termLeft.isPresent() ? left : right; // 尝试吧_left作为term项
 					final var _right = _termLeft.isPresent() ? right : left; // 尝试吧_left作为term项
