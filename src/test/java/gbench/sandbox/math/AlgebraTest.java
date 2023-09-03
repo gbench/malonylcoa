@@ -78,8 +78,11 @@ public class AlgebraTest {
 	 */
 	@Test
 	public void qua() {
-		println(parse("a*sin x + b* sin x").simplify());
-		println(parse("sin x * tan x + sin x * (cos x + sin x)").simplify());
+		println(parse("a*sin x + b*sin x").simplify().dumpAST());
+		println("-------------------------------------------------------------------");
+		println(parse("sin x * tan x + sin x * (cos x + sin x)").simplify().dumpAST());
+		println("-------------------------------------------------------------------");
+		println(parse("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify().dumpAST());
 	}
 
 }
