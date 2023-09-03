@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -135,7 +136,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 
 	 * @return [_1:第一个参数,_2:第二个参数]
 	 */
-	public Stream<Object> getArgsS() {
+	public Stream<Object> getArgS() {
 		if (this._2 == null) {
 			return Stream.of();
 		} else if (this.getAry() == 1) { // 一元函数
@@ -154,8 +155,19 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 
 	 * @return 把把参数扁平化之后的 流
 	 */
-	public Stream<Object> flatArgsS() {
+	public Stream<Object> flatArgS() {
 		return flat(this.getArgs()).stream();
+	}
+	
+	/**
+	 * 把把参数扁平化之后的 流
+	 * 
+	 * 比如 (a,(b,(c,d)),(e,(f,g))) 扁平化 之后 返回 [b,c,d,e,f,g]
+	 * 
+	 * @return 把把参数扁平化之后的 流
+	 */
+	public List<Object> flatArgs() {
+		return this.flatArgS().toList();
 	}
 
 	/**
@@ -259,7 +271,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 */
 	public Object evaluate(final Map<String, Object> bindings) {
 
-		final var dataStream = this.getArgsS().map(e -> {
+		final var dataStream = this.getArgS().map(e -> {
 			if (e instanceof BinaryOp) { // op 算符类型
 				return ((BinaryOp<?, ?>) e).evaluate(bindings);
 			} else if (e instanceof Node) { // node 数据糖衣类型
@@ -403,7 +415,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 */
 	public Object[] argsEval(final Map<String, ?> bindings) {
 		@SuppressWarnings("unchecked")
-		final var args = this.getArgsS().map(Node::PACK) // 参数包装
+		final var args = this.getArgS().map(Node::PACK) // 参数包装
 				// 一定要强转否则会出现对应到Node.evaluate(Object ... oo)
 				.map(node -> node.evaluate((Map<String, Object>) bindings)) // 数值计算,
 				.toArray(Object[]::new);
@@ -422,7 +434,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 		final X leafs = sup.get();
 		final var stack = new Stack<Object>();
 
-		this.getArgsS().forEach(stack::push);
+		this.getArgS().forEach(stack::push);
 		while (!stack.empty()) {
 			final var o = Node.UNPACK(stack.pop());
 			if (o instanceof BinaryOp) {
@@ -470,7 +482,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 		final var one = PACK(1);
 		final var ai_one = new AtomicInteger(-1); // 1 乘法的 幺元
 		final var ai_zero = new AtomicInteger(-1); // 0 加法的 幺元，乘法的 零元
-		final var args = this.getArgsS().filter(Objects::nonNull) // 过滤掉空值
+		final var args = this.getArgS().filter(Objects::nonNull) // 过滤掉空值
 				.map(Node::PACK).map(e -> e.fmap(BinaryOp::simplify)).map(kvp_int()).peek(e -> {
 					if (e._2.equals(one))
 						ai_one.set(e._1);
@@ -485,7 +497,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 							final var coef_i = argdbls[i == 0 ? 1 : 0]; // 外层系数
 							if (coef_i != null) { // 外层系数有效
 								final var op_i = args[i].getOp(); // 外层的运算对象
-								final var op_i_args = op_i.getArgsS().map(Node::PACK).toArray(Node[]::new); // 外层运算的参数
+								final var op_i_args = op_i.getArgS().map(Node::PACK).toArray(Node[]::new); // 外层运算的参数
 								for (int j = 0; j < 2; j++) { // 内层运算的各个参数
 									final var arg_j = op_i_args[j].isToken() // token 检测
 											? op_i_args[j].getToken() // 转换为 token
@@ -636,7 +648,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	@SuppressWarnings("unchecked")
 	public boolean hasLeaf(final Object variable) {
 		final var stack = new Stack<Object>();
-		this.getArgsS().forEach(stack::push);
+		this.getArgS().forEach(stack::push);
 		while (!stack.empty()) {
 			final var o = Node.UNPACK(stack.pop());
 			if (o instanceof BinaryOp) {
@@ -687,7 +699,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 
 			cons.accept(level, binaryop); // 方法回调
 
-			binaryop.getArgsS() // 一次处理 参数节点
+			binaryop.getArgS() // 一次处理 参数节点
 					.map(Node::UNPACK) // Node 类型去包装
 					.filter(e -> e instanceof BinaryOp) // 仅提取 BinaryOp 类型的数据
 					.filter(Objects::nonNull) // 过滤掉空值
@@ -950,7 +962,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 		if (parent == null) {
 			return 0;
 		} else {
-			final var optional = parent.getArgsS().map(kvp_int()).map(sibling -> { // 添加序号并脱壳
+			final var optional = parent.getArgS().map(kvp_int()).map(sibling -> { // 添加序号并脱壳
 				final var o = Node.UNPACK(sibling._2()); // 对象脱壳
 				return P(sibling._1(), o instanceof BinaryOp ? o : null);
 			}).filter(e -> e._2() == op).findAny(); // 尝试从脱壳之后的args中查询结果项为op的节点

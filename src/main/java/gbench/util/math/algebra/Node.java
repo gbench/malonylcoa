@@ -403,7 +403,7 @@ public class Node {
 			} // if
 
 			final var name = this.getName(); // 获取运算名称
-			final var nodes = theOp.getArgsS().limit(theOp.getAry()).map(Node::PACK).toArray(Node[]::new); // 提取方法参数并Node糖衣化
+			final var nodes = theOp.getArgS().limit(theOp.getAry()).map(Node::PACK).toArray(Node[]::new); // 提取方法参数并Node糖衣化
 			final var xnode = nodes.length < 1 ? null : nodes[0]; // 第一个参数的node
 			final var ynode = nodes.length < 2 ? null : nodes[1]; // 第二个参数的node
 			final var x = xnode == null ? null : xnode.unpack(); // 第一个参数
@@ -411,7 +411,7 @@ public class Node {
 			final Supplier<IRecord> comma_args_adjust = () -> { // 逗号表达式的情况
 				final var rb = IRecord.rb("xnode,ynode,x,y"); // 基本数据的命名结构
 				if (y == null && COMMA_TEST(xnode.getOp().getName())) { // xnode 是一个逗号表达式
-					final var comma_args = xnode.getOp().flatArgsS().map(Node::UNPACK).toArray(Object[]::new); // 提取逗号表达式的参数列表
+					final var comma_args = xnode.getOp().flatArgS().map(Node::UNPACK).toArray(Object[]::new); // 提取逗号表达式的参数列表
 					final var _x = comma_args[0]; // comma 的一号位置元素
 					final var _y = comma_args[1]; // comma 的二号位置元素
 					final var _xnode = PACK(_x);
@@ -651,7 +651,7 @@ public class Node {
 					writeln.accept(line);
 				}));
 
-				op.getArgsS() // 子节点的处理
+				op.getArgS() // 子节点的处理
 						.limit(op.getAry()) // 提取有效参数
 						.map(kvp_int()) // 增加节点的兄弟排行
 						.filter(kvp -> predicate_token.test(kvp._2())) // 提取叶子节点

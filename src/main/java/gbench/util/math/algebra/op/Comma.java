@@ -50,7 +50,7 @@ public class Comma<T, U> extends BinaryOp<T, U> {
                 if (Comma.COMMA_TEST(node.getName())) { // 把逗号表达式进行深度遍历
                     final var op = node.getOp(); // 转换成算符结构
                     // 注意这是 先1后2，入栈，出栈的时候就是先2后1
-                    op.getArgsS().map(Node::PACK).forEach(stack::push); // 参数入栈
+                    op.getArgS().map(Node::PACK).forEach(stack::push); // 参数入栈
                 } else { // 提取逗号表达式的节点作为参数项目
                     nodes.addFirst(node); // 由于是先2后1的出栈顺序，因此遍历为了保证初始顺序，这里 采用addFirst 给予恢复。
                 } // if

@@ -322,7 +322,7 @@ public class AlgebraEngine {
 					final var arg = nodes.get(index + 1);
 					tobe_removed.add(index + 1); // 记录参数索引
 					if (COMMA_TEST(arg.getName()) && op.getAry() == 2) { // 逗号表达式
-						final var oo = arg.getOp().getArgsS().map(Node::UNPACK).toArray(Object[]::new);
+						final var oo = arg.getOp().getArgS().map(Node::UNPACK).toArray(Object[]::new);
 						final var left = oo.length > 0 ? oo[0] : null; // 左参数
 						final var right = oo.length > 1 ? oo[1] : null; // 右参数
 
@@ -514,7 +514,7 @@ public class AlgebraEngine {
 						final var comma_term_flag = term.isOp() && COMMA_TEST(term.getName()); // COMMA 的条件检测
 						if (!elemStack.isEmpty() || comma_term_flag) { // 二元运算 对于 除了 COMMA-逗号term以外,要求 elemStack 至少有一个元素
 							final var oo = (elemStack.isEmpty() // 根据堆栈数据状态 确定算符的参数
-									? term.getOp().getArgsS() // comma_term_flag,逗号表达式, 拆分逗号表达式的参数 来构造左右参数
+									? term.getOp().getArgS() // comma_term_flag,逗号表达式, 拆分逗号表达式的参数 来构造左右参数
 									: Stream.of(elemStack.pop(), term).map(node2arg)).map(Node::UNPACK) //
 									.toArray(); // 堆栈不为空,从数据栈中提取一个数据合并当前项目term作为方法参数
 							final var handle = (opStack.pop()).compose(oo[0], oo[1]); // 二元算符 规约句柄
