@@ -84,7 +84,7 @@ public class AlgebraTest {
 		println("-------------------------------------------------------------------");
 		println(parse("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify().dumpAST());
 	}
-	
+
 	/**
 	 * 因子式化简
 	 */
@@ -94,13 +94,14 @@ public class AlgebraTest {
 		println(parse("a*x + x*b").simplify());
 		println(parse("a*b + b*a").simplify());
 	}
-	
+
 	/**
 	 * 因子式化简
 	 */
 	@Test
 	public void quc() {
 		println(parse("(sin x)^2 + (cos x)^2").dx().simplify());
+		println(parse("cos x").dx().simplify());
 	}
 
 }

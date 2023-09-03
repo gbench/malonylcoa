@@ -510,7 +510,11 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 		final var handle = Optional.of(this.getAry()).map(nary -> {
 			switch (nary) { // 算符类型的判断
 			case 1: { // 一元算符
-				return theOp.compose1(left); // 一元算符的组合，一元算符 只有一个参数 即 左位参数
+				if (opName.equals("neg")) { //
+					return MUL(-1, left);
+				} else {
+					return theOp.compose1(left); // 一元算符的组合，一元算符 只有一个参数 即 左位参数
+				}
 			}
 			case 2: { // 二元算符
 				final var zero_i = ai_zero.getAndIncrement(); // 0值 的 位置索引
