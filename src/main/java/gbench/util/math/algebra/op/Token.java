@@ -1,5 +1,8 @@
 package gbench.util.math.algebra.op;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import gbench.util.math.algebra.tuple.IRecord;
 
 /**
@@ -27,10 +30,16 @@ public class Token extends ConstantOp {
 		return this._1 == null ? null : this._1;
 	}
 
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(new Object[] { Token.class, this._1 });
+	}
+
+	@Override
 	public boolean equals(final Object obj) {
 		if (obj instanceof Token) {
 			final var another = (Token) obj;
-			return this.text().equals(another.text());
+			return Objects.equals(this.text(), another.text());
 		} else {
 			return false;
 		}
