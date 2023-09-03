@@ -451,8 +451,9 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	}
 
 	/**
+	 * termOpt
 	 * 
-	 * @return
+	 * @return termOpt
 	 */
 	public Optional<BinaryOp<Object, Object>> termOpt() {
 		return BinaryOp.termOpt(this);
@@ -522,15 +523,18 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 						: TOKEN(String.valueOf(obj));
 
 				if (opName.equals("+")) { // 加法
-					final var termLeft = BinaryOp.termOpt(left);
-					if (termLeft.isPresent()) {
+					final var _termLeft = BinaryOp.termOpt(left);
+					final var _left = _termLeft.isPresent() ? left : right; // 尝试吧_left作为term项
+					final var _right = _termLeft.isPresent() ? right : left; // 尝试吧_left作为term项
+					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
+					if (termLeft.isPresent()) { // left 是作为term项目而存在
 						final var a = to_token.apply(termLeft.get()._2._2);
-						final var b = to_token.apply(right);
+						final var b = to_token.apply(_right);
 						if (Objects.equals(a, b)) { // 合并 2x+x
 							final var x = termLeft.get();
 							return MUL(dbl(x._2._1) + 1, x._2._2);
 						} else { // 合并 2x+3x
-							final var termRight = BinaryOp.termOpt(right);
+							final var termRight = BinaryOp.termOpt(_right);
 							if (termRight.isPresent()) {
 								final var _b = to_token.apply(termRight.get()._2._2);
 								if (Objects.equals(a, _b)) {
@@ -540,6 +544,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 								} // if
 							} // if
 						} // if
+
 					} else if (Objects.equals(left, right)) { // 合并同类项
 						return MUL(2, right);
 					} else if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变
@@ -758,8 +763,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	/**
 	 * 强制转换成系数
 	 * 
-	 * @param object
-	 * @return
+	 * @param object 参数对象
+	 * @return factorOpt
 	 */
 	public static final Optional<ConstantOp> factorOpt(final Object object) {
 		if (UNPACK(object) instanceof ConstantOp constOp) {
@@ -768,13 +773,14 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 			return Optional.ofNullable(TOKEN(num));
 		} else {
 			return Optional.empty();
-		}
+		} // if
 	}
 
 	/**
+	 * termOpt
 	 * 
 	 * @param object
-	 * @return
+	 * @return termOpt
 	 */
 	public static Optional<BinaryOp<Object, Object>> termOpt(final Object object) {
 
