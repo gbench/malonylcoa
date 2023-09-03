@@ -69,7 +69,8 @@ public class AlgebraTest {
 		println("", parse("2*x").map(e -> e.termOpt()));
 		println(parse("x+x+x+x").simplify());
 		println(parse("sin x + sin x + sin x ").simplify());
-		println(parse("x+x+x+2*x").simplify());
+		println(parse("x+x+x+sin (x+x+x)").simplify());
+		println(parse("x+2*x").simplify());
 	}
 
 }

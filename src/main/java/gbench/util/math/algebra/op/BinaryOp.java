@@ -531,11 +531,13 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 							return MUL(dbl(x._2._1) + 1, x._2._2);
 						} else { // 合并 2x+3x
 							final var termRight = BinaryOp.termOpt(right);
-							final var _b = to_token.apply(termRight.get()._2._2);
-							if (termRight.isPresent() && Objects.equals(a, _b)) {
-								final var x = termLeft.get();
-								final var y = termRight.get();
-								return MUL(dbl(x._2._1) + dbl(y._2._1), x._2._2);
+							if (termRight.isPresent()) {
+								final var _b = to_token.apply(termRight.get()._2._2);
+								if (Objects.equals(a, _b)) {
+									final var x = termLeft.get();
+									final var y = termRight.get();
+									return MUL(dbl(x._2._1) + dbl(y._2._1), x._2._2);
+								} // if
 							} // if
 						} // if
 					} else if (Objects.equals(left, right)) { // 合并同类项
