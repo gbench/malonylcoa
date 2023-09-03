@@ -166,8 +166,67 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 
 	 * @return 把把参数扁平化之后的 流
 	 */
+	public List<BinaryOp<?, ?>> flatArgs2() {
+		return this.flatArgS2().toList();
+	}
+
+	/**
+	 * 把把参数扁平化之后的 流
+	 * 
+	 * 比如 (a,(b,(c,d)),(e,(f,g))) 扁平化 之后 返回 [b,c,d,e,f,g]
+	 * 
+	 * @return 把把参数扁平化之后的 流
+	 */
+	public Stream<BinaryOp<?, ?>> flatArgS2() {
+		return this.flatArgS().map(BinaryOp::BOP);
+	}
+
+	/**
+	 * 把把参数扁平化之后的 流
+	 * 
+	 * 比如 (a,(b,(c,d)),(e,(f,g))) 扁平化 之后 返回 [b,c,d,e,f,g]
+	 * 
+	 * @return 把把参数扁平化之后的 流
+	 */
 	public List<Object> flatArgs() {
 		return this.flatArgS().toList();
+	}
+
+	/**
+	 * 扁平化
+	 * 
+	 * @return 扁平化
+	 */
+	public List<BinaryOp<Object, Object>> flats() {
+		return this.flatS().toList();
+	}
+
+	/**
+	 * 扁平化
+	 * 
+	 * @return 扁平化
+	 */
+	public Stream<BinaryOp<Object, Object>> flatS() {
+		final Stack<Object> stack = new Stack<>();
+		final var ai = new AtomicInteger(); // 终止flag
+		stack.push(this);
+		return Stream.iterate((BinaryOp<Object, Object>) null, e -> ai.get() < 1, e -> {
+			if (!stack.isEmpty()) {
+				final var p = stack.pop();
+				if (p instanceof BinaryOp<?, ?> bop) {
+					if (bop._2 != null) { // 尝试压入参数
+						if (bop._2._2 != null)
+							stack.push(bop._2._2);
+						if (bop._2._1 != null)
+							stack.push(bop._2._1);
+					} // if
+				} // if
+				return p == null ? null : (BinaryOp<Object, Object>) BOP(p);
+			} else { // 加入结尾标记
+				ai.getAndIncrement();
+				return null;
+			} //
+		}).skip(1);
 	}
 
 	/**
@@ -890,9 +949,10 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @param obj 目标对象
 	 * @return 如果是BinaryOp直接返回,否则返回TOKEN
 	 */
-	final static BinaryOp<?, ?> BOP(final Object obj) {
+	@SuppressWarnings("unchecked")
+	public static BinaryOp<Object, Object> BOP(final Object obj) {
 		return obj instanceof BinaryOp<?, ?> bop // 是否本身就是算符
-				? bop
+				? (BinaryOp<Object, Object>) bop
 				: obj instanceof Number num // 是否是数值类型
 						? TOKEN(num) // 数值类型
 						: TOKEN(String.valueOf(obj)); // 非数值类型

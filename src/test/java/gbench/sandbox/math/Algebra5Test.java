@@ -6,8 +6,6 @@ import static gbench.util.io.Output.println;
 import static gbench.util.math.algebra.AlgebraEngine.parse;
 import static gbench.util.math.algebra.op.Ops.*;
 
-
-
 /**
  * 
  * @author gbench
@@ -24,15 +22,18 @@ public class Algebra5Test {
 		println(parse("cos x").dx().simplify());
 		println(parse("sin x * cos x + cos x * sin x").simplify());
 	}
-	
+
 	/**
 	 * 
 	 */
 	@Test
 	public void foo() {
-		final var a = MUL("x",MUL("y",MUL("z",2)));
+		final var a = MUL("x", MUL("y", MUL("z", 2)));
 		println(a.simplify());
-		println(a.flatArgs());
+		println(a.flatArgs2());
+		a.flatS().forEach(e -> {
+			println(e.isConstant(), e);
+		});
 	}
 
 }
