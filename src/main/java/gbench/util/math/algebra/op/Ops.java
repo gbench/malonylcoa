@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import gbench.util.math.algebra.Node;
 import gbench.util.math.algebra.tuple.IRecord;
-import gbench.util.math.algebra.tuple.Node;
 import gbench.util.math.algebra.tuple.Tuple2;
 
 /**

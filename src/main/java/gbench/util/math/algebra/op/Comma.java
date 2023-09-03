@@ -3,7 +3,7 @@ package gbench.util.math.algebra.op;
 import java.util.LinkedList;
 import java.util.Stack;
 
-import gbench.util.math.algebra.tuple.Node;
+import gbench.util.math.algebra.Node;
 
 /**
  * 

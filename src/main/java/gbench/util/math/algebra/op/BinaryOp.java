@@ -1,9 +1,9 @@
 package gbench.util.math.algebra.op;
 
+import static gbench.util.math.algebra.Node.*;
 import static gbench.util.math.algebra.op.Comma.COMMA_TEST;
 import static gbench.util.math.algebra.op.Ops.*;
 import static gbench.util.math.algebra.tuple.MyRecord.REC;
-import static gbench.util.math.algebra.tuple.Node.*;
 
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -22,8 +22,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import gbench.util.math.algebra.Node;
 import gbench.util.math.algebra.tuple.IRecord;
-import gbench.util.math.algebra.tuple.Node;
 import gbench.util.math.algebra.tuple.Tuple2;
 
 /**

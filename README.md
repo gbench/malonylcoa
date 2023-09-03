@@ -37,6 +37,7 @@ import static gbench.util.math.Maths.*;
 import static gbench.util.math.FinanceMaths.*;
 import static java.lang.Math.*;
 import static gbench.util.math.algebra.AlgebraEngine.evaluate;
+import static gbench.util.math.algebra.AlgebraEngine.parse;
 
 // 数据库配置,请指定正确的数据库url,driver,user和password
 final var mysql_rec = REC("url", "jdbc:mysql://127.0.0.1:3309/hitler?serverTimezone=UTC", "driver", "com.mysql.cj.jdbc.Driver", "user", "root", "password", "123456");
@@ -71,6 +72,12 @@ System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate *
 
 // 序列分解
 nd(i -> pow(2, i), 10).fmap(n -> nats(n, 2 * n));
+
+// algebra
+nats(8).fmap(n->evaluate("sin x","x",PI*2/8*n));
+nats(8).fmap(n->evaluate("(sin x)^2 + (cos x)^2","x",PI*2/8*n));
+println(parse("(sin x)^2 + (cos x)^2").dumpAST()); // 解析成语法树
+parse("(sin x)^2 + (cos x)^2").dx(); // 微分结构
 
 ```
 # 启动H2控制台 : 在eclipse debugshell

@@ -8,9 +8,9 @@ import static gbench.util.math.algebra.tuple.IRecord.REC;
 import java.util.stream.Stream;
 
 import gbench.util.math.algebra.AlgebraEngine;
+import gbench.util.math.algebra.Node;
 import gbench.util.math.algebra.op.BinaryOp;
 import gbench.util.math.algebra.op.Ops;
-import gbench.util.math.algebra.tuple.Node;
 
 /**
  * 

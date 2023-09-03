@@ -1,4 +1,4 @@
-package gbench.util.math.algebra.tuple;
+package gbench.util.math.algebra;
 
 import static gbench.util.math.algebra.op.BinaryOp.*;
 import static gbench.util.math.algebra.op.Comma.COMMA_TEST;
@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 import gbench.util.math.algebra.op.BinaryOp;
 import gbench.util.math.algebra.op.Ops;
 import gbench.util.math.algebra.op.Token;
+import gbench.util.math.algebra.tuple.IRecord;
+import gbench.util.math.algebra.tuple.Tuple2;
 
 /**
  * 数据糖衣结构 (语法节点)
@@ -302,6 +304,15 @@ public class Node {
 	 * @return 求导之后的语法树结构
 	 */
 	public Node derivate() {
+		return this.derivate("x");
+	}
+
+	/**
+	 * 按照x变量进行方法求导(derivate()的别名)
+	 * 
+	 * @return 求导之后的语法树结构
+	 */
+	public Node dx() {
 		return this.derivate("x");
 	}
 
