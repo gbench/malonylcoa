@@ -519,7 +519,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 						.map(e -> !e.isToken() ? null : e.getToken() == null ? null : e.getToken().dbl())
 						.toArray(Double[]::new); // 浮点数类型的数据值
 				final var flag = (dbls[0] != null) && (dbls[1] != null); // 是否是数值计算
-				final Function<Object, BinaryOp<?, ?>> to_token = obj -> obj instanceof BinaryOp bop ? bop
+				final Function<Object, BinaryOp<?, ?>> to_token = obj -> obj instanceof BinaryOp<?, ?> bop ? bop
 						: TOKEN(String.valueOf(obj));
 
 				if (opName.equals("+")) { // 加法
@@ -544,7 +544,6 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 								} // if
 							} // if
 						} // if
-
 					} else if (Objects.equals(left, right)) { // 合并同类项
 						return MUL(2, right);
 					} else if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变

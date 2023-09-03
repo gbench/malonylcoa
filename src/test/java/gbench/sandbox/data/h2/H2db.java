@@ -462,7 +462,7 @@ public class H2db {
 	 * excel 命名发的
 	 * 
 	 * @param n 命名长度 大于0正整数。1:[A],2:[A,B],2:[A,B,C],...
-	 * @return {A:null,B:null,...,XXX:null} 的 IRecord
+	 * @return {A:null,B:null,...,X:null} 的 IRecord
 	 */
 	public static ArrayRecord xra(final int n) {
 		return ra(nats(n).fmap(DataMatrix::index_to_excel_name));
