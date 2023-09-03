@@ -30,9 +30,9 @@ public class Algebra5Test {
 	 */
 	@Test
 	public void foo() {
-		final var a = MUL("x",MUL("y",2));
+		final var a = MUL("x",MUL("y",MUL("z",2)));
 		println(a.simplify());
-		println(a.flatArgS().toList());
+		println(a.flatArgs());
 	}
 
 }

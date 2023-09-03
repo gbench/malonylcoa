@@ -158,7 +158,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	public Stream<Object> flatArgS() {
 		return flat(this.getArgs()).stream();
 	}
-	
+
 	/**
 	 * 把把参数扁平化之后的 流
 	 * 
@@ -517,8 +517,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 				}; // cascadeOp , argdbls 浮点数类型的 args, op 级联算符名称
 		final var theOp = this.duplicate(); // 复制操作符
 		final var opName = theOp.getName(); // 操作符名称
-		final var left = Optional.ofNullable(args != null && args.length > 0 ? args[0].unpack() : null).orElse(null); // 左位参数
-		final var right = Optional.ofNullable(args != null && args.length > 1 ? args[1].unpack() : null).orElse(null); // 右位参数
+		final var left = args != null && args.length > 0 ? args[0].unpack() : null; // 左位参数
+		final var right = args != null && args.length > 1 ? args[1].unpack() : null; // 右位参数
 		final var handle = Optional.of(this.getAry()).map(nary -> {
 			switch (nary) { // 算符类型的判断
 			case 1: { // 一元算符
@@ -535,8 +535,6 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 						.map(e -> !e.isToken() ? null : e.getToken() == null ? null : e.getToken().dbl())
 						.toArray(Double[]::new); // 浮点数类型的数据值
 				final var flag = (dbls[0] != null) && (dbls[1] != null); // 是否是数值计算
-				final Function<Object, BinaryOp<?, ?>> to_op = obj -> obj instanceof BinaryOp<?, ?> bop ? bop
-						: TOKEN(String.valueOf(obj));
 
 				if (opName.equals("+")) { // 加法
 					final BinaryOp<?, ?> arg1; // 第一参数
@@ -548,15 +546,15 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
 
 					if (termLeft.isPresent()) { // left 是作为term项目而存在
-						final var a = to_op.apply(termLeft.get()._2._2);
-						final var b = to_op.apply(_right);
+						final var a = BOP(termLeft.get()._2._2);
+						final var b = BOP(_right);
 						if (Objects.equals(a, b)) { // 合并 2x+x
 							final var x = termLeft.get();
 							return MUL(dbl(x._2._1) + 1, x._2._2);
 						} else { // 合并 2x+3x
 							final var termRight = BinaryOp.termOpt(_right);
 							if (termRight.isPresent()) {
-								final var _b = to_op.apply(termRight.get()._2._2);
+								final var _b = BOP(termRight.get()._2._2);
 								if (Objects.equals(a, _b)) {
 									final var x = termLeft.get();
 									final var y = termRight.get();
@@ -564,9 +562,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 								} // if
 							} // if
 						} // if
-					} else if ((share_flag = Objects.equals((arg1 = to_op.apply(left))._1,
-							(arg2 = to_op.apply(right))._1) && Objects.equals(arg1._1, "*"))
-							&& Optional.ofNullable(arg1._2) // 类型：ax + bx -> (a+b)*x
+					} else if ((share_flag = Objects.equals((arg1 = BOP(left))._1, (arg2 = BOP(right))._1)
+							&& Objects.equals(arg1._1, "*")) && Optional.ofNullable(arg1._2) // 类型：ax + bx -> (a+b)*x
 									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
 									.orElse(false)) {
 						return MUL(ADD(arg1._2._1, arg2._2._1).simplify(), arg1._2._2);
@@ -885,6 +882,20 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 */
 	public static Double dbl(final Object obj) {
 		return IRecord.obj2dbl().apply(obj);
+	}
+
+	/**
+	 * 使用 BinaryOp 封装对象：算符化
+	 * 
+	 * @param obj 目标对象
+	 * @return 如果是BinaryOp直接返回,否则返回TOKEN
+	 */
+	final static BinaryOp<?, ?> BOP(final Object obj) {
+		return obj instanceof BinaryOp<?, ?> bop // 是否本身就是算符
+				? bop
+				: obj instanceof Number num // 是否是数值类型
+						? TOKEN(num) // 数值类型
+						: TOKEN(String.valueOf(obj)); // 非数值类型
 	}
 
 	/**
