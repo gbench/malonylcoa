@@ -514,8 +514,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 					return MUL(-1, left);
 				} else {
 					return theOp.compose1(left); // 一元算符的组合，一元算符 只有一个参数 即 左位参数
-				}
-			}
+				} // if
+			} // case 1
 			case 2: { // 二元算符
 				final var zero_i = ai_zero.getAndIncrement(); // 0值 的 位置索引
 				final var one_i = ai_one.getAndIncrement(); // 1值 的 位置索引
@@ -617,7 +617,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 				} // if
 
 				return theOp.compose(left, right); // 重新组合数据
-			}
+			} // case 2
 			default: {
 				return theOp;
 			} // default
