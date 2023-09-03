@@ -102,6 +102,7 @@ public class AlgebraTest {
 	public void quc() {
 		println(parse("(sin x)^2 + (cos x)^2").dx().simplify());
 		println(parse("cos x").dx().simplify());
+		println(parse("sin x * cos x + cos x * sin x").simplify());
 	}
 
 }

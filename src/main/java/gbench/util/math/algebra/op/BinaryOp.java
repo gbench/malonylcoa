@@ -562,14 +562,14 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._1)))
 							.orElse(false)) {
 						return MUL(ADD(arg1._2._2, arg2._2._2).simplify(), arg1._2._1);
-					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：xa + bx -> (a+b)*x
-							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._2)))
-							.orElse(false)) {
-						return MUL(ADD(arg1._2._2, arg2._2._1).simplify(), arg1._2._1);
 					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：ax + xb -> (a+b)*x
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._1)))
 							.orElse(false)) {
 						return MUL(ADD(arg1._2._1, arg2._2._2).simplify(), arg1._2._2);
+					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：xa + bx -> (a+b)*x
+							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._2)))
+							.orElse(false)) {
+						return MUL(ADD(arg1._2._2, arg2._2._1).simplify(), arg1._2._1);
 					} else if (Objects.equals(left, right)) { // 合并同类项
 						return MUL(2, right);
 					} else if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变
