@@ -519,24 +519,30 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 						.map(e -> !e.isToken() ? null : e.getToken() == null ? null : e.getToken().dbl())
 						.toArray(Double[]::new); // 浮点数类型的数据值
 				final var flag = (dbls[0] != null) && (dbls[1] != null); // 是否是数值计算
-				final Function<Object, BinaryOp<?, ?>> to_token = obj -> obj instanceof BinaryOp<?, ?> bop ? bop
+				final Function<Object, BinaryOp<?, ?>> to_op = obj -> obj instanceof BinaryOp<?, ?> bop ? bop
 						: TOKEN(String.valueOf(obj));
 
 				if (opName.equals("+")) { // 加法
+					final BinaryOp<?, ?> arg1; // 第一参数
+					final BinaryOp<?, ?> arg2; // 第二参数
+					final boolean share_flag; // 共享项标志
+					final Optional<Tuple2<?, ?>> opt1;
+					final Optional<Tuple2<?, ?>> opt2;
 					final var _termLeft = BinaryOp.termOpt(left);
 					final var _left = _termLeft.isPresent() ? left : right; // 尝试吧_left作为term项
 					final var _right = _termLeft.isPresent() ? right : left; // 尝试吧_left作为term项
 					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
+
 					if (termLeft.isPresent()) { // left 是作为term项目而存在
-						final var a = to_token.apply(termLeft.get()._2._2);
-						final var b = to_token.apply(_right);
+						final var a = to_op.apply(termLeft.get()._2._2);
+						final var b = to_op.apply(_right);
 						if (Objects.equals(a, b)) { // 合并 2x+x
 							final var x = termLeft.get();
 							return MUL(dbl(x._2._1) + 1, x._2._2);
 						} else { // 合并 2x+3x
 							final var termRight = BinaryOp.termOpt(_right);
 							if (termRight.isPresent()) {
-								final var _b = to_token.apply(termRight.get()._2._2);
+								final var _b = to_op.apply(termRight.get()._2._2);
 								if (Objects.equals(a, _b)) {
 									final var x = termLeft.get();
 									final var y = termRight.get();
@@ -544,6 +550,16 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 								} // if
 							} // if
 						} // if
+					} else if ((share_flag = Objects.equals((arg1 = to_op.apply(left))._1,
+							(arg2 = to_op.apply(right))._1) && Objects.equals(arg1._1, "*"))
+							&& Optional.ofNullable(arg1._2) // 类型：ax + bx -> (a+b)*x
+									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
+									.orElse(false)) {
+						return MUL(ADD(arg1._2._1, arg2._2._1).simplify(), arg1._2._2);
+					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：xa + xa -> (a+b)*x
+							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._1)))
+							.orElse(false)) {
+						return MUL(ADD(arg1._2._2, arg2._2._2).simplify(), arg1._2._1);
 					} else if (Objects.equals(left, right)) { // 合并同类项
 						return MUL(2, right);
 					} else if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变

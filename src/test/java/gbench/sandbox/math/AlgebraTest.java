@@ -73,4 +73,13 @@ public class AlgebraTest {
 		println(parse("x+2*x").simplify());
 	}
 
+	/**
+	 * 因子式化简
+	 */
+	@Test
+	public void qua() {
+		println(parse("a*sin x + b* sin x").simplify());
+		println(parse("sin x * tan x + sin x * (cos x + sin x)").simplify());
+	}
+
 }
