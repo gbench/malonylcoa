@@ -3,8 +3,8 @@ package gbench.sandbox.math;
 import org.junit.jupiter.api.Test;
 
 import static gbench.util.io.Output.println;
-import static gbench.util.math.algebra.Node.PACK;
 import static gbench.util.math.algebra.op.Ops.*;
+import static gbench.util.math.algebra.symbol.Node.PACK;
 import static gbench.util.math.algebra.tuple.IRecord.REC;
 
 import java.util.*;
@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import gbench.util.math.algebra.AlgebraEngine;
-import gbench.util.math.algebra.Node;
 import gbench.util.math.algebra.op.*;
+import gbench.util.math.algebra.symbol.Node;
 import gbench.util.math.algebra.tuple.IRecord;
 
 /**

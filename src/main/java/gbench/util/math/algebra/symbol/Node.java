@@ -1,4 +1,4 @@
-package gbench.util.math.algebra;
+package gbench.util.math.algebra.symbol;
 
 import static gbench.util.math.algebra.op.BinaryOp.*;
 import static gbench.util.math.algebra.op.Comma.COMMA_TEST;

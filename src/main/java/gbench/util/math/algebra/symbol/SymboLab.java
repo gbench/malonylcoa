@@ -1,6 +1,5 @@
 package gbench.util.math.algebra.symbol;
 
-import static gbench.util.math.algebra.Node.PACK;
 import static gbench.util.math.algebra.op.BinaryOp.bop;
 import static gbench.util.math.algebra.op.BinaryOp.dbl;
 import static gbench.util.math.algebra.op.Comma.COMMA_TEST;
@@ -9,6 +8,7 @@ import static gbench.util.math.algebra.op.Ops.MUL;
 import static gbench.util.math.algebra.op.Ops.POW;
 import static gbench.util.math.algebra.op.Ops.TOKEN;
 import static gbench.util.math.algebra.op.Ops.kvp_int;
+import static gbench.util.math.algebra.symbol.Node.PACK;
 import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.util.LinkedList;
@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
-import gbench.util.math.algebra.Node;
 import gbench.util.math.algebra.op.BinaryOp;
 import gbench.util.math.algebra.op.ConstantOp;
 import gbench.util.math.algebra.op.UnaryOp;

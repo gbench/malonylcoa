@@ -1,11 +1,11 @@
 package gbench.util.math.algebra;
 
-import static gbench.util.math.algebra.Node.PACK;
-import static gbench.util.math.algebra.Node.UNPACK;
 import static gbench.util.math.algebra.op.Comma.COMMA_TEST;
 import static gbench.util.math.algebra.op.Ops.TOKEN;
 import static gbench.util.math.algebra.op.Ops.kvp_int;
 import static gbench.util.math.algebra.op.Ops.println;
+import static gbench.util.math.algebra.symbol.Node.PACK;
+import static gbench.util.math.algebra.symbol.Node.UNPACK;
 import static gbench.util.math.algebra.tuple.MyRecord.REC;
 import static gbench.util.math.algebra.tuple.Tuple2.P;
 
@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import gbench.util.math.algebra.op.BinaryOp;
 import gbench.util.math.algebra.op.Ops;
 import gbench.util.math.algebra.op.UnaryOp;
+import gbench.util.math.algebra.symbol.Node;
 import gbench.util.math.algebra.tuple.DFrame;
 import gbench.util.math.algebra.tuple.IRecord;
 import gbench.util.math.algebra.tuple.Tuple2;
