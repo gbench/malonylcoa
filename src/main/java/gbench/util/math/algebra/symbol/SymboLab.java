@@ -257,7 +257,19 @@ public class SymboLab implements ISymboLab {
 		}).map(o -> (BinaryOp<?, ?>) o) // 转换成算符类型
 				.orElse(null); // handle
 
-		return coef_adjust(handle); // 系数调整
+		return handle.isConstant() // 是否是常量
+				? handle // 常量
+				: Optional.ofNullable(coef_adjust(handle)).flatMap(_handle -> { // 系数调整
+					if (_handle.equals(handle)) { // 调整后没有改变
+						return Optional.ofNullable(_handle);
+					} else {
+						return Optional.ofNullable(_handle.getArgS().map(e -> Optional.ofNullable(e) // 参数调整
+								.map(p -> bop(p).simplify()).orElse(null)).toArray()) // 参数优化
+								.map(_args -> _args.length == 1 //
+										? symbol.compose1(_args[0]) // 一元函数
+										: symbol.compose(_args[0], _args[1])); // 二元函数
+					} // if
+				}).orElse(null); // 结果调整
 	}
 
 	/**
