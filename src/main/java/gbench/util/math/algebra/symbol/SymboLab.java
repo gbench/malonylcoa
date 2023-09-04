@@ -11,6 +11,7 @@ import static gbench.util.math.algebra.op.Ops.kvp_int;
 import static gbench.util.math.algebra.symbol.Node.PACK;
 import static gbench.util.math.algebra.tuple.Tuple2.P;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
@@ -41,14 +42,15 @@ public class SymboLab implements ISymboLab {
 	 * @param symbol 运算符号
 	 * @return 计算结果
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
-	public <T, U> BinaryOp<Object, Object> simplify(final BinaryOp<T, U> symbol) {
-
+	public <T, U> BinaryOp<?, ?> simplify(final BinaryOp<T, U> symbol) {
+		final var _symbol = symbol; // 系数调整
 		final var zero = PACK(0);
 		final var one = PACK(1);
 		final var ai_one = new AtomicInteger(-1); // 1 乘法的 幺元
 		final var ai_zero = new AtomicInteger(-1); // 0 加法的 幺元，乘法的 零元
-		final var args = symbol.getArgS().filter(Objects::nonNull) // 过滤掉空值
+		final var args = _symbol.getArgS().filter(Objects::nonNull) // 过滤掉空值
 				.map(Node::PACK).map(e -> e.fmap(BinaryOp::simplify)).map(kvp_int()).peek(e -> {
 					if (e._2.equals(one))
 						ai_one.set(e._1);
@@ -81,12 +83,11 @@ public class SymboLab implements ISymboLab {
 
 					return null; // 返回 空 表示 级联运算尝试 失败
 				}; // cascadeOp , argdbls 浮点数类型的 args, op 级联算符名称
-		final var theOp = symbol.duplicate(); // 复制操作符
+		final var theOp = _symbol.duplicate(); // 复制操作符
 		final var opName = theOp.getName(); // 操作符名称
 		final var left = args != null && args.length > 0 ? args[0].unpack() : null; // 左位参数
 		final var right = args != null && args.length > 1 ? args[1].unpack() : null; // 右位参数
-		@SuppressWarnings("unchecked")
-		final var handle = Optional.of(symbol.getAry()).map(nary -> {
+		final var handle = Optional.of(_symbol.getAry()).map(nary -> {
 			switch (nary) { // 算符类型的判断
 			case 1: { // 一元算符
 				if (opName.equals("neg")) { //
@@ -201,7 +202,7 @@ public class SymboLab implements ISymboLab {
 		}).map(o -> (BinaryOp<Object, Object>) o) // 转换成算符类型
 				.orElse(null); // handle
 
-		return handle;
+		return coef_adjust(handle);
 	}
 
 	/**
@@ -348,6 +349,42 @@ public class SymboLab implements ISymboLab {
 				}// switch
 			} // if 其余函数
 		} // if 逗号表达式
+	}
+
+	/**
+	 * 节点调整：将节点系数向前调整
+	 * 
+	 * @param <T> 第一元素
+	 * @param <U> 第二元素
+	 * @param bop 符号类型
+	 * @return 调整节点
+	 */
+	public static <T, U> BinaryOp<?, ?> coef_adjust(final BinaryOp<T, U> bop) {
+		if (bop instanceof ConstantOp cop) {
+			return cop.duplicate();
+		} else if (bop instanceof UnaryOp uop) {
+			return uop.duplicate();
+		} else {
+			if (bop.namEq("*") || bop.namEq("+")) {
+				final BinaryOp<?, ?>[] bb = bop.getArgS() //
+						.map(e -> coef_adjust(BinaryOp.bop(e))).toArray(BinaryOp[]::new);
+				if (Arrays.stream(bb).allMatch(e -> e.isConstant()) // 简单节点
+						&& bb[1].dbl() != null && bb[0].dbl() == null) {
+					return bop.compose(bb[1], bb[0]);
+				} else { // 复合节点
+					final BinaryOp<?, ?>[] bb1 = Arrays.stream(bb).map(e -> {
+						return e.isConstant() ? e : e.flatArgS2().findFirst().orElse(null);
+					}).filter(Objects::nonNull).toArray(BinaryOp[]::new);
+					if (bb1[1].dbl() != null && bb1[0].dbl() == null) {
+						return bop.compose(bb[1], bb[0]);
+					} else {// if
+						return bop.compose(bb[0], bb[1]);
+					}
+				} // if
+			} // if
+		}
+
+		return bop.duplicate();
 	}
 
 }

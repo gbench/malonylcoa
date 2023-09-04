@@ -105,6 +105,15 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	}
 
 	/**
+	 * 构造一个复制品
+	 * 
+	 * @return BinaryOp 浅层拷贝
+	 */
+	public BinaryOp<T, U> duplicate() {
+		return this._2 == null ? BinaryOp.of(_1, null) : BinaryOp.of(_1, this._2._1(), this._2._2());
+	}
+
+	/**
 	 * 操作的名称
 	 * 
 	 * @return 操作名称
@@ -243,6 +252,17 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 */
 	public int getAry() {
 		return 2;
+	}
+
+	/**
+	 * name equals <br>
+	 * 判断当前运算符号是否名称为name
+	 * 
+	 * @param name 待检测的名称
+	 * @return 判断当前运算符号是否名称为name
+	 */
+	public boolean namEq(final Object name) {
+		return Objects.equals(name, this._1);
 	}
 
 	/**
@@ -408,7 +428,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 
 	 * @return 结构化简
 	 */
-	public BinaryOp<Object, Object> simplify() {
+	public BinaryOp<?, ?> simplify() {
 		return ISymboLab.spf(this);
 	}
 
@@ -440,48 +460,6 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 		} // while
 
 		return false;
-	}
-
-	/**
-	 * 构造一个复制品
-	 * 
-	 * @return BinaryOp 浅层拷贝
-	 */
-	public BinaryOp<T, U> duplicate() {
-		return this._2 == null ? BinaryOp.of(_1, null) : BinaryOp.of(_1, this._2._1(), this._2._2());
-	}
-
-	/**
-	 * 运算节点的遍历<br>
-	 * 需要注意：forEach 方法 只遍历 算符结构 对于 非 算符结构，即 算符的参数数据 并不给予 遍历 <br>
-	 * 如果需要 遍历 算符的参数 数据，需要 利用 binaryop 的实际情况 来 进行处理 <br>
-	 * 
-	 * @param cons 回调函数 (level:层级从0开始, binaryop:运算节点)->{}
-	 */
-	@SuppressWarnings("unchecked")
-	public void forEach(final BiConsumer<Integer, BinaryOp<?, ?>> cons) {
-		final var stack = new Stack<BinaryOp<?, ?>>();
-		final Map<Object, Integer> stateLevel = new HashMap<>();
-
-		stateLevel.put(this, 0); // 层级初始化
-		stack.push(this); // 根节点如栈
-
-		while (!stack.empty()) {
-			final var binaryop = stack.pop();
-			final var level = stateLevel.get(binaryop);
-
-			cons.accept(level, binaryop); // 方法回调
-
-			binaryop.getArgS() // 一次处理 参数节点
-					.map(Node::UNPACK) // Node 类型去包装
-					.filter(e -> e instanceof BinaryOp) // 仅提取 BinaryOp 类型的数据
-					.filter(Objects::nonNull) // 过滤掉空值
-					.map(e -> (BinaryOp<Object, Object>) e) // 统一声明为 BinaryOp
-					.forEach(e -> { // 计算层级加入 stack
-						stateLevel.put(e, level + 1);
-						stack.push(e);
-					}); // forEach
-		} // while
 	}
 
 	/**
@@ -539,6 +517,39 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 		} // while
 
 		return buffer.toString();
+	}
+
+	/**
+	 * 运算节点的遍历<br>
+	 * 需要注意：forEach 方法 只遍历 算符结构 对于 非 算符结构，即 算符的参数数据 并不给予 遍历 <br>
+	 * 如果需要 遍历 算符的参数 数据，需要 利用 binaryop 的实际情况 来 进行处理 <br>
+	 * 
+	 * @param cons 回调函数 (level:层级从0开始, binaryop:运算节点)->{}
+	 */
+	@SuppressWarnings("unchecked")
+	public void forEach(final BiConsumer<Integer, BinaryOp<?, ?>> cons) {
+		final var stack = new Stack<BinaryOp<?, ?>>();
+		final Map<Object, Integer> stateLevel = new HashMap<>();
+
+		stateLevel.put(this, 0); // 层级初始化
+		stack.push(this); // 根节点如栈
+
+		while (!stack.empty()) {
+			final var binaryop = stack.pop();
+			final var level = stateLevel.get(binaryop);
+
+			cons.accept(level, binaryop); // 方法回调
+
+			binaryop.getArgS() // 一次处理 参数节点
+					.map(Node::UNPACK) // Node 类型去包装
+					.filter(e -> e instanceof BinaryOp) // 仅提取 BinaryOp 类型的数据
+					.filter(Objects::nonNull) // 过滤掉空值
+					.map(e -> (BinaryOp<Object, Object>) e) // 统一声明为 BinaryOp
+					.forEach(e -> { // 计算层级加入 stack
+						stateLevel.put(e, level + 1);
+						stack.push(e);
+					}); // forEach
+		} // while
 	}
 
 	/**

@@ -20,7 +20,7 @@ public interface ISymboLab {
 	 * @param symbol 运算符号
 	 * @return 计算结果
 	 */
-	<T, U> BinaryOp<Object, Object> simplify(final BinaryOp<T, U> symbol);
+	<T, U> BinaryOp<?, ?> simplify(final BinaryOp<T, U> symbol);
 
 	/**
 	 * 二元函数的求值
@@ -41,7 +41,7 @@ public interface ISymboLab {
 	 * @param symbol 运算符号
 	 * @return 计算结果
 	 */
-	public static <T, U> BinaryOp<Object, Object> spf(final BinaryOp<T, U> symbol) {
+	public static <T, U> BinaryOp<?, ?> spf(final BinaryOp<T, U> symbol) {
 		return new SymboLab().simplify(symbol);
 	}
 
