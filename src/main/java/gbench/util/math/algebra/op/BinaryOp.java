@@ -195,6 +195,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	/**
 	 * 扁平化
 	 * 
+	 * @param <E>
+	 * 
 	 * @return 扁平化
 	 */
 	@SuppressWarnings("unchecked")
@@ -205,6 +207,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	/**
 	 * 扁平化
 	 * 
+	 * @param <E>
 	 * @return 扁平化
 	 */
 	@SuppressWarnings("unchecked")

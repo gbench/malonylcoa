@@ -27,6 +27,7 @@ public interface ISymboLab {
 	 * 
 	 * @param <T>      第一参数类型
 	 * @param <U>      第二参数类型
+	 * @param symbol   运算符号
 	 * @param bindings 变量参数的数据绑定
 	 * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
 	 */
@@ -49,6 +50,7 @@ public interface ISymboLab {
 	 * 
 	 * @param <T>      第一参数类型
 	 * @param <U>      第二参数类型
+	 * @param symbol   运算符号
 	 * @param bindings 变量参数的数据绑定
 	 * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
 	 */
