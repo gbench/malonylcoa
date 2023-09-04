@@ -178,7 +178,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 把把参数扁平化之后的 流
 	 */
 	public Stream<BinaryOp<?, ?>> flatArgS2() {
-		return this.flatArgS().map(BinaryOp::BOP);
+		return this.flatArgS().map(BinaryOp::bop);
 	}
 
 	/**
@@ -221,7 +221,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 							stack.push(bop._2._1);
 					} // if
 				} // if
-				return p == null ? null : (BinaryOp<Object, Object>) BOP(p);
+				return p == null ? null : (BinaryOp<Object, Object>) bop(p);
 			} else { // 加入结尾标记
 				ai.getAndIncrement();
 				return null;
@@ -517,7 +517,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 
 	 * @return ConstantOp
 	 */
-	public final Optional<ConstantOp> factorOpt() {
+	public Optional<ConstantOp> factorOpt() {
 		return BinaryOp.factorOpt(this);
 	}
 
@@ -605,15 +605,15 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
 
 					if (termLeft.isPresent()) { // left 是作为term项目而存在
-						final var a = BOP(termLeft.get()._2._2);
-						final var b = BOP(_right);
+						final var a = bop(termLeft.get()._2._2);
+						final var b = bop(_right);
 						if (Objects.equals(a, b)) { // 合并 2x+x
 							final var x = termLeft.get();
 							return MUL(dbl(x._2._1) + 1, x._2._2);
 						} else { // 合并 2x+3x
 							final var termRight = BinaryOp.termOpt(_right);
 							if (termRight.isPresent()) {
-								final var _b = BOP(termRight.get()._2._2);
+								final var _b = bop(termRight.get()._2._2);
 								if (Objects.equals(a, _b)) {
 									final var x = termLeft.get();
 									final var y = termRight.get();
@@ -621,7 +621,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 								} // if
 							} // if
 						} // if
-					} else if ((share_flag = Objects.equals((arg1 = BOP(left))._1, (arg2 = BOP(right))._1)
+					} else if ((share_flag = Objects.equals((arg1 = bop(left))._1, (arg2 = bop(right))._1)
 							&& Objects.equals(arg1._1, "*")) && Optional.ofNullable(arg1._2) // 类型：ax + bx -> (a+b)*x
 									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
 									.orElse(false)) {
@@ -697,9 +697,10 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	}
 
 	/**
+	 * 是否包含有 variable 名称的叶子节点
 	 * 
-	 * @param variable
-	 * @return
+	 * @param variable 变量名称
+	 * @return true:包含,false:包含
 	 */
 	@SuppressWarnings("unchecked")
 	public boolean hasLeaf(final Object variable) {
@@ -765,6 +766,15 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 						stack.push(e);
 					}); // forEach
 		} // while
+	}
+
+	/**
+	 * 强转为浮点数类型
+	 * 
+	 * @return Double
+	 */
+	public Double dbl() {
+		return this.isConstant() ? dbl(this._1) : null;
 	}
 
 	/**
@@ -860,13 +870,14 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return factorOpt
 	 */
 	public static final Optional<ConstantOp> factorOpt(final Object object) {
-		if (UNPACK(object) instanceof ConstantOp constOp) {
-			return dblOpt(constOp.evaluate()).map(Ops::TOKEN);
-		} else if (UNPACK(object) instanceof Number num) {
+		final var _obj = UNPACK(object);
+		if (_obj instanceof ConstantOp constOp) {
+			return dblOpt(constOp._1).map(Ops::TOKEN);
+		} else if (_obj instanceof Number num) {
 			return Optional.ofNullable(TOKEN(num));
 		} else {
-			return Optional.empty();
-		} // if
+			return dblOpt(dbl(_obj)).map(Ops::TOKEN);
+		} //
 	}
 
 	/**
@@ -950,7 +961,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 如果是BinaryOp直接返回,否则返回TOKEN
 	 */
 	@SuppressWarnings("unchecked")
-	public static BinaryOp<Object, Object> BOP(final Object obj) {
+	public static BinaryOp<Object, Object> bop(final Object obj) {
 		return obj instanceof BinaryOp<?, ?> bop // 是否本身就是算符
 				? (BinaryOp<Object, Object>) bop
 				: obj instanceof Number num // 是否是数值类型

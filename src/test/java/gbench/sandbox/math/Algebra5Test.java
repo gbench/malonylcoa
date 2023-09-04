@@ -32,7 +32,7 @@ public class Algebra5Test {
 		println(a.simplify());
 		println(a.flatArgs2());
 		a.flatS().forEach(e -> {
-			println(e.isConstant(), e);
+			println(e.isConstant(), e, e.dbl());
 		});
 	}
 
