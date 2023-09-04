@@ -157,7 +157,61 @@ public class SymboLab implements ISymboLab {
 						} // if
 					} // else 连加情形
 				} else if (opName.equals("*")) { // 乘法
-					if (Objects.equals(right, left)) { // 合并同类项
+					final BinaryOp<?, ?> arg1; // 第一参数
+					final BinaryOp<?, ?> arg2; // 第二参数
+					final boolean share_flag; // 共享项标志
+					final var _termLeft = BinaryOp.termOpt(left);
+					final var _left = _termLeft.isPresent() ? left : right; // 尝试吧_left作为term项
+					final var _right = _termLeft.isPresent() ? right : left; // 尝试吧_left作为term项
+					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
+					final var b0 = bop(_left);
+					final var b1 = bop(_right);
+
+					if (b0.namEq("pow") && Objects.equals(b0._2._1, b1)) {
+						return b0.compose2(dbl(b0._2._2) + 1);
+					} else if (b1.namEq("pow") && Objects.equals(b1._2._1, b0)) {
+						return b1.compose2(dbl(b1._2._2) + 1);
+					} else if (termLeft.isPresent()) { // left 是作为term项目而存在
+						final var a = bop(termLeft.get()._2._2);
+						final var b = b1;
+						if (a.namEq("pow") && Objects.equals(a._2._1, b)) {
+							return MUL(b0._2._1, a.compose2(dbl(a._2._2) + 1));
+						} else if (Objects.equals(a, b)) { // 合并 2*x*x
+							final var x = termLeft.get();
+							return MUL(dbl(x._2._1) * 1, POW(x._2._2, 2));
+						} else { // 合并 2x+3x
+							final var termRight = BinaryOp.termOpt(_right);
+							final Double d;
+							if (termRight.isPresent()) {
+								final var _b = bop(termRight.get()._2._2);
+								if (Objects.equals(a, _b)) {
+									final var x = termLeft.get();
+									final var y = termRight.get();
+									return MUL(dbl(x._2._1) * dbl(y._2._1), POW(x._2._2, 2));
+								} // if
+							} else if (null != (d = dbl(_right))) { // if 5*x*6
+								final var bleft = bop(_left);
+								return bleft.compose1(dbl(bleft._2._1) * d);
+							} // if
+						} // if
+					} else if ((share_flag = Objects.equals((arg1 = bop(left))._1, (arg2 = bop(right))._1)
+							&& Objects.equals(arg1._1, "*")) && Optional.ofNullable(arg1._2) // 类型：a*x*b*x->(a*b)*pow(x,2)
+									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
+									.orElse(false)) {
+						return MUL(MUL(arg1._2._1, arg2._2._1).simplify(), POW(arg1._2._2, 2));
+					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：x*a*x*b -> (a*b)*pow(x,2)
+							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._1)))
+							.orElse(false)) {
+						return MUL(MUL(arg1._2._2, arg2._2._2).simplify(), POW(arg1._2._1, 2));
+					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：a*x*x*b -> (a+b)*pow(x,2)
+							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._1)))
+							.orElse(false)) {
+						return MUL(MUL(arg1._2._1, arg2._2._2).simplify(), POW(arg1._2._2, 2));
+					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：x*a*b*x -> (a+b)*pow(x,2)
+							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._2)))
+							.orElse(false)) {
+						return MUL(MUL(arg1._2._2, arg2._2._1).simplify(), POW(arg1._2._1, 2));
+					} else if (Objects.equals(right, left)) { // 合并同类项
 						return POW(right, 2);
 					} else if (one_i >= 0) { // 存在1参数，1 是 乘法的 幺元 即 1 乘以 任何数 的结果 仍旧是 任何数，也就是乘以幺元 保持不变
 						return one_i == 0 ? right : left;
