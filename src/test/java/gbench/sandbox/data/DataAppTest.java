@@ -73,7 +73,6 @@ public class DataAppTest {
 	/**
 	 * 行数据输出
 	 * 
-	 * @param <T>     参数类型
 	 * @param objects 输出的
 	 */
 	public String println(final Object... objects) {
