@@ -45,9 +45,9 @@ public class Algebra5Test {
 
 	@Test
 	public void bar() {
-		// println(adjust(MUL("x", MUL("x", 2))));
+		println(adjust(MUL("x", MUL("x", 2))));
 		println(adjust(analyze("cos x ^ 2").dx().getOp().simplify()));
-		println(analyze("(sin x)^2 + (cos x)^2").dx().simplify());
+		println(analyze("sin x ^ 2 + cos x ^ 2").dx().simplify());
 	}
 
 	/**
