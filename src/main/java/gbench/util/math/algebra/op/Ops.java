@@ -49,6 +49,10 @@ public class Ops {
 		return new Add<>(t, u);
 	}
 
+	public static <T, U> BinaryOp<T, U> SUB(T t, U u) {
+		return new Subtract<>(t, u);
+	}
+
 	public static <T, U> BinaryOp<T, U> MINUS(T t, U u) {
 		return new Minus<>(t, u);
 	}
@@ -328,11 +332,11 @@ public class Ops {
 	 * registry 的 初始化过程, 注册系统函数
 	 */
 	static { // 注册系统函数
-		Stream.of(ADD(null, null), MINUS(null, null), MINUS(null), MUL(null, null), DIV(null, null), POW(null, null),
-				COMMA(null, null), LOG(null, null), SIN(null), SINH(null), CSC(null), COS(null), COSH(null), SEC(null),
-				TAN(null), COT(null), NEG(null), EXP(null), ID(null), LN(null), SQRT(null), SQUARE(null), FACT(null),
-				FACT2(null), POW2(null, null), EXPA(null, null), ARCSIN(null), ARCCOS(null), ARCTAN(null), ARCCOT(null))
-				.forEach(e -> {
+		Stream.of(ADD(null, null), SUB(null, null), MINUS(null, null), MINUS(null), MUL(null, null), DIV(null, null),
+				POW(null, null), COMMA(null, null), LOG(null, null), SIN(null), SINH(null), CSC(null), COS(null),
+				COSH(null), SEC(null), TAN(null), COT(null), NEG(null), EXP(null), ID(null), LN(null), SQRT(null),
+				SQUARE(null), FACT(null), FACT2(null), POW2(null, null), EXPA(null, null), ARCSIN(null), ARCCOS(null),
+				ARCTAN(null), ARCCOT(null)).forEach(e -> {
 					registry.put(e.getName(), e); // 注册函数
 				}); // forEach
 	} // static
