@@ -6,9 +6,12 @@ import gbench.util.math.algebra.op.BinaryOp;
 import gbench.util.math.algebra.op.ConstantOp;
 import gbench.util.math.algebra.op.UnaryOp;
 
+import static gbench.util.array.INdarray.nats;
 import static gbench.util.io.Output.println;
 import static gbench.util.math.algebra.Algebras.analyze;
+import static gbench.util.math.algebra.Algebras.evaluate;
 import static gbench.util.math.algebra.op.Ops.*;
+import static java.lang.Math.PI;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -84,6 +87,15 @@ public class Algebra5Test {
 		}
 
 		return bop.duplicate();
+	}
+
+	@Test
+	public void qux() {
+		nats(8).fmap(n -> evaluate("sin x", "x", PI * 2 / 8 * n));
+		nats(8).fmap(n -> evaluate("sin x ^ 2 + cos x ^ 2", "x", PI * 2 / 8 * n));
+		analyze("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify(); // 符号计算化简
+		println(analyze("sin x ^ 2 + cos x ^ 2").dumpAST()); // 解析成语法树
+		analyze("sin x ^ 2 + cos x ^ 2").dx(); // 微分结构
 	}
 
 }
