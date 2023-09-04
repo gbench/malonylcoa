@@ -3,7 +3,7 @@ package gbench.sandbox.math;
 import org.junit.jupiter.api.Test;
 
 import static gbench.util.io.Output.println;
-import static gbench.util.math.algebra.AlgebraEngine.parse;
+import static gbench.util.math.algebra.Algebras.analyze;
 import static gbench.util.math.algebra.op.Ops.*;
 
 /**
@@ -18,9 +18,9 @@ public class Algebra5Test {
 	 */
 	@Test
 	public void quc() {
-		println(parse("(sin x)^2 + (cos x)^2").dx().simplify());
-		println(parse("cos x").dx().simplify());
-		println(parse("sin x * cos x + cos x * sin x").simplify());
+		println(analyze("(sin x)^2 + (cos x)^2").dx().simplify());
+		println(analyze("cos x").dx().simplify());
+		println(analyze("sin x * cos x + cos x * sin x").simplify());
 	}
 
 	/**

@@ -7,6 +7,7 @@ import static gbench.util.io.Output.println;
 import java.util.stream.Stream;
 
 import gbench.util.math.algebra.AlgebraEngine;
+import gbench.util.math.algebra.Algebras;
 
 /**
  * 
@@ -52,7 +53,7 @@ public class Algebra3Test {
 
 	@Test
 	public void bar() {
-		double d = AlgebraEngine.evaluate("1+2*3");
+		double d = Algebras.evaluate("1+2*3");
 		println(d);
 	}
 

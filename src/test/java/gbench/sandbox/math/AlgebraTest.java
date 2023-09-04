@@ -7,7 +7,7 @@ import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
-import static gbench.util.math.algebra.AlgebraEngine.parse;
+import static gbench.util.math.algebra.Algebras.analyze;
 import static gbench.util.math.algebra.op.Ops.*;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,20 +45,20 @@ public class AlgebraTest {
 
 	@Test
 	public void foo() {
-		println(parse("(sin x)* sin x").dx().simplify().dumpAST());
-		println(parse("x+x+x").simplify());
-		println(parse("x-x").simplify());
-		println(parse("x/x").simplify());
-		println(parse("(sin cos (x+x)) * (sin cos (x+x))").simplify());
+		println(analyze("(sin x)* sin x").dx().simplify().dumpAST());
+		println(analyze("x+x+x").simplify());
+		println(analyze("x-x").simplify());
+		println(analyze("x/x").simplify());
+		println(analyze("(sin cos (x+x)) * (sin cos (x+x))").simplify());
 		println(SIN("x").equals(SIN("x")));
-		println(parse("x").isToken());
+		println(analyze("x").isToken());
 	}
 
 	@Test
 	public void bar() {
-		println("", parse("4").map(e -> e.factorOpt()));
-		println("", parse("4*sin x").map(e -> e.termOpt()));
-		println("", parse("sin x * 4 ").map(e -> e.termOpt()));
+		println("", analyze("4").map(e -> e.factorOpt()));
+		println("", analyze("4*sin x").map(e -> e.termOpt()));
+		println("", analyze("sin x * 4 ").map(e -> e.termOpt()));
 	}
 
 	/**
@@ -66,11 +66,11 @@ public class AlgebraTest {
 	 */
 	@Test
 	public void quz() {
-		println("", parse("2*x").map(e -> e.termOpt()));
-		println(parse("x+x+x+x").simplify());
-		println(parse("sin x + sin x + sin x ").simplify());
-		println(parse("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify());
-		println(parse("x+2*x").simplify());
+		println("", analyze("2*x").map(e -> e.termOpt()));
+		println(analyze("x+x+x+x").simplify());
+		println(analyze("sin x + sin x + sin x ").simplify());
+		println(analyze("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify());
+		println(analyze("x+2*x").simplify());
 	}
 
 	/**
@@ -78,11 +78,11 @@ public class AlgebraTest {
 	 */
 	@Test
 	public void qua() {
-		println(parse("a*sin x + b*sin x").simplify().dumpAST());
+		println(analyze("a*sin x + b*sin x").simplify().dumpAST());
 		println("-------------------------------------------------------------------");
-		println(parse("sin x * tan x + sin x * (cos x + sin x)").simplify().dumpAST());
+		println(analyze("sin x * tan x + sin x * (cos x + sin x)").simplify().dumpAST());
 		println("-------------------------------------------------------------------");
-		println(parse("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify().dumpAST());
+		println(analyze("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify().dumpAST());
 	}
 
 	/**
@@ -90,9 +90,9 @@ public class AlgebraTest {
 	 */
 	@Test
 	public void qub() {
-		println(parse("x*a + b*x").simplify());
-		println(parse("a*x + x*b").simplify());
-		println(parse("a*b + b*a").simplify());
+		println(analyze("x*a + b*x").simplify());
+		println(analyze("a*x + x*b").simplify());
+		println(analyze("a*b + b*a").simplify());
 	}
 
 	/**
@@ -100,9 +100,9 @@ public class AlgebraTest {
 	 */
 	@Test
 	public void quc() {
-		println(parse("(sin x)^2 + (cos x)^2").dx().simplify());
-		println(parse("cos x").dx().simplify());
-		println(parse("sin x * cos x + cos x * sin x").simplify());
+		println(analyze("(sin x)^2 + (cos x)^2").dx().simplify());
+		println(analyze("cos x").dx().simplify());
+		println(analyze("sin x * cos x + cos x * sin x").simplify());
 	}
 
 }
