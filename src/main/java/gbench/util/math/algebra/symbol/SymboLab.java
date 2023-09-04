@@ -29,7 +29,7 @@ import gbench.util.math.algebra.tuple.Tuple2;
 /**
  * 符号计算库
  * 
- * @author Administrator
+ * @author gbench
  *
  */
 public class SymboLab implements ISymboLab {
@@ -37,8 +37,10 @@ public class SymboLab implements ISymboLab {
 	/**
 	 * 符号计算
 	 * 
+	 * @param <T>    第一参数类型
+	 * @param <U>    第二参数类型
 	 * @param symbol 运算符号
-	 * @return 元素符号
+	 * @return 计算结果
 	 */
 	@Override
 	public <T, U> BinaryOp<Object, Object> simplify(final BinaryOp<T, U> symbol) {
@@ -203,8 +205,16 @@ public class SymboLab implements ISymboLab {
 		return handle;
 	}
 
+	/**
+	 * 二元函数的求值
+	 * 
+	 * @param <T>      第一参数类型
+	 * @param <U>      第二参数类型
+	 * @param bindings 变量参数的数据绑定
+	 * @return 二元函数计算的结果, 数值 或者 BinaryOp 对象（当含有未知数的时候）
+	 */
 	@Override
-	public <T, U> Object evaluate(BinaryOp<T, U> symbol, Map<String, Object> bindings) {
+	public <T, U> Object evaluate(final BinaryOp<T, U> symbol, final Map<String, Object> bindings) {
 
 		final var dataStream = symbol.getArgS().map(e -> {
 			if (e instanceof BinaryOp) { // op 算符类型
