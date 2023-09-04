@@ -197,8 +197,9 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 
 	 * @return 扁平化
 	 */
-	public List<BinaryOp<Object, Object>> flats() {
-		return this.flatS().toList();
+	@SuppressWarnings("unchecked")
+	public <E extends BinaryOp<?, ?>> List<E> flats() {
+		return (List<E>) this.flatS().toList();
 	}
 
 	/**
@@ -206,11 +207,12 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 
 	 * @return 扁平化
 	 */
-	public Stream<BinaryOp<Object, Object>> flatS() {
+	@SuppressWarnings("unchecked")
+	public <E extends BinaryOp<?, ?>> Stream<E> flatS() {
 		final Stack<Object> stack = new Stack<>();
 		final var ai = new AtomicInteger(); // 终止flag
 		stack.push(this);
-		return Stream.iterate((BinaryOp<Object, Object>) null, e -> ai.get() < 1, e -> {
+		return Stream.iterate((E) null, e -> ai.get() < 1, e -> {
 			if (!stack.isEmpty()) {
 				final var p = stack.pop();
 				if (p instanceof BinaryOp<?, ?> bop) {
@@ -221,7 +223,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 							stack.push(bop._2._1);
 					} // if
 				} // if
-				return p == null ? null : (BinaryOp<Object, Object>) bop(p);
+				return p == null ? null : (E) bop(p);
 			} else { // 加入结尾标记
 				ai.getAndIncrement();
 				return null;
@@ -672,7 +674,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 如果是BinaryOp直接返回,否则返回TOKEN
 	 */
 	@SuppressWarnings("unchecked")
-	public static BinaryOp<Object, Object> bop(final Object obj) {
+	public static BinaryOp<?, ?> bop(final Object obj) {
 		return obj instanceof BinaryOp<?, ?> bop // 是否本身就是算符
 				? (BinaryOp<Object, Object>) bop
 				: obj instanceof Number num // 是否是数值类型
