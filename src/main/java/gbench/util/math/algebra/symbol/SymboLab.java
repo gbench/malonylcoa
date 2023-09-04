@@ -42,10 +42,9 @@ public class SymboLab implements ISymboLab {
 	 * @param symbol 运算符号
 	 * @return 计算结果
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public <T, U> BinaryOp<?, ?> simplify(final BinaryOp<T, U> symbol) {
-		final var _symbol = symbol; // 系数调整
+		final var _symbol = symbol; // 符号预处理
 		final var zero = PACK(0);
 		final var one = PACK(1);
 		final var ai_one = new AtomicInteger(-1); // 1 乘法的 幺元
@@ -80,7 +79,6 @@ public class SymboLab implements ISymboLab {
 							} // coef_i 外层
 						} // if 发现存在内层*结构。
 					} // for i 外层
-
 					return null; // 返回 空 表示 级联运算尝试 失败
 				}; // cascadeOp , argdbls 浮点数类型的 args, op 级联算符名称
 		final var theOp = _symbol.duplicate(); // 复制操作符
@@ -103,7 +101,6 @@ public class SymboLab implements ISymboLab {
 						.map(e -> !e.isToken() ? null : e.getToken() == null ? null : e.getToken().dbl())
 						.toArray(Double[]::new); // 浮点数类型的数据值
 				final var flag = (dbls[0] != null) && (dbls[1] != null); // 是否是数值计算
-
 				if (opName.equals("+")) { // 加法
 					final BinaryOp<?, ?> arg1; // 第一参数
 					final BinaryOp<?, ?> arg2; // 第二参数
@@ -170,8 +167,9 @@ public class SymboLab implements ISymboLab {
 						return PACK(dbls[0] * dbls[1]).unpack();
 					} else { // 连乘情形 把 (*,coef_i,(*,coef_j,c)) 转成 (*,coef_i*coef_j,c) 的结构，降低一个阶层 以 提升效率
 						final var h = cascade_handler.apply(dbls, MUL(null, null)); // 计算连乘
-						if (h != null)
+						if (h != null) {
 							return h;
+						} // if
 					} // else 连乘的情形
 				} else if (opName.equals("-")) { // 减法
 					if (Objects.equals(right, left)) // 合并同类项
@@ -192,17 +190,16 @@ public class SymboLab implements ISymboLab {
 						return left;
 					}
 				} // if
-
 				return theOp.compose(left, right); // 重新组合数据
 			} // case 2
 			default: {
 				return theOp;
 			} // default
 			} // switch
-		}).map(o -> (BinaryOp<Object, Object>) o) // 转换成算符类型
+		}).map(o -> (BinaryOp<?, ?>) o) // 转换成算符类型
 				.orElse(null); // handle
 
-		return coef_adjust(handle);
+		return coef_adjust(handle); // 系数调整
 	}
 
 	/**
@@ -382,7 +379,7 @@ public class SymboLab implements ISymboLab {
 					}
 				} // if
 			} // if
-		}
+		} // if
 
 		return bop.duplicate();
 	}
