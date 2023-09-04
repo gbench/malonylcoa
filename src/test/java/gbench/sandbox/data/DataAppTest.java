@@ -76,7 +76,7 @@ public class DataAppTest {
 	 * @param <T>     参数类型
 	 * @param objects 输出的
 	 */
-	public <T> String println(@SuppressWarnings("unchecked") final T... objects) {
+	public String println(final Object... objects) {
 		if (null != objects) {
 			final String line = Arrays.asList(objects).stream().map(e -> e + "").collect(Collectors.joining("\t"));
 			if (debug) {
