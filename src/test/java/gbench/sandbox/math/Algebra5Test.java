@@ -55,6 +55,39 @@ public class Algebra5Test {
 		println(analyze("(5*sin x) * (5*sin x)").simplify());
 	}
 
+	@Test
+	public void qux() {
+		nats(8).fmap(n -> evaluate("sin x", "x", PI * 2 / 8 * n));
+		nats(8).fmap(n -> evaluate("sin x ^ 2 + cos x ^ 2", "x", PI * 2 / 8 * n));
+		analyze("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify(); // 符号计算化简
+		println(analyze("sin x ^ 2 + cos x ^ 2").dumpAST()); // 解析成语法树
+		analyze("sin x ^ 2 + cos x ^ 2").dx(); // 微分结构
+	}
+
+	@Test
+	public void quy() {
+		println(analyze("x*x*x").simplify());
+		println(analyze("sin x * sin x * sin x").simplify());
+		println(analyze("x*5*x*6*x*x").simplify());
+		println(analyze("(* (* 30.0 (pow x 2)) x)").simplify());
+	}
+
+	@Test
+	public void qua() {
+		println(analyze("2*x*3*x").simplify());
+		println(analyze("2*x*x*3").simplify());
+		println(analyze("x*2*x*3").simplify());
+		println(analyze("x*2*3*x").simplify());
+		println(analyze("x*2*neg x").simplify());
+	}
+	
+	@Test
+	public void qub() {
+		//println(analyze("cos x ^ 2").dx().simplify());
+		println(analyze("1*sin x * neg 1 * cos x").simplify());
+		//println(analyze("1 * 1").simplify());
+	}
+
 	/**
 	 * 节点调整：将节点系数向前调整
 	 * 
@@ -89,32 +122,6 @@ public class Algebra5Test {
 		}
 
 		return bop.duplicate();
-	}
-
-	@Test
-	public void qux() {
-		nats(8).fmap(n -> evaluate("sin x", "x", PI * 2 / 8 * n));
-		nats(8).fmap(n -> evaluate("sin x ^ 2 + cos x ^ 2", "x", PI * 2 / 8 * n));
-		analyze("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify(); // 符号计算化简
-		println(analyze("sin x ^ 2 + cos x ^ 2").dumpAST()); // 解析成语法树
-		analyze("sin x ^ 2 + cos x ^ 2").dx(); // 微分结构
-	}
-
-	@Test
-	public void quy() {
-		println(analyze("x*x*x").simplify());
-		println(analyze("sin x * sin x * sin x").simplify());
-		println(analyze("x*5*x*6*x*x").simplify());
-		println(analyze("(* (* 30.0 (pow x 2)) x)").simplify());
-	}
-
-	@Test
-	public void qua() {
-		println(analyze("2*x*3*x").simplify());
-		println(analyze("2*x*x*3").simplify());
-		println(analyze("x*2*x*3").simplify());
-		println(analyze("x*2*3*x").simplify());
-		println(analyze("x*2*neg x").simplify());
 	}
 
 }

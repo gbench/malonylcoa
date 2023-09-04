@@ -164,10 +164,14 @@ public class SymboLab implements ISymboLab {
 					final var _left = _termLeft.isPresent() ? left : right; // 尝试吧_left作为term项
 					final var _right = _termLeft.isPresent() ? right : left; // 尝试吧_left作为term项
 					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
-					final var b0 = bop(_left);
-					final var b1 = bop(_right);
+					final var b0 = bop(_left).simplify();
+					final var b1 = bop(_right).simplify();
+					final var d0 = b0.dbl(); // 浮点数类型
+					final var d1 = b1.dbl(); // 浮点数类型
 
-					if (b0.namEq("pow") && Objects.equals(b0._2._1, b1)) {
+					if (d0 != null && d1 != null) {
+						return TOKEN(d0 * d1);
+					} else if (b0.namEq("pow") && Objects.equals(b0._2._1, b1)) {
 						return b0.compose2(dbl(b0._2._2) + 1);
 					} else if (b1.namEq("pow") && Objects.equals(b1._2._1, b0)) {
 						return b1.compose2(dbl(b1._2._2) + 1);
@@ -179,7 +183,7 @@ public class SymboLab implements ISymboLab {
 						} else if (Objects.equals(a, b)) { // 合并 2*x*x
 							final var x = termLeft.get();
 							return MUL(dbl(x._2._1) * 1, POW(x._2._2, 2));
-						} else { // 合并 2x+3x
+						} else { // 合并 2*x*3*x
 							final var termRight = BinaryOp.termOpt(_right);
 							final Double d;
 							if (termRight.isPresent()) {
