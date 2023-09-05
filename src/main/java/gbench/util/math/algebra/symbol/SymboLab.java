@@ -133,19 +133,19 @@ public class SymboLab implements ISymboLab {
 							&& Objects.equals(arg1._1, "*")) && Optional.ofNullable(arg1._2) // 类型：ax + bx -> (a+b)*x
 									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
 									.orElse(false)) {
-						return MUL(ADD(arg1._2._1, arg2._2._1).simplify(), arg1._2._2);
+						return MUL(ADD(arg1._2._1, arg2._2._1).simplify(), arg1._2._2).simplify();
 					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：xa + xa -> (a+b)*x
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._1)))
 							.orElse(false)) {
-						return MUL(ADD(arg1._2._2, arg2._2._2).simplify(), arg1._2._1);
+						return MUL(ADD(arg1._2._2, arg2._2._2).simplify(), arg1._2._1).simplify();
 					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：ax + xb -> (a+b)*x
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._1)))
 							.orElse(false)) {
-						return MUL(ADD(arg1._2._1, arg2._2._2).simplify(), arg1._2._2);
+						return MUL(ADD(arg1._2._1, arg2._2._2).simplify(), arg1._2._2).simplify();
 					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：xa + bx -> (a+b)*x
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._2)))
 							.orElse(false)) {
-						return MUL(ADD(arg1._2._2, arg2._2._1).simplify(), arg1._2._1);
+						return MUL(ADD(arg1._2._2, arg2._2._1).simplify(), arg1._2._1).simplify();
 					} else if (Objects.equals(left, right)) { // 合并同类项
 						return MUL(2, right);
 					} else if (zero_i >= 0) { // // 存在0参数，0 是 加法的 幺元 即 0 加上 任何数 的结果 仍旧是 任何数，也就是 加上 幺元 保持不变
@@ -174,17 +174,17 @@ public class SymboLab implements ISymboLab {
 					if (d0 != null && d1 != null) {
 						return TOKEN(d0 * d1);
 					} else if (b0.namEq("pow") && Objects.equals(b0._2._1, b1)) {
-						return b0.compose2(dbl(b0._2._2) + 1);
+						return b0.compose2(dbl(b0._2._2) + 1).simplify();
 					} else if (b1.namEq("pow") && Objects.equals(b1._2._1, b0)) {
-						return b1.compose2(dbl(b1._2._2) + 1);
+						return b1.compose2(dbl(b1._2._2) + 1).simplify();
 					} else if (termLeft.isPresent()) { // left 是作为term项目而存在
 						final var a = bop(termLeft.get()._2._2);
 						final var b = b1;
 						if (a.namEq("pow") && Objects.equals(a._2._1, b)) {
-							return MUL(b0._2._1, a.compose2(dbl(a._2._2) + 1));
+							return MUL(b0._2._1, a.compose2(dbl(a._2._2) + 1)).simplify();
 						} else if (Objects.equals(a, b)) { // 合并 2*x*x
 							final var x = termLeft.get();
-							return MUL(dbl(x._2._1) * 1, POW(x._2._2, 2));
+							return MUL(dbl(x._2._1) * 1, POW(x._2._2, 2)).simplify();
 						} else { // 合并 2*x*3*x
 							final var termRight = BinaryOp.termOpt(_right);
 							final Double d;
@@ -193,30 +193,30 @@ public class SymboLab implements ISymboLab {
 								if (Objects.equals(a, _b)) {
 									final var x = termLeft.get();
 									final var y = termRight.get();
-									return MUL(dbl(x._2._1) * dbl(y._2._1), POW(x._2._2, 2));
+									return MUL(dbl(x._2._1) * dbl(y._2._1), POW(x._2._2, 2)).simplify();
 								} // if
 							} else if (null != (d = dbl(_right))) { // if 5*x*6
 								final var bleft = bop(_left);
-								return bleft.compose1(dbl(bleft._2._1) * d);
+								return bleft.compose1(dbl(bleft._2._1) * d).simplify();
 							} // if
 						} // if
 					} else if ((share_flag = Objects.equals((arg1 = bop(left))._1, (arg2 = bop(right))._1)
 							&& Objects.equals(arg1._1, "*")) && Optional.ofNullable(arg1._2) // 类型：a*x*b*x->(a*b)*pow(x,2)
 									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
 									.orElse(false)) {
-						return MUL(MUL(arg1._2._1, arg2._2._1).simplify(), POW(arg1._2._2, 2));
+						return MUL(MUL(arg1._2._1, arg2._2._1).simplify(), POW(arg1._2._2, 2)).simplify();
 					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：x*a*x*b -> (a*b)*pow(x,2)
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._1)))
 							.orElse(false)) {
-						return MUL(MUL(arg1._2._2, arg2._2._2).simplify(), POW(arg1._2._1, 2));
+						return MUL(MUL(arg1._2._2, arg2._2._2).simplify(), POW(arg1._2._1, 2)).simplify();
 					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：a*x*x*b -> (a+b)*pow(x,2)
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._1)))
 							.orElse(false)) {
-						return MUL(MUL(arg1._2._1, arg2._2._2).simplify(), POW(arg1._2._2, 2));
+						return MUL(MUL(arg1._2._1, arg2._2._2).simplify(), POW(arg1._2._2, 2)).simplify();
 					} else if (share_flag && Optional.ofNullable(arg1._2) // 类型：x*a*b*x -> (a+b)*pow(x,2)
 							.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._1, a2._2)))
 							.orElse(false)) {
-						return MUL(MUL(arg1._2._2, arg2._2._1).simplify(), POW(arg1._2._1, 2));
+						return MUL(MUL(arg1._2._2, arg2._2._1).simplify(), POW(arg1._2._1, 2)).simplify();
 					} else if (Objects.equals(right, left)) { // 合并同类项
 						return POW(right, 2);
 					} else if (one_i >= 0) { // 存在1参数，1 是 乘法的 幺元 即 1 乘以 任何数 的结果 仍旧是 任何数，也就是乘以幺元 保持不变
