@@ -31,6 +31,7 @@ public class Algebra5Test {
 		println(analyze("(sin x)^2 + (cos x)^2").dx().simplify());
 		println(analyze("cos x").dx().simplify());
 		println(analyze("sin x * cos x + cos x * sin x").simplify());
+		println(analyze("x+x+x+x+x").dx().simplify());
 	}
 
 	/**
