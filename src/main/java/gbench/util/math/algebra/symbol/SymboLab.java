@@ -426,32 +426,44 @@ public class SymboLab implements ISymboLab {
 	 * @param bop 符号类型
 	 * @return 调整节点
 	 */
-	public static <T, U> BinaryOp<?, ?> coef_adjust(final BinaryOp<T, U> bop) {
-		if (bop instanceof ConstantOp cop) {
-			return cop.duplicate();
-		} else if (bop instanceof UnaryOp uop) {
-			return uop.duplicate();
-		} else {
-			if (bop.namEq("*") || bop.namEq("+")) {
-				final BinaryOp<?, ?>[] bb = bop.getArgS() //
-						.map(e -> coef_adjust(BinaryOp.bop(e))).toArray(BinaryOp[]::new);
-				if (Arrays.stream(bb).allMatch(e -> e.isConstant()) // 简单节点
-						&& bb[1].dbl() != null && bb[0].dbl() == null) {
-					return bop.compose(bb[1], bb[0]);
-				} else { // 复合节点
-					final BinaryOp<?, ?>[] bb1 = Arrays.stream(bb).map(e -> {
-						return e.isConstant() ? e : e.flatArgS2().findFirst().orElse(null);
-					}).filter(Objects::nonNull).toArray(BinaryOp[]::new);
-					if (bb1[1].dbl() != null && bb1[0].dbl() == null) {
+	public static <T, U> BinaryOp<?, ?> coef_adjust(final BinaryOp<T, U> _bop) {
+		@SuppressWarnings("unchecked")
+		final var opt = Optional.ofNullable(_bop).map(bop -> {
+			if (bop instanceof ConstantOp cop) {
+				return cop.duplicate();
+			} else if (bop instanceof UnaryOp uop) {
+				return uop.duplicate();
+			} else {
+				if (bop.namEq("*") || bop.namEq("+")) {
+					final BinaryOp<?, ?>[] bb = bop.getArgS() //
+							.map(e -> coef_adjust(BinaryOp.bop(e))).toArray(BinaryOp[]::new);
+					if (Arrays.stream(bb).allMatch(e -> e.isConstant()) // 简单节点
+							&& bb[1].dbl() != null && bb[0].dbl() == null) {
 						return bop.compose(bb[1], bb[0]);
-					} else {// if
-						return bop.compose(bb[0], bb[1]);
-					}
+					} else { // 复合节点
+						final BinaryOp<?, ?>[] bb1 = Arrays.stream(bb).map(e -> {
+							return e.isConstant() ? e : e.flatArgS2().findFirst().orElse(null);
+						}).filter(Objects::nonNull).toArray(BinaryOp[]::new);
+						if (bb1[1].dbl() != null && bb1[0].dbl() == null) {
+							return bop.compose(bb[1], bb[0]);
+						} else {// if
+							return bop.compose(bb[0], bb[1]);
+						}
+					} // if
 				} // if
 			} // if
-		} // if
+			return bop.duplicate();
+		}).map(e -> { // (5*a)*b 转换成 (*,5,(*,a,b)) 即 5*(a*b)
+			final var p = (Tuple2<BinaryOp<Object, Object>, BinaryOp<Object, Object>>) e._2;
+			if (p != null && p._1 != null && p._2 != null) {
+				if (e.namEq("*") && p._1.namEq("*") && dbl(p._1._2._1) != null) {
+					return MUL(p._1._2._1, MUL(p._1._2._2, p._2));
+				} // if
+			} //
+			return e;
+		}); //
 
-		return bop.duplicate();
+		return opt.get();
 	}
 
 }

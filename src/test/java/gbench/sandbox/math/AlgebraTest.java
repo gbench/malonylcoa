@@ -105,4 +105,13 @@ public class AlgebraTest {
 		println(analyze("sin x * cos x + cos x * sin x").simplify());
 	}
 
+	/**
+	 * 因子式化简
+	 */
+	@Test
+	public void qud() {
+		println(analyze("(5*a)*b").simplify());
+
+	}
+
 }
