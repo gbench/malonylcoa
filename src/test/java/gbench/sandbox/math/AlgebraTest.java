@@ -112,7 +112,8 @@ public class AlgebraTest {
 	public void qud() {
 		println(analyze("(5*a)*b").simplify());
 		println(analyze("square(sin x)").dx().simplify());
-
+		println(analyze("1/(sigma*sqrt(2*pi))*exp(neg(square((x-mu)/sigma)/2))").dumpAST());
+		println(analyze("1/(sigma*sqrt(2*pi))*exp(neg(square((x-mu)/sigma)/2))").dx().simplify());
 	}
 
 }
