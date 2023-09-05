@@ -425,12 +425,12 @@ public class SymboLab implements ISymboLab {
 	 * 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
-	 * @param bop 符号类型
+	 * @param symbol 符号类型
 	 * @return 调整节点
 	 */
-	public static <T, U> BinaryOp<?, ?> coef_adjust(final BinaryOp<T, U> _bop) {
+	public static <T, U> BinaryOp<?, ?> coef_adjust(final BinaryOp<T, U> symbol) {
 		@SuppressWarnings("unchecked")
-		final var opt = Optional.ofNullable(_bop).map(bop -> {
+		final var opt = Optional.ofNullable(symbol).map(bop -> {
 			if (bop instanceof ConstantOp cop) {
 				return cop.duplicate();
 			} else if (bop instanceof UnaryOp uop) {
