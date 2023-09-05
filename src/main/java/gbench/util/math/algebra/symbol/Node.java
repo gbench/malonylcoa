@@ -523,6 +523,9 @@ public class Node {
 			case "sqrt": { // 求平方根函数 sqrt(x)
 				return derivate_rule.apply(PACK(MUL(1 / 2d, POW(x, -1 / 2d))));
 			}
+			case "square": { // 平方根函数 square(x)
+				return derivate_rule.apply(PACK(MUL(2d, x)));
+			}
 			case "^":
 			case "pow": { // 指数函数 pow (x,y), 由于 pow 函数 是采用逗号表达式来提供参数操作数的，所以这里需要对操作数进行调整
 				final var _args = comma_args_adjust.get();

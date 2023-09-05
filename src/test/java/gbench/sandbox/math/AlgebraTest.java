@@ -111,6 +111,7 @@ public class AlgebraTest {
 	@Test
 	public void qud() {
 		println(analyze("(5*a)*b").simplify());
+		println(analyze("square(sin x)").dx().simplify());
 
 	}
 
