@@ -78,7 +78,8 @@ nats(8).fmap(n -> evaluate("sin x", "x", PI * 2 / 8 * n));
 nats(8).fmap(n -> evaluate("sin x ^ 2 + cos x ^ 2", "x", PI * 2 / 8 * n));
 analyze("x+(x+2*x+x)+x*sin(x+(x+2*x+x))").simplify(); // 符号计算化简
 println(analyze("sin x ^ 2 + cos x ^ 2").dumpAST()); // 解析成语法树
-analyze("sin x ^ 2 + cos x ^ 2").dx(); // 微分结构
+analyze("sin x ^ 2 + cos x ^ 2").dx(); // 对x求导的微分运算
+analyze("sin x ^ 2 + cos x ^ 2").dx().simplify(); // 微分化简:结果0
 
 ```
 # 启动H2控制台 : 在eclipse debugshell
