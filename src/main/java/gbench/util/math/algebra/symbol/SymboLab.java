@@ -51,9 +51,9 @@ public class SymboLab implements ISymboLab {
 		final var ai_zero = new AtomicInteger(-1); // 0 加法的 幺元，乘法的 零元
 		final var args = _symbol.getArgS().filter(Objects::nonNull) // 过滤掉空值
 				.map(Node::PACK).map(e -> e.fmap(BinaryOp::simplify)).map(kvp_int()).peek(e -> {
-					if (e._2.equals(one))
+					if (e._2.equals(one) || Objects.equals(dbl(e._2), 1d))
 						ai_one.set(e._1);
-					else if (e._2.equals(zero))
+					else if (e._2.equals(zero) || Objects.equals(dbl(e._2), 0d))
 						ai_zero.set(e._1);
 				}).map(e -> e._2).toArray(Node[]::new);
 		final BiFunction<Double[], BinaryOp<Object, Object>, BinaryOp<Object, Object>> cascade_handler = // 级联算符
@@ -115,7 +115,8 @@ public class SymboLab implements ISymboLab {
 						final var b = bop(_right);
 						if (Objects.equals(a, b)) { // 合并 2x+x
 							final var x = termLeft.get();
-							return MUL(dbl(x._2._1) + 1, x._2._2);
+							final var coef = dbl(x._2._1) + 1;
+							return Objects.equals(coef, 0d) ? PACK(0).unpack() : MUL(coef, x._2._2);
 						} else { // 合并 2x+3x
 							final var termRight = BinaryOp.termOpt(_right);
 							if (termRight.isPresent()) {
@@ -123,7 +124,8 @@ public class SymboLab implements ISymboLab {
 								if (Objects.equals(a, _b)) {
 									final var x = termLeft.get();
 									final var y = termRight.get();
-									return MUL(dbl(x._2._1) + dbl(y._2._1), x._2._2);
+									final var coef = dbl(x._2._1) + dbl(y._2._1);
+									return Objects.equals(coef, 0d) ? PACK(0).unpack() : MUL(coef, x._2._2);
 								} // if
 							} // if
 						} // if
