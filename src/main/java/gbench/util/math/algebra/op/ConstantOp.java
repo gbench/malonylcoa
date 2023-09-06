@@ -1,5 +1,7 @@
 package gbench.util.math.algebra.op;
 
+import static gbench.util.math.algebra.tuple.IRecord.REC;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -109,7 +111,7 @@ public class ConstantOp extends BinaryOp<Object, Object> {
 	 * @return 二元函数计算的结果
 	 */
 	public Object evaluate(final Map<String, Object> bindings) {
-		return bindings.getOrDefault(this._1, this._1);
+		return bindings.getOrDefault(this._1, consts.getOrDefault(this._1, this._1));
 	}
 
 	@Override
@@ -125,5 +127,21 @@ public class ConstantOp extends BinaryOp<Object, Object> {
 			return false;
 		}
 	}
+
+	/**
+	 * 数学常量
+	 */
+	static Map<String, Object> consts = REC( //
+			"PI", Math.PI //
+			, "E", Math.E //
+			, "TAU", Math.TAU //
+	).toMap(); // 常量
+
+	// 大写转小写
+	static { // 常量初始化
+		consts.keySet().forEach(k -> { // 键名转换
+			consts.put(k.toLowerCase(), consts.get(k));
+		});
+	} // static
 
 }
