@@ -426,11 +426,23 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	/**
 	 * 结构化简
 	 * 
+	 * @param flag 是否哟先运行evaluate后化简,false:不运行,true:运行,<br>
+	 * 运行evaluate后化简会将数学常数比如pi,e等转换为系统默认的浮点数。比如: <br>
+	 * 1+pi,会被替换成 4.141592653589793 而不在保留 pi常数
+	 * @return 结构化简
+	 */
+	public BinaryOp<?, ?> simplify(final boolean flag) {
+		final var simbol = flag ? this.evaluate() : this; // 精简符号
+		return simbol instanceof BinaryOp<?, ?> bop ? ISymboLab.spf(bop) : BinaryOp.wrap(simbol);
+	}
+
+	/**
+	 * 结构化简
+	 * 
 	 * @return 结构化简
 	 */
 	public BinaryOp<?, ?> simplify() {
-		final var simbol = this.evaluate(); // 精简符号
-		return simbol instanceof BinaryOp<?, ?> bop ? ISymboLab.spf(bop) : BinaryOp.wrap(simbol);
+		return this.simplify(false);
 	}
 
 	/**

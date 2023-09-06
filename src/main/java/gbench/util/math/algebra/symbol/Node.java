@@ -172,7 +172,19 @@ public class Node {
 	 * @return Node
 	 */
 	public Node simplify() {
-		final var o = this.isOp() ? this.getOp().simplify() : this.getToken(); // 只对op结构进行化简
+		return this.simplify(false);
+	}
+
+	/**
+	 * 结构化简
+	 * 
+	 * @param flag 是否哟先运行evaluate后化简,false:不运行,true:运行,<br>
+	 *             运行evaluate后化简会将数学常数比如pi,e等转换为系统默认的浮点数。比如: <br>
+	 *             1+pi,会被替换成 4.141592653589793 而不在保留 pi常数
+	 * @return Node
+	 */
+	public Node simplify(final boolean flag) {
+		final var o = this.isOp() ? this.getOp().simplify(flag) : this.getToken(); // 只对op结构进行化简
 		return new Node(o);
 	}
 
@@ -771,8 +783,7 @@ public class Node {
 			return (Node) target;
 		} else { // 其他类型的值 一律 视为 Token
 			final var token = Optional.ofNullable(target) //
-					.map(BinaryOp::dbl).map(Ops::TOKEN)
-					.orElse(TOKEN(String.valueOf(target)));
+					.map(BinaryOp::dbl).map(Ops::TOKEN).orElse(TOKEN(String.valueOf(target)));
 			return NODE(token);
 		} // if
 	}

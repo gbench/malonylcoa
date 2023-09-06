@@ -8,9 +8,11 @@ import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.RPTA;
 import static gbench.util.lisp.Lisp.cph;
 import static gbench.util.math.algebra.Algebras.analyze;
+import static gbench.util.math.algebra.Algebras.evaluate;
 import static gbench.util.math.algebra.op.Ops.*;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import gbench.util.math.algebra.AlgebraEngine;
 import gbench.util.math.algebra.tuple.IRecord;
@@ -114,6 +116,18 @@ public class AlgebraTest {
 		println(analyze("square(sin x)").dx().simplify());
 		println(analyze("1/(sigma*sqrt(2*pi))*exp(neg(square((x-mu)/sigma)/2))").dumpAST());
 		println(analyze("1/(sigma*sqrt(2*pi))*exp(neg(square((x-mu)/sigma)/2))").dx().simplify());
+	}
+
+	/**
+	 * 数学常数
+	 */
+	@Test
+	public void consts() {
+		Stream.of("pi,e,tau".split(",")).forEach(k -> {
+			println(k, "" + evaluate(k));
+		});
+		println(analyze("1+pi").simplify());
+		println(analyze("1+pi").simplify(true));
 	}
 
 }

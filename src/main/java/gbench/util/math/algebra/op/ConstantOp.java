@@ -2,6 +2,7 @@ package gbench.util.math.algebra.op;
 
 import static gbench.util.math.algebra.tuple.IRecord.REC;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -139,9 +140,10 @@ public class ConstantOp extends BinaryOp<Object, Object> {
 
 	// 大写转小写
 	static { // 常量初始化
-		consts.keySet().forEach(k -> { // 键名转换
-			consts.put(k.toLowerCase(), consts.get(k));
-		});
+		new ArrayList<>(consts.keySet()) // 复制键名列表以保证MAP不会并发修改
+				.forEach(k -> { // 键名转换
+					consts.put(k.toLowerCase(), consts.get(k));
+				});
 	} // static
 
 }
