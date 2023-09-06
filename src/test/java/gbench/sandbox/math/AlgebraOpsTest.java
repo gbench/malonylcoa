@@ -21,7 +21,7 @@ import gbench.util.math.algebra.tuple.IRecord;
  * @author gbench
  *
  */
-public class Algebra4Test {
+public class AlgebraOpsTest {
 
 	/**
 	 * 自定义 二元 算符：连接 <br>
@@ -203,7 +203,7 @@ public class Algebra4Test {
 	 * 
 	 * @param <T>
 	 */
-	static public class Lt<T, U> extends BinaryOp<T, U> {
+	static class Lt<T, U> extends BinaryOp<T, U> {
 
 		public Lt(final T t, final U u) {
 			super("<", P(t, u));
@@ -246,7 +246,7 @@ public class Algebra4Test {
 	 * 
 	 * @param <T>
 	 */
-	static public class Eq<T, U> extends BinaryOp<T, U> {
+	static class Eq<T, U> extends BinaryOp<T, U> {
 
 		public Eq(final T t, final U u) {
 			super("=", P(t, u));
@@ -289,7 +289,7 @@ public class Algebra4Test {
 	 * 
 	 * @param <T>
 	 */
-	static public class Assign<T, U> extends BinaryOp<T, U> {
+	static class Assign<T, U> extends BinaryOp<T, U> {
 
 		public Assign(final T t, final U u) {
 			super(":", P(t, u));

@@ -21,7 +21,7 @@ import java.util.Objects;
  * @author gbench
  *
  */
-public class Algebra5Test {
+public class AlgebraSimplifyTest {
 
 	/**
 	 * 因子式化简

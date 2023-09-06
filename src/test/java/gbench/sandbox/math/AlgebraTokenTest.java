@@ -8,6 +8,7 @@ import gbench.util.math.algebra.tuple.IRecord;
 
 import static gbench.util.io.Output.println;
 import static gbench.util.math.algebra.symbol.Node.PACK;
+import static gbench.util.math.algebra.tuple.IRecord.REC;
 import static gbench.util.math.algebra.tuple.Tuple2.P;
 
 import java.util.Arrays;
@@ -18,32 +19,16 @@ import java.util.Map;
  * @author gbench
  *
  */
-public class Algebra6Test {
+public class AlgebraTokenTest {
 
 	/**
-	 * 因子式化简
-	 */
-	@Test
-	public void quc() {
-		final var line = "a := b";
-		final var engine = new AlgebraEngine();
-		final var tokens = Arrays.asList(line.split("\\s+")).stream().map(e -> IRecord.REC("type", "word", "value", e))
-				.toList();
-		println(tokens);
-		engine.add(BinaryOp.of(":=", P(null, null)));
-		final var node = engine.analyze(tokens);
-		println(node.dumpAST());
-
-	}
-
-	/**
-	 * 因子式化简
+	 * 自定义分词
 	 */
 	@Test
 	public void foo() {
-		final var line = "a := ( b := 1.5 )";
+		final var line = "a := ( b := 1 + 0.5 )";
 		final var engine = new AlgebraEngine();
-		final var aa = line.split("[\\s]+"); // 分词类型
+		final var aa = line.split("[\\s]+"); // 自定义分词
 		final var rb = IRecord.rb("type,value"); // 符号类型
 		final var tokens = Arrays.stream(aa).map(e -> rb.get("word", e)).toList();
 		println("tokens", tokens);
@@ -51,6 +36,21 @@ public class Algebra6Test {
 		final var node = engine.analyze(tokens); // 分析类型
 		println("ast", node.dumpAST());
 		println("value", node.evaluate());
+	}
+
+	/**
+	 * 自定义分词
+	 */
+	@Test
+	public void bar() {
+		final var line = "a := b";
+		final var engine = new AlgebraEngine();
+		final var tokens = Arrays.stream(line.split("\\s+")).map(e -> REC("type", "word", "value", e)).toList();
+		println("tokens", tokens);
+		engine.add(BinaryOp.of(":=", P(null, null)));
+		final var node = engine.analyze(tokens);
+		println("ast", node.dumpAST());
+
 	}
 
 	/**
@@ -63,8 +63,14 @@ public class Algebra6Test {
 	 * @param <T> 第一参数
 	 * @param <U> 第二参数
 	 */
-	static public class Assign<T, U> extends BinaryOp<T, U> {
+	public static class Assign<T, U> extends BinaryOp<T, U> {
 
+		/**
+		 * Assign 构造函数
+		 * 
+		 * @param t 第一参数
+		 * @param u 第二参数
+		 */
 		public Assign(final T t, final U u) {
 			super(":=", P(t, u));
 		}
@@ -103,6 +109,6 @@ public class Algebra6Test {
 			return 0.5;
 		}
 
-	}
+	} // Assign
 
 }
