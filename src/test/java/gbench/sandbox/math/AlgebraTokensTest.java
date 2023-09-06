@@ -15,11 +15,12 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
+ * 分词<br>
  * 
  * @author gbench
  *
  */
-public class AlgebraTokenTest {
+public class AlgebraTokensTest {
 
 	/**
 	 * 自定义分词

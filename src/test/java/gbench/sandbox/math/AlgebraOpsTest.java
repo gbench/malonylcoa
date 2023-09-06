@@ -17,6 +17,7 @@ import gbench.util.math.algebra.symbol.Node;
 import gbench.util.math.algebra.tuple.IRecord;
 
 /**
+ * 自定义算符
  * 
  * @author gbench
  *

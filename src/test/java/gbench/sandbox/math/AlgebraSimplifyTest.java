@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
+ * 化简
  * 
  * @author gbench
  *
@@ -81,12 +82,12 @@ public class AlgebraSimplifyTest {
 		println(analyze("x*2*3*x").simplify());
 		println(analyze("x*2*neg x").simplify());
 	}
-	
+
 	@Test
 	public void qub() {
-		//println(analyze("cos x ^ 2").dx().simplify());
+		// println(analyze("cos x ^ 2").dx().simplify());
 		println(analyze("1*sin x * neg 1 * cos x").simplify());
-		//println(analyze("1 * 1").simplify());
+		// println(analyze("1 * 1").simplify());
 	}
 
 	/**
