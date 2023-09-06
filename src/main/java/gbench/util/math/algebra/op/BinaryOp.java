@@ -429,7 +429,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 结构化简
 	 */
 	public BinaryOp<?, ?> simplify() {
-		return ISymboLab.spf(this);
+		final var simbol = this.evaluate(); // 精简符号
+		return simbol instanceof BinaryOp<?, ?> bop ? ISymboLab.spf(bop) : BinaryOp.wrap(simbol);
 	}
 
 	/**
