@@ -753,7 +753,6 @@ public class Node {
 	 * @param target 被包装对象
 	 * @return Node 包装后的 target
 	 */
-	@SuppressWarnings("unchecked")
 	public static Node PACK(final Object target) {
 		if (target == null) {
 
@@ -766,14 +765,16 @@ public class Node {
 			} // if
 
 			return NODE(null);
-		} else if (target instanceof BinaryOp) {
-			return NODE((BinaryOp<Object, Object>) target);
+		} else if (target instanceof BinaryOp<?, ?> _target) {
+			return NODE(_target);
 		} else if (target instanceof Node) {
 			return (Node) target;
 		} else { // 其他类型的值 一律 视为 Token
-			final var s = target.toString();
-			return NODE(TOKEN(s));
-		}
+			final var opt = Optional.ofNullable(target);
+			final var token = opt.map(BinaryOp::dbl).map(Ops::TOKEN)
+					.orElse(TOKEN(opt.map(Object::toString).orElse(null)));
+			return NODE(token);
+		} // if
 	}
 
 	/**
