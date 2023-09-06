@@ -43,15 +43,14 @@ public class Algebra6Test {
 	public void foo() {
 		final var line = "a := ( b := 1.5 )";
 		final var engine = new AlgebraEngine();
-		final var aa = line.split("[\\s]+");
-		final var tokens = Arrays.asList(aa).stream() //
-				.map(e -> IRecord.REC("type", "word", "value", e))
-				.toList();
-		println("tokens",tokens);
+		final var aa = line.split("[\\s]+"); // 分词类型
+		final var rb = IRecord.rb("type,value"); // 符号类型
+		final var tokens = Arrays.stream(aa).map(e -> rb.get("word", e)).toList();
+		println("tokens", tokens);
 		engine.add(BinaryOp.of(":=", P(null, null)));
-		final var node = engine.analyze(tokens);
-		println("ast",node.dumpAST());
-		println("value",node.evaluate());
+		final var node = engine.analyze(tokens); // 分析类型
+		println("ast", node.dumpAST());
+		println("value", node.evaluate());
 	}
 
 	/**
