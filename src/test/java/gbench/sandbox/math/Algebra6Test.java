@@ -47,7 +47,7 @@ public class Algebra6Test {
 		final var rb = IRecord.rb("type,value"); // 符号类型
 		final var tokens = Arrays.stream(aa).map(e -> rb.get("word", e)).toList();
 		println("tokens", tokens);
-		engine.add(BinaryOp.of(":=", P(null, null)));
+		engine.add(new Assign<>(null, null));
 		final var node = engine.analyze(tokens); // 分析类型
 		println("ast", node.dumpAST());
 		println("value", node.evaluate());
