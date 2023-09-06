@@ -35,7 +35,7 @@ public class Algebra4Test {
 	 */
 	static class Join<T, U> extends BinaryOp<T, U> {
 
-		public Join(final T t, U u) {
+		public Join(final T t, final U u) {
 			super(";", P(t, u));
 		}
 
@@ -119,7 +119,7 @@ public class Algebra4Test {
 	 */
 	static class Mod<T, U> extends BinaryOp<T, U> {
 
-		public Mod(final T t, U u) {
+		public Mod(final T t, final U u) {
 			super("%", P(t, u));
 		}
 
@@ -162,7 +162,7 @@ public class Algebra4Test {
 	 */
 	static class Gt<T, U> extends BinaryOp<T, U> {
 
-		public Gt(final T t, U u) {
+		public Gt(final T t, final U u) {
 			super(">", P(t, u));
 		}
 
@@ -205,7 +205,7 @@ public class Algebra4Test {
 	 */
 	static public class Lt<T, U> extends BinaryOp<T, U> {
 
-		public Lt(final T t, U u) {
+		public Lt(final T t, final U u) {
 			super("<", P(t, u));
 		}
 
@@ -248,7 +248,7 @@ public class Algebra4Test {
 	 */
 	static public class Eq<T, U> extends BinaryOp<T, U> {
 
-		public Eq(final T t, U u) {
+		public Eq(final T t, final U u) {
 			super("=", P(t, u));
 		}
 
@@ -291,7 +291,7 @@ public class Algebra4Test {
 	 */
 	static public class Assign<T, U> extends BinaryOp<T, U> {
 
-		public Assign(final T t, U u) {
+		public Assign(final T t, final U u) {
 			super(":", P(t, u));
 		}
 
@@ -475,7 +475,7 @@ public class Algebra4Test {
 	 */
 	static class Get<T, U> extends BinaryOp<T, U> {
 
-		public Get(final T t, U u) {
+		public Get(final T t, final U u) {
 			super("$", P(t, u));
 		}
 

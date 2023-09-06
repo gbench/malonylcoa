@@ -1,6 +1,6 @@
 package gbench.util.math.algebra.symbol;
 
-import static gbench.util.math.algebra.op.BinaryOp.bop;
+import static gbench.util.math.algebra.op.BinaryOp.wrap;
 import static gbench.util.math.algebra.op.BinaryOp.dbl;
 import static gbench.util.math.algebra.op.Comma.COMMA_TEST;
 import static gbench.util.math.algebra.op.Ops.ADD;
@@ -111,8 +111,8 @@ public class SymboLab implements ISymboLab {
 					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
 
 					if (termLeft.isPresent()) { // left 是作为term项目而存在
-						final var a = bop(termLeft.get()._2._2);
-						final var b = bop(_right);
+						final var a = wrap(termLeft.get()._2._2);
+						final var b = wrap(_right);
 						if (Objects.equals(a, b)) { // 合并 2x+x
 							final var x = termLeft.get();
 							final var coef = dbl(x._2._1) + 1;
@@ -120,7 +120,7 @@ public class SymboLab implements ISymboLab {
 						} else { // 合并 2x+3x
 							final var termRight = BinaryOp.termOpt(_right);
 							if (termRight.isPresent()) {
-								final var _b = bop(termRight.get()._2._2);
+								final var _b = wrap(termRight.get()._2._2);
 								if (Objects.equals(a, _b)) {
 									final var x = termLeft.get();
 									final var y = termRight.get();
@@ -129,7 +129,7 @@ public class SymboLab implements ISymboLab {
 								} // if
 							} // if
 						} // if
-					} else if ((share_flag = Objects.equals((arg1 = bop(left))._1, (arg2 = bop(right))._1)
+					} else if ((share_flag = Objects.equals((arg1 = wrap(left))._1, (arg2 = wrap(right))._1)
 							&& Objects.equals(arg1._1, "*")) && Optional.ofNullable(arg1._2) // 类型：ax + bx -> (a+b)*x
 									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
 									.orElse(false)) {
@@ -166,8 +166,8 @@ public class SymboLab implements ISymboLab {
 					final var _left = _termLeft.isPresent() ? left : right; // 尝试吧_left作为term项
 					final var _right = _termLeft.isPresent() ? right : left; // 尝试吧_left作为term项
 					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
-					final var b0 = bop(_left).simplify();
-					final var b1 = bop(_right).simplify();
+					final var b0 = wrap(_left).simplify();
+					final var b1 = wrap(_right).simplify();
 					final var d0 = b0.dbl(); // 浮点数类型
 					final var d1 = b1.dbl(); // 浮点数类型
 
@@ -178,7 +178,7 @@ public class SymboLab implements ISymboLab {
 					} else if (b1.namEq("pow") && Objects.equals(b1._2._1, b0)) {
 						return b1.compose2(dbl(b1._2._2) + 1).simplify();
 					} else if (termLeft.isPresent()) { // left 是作为term项目而存在
-						final var a = bop(termLeft.get()._2._2);
+						final var a = wrap(termLeft.get()._2._2);
 						final var b = b1;
 						if (a.namEq("pow") && Objects.equals(a._2._1, b)) {
 							return MUL(b0._2._1, a.compose2(dbl(a._2._2) + 1)).simplify();
@@ -189,18 +189,18 @@ public class SymboLab implements ISymboLab {
 							final var termRight = BinaryOp.termOpt(_right);
 							final Double d;
 							if (termRight.isPresent()) {
-								final var _b = bop(termRight.get()._2._2);
+								final var _b = wrap(termRight.get()._2._2);
 								if (Objects.equals(a, _b)) {
 									final var x = termLeft.get();
 									final var y = termRight.get();
 									return MUL(dbl(x._2._1) * dbl(y._2._1), POW(x._2._2, 2)).simplify();
 								} // if
 							} else if (null != (d = dbl(_right))) { // if 5*x*6
-								final var bleft = bop(_left);
+								final var bleft = wrap(_left);
 								return bleft.compose1(dbl(bleft._2._1) * d).simplify();
 							} // if
 						} // if
-					} else if ((share_flag = Objects.equals((arg1 = bop(left))._1, (arg2 = bop(right))._1)
+					} else if ((share_flag = Objects.equals((arg1 = wrap(left))._1, (arg2 = wrap(right))._1)
 							&& Objects.equals(arg1._1, "*")) && Optional.ofNullable(arg1._2) // 类型：a*x*b*x->(a*b)*pow(x,2)
 									.flatMap(a1 -> Optional.of(arg2._2).map(a2 -> Objects.equals(a1._2, a2._2)))
 									.orElse(false)) {
@@ -266,7 +266,7 @@ public class SymboLab implements ISymboLab {
 						return Optional.ofNullable(_handle);
 					} else {
 						return Optional.ofNullable(_handle.getArgS().map(e -> Optional.ofNullable(e) // 参数调整
-								.map(p -> bop(p).simplify()).orElse(null)).toArray()) // 参数优化
+								.map(p -> wrap(p).simplify()).orElse(null)).toArray()) // 参数优化
 								.map(_args -> _args.length == 1 //
 										? symbol.compose1(_args[0]) // 一元函数
 										: symbol.compose(_args[0], _args[1])); // 二元函数
@@ -438,7 +438,7 @@ public class SymboLab implements ISymboLab {
 			} else {
 				if (bop.namEq("*") || bop.namEq("+")) {
 					final BinaryOp<?, ?>[] bb = bop.getArgS() //
-							.map(e -> coef_adjust(BinaryOp.bop(e))).toArray(BinaryOp[]::new);
+							.map(e -> coef_adjust(BinaryOp.wrap(e))).toArray(BinaryOp[]::new);
 					if (Arrays.stream(bb).allMatch(e -> e.isConstant()) // 简单节点
 							&& bb[1].dbl() != null && bb[0].dbl() == null) {
 						return bop.compose(bb[1], bb[0]);

@@ -187,7 +187,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 把把参数扁平化之后的 流
 	 */
 	public Stream<BinaryOp<?, ?>> flatArgS2() {
-		return this.flatArgS().map(BinaryOp::bop);
+		return this.flatArgS().map(BinaryOp::wrap);
 	}
 
 	/**
@@ -235,7 +235,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 							stack.push(bop._2._1);
 					} // if
 				} // if
-				return p == null ? null : (E) bop(p);
+				return p == null ? null : (E) wrap(p);
 			} else { // 加入结尾标记
 				ai.getAndIncrement();
 				return null;
@@ -682,13 +682,15 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	}
 
 	/**
-	 * 使用 BinaryOp 封装对象：算符化
+	 * 使用 BinaryOp 封装对象：算符化 <br>
+	 * 1) 算符类型 返回 原来的算符类型 <br>
+	 * 2) 非算符类型 视为视为 TOKEN
 	 * 
 	 * @param obj 目标对象
 	 * @return 如果是BinaryOp直接返回,否则返回TOKEN
 	 */
 	@SuppressWarnings("unchecked")
-	public static BinaryOp<?, ?> bop(final Object obj) {
+	public static BinaryOp<?, ?> wrap(final Object obj) {
 		return obj instanceof BinaryOp<?, ?> bop // 是否本身就是算符
 				? (BinaryOp<Object, Object>) bop
 				: obj instanceof Number num // 是否是数值类型
