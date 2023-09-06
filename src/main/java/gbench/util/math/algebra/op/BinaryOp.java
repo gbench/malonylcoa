@@ -678,7 +678,7 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 浮点数Opt
 	 */
 	public static Double dbl(final Object obj) {
-		return IRecord.obj2dbl().apply(obj);
+		return IRecord.obj2dbl(null, false).apply(obj);
 	}
 
 	/**
@@ -689,10 +689,9 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @param obj 目标对象
 	 * @return 如果是BinaryOp直接返回,否则返回TOKEN
 	 */
-	@SuppressWarnings("unchecked")
 	public static BinaryOp<?, ?> wrap(final Object obj) {
 		return obj instanceof BinaryOp<?, ?> bop // 是否本身就是算符
-				? (BinaryOp<Object, Object>) bop
+				? bop
 				: obj instanceof Number num // 是否是数值类型
 						? TOKEN(num) // 数值类型
 						: TOKEN(String.valueOf(obj)); // 非数值类型

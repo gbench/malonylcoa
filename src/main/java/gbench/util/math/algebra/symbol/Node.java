@@ -770,9 +770,9 @@ public class Node {
 		} else if (target instanceof Node) {
 			return (Node) target;
 		} else { // 其他类型的值 一律 视为 Token
-			final var opt = Optional.ofNullable(target);
-			final var token = opt.map(BinaryOp::dbl).map(Ops::TOKEN)
-					.orElse(TOKEN(opt.map(Object::toString).orElse(null)));
+			final var token = Optional.ofNullable(target) //
+					.map(BinaryOp::dbl).map(Ops::TOKEN)
+					.orElse(TOKEN(String.valueOf(target)));
 			return NODE(token);
 		} // if
 	}
