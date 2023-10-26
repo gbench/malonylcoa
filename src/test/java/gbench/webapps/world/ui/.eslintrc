@@ -1,0 +1,26 @@
+{
+  "parser": "@babel/eslint-parser",
+  "rules": {
+    // 禁止使用var变量
+    "no-var": 2,
+    // 分号
+    "semi": [
+      "error",
+      "always"
+    ],
+    // // 双引号
+    // "quotes": [
+    //   "error",
+    //   "double"
+    // ],
+    // 最大行长度
+    "max-len": [
+      1,
+      150,
+      2,
+      {
+        "ignoreComments": true
+      }
+    ]
+  }
+}
