@@ -5,6 +5,7 @@
 	<groupId>gbench.pubchem</groupId>
 	<artifactId>malonylcoa</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.outputEncoding>UTF-8</project.build.outputEncoding>
@@ -14,7 +15,11 @@
 		<h2-version>LATEST</h2-version>
 		<mysql-version>LATEST</mysql-version>
 		<spring-boot-version>3.1.5</spring-boot-version>
+		<maven-compiler-plugin-version>3.11.0</maven-compiler-plugin-version>
+		<maven-javadoc-plugin-version>3.6.0</maven-javadoc-plugin-version>
+		<maven-source-plugin-version>3.3.0</maven-source-plugin-version>
 	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
@@ -50,14 +55,15 @@
 			<artifactId>poi-excelant</artifactId>
 			<version>${poi-version}</version>
 		</dependency>
+
+		<!-- ================================= TEST ================================= -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
 			<version>${jupiter-version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
+		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-engine -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
@@ -79,29 +85,29 @@
 			<scope>test</scope>
 		</dependency>
 		
-		<!-- apl -->
-		
+		<!-- ================================= APPLICATION ================================= -->
 		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web -->
 		<dependency>
 		    <groupId>org.springframework.boot</groupId>
 		    <artifactId>spring-boot-starter-web</artifactId>
 		    <version>${spring-boot-version}</version>
+			<scope>test</scope>
 		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter -->
 		<dependency>
 		    <groupId>org.springframework.boot</groupId>
 		    <artifactId>spring-boot-starter</artifactId>
 		    <version>${spring-boot-version}</version>
+			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
+
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.11.0</version>
+				<version>${maven-compiler-plugin-version}</version>
 				<configuration>
 					<source>21</source>
 					<target>21</target>
@@ -115,7 +121,7 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<configuration></configuration>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>3.3.0</version>
+				<version>${maven-source-plugin-version}</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -130,7 +136,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.5.0</version>
+				<version>${maven-javadoc-plugin-version}</version>
 			</plugin>
 		</plugins>
 	</build>
