@@ -18,13 +18,14 @@ const AComp = {
      */
     mounted() {
         console.log(this.name);
+        
         // 开始信息
         http_post("/h5/api/hello").then(res=>{
             this.label = res.data.message+" @ "+res.data.time;
-            console.log(this.label);
         });
+        
         // 版本信息
-        sqlquery("select H2VERSION() VERSION FROM DUAL").then(res=>{
+        sqlquery("SELECT H2VERSION() VERSION FROM DUAL").then(res=>{
             this.version = res.data.data[0]["VERSION"];
         });
     },
