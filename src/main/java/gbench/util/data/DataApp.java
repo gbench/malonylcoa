@@ -2265,6 +2265,15 @@ public class DataApp {
 		default String json() {
 			return JSON.toJson(this);
 		}
+		
+		/**
+		 * 元素个数
+		 *
+		 * @return 元素个数
+		 */
+		default int size() {
+			return this.toMap().size();
+		}
 
 		/**
 		 * 比较器,需要 键名序列keys中的每个值对象带有比较能力:Comparable

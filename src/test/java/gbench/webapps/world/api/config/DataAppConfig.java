@@ -1,6 +1,9 @@
 package gbench.webapps.world.api.config;
 
+import gbench.util.data.DataApp;
+import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.MyDataApp;
+import gbench.util.data.xls.SimpleExcel;
 import gbench.util.lisp.IRecord;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import javax.sql.DataSource;
 
 import static gbench.util.lisp.IRecord.REC;
+import static gbench.webapps.world.api.model.DataModel.*;
 
 @Configuration
 public class DataAppConfig {
@@ -36,9 +40,42 @@ public class DataAppConfig {
 	 */
 	@Bean
 	public MyDataApp dataApp(final DataSource ds, final @Value("${gbench.dbreset:true}") Boolean dbreset,
-			final @Value("${gbench.datafile:F:/slicef/ws/gitws/gcloud/projs/fumarate/src/test/java/gbench/sandbox/mall/data/data.xlsx}") String datafile) {
+			final @Value("${gbench.datafile:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/world/api/model/data/datafile.xlsx}") String datafile) {
 		final var dataApp = new MyDataApp(ds);
+		final var excel = SimpleExcel.of(datafile);
+		for (final var sheet : excel.sheets()) {
+			final var tblname = sheet.getSheetName();
+			final var dfm = excel.autoDetect(tblname).collect(DFrame.dfmclc2);
+			final var proto = dfm.rowS().reduce(DataApp.IRecord.REC(), (acc, a) -> {
+				a.forEach(tup -> {
+					final var k = tup._1;
+					final var v0 = tup._2 instanceof String s ? s : tup._2 + "";
+					final var v1 = acc.opt(k).map(v -> v instanceof String s ? s : null).orElse("");
+					if (v0.length() > v1.length()) {
+						acc.set(k, v0);
+					}
+				});
+				return acc;
+			});
+			final var ctsql = ctsql(tblname, proto);
+			final var insql = insql(tblname, dfm);
+			final var qrysql = String.format("select * from %s", tblname);
+			println(ctsql);
+			println(insql);
+			dataApp.sqlmaybe2(ctsql);
+			dataApp.sqlmaybe2(insql);
+			println(dataApp.sqldframe(qrysql));
+		}
+
 		return dataApp;
+	}
+
+	/**
+	 * 
+	 * @param obj
+	 */
+	public static void println(final Object obj) {
+		System.out.println(obj);
 	}
 
 	protected final IRecord h2_rec = REC( //
