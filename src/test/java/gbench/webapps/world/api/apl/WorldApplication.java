@@ -15,6 +15,10 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 public class WorldApplication {
 
+	/**
+	 * 
+	 * @param args
+	 */
 	public static void main(final String args[]) {
 		SpringApplication.run(WorldApplication.class, args);
 	}
