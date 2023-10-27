@@ -10,7 +10,7 @@ const AComp = {
      * @returns 
      */
     data() {
-        return {label:"-",version:"-"};
+        return {label:"-",data:"-"};
     },
 
     /**
@@ -24,9 +24,9 @@ const AComp = {
             this.label = res.data.message+" @ "+res.data.time;
         });
         
-        // 版本信息
+        // sql data 
         sqlquery("SELECT H2VERSION() VERSION FROM DUAL").then(res=>{
-            this.version = res.data.data[0]["VERSION"];
+            this.data = res.data.data;
         });
     },
 

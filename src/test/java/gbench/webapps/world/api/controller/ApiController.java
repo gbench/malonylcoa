@@ -33,7 +33,11 @@ public class ApiController {
 	@RequestMapping("sqlquery")
 	public IRecord sqlquery(final String sql) {
 		final var ret = IRecord.REC("code", 0);
-		ret.add("data", this.dataApp.sqldframe(sql));
+		if (sql == null) {
+			ret.add("data", this.dataApp.sqldframe("select * from t_maozedong limit 1"));
+		} else {
+			ret.add("data", this.dataApp.sqldframe(sql));
+		}
 		return ret;
 	}
 
