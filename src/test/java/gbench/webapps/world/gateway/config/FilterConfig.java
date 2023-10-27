@@ -4,12 +4,15 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import reactor.core.publisher.Mono;
 
 @Configuration
 public class FilterConfig {
-	
+
 	@Bean
 	public GlobalFilter postGlobalFilter() {
 		return (exchange, chain) -> {
@@ -31,6 +34,20 @@ public class FilterConfig {
 				// System.out.println("Global Post Filter executed");
 			}));
 		};
+	}
+
+	@Bean
+	public CorsWebFilter corsWebFilter() {
+		System.out.println("CORS限制打开");
+		final var config = new CorsConfiguration();
+		// 仅在开发环境设置为*
+		config.addAllowedOrigin("*");
+		config.addAllowedHeader("*");
+		config.addAllowedMethod("*");
+		config.setAllowCredentials(false);
+		final var configSource = new UrlBasedCorsConfigurationSource();
+		configSource.registerCorsConfiguration("/**", config);
+		return new CorsWebFilter(configSource);
 	}
 
 }

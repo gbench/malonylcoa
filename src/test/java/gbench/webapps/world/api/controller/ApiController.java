@@ -4,7 +4,7 @@ import static gbench.util.lisp.IRecord.REC;
 import static java.time.LocalDateTime.now;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
+//import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -13,7 +13,7 @@ import gbench.util.data.MyDataApp;
 import gbench.util.lisp.IRecord;
 import reactor.core.publisher.Mono;
 
-@CrossOrigin
+//@CrossOrigin // 通过gateway 来设置,这里就可以省略了。
 @RestController
 @RequestMapping("api")
 public class ApiController {
@@ -44,7 +44,6 @@ public class ApiController {
 				System.err.println("attrs:--->"+exchange.getAttributes());
 				
 			});
-			
 			
 			ret.add("data", this.dataApp.sqldframe("select * from t_maozedong limit 1"));
 		} else {
