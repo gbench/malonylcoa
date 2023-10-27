@@ -20,7 +20,8 @@ public class WorldApiRoute {
 	@Bean
 	public RouteLocator apiRouteLocator(final RouteLocatorBuilder builder) {
 		return builder.routes() //
-				.route(r -> r.path("/world/**").filters(f -> f.stripPrefix(1)).uri(world_api)) //
+				.route(r -> r.path("/world/**").filters(f -> f.stripPrefix(1))
+						.uri(world_api)) //
 				.build();
 	}
 
