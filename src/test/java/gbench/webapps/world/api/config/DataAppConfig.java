@@ -1,6 +1,5 @@
 package gbench.webapps.world.api.config;
 
-import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.MyDataApp;
 import gbench.util.data.xls.SimpleExcel;
@@ -46,17 +45,8 @@ public class DataAppConfig {
 		for (final var sheet : excel.sheets()) {
 			final var tblname = sheet.getSheetName();
 			final var dfm = excel.autoDetect(tblname).collect(DFrame.dfmclc2);
-			final var proto = dfm.rowS().reduce(DataApp.IRecord.REC(), (acc, a) -> {
-				a.forEach(tup -> {
-					final var k = tup._1;
-					final var v0 = tup._2 instanceof String s ? s : tup._2 + "";
-					final var v1 = acc.opt(k).map(v -> v instanceof String s ? s : null).orElse("");
-					if (v0.length() > v1.length()) {
-						acc.set(k, v0);
-					}
-				});
-				return acc;
-			});
+			final var proto = dfm
+					.maxBy2((String a, String b) -> b == null ? true : String.valueOf(a).length() > b.length()); // 提取最大长度
 			final var ctsql = ctsql(tblname, proto);
 			final var insql = insql(tblname, dfm);
 			final var qrysql = String.format("select * from %s", tblname);
@@ -71,7 +61,6 @@ public class DataAppConfig {
 	}
 
 	/**
-	 * 
 	 * @param obj
 	 */
 	public static void println(final Object obj) {

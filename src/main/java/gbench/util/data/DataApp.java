@@ -2265,7 +2265,7 @@ public class DataApp {
 		default String json() {
 			return JSON.toJson(this);
 		}
-		
+
 		/**
 		 * 元素个数
 		 *
@@ -6372,6 +6372,33 @@ public class DataApp {
 		public DFrame sorted(final Comparator<? super IRecord> c) {
 			this.sort(c);
 			return this;
+		}
+
+		/**
+		 * 按照列进行数据比较
+		 * 
+		 * @param <T> 元素类型
+		 * @param gt  行间比较函数(a:当前行,max:累计行)-&gt; a &gt; acc;
+		 * @return 提取每一列的最大值
+		 */
+		public <T> IRecord maxBy(final BiPredicate<IRecord, IRecord> gt) {
+			return this.rowS().reduce((max, a) -> gt.test(a, max) ? a : max).orElse(null);
+		}
+
+		/**
+		 * 按照列进行数据比较
+		 * 
+		 * @param <T> 元素类型
+		 * @param gt  列内元素比较函数(a:当前元素,max:累计对象)-&gt; a &gt; max;
+		 * @return 提取每一列的最大值
+		 */
+		@SuppressWarnings("unchecked")
+		public <T> IRecord maxBy2(final BiPredicate<T, T> gt) {
+			return this.rowS().reduce(DataApp.IRecord.REC(), (nul, a) -> a.tupleS().reduce(nul, (max, p) -> {
+				if (gt.test((T) p._2, (T) max.get(p._1)))
+					max.set(p._1, p._2);
+				return max;
+			}, (r1, r2) -> r1.add(r2))); // 提取最大长度
 		}
 
 		/**
