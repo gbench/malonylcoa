@@ -4,6 +4,7 @@ import static gbench.util.lisp.IRecord.REC;
 import static java.time.LocalDateTime.now;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.buffer.DataBufferUtils;
 //import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,13 +39,24 @@ public class ApiController {
 	public Mono<IRecord> sqlquery(final String sql, final ServerWebExchange exchange) {
 		final var ret = IRecord.REC("code", 0);
 		if (sql == null) {
-			final var formData =exchange.getFormData();
-			formData.subscribe(e->{
-				System.err.println(e);
-				System.err.println("attrs:--->"+exchange.getAttributes());
-				
-			});
 			
+			System.out.println(exchange.getRequest().getMethod());
+//			final var formData = exchange.getFormData();
+//			formData.subscribe(e -> {
+//				System.err.println(e);
+//				System.err.println("attrs:--->" + exchange.getAttributes());
+//			});
+			exchange.getRequest().getBody().subscribe(buffer->{
+				final var bb = new byte[buffer.readableByteCount()];
+				buffer.read(bb);
+				DataBufferUtils.release(buffer);
+				try {
+					System.err.println("api:"+new String(bb,"utf8"));
+				}catch(Exception e) {
+					
+				}
+			});
+
 			ret.add("data", this.dataApp.sqldframe("select * from t_maozedong limit 1"));
 		} else {
 			ret.add("data", this.dataApp.sqldframe(sql));

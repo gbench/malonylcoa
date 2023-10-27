@@ -1,38 +1,56 @@
 package gbench.webapps.world.gateway.config;
 
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Configuration
 public class FilterConfig {
 
+	@Order(1)
 	@Bean
-	public GlobalFilter postGlobalFilter() {
+	public GlobalFilter globalFilter() {
 		return (exchange, chain) -> {
 			final var req = exchange.getRequest();
 			if (req.getMethod().compareTo(HttpMethod.POST) == 0) {
-//				req.getBody().subscribe(buffer->{
-//					final var bb = new byte[buffer.readableByteCount()];
-//					buffer.read(bb);
-//					DataBufferUtils.release(buffer);
-//					try {
-//						System.err.println(new String(bb,"utf8"));
-//					}catch(Exception e) {
-//						
-//					}
-//				});
-				System.out.println("POST METHOD");
+				System.out.println("GATEWAY: POST METHOD");
+				return DataBufferUtils.join(exchange.getRequest().getBody()).flatMap(dataBuffer -> {
+					final var bytes = new byte[dataBuffer.readableByteCount()];
+					dataBuffer.read(bytes);
+					final var body = new String(bytes, StandardCharsets.UTF_8);
+					System.err.println("GATEWAY:" + body);
+					exchange.getAttributes().put("POST_BODY", body);
+					DataBufferUtils.release(dataBuffer);
+					final var cachedFlux = Flux.defer(() -> {
+						final var buffer = exchange.getResponse().bufferFactory().wrap(bytes);
+						return Mono.just(buffer);
+					});
+					final var mutateRequest = new ServerHttpRequestDecorator(exchange.getRequest()) {
+						@Override
+						public Flux<DataBuffer> getBody() {
+							return cachedFlux;
+						}
+					};
+					return chain.filter(exchange.mutate().request(mutateRequest).build());
+				});
+			} else {
+				return chain.filter(exchange).then(Mono.fromRunnable(() -> {
+					// System.out.println("Global Filter executed");
+				}));
 			}
-			return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-				// System.out.println("Global Post Filter executed");
-			}));
 		};
 	}
 
