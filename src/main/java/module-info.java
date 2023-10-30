@@ -13,6 +13,7 @@ module gbench.malonylcoa {
 	exports gbench.util.json;
 	exports gbench.util.lisp;
 	exports gbench.util.math;
+	exports gbench.util.math.algebra;
 	exports gbench.util.matrix;
 	exports gbench.util.tree;
 	exports gbench.util.type;
