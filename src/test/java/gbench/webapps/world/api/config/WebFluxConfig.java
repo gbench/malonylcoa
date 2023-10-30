@@ -16,6 +16,7 @@ import org.springframework.web.reactive.result.method.annotation.ArgumentResolve
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.json.MyJson;
+import gbench.webapps.world.api.config.param.ParamResolver;
 
 @Configuration
 public class WebFluxConfig implements WebFluxConfigurer {
@@ -30,7 +31,7 @@ public class WebFluxConfig implements WebFluxConfigurer {
         //添加Http消息编解码器
         readers.add(new DecoderHttpMessageReader<>(new Jackson2JsonDecoder()));
         //消息编解码器与Resolver绑定
-        configurer.addCustomResolver(new ParamsResolver(readers));
+        configurer.addCustomResolver(new ParamResolver(readers));
     }
 	
 	/**
