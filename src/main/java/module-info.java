@@ -2,6 +2,10 @@ module gbench.malonylcoa {
 	requires java.sql;
 	requires java.base;
 	requires com.fasterxml.jackson.core;
+	requires com.fasterxml.jackson.databind;
+	requires com.fasterxml.jackson.datatype.jsr310;
+	requires org.apache.poi.poi;
+	requires org.apache.poi.ooxml;
 	exports gbench.util.array;
 	exports gbench.util.data;
 	exports gbench.util.function;
