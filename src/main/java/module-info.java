@@ -1,8 +1,8 @@
 module gbench.malonylcoa {
-	requires java.sql;
 	requires java.base;
+	requires transitive java.sql;
 	requires com.fasterxml.jackson.core;
-	requires com.fasterxml.jackson.databind;
+	requires transitive com.fasterxml.jackson.databind;
 	requires com.fasterxml.jackson.datatype.jsr310;
 	requires org.apache.poi.poi;
 	requires org.apache.poi.ooxml;
@@ -14,6 +14,9 @@ module gbench.malonylcoa {
 	exports gbench.util.lisp;
 	exports gbench.util.math;
 	exports gbench.util.math.algebra;
+	exports gbench.util.math.algebra.op;
+	exports gbench.util.math.algebra.tuple;
+	exports gbench.util.math.algebra.symbol;
 	exports gbench.util.matrix;
 	exports gbench.util.tree;
 	exports gbench.util.type;

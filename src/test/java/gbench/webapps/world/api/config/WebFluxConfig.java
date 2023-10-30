@@ -1,7 +1,6 @@
 package gbench.webapps.world.api.config;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,20 +19,21 @@ import gbench.webapps.world.api.config.param.ParamResolver;
 
 @Configuration
 public class WebFluxConfig implements WebFluxConfigurer {
-	
+
 	/**
-     * 加入自定义方法参数解析器
-     * @param configurer
-     */
-    @Override
-    public void configureArgumentResolvers(ArgumentResolverConfigurer configurer) {
-        List<HttpMessageReader<?>> readers=new ArrayList<>();
-        //添加Http消息编解码器
-        readers.add(new DecoderHttpMessageReader<>(new Jackson2JsonDecoder()));
-        //消息编解码器与Resolver绑定
-        configurer.addCustomResolver(new ParamResolver(readers));
-    }
-	
+	 * 加入自定义方法参数解析器
+	 * 
+	 * @param configurer
+	 */
+	@Override
+	public void configureArgumentResolvers(final ArgumentResolverConfigurer configurer) {
+		final var readers = new ArrayList<HttpMessageReader<?>>();
+		// 添加Http消息编解码器
+		readers.add(new DecoderHttpMessageReader<>(new Jackson2JsonDecoder()));
+		// 消息编解码器与Resolver绑定
+		configurer.addCustomResolver(new ParamResolver(readers));
+	}
+
 	/**
 	 * 
 	 * @return
