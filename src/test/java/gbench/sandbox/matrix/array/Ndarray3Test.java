@@ -10,6 +10,8 @@ import static gbench.util.array.Partitioner.P2;
 import static gbench.util.function.Functions.identity;
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.IRecord.A;
+import static gbench.util.lisp.Lisp.RPTA;
+import static gbench.util.lisp.Lisp.cph;
 import static gbench.util.lisp.Tuple2.bifun;
 import static gbench.util.type.Types.Bytes2Bool;
 import static gbench.util.type.Types.Bytes2Int;
@@ -162,6 +164,14 @@ public class Ndarray3Test {
 		println(data.cuts(3, true).get(1)); // 第2行
 		println(data.subset(is_modrem(3, 1)).assign(pts(t -> 10 * t))); // 第2列
 		println(data.dupdata());
+	}
+
+	@Test
+	public void d6(){
+		final var p = cph(RPTA(A(1, 2), 3)).map(INdarray::nd2) //
+				.map(e -> e.sorted()).sorted()
+				.collect(ndclc()).groupBy(e -> e, e -> e.length());
+		println(p);
 	}
 
 }
