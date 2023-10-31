@@ -20,7 +20,7 @@ const AComp = {
 		console.log(this.name);
 
 		// 开始信息
-		http_get("/h5/api/component", {name:"AComp"}).then(res => {
+		http_post("/h5/api/component", {name:"AComp"}).then(res => {
 			const data = res.data.data;
 			this.label = data.name + " @ " + data.time;
 		});

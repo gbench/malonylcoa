@@ -1,6 +1,7 @@
 th {
     color: white;
     background-color: red;
+    border: solid 1px red;
 }
 
 td {

@@ -15,6 +15,9 @@ import gbench.util.lisp.IRecord;
 import gbench.webapps.world.api.config.param.Param;
 import reactor.core.publisher.Mono;
 
+/**
+ * 注意参数必须加入 @Param 标记进行注释，否则 post方法会获得不到参数。
+ */
 @RestController
 @RequestMapping("api")
 public class ApiController {
@@ -22,9 +25,9 @@ public class ApiController {
 	/**
 	 * 提取组件模块 <br>
 	 * 
-	 * http://localhost:8010/world/api/component
+	 * http://localhost:6010/api/component
 	 * 
-	 * @return
+	 * @return IRecord
 	 */
 	@RequestMapping("component")
 	public Mono<IRecord> component(final @Param String name) {
