@@ -1,4 +1,4 @@
-module gbench.malonylcoa {
+open module gbench.malonylcoa {
 	requires java.base;
 	requires transitive java.sql;
 	requires com.fasterxml.jackson.core;

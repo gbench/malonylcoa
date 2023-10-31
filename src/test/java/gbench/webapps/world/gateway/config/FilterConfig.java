@@ -1,6 +1,9 @@
 package gbench.webapps.world.gateway.config;
 
+import static gbench.util.io.Output.println;
+
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
@@ -20,43 +23,54 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class FilterConfig {
 
-	@Order(1)
+	/**
+	 * 全局过滤器
+	 * 
+	 * @return GlobalFilter
+	 */
+	@Order(0)
 	@Bean
 	public GlobalFilter globalFilter() {
+
 		return (exchange, chain) -> {
 			final var req = exchange.getRequest();
-			if (req.getMethod().compareTo(HttpMethod.POST) == 0) {
-				System.out.println("GATEWAY: POST METHOD");
-				return DataBufferUtils.join(exchange.getRequest().getBody()).flatMap(dataBuffer -> {
-					final var bytes = new byte[dataBuffer.readableByteCount()];
-					dataBuffer.read(bytes);
-					final var body = new String(bytes, StandardCharsets.UTF_8);
-					System.err.println("GATEWAY:" + body);
-					exchange.getAttributes().put("POST_BODY", body);
-					DataBufferUtils.release(dataBuffer);
-					final var cachedFlux = Flux.defer(() -> {
-						final var buffer = exchange.getResponse().bufferFactory().wrap(bytes);
-						return Mono.just(buffer);
-					});
-					final var mutateRequest = new ServerHttpRequestDecorator(exchange.getRequest()) {
-						@Override
-						public Flux<DataBuffer> getBody() {
-							return cachedFlux;
-						}
-					};
-					return chain.filter(exchange.mutate().request(mutateRequest).build());
-				});
-			} else {
+			final var method = req.getMethod();
+			if (HttpMethod.POST.compareTo(method) == 0) { // POST
+				println("GATEWAY", HttpMethod.POST, LocalDateTime.now());
+				return DataBufferUtils.join(exchange.getRequest().getBody()) //
+						.flatMap(dataBuffer -> {
+							final var bytes = new byte[dataBuffer.readableByteCount()];
+							dataBuffer.read(bytes);
+							final var body = new String(bytes, StandardCharsets.UTF_8);
+							System.err.println("GATEWAY:" + body);
+							exchange.getAttributes().put("POST_BODY", body);
+							DataBufferUtils.release(dataBuffer);
+
+							return chain.filter(exchange.mutate() //
+									.request(new ServerHttpRequestDecorator(exchange.getRequest()) {
+										@Override
+										public Flux<DataBuffer> getBody() {
+											return Flux.defer(() -> Mono
+													.just(exchange.getResponse().bufferFactory().wrap(bytes)));
+										} // getBody
+									}).build());
+						}); // flatMap
+			} else { // 其他方法
 				return chain.filter(exchange).then(Mono.fromRunnable(() -> {
-					// System.out.println("Global Filter executed");
+					println("GATEWAY", method, LocalDateTime.now());
 				}));
-			}
+			} // if
 		};
 	}
 
+	/**
+	 * CorsWebFilter
+	 * 
+	 * @return CorsWebFilter
+	 */
 	@Bean
 	public CorsWebFilter corsWebFilter() {
-		System.out.println("CORS限制打开");
+		System.out.println("corsWebFilter");
 		final var config = new CorsConfiguration();
 		// 仅在开发环境设置为*
 		config.addAllowedOrigin("*");
@@ -65,6 +79,7 @@ public class FilterConfig {
 		config.setAllowCredentials(false);
 		final var configSource = new UrlBasedCorsConfigurationSource();
 		configSource.registerCorsConfiguration("/**", config);
+
 		return new CorsWebFilter(configSource);
 	}
 
