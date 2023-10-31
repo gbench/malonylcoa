@@ -10,7 +10,7 @@ const AComp = {
 	 * @returns 
 	 */
 	data() {
-		return { label: "-", articles: [] };
+		return { component: "-", articles: [] };
 	},
 
 	/**
@@ -22,7 +22,7 @@ const AComp = {
 		// 开始信息
 		http_post("/h5/api/component", {name:"AComp"}).then(res => {
 			const data = res.data.data;
-			this.label = data.name + " @ " + data.time;
+			this.name = this.component = data.name + " @ " + data.time;
 		});
 
 		// sql data 
