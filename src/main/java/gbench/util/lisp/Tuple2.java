@@ -47,7 +47,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 1#位置 元素变换
 	 *
 	 * @param <X>    mapper 的结果类型
-	 * @param mapper 元素变化函数 t-x
+	 * @param mapper 元素变化函数 t-&gt;x
 	 * @return 变换后的 元素 (x,u)
 	 */
 	public <X> Tuple2<X, U> fmap1(final Function<T, X> mapper) {
@@ -58,7 +58,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 2#位置 元素变换
 	 *
 	 * @param <X>    mapper 的结果类型
-	 * @param mapper 元素变化函数 u-x
+	 * @param mapper 元素变化函数 u-&gt;x
 	 * @return 变换后的 元素 (t,x)
 	 */
 	public <X> Tuple2<T, X> fmap2(final Function<U, X> mapper) {
@@ -87,7 +87,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 元素位置互换
 	 *
 	 * @param <X>    元素类型
-	 * @param mapper 元祖变换函数 (u,t)->X
+	 * @param mapper 元祖变换函数 (u,t)-&gt;X
 	 * @return X 类型结果
 	 */
 	public <X> X swap(final Function<Tuple2<U, T>, X> mapper) {
@@ -99,7 +99,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 视 Tuple2 为一个Object的二元数组[_1,_2],然后调用mapper 给予变换<br>
 	 *
 	 * @param <X>    mapper 结果的类型
-	 * @param mapper [o]->x 数组变换函数
+	 * @param mapper [o]-&gt;x 数组变换函数
 	 * @return X类型结果
 	 */
 	public <X> X arrayOf(final Function<Object[], X> mapper) {
@@ -144,7 +144,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	/**
 	 * 生成数组 [_1,_2]
 	 *
-	 * @param generator 数组生成器 n->[t]
+	 * @param generator 数组生成器 n-&gt;[t]
 	 * @param <V>       元素类型
 	 * @return [_1, _2]
 	 */
@@ -156,7 +156,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 扁平化
 	 *
 	 * @param <X>    元素类型
-	 * @param mapper 值变换函数 o->x
+	 * @param mapper 值变换函数 o-&gt;x
 	 * @return X类型额数据流
 	 */
 	public <X> Stream<X> flatS(final Function<Object, X> mapper) {
@@ -167,7 +167,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 转成列表结构
 	 *
 	 * @param <V>    元素类型
-	 * @param mapper 值变换函数 o->x
+	 * @param mapper 值变换函数 o-&gt;x
 	 * @return v list
 	 */
 	public <V> List<V> toFlatList(final Function<Object, V> mapper) {
@@ -187,7 +187,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 数值变换
 	 *
 	 * @param <V>    元素类型
-	 * @param mapper 数值变换函数 tup->x
+	 * @param mapper 数值变换函数 tup-&gt;x
 	 * @return V类型的数据
 	 */
 	public <V> V mutate(final Function<Tuple2<T, U>, V> mapper) {
@@ -282,7 +282,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
 	 * @param tt  第一元素遍历器
-	 * @return t->(t,u)
+	 * @return t-&gt;(t,u)
 	 */
 	public static <T, U> Function<U, Tuple2<T, U>> zipper1(final T[] tt) {
 		return zipper1(Arrays.asList(tt));
@@ -294,7 +294,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
 	 * @param stm 第一元素流
-	 * @return t->(t,u)
+	 * @return t-&gt;(t,u)
 	 */
 	public static <T, U> Function<U, Tuple2<T, U>> zipper1(final Stream<T> stm) {
 		return zipper1(stm.iterator());
@@ -306,7 +306,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
 	 * @param itr 第二元素遍历器
-	 * @return t->(t,u)
+	 * @return t-&gt;(t,u)
 	 */
 	public static <T, U> Function<T, Tuple2<T, U>> zipper2(final Iterator<U> itr) {
 		final List<U> data = new ArrayList<U>();
@@ -327,7 +327,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
 	 * @param uu  第二元素遍历器
-	 * @return t->(t,u)
+	 * @return t-&gt;(t,u)
 	 */
 	public static <T, U> Function<T, Tuple2<T, U>> zipper2(final Iterable<U> uu) {
 		return zipper2(uu.iterator());
@@ -339,7 +339,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
 	 * @param uu  第二元素遍历器
-	 * @return t->(t,u)
+	 * @return t-&gt;(t,u)
 	 */
 	public static <T, U> Function<T, Tuple2<T, U>> zipper2(final U[] uu) {
 		return zipper2(Arrays.asList(uu));
@@ -351,7 +351,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <T> 第一元素
 	 * @param <U> 第二元素
 	 * @param stm 第二元素流
-	 * @return t->(t,u)
+	 * @return t-&gt;(t,u)
 	 */
 	public static <T, U> Function<T, Tuple2<T, U>> zipper2(final Stream<U> stm) {
 		return zipper2(stm.iterator());
@@ -539,7 +539,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 *
 	 * @param <T>   元素
 	 * @param start 开始号码
-	 * @return t->(int,t) 的标记函数
+	 * @return t-&gt;(int,t) 的标记函数
 	 */
 	public static <T> Function<T, Tuple2<Integer, T>> snb(final Integer start) {
 		return snbuilder(start);
@@ -551,7 +551,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 *
 	 * @param <T>   元素
 	 * @param start 开始号码
-	 * @return t->(t,integer) 的标记函数
+	 * @return t-&gt;(t,integer) 的标记函数
 	 */
 	public static <T> Function<T, Tuple2<T, Integer>> snb2(final Integer start) {
 		final AtomicInteger sn = new AtomicInteger(start);
@@ -564,7 +564,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 *
 	 * @param <T>   元素
 	 * @param start 开始号码
-	 * @return t->(int,t) 的标记函数
+	 * @return t-&gt;(int,t) 的标记函数
 	 */
 	public static <T> Function<T, Tuple2<Integer, T>> snbuilder(final int start) {
 		final AtomicInteger sn = new AtomicInteger(start);
@@ -576,7 +576,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 开始号码为0
 	 *
 	 * @param <T> 元素类型
-	 * @return t->(int,t) 的标记函数
+	 * @return t-&gt;(int,t) 的标记函数
 	 */
 	public static <T> Function<T, Tuple2<Integer, T>> snbuilder() {
 		return snbuilder(0);
@@ -589,7 +589,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <T>     元素类型
 	 * @param divisor 除数
 	 * @param start   开始数值
-	 * @return t->((i,j),t)
+	 * @return t-&gt;((i,j),t)
 	 */
 	public static <T> Function<T, Tuple2<Tuple2<Integer, Integer>, T>> modulob(final int divisor, final int start) {
 		final AtomicInteger sn = new AtomicInteger(start);
@@ -601,7 +601,7 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * 
 	 * @param <T>     元素类型
 	 * @param divisor 除数
-	 * @return t->((i,j),t)
+	 * @return t-&gt;((i,j),t)
 	 */
 	public static <T> Function<T, Tuple2<Tuple2<Integer, Integer>, T>> modulob(final int divisor) {
 		return Tuple2.modulob(divisor, 0);
@@ -671,8 +671,8 @@ public class Tuple2<T, U> implements Iterable<Object>, Comparable<Tuple2<T, U>> 
 	 * @param <X>    1号元素类型
 	 * @param <Y>    2号元素类型
 	 * @param <Z>    结果类型
-	 * @param mapper (x,y)->z
-	 * @return (x,y)->z
+	 * @param mapper (x,y)-&gt;z
+	 * @return (x,y)-&gt;z
 	 */
 	public static <X, Y, Z> Function<Tuple2<X, Y>, Z> bifun(final BiFunction<X, Y, Z> mapper) {
 		return tup -> mapper.apply(tup._1, tup._2);

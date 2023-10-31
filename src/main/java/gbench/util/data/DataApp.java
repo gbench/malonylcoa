@@ -398,6 +398,17 @@ public class DataApp {
 			return Stream.of(this._1, this._2).toArray(generator);
 		}
 
+		/**
+		 * 数组格式应用
+		 * 
+		 * @param <X>    结果类型
+		 * @param mapper 概念换函数 [_1,_2]-&gt;x
+		 * @return X 类型的结构
+		 */
+		public <X> X arrayOf(final Function<Object[], X> mapper) {
+			return mapper.apply(this.toArray());
+		}
+
 		@Override
 		public int hashCode() {
 			return Objects.hash(this._1, this._2);
