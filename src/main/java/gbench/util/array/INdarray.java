@@ -868,7 +868,21 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @return 分类分组:[(k,nd)]
 	 */
 	default <K extends Comparable<K>> Map<K, INdarray<V>> groupBy(final Function<V, K> classifier) {
-		final Map<K, INdarray<V>> groups = new LinkedHashMap<>(); // 分组结果
+		return this.groupBy(classifier, e -> e);
+	}
+
+	/**
+	 * 分组 &amp; 排序
+	 * 
+	 * @param <K>        分类键类型
+	 * @param <T>        值类型
+	 * @param classifier 分类器 把T转换成分组键名
+	 * @param mapper     值计算函数 nd->t
+	 * @return 分类分组:[(k,t)]
+	 */
+	default <K extends Comparable<K>, T> Map<K, T> groupBy(final Function<V, K> classifier,
+			final Function<INdarray<V>, T> mapper) {
+		final Map<K, T> groups = new LinkedHashMap<>(); // 分组结果
 		final INdarray<V> ndata = this.dupdata(); // 备份当前数据区域已作为后续的索引排序的数据源。
 		final Iterator<Tuple2<K, Integer>> key_itr = this.map(classifier) // 计算键值（索引排序的键索引）
 				.map(Tuple2.snb2(0)).sorted().iterator(); // 计算键值并排序
@@ -879,14 +893,14 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 		while (key_itr.hasNext()) {
 			final Tuple2<K, Integer> e = key_itr.next(); // 提取
 			if (key != null && key != e._1) { // key 发生变化，将先前的数据合并一个区域分组。
-				groups.put(key, this.build(start, i)); // 注意要使用相对位置构造nd,即build不能create,以保证动态性
+				groups.put(key, mapper.apply(this.build(start, i))); // 注意要使用相对位置构造nd,即build不能create,以保证动态性
 				start = i; // 更新开始位置
 			} //
 			key = e._1; // 记录键值
 			this.set(i++, ndata.get(e._2)); // 对当前数据区域的数据进行排序
 		} // while
 		if (key != null && start < i) { // 记录索引结果
-			groups.put(key, this.build(start, i)); // 注意要使用相对位置构造nd,即build不能create,以保证动态性
+			groups.put(key, mapper.apply(this.build(start, i))); // 注意要使用相对位置构造nd,即build不能create,以保证动态性
 		} // if
 
 		return groups; // 返回分组
@@ -3085,6 +3099,17 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 */
 	static <T> INdarray<T> nd(final T[] data) {
 		return INdarray.of(data);
+	}
+
+	/**
+	 * 创建多维数组: INdarray.of and dupdata 简写
+	 *
+	 * @param <T>  元素类型
+	 * @param data 元数据
+	 * @return ndarray
+	 */
+	static <T> INdarray<T> nd2(final T[] data) {
+		return INdarray.of(data).dupdata();
 	}
 
 	/**
