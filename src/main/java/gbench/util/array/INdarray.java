@@ -876,8 +876,24 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 
 	 * @param <K>        分类键类型
 	 * @param <T>        值类型
+	 * @param <U>        返回结果类型
 	 * @param classifier 分类器 把T转换成分组键名
-	 * @param mapper     值计算函数 nd->t
+	 * @param mapper     值计算函数 nd-&gt;t
+	 * @param finishier  终值计算函数 {(k,t)}-&gt;u
+	 * @return U 类型的结果
+	 */
+	default <K extends Comparable<K>, T, U> U groupBy(final Function<V, K> classifier,
+			final Function<INdarray<V>, T> mapper, Function<Map<K, T>, U> finishier) {
+		return finishier.apply(this.groupBy(classifier, mapper));
+	}
+
+	/**
+	 * 分组 &amp; 排序
+	 * 
+	 * @param <K>        分类键类型
+	 * @param <T>        值类型
+	 * @param classifier 分类器 把T转换成分组键名
+	 * @param mapper     值计算函数 nd-&gt;t
 	 * @return 分类分组:[(k,t)]
 	 */
 	default <K extends Comparable<K>, T> Map<K, T> groupBy(final Function<V, K> classifier,
