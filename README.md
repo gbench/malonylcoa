@@ -48,7 +48,7 @@ final var dataApp = new MyDataApp(mysql_rec);
 dataApp.sqldframe("show tables");
 dataApp.withTransaction(sess->sess.setData(sess.sql2pdS("show tables").fmap2(t->nd(t.toList()))));
 
-//h2数据库
+// h2数据库
 final var dataApp2 = new MyDataApp(h2_rec);
 dataApp2.sqldframe2("create table t_user(id int auto_increment,name varchar(128),password varchar(32),phone varchar(64),sex varchar)");
 dataApp2.sqldframe2("insert into t_user(name,password,phone,sex) values ('zhangsan','123456','18120751773','man')");
