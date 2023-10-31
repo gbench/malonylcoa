@@ -46,7 +46,7 @@ final var h2_rec = REC("url", String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE
 // 查看数据表
 final var dataApp = new MyDataApp(mysql_rec);
 dataApp.sqldframe("show tables");
-dataApp.withTransaction(sess->sess.setData(sess.sql2pdS("show tables").fmap2(t->nd(t.toList()))));
+dataApp.withTransaction(sess -> sess.setData(sess.sql2pdS("show tables").fmap2(t -> nd(t.toList()))));
 
 // h2数据库
 final var dataApp2 = new MyDataApp(h2_rec);
@@ -68,7 +68,7 @@ final var price = 1000; // 现值(价格)
 final var formula = identity(0d).andThen(rate -> pmts.fmap((i, pmt) -> pmt * pow(1 + rate, -(1 + i)))).andThen(pvs -> pvs.sum() - price); // 实际利率
 final var eps = pow(10, -6); // 最小值
 final var eff_rate = bisect(formula, 0d, 1, eps); // 实际利率
-System.out.println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));	
+println(String.format("eff_rate percent:%.02f%%, real:%s", eff_rate * 100, eff_rate));
 
 // 序列分解
 nd(i -> pow(2, i), 10).fmap(n -> nats(n, 2 * n));
