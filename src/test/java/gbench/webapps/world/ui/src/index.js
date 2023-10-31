@@ -2,6 +2,8 @@ import { createApp } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { AComp } from './comps/acomp/AComp';
 import { BComp } from './comps/bcomp/BComp';
+import { DataTable } from './ctrls/DataTable';
+import { AutoComplete } from './ctrls/AutoComplete';
 import { store } from './store';
 import $ from 'jquery';
 
@@ -36,6 +38,8 @@ $(function () {
 
         // 生成vue对象
         const app = createApp({});
+        app.component('data-table', DataTable);
+        app.component('autocomplete', AutoComplete);
         app
             .use(store)
             .use(router)

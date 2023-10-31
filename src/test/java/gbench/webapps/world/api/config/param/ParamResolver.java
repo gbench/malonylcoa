@@ -60,7 +60,7 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 		final var qps = serverWebExchange.getRequest().getQueryParams();
 		return serverWebExchange.getFormData().map(data -> {
 			final var ll = Optional.ofNullable(data.get(name)).orElse(qps.get(name));
-			return ll != null && ll.size() > 0 ? ll.get(0) : null;
+			return ll != null && ll.size() > 0 ? ll.get(0) : "";
 		});
 
 	}

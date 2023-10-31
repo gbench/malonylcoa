@@ -3,6 +3,9 @@ package gbench.webapps.world.api.controller;
 import static gbench.util.lisp.IRecord.REC;
 import static java.time.LocalDateTime.now;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,13 +20,17 @@ import reactor.core.publisher.Mono;
 public class ApiController {
 
 	/**
-	 * http://localhost:8010/world/api/hello
+	 * 提取组件模块 <br>
+	 * 
+	 * http://localhost:8010/world/api/component
 	 * 
 	 * @return
 	 */
-	@RequestMapping("hello")
-	public Mono<IRecord> hello() {
-		return Mono.just(REC("code", "0", "message", "hello", "time", now()));
+	@RequestMapping("component")
+	public Mono<IRecord> component(final @Param String name) {
+		return Mono.just(REC("code", "0", "data", //
+				REC("name", Optional.ofNullable(name).map(e -> e.matches("^\\s*$") ? null : e)
+						.orElse("UNNAMED-" + UUID.randomUUID()), "time", now())));
 	}
 
 	/**

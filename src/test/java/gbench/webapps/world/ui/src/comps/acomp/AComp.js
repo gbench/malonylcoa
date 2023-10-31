@@ -10,7 +10,7 @@ const AComp = {
 	 * @returns 
 	 */
 	data() {
-		return { label: "-", data: "-" };
+		return { label: "-", articles: [] };
 	},
 
 	/**
@@ -20,13 +20,14 @@ const AComp = {
 		console.log(this.name);
 
 		// 开始信息
-		http_get("/h5/api/hello", { }).then(res => {
-			this.label = res.data.message + " @ " + res.data.time;
+		http_get("/h5/api/component", {name:"AComp"}).then(res => {
+			const data = res.data.data;
+			this.label = data.name + " @ " + data.time;
 		});
 
 		// sql data 
-		sqlquery("SELECT H2VERSION() VERSION FROM DUAL").then(res => {
-			this.data = res.data.data;
+		sqlquery("SELECT ID,TITLE,VOLUME,TIME FROM t_maozedong LIMIT 10").then(res => {
+			this.articles = res.data.data;
 		});
 	},
 

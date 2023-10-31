@@ -1,4 +1,9 @@
 <div>
     <div class="highlight">{{name}}</div>
-    <div> LABEL:{{label}}, DATA:{{data}}</div>
+    <hr/>
+    <div> LABEL:{{label}}</div>
+    <hr/>
+    <div>
+		<data-table :data="articles"></data-table>
+	</div>
 </div>
