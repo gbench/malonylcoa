@@ -1,18 +1,38 @@
 import axios from 'axios';
 
 /**
+ * http_post
  * 
  * @param {*} url 
  * @param {*} data 
- * @returns 
+ * @returns 数据请求
  */
 const http_post = function (url, data) {
     return axios({
         headers: { // axios 默认 application/json
             "Content-Type": "application/x-www-form-urlencoded",
-            "component-label": "mall"
+            "component-label": "world"
         },
         method: "post",
+        url: url,
+        data: data,
+    });
+};
+
+/**
+ * http_post
+ * 
+ * @param {*} url 
+ * @param {*} data 
+ * @returns 数据请求
+ */
+const http_get = function (url, data) {
+    return axios({
+        headers: { // axios 默认 application/json
+            "Content-Type": "application/x-www-form-urlencoded",
+            "component-label": "world"
+        },
+        method: "get",
         url: url,
         data: data,
     });
@@ -54,7 +74,7 @@ const sqlquery = function (sql) {
         axios({
             headers: { // axios 默认 application/json
                 "Content-Type": "application/x-www-form-urlencoded",
-                "component-label": "mall"
+                "component-label": "world"
             },
             method: "post",
             url: "/h5/api/sqlquery",
@@ -91,7 +111,7 @@ const sqlexecute = function (sql) {
         axios({
             headers: { // axios 默认 application/json
                 "Content-Type": "application/x-www-form-urlencoded",
-                "component-label": "mall"
+                "component-label": "world"
             },
             method: "post",
             url: "/h5/api/sqlexecute",
@@ -104,4 +124,4 @@ const sqlexecute = function (sql) {
     return new Promise(executor);
 };
 
-export { http_post, sqlquery, sqlquery2, sqlexecute };
+export { http_post, http_get, sqlquery, sqlquery2, sqlexecute };
