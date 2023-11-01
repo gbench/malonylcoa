@@ -933,7 +933,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 分组 &amp; 排序
 	 * 
 	 * @param <K>        分类键类型
-	 * @param classifier 分类器 把T转换成分组键名
+	 * @param classifier 分类器 把T转换成分组键名 v-&gt;k
 	 * @return 分类分组:[(k,nd)]
 	 */
 	default <K extends Comparable<K>> Map<K, INdarray<V>> groupBy(final Function<V, K> classifier) {
@@ -944,9 +944,9 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 分组 &amp; 排序
 	 * 
 	 * @param <K>        分类键类型
-	 * @param <T>        值类型
+	 * @param <T>        中间值类型
 	 * @param <U>        返回结果类型
-	 * @param classifier 分类器 把T转换成分组键名
+	 * @param classifier 分类器 把T转换成分组键名 v-&gt;k
 	 * @param mapper     值计算函数 nd-&gt;t
 	 * @param finishier  终值计算函数 {(k,t)}-&gt;u
 	 * @return U 类型的结果
@@ -960,8 +960,8 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 分组 &amp; 排序
 	 * 
 	 * @param <K>        分类键类型
-	 * @param <T>        值类型
-	 * @param classifier 分类器 把T转换成分组键名
+	 * @param <T>        结果值类型
+	 * @param classifier 分类器 把T转换成分组键名 v-&gt;k
 	 * @param mapper     值计算函数 nd-&gt;t
 	 * @return 分类分组:[(k,t)]
 	 */
@@ -1825,6 +1825,18 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * 数据累计和
+	 *
+	 * @return T 类型数字，非数字返回null
+	 */
+	default Double mean() {
+		final Double dbl = Optional.ofNullable(this.dbls()) //
+				.flatMap(e -> e.filter(Objects::nonNull).reduce(Double::sum)) //
+				.orElse(null);
+		return dbl / this.length();
+	}
+
+	/**
 	 * 数据乘积
 	 *
 	 * @return T 类型数字，非数字返回null
@@ -1834,6 +1846,29 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 				.flatMap(e -> e.filter(Objects::nonNull).reduce((a, b) -> a * b)) //
 				.orElse(null);
 		return this.asNum(dbl);
+	}
+
+	/**
+	 * 计算频率
+	 * 
+	 * @param <K>        分组类型
+	 * @param classifier 分类器 把V转换成分组键名
+	 * @return 频率列表
+	 */
+	default <K extends Comparable<K>> Map<K, Integer> freq(final Function<V, K> classifier) {
+		return this.groupBy(classifier, e -> e.length());
+	}
+
+	/**
+	 * 计算频率
+	 * 
+	 * @param <T>        中间分组类型
+	 * @param classifier 分类器 把V转换成分组键名
+	 * @return 频率列表
+	 */
+	@SuppressWarnings("unchecked")
+	default <T extends Comparable<T>> Map<V, Integer> freq() {
+		return (Map<V, Integer>) this.groupBy(e -> (T) e, e -> e.length());
 	}
 
 	/**
