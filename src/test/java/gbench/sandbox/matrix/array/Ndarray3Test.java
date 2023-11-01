@@ -167,10 +167,10 @@ public class Ndarray3Test {
 	}
 
 	@Test
-	public void d6(){
-		final var p = cph(RPTA(A(1, 2), 3)).map(INdarray::nd2) //
-				.map(e -> e.sorted()).sorted()
-				.collect(ndclc()).groupBy(e -> e, e -> e.length());
+	public void d6() {
+		final var p = cph(RPTA(A(1, 2, 3), 3)).map(INdarray::nd2) //
+				.map(e -> e.sorted()).collect(ndclc())
+				.groupBy(e -> e.groupBy(q -> q, q -> q.length(), Object::toString), e -> e.length());
 		println(p);
 	}
 

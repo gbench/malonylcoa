@@ -775,12 +775,12 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
 	 * @param <PV>        PivotValue类型
 	 * @param evaluator   pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
-	 *                    vs核算器: vs->pivotValue,
+	 *                    vs核算器: vs-&gt;pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
-	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
-	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
+	 *                    classifiers是一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
+	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值-&gt;k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴的数据透视表的树形式(共享前缀式)。 <br>
 	 *         注意：树形式：(A,(A1,(A11,A12),(A2,(A21,A22)))) 等价于 列表/矩阵形式:
 	 *         [(A,A1,A11),(A,A1,A12),(A,A2,A21),(A,A2,A22)] <br>
@@ -803,12 +803,12 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
 	 * @param <PV>        PivotValue类型
 	 * @param evaluator   pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
-	 *                    vs核算器: vs->pivotValue,
+	 *                    vs核算器: vs-&gt;pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
-	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
-	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
+	 *                    classifiers是一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
+	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值-&gt;k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴的数据透视表的树形式(共享前缀式)。 <br>
 	 *         注意：树形式：(A,(A1,(A11,A12),(A2,(A21,A22)))) 等价于 列表/矩阵形式:
 	 *         [(A,A1,A11),(A,A1,A12),(A,A2,A21),(A,A2,A22)] <br>
@@ -831,12 +831,12 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param <VS>        是共享同一个pivotPath的value集合是[V]的序列形式
 	 * @param <PV>        PivotValue类型
 	 * @param evaluator   pivotValue的计算函数，pivotValue是对vs的某种封装或者就是vs本身,取决于具体应用要求
-	 *                    vs核算器: vs->pivotValue,
+	 *                    vs核算器: vs-&gt;pivotValue,
 	 *                    核算器并发执行可以依据枢轴的分类层级实现对源数据进行多级划分进而实现分组/批次计算能力:例如分库分表，惨见H2Test.qux
 	 * @param classifiers 枢轴脸谱函数/分类函数序列 [cf1,cf2,...]
 	 *                    classifiers即是把一个value映射成一组标识[k]<br>
-	 *                    classifiers 是 一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
-	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值->k键，
+	 *                    classifiers是一个cf续流:[cf],cf是标签分类函数或者说逆向键值函数,<br>
+	 *                    用于构造pivotPath的路径元素。cf逆向键函数:v值-&gt;k键，
 	 * @return 数据透视表,依据分类函数序列classifiers指定枢轴的数据透视表的树形式(共享前缀式)。 <br>
 	 *         注意：树形式：(A,(A1,(A11,A12),(A2,(A21,A22)))) 等价于 列表/矩阵形式:
 	 *         [(A,A1,A11),(A,A1,A12),(A,A2,A21),(A,A2,A22)] <br>

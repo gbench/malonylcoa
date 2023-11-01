@@ -1481,7 +1481,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 			hashSet.addAll(o.keys());// 归并
 			final String[] kk = hashSet.stream().sorted().toArray(String[]::new);
 			System.err.println(
-					"比较的两个个键名序列(" + this.keys() + "," + o.keys() + ")不相同,采用归并键名序列进行比较:" + Arrays.deepToString(kk));
+					"比较的两个键名序列(" + this.keys() + "," + o.keys() + ")不相同,采用归并键名序列进行比较:" + Arrays.deepToString(kk));
 			return IRecord.cmp(kk, true).compare(this, o);
 		} // if
 	}
