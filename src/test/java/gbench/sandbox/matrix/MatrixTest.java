@@ -135,11 +135,11 @@ public class MatrixTest {
 
 	@Test
 	public void matrix() {
-		try (final var excel = SimpleExcel.of("E:\\slicee\\repos\\diaries\\2023\\07\\16\\data.xlsx")) {
+		try (final var excel = SimpleExcel
+				.of("F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/matrix/data.xlsx")) {
 			final var x = excel.autoDetect(0).row2S(INdarray::of).flatMap(e -> e.stream()).collect(INdarray.nxclc(6));
 			println(x);
-			println(x.colS(6).map(e->e.fflat().sum()).collect(INdarray.ndclc()));
+			println(x.colS(6).map(e -> e.fflat().sum()).collect(INdarray.ndclc()));
 		}
-		
 	}
 }

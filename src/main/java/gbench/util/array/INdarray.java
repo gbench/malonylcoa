@@ -1825,15 +1825,37 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 数据累计和
+	 * 均值
 	 *
-	 * @return T 类型数字，非数字返回null
+	 * @return 均值
 	 */
 	default Double mean() {
 		final Double dbl = Optional.ofNullable(this.dbls()) //
 				.flatMap(e -> e.filter(Objects::nonNull).reduce(Double::sum)) //
 				.orElse(null);
 		return dbl / this.length();
+	}
+
+	/**
+	 * 样本标准差
+	 *
+	 * @return 样本标准差
+	 */
+	default Double stdevp() {
+		final Double mean = this.mean();
+		final Double sum = this.dbls().fmap(e -> Math.pow(e - mean, 2)).sum();
+		return Math.sqrt(sum / this.length());
+	}
+
+	/**
+	 * 总体标准差
+	 *
+	 * @return 总体标准差
+	 */
+	default Double stdev() {
+		final Double mean = this.mean();
+		final Double sum = this.dbls().fmap(e -> Math.pow(e - mean, 2)).sum();
+		return Math.sqrt(sum / (this.length() - 1));
 	}
 
 	/**
