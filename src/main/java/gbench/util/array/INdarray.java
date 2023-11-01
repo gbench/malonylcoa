@@ -737,6 +737,28 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
 	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
 	 */
+	default List<INdarray<V>> splits(final Integer[] breaks) {
+		final int[] _breaks = Stream.of(breaks).mapToInt(e -> e).toArray();
+		return this.splits(_breaks);
+	}
+
+	/**
+	 * 从i索引处拆分,([0,i),[i+1,length)) 即 1#元素长度为i,2#元素长度为length-i
+	 *
+	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
+	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
+	 */
+	default Stream<INdarray<V>> splitS(final Integer[] breaks) {
+		final int[] _breaks = Stream.of(breaks).mapToInt(e -> e).toArray();
+		return this.splitS(_breaks);
+	}
+
+	/**
+	 * 从i索引处拆分,([0,i),[i+1,length)) 即 1#元素长度为i,2#元素长度为length-i
+	 *
+	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
+	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
+	 */
 	default Stream<INdarray<V>> splitS(final int... breaks) {
 		return this.breakS(breaks).filter(e -> e._1 < this.end()) //
 				.map(t -> t.fmap2(_2 -> Math.min(_2, this.end()))) //
