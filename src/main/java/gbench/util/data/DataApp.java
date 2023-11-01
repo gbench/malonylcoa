@@ -3859,10 +3859,10 @@ public class DataApp {
 		default Tuple2<String[], Stream<Object>> sql2pdS(final String sql,
 				final ExceptionalConsumer<Tuple2<Connection, Tuple2<Statement, ResultSet>>> close_callback)
 				throws SQLException {
-			final var conn = this.getConnection();
-			final var stmt = conn.createStatement();
-			final var rs = stmt.executeQuery(sql);
-			final var ar = new AtomicReference<SQLException>(); // 内部异常缓存
+			final Connection conn = this.getConnection();
+			final Statement stmt = conn.createStatement();
+			final ResultSet rs = stmt.executeQuery(sql);
+			final AtomicReference<SQLException> ar = new AtomicReference<SQLException>(); // 内部异常缓存
 			final Runnable close = () -> {
 				try {
 					close_callback.accept(Tuple2.of(conn, Tuple2.of(stmt, rs)));
@@ -3872,7 +3872,7 @@ public class DataApp {
 					e.printStackTrace();
 				}
 			}; // close
-			final var data = IJdbcSession.readDataS(rs, t -> close.run());
+			final Tuple2<String[], Stream<Object>> data = IJdbcSession.readDataS(rs, t -> close.run());
 			this.add(data._2.onClose(close)); // 等级数据流，以便在关闭流的时候触发close_callback
 			if (ar.get() != null) {
 				throw ar.get();
