@@ -624,7 +624,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 			System.err.println("切分长度为零或是存在非法值(负数)");
 			return null;
 		} else {
-			final var nd = Objects.equals(0, ns[0]) ? nd(ns) : nd(ns).prepend(0);
+			final INdarray<Integer> nd = Objects.equals(0, ns[0]) ? nd(ns) : nd(ns).prepend(0);
 			return this.splitS(nd.scanls(_nd -> _nd.sum())).collect(ndclc());
 		} // if
 	}
