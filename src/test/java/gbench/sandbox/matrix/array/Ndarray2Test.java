@@ -2,6 +2,7 @@ package gbench.sandbox.matrix.array;
 
 import org.junit.jupiter.api.Test;
 
+import static gbench.util.array.INdarray.nats;
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.IRecord.A;
 
@@ -48,7 +49,7 @@ public class Ndarray2Test {
 		//
 		final var indices = row_3.map((i, e) -> i).mapToInt(i -> i).toArray();
 		println(row_3.splits(indices));
-		println("----------------",row_3.partition(2));
+		println("----------------", row_3.partition(2));
 
 	}
 
@@ -57,6 +58,24 @@ public class Ndarray2Test {
 		final var row = INdarray.of(i -> i, 10);
 		final var idx = row.map((i, e) -> i).mapToInt(i -> i).toArray();
 		println(row.splits(idx));
+	}
+
+	/**
+	 * 切分长度
+	 */
+	@Test
+	public void qub() {
+		println("nats(10).cuts(2, 3, 4)", nats(10).cuts(2, 3, 4));
+		println("nats(10).splits(0, 2, 5, 9)", nats(10).splits(0, 2, 5, 9));
+	}
+
+	/**
+	 * 切分长度
+	 */
+	@Test
+	public void quc() {
+		println("nats(10).prepend(-1)", nats(10).prepend(-1));
+		println("nats(10).append(11)", nats(10).append(11));
 	}
 
 }

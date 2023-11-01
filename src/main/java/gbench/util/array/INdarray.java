@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import java.lang.reflect.Array;
 
 import gbench.util.array.INdarrayX.MetaKey;
 import gbench.util.function.Getter;
@@ -613,6 +614,32 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * 分区片段
+	 * 
+	 * @param ns 切分片段长度序列:2,3,相当于 breaks 为 0,2,5 的splits
+	 * @return 分区判断
+	 */
+	default INdarray<INdarray<V>> cuts(final Integer... ns) {
+		if (ns.length < 1 || Stream.of(ns).allMatch(e -> e < 1)) {
+			System.err.println("切分长度为零或是存在非法值(负数)");
+			return null;
+		} else {
+			final var nd = Objects.equals(0, ns[0]) ? nd(ns) : nd(ns).prepend(0);
+			return this.splitS(nd.scanls(_nd -> _nd.sum())).collect(ndclc());
+		} // if
+	}
+
+	/**
+	 * 分区片段
+	 * 
+	 * @param ns 切分片段长度序列:2,3,相当于 breaks 为 0,2,5 的splits
+	 * @return 分区判断
+	 */
+	default INdarray<INdarray<V>> cuts(final Iterable<Integer> ns) {
+		return this.cuts(nd(ns).ints().data());
+	}
+
+	/**
 	 * 相对索引访问 <br>
 	 * 检查所索引并运行
 	 *
@@ -748,9 +775,29 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
 	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
 	 */
+	default List<INdarray<V>> splits(final Iterable<Integer> breaks) {
+		return this.splits(nd(breaks).data());
+	}
+
+	/**
+	 * 从i索引处拆分,([0,i),[i+1,length)) 即 1#元素长度为i,2#元素长度为length-i
+	 *
+	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
+	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
+	 */
 	default Stream<INdarray<V>> splitS(final Integer[] breaks) {
 		final int[] _breaks = Stream.of(breaks).mapToInt(e -> e).toArray();
 		return this.splitS(_breaks);
+	}
+
+	/**
+	 * 从i索引处拆分,([0,i),[i+1,length)) 即 1#元素长度为i,2#元素长度为length-i
+	 *
+	 * @param breaks 相对索引，索引分割点从0开始,不包含0与length [...,i,i+n,...,]
+	 * @return ([0, i)长度为i, [i+1,size)长度为length-i)
+	 */
+	default Stream<INdarray<V>> splitS(final Iterable<Integer> breaks) {
+		return this.splitS(nd(breaks).data());
 	}
 
 	/**
@@ -2312,7 +2359,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
-	 * 连接两个 ndarray <br>
+	 * 脱离data类的方法:连接两个 ndarray <br>
 	 * 将可视区间中的数据进行连接 [this.mydata,nd.mydata]
 	 *
 	 * @param ts 另一个ndarray
@@ -2321,6 +2368,38 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	@SuppressWarnings("unchecked")
 	default INdarray<V> concat(final V... ts) {
 		return INdarray.of(INdarray.concat(this.mydata(), ts));
+	}
+
+	/**
+	 * 脱离data类的方法:前置元素追加 <br>
+	 * 将可视区间中的数据进行连接 [v,nd.mydata]
+	 *
+	 * @param v 首部元素
+	 * @return 连接以后的ndarray,新生成的nd对象
+	 */
+	default INdarray<V> prepend(final V v) {
+		final int n = this.length();
+		@SuppressWarnings("unchecked")
+		final V[] data = (V[]) Array.newInstance(this.dtype(), this.length() + 1);
+		System.arraycopy(this.data(), 0, data, 1, n);
+		data[0] = v;
+		return INdarray.of(data);
+	}
+
+	/**
+	 * 脱离data类的方法:后置元素追加: <br>
+	 * 将可视区间中的数据进行连接 [this.mydata,v]
+	 *
+	 * @param v 尾部元素
+	 * @return 连接以后的ndarray,新生成的nd对象
+	 */
+	default INdarray<V> append(final V v) {
+		final int n = this.length();
+		@SuppressWarnings("unchecked")
+		final V[] data = (V[]) Array.newInstance(this.dtype(), this.length() + 1);
+		System.arraycopy(this.data(), 0, data, 0, n);
+		data[n] = v;
+		return INdarray.of(data);
 	}
 
 	/**
