@@ -24,11 +24,14 @@ import static gbench.util.type.Types.dbl2Bytes;
 import static gbench.util.type.Types.bool2Bytes;
 import static gbench.util.type.Types.char2Bytes;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import gbench.util.array.INdarray;
+import gbench.util.lisp.IRecord;
 import gbench.util.lisp.Tuple2;
+import gbench.util.math.algebra.Algebras;
 import gbench.util.matrix.Matrix;
 
 public class Ndarray3Test {
@@ -168,12 +171,33 @@ public class Ndarray3Test {
 
 	@Test
 	public void d6() {
-		final var p = cph(RPTA(A(1, 2, 3), 3)).map(INdarray::nd2) // (1+2+3)^3的展开式
+
+		/**
+		 * 格式化器:连接器
+		 */
+		class Join {
+			public Join(final String format, final String delim) {
+				this.format = format;
+				this.delim = delim;
+			}
+
+			public <K, V> String format(final Map<K, V> mm) {
+				return mm.entrySet().stream().map(q -> IRecord.FT(format, q.getKey(), q.getValue())).collect(ndclc())
+						.join(delim);
+			}
+
+			final String format;
+			final String delim;
+		}
+
+		final var mul = new Join("pow($0,$1)", "*");
+		final var add = new Join("$1*$0", "+");
+		final var expression = cph(RPTA(A(1, 2, 3), 3)).map(INdarray::nd2) // (1+2+3)^3的展开式
 				.map(e -> e.sorted()).collect(ndclc())
-				.groupBy(e -> e.groupBy(q -> q, q -> q.length(), mm -> mm.entrySet().stream()
-						.map(q -> String.format("pow(%s,%s)", q.getKey(), q.getValue())).collect(ndclc()).join("*")),
-						e -> e.length());
-		println(p);
+				.groupBy(e -> e.groupBy(identity(), INdarray::length, mul::format), INdarray::length, add::format);
+		println(expression);
+		final var result = Algebras.evaluate(expression);
+		println(result);
 	}
 
 }
