@@ -168,9 +168,11 @@ public class Ndarray3Test {
 
 	@Test
 	public void d6() {
-		final var p = cph(RPTA(A(1, 2, 3), 3)).map(INdarray::nd2) //
+		final var p = cph(RPTA(A(1, 2, 3), 3)).map(INdarray::nd2) // (1+2+3)^3的展开式
 				.map(e -> e.sorted()).collect(ndclc())
-				.groupBy(e -> e.groupBy(q -> q, q -> q.length(), Object::toString), e -> e.length());
+				.groupBy(e -> e.groupBy(q -> q, q -> q.length(), mm -> mm.entrySet().stream()
+						.map(q -> String.format("pow(%s,%s)", q.getKey(), q.getValue())).collect(ndclc()).join("*")),
+						e -> e.length());
 		println(p);
 	}
 
