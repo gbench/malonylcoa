@@ -1884,8 +1884,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	/**
 	 * 计算频率
 	 * 
-	 * @param <T>        中间分组类型
-	 * @param classifier 分类器 把V转换成分组键名
+	 * @param <T> 中间分组类型
 	 * @return 频率列表
 	 */
 	@SuppressWarnings("unchecked")
