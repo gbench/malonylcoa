@@ -111,7 +111,7 @@ public class H2db {
 	 * 插入数据sql
 	 * 
 	 * @param tblname 表名
-	 * @param line    数据行
+	 * @param lines   数据行
 	 * @return insert sql
 	 */
 	public static String insql(final String tblname, final Iterable<IRecord> lines) {
@@ -174,7 +174,7 @@ public class H2db {
 	/**
 	 * 导入数据表格
 	 * 
-	 * @param tblnames
+	 * @param tblnames 表名列表
 	 * @return 数据表
 	 */
 	public static ExceptionalConsumer<DataApp.IJdbcSession<Object, DFrame>> imports(final String... tblnames) {
