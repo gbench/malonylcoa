@@ -25,7 +25,7 @@ public class PgSQLTest {
 
 	final IRecord pgsql_rec = IRecord.REC( //
 			"url", "jdbc:postgresql://localhost:5432/latinus?currentSchema=economics", //
-			"driver", "com.mysql.cj.jdbc.Driver", //
+			"driver", "org.postgresql.Driver", //
 			"user", "postgres", "password", "123456");
 
 }
