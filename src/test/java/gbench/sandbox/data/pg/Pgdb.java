@@ -8,9 +8,11 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import gbench.util.array.INdarray;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.DataApp.ExceptionalConsumer;
@@ -36,7 +38,7 @@ public class Pgdb {
 		final var intpattern = "^\\d+$";
 		final var datepattern = "^[1-9]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\\s+(20|21|22|23|[0-1]\\d):[0-5]\\d:[0-5]\\d$";
 		final BiFunction<String, Object, String> typeof = (k, v) -> {
-			final String inttype = String.format("%s %s", "INT", "id".equalsIgnoreCase(k) ? "" : "");
+			final String inttype = String.format("%s", "id".equalsIgnoreCase(k) ? "serial" : "INT");
 			if (v instanceof Map || v instanceof IRecord || v instanceof Iterable || v == Map.class
 					|| v == IRecord.class
 					|| ((v instanceof Class<?>) && Iterable.class.isAssignableFrom(((Class<?>) v)))) {
@@ -106,6 +108,30 @@ public class Pgdb {
 	}
 
 	/**
+	 * 插入数据sql
+	 * 
+	 * @param tblname 表名
+	 * @param lines   数据行(keys:[k],values:[v])
+	 * @return insert sql
+	 */
+	public static String insql(final String tblname, Tuple2<? extends String[], ? extends Object[]> lines) {
+		final var keys = Arrays.stream(lines._1).collect(Collectors.joining(","));
+		final var rows = INdarray.of(lines._2).cuts(lines._1.length, true);
+		final Function<INdarray<?>, String> value_part = line -> line.map(e -> String.format("'%s'", v2s.apply(e)))
+				.collect(Collectors.joining(", "));
+		final StringBuilder sb = new StringBuilder(); // sql写入缓存
+		for (final var line : rows) {
+			if (sb.length() < 1) {// 第一行,开头部分
+				sb.append(String.format("insert into %s ( %s ) values ( %s )", tblname, keys, value_part.apply(line)));
+			} else { // 剩余行,追加value部分
+				sb.append(String.format(", ( %s )", value_part.apply(line)));
+			} // if
+		} // for
+
+		return sb.toString();
+	}
+
+	/**
 	 * 导入数据表格
 	 * 
 	 * @param tblnames 表名列表
@@ -118,9 +144,7 @@ public class Pgdb {
 			final var sess = tup._2;
 			for (final var tblname : tblnames) {
 				final var dfm = shtmx(datafile, tblname).collect(DFrame.dfmclc2);
-				final var proto = dfm.maxBy2((String a, String b) -> Optional.ofNullable(a)
-						.map(_a -> Optional.ofNullable(b).map(_b -> _a.length() > _b.length()).orElse(true))
-						.orElse(false));
+				final var proto = dfm.maxBy2(compare(false, true, (String _a, String _b) -> _a.length() > _b.length()));
 				final var ctsql = ctsql(tblname, proto);
 				if (sess.isTablePresent(tblname)) {
 					sess.sql2execute(String.format("drop table %s", tblname));
@@ -155,6 +179,23 @@ public class Pgdb {
 			mx = excel.autoDetect(name);
 		}
 		return mx;
+	}
+
+	/**
+	 * 二元函数
+	 * 
+	 * @param <V>    值类型
+	 * @param t      第一元素类型
+	 * @param u      第二元素类型
+	 * @param vtnull T 为空值时的默认值
+	 * @param vunull U 为空值时默认值
+	 * @param mapper 非空变换函数 (t,u)->v
+	 * @return 二元函数类型 (t,u)->bool
+	 */
+	public static <T, U, V> BiPredicate<T, U> compare(final Boolean vtnull, final Boolean vunull,
+			final BiPredicate<T, U> mapper) {
+		return (t, u) -> Optional.ofNullable(t)
+				.map(_t -> Optional.ofNullable(u).map(_u -> mapper.test(_t, u)).orElse(vunull)).orElse(vtnull);
 	}
 
 	/**

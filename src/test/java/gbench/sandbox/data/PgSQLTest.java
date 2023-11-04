@@ -3,10 +3,10 @@ package gbench.sandbox.data;
 import org.junit.jupiter.api.Test;
 
 import gbench.util.data.DataApp.IRecord;
-import gbench.util.data.DataApp.Tuple2;
 import gbench.util.data.MyDataApp;
 
 import static gbench.sandbox.data.pg.Pgdb.*;
+import static gbench.util.data.DataApp.Tuple2.P;
 
 /**
  * PgSQLTest
@@ -19,7 +19,7 @@ public class PgSQLTest {
 		final var datafile = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
 
 		dataApp.withTransaction(sess -> {
-			imports("t_company,t_product,t_company_product".split(",")).accept(Tuple2.of(datafile, sess));
+			imports("t_company,t_product,t_company_product".split(",")).accept(P(datafile, sess));
 		});
 	}
 
