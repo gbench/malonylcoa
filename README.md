@@ -82,7 +82,7 @@ println(analyze("1/(sigma*sqrt(2*pi))*exp(neg(square((x-mu)/sigma)/2))").dumpAST
 analyze("sin x ^ 2 + cos x ^ 2").dx(); // 对x求导的微分运算
 analyze("sin x ^ 2 + cos x ^ 2").dx().simplify(); // 微分化简:结果0
 Stream.iterate(analyze("sin x"), e -> e.derivate()).map(e -> e.simplify()).limit(10).collect(ndclc()); // sin 高阶导数 公式
-Stream.iterate(analyze("cos x"), e -> e.derivate()).map(e -> e.simplify()).limit(10).collect(ndclc()); // sin 高阶导数 公式
+Stream.iterate(analyze("cos x"), e -> e.derivate()).map(e -> e.simplify()).limit(10).collect(ndclc()); // cos 高阶导数 公式
 Stream.iterate(analyze("sin x"), e -> e.derivate()).map(e -> e.eval("x", 0)).limit(10).collect(ndclc()); // sin 高阶导数 数值
 Stream.iterate(analyze("cos x"), e -> e.derivate()).map(e -> e.eval("x", 0)).limit(10).collect(ndclc()); // cos 高阶导数 数值
 
