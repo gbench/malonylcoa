@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import gbench.util.math.algebra.op.BinaryOp;
 import gbench.util.math.algebra.op.ConstantOp;
+import gbench.util.math.algebra.op.Token;
 import gbench.util.math.algebra.op.UnaryOp;
 import gbench.util.math.algebra.tuple.IRecord;
 import gbench.util.math.algebra.tuple.Tuple2;
@@ -234,9 +235,21 @@ public class SymboLab implements ISymboLab {
 				} else if (opName.equals("-")) { // 减法
 					if (Objects.equals(right, left)) // 合并同类项
 						return TOKEN(0);
-					else if (zero_i == 1)
+					else if (zero_i == 1) {
 						return left;
-					else if (flag)
+					} else if (zero_i == 0 && right instanceof BinaryOp right_bop
+							&& Objects.equals("-", right_bop.getName()) && right_bop._2 instanceof Tuple2 right_tp) {
+						final var flag1 = (right_tp._1 instanceof Token token && token.isConstant()
+								&& token.dbl() != null && token.dbl().intValue() == 0); // token 格式的数字
+						final var flag2 = right_tp._1 instanceof Number num && num.intValue() == 0; // 数字
+						if (flag1 || flag2) {
+							return right_tp._2;
+						} else {
+							return left;
+						} // if
+					} else if (zero_i == 0) {
+						return MUL(-1, right).simplify();
+					} else if (flag)
 						return PACK(dbls[0] - dbls[1]).unpack();
 				} else if (opName.equals("/")) { // 除法
 					if (Objects.equals(right, left)) // 合并同类项
@@ -423,8 +436,8 @@ public class SymboLab implements ISymboLab {
 	/**
 	 * 节点调整：将节点系数向前调整
 	 * 
-	 * @param <T> 第一元素
-	 * @param <U> 第二元素
+	 * @param <T>    第一元素
+	 * @param <U>    第二元素
 	 * @param symbol 符号类型
 	 * @return 调整节点
 	 */

@@ -3,10 +3,12 @@ package gbench.sandbox.math;
 import org.junit.jupiter.api.Test;
 
 import static gbench.util.io.Output.println;
+import static gbench.util.math.algebra.Algebras.analyze;
 import static gbench.util.math.algebra.tuple.IRecord.REC;
 
 import java.util.stream.Stream;
 
+import gbench.util.array.INdarray;
 import gbench.util.math.algebra.AlgebraEngine;
 import gbench.util.math.algebra.op.BinaryOp;
 import gbench.util.math.algebra.op.Ops;
@@ -94,6 +96,20 @@ public class Algebra2Test {
 			println("导数值:", d_node.eval(args));
 			println("----------------------------------------------");
 		}); // forEach
+	}
+	
+	@Test
+	public void quz() {
+		final var elem = Stream.iterate(analyze("cos x"), e -> e.derivate())
+				.map(e->e.simplify())
+				//.map(e -> e.eval("x", 0))
+				.limit(10).collect(INdarray.ndclc()); // cos 高阶导数
+		println(elem);
+		final var elem2 = Stream.iterate(analyze("cos x"), e -> e.derivate())
+				.map(e->e.simplify())
+				.map(e -> e.eval("x", 0))
+				.limit(10).collect(INdarray.ndclc()); // cos 高阶导数
+		println(elem2);
 	}
 
 }
