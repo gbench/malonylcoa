@@ -2,7 +2,9 @@ package gbench.sandbox.math;
 
 import org.junit.jupiter.api.Test;
 
+import static gbench.util.array.INdarray.nats;
 import static gbench.util.io.Output.println;
+import static gbench.util.math.algebra.Algebras.analyze;
 
 import java.util.stream.Stream;
 
@@ -55,6 +57,15 @@ public class Algebra3Test {
 	public void bar() {
 		double d = Algebras.evaluate("1+2*3");
 		println(d);
+	}
+
+	@Test
+	public void quz() {
+		for (var i = 0; i < 10; i++) {
+			final var dx = nats(i).reduce(analyze("sin x"), (a, b) -> a.derivate());
+			println(i, dx);
+		}
+		println("reduce", nats(10).reduce(10, (a, b) -> a + b));
 	}
 
 }

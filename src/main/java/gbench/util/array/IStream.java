@@ -172,6 +172,20 @@ public interface IStream<T> extends Iterable<T> {
 	}
 
 	/**
+	 * 规约函数 <br>
+	 * reduce(identity, accumulator, (a, b) -> a) 的简写
+	 * 
+	 * @param <U>         The type of the result
+	 * @param identity    the identity value for the combiner function
+	 * @param accumulator an associative, non-interfering, statelessfunction for
+	 *                    incorporating an additional element into a result
+	 * @return U the result of the reduction
+	 */
+	default <U> U reduce(final U identity, final BiFunction<U, ? super T, U> accumulator) {
+		return this.stream().reduce(identity, accumulator, (a, b) -> a);
+	}
+
+	/**
 	 * 归集函数
 	 * 
 	 * @param <R>       结果类型
