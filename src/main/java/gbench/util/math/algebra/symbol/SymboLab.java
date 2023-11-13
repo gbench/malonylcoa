@@ -89,8 +89,14 @@ public class SymboLab implements ISymboLab {
 		final var handle = Optional.of(_symbol.getAry()).map(nary -> {
 			switch (nary) { // 算符类型的判断
 			case 1: { // 一元算符
-				if (opName.equals("neg")) { //
-					return MUL(-1, left);
+				if (opName.equals("neg")) { // 取反函数
+					if (BinaryOp.termOpt(left).map(e -> e instanceof BinaryOp bop ? bop : null)
+							.orElse(null) instanceof BinaryOp bop && bop._2 instanceof Tuple2 tup
+							&& Optional.ofNullable(BinaryOp.dbl(tup._1)).orElse(null) instanceof Number num) {
+						return MUL(-num.doubleValue(), tup._2).simplify();
+					} else {
+						return MUL(-1, left);
+					}
 				} else {
 					return theOp.compose1(left); // 一元算符的组合，一元算符 只有一个参数 即 左位参数
 				} // if
@@ -237,20 +243,32 @@ public class SymboLab implements ISymboLab {
 						return TOKEN(0);
 					else if (zero_i == 1) {
 						return left;
-					} else if (zero_i == 0 && right instanceof BinaryOp right_bop
-							&& Objects.equals("-", right_bop.getName()) && right_bop._2 instanceof Tuple2 right_tp) {
-						final var flag1 = (right_tp._1 instanceof Token token && token.isConstant()
-								&& token.dbl() != null && token.dbl().intValue() == 0); // token 格式的数字
-						final var flag2 = right_tp._1 instanceof Number num && num.intValue() == 0; // 数字
-						if (flag1 || flag2) {
-							return right_tp._2;
-						} else {
-							return left;
-						} // if
+					} else if (zero_i == 0 && right instanceof BinaryOp right_bop) { // (-,0,right)
+						final Optional<BinaryOp<Object, Object>> rbopt = BinaryOp.termOpt(right_bop);
+						if (Objects.equals("-", right_bop.getName()) && right_bop._2 instanceof Tuple2 right_tp) {
+							final var flag1 = (right_tp._1 instanceof Token token && token.isConstant()
+									&& token.dbl() != null && token.dbl().intValue() == 0); // token 格式的数字
+							final var flag2 = right_tp._1 instanceof Number num && num.intValue() == 0; // 数字
+							if (flag1 || flag2) {
+								return right_tp._2;
+							} else {
+								return left;
+							} // if
+						} else if (Objects.equals("neg", right_bop.getName())) { // (-,0,(neg,(...)))
+							return right_bop._1;
+						} else if (rbopt.isPresent() // (-,0,term)
+								&& rbopt.map(e -> e._2._1).map(BinaryOp::dbl).orElse(null) instanceof Double factor) {
+							if (Objects.equals(-1, factor.intValue())) { // factor 为 -1
+								return rbopt.get()._2._2;
+							} else {
+								return MUL(-factor, rbopt.get()._2._2).simplify();
+							}
+						}
 					} else if (zero_i == 0) {
 						return MUL(-1, right).simplify();
-					} else if (flag)
+					} else if (flag) {
 						return PACK(dbls[0] - dbls[1]).unpack();
+					}
 				} else if (opName.equals("/")) { // 除法
 					if (Objects.equals(right, left)) // 合并同类项
 						return TOKEN(1);

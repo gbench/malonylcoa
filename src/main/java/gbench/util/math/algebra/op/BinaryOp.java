@@ -427,8 +427,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * 结构化简
 	 * 
 	 * @param flag 是否哟先运行evaluate后化简,false:不运行,true:运行,<br>
-	 * 运行evaluate后化简会将数学常数比如pi,e等转换为系统默认的浮点数。比如: <br>
-	 * 1+pi,会被替换成 4.141592653589793 而不在保留 pi常数
+	 *             运行evaluate后化简会将数学常数比如pi,e等转换为系统默认的浮点数。比如: <br>
+	 *             1+pi,会被替换成 4.141592653589793 而不在保留 pi常数
 	 * @return 结构化简
 	 */
 	public BinaryOp<?, ?> simplify(final boolean flag) {
@@ -604,48 +604,6 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	}
 
 	/**
-	 * 强制转换成系数
-	 * 
-	 * @param object 参数对象
-	 * @return factorOpt
-	 */
-	public static final Optional<ConstantOp> factorOpt(final Object object) {
-		final var _obj = UNPACK(object);
-		if (_obj instanceof BinaryOp<?, ?> bop && bop.isConstant()) {
-			return dblOpt(bop._1).map(Ops::TOKEN);
-		} else if (_obj instanceof Number num) {
-			return Optional.ofNullable(TOKEN(num));
-		} else {
-			return dblOpt(dbl(_obj)).map(Ops::TOKEN);
-		} //
-	}
-
-	/**
-	 * termOpt
-	 * 
-	 * @param object
-	 * @return termOpt
-	 */
-	public static Optional<BinaryOp<Object, Object>> termOpt(final Object object) {
-
-		if (UNPACK(object) instanceof BinaryOp<?, ?> bop) {
-			if (bop._2 != null) {
-				final var left = bop._2._1;
-				final var right = bop._2._2;
-				if (Objects.equals("*", bop._1)) { // 乘项
-					final var leftopt = factorOpt(left);
-					return leftopt.isEmpty() //
-							? factorOpt(right).map(v -> MUL(v, left)) //
-							: leftopt.map(v -> MUL(v, right));
-				}
-			}
-			return Optional.empty();
-		} else {
-			return Optional.empty();
-		}
-	}
-
-	/**
 	 * 考虑到 BinaryOp 会覆盖掉name类派生类的特性，比如 一元函数 sin , 转换成 二元 函数 的情况 <br>
 	 * 因此 建议 实际使用中 尽量不用 BinaryOp.of ， 可以的化 使用 BinaryOp.duplicate().compose 系列函数<br>
 	 * 
@@ -672,6 +630,48 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 */
 	public static <T, U> BinaryOp<T, U> of(final Object name, Tuple2<T, U> args) {
 		return new BinaryOp<T, U>(name, args);
+	}
+
+	/**
+	 * 强制转换成系数
+	 * 
+	 * @param object 参数对象
+	 * @return factorOpt
+	 */
+	public static final Optional<ConstantOp> factorOpt(final Object object) {
+		final var _obj = UNPACK(object);
+		if (_obj instanceof BinaryOp<?, ?> bop && bop.isConstant()) {
+			return dblOpt(bop._1).map(Ops::TOKEN);
+		} else if (_obj instanceof Number num) {
+			return Optional.ofNullable(TOKEN(num));
+		} else {
+			return dblOpt(dbl(_obj)).map(Ops::TOKEN);
+		} //
+	}
+
+	/**
+	 * termOpt 是否是一个乘法项目(*,t1,t2)
+	 * 
+	 * @param object
+	 * @return termOpt
+	 */
+	public static Optional<BinaryOp<Object, Object>> termOpt(final Object object) {
+
+		if (UNPACK(object) instanceof BinaryOp<?, ?> bop) {
+			if (bop._2 != null) {
+				final var left = bop._2._1;
+				final var right = bop._2._2;
+				if (Objects.equals("*", bop._1)) { // 乘项
+					final var leftopt = factorOpt(left);
+					return leftopt.isEmpty() //
+							? factorOpt(right).map(v -> MUL(v, left)) //
+							: leftopt.map(v -> MUL(v, right));
+				}
+			}
+			return Optional.empty();
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	/**

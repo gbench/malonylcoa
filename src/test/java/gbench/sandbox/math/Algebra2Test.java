@@ -100,12 +100,13 @@ public class Algebra2Test {
 
 	@Test
 	public void quz() {
-		final var e1 = Stream.iterate(analyze("cos x"), e -> e.derivate()).map(e -> e.simplify()).limit(10)
+		final var e1 = Stream.iterate(analyze("cos x"), e -> e.derivate().simplify()).limit(10)
 				.collect(INdarray.ndclc()); // cos 高阶导数
 		println(e1);
-		final var e2 = Stream.iterate(analyze("cos x"), e -> e.derivate()).map(e -> e.simplify())
+		final var e2 = Stream.iterate(analyze("cos x"), e -> e.derivate().simplify()).map(e -> e.simplify())
 				.map(e -> e.eval("x", 0)).limit(10).collect(INdarray.ndclc()); // cos 高阶导数
 		println(e2);
+		println(analyze("neg neg x").simplify());
 	}
 
 }
