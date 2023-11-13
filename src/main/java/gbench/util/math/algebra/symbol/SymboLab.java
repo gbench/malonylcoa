@@ -117,7 +117,11 @@ public class SymboLab implements ISymboLab {
 					final var _right = _termLeft.isPresent() ? right : left; // 尝试吧_left作为term项
 					final var termLeft = _termLeft.isPresent() ? _termLeft : BinaryOp.termOpt(_left);
 
-					if (termLeft.isPresent()) { // left 是作为term项目而存在
+					if ((_right instanceof Number num && Objects.equals(num.intValue(), 0))
+							|| (_right instanceof Token token && Optional.ofNullable(token.dbl())
+									.map(d -> Objects.equals(d.intValue(), 0)).orElse(false))) { // (+,left,0)
+						return _left;
+					} else if (termLeft.isPresent()) { // left 是作为term项目而存在
 						final var a = wrap(termLeft.get()._2._2);
 						final var b = wrap(_right);
 						if (Objects.equals(a, b)) { // 合并 2x+x
