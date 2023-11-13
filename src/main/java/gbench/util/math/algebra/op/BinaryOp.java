@@ -691,7 +691,8 @@ public class BinaryOp<T, U> extends Tuple2<Object, Tuple2<T, U>> {
 	 * @return 浮点数Opt
 	 */
 	public static Double dbl(final Object obj) {
-		return IRecord.obj2dbl(null, false).apply(obj);
+
+		return obj instanceof Token token ? token.dbl() : IRecord.obj2dbl(null, false).apply(obj);
 	}
 
 	/**

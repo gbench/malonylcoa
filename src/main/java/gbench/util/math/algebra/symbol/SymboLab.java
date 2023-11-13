@@ -265,7 +265,7 @@ public class SymboLab implements ISymboLab {
 							if (Objects.equals(-1, factor.intValue())) { // factor 为 -1
 								return rbopt.get()._2._2;
 							} else {
-								return MUL(-factor, rbopt.get()._2._2).simplify();
+								return MUL(-factor, rbopt.get()._2._2);
 							}
 						}
 					} else if (zero_i == 0) {
