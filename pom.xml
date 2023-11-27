@@ -14,6 +14,7 @@
 		<jupiter-version>LATEST</jupiter-version>
 		<h2-version>LATEST</h2-version>
 		<mysql-version>LATEST</mysql-version>
+		<lucene.version>9.8.0</lucene.version>
 		<spring-boot-version>3.1.5</spring-boot-version>
 		<spring-gateway-version>4.0.7</spring-gateway-version>
 		<maven-compiler-plugin-version>3.11.0</maven-compiler-plugin-version>
@@ -91,6 +92,42 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>42.6.0</version>
+			<scope>test</scope>
+		</dependency>
+		
+		<!-- lucene核心库 -->
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>${lucene.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Lucene的查询解析器 -->
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+			<version>${lucene.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- lucene的默认分词器库 -->
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analyzers-common</artifactId>
+			<version>8.11.2</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- lucene的高亮显示 -->
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-highlighter</artifactId>
+			<version>${lucene.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.lucene/lucene-misc -->
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-misc</artifactId>
+			<version>${lucene.version}</version>
 			<scope>test</scope>
 		</dependency>
 
