@@ -28,7 +28,7 @@ import static gbench.util.data.DataApp.IRecord.*;
  * @author gbench
  *
  */
-public class JunitAnalyzePeople {
+public class JunitAnalyzer1 {
 
 	/**
 	 * 
