@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
  * 
  *         启动参数: --server.port=6010
  */
-@ComponentScan(basePackages = { "gbench.webapps.world.api" })
+@ComponentScan(basePackages = { "gbench.webapps.crawler.api" })
 @SpringBootApplication
 public class CrawlerApplication {
 
