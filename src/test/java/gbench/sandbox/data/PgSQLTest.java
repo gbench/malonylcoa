@@ -22,6 +22,16 @@ public class PgSQLTest {
 			imports("t_company,t_product,t_company_product".split(",")).accept(P(datafile, sess));
 		});
 	}
+	
+	@Test
+	public void bar() {
+		final var dataApp = new MyDataApp(pgsql_rec);
+		final var datafile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/world/api/model/data/datafile.xlsx";
+
+		dataApp.withTransaction(sess -> {
+			imports("t_maozedong,t_wenyan".split(",")).accept(P(datafile, sess));
+		});
+	}
 
 	final IRecord pgsql_rec = IRecord.REC( //
 			"url", "jdbc:postgresql://localhost:5432/latinus?currentSchema=economics", //
