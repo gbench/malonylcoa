@@ -101,7 +101,7 @@ public class AlgebraSimplifyTest {
 	public static <T, U> BinaryOp<?, ?> adjust(final BinaryOp<T, U> bop) {
 		if (bop instanceof ConstantOp cop) {
 			return cop.duplicate();
-		} else if (bop instanceof UnaryOp uop) {
+		} else if (bop instanceof UnaryOp<?> uop) {
 			return uop.duplicate();
 		} else {
 			if (bop.namEq("*") || bop.namEq("+")) {
