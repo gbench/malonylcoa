@@ -72,7 +72,7 @@ public class JunitAnalyzer1 {
 	/**
 	 * corpusPath 语料库路径
 	 * 
-	 * @return
+	 * @return YuhuanAnalyzer
 	 */
 	public YuhuanAnalyzer getYunHuan(final String corpusDir) {
 		final var trie = new Trie<String>();// 语料库的根节点树
@@ -84,12 +84,12 @@ public class JunitAnalyzer1 {
 				.filter(file -> file.getAbsolutePath().endsWith(".txt")).forEach(file -> {// 创建语料文件
 					FileSystem.readLineS(file).filter(line -> !line.matches("^\\s*$")) // 去除空行
 							.forEach(e -> {// 提取语料词汇
-								Stream.of(e.strip().split("[\n]+")).map(p -> p.split("")).forEach(points -> {// 设置词素
-																												// 的节点属性信息
-									Trie.addPoints2Trie(trie, points).addAttribute("category", "word")// 绑定词法类型信息
-											.addAttribute("meaning",
-													Arrays.stream(points).collect(Collectors.joining()));
-								});
+								Stream.of(e.strip().split("[\n]+")).map(p -> p.split("")) //
+										.forEach(points -> {// 设置词素的节点属性信息
+											Trie.addPoints2Trie(trie, points).addAttribute("category", "word")// 绑定词法类型信息
+													.addAttribute("meaning",
+															Arrays.stream(points).collect(Collectors.joining()));
+										});
 							});// forEach
 				});
 
@@ -149,9 +149,10 @@ public class JunitAnalyzer1 {
 					this.getYunHuan(corpusDir)// getYunHuan
 			).forEach(analyzer -> { // 分词器演示
 				System.out.println("\n -- " + analyzer.getClass().getSimpleName());
-				splits(analyzer, "test", line).stream().filter(e -> e.str("category").equals("word")).forEach(rec -> {
-					System.out.println(rec);
-				});
+				splits(analyzer, "test", line).stream().filter(e -> e.str("category").equals("word")) //
+						.forEach(rec -> {
+							System.out.println(rec);
+						});
 			});
 		});
 	}
