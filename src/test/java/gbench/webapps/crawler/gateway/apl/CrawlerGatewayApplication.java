@@ -13,7 +13,7 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackages = { "gbench.webapps.world.gateway" })
 @SpringBootConfiguration
 @EnableAutoConfiguration
-public class WorldGatewayApplication {
+public class CrawlerGatewayApplication {
 
 	/**
 	 * Gateway 启动入口
@@ -21,6 +21,6 @@ public class WorldGatewayApplication {
 	 * @param args 入口参数
 	 */
 	public static void main(final String[] args) {
-		SpringApplication.run(WorldGatewayApplication.class, args);
+		SpringApplication.run(CrawlerGatewayApplication.class, args);
 	}
 }

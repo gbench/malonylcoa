@@ -12,7 +12,7 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @ComponentScan(basePackages = { "gbench.webapps.world.api" })
 @SpringBootApplication
-public class WorldApplication {
+public class CrawlerApplication {
 
 	/**
 	 * API启动入口
@@ -20,7 +20,7 @@ public class WorldApplication {
 	 * @param args 启动参数
 	 */
 	public static void main(final String args[]) {
-		SpringApplication.run(WorldApplication.class, args);
+		SpringApplication.run(CrawlerApplication.class, args);
 	}
 
 }

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * WorldApiRoute
  */
 @Component
-public class WorldApiRoute {
+public class CrawlerApiRoute {
 
 	/**
 	 * apiRouteLocator
