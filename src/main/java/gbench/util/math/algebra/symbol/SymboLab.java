@@ -90,8 +90,8 @@ public class SymboLab implements ISymboLab {
 			switch (nary) { // 算符类型的判断
 			case 1: { // 一元算符
 				if (opName.equals("neg")) { // 取反函数
-					if (BinaryOp.termOpt(left).map(e -> e instanceof BinaryOp bop ? bop : null)
-							.orElse(null) instanceof BinaryOp bop && bop._2 instanceof Tuple2 tup
+					if (BinaryOp.termOpt(left).map(e -> e instanceof BinaryOp<?, ?> bop ? bop : null)
+							.orElse(null) instanceof BinaryOp<?, ?> bop && bop._2 instanceof Tuple2<?, ?> tup
 							&& Optional.ofNullable(BinaryOp.dbl(tup._1)).orElse(null) instanceof Number num) {
 						return MUL(-num.doubleValue(), tup._2).simplify();
 					} else {
@@ -247,9 +247,9 @@ public class SymboLab implements ISymboLab {
 						return TOKEN(0);
 					else if (zero_i == 1) {
 						return left;
-					} else if (zero_i == 0 && right instanceof BinaryOp right_bop) { // (-,0,right)
+					} else if (zero_i == 0 && right instanceof BinaryOp<?, ?> right_bop) { // (-,0,right)
 						final Optional<BinaryOp<Object, Object>> rbopt = BinaryOp.termOpt(right_bop);
-						if (Objects.equals("-", right_bop.getName()) && right_bop._2 instanceof Tuple2 right_tp) {
+						if (Objects.equals("-", right_bop.getName()) && right_bop._2 instanceof Tuple2<?, ?> right_tp) {
 							final var flag1 = (right_tp._1 instanceof Token token && token.isConstant()
 									&& token.dbl() != null && token.dbl().intValue() == 0); // token 格式的数字
 							final var flag2 = right_tp._1 instanceof Number num && num.intValue() == 0; // 数字
@@ -468,7 +468,7 @@ public class SymboLab implements ISymboLab {
 		final var opt = Optional.ofNullable(symbol).map(bop -> {
 			if (bop instanceof ConstantOp cop) {
 				return cop.duplicate();
-			} else if (bop instanceof UnaryOp uop) {
+			} else if (bop instanceof UnaryOp<?> uop) {
 				return uop.duplicate();
 			} else {
 				if (bop.namEq("*") || bop.namEq("+")) {
