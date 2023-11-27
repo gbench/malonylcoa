@@ -79,7 +79,8 @@ public class JunitAnalyzer1 {
 		final var corpusHome = new File(corpusDir);
 
 		// 构建语料库
-		((corpusHome.isDirectory()) ? Stream.of(corpusHome.listFiles())
+		((corpusHome.isDirectory()) //
+				? Stream.of(corpusHome.listFiles())
 				: Stream.of(new File(FileSystem.path(corpusDir, this.getClass()))))
 				.filter(file -> file.getAbsolutePath().endsWith(".txt")).forEach(file -> {// 创建语料文件
 					FileSystem.readLineS(file).filter(line -> !line.matches("^\\s*$")) // 去除空行
