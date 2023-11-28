@@ -1,0 +1,200 @@
+package gbench.webapps.crawler.api.model;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import org.apache.lucene.document.Document;
+
+import gbench.util.data.DataApp;
+import gbench.util.data.DataApp.IRecord;
+import gbench.util.io.FileSystem;
+import gbench.webapps.crawler.api.model.decompose.DecomposeUtils;
+import gbench.webapps.crawler.api.model.decompose.IDecomposer;
+import gbench.webapps.crawler.api.model.decompose.TextDecomposer;
+import gbench.webapps.crawler.api.model.srch.JdbcSrchApp;
+
+import static gbench.util.data.DataApp.IRecord.REC;
+import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
+
+public class SrchModel extends JdbcSrchApp {
+	/**
+	 * 构造函数
+	 * 
+	 * @param indexHome  索引的保存位置路径
+	 * @param corpusHome 语料库位置 路径
+	 * @param snapHome   快照的保存位置路径
+	 */
+	public SrchModel(String indexHome, String corpusHome, String snapHome) {
+		super(indexHome, corpusHome, snapHome);
+	}
+
+	/**
+	 * 表示一个可以抛出异常的函数操作的函数接口 <br>
+	 * 
+	 * @author gbench
+	 *
+	 */
+	@FunctionalInterface
+	interface MaybeThrowable {
+		public void run() throws Throwable;
+	}
+
+	/**
+	 * 这个函数被用于简化 try catch 的程序辨析。自动铺货异常。采用如下的方法就可以简写系统异常了。<br>
+	 * trycatch(()->{....}); <br>
+	 * 对一个可以能抛出异常的操作进行异常捕获，并给与执行。<br>
+	 * 
+	 * @param maybe 可能抛出异常的操作
+	 */
+	public static void trycatch(final MaybeThrowable maybe) {
+		try {
+			maybe.run();
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 内置一个文件索索引擎
+	 * 
+	 * @author gbench
+	 *
+	 */
+	public class FileSrchEngine extends JdbcSrchEngine {
+		/**
+		 * 构造函数
+		 */
+		public FileSrchEngine() {
+			super();
+		}
+
+		/**
+		 * 构造函数
+		 * 
+		 * @param indexName 索引文件位置名称或者目录
+		 */
+		public FileSrchEngine(String indexName) {
+			super(indexName);
+		}
+
+		/**
+		 * 把一条分词记录转传承 索引记录
+		 * 
+		 * @param token 分词分词记录: 一条token是 信息（索引）的基本单元。
+		 * @return 索引文档
+		 */
+		public Document token2doc(final DataApp.IRecord token) {
+
+			final var symbol = token.get("symbol");// 检索词
+			final var statement = token.get("statement");// 语句上下文
+			final var file = token.get("file");// 文件名称
+			final var id = md5(token);// md5 的去重标记
+			final var position = token.strOpt("position").orElse("-"); // 提关键字的位置记录
+			final var snapfile = token.strOpt("snapfile").orElse("-"); // 快照文件位置
+
+			final var doc = rec2doc(REC(// 定义文档结构
+					"id?", id, // 临时字段用户同一批次的数据的 去重, 后缀 ? 表示临时字段
+					"symbol", symbol, // 文法符号
+					"search_field", symbol, // 检索符号
+					"text", statement, // 上下文本
+					"file", file, // 对文件名称路径
+					"position", position, // 关键词
+					"snapfile", snapfile // 快照文件路径
+			));// doc
+
+			return doc;
+		}
+
+		/**
+		 * 书写索引文件<br>
+		 * 重要且关键的函数：把解构的结果 tokens 编写成索引记录 文档。<br>
+		 *
+		 * @param tokens 文件记录集合流：每个 token 包含有 symbol 关键词，statement 上下文语句, file:文件名称 等字段。
+		 */
+		public synchronized void indexTokens(final Stream<IRecord> tokens) {
+			super.writeIndexes(writer -> {// 使用index writer 来写索引文件
+				final var counter = new AtomicLong(1l);// 计数器
+				tokens.parallel().forEach(token -> {// 并行处理
+					try {
+						final var doc = token2doc(token);// 生成索引文档
+						final var id = strfld(doc, "id");// 去重标签
+						writer.updateDocument(T("id", id), doc);// 文档的去重保存
+						// 中间按日志文本输出
+						if (debug)
+							System.out.println(MessageFormat.format( // 文本格式化
+									"[{0,number,#}\t{1}] ---- {2}", // 格式化模板
+									counter.getAndIncrement(),
+									Thread.currentThread().threadId() + "#" + Thread.currentThread().getName(),
+									doc2rec(doc).filter("id,symbol,text")) // format
+							);// 日志文本
+					} catch (IOException e) {
+						e.printStackTrace();
+					} // try
+				});// parallelStream 分词处理
+			}, writer -> {
+				trycatch(() -> writer.forceMerge(1));// 生成合并块文件
+			});// indexTokens
+		}
+
+	}
+
+	/**
+	 * 索引文件
+	 * 
+	 * @param homeFile 待索引的文件或文件目录
+	 * @param cs       索引成功的回调函数,Consumer类型参数为IRecord:
+	 *                 {code:错误代码,tokens:分词列表,files:文件列表,decompose_time:分词时间}->{}
+	 */
+	public void indexFiles(final String homeFile, final Consumer<IRecord> cs) {
+		final var srchEngine = new FileSrchEngine(this.indexHome);
+		final var yuhuan = srchEngine.getYuhuanAnalyzer(corpusHome);
+		srchEngine.setAnalyzer(yuhuan);
+		final var tokens = new ConcurrentLinkedQueue<IRecord>(); // 生成一个并发队列，用于接收各个 文档的处理信息。
+		final var files = new ConcurrentLinkedQueue<File>(); // 生成一个并发队列，用于接收各个 文档的处理信息。
+		final var dftdcp = (IDecomposer) decomposers.get("default");// 默认解构器
+
+		// 分词开始时间
+		final long begTime = System.currentTimeMillis();// 开始时间
+		// 检索每个文件并生成索引
+		traverse(new File(homeFile), file -> {
+			final var extension = FileSystem.extensionpicker(file.getAbsolutePath()).toLowerCase();// 提取文件扩展名
+			final var dcp = (IDecomposer) decomposers.opt(extension).orElse(dftdcp);// 提取对应分词器
+			dcp.decompose(REC("file", file, // 待处理的文件对象
+					"analyzer", yuhuan, // 分词器
+					"tokens", tokens, // 分词符号
+					"files", files, // 文件集合
+					"snapHome", this.snapHome, // 快照根目录
+					"executors", this.executors // 线程池
+			));// decompose
+		});
+		long decomposeTime = System.currentTimeMillis() - begTime; // 分词终止时间
+
+		// 创建索引文件
+		srchEngine.prepareIndexWriter(iwc -> {
+			iwc.setMaxBufferedDocs(10000);
+		});
+		srchEngine.indexTokens(tokens.stream());
+
+		// file
+		cs.accept(REC("code", 0, "tokens", tokens.stream(), "files", files.stream(), "decompose_time", decomposeTime));
+	}
+
+	/**
+	 * 结构分解器
+	 */
+	private DataApp.IRecord decomposers = REC( // 预先加载的分词器
+			"txt", new TextDecomposer(), // 文本分词器
+//            "jpg",      new ImageDecomposer(), // 图片解构
+//            "jpeg",     new ImageDecomposer(), // 图片解构
+//            "bmp",      new ImageDecomposer(), // 图片解构
+//            "gif",      new ImageDecomposer(), // 图片解构
+//            "png",      new ImageDecomposer(), // 图片解构
+//            "rules",    new RulesDecomposer(), // 图片解构
+			"default", (IDecomposer) DecomposeUtils::dftdecompse // 默认分词器
+	);
+}

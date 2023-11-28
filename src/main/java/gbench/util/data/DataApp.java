@@ -1095,6 +1095,24 @@ public class DataApp {
 		}
 
 		/**
+		 * 这个属性对不是分词器来说不是必须，不过就像设计衣服的时候为 服装缝制个口袋，完全是为了便于 携带数据而做的设计而已。<br>
+		 * 比如把 yuhuan作为参数传递时还需要附加一些关联数据的时候，可以省略一个调用导函数的参数位置。<br>
+		 * 把这个数据写入到 attributes 中就可以了。<br>
+		 * 这就是袋袋裤的设计思想的程序体现。<br>
+		 * <p>
+		 * 根据类型检索属性对象
+		 *
+		 * @param <T>   属性对象
+		 * @param clazz 属性类型
+		 * @return 属性值 或 null
+		 */
+		@SuppressWarnings("unchecked")
+		default <T> T findOne(final Class<T> clazz) {
+			return (T) valueS() //
+					.filter(e -> e != null && clazz.isAssignableFrom(e.getClass())).findFirst().orElse(null);
+		}
+
+		/**
 		 * 设置键，若 key 与 老的 键 相同则 覆盖 老的值
 		 *
 		 * @param key   键名

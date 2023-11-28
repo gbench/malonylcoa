@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URISyntaxException;
@@ -258,6 +259,21 @@ public class FileSystem {
 	 */
 	public static Stream<String> readLineS(final File file) {
 		return FileSystem.readLineS(file, "utf8");
+	}
+
+	/**
+	 * 读取文件所有行
+	 *
+	 * @param is       文件对象
+	 * @param encoding 文件编码
+	 * @param cs       回调函数 reader->{} ,reader 不需要关闭
+	 */
+	public static void bufferedRead(final InputStream is, final String encoding, final Consumer<BufferedReader> cs) {
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(is, encoding))) {
+			cs.accept(br);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} // try
 	}
 
 }
