@@ -168,7 +168,7 @@ public class SrchController extends AbstractState<SrchController> {
 
 		return REC("code", 0, // 错误代码
 				"pagenum", this.stateOfInteger(pageNumKey), "size",
-				optional.map(e -> e.getTotalHits().value).orElse(0l), "total", this.stateOfInteger(pageTotalKey),
+				optional.map(e -> e.getTotalHits().value).orElse(0l), "pagetotal", this.stateOfInteger(pageTotalKey),
 				"result", optional.map(e -> e.hitsStream()).orElse(Stream.of()).toList() // 数据结果
 		);// REC
 	}
