@@ -46,7 +46,7 @@ public class DataAppConfig {
 			final var tblname = sheet.getSheetName();
 			final var dfm = excel.autoDetect(tblname).collect(DFrame.dfmclc2);
 			final var proto = dfm
-					.maxBy2((String a, String b) -> b == null ? true : String.valueOf(a).length() > b.length()); // 提取最大长度
+					.maxBy2((String a, String b) -> b == null || String.valueOf(a).length() > b.length()); // 提取最大长度
 			final var ctsql = ctsql(tblname, proto);
 			final var insql = insql(tblname, dfm);
 			final var qrysql = String.format("select * from %s", tblname);
