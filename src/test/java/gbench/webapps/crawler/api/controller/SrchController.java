@@ -146,7 +146,7 @@ public class SrchController extends AbstractState<SrchController> {
 
 		if (!line.equals(this.stateOfT(lineKey, Object.class))) {// 初次访问
 			pageQuery = this.srchModel.getPageQuery(query);
-			pageQuery.initialize(10);
+			pageQuery.initialize(pageSize);
 			optional = pageQuery.getDataNoThrow();
 
 			// 程序状态
