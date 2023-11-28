@@ -137,10 +137,11 @@ public class SrchController extends AbstractState<SrchController> {
 		final Optional<PageData> optional;
 
 		// 设置各种key
-		final var pageQueryKey = format("${0}.${1}.${2}", agentId, "lookup2", "pageQuery");
-		final var lineKey = format("${0}.${1}.${2}", agentId, "lookup2", "line");
-		final var pageNumKey = format("${0}.${1}.${2}", agentId, "lookup2", "pagenum");
-		final var pageTotalKey = format("${0}.${1}.${2}", agentId, "lookup2", "pageTotal");
+		final var keyPrefix = format("{0}@{1}", agentId, sessId); // key前缀
+		final var pageQueryKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pageQuery");
+		final var lineKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "line");
+		final var pageNumKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pagenum");
+		final var pageTotalKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pageTotal");
 		System.out.println(format("pageQueryKey:{0},lineKey:{1},pageNumKey:{2},pageTotalKey:{3}", //
 				pageQueryKey, lineKey, pageNumKey, pageTotalKey));
 
