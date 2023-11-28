@@ -32,7 +32,7 @@ import gbench.webapps.world.api.config.param.Param;
 /**
  * 检索模型
  */
-@RequestMapping("/srch")
+@RequestMapping("/api/srch")
 @RestController
 public class SrchController extends AbstractState<SrchController> {
 
@@ -94,7 +94,7 @@ public class SrchController extends AbstractState<SrchController> {
 	/**
 	 * 全文检索 <br>
 	 * 
-	 * 请求示例 http://localhost:6010/srch/lookup?keyword=存货
+	 * 请求示例 http://localhost:6010/api/srch/lookup?keyword=存货
 	 * 
 	 * @param keyword 检索关键字
 	 * @return 检索关键字

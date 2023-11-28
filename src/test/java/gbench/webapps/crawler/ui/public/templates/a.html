@@ -4,5 +4,10 @@
     <div>
 		{{component}}
 		<data-table :data="articles" />
+    <hr>
+    <input type="text" @blur="on_srch_click($event)">
+    搜索：<div style="height:200px; overflow: auto;">
+		<data-table :data="lines" />
+    </div>
 	</div>
 </div>
