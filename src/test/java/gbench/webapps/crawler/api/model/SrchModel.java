@@ -13,11 +13,11 @@ import org.apache.lucene.document.Document;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.io.FileSystem;
-import gbench.webapps.crawler.api.model.decompose.DecomposeUtils;
-import gbench.webapps.crawler.api.model.decompose.IDecomposer;
-import gbench.webapps.crawler.api.model.decompose.ImageDecomposer;
-import gbench.webapps.crawler.api.model.decompose.RulesDecomposer;
-import gbench.webapps.crawler.api.model.decompose.TextDecomposer;
+import gbench.webapps.crawler.api.model.decomposer.DecomposeUtils;
+import gbench.webapps.crawler.api.model.decomposer.IDecomposer;
+import gbench.webapps.crawler.api.model.decomposer.ImageDecomposer;
+import gbench.webapps.crawler.api.model.decomposer.RulesDecomposer;
+import gbench.webapps.crawler.api.model.decomposer.TextDecomposer;
 import gbench.webapps.crawler.api.model.srch.SrchApp;
 
 import static gbench.util.data.DataApp.IRecord.REC;

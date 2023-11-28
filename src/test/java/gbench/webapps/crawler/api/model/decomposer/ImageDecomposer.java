@@ -1,4 +1,4 @@
-package gbench.webapps.crawler.api.model.decompose;
+package gbench.webapps.crawler.api.model.decomposer;
 
 import gbench.util.data.DataApp.IRecord;
 import gbench.webapps.crawler.api.model.SrchModel;

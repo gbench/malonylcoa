@@ -1,4 +1,4 @@
-package gbench.webapps.crawler.api.model.decompose.junit;
+package gbench.webapps.crawler.api.model.decomposer.junit;
 
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.io.Output.println;

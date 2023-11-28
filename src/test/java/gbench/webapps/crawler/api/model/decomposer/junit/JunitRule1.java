@@ -1,4 +1,4 @@
-package gbench.webapps.crawler.api.model.decompose.junit;
+package gbench.webapps.crawler.api.model.decomposer.junit;
 
 import static gbench.util.data.DataApp.IRecord.FT;
 
@@ -6,7 +6,7 @@ import java.io.File;
 
 import org.junit.jupiter.api.Test;
 
-import gbench.webapps.crawler.api.model.decompose.RulesDecomposer;
+import gbench.webapps.crawler.api.model.decomposer.RulesDecomposer;
 import gbench.webapps.crawler.api.model.srch.SrchApp;
 
 public class JunitRule1 {
