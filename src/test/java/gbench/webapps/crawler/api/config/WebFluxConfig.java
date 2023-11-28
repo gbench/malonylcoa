@@ -15,7 +15,7 @@ import org.springframework.web.reactive.result.method.annotation.ArgumentResolve
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.json.MyJson;
-import gbench.webapps.world.api.config.param.ParamResolver;
+import gbench.webapps.crawler.api.config.param.ParamResolver;
 
 @Configuration
 public class WebFluxConfig implements WebFluxConfigurer {
