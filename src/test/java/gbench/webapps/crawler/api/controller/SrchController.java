@@ -54,6 +54,7 @@ public class SrchController extends AbstractState<SrchController> {
 	}
 
 	/**
+	 * 初始化
 	 * 
 	 * @param indexHome
 	 * @param corpusDir
@@ -122,7 +123,7 @@ public class SrchController extends AbstractState<SrchController> {
 
 		System.out.println(
 				format("\n#lookup2:\nline:【{0}】\n rec:【{1}】,sessionId:{2},agentId:{3}", line, rec, sessId, agentId));
-		final Query query = rec.tupleS().collect(SrchUtils.bool_query_clc);
+		final Query query = rec.collect(SrchUtils.bool_query_clc);
 		final PageQuery pageQuery;
 		final Optional<PageData> optional;
 
