@@ -1942,6 +1942,18 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
+	 * Record 搜集器
+	 * 
+	 * @param <A>       累加器的元素 类型 中间结果类型,用于暂时存放 累加元素的中间结果的集合。
+	 * @param <R>       返回结果类型
+	 * @param collector 搜集 KVPair&lt;String,Object&gt;类型的 搜集器
+	 * @return 规约的结果 R
+	 */
+	default <A, R> R collect(final Collector<Tuple2<String, Object>, A, R> collector) {
+		return this.tupleS().collect(collector);
+	};
+
+	/**
 	 * 生成 构建器
 	 *
 	 * @param n     键数量,正整数
