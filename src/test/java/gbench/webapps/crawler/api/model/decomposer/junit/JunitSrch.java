@@ -8,7 +8,15 @@ import org.junit.jupiter.api.Test;
 import gbench.webapps.crawler.api.controller.SrchController;
 import gbench.webapps.crawler.api.model.SrchModel;
 
-public class JunitRule2 {
+//import java.io.File;
+//import java.util.stream.Collectors;
+//import static java.text.MessageFormat.format;
+//import gbench.util.io.FileSystem;
+
+/**
+ * 
+ */
+public class JunitSrch {
 
 	@Test
 	public void foo() {
@@ -24,7 +32,26 @@ public class JunitRule2 {
 		final var srchCtrl = new SrchController();
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
 		println("----------------------");
-		println(srchCtrl.lookup("存货"));
+		println(srchCtrl.lookup("比方"));
 	}
+
+	/**
+	 * 修改把gb2312转换成utf8
+	 */
+//	@Test
+//	public void bar() {
+//		final var prefix = "F:/slicef/ws/gitws/malonylcoa/src/test/";
+//		final var fileHome = FT("$0/java/gbench/webapps/crawler/api/model/data/docs/maoxuan", prefix);
+//		final var output = fileHome;
+//		final var home = new File(fileHome);
+//		FileSystem.tranverse(home, file -> {
+//			if (file.isFile()) {
+//				println("write file", file);
+//				final var name = file.getName();
+//				final var lines = FileSystem.readLineS(file, "gb2312").collect(Collectors.joining("\n"));
+//				FileSystem.write(new File(format("{0}/{1}", output, name)), "utf8", () -> lines);
+//			} // if
+//		});
+//	}
 
 }
