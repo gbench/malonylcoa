@@ -2,12 +2,16 @@
     <div class="highlight">{{name}}</div>
     <hr/>
     <div>
-		{{component}}
-		<data-table :data="articles" />
-    <hr>
-    <input type="text" @blur="on_srch_click($event)">
-    搜索：<div style="height:200px; overflow: auto;">
-		<data-table :data="lines" />
-    </div>
+      <div>
+        {{component}}
+        <data-table :data="articles" />
+      </div>
+      <div>
+        检索 <input type="text" @blur="on_srch_click($event)">
+        <div v-if="lines.length>0"
+          style="height:200px; overflow: auto;margin:2px; border:solid 1px red;">
+            <data-table :data="lines" />
+        </div>
+      </div>
 	</div>
 </div>
