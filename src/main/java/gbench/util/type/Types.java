@@ -2,14 +2,20 @@ package gbench.util.type;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.*;
+
+import gbench.util.lisp.IRecord;
 
 /**
  * 类型强转
@@ -43,6 +49,36 @@ public class Types {
 	@SuppressWarnings("unchecked")
 	public static <T, U> Function<T, U> cast(final Class<U> tclass) {
 		return o -> (U) o;
+	}
+
+	/**
+	 * 类型转换:非强转
+	 * 
+	 * @param <T>   目标类型
+	 * @param value 数据值
+	 * @param type  目标类型
+	 * @return 类型转换
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T corece(final String value, final Class<T> type) {
+		if (value == null) {
+			return (T) null;
+		} else if (type == Integer.class) {
+			return (T) (Object) Integer.parseInt(value);
+		} else if (type == Double.class) {
+			return (T) (Object) Double.parseDouble(value);
+		} else if (type == Long.class) {
+			return (T) (Object) Long.parseLong(value);
+		} else if (type == LocalDateTime.class) {
+			return (T) IRecord.asLocalDateTime(value);
+		} else if (type == LocalDate.class) {
+			return (T) IRecord.asLocalDate(value);
+		} else if (type == LocalTime.class) {
+			return (T) Optional.ofNullable(IRecord.asLocalDateTime(value)) //
+					.map(e -> e.toLocalTime()).orElse(null);
+		} else {
+			return (T) value;
+		} // if
 	}
 
 	/**
@@ -177,8 +213,8 @@ public class Types {
 	/**
 	 * iterable换为数据流
 	 * 
-	 * @param <T>     元素类型
-	 * @param itr     元素迭代器
+	 * @param <T> 元素类型
+	 * @param itr 元素迭代器
 	 * @return T类型的数组
 	 */
 	public static <T> Stream<T> itr2stream(final Iterable<T> itr) {

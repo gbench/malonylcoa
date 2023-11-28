@@ -26,7 +26,7 @@ import gbench.webapps.crawler.api.model.SrchModel;
 import gbench.webapps.crawler.api.model.analyzer.lexer.Trie;
 import gbench.webapps.crawler.api.model.srch.*;
 import gbench.webapps.crawler.api.model.srch.AbstractJdbcSrchEngine.PageQuery;
-import gbench.webapps.world.api.config.param.Param;
+import gbench.webapps.crawler.api.config.param.Param;
 
 /**
  * 检索模型
@@ -67,16 +67,18 @@ public class SrchController extends AbstractState<SrchController> {
 	}
 
 	/**
-	 * 关键词以前缀来进行检索
+	 * 关键词以前缀来进行检索 <br>
+	 * 
+	 * 请求示例 http://localhost:6010/api/srch/keywords
 	 * 
 	 * @param prefix 检索关键字
 	 * @param size   最大长度
 	 * @return 检索关键字
 	 */
 	@RequestMapping("keywords")
-	public IRecord keywords(final @Param String prefix, final @Param Integer size) {
+	public IRecord keywords(final @Param String prefix, final @Param(type = Integer.class) Integer size) {
 		synchronized (this.srchModel) {
-			if (this.srchModel.getKeywords().size() < 1)
+			if (!this.srchModel.readyFlag())
 				this.srchModel.refresh();
 		}
 		// 直接返回结果
@@ -85,7 +87,8 @@ public class SrchController extends AbstractState<SrchController> {
 						.filter(e -> e != null && e.startsWith((prefix == null ? "" : prefix).strip()))
 						.limit(size == null ? 10 : size)// 默认长度
 						.sorted((a, b) -> a.length() - b.length()).map(e -> REC(// 返回结果字段
-								"code", e, "label", e, "value", e))// getKeywords
+								"code", e, "label", e, "value", e))
+						.toList()// getKeywords
 		);// REC
 	}
 

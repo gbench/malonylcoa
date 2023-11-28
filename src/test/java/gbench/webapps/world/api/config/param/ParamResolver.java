@@ -10,6 +10,7 @@ import org.springframework.web.reactive.BindingContext;
 import org.springframework.web.reactive.result.method.annotation.AbstractMessageReaderArgumentResolver;
 import org.springframework.web.server.ServerWebExchange;
 
+import gbench.util.type.Types;
 import reactor.core.publisher.Mono;
 
 public class ParamResolver extends AbstractMessageReaderArgumentResolver {
@@ -55,12 +56,13 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 		final var parameterAnnotation = methodParameter.getParameterAnnotation(Param.class);
 		final var name = Optional.ofNullable(parameterAnnotation.name()) //
 				.map(e -> e.matches("^\\s*$") ? null : e).orElse(param.getName());
-		@SuppressWarnings("unused")
 		final var type = parameterAnnotation.type();
 		final var qps = serverWebExchange.getRequest().getQueryParams();
 		return serverWebExchange.getFormData().map(data -> {
 			final var ll = Optional.ofNullable(data.get(name)).orElse(qps.get(name));
-			return ll != null && ll.size() > 0 ? ll.get(0) : "";
+			final Optional<Object> opt = Optional.ofNullable(ll != null && ll.size() > 0 ? ll.get(0) : null)
+					.map(value -> (Object) Types.corece(value, type));
+			return opt.orElse("");
 		});
 
 	}

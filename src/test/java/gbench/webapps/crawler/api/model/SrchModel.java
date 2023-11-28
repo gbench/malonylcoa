@@ -205,8 +205,17 @@ public class SrchModel extends SrchApp {
 	 *
 	 * @return 关键词集合
 	 */
+	public boolean readyFlag() {
+		return this.fileEngine.getKeywords().size() > 0;
+	}
+
+	/**
+	 * 获取关键词集合
+	 *
+	 * @return 关键词集合
+	 */
 	public Set<String> getKeywords() {
-		return this.fileEngine.getKeywords();
+		return fileEngine.getKeywords();
 	}
 
 	/**
