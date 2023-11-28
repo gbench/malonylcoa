@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.Tuple2.P;
+import static gbench.webapps.crawler.api.model.srch.SrchUtils.bool_query_clc;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -108,24 +109,30 @@ public class SrchController extends AbstractState<SrchController> {
 	}
 
 	/**
+	 * 带有状态的 关键字检索 <br>
 	 * 全文检索:待有检索条件的项目检索 <br>
-	 * 请求示例
+	 * 请求示例,该请求会记录sessId和agentId组成的请求key,依次遍历请求数据。
 	 * http://localhost:6010/api/srch/lookup2?line=%E6%8D%AD%E9%98%96;guigu&sessId=1&agentId=1&size=1
+	 * <br>
+	 * http://localhost:6010/api/srch/lookup2?line=捭阖;guigu
 	 * 
-	 * @param line 检索关键字,symbol;file的数据格式进行指定范围的数据检索
-	 * @return 检索关键字
+	 * @param line    检索关键字,symbol;file的数据格式进行指定范围的数据检索
+	 * @param sessId  会话id
+	 * @param agentId 用户id
+	 * @param size    每页数据大小
+	 * @return 检索内容
 	 */
 	@RequestMapping("lookup2")
 	public IRecord lookup2(final @Param String line, final @Param String sessId, final @Param String agentId,
 			final @Param Integer size) {
-		final var pageSize = size == null ? 10 : size;// 页面大小
+		final var pageSize = size == null || size == 0 ? Integer.MAX_VALUE : size;// 页面大小
 		final var ss = (line == null ? " " : line).split("[;\s]+");
 		final var rec = REC("+symbol*", format("*{0}*", ss.length > 0 ? ss[0] : "").trim(), "+file*",
 				format("*{0}*", ss.length > 1 ? ss[1] : "").trim());// rec
 
-		System.out.println(
-				format("\n#lookup2:\nline:【{0}】\n rec:【{1}】,sessionId:{2},agentId:{3}", line, rec, sessId, agentId));
-		final Query query = rec.collect(SrchUtils.bool_query_clc);
+		System.out.println(format("\n#lookup2:\nline:【{0}】\n rec:【{1}】,sessionId:{2},agentId:{3},size:{4}", //
+				line, rec, sessId, agentId, size));
+		final Query query = rec.collect(bool_query_clc);
 		final PageQuery pageQuery;
 		final Optional<PageData> optional;
 
@@ -134,6 +141,8 @@ public class SrchController extends AbstractState<SrchController> {
 		final var lineKey = format("${0}.${1}.${2}", agentId, "lookup2", "line");
 		final var pageNumKey = format("${0}.${1}.${2}", agentId, "lookup2", "pagenum");
 		final var pageTotalKey = format("${0}.${1}.${2}", agentId, "lookup2", "pageTotal");
+		System.out.println(format("pageQueryKey:{0},lineKey:{1},pageNumKey:{2},pageTotalKey:{3}", //
+				pageQueryKey, lineKey, pageNumKey, pageTotalKey));
 
 		if (!line.equals(this.stateOfT(lineKey, Object.class))) {// 初次访问
 			pageQuery = this.srchModel.getPageQuery(query);
@@ -145,7 +154,7 @@ public class SrchController extends AbstractState<SrchController> {
 			this.setState(pageQuery, pageQueryKey);
 			this.setState(1l, pageNumKey);// 记录行号
 			this.setState((long) Math.ceil(pageQuery.getTotalHits().value / pageSize) + 1, pageTotalKey);
-		} else { // 二次访问
+		} else { // 非初次访问
 			pageQuery = this.stateOfT(pageQueryKey, PageQuery.class);
 			optional = pageQuery.nextPageNoThrow();
 
