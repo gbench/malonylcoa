@@ -1226,6 +1226,26 @@ public class DataApp {
 		}
 
 		/**
+		 * 根据路径提取数据 (pathget 的别名 ) <br>
+		 * <p>
+		 * 可以识别的值类型IRecord,Map,Collection,Array其中Collection和Array 的 key为索引序号，从开始
+		 *
+		 * @param <X>          元素类型
+		 * @param <Y>          元素类型Y 需要为
+		 *                     IRecord,Map,Collection,Array其中Collection和Array任一
+		 * @param <T>          元素类型
+		 * @param <U>          结果类型
+		 * @param path         键名路径
+		 * @param preprocessor 预处理器 x->y
+		 * @param mapper       值变换函数 t->u
+		 * @return U类型的值
+		 */
+		default <X, Y, T, U> U pget(final String path, final BiFunction<String, X, Y> preprocessor,
+				final Function<T, U> mapper) {
+			return this.pathget(path, mapper);
+		}
+
+		/**
 		 * 键名索引
 		 *
 		 * @param key 键名
@@ -1681,6 +1701,48 @@ public class DataApp {
 		 */
 		default Optional<Integer> i4Opt(final String key) {
 			return Optional.ofNullable(this.i4(key));
+		}
+
+		/**
+		 * 返回 idx 所对应的 键值, Long 类型
+		 *
+		 * @param idx 键名索引 從 0开始
+		 * @return idx 所标定的 值
+		 */
+		default Long lng(final int idx) {
+			return this.lng(this.keyOf(idx));
+		}
+
+		/**
+		 * 返回 key 所对应的 键值, Long 类型
+		 *
+		 * @param key 键名
+		 * @return key 所标定的 值
+		 */
+		default Long lng(final String key) {
+			final Object obj = this.get(key);
+
+			return Optional.ofNullable(IRecord.obj2dbl(null).apply(obj)).map(Number::longValue).orElse(null);
+		}
+
+		/**
+		 * 返回 建明索引 所对应的 键值, Long 类型
+		 *
+		 * @param idx 键名索引 从0开始
+		 * @return idx 所标定的 值 Optional
+		 */
+		default Optional<Long> lngOpt(final int idx) {
+			return this.lngOpt(this.keyOf(idx));
+		}
+
+		/**
+		 * 返回 key 所对应的 键值, Long 类型
+		 *
+		 * @param key 键名
+		 * @return key 所标定的 值 Optional
+		 */
+		default Optional<Long> lngOpt(final String key) {
+			return Optional.ofNullable(this.lng(key));
 		}
 
 		/**
@@ -2303,6 +2365,18 @@ public class DataApp {
 		default int size() {
 			return this.toMap().size();
 		}
+
+		/**
+		 * Record 搜集器
+		 * 
+		 * @param <A>       累加器的元素 类型 中间结果类型,用于暂时存放 累加元素的中间结果的集合。
+		 * @param <R>       返回结果类型
+		 * @param collector 搜集 KVPair&lt;String,Object&gt;类型的 搜集器
+		 * @return 规约的结果 R
+		 */
+		default <A, R> R collect(final Collector<Tuple2<String, Object>, A, R> collector) {
+			return this.tupleS().collect(collector);
+		};
 
 		/**
 		 * 比较器,需要 键名序列keys中的每个值对象带有比较能力:Comparable
