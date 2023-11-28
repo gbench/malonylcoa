@@ -1951,7 +1951,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	default <A, R> R collect(final Collector<Tuple2<String, Object>, A, R> collector) {
 		return this.tupleS().collect(collector);
-	};
+	}
 
 	/**
 	 * 生成 构建器

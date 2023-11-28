@@ -2376,7 +2376,7 @@ public class DataApp {
 		 */
 		default <A, R> R collect(final Collector<Tuple2<String, Object>, A, R> collector) {
 			return this.tupleS().collect(collector);
-		};
+		}
 
 		/**
 		 * 比较器,需要 键名序列keys中的每个值对象带有比较能力:Comparable
