@@ -15,6 +15,7 @@ const AComp = {
 			component: "-",
 			articles: [],
 			lines: [],
+			keyword:"",
 		};
 	},
 
@@ -55,13 +56,27 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_srch_click(event) {
-			const keyword = $(event.target).val();
+			const keyword = this.keyword;
 			// 开始信息
 			http_post("/h5/api/srch/lookup", { keyword: keyword }).then(res => {
-				const lines= res.data.result;
+				const lines = res.data.result;
+				this.lines = lines;
+			});
+		},
+
+		/**
+		 * 全文检索 
+		 * @param {*} event 
+		 */
+		on_srch_click2(event) {
+			const keyword = this.keyword;
+			// 开始信息
+			http_post("/h5/api/srch/lookup2", { line: keyword, sessId: 1, agentId: 1, size: 5 }).then(res => {
+				const lines = res.data.result;
 				this.lines = lines;
 			});
 		}
+
 	}
 
 };
