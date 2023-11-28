@@ -7,7 +7,7 @@ import java.io.File;
 import org.junit.jupiter.api.Test;
 
 import gbench.webapps.crawler.api.model.decompose.RulesDecomposer;
-import gbench.webapps.crawler.api.model.srch.JdbcSrchApp;
+import gbench.webapps.crawler.api.model.srch.SrchApp;
 
 public class JunitRule1 {
 
@@ -16,7 +16,7 @@ public class JunitRule1 {
 		final var rd = new RulesDecomposer();
 		final var prefix = "F:/slicef/ws/gitws/malonylcoa/src/test/";
         final var fileHome = FT("$0/java/gbench/webapps/crawler/api/model/data/docs/rules", prefix);
-        JdbcSrchApp.traverse(new File(fileHome), file -> {
+        SrchApp.traverse(new File(fileHome), file -> {
 			rd.processFile(file).forEach(line -> {
 				System.out.println("-------------");
 				System.out.println(line);

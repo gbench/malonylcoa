@@ -19,7 +19,7 @@ import org.apache.lucene.analysis.Analyzer;
 /**
  *
  */
-public class JdbcSrchApp {
+public class SrchApp {
     /**
      * 构造函数
      *
@@ -27,7 +27,7 @@ public class JdbcSrchApp {
      * @param corpusHome 语料库目录
      * @param snapHome   快照库目录
      */
-    public JdbcSrchApp(final String indexHome, final String corpusHome, final String snapHome) {
+    public SrchApp(final String indexHome, final String corpusHome, final String snapHome) {
         this.indexHome = indexHome;
         this.corpusHome = corpusHome;
         this.snapHome = snapHome.replaceAll("\\\\+", "/");
@@ -44,8 +44,8 @@ public class JdbcSrchApp {
          * 构造函数
          */
         public JdbcSrchEngine() {
-            this(JdbcSrchApp.this.indexHome);
-            this.corpusHome = JdbcSrchApp.this.corpusHome;
+            this(SrchApp.this.indexHome);
+            this.corpusHome = SrchApp.this.corpusHome;
         }
 
         /**
@@ -55,14 +55,14 @@ public class JdbcSrchApp {
          */
         public JdbcSrchEngine(final String indexName) {
             this.indexHome = indexName;
-            this.corpusHome = JdbcSrchApp.this.corpusHome;
+            this.corpusHome = SrchApp.this.corpusHome;
         }
 
         /**
          * 搜索引擎初始化
          */
         public void initialize() {
-            analyzer = this.getYuhuanAnalyzer(JdbcSrchApp.this.corpusHome);
+            analyzer = this.getYuhuanAnalyzer(SrchApp.this.corpusHome);
         }
 
         /**
@@ -94,7 +94,7 @@ public class JdbcSrchApp {
 
                 if (this.analyzer != null) {// 分词器有效
                     if (corpus == null && this.analyzer instanceof YuhuanAnalyzer) {//
-                        JdbcSrchApp.this.corpus = ((YuhuanAnalyzer) this.analyzer).findOne(Trie.class);
+                        SrchApp.this.corpus = ((YuhuanAnalyzer) this.analyzer).findOne(Trie.class);
                     } else {//
                         System.err.println("分词器为 " + this.analyzer.getClass() + " 类型, 不予提供 关键词刷新操作");
                     }//if this.analyzer
@@ -102,7 +102,7 @@ public class JdbcSrchApp {
                     System.out.println("分词器为null,请运行intialize初始化或是添加适当的分词器");
                 }//if this.analyzer
 
-                if (null != JdbcSrchApp.this.corpus) JdbcSrchApp.this.corpus.traverse(e -> {
+                if (null != SrchApp.this.corpus) SrchApp.this.corpus.traverse(e -> {
                     if ("word".equals(e.getAttribute("category"))) {
                         keywords.add(e.getPath(cc -> cc.collect(Collectors.joining())));
                     }//if

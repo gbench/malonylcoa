@@ -18,12 +18,12 @@ import gbench.webapps.crawler.api.model.decompose.IDecomposer;
 import gbench.webapps.crawler.api.model.decompose.ImageDecomposer;
 import gbench.webapps.crawler.api.model.decompose.RulesDecomposer;
 import gbench.webapps.crawler.api.model.decompose.TextDecomposer;
-import gbench.webapps.crawler.api.model.srch.JdbcSrchApp;
+import gbench.webapps.crawler.api.model.srch.SrchApp;
 
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
 
-public class SrchModel extends JdbcSrchApp {
+public class SrchModel extends SrchApp {
 	/**
 	 * 构造函数
 	 * 
@@ -189,7 +189,7 @@ public class SrchModel extends JdbcSrchApp {
 	/**
 	 * 结构分解器
 	 */
-	private DataApp.IRecord decomposers = REC( // 预先加载的分词器
+	private IRecord decomposers = REC( // 预先加载的分词器
 			"txt", new TextDecomposer(), // 文本分词器
 			"jpg", new ImageDecomposer(), // 图片解构
 			"jpeg", new ImageDecomposer(), // 图片解构
