@@ -108,16 +108,18 @@ public class SrchController extends AbstractState<SrchController> {
 	}
 
 	/**
-	 * 全文检索:待有检索条件的项目检索
+	 * 全文检索:待有检索条件的项目检索 <br>
+	 * 请求示例
+	 * http://localhost:6010/api/srch/lookup2?line=%E6%8D%AD%E9%98%96;guigu&sessId=1&agentId=1&size=1
 	 * 
-	 * @param line 检索关键字
+	 * @param line 检索关键字,symbol;file的数据格式进行指定范围的数据检索
 	 * @return 检索关键字
 	 */
 	@RequestMapping("lookup2")
 	public IRecord lookup2(final @Param String line, final @Param String sessId, final @Param String agentId,
-			@Param Integer size) {
+			final @Param Integer size) {
 		final var pageSize = size == null ? 10 : size;// 页面大小
-		final var ss = (line == null ? " " : line).split("\\s+");
+		final var ss = (line == null ? " " : line).split("[;\s]+");
 		final var rec = REC("+symbol*", format("*{0}*", ss.length > 0 ? ss[0] : "").trim(), "+file*",
 				format("*{0}*", ss.length > 1 ? ss[1] : "").trim());// rec
 
@@ -157,7 +159,7 @@ public class SrchController extends AbstractState<SrchController> {
 		return REC("code", 0, // 错误代码
 				"pagenum", this.stateOfInteger(pageNumKey), "size",
 				optional.map(e -> e.getTotalHits().value).orElse(0l), "total", this.stateOfInteger(pageTotalKey),
-				"result", optional.map(e -> e.hitsStream()).orElse(Stream.of()) // 数据结果
+				"result", optional.map(e -> e.hitsStream()).orElse(Stream.of()).toList() // 数据结果
 		);// REC
 	}
 
@@ -179,7 +181,7 @@ public class SrchController extends AbstractState<SrchController> {
 	 * 全文检索
 	 * 
 	 * 请求示例
-	 * http://localhost:8081/poeny/srch/indexfiles?homeFile=C:/Users/xuqinghua/Desktop/史记.txt
+	 * http://localhost:6010/api/srch/indexfiles?homeFile=C:/Users/xuqinghua/Desktop/史记.txt
 	 * 
 	 * @param homeFile 索引文件的起始位置
 	 * @return 检索关键字

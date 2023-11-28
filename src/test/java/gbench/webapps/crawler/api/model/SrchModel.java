@@ -201,21 +201,21 @@ public class SrchModel extends SrchApp {
 	}
 
 	/**
-	 * 获取关键词集合
+	 * 是否初始化完毕
 	 *
-	 * @return 关键词集合
+	 * @return 是否初始化完毕 true:初始化,false:未初始化
 	 */
 	public boolean readyFlag() {
 		return this.fileEngine.getKeywords().size() > 0;
 	}
 
 	/**
-	 * 获取关键词集合
+	 * 获取关键词集合(使用关键词进行索引编制)
 	 *
 	 * @return 关键词集合
 	 */
 	public Set<String> getKeywords() {
-		return fileEngine.getKeywords();
+		return this.fileEngine.getKeywords();
 	}
 
 	/**
