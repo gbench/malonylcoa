@@ -76,7 +76,7 @@ public class SrchController extends AbstractState<SrchController> {
 	 * @return 检索关键字
 	 */
 	@RequestMapping("keywords")
-	public IRecord keywords(final @Param String prefix, final @Param(type = Integer.class) Integer size) {
+	public IRecord keywords(final @Param String prefix, final @Param Integer size) {
 		synchronized (this.srchModel) {
 			if (!this.srchModel.readyFlag())
 				this.srchModel.refresh();

@@ -62,7 +62,7 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 			final var ll = Optional.ofNullable(data.get(name)).orElse(qps.get(name));
 			final Optional<Object> opt = Optional.ofNullable(ll != null && ll.size() > 0 ? ll.get(0) : null)
 					.map(value -> (Object) Types.corece(value, type));
-			return opt.orElse("");
+			return opt.orElse(Types.defaultValue(type));
 		});
 
 	}
