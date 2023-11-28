@@ -13,7 +13,7 @@ public class JunitRule2 {
 	@Test
 	public void foo() {
 		final var prefix = "F:/slicef/ws/gitws/malonylcoa/src/test/";
-		final var fileHome = FT("$0/java/gbench/webapps/crawler/api/model/data/docs/rules", prefix);
+		final var fileHome = FT("$0/java/gbench/webapps/crawler/api/model/data/docs", prefix);
 		final var corpusDir = FT("$0/java/gbench/webapps/crawler/api/model/data/corpus", prefix);
 		final var indexHome = "D:/sliced/tmp/crawler/index";
 		final var snapHome = "D:/sliced/tmp/crawler/snap";

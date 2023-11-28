@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static java.text.MessageFormat.*;
 
-public class TextDecomposer {
+public class TextDecomposer implements IDecomposer {
 
 	/**
 	 * 切分文本信息:line成上下文 句子
