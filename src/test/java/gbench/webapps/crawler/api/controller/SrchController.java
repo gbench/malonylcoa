@@ -23,7 +23,6 @@ import static java.text.MessageFormat.*;
 
 import gbench.util.data.DataApp.IRecord;
 import gbench.webapps.crawler.api.model.SrchModel;
-import gbench.webapps.crawler.api.model.SrchModel.FileSrchEngine;
 import gbench.webapps.crawler.api.model.analyzer.lexer.Trie;
 import gbench.webapps.crawler.api.model.srch.*;
 import gbench.webapps.crawler.api.model.srch.AbstractJdbcSrchEngine.PageQuery;
@@ -62,9 +61,7 @@ public class SrchController extends AbstractState<SrchController> {
 	 */
 	public void initialize(final String indexHome, final String corpusDir, final String snapHome) {
 		// 成员属性创建与初始化
-		this.srchModel = new SrchModel(indexHome, corpusDir, snapHome);
-		this.fileEngine = this.srchModel.new FileSrchEngine();
-		this.fileEngine.initialize();
+		this.srchModel = new SrchModel(indexHome, corpusDir, snapHome).initialize();
 		this.state.set(REC());// 清空state
 		Trie.USE_RECURSIVE_GET_TRIE = false;// 使用LOOP模式的分词方式
 	}
@@ -78,13 +75,13 @@ public class SrchController extends AbstractState<SrchController> {
 	 */
 	@RequestMapping("keywords")
 	public IRecord keywords(final @Param String prefix, final @Param Integer size) {
-		synchronized (this.fileEngine) {
-			if (this.fileEngine.getKeywords().size() < 1)
-				this.fileEngine.refresh();
+		synchronized (this.srchModel) {
+			if (this.srchModel.getKeywords().size() < 1)
+				this.srchModel.refresh();
 		}
 		// 直接返回结果
 		return REC("code", 0, // 错误代码
-				"result", fileEngine.getKeywords().stream() // 数据结果
+				"result", this.srchModel.getKeywords().stream() // 数据结果
 						.filter(e -> e != null && e.startsWith((prefix == null ? "" : prefix).strip()))
 						.limit(size == null ? 10 : size)// 默认长度
 						.sorted((a, b) -> a.length() - b.length()).map(e -> REC(// 返回结果字段
@@ -103,7 +100,7 @@ public class SrchController extends AbstractState<SrchController> {
 	@RequestMapping("lookup")
 	public IRecord lookup(final @Param String keyword) {
 		return REC("code", 0, // 错误代码
-				"result", fileEngine.lookup(keyword == null ? "" : keyword, 50) // 数据结果
+				"result", this.srchModel.lookup(keyword == null ? "" : keyword, 50) // 数据结果
 		);// REC
 	}
 
@@ -134,8 +131,7 @@ public class SrchController extends AbstractState<SrchController> {
 		final var pageTotalKey = format("${0}.${1}.${2}", agentId, "lookup2", "pageTotal");
 
 		if (!line.equals(this.stateOfT(lineKey, Object.class))) {// 初次访问
-
-			pageQuery = fileEngine.getPageQuery(query);
+			pageQuery = this.srchModel.getPageQuery(query);
 			pageQuery.initialize(10);
 			optional = pageQuery.getDataNoThrow();
 
@@ -170,7 +166,7 @@ public class SrchController extends AbstractState<SrchController> {
 	 */
 	@RequestMapping("refresh")
 	public IRecord refresh() {
-		es.execute(() -> this.fileEngine.refresh());// 执行刷新请求
+		es.execute(() -> this.srchModel.refresh());// 执行刷新请求
 		return REC("code", 0, // 错误代码
 				"result", "刷新请求已经收到" // 数据结果
 		);// REC
@@ -233,7 +229,6 @@ public class SrchController extends AbstractState<SrchController> {
 		} // 线程文件
 	}
 
-	private FileSrchEngine fileEngine;// 搜索引擎
 	private SrchModel srchModel;// 搜索APP
 	private ExecutorService es = Executors.newFixedThreadPool(1);// 创建一个线程队列
 

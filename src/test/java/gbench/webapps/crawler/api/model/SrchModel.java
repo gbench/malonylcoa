@@ -3,12 +3,15 @@ package gbench.webapps.crawler.api.model;
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.search.Query;
 
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.IRecord;
@@ -19,6 +22,7 @@ import gbench.webapps.crawler.api.model.decomposer.ImageDecomposer;
 import gbench.webapps.crawler.api.model.decomposer.RulesDecomposer;
 import gbench.webapps.crawler.api.model.decomposer.TextDecomposer;
 import gbench.webapps.crawler.api.model.srch.SrchApp;
+import gbench.webapps.crawler.api.model.srch.AbstractJdbcSrchEngine.PageQuery;
 
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
@@ -185,6 +189,59 @@ public class SrchModel extends SrchApp {
 		// file
 		cs.accept(REC("code", 0, "tokens", tokens.stream(), "files", files.stream(), "decompose_time", decomposeTime));
 	}
+
+	/**
+	 * initialize
+	 */
+	public SrchModel initialize() {
+		// 成员属性创建与初始化
+		this.fileEngine = new FileSrchEngine();
+		this.fileEngine.initialize();
+		return this;
+	}
+
+	/**
+	 * 获取关键词集合
+	 *
+	 * @return 关键词集合
+	 */
+	public Set<String> getKeywords() {
+		return this.fileEngine.getKeywords();
+	}
+
+	/**
+	 * 刷新关键词列表
+	 */
+	public void refresh() {
+		this.fileEngine.refresh();
+	}
+
+	/**
+	 * 关键字检索
+	 *
+	 * @param keyword     keyword 关键词检索
+	 * @param hitsPerPage 放回列表的最大长度
+	 * @return 与关键字匹配的产品列表, 如果没有匹配返回null
+	 */
+	public List<IRecord> lookup(final String keyword, final int hitsPerPage) {
+		return this.fileEngine.lookup(keyword, hitsPerPage);
+	}
+
+	/**
+	 * 生成一个按页查询的项目对象。 PageQuery 需要经过初始化之后才能够使用
+	 *
+	 * @param query 查询对象
+	 * @return PageQuery
+	 */
+	public PageQuery getPageQuery(final Query query) {
+		return this.fileEngine.getPageQuery(query);
+	}
+
+	/**
+	 * 搜索引擎
+	 * 
+	 */
+	private FileSrchEngine fileEngine; // 搜索引擎
 
 	/**
 	 * 结构分解器

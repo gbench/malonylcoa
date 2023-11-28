@@ -87,7 +87,6 @@ public class SrchApp {
 		 */
 		@SuppressWarnings("unchecked")
 		public void refresh() {
-
 			final var begTime = System.currentTimeMillis(); // 记录开始运行时间
 
 			synchronized (keywords) {// 关键词刷新
