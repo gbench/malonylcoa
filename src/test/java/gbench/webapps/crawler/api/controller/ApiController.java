@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gbench.util.data.MyDataApp;
 import gbench.util.lisp.IRecord;
-import gbench.webapps.world.api.config.param.Param;
+import gbench.webapps.crawler.api.config.param.Param;
 import reactor.core.publisher.Mono;
 
 /**
