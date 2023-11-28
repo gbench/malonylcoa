@@ -2,7 +2,6 @@ package gbench.webapps.crawler.api.controller;
 
 import org.apache.lucene.search.Query;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,7 +11,6 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.Tuple2.P;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Optional;
@@ -238,15 +236,6 @@ public class SrchController extends AbstractState<SrchController> {
 	private SrchModel srchModel;// 搜索APP
 	private ExecutorService es = Executors.newFixedThreadPool(1);// 创建一个线程队列
 
-	/**
-	 * 启动函数
-	 * 
-	 * @param args
-	 * @throws IOException
-	 */
-	public static void main(String[] args) {
-		SpringApplication.run(SrchController.class, args);
-	}
 }
 
 /**
