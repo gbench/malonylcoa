@@ -167,8 +167,10 @@ public class SrchController extends AbstractState<SrchController> {
 		} // if
 
 		return REC("code", 0, // 错误代码
-				"pagenum", this.stateOfInteger(pageNumKey), "size",
-				optional.map(e -> e.getTotalHits().value).orElse(0l), "pagetotal", this.stateOfInteger(pageTotalKey),
+				"pagenum", this.stateOfInteger(pageNumKey), // 页号
+				"pagetotal", this.stateOfInteger(pageTotalKey), // 总页数
+				"pagesize", pageSize, // 页面尺寸
+				"size", optional.map(e -> e.getTotalHits().value).orElse(0l), // 中数量
 				"result", optional.map(e -> e.hitsStream()).orElse(Stream.of()).toList() // 数据结果
 		);// REC
 	}
