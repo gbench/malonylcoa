@@ -15,6 +15,8 @@ import gbench.util.data.DataApp.IRecord;
 import gbench.util.io.FileSystem;
 import gbench.webapps.crawler.api.model.decompose.DecomposeUtils;
 import gbench.webapps.crawler.api.model.decompose.IDecomposer;
+import gbench.webapps.crawler.api.model.decompose.ImageDecomposer;
+import gbench.webapps.crawler.api.model.decompose.RulesDecomposer;
 import gbench.webapps.crawler.api.model.decompose.TextDecomposer;
 import gbench.webapps.crawler.api.model.srch.JdbcSrchApp;
 
@@ -189,12 +191,12 @@ public class SrchModel extends JdbcSrchApp {
 	 */
 	private DataApp.IRecord decomposers = REC( // 预先加载的分词器
 			"txt", new TextDecomposer(), // 文本分词器
-//            "jpg",      new ImageDecomposer(), // 图片解构
-//            "jpeg",     new ImageDecomposer(), // 图片解构
-//            "bmp",      new ImageDecomposer(), // 图片解构
-//            "gif",      new ImageDecomposer(), // 图片解构
-//            "png",      new ImageDecomposer(), // 图片解构
-//            "rules",    new RulesDecomposer(), // 图片解构
+			"jpg", new ImageDecomposer(), // 图片解构
+			"jpeg", new ImageDecomposer(), // 图片解构
+			"bmp", new ImageDecomposer(), // 图片解构
+			"gif", new ImageDecomposer(), // 图片解构
+			"png", new ImageDecomposer(), // 图片解构
+			"rules", new RulesDecomposer(), // 会计准则解构
 			"default", (IDecomposer) DecomposeUtils::dftdecompse // 默认分词器
 	);
 }
