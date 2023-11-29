@@ -29,9 +29,9 @@ public class JunitSrch {
 		final var indexHome = "D:/sliced/tmp/crawler/index";
 		final var snapHome = "D:/sliced/tmp/crawler/snap";
 		final var srchModel = new SrchModel(indexHome, corpusDir, snapHome);
-//		srchModel.indexFiles(fileHome, e -> {
-//			println(e);
-//		});
+		srchModel.indexFiles(fileHome, e -> {
+			println(e);
+		});
 		final var srchCtrl = new SrchController();
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
 
