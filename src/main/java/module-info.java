@@ -6,6 +6,7 @@ open module gbench.malonylcoa {
 	requires com.fasterxml.jackson.datatype.jsr310;
 	requires org.apache.poi.poi;
 	requires org.apache.poi.ooxml;
+	requires pinyin4j;
 	exports gbench.util.array;
 	exports gbench.util.data;
 	exports gbench.util.function;
