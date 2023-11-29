@@ -3,6 +3,9 @@ package gbench.webapps.crawler.api.model.srch;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import static java.text.MessageFormat.format;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -72,7 +75,7 @@ import static gbench.util.data.DataApp.IRecord.*;
 public abstract class AbstractJdbcSrchEngine {
 
 	/**
-	 * 把rec记录的指定col展开成多记录对象
+	 * 把rec记录的指定col展开成多记录对象,增加拼音字段
 	 *
 	 * @param rec 记录对象
 	 * @param col 展开的字段
@@ -123,7 +126,7 @@ public abstract class AbstractJdbcSrchEngine {
 	 * @return 与关键字匹配的产品列表, 如果没有匹配返回null
 	 */
 	public List<IRecord> lookup(final String keyword, final int hitsPerPage) {
-		final Term term = new Term(SEARCH_FIELD, "*" + keyword + "*");// 通配符查询
+		final Term term = new Term(SEARCH_FIELD, format("*{0}*", keyword));// 通配符查询
 		final Query query = new WildcardQuery(term);
 
 		return this.lookup(query, hitsPerPage);
