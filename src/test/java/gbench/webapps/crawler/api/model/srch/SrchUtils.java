@@ -37,13 +37,13 @@ import gbench.util.data.DataApp.Tuple2;
  */
 public class SrchUtils {
 	/**
-	 * 一个数据项目字段
+	 * 一个数据项目字段 (
 	 *
-	 * @param termline term行的字符串 <br>
-	 *                 + 开头表示 BooleanClause.Occur.MUST - 开头表示
-	 *                 BooleanClause.Occur.MUST_NOT # 开头表示
-	 *                 BooleanClause.Occur.FILTER 空开头 即默认 表示
-	 *                 BooleanClause.Occur.SHOULD
+	 * @param termline term行的字符串 的结构 [BooleanClause.Occur][字段名][Query的类型] <br>
+	 *                 + 开头表示 BooleanClause.Occur.MUST <br>
+	 *                 - 开头表示 BooleanClause.Occur.MUST_NOT <br>
+	 *                 # 开头表示 BooleanClause.Occur.FILTER <br>
+	 *                 空开头 即默认 表示 BooleanClause.Occur.SHOULD <br>
 	 * @return {name:名称String,op:操作符BooleanClause.Ocuur,type:类型string}
 	 */
 	public static IRecord parse2Term(final String termline) {
@@ -51,11 +51,11 @@ public class SrchUtils {
 		final var nameline_pattern = "([-#+])?([^-#+].*)";// 名称行的模式文法
 		Function<String, Tuple2<String, BooleanClause.Occur>> name_parser = (nameline) -> {
 			final var mth = Pattern.compile(nameline_pattern).matcher(nameline.trim());
-			if (!mth.matches())
+			if (!mth.matches()) {
 				return null;
-			var op = BooleanClause.Occur.SHOULD;
-			String grp1 = mth.group(1);
-			op = switch (grp1 == null ? "" : grp1) {// 操作符选择
+			}
+			final var grp1 = mth.group(1);
+			final var op = switch (grp1 == null ? "" : grp1) {// 操作符选择
 			case "+" -> BooleanClause.Occur.MUST;
 			case "-" -> BooleanClause.Occur.MUST_NOT;
 			case "#" -> BooleanClause.Occur.FILTER;
@@ -78,9 +78,14 @@ public class SrchUtils {
 	}
 
 	/**
-	 * 类型符号说明 '=' TermQuery 精确查询 '*' WildcardQuery 通配符查询 '[' TermRangeQuery 查询一个范围
-	 * 没有实现 '-' PrefixQuery 前缀匹配查询 '#' PhraseQuery 短语查询 '~' FuzzyQuery 模糊查询 '@'
-	 * Queryparser 万能查询（上面的都可以用这个来查询到） 没有实现
+	 * 类型符号说明 <br>
+	 * '=' TermQuery 精确查询 <br>
+	 * '*' WildcardQuery 通配符查询 <br>
+	 * '[' TermRangeQuery 查询一个范围 没有实现 <br>
+	 * '-' PrefixQuery 前缀匹配查询 <br>
+	 * '#' PhraseQuery 短语查询 <br>
+	 * '~' FuzzyQuery 模糊查询 <br>
+	 * '@' Queryparser 万能查询（上面的都可以用这个来查询到） 没有实现 <br>
 	 * <p>
 	 * 生成对Term的Query 归集器
 	 *
@@ -310,8 +315,7 @@ public class SrchUtils {
 	}
 
 	/**
-	 * 把一个记录对象转换<br>
-	 * <br>
+	 * 把一个记录对象转换成文档对象 <br>
 	 * <p>
 	 * 一 、field 前缀说明 即 类型前缀 参见VBA的类型简写 <br>
 	 * &nbsp; $ = TextField 文本字符串(需要进行文本索引分词 ) 已经实现 <br>
@@ -325,7 +329,6 @@ public class SrchUtils {
 	 * 二 、field 后缀（Store标记）说明: <br>
 	 * &nbsp; ? 不存储 <br>
 	 * &nbsp; 空 存储 <br>
-	 * <br>
 	 *
 	 * @param rec 记录对象: field的集合
 	 * @return 把记录对象转换成 索引文件
@@ -336,7 +339,7 @@ public class SrchUtils {
 		// 为文档依次添加字段Field
 		rec.tupleS().filter(p -> p._2 != null).map(p -> { // 依次遍历各个字段定义:kvpair(p)
 			final var key = p._1;// 提取字段键名
-			final var nosave = key.endsWith("?");// 问号的后悔代表这是一个临时字段
+			final var nosave = key.endsWith("?");// 问号的后缀代表这是一个临时字段
 			final var field_type_and_name = nosave ? key.substring(0, key.length() - 1) : key;// 去除store标记，获取字段定义：类型+字段名
 
 			// 定义字段的参数：name 与 value

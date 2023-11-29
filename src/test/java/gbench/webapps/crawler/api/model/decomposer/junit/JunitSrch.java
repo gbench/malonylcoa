@@ -31,8 +31,17 @@ public class JunitSrch {
 		});
 		final var srchCtrl = new SrchController();
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
-		println("----------------------");
-		println(srchCtrl.lookup("比方"));
+		println("srchCtrl.lookup(\"权\")");
+		println(srchCtrl.lookup("权"));
+
+		println("srchCtrl.lookup(\"quan\")");
+		println(srchCtrl.lookup("quan"));
+
+		println("srchCtrl.lookup2(\"权\",\"sess1\",\"agent1\",10)");
+		println(srchCtrl.lookup2("权", "sess1", "agent1", 10));
+
+		println("srchCtrl.lookup2(\"quan\",\"sess2\",\"agent1\",10)");
+		println(srchCtrl.lookup2("quan", "sess2", "agent1", 10));
 	}
 
 	/**

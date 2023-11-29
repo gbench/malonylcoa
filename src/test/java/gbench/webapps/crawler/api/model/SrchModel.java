@@ -18,6 +18,7 @@ import gbench.util.chn.PinyinUtil;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.io.FileSystem;
+import gbench.util.lisp.Tuple2;
 import gbench.webapps.crawler.api.model.decomposer.DecomposeUtils;
 import gbench.webapps.crawler.api.model.decomposer.IDecomposer;
 import gbench.webapps.crawler.api.model.decomposer.ImageDecomposer;
@@ -104,16 +105,17 @@ public class SrchModel extends SrchApp {
 			final var id = md5(token);// md5 的去重标记
 			final var position = token.strOpt("position").orElse("-"); // 提关键字的位置记录
 			final var snapfile = token.strOpt("snapfile").orElse("-"); // 快照文件位置
+			final var rest = token.filterNot("id,symbol,statement,file,position,snapfile"); // 剩余的自定义字段
 
 			final var doc = rec2doc(REC(// 定义文档结构
-					"id?", id, // 临时字段用户同一批次的数据的 去重, 后缀 ? 表示临时字段
+					"id?", id, // 临时字段用户同一批次的数据的去重, 后缀?表示临时字段
 					"symbol", symbol, // 文法符号
-					"search_field", symbol, // 检索符号
+					SEARCH_FIELD, symbol, // 检索符号
 					"text", statement, // 上下文本
 					"file", file, // 对文件名称路径
 					"position", position, // 关键词
 					"snapfile", snapfile // 快照文件路径
-			));// doc
+			).add(rest));// doc
 
 			return doc;
 		}
@@ -127,10 +129,13 @@ public class SrchModel extends SrchApp {
 		public synchronized void indexTokens(final Stream<IRecord> tokens) {
 			super.writeIndexes(writer -> {// 使用index writer 来写索引文件
 				final var counter = new AtomicLong(1l);// 计数器
-				final Function<? super IRecord, ? extends Stream<? extends IRecord>> py_mapper = token -> Stream
-						.concat(Stream.of(token), PinyinUtil.getPinyinS(token.str("symbol"))
-								.map(pinyin -> token.duplicate().set("symbol", pinyin)));
-				tokens.parallel().flatMap(py_mapper).forEach(token -> {// 并行处理
+				final Function<? super IRecord, ? extends IRecord> mapper = token -> { // 增加pinyin字段
+					PinyinUtil.getPinyinS(token.str("symbol")).map(Tuple2.snb(0)).forEach(e -> {
+						token.add("py" + e._1, e._2);
+					});
+					return token;
+				};
+				tokens.parallel().map(mapper).forEach(token -> {// 并行处理
 					try {
 						final var doc = token2doc(token);// 生成索引文档
 						final var id = strfld(doc, "id");// 去重标签

@@ -1468,8 +1468,8 @@ public abstract class AbstractJdbcSrchEngine {
 	}
 
 	private IndexReader indexReader = null; // 索引库的访问接口
-	private final String SEARCH_FIELD = "search_field";// 检索的字段项目
 
+	protected final String SEARCH_FIELD = "search_field";// 检索的字段项目
 	protected Analyzer analyzer = null;// 分析器
 	protected String indexHome = "indexes";// 索引文件位置名称或者目录
 	protected String corpusHome;// 语料库的词汇目录,一般由子类给赋值 AbstractJdbcSrchEngine 仅提供一个占用/引用位置。这是一种叫做模板方法 的模式在

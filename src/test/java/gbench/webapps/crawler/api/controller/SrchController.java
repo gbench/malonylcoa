@@ -126,15 +126,18 @@ public class SrchController extends AbstractState<SrchController> {
 	public IRecord lookup2(final @Param String line, final @Param String sessId, final @Param String agentId,
 			final @Param Integer size) {
 		final var pageSize = size == null || size == 0 ? Integer.MAX_VALUE : size;// 页面大小
-		final var ss = (line == null ? " " : line).split("[;\s]+");
-		final var rec = REC("+symbol*", format("*{0}*", ss.length > 0 ? ss[0] : "").trim(), "+file*",
-				format("*{0}*", ss.length > 1 ? ss[1] : "").trim());// rec
+		final var ss = Arrays.stream((line == null ? " " : line).split("[;\s]+")).map(e -> e.strip())
+				.toArray(String[]::new);
+		final var rec = REC( //
+				"+symbol*", format("*{0}*", ss.length > 0 ? ss[0] : ""), // SHOULD WildcardQuery
+				"+file*", format("*{0}*", ss.length > 1 ? ss[1] : ""));// SHOULD WildcardQuery
 
-		System.out.println(format("\n#lookup2:\nline:【{0}】\n rec:【{1}】,sessionId:{2},agentId:{3},size:{4}", //
+		System.out.println(format("\n#lookup2:\nline:【{0}】\nrec:【{1}】,sessionId:{2},agentId:{3},size:{4}", //
 				line, rec, sessId, agentId, size));
-		final Query query = rec.collect(bool_query_clc);
+		final Query query = rec.collect(bool_query_clc); // 解析成Query对象
 		final PageQuery pageQuery;
 		final Optional<PageData> optional;
+		System.out.println(format("query:{0},{1}", query.getClass().getSimpleName(), query));
 
 		// 设置各种key
 		final var keyPrefix = format("{0}@{1}", agentId, sessId); // key前缀
