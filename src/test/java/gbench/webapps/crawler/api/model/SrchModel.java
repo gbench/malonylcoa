@@ -1,5 +1,7 @@
 package gbench.webapps.crawler.api.model;
 
+import static java.text.MessageFormat.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -105,12 +107,12 @@ public class SrchModel extends SrchApp {
 			final var id = md5(token);// md5 的去重标记
 			final var position = token.strOpt("position").orElse("-"); // 提关键字的位置记录
 			final var snapfile = token.strOpt("snapfile").orElse("-"); // 快照文件位置
-			final var rest = token.filterNot("id,symbol,statement,file,position,snapfile"); // 剩余的自定义字段
+			final var rest = token.filterNot("id,symbol,statement,file,position,snapfile,type"); // 剩余的自定义字段
 
 			final var doc = rec2doc(REC(// 定义文档结构
 					"id?", id, // 临时字段用户同一批次的数据的去重, 后缀?表示临时字段
 					"symbol", symbol, // 文法符号
-					SEARCH_FIELD, symbol, // 检索符号
+					SEARCH_FIELD, format("{0},{1}", symbol, rest.vals()), // 检索符号
 					"text", statement, // 上下文本
 					"file", file, // 对文件名称路径
 					"position", position, // 关键词
