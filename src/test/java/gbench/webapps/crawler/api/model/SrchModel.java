@@ -8,11 +8,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 
+import gbench.util.chn.PinyinUtil;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.io.FileSystem;
@@ -125,7 +127,10 @@ public class SrchModel extends SrchApp {
 		public synchronized void indexTokens(final Stream<IRecord> tokens) {
 			super.writeIndexes(writer -> {// 使用index writer 来写索引文件
 				final var counter = new AtomicLong(1l);// 计数器
-				tokens.parallel().forEach(token -> {// 并行处理
+				final Function<? super IRecord, ? extends Stream<? extends IRecord>> py_mapper = token -> Stream
+						.concat(Stream.of(token), PinyinUtil.getPinyinS(token.str("symbol"))
+								.map(pinyin -> token.duplicate().set("symbol", pinyin)));
+				tokens.parallel().flatMap(py_mapper).forEach(token -> {// 并行处理
 					try {
 						final var doc = token2doc(token);// 生成索引文档
 						final var id = strfld(doc, "id");// 去重标签
