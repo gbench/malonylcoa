@@ -36,6 +36,7 @@ public class JunitSrch {
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
 
 		final var keys = "docid,symbol,py0,py1";
+		@SuppressWarnings("unchecked")
 		final Function<gbench.util.data.DataApp.IRecord, String> mapper = r -> {
 			return r.get("result") instanceof List<?> us ? ((List<gbench.util.data.DataApp.IRecord>) (Object) us)
 					.stream().map(e -> e.filter("symbol,py0,py1")).toList().toString() : "none";
