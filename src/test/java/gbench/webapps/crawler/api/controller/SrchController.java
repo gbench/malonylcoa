@@ -362,7 +362,6 @@ class AbstractState<SELF> {
 	 */
 	@SuppressWarnings("unchecked")
 	public SELF state(final String name, final Object value) {
-
 		// 重新设置新的状态信息
 		this.state.set(this.state.get().derive(Arrays.asList(P(name, value))));
 		return (SELF) this;

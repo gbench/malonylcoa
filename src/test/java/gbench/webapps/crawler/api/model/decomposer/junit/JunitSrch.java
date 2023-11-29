@@ -3,6 +3,9 @@ package gbench.webapps.crawler.api.model.decomposer.junit;
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.io.Output.println;
 
+import java.util.*;
+import java.util.function.Function;
+
 import org.junit.jupiter.api.Test;
 
 import gbench.webapps.crawler.api.controller.SrchController;
@@ -26,22 +29,28 @@ public class JunitSrch {
 		final var indexHome = "D:/sliced/tmp/crawler/index";
 		final var snapHome = "D:/sliced/tmp/crawler/snap";
 		final var srchModel = new SrchModel(indexHome, corpusDir, snapHome);
-		srchModel.indexFiles(fileHome, e -> {
-			println(e);
-		});
+//		srchModel.indexFiles(fileHome, e -> {
+//			println(e);
+//		});
 		final var srchCtrl = new SrchController();
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
+
+		final var keys = "docid,symbol,py0,py1";
+		final Function<gbench.util.data.DataApp.IRecord, String> mapper = r -> {
+			return r.get("result") instanceof List<?> us ? ((List<gbench.util.data.DataApp.IRecord>) (Object) us)
+					.stream().map(e -> e.filter("symbol,py0,py1")).toList().toString() : "none";
+		};
 		println("srchCtrl.lookup(\"权\")");
-		println(srchCtrl.lookup("权"));
+		println(srchCtrl.lookup("权").mutate(mapper));
 
 		println("srchCtrl.lookup(\"quan\")");
-		println(srchCtrl.lookup("quan"));
+		println(srchCtrl.lookup("quan").filter(keys).mutate(mapper));
 
 		println("srchCtrl.lookup2(\"权\",\"sess1\",\"agent1\",10)");
-		println(srchCtrl.lookup2("权", "sess1", "agent1", 10));
+		println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(mapper));
 
 		println("srchCtrl.lookup2(\"quan\",\"sess2\",\"agent1\",10)");
-		println(srchCtrl.lookup2("quan", "sess2", "agent1", 10));
+		println(srchCtrl.lookup2("quan;sunzi", "sess2", "agent1", 10).mutate(mapper));
 	}
 
 	/**
