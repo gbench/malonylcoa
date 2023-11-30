@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
+import gbench.util.data.DataApp.IRecord;
 import gbench.webapps.crawler.api.controller.SrchController;
 import gbench.webapps.crawler.api.model.SrchModel;
 
@@ -37,21 +38,20 @@ public class JunitSrch {
 
 		final var keys = "docid,symbol,py0,py1";
 		@SuppressWarnings("unchecked")
-		final Function<gbench.util.data.DataApp.IRecord, String> mapper = r -> {
-			return r.get("result") instanceof List<?> us ? ((List<gbench.util.data.DataApp.IRecord>) (Object) us)
-					.stream().map(e -> e.filter("symbol,py0,py1")).toList().toString() : "none";
-		};
+		final Function<IRecord, String> format = r -> r.get("result") instanceof List<?> us
+				? ((List<IRecord>) us).stream().map(e -> e.filter("symbol,py0,py1")).toList().toString()
+				: "none";
 		println("srchCtrl.lookup(\"权\")");
-		println(srchCtrl.lookup("权").mutate(mapper));
+		println(srchCtrl.lookup("权").mutate(format));
 
 		println("srchCtrl.lookup(\"quan\")");
-		println(srchCtrl.lookup("quan").filter(keys).mutate(mapper));
+		println(srchCtrl.lookup("quan").filter(keys).mutate(format));
 
 		println("srchCtrl.lookup2(\"权\",\"sess1\",\"agent1\",10)");
-		println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(mapper));
+		println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(format));
 
 		println("srchCtrl.lookup2(\"quan\",\"sess2\",\"agent1\",10)");
-		println(srchCtrl.lookup2("quan;sunzi", "sess2", "agent1", 10).mutate(mapper));
+		println(srchCtrl.lookup2("quan;sunzi", "sess2", "agent1", 10).mutate(format));
 	}
 
 	/**
