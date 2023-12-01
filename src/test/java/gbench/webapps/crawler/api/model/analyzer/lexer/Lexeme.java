@@ -139,7 +139,7 @@ public class Lexeme {
 	 * @param name 属性名
 	 * @return 获取属性值
 	 */
-	public Object getAttribute(String name) {
+	public Object getAttribute(final String name) {
 		return this.attributes.get(name);
 	}
 
@@ -158,7 +158,7 @@ public class Lexeme {
 	 * @param name 属性名
 	 * @return 移除的属性的值
 	 */
-	public Object removeAttribute(String name) {
+	public Object removeAttribute(final String name) {
 		return this.attributes.remove(name);
 	}
 
