@@ -28,8 +28,22 @@ public final class PageData {
 
 	/**
 	 * 构造函数
+	 * 
+	 * @throws IOException
 	 */
-	private PageData() {
+	private PageData(final TotalHits totalHits, final ScoreDoc[] docs, final int offset, final IndexSearcher searcher,
+			final Set<String> fieldsToLoad) throws IOException {
+		Objects.requireNonNull(docs);
+		Objects.requireNonNull(searcher);
+
+		this.offset = offset;
+		this.totalHits = Objects.requireNonNull(totalHits);
+		final var sfs = searcher.storedFields();
+		for (final var sd : docs) {
+			final var luceneDoc = (fieldsToLoad == null) ? sfs.document(sd.doc) : sfs.document(sd.doc, fieldsToLoad);
+			this.hits.add(Doc.of(sd.doc, sd.score, luceneDoc));
+
+		}
 	}
 
 	/**
@@ -45,21 +59,9 @@ public final class PageData {
 	 */
 	public static PageData of(final TotalHits totalHits, final ScoreDoc[] docs, final int offset,
 			final IndexSearcher searcher, final Set<String> fieldsToLoad) throws IOException {
-		final var res = new PageData();
-		final var sfs = searcher.storedFields();
-
-		res.totalHits = Objects.requireNonNull(totalHits);
 		Objects.requireNonNull(docs);
 		Objects.requireNonNull(searcher);
-
-		for (final ScoreDoc sd : docs) {
-			final Document luceneDoc = (fieldsToLoad == null) ? sfs.document(sd.doc)
-					: sfs.document(sd.doc, fieldsToLoad);
-			res.hits.add(Doc.of(sd.doc, sd.score, luceneDoc));
-			res.offset = offset;
-		}
-
-		return res;
+		return new PageData(totalHits, docs, offset, searcher, fieldsToLoad);
 	}
 
 	/**
@@ -214,7 +216,7 @@ public final class PageData {
 		private final Map<String, String[]> fieldValues = new HashMap<>();
 	}
 
-	private TotalHits totalHits;
-	private int offset = 0;
-	private List<Doc> hits = new ArrayList<>();
+	private final TotalHits totalHits;
+	private final int offset;
+	private final List<Doc> hits = new ArrayList<>();
 }
