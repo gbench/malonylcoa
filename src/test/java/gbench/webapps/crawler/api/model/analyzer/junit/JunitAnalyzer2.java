@@ -56,7 +56,8 @@ public class JunitAnalyzer2 {
 				}).orElseGet(() -> { // 模式识别
 					return predefs.tupleS() // 预定模式检测
 							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
-							.findFirst().map(t -> new Lexeme(symbol, t._1, symbol)) // 生成词素
+							.findFirst().map(t -> new Lexeme(symbol, t._1, symbol) //
+									.addAttributes("tags", "mode")) // 生成词素
 							.orElse(null); // 获取词意失败
 				}); // opt
 			}

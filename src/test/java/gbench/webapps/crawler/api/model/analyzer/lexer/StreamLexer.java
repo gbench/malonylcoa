@@ -7,22 +7,20 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
- * 
  * 流式中文阅读器 <br>
  * 
  * 我想我是有诗人的气质的：不是婉约的而是豪放派的那种，给点阳光就要灿烂，给竹筐就要下蛋的 灵感来了，挡也挡不住的！就要写点 疯狂与躁动， <br>
  * 用流水 掀起 狂澜。 这是 诗人的 冷静与逻辑。理性 就是用来为 自信（抱负与气魄 )提供 依据与手段的。否则 充其量 理性只会让 一个人成为
- * 忠实的奴隶，<br>
- * 而这个理性不要也罢！ <br>
+ * 忠实的奴隶，而这个理性不要也罢！ <br>
  * 
  * 我想把程序写的简洁一些 就像 每个词在文章中的 出现就像流水一样的自然顺畅。这也许就是我想写一个 StreamLexer 的最开始的动机(注意不是原始,
- * <br>
  * 原始强目标情怀,是一种价值追求，往往后续还会在其基础之上进行演化，派生。而 开始则简单得多,只是一个事件触发而已,没有太大的价值牵引只是一种兴趣 <br>
  * 或是不得已而为之 ,没有什么伟大的宏伟目标,或是说原因不是特别 纯良的 又或是 清楚明白的,饭真的就是 这么的开始了，然后就这么的现在了。。。)。
  * <br>
@@ -33,8 +31,7 @@ import java.util.function.Supplier;
  * 于是 就有了 最水的分词器：StreamLexer
  * 
  * 水是没味道的 , 是没滋味的, 所以 水的 东西大家都看不上 不是不重要,而是 不容易被察觉。这就是 水的意义。所以水 的程序也是有意义的 ,
- * 只不过这个意义要<br>
- * 用水的人才知道,水 是不知道的，这就是水的程序的意义。<br>
+ * 只不过这个意义要 用水的人才知道,水是不知道的，这就是水的程序的意义。<br>
  * 
  * @author XUQINGHUA
  *
@@ -60,18 +57,20 @@ public class StreamLexer extends AbstractLexer {
 	}
 
 	/**
+	 * 获取 reader
 	 * 
-	 * @return
+	 * @return reader
 	 */
 	public Reader getStreamReader() {
 		return streamReader;
 	}
 
 	/**
+	 * 设置 reader
 	 * 
 	 * @param reader
 	 */
-	public void setStreamReader(Reader reader) {
+	public void setStreamReader(final Reader reader) {
 		this.streamReader = reader;
 	}
 
@@ -83,13 +82,16 @@ public class StreamLexer extends AbstractLexer {
 	 */
 	synchronized boolean moveOn(final String line) {
 		final var ar = new AtomicReference<Boolean>(false);
-		return this.processors.entrySet().stream().parallel().map(e -> e.getValue()).map(processor -> {
-			if (ar.get())
+		return this.processors.entrySet().stream().parallel().map(Map.Entry::getValue).map(processor -> {
+			if (ar.get()) {
 				return true;
-			boolean _b_ = processor.isPrefix(line);// 是否可以停下啦
-			if (_b_)
-				ar.set(true);
-			return _b_;
+			} else {
+				boolean _b_ = processor.isPrefix(line);// 是否可以停下啦
+				if (_b_) {
+					ar.set(true);
+				} // if
+				return _b_;
+			} // if
 		}).filter(e -> e == true).findFirst().isPresent();
 	}
 
@@ -158,13 +160,15 @@ public class StreamLexer extends AbstractLexer {
 				// 如果s是一个 单词前缀 就一直读下去， 直到 最近读到一个字符（c)让其（wordBuffer）不在是一个单词前缀。
 				// 增长单词前缀长度，直到不再是单词前缀为止（以获得wordBuffer在这一轮读取操作中是中包含有最长的按此前缀）即去掉 末尾的一个字符 就可以得到这个
 				// 最长前缀。
-				while (c != -1 && this.moveOn(wordBuffer))
+				while (c != -1 && this.moveOn(wordBuffer)) {
 					wordBuffer += ((char) (c = spfunc_scanner.get())); // 增长单词前缀长度
+				}
 
 				// 已经读到了最后一个字符,注意这里不能使用wordBuffer.indexOf(0),
 				// 因为对于unicode会会返回第一字节的内容(-1),unicode的一个字符不是一个字节长的。而不是第一个字符。
-				if (wordBuffer.length() == 1 && wordBuffer.equals(((char) -1) + ""))
+				if (wordBuffer.length() == 1 && wordBuffer.equals(((char) -1) + "")) {
 					break;// 数据读完了。因读到 -1文件结束字符了。
+				}
 
 				/**
 				 * 尝试去进行精确匹配的取词：获取 characters（有效单词前缀）的意义。即 this.evaluate 若是最近的取得那个字符(c)无法与先前取到
@@ -175,12 +179,13 @@ public class StreamLexer extends AbstractLexer {
 				 * 1) 必须是一个单词前缀 ： moveOn 保证了wordBuffer 是一个逐渐增长的 单词前缀。 2) 而且 还拥有 意义 meaning
 				 */
 				String characters = null; // 准备做单词意义检测的字符串。
-				if (wordBuffer.length() > 1) // 已经读到了至少两个字符,读到的字符存入 characters 以之中 准备做 单词意义检测。
+				if (wordBuffer.length() > 1) { // 已经读到了至少两个字符,读到的字符存入 characters 以之中 准备做 单词意义检测。
 					characters = wordBuffer.substring(0, wordBuffer.length() - 1);// 回退一个字符：获取单词前缀。
-				else // 长度为1的wordBuffer: 因为 spfunc_scanner保证了 wordBuffer至少包含一个字符。
-						// 由于 此时wordBuffer中只有一个字符,所以 就不能再去除尾部字符了（那样characters就为空了） ,只有一个字符
-						// 的wordBuffer将以整体形式进行evaluate.
+				} else { // 长度为1的wordBuffer: 因为 spfunc_scanner保证了 wordBuffer至少包含一个字符。
+					// 由于 此时wordBuffer中只有一个字符,所以 就不能再去除尾部字符了（那样characters就为空了） ,只有一个字符
+					// 的wordBuffer将以整体形式进行evaluate.
 					characters = wordBuffer.toString();
+				}
 
 				// 已经取得一个类似词的对象(准单词characters),即 characters 是我们找到的一个不是任何
 				// 其他单词前缀的对象（即最长单词前缀,我们用最长保证 不是任何其他），
