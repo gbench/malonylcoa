@@ -165,7 +165,7 @@ public class SrchUtils {
 			}
 		});
 
-		return subqueries.size() < 1 //
+		return subqueries.size() <= 1 //
 				? subqueries.values().iterator().next()._2 //
 				: builder.build();
 	}

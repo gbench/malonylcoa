@@ -88,6 +88,13 @@ public final class PageData {
 	/**
 	 * Returns the documents of the current page.
 	 */
+	public List<IRecord> getHits2() {
+		return this.hitsStream().toList();
+	}
+
+	/**
+	 * Returns the documents of the current page.
+	 */
 	public Stream<IRecord> hitsStream() {
 		return this.getHits().stream().map(Doc::record);
 	}

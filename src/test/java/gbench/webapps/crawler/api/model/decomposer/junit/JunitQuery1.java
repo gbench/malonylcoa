@@ -14,6 +14,9 @@ import gbench.util.data.DataApp.IRecord;
 import gbench.webapps.crawler.api.controller.SrchController;
 import gbench.webapps.crawler.api.model.SrchModel;
 
+/**
+ * 
+ */
 public class JunitQuery1 {
 
 	@Test
@@ -24,14 +27,14 @@ public class JunitQuery1 {
 		final var snapHome = "D:/sliced/tmp/crawler/snap";
 		final var srchCtrl = new SrchController();
 		@SuppressWarnings("unchecked")
-		final Function<IRecord, String> format = r -> r.get("result") instanceof List<?> us
-				? ((List<IRecord>) us).stream().map(e -> e.filter("symbol,py0,py1")).toList().toString()
+		final Function<IRecord, String> format = r -> r.get("result") instanceof Collection<?> us
+				? ((Collection<IRecord>) us).stream().map(e -> e.filter("symbol,py0,py1")).toList().toString()
 				: "none";
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
 		// println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(format));
 
 		final var dsl = REC( //
-				"must", REC("symbol*", "*权*", "file*", "**") //
+				"must", REC("symbol*", "*权*", "file*", "*sunzi*") //
 				, "should", REC("py0*", "*quan*", "py1*", "*q*") //
 		); // line
 
@@ -41,9 +44,8 @@ public class JunitQuery1 {
 		pq.initialize();
 		System.out.println(format("query:{0},{1}", q.getClass().getSimpleName(), q));
 		final var optional = pq.getData2();
-		println(q);
-		println(optional.map(e -> e.hitsStream().toList()).orElse(new ArrayList<>()));
-		println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(format));
+		println(optional.map(e -> REC("result", e.getHits2()).mutate(format)));
+		println(srchCtrl.lookup2("权;sunzi", "sess1", "agent1", 10).mutate(format));
 	}
 
 	/**

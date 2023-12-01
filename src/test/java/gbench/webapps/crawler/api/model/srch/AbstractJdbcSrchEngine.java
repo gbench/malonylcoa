@@ -998,8 +998,8 @@ public abstract class AbstractJdbcSrchEngine {
 		public Optional<PageData> getData() throws IOException {
 			// execute search
 			final ScoreDoc after = docs.length == 0 ? null : docs[docs.length - 1];
-
 			final TopDocs topDocs;
+			
 			if (sort != null) {
 				topDocs = searcher.searchAfter(after, query, pageSize, sort);
 			} else {
