@@ -25,24 +25,18 @@ public class JunitQuery1 {
 		final var corpusDir = FT("$0/java/gbench/webapps/crawler/api/model/data/corpus", prefix);
 		final var indexHome = "D:/sliced/tmp/crawler/index";
 		final var snapHome = "D:/sliced/tmp/crawler/snap";
-		final var srchCtrl = new SrchController();
+		final var srchCtrl = new SrchController().initialize(indexHome, corpusDir, snapHome);
+		final var srchModel = new SrchModel(indexHome, corpusDir, snapHome).initialize();
+		final var pq = REC("must", REC( // must 项目
+				"should", REC("py0*", "*quan*", "py1*", "*q*"), // should 项目
+				"file*", "*sunzi*" // 文件项目
+		)).mutate(e -> srchModel.getPageQuery(parseDsl(e))).initialize(); // PageQuery
 		@SuppressWarnings("unchecked")
 		final Function<IRecord, String> format = r -> r.get("result") instanceof Collection<?> us
 				? ((Collection<IRecord>) us).stream().map(e -> e.filter("symbol,py0,py1")).toList().toString()
 				: "none";
-		srchCtrl.initialize(indexHome, corpusDir, snapHome);
-		// println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(format));
-
-		final var srchModel = new SrchModel(indexHome, corpusDir, snapHome).initialize();
-		final var pq = REC( // dsl
-				"must", REC( // must 项目
-						"should", REC("py0*", "*quan*", "py1*", "*q*"), // should 项目
-						"file*", "*sunzi*") //
-		).mutate(e -> srchModel.getPageQuery(parseDsl(e))).initialize(); // dsl
-
 		System.out.println(format("query:{0},{1}", pq.getClass().getSimpleName(), pq));
-		final var optional = pq.getData2();
-		println(optional.map(e -> REC("result", e.getHits2()).mutate(format)).orElse(null));
+		println(pq.getData2().map(e -> REC("result", e.getHits2()).mutate(format)).orElse(null));
 		println(srchCtrl.lookup2("权;sunzi", "sess1", "agent1", 10).mutate(format));
 	}
 

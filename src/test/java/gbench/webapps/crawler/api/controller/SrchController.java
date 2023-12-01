@@ -60,11 +60,12 @@ public class SrchController extends AbstractState<SrchController> {
 	 * @param corpusDir
 	 * @param snapHome
 	 */
-	public void initialize(final String indexHome, final String corpusDir, final String snapHome) {
+	public SrchController initialize(final String indexHome, final String corpusDir, final String snapHome) {
 		// 成员属性创建与初始化
 		this.srchModel = new SrchModel(indexHome, corpusDir, snapHome).initialize();
 		this.state.set(REC());// 清空state
 		Trie.USE_RECURSIVE_GET_TRIE = false;// 使用LOOP模式的分词方式
+		return this;
 	}
 
 	/**
