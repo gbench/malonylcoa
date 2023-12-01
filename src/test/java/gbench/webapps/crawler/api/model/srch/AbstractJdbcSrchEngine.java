@@ -492,7 +492,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @param size 返回最大长度
 		 */
 		public List<IRecord> boolean_query(final IRecord rec, final int size) {
-			return AbstractJdbcSrchEngine.this.lookup(rec2boolquery(rec), size);
+			return AbstractJdbcSrchEngine.this.lookup(parseDsl(rec), size);
 		}
 
 		/**
@@ -521,7 +521,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @param rec 查询定义
 		 */
 		public IRecord sqlget1(final IRecord rec) {
-			final var r = AbstractJdbcSrchEngine.this.lookup(rec2boolquery(rec), 1);
+			final var r = AbstractJdbcSrchEngine.this.lookup(parseDsl(rec), 1);
 			return r == null || r.size() < 1 ? null : r.get(0);
 		}
 
@@ -951,7 +951,7 @@ public abstract class AbstractJdbcSrchEngine {
 			this.exactHitsCount = exactHitsCount;
 			this.sort = sort == null ? Sort.INDEXORDER : sort;
 			this.fieldsToLoad = fieldsToLoad == null ? null : Collections.unmodifiableSet(new HashSet<>(fieldsToLoad));
-			
+
 			return this;
 		}
 
