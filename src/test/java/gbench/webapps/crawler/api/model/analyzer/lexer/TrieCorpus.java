@@ -13,7 +13,7 @@ import java.util.stream.Stream;
  */
 public class TrieCorpus extends Trie<String> {
 
-	public TrieCorpus(String value) {
+	public TrieCorpus(final String value) {
 		super(value);
 	}
 
@@ -27,6 +27,40 @@ public class TrieCorpus extends Trie<String> {
 		this.level = trie.level;
 		this.parent = trie.parent;
 		this.value = trie.value;
+	}
+
+	/**
+	 * 为语料库添加关键词
+	 * 
+	 * @param keyword 关键词
+	 * @return 语料库
+	 */
+	public TrieCorpus addPoints2Trie(final String keyword) {
+		addPoints2Trie(this, Arrays.asList(keyword.split("")));
+		return this;
+	}
+
+	/**
+	 * 为语料库添加关键词
+	 * 
+	 * @param keywords 关键词集合
+	 * @return 语料库
+	 */
+	public TrieCorpus addPoints2Trie(final Stream<String> keywords) {
+		keywords.forEach(keyword -> {
+			addPoints2Trie(this, Arrays.asList(keyword.split("")));
+		});
+		return this;
+	}
+
+	/**
+	 * 前缀检测
+	 * 
+	 * @param points
+	 * @return
+	 */
+	public boolean isPrefix(final String points) {
+		return this.isPrefix(Arrays.asList(points.split("")));
 	}
 
 	/**
@@ -49,40 +83,6 @@ public class TrieCorpus extends Trie<String> {
 	 */
 	public static TrieCorpus getCorpus(final List<String> keywords) {
 		return getCorpus(keywords.stream());
-	}
-
-	/**
-	 * 为语料库添加关键词
-	 * 
-	 * @param keyword 关键词
-	 * @return 语料库
-	 */
-	public TrieCorpus addPoints2Trie(String keyword) {
-		addPoints2Trie(this, Arrays.asList(keyword.split("")));
-		return this;
-	}
-
-	/**
-	 * 为语料库添加关键词
-	 * 
-	 * @param keywords 关键词集合
-	 * @return 语料库
-	 */
-	public TrieCorpus addPoints2Trie(Stream<String> keywords) {
-		keywords.forEach(keyword -> {
-			addPoints2Trie(this, Arrays.asList(keyword.split("")));
-		});
-		return this;
-	}
-
-	/**
-	 * 前缀检测
-	 * 
-	 * @param points
-	 * @return
-	 */
-	public boolean isPrefix(final String points) {
-		return this.isPrefix(Arrays.asList(points.split("")));
 	}
 
 	/**
