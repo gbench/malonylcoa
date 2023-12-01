@@ -1,10 +1,12 @@
 package gbench.webapps.crawler.api.model.analyzer.junit;
 
-import java.util.stream.Stream;
+import static gbench.util.io.Output.println;
+import static java.text.MessageFormat.format;
 
 import org.junit.jupiter.api.Test;
 
 import gbench.util.data.DataApp.DFrame;
+import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.webapps.crawler.api.model.analyzer.YuhuanAnalyzer;
 import gbench.webapps.crawler.api.model.analyzer.lexer.ILexProcessor;
@@ -12,28 +14,29 @@ import gbench.webapps.crawler.api.model.analyzer.lexer.Lexeme;
 import gbench.webapps.crawler.api.model.analyzer.lexer.Trie;
 
 /**
- * 
+ * 分词器
  */
 public class JunitAnalyzer2 {
 
 	/**
 	 * corpusPath 语料库路径
 	 *
-	 * @param corpusDir
+	 * @param dfm 基础词库
 	 * @return YuhuanAnalyzer
 	 */
 	public YuhuanAnalyzer getYunHuan(final DFrame dfm) {
-		final var trie = new Trie<String>();// 语料库的根节点树
+		final var corpus = new Trie<String>();// 语料库的根节点树
+
 		dfm.rowS().forEach(line -> {
 			final var word = line.str("WORD");
 			final var meaning = word;
-			Trie.addPoints2Trie(trie, word) // 增加节点
+			Trie.addPoints2Trie(corpus, word) // 增加节点
 					.addAttribute("category", "word") // 绑定词法类型信息
 					.addAttribute("meaning", meaning); // 词义
-		});
+		}); // forEach
 
 		// 打印语料库
-		Trie.traverse(trie, e -> {
+		Trie.traverse(corpus, e -> {
 			final var line = "\t".repeat(e.getLevel()) + e.getValue() + //
 					"\tcategory:" + e.getAttribute("category");
 			System.out.println(line);
@@ -41,29 +44,44 @@ public class JunitAnalyzer2 {
 
 		@SuppressWarnings("resource")
 		final var yuhuan = new YuhuanAnalyzer().addProcessor(new ILexProcessor() { // 创建一个 分词器
+			/**
+			 * 一个成功的分词需要evaluate返回非空,否则分词器会返回最基础的单词符号
+			 */
 			@Override
 			public Lexeme evaluate(final String symbol) {
-				final var cur_trie = trie.getTrie(symbol.split(""));// 提取节点词素
-				if (cur_trie == null)
-					return null;
-				final var category = cur_trie.strAttr("category");
-				return new Lexeme(symbol, category, cur_trie.strAttr("meaning"));
+				return corpus.opt(symbol.split("")).map(trie -> {
+					final var category = trie.strAttr("category");
+					final var meaning = trie.strAttr("meaning");
+					return new Lexeme(symbol, category, meaning);
+				}).orElseGet(() -> { // 模式识别
+					return predefs.tupleS() // 预定模式检测
+							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
+							.findFirst().map(t -> new Lexeme(symbol, t._1, symbol)) // 生成词素
+							.orElse(null); // 获取词意失败
+				}); // opt
 			}
 
 			@Override
 			public boolean isPrefix(final String line) {
-				if (Stream.of(// pattern 列表
-						"[a-zA-Z]+", // 英文单词
-						"[a-zA-Z_-]+", // 英文标识符号
-						"[\\d\\.]+", // 阿拉伯数据
-						"[一二三四五六七八九十零百千万亿兆]+", // 中文数字
-						"[一二三四五六七八九十零百千万亿兆\\d]+年([一二三四五六七八九十零百千万亿兆\\d+](月([一二三四五六七八九十零百千万亿兆\\d+]日?)?)?)?") // 日期前缀的判断
-						.anyMatch(line::matches)) {
+				if (predefs.valueS().map(Object::toString).anyMatch(line::matches)) {
 					return true;
+				} else {
+					return corpus.isPrefix(line.split(""));
 				}
+			} // isPrefix
 
-				return trie.isPrefix(line.split(""));
-			}// isPrefix
+			/**
+			 * 预定义模式
+			 */
+			final IRecord predefs = IRecord.REC( // 预定义符号
+					"LETTER", "[a-zA-Z]+" // 英文单词
+					, "INDENTIFIER", "[a-zA-Z_-]+" // 英文标识符号
+					, "NUMBER", "[\\d\\.]+" // 阿拉伯数据
+					, "CN_NUMBER", "[一二三四五六七八九十零百千万亿兆]+" // 中文数字
+					, "CN_YEAR", "[一二三四五六七八九十零百千万亿兆\\d]+年([一二三四五六七八九十零百千万亿兆\\d+](月([一二三四五六七八九十零百千万亿兆\\d+]日?)?)?)?" //
+					, "PUNCT", "[-,+*/，。、]" // 标点符号
+			);
+
 		});// addProcessor
 
 		return yuhuan;
@@ -71,13 +89,14 @@ public class JunitAnalyzer2 {
 
 	@Test
 	public void foo() {
-		final var file = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/datafile.xlsx";
+		final var home = "F:/slicef/ws/gitws/malonylcoa/src/test/";
+		final var file = format("{0}/java/gbench/webapps/crawler/api/model/data/datafile.xlsx", home);
 		final var excel = SimpleExcel.of(file);
-		final var dfm = excel.autoDetect(1).collect(DFrame.dfmclc2);
-		final var analyzer = this.getYunHuan(dfm);
+		final var dfm = excel.autoDetect("t_wenyan").collect(DFrame.dfmclc2);
+		final var yuhuan = this.getYunHuan(dfm);
 
-		analyzer.analyze("何不按兵束甲，北面而事之？").forEach(world -> {
-			System.out.println(world);
+		yuhuan.analyze("何不按兵束甲，北面而事之？this is a 23,二零二三年").forEach(word -> {
+			println(word);
 		});
 
 	}

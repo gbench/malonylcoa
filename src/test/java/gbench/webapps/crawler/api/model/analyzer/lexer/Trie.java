@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -145,6 +146,17 @@ public class Trie<T> {
 	 */
 	public Trie<T> getTrie(final T[] points) {
 		return this.getTrie(Arrays.asList(points));
+	}
+
+	/**
+	 * 获取points 路径所在的Trie
+	 * 
+	 * @param points 前缀的元素列表
+	 * @return points 是否是一条词语前缀
+	 */
+	@SafeVarargs
+	public final Optional<Trie<T>> opt(final T... points) {
+		return Optional.ofNullable(this.getTrie(points));
 	}
 
 	/**
