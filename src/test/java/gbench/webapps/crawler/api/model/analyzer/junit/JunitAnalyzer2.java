@@ -49,16 +49,16 @@ public class JunitAnalyzer2 {
 			 */
 			@Override
 			public Lexeme evaluate(final String symbol) {
-				return corpus.opt(symbol.split("")).map(trie -> {
-					final var category = trie.strAttr("category");
-					final var meaning = trie.strAttr("meaning");
-					return new Lexeme(symbol, category, meaning);
+				return corpus.opt(symbol.split("")).map(token -> { // 数据符号
+					final var category = token.strAttr("category"); // 提取corpus词典分类属性
+					final var meaning = token.strAttr("meaning"); // 提取corpus词典意义属性
+					return new Lexeme(symbol, category, meaning); // 返回词素
 				}).orElseGet(() -> { // 模式识别
 					return predefs.tupleS() // 预定模式检测
 							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
 							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // // 生成词素
-									.addAttributes("class", "mode"))
-							.orElse(null); // 获取词意失败
+									.addAttributes("class", "mode") // 补充属性
+					).orElse(null); // 获取词意失败
 				}); // opt
 			}
 
@@ -68,20 +68,20 @@ public class JunitAnalyzer2 {
 					return true;
 				} else {
 					return corpus.isPrefix(line.split(""));
-				}
+				} // if
 			} // isPrefix
 
 			/**
 			 * 预定义模式
 			 */
-			final IRecord predefs = IRecord.REC( // 预定义符号
+			private final IRecord predefs = IRecord.REC( // 预定义符号
 					"LETTER", "[a-zA-Z]+" // 英文单词
 					, "INDENTIFIER", "[a-zA-Z_-]+" // 英文标识符号
 					, "NUMBER", "[\\d\\.]+" // 阿拉伯数据
 					, "CN_NUMBER", "[一二三四五六七八九十零百千万亿兆]+" // 中文数字
 					, "CN_YEAR", "[一二三四五六七八九十零百千万亿兆\\d]+年([一二三四五六七八九十零百千万亿兆\\d+](月([一二三四五六七八九十零百千万亿兆\\d+]日?)?)?)?" //
 					, "PUNCT", "[-,+*/，。、]" // 标点符号
-			);
+			); // 预定义模式
 
 		});// addProcessor
 
