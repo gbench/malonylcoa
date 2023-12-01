@@ -26,11 +26,11 @@ import static gbench.util.data.DataApp.IRecord.*;
  */
 public final class PageData {
 
-	private TotalHits totalHits;
-
-	private int offset = 0;
-
-	private List<Doc> hits = new ArrayList<>();
+	/**
+	 * 构造函数
+	 */
+	private PageData() {
+	}
 
 	/**
 	 * Creates a search result page for the given raw Lucene hits.
@@ -43,16 +43,16 @@ public final class PageData {
 	 * @return the search result page
 	 * @throws IOException
 	 */
-	static PageData of(TotalHits totalHits, ScoreDoc[] docs, int offset, IndexSearcher searcher,
-			Set<String> fieldsToLoad) throws IOException {
-		final PageData res = new PageData();
+	public static PageData of(final TotalHits totalHits, final ScoreDoc[] docs, final int offset,
+			final IndexSearcher searcher, final Set<String> fieldsToLoad) throws IOException {
+		final var res = new PageData();
 		final var sfs = searcher.storedFields();
 
 		res.totalHits = Objects.requireNonNull(totalHits);
 		Objects.requireNonNull(docs);
 		Objects.requireNonNull(searcher);
 
-		for (ScoreDoc sd : docs) {
+		for (final ScoreDoc sd : docs) {
 			final Document luceneDoc = (fieldsToLoad == null) ? sfs.document(sd.doc)
 					: sfs.document(sd.doc, fieldsToLoad);
 			res.hits.add(Doc.of(sd.doc, sd.score, luceneDoc));
@@ -95,7 +95,7 @@ public final class PageData {
 	 * 
 	 * @param cs hits 的遍历函数
 	 */
-	public void forEach(Consumer<IRecord> cs) {
+	public void forEach(final Consumer<IRecord> cs) {
 		this.hitsStream().forEach(cs);
 	}
 
@@ -104,7 +104,7 @@ public final class PageData {
 	 * 
 	 * @param cs hits 的遍历函数
 	 */
-	public void forEach2(Consumer<Doc> cs) {
+	public void forEach2(final Consumer<Doc> cs) {
 		this.getHits().forEach(cs);
 	}
 
@@ -116,18 +116,26 @@ public final class PageData {
 	}
 
 	/**
-	 * 构造函数
-	 */
-	private PageData() {
-	}
-
-	/**
 	 * Holder for a hit.
 	 */
 	public static class Doc {
-		private int docId;
-		private float score;
-		private Map<String, String[]> fieldValues = new HashMap<>();
+
+		/**
+		 * Doc
+		 * 
+		 * @param docId
+		 * @param score
+		 * @param luceneDoc
+		 */
+		private Doc(final int docId, final float score, final Document luceneDoc) {
+			this.docId = docId;
+			this.score = score;
+			final Set<String> fields = luceneDoc.getFields().stream().map(IndexableField::name)
+					.collect(Collectors.toSet());
+			for (String f : fields) {
+				this.fieldValues.put(f, luceneDoc.getValues(f));
+			}
+		}
 
 		/**
 		 * Creates a hit.
@@ -137,17 +145,9 @@ public final class PageData {
 		 * @param luceneDoc - raw Lucene document
 		 * @return the hit
 		 */
-		static Doc of(int docId, float score, Document luceneDoc) {
+		static Doc of(final int docId, final float score, final Document luceneDoc) {
 			Objects.requireNonNull(luceneDoc);
-
-			Doc doc = new Doc();
-			doc.docId = docId;
-			doc.score = score;
-			Set<String> fields = luceneDoc.getFields().stream().map(IndexableField::name).collect(Collectors.toSet());
-			for (String f : fields) {
-				doc.fieldValues.put(f, luceneDoc.getValues(f));
-			}
-			return doc;
+			return new Doc(docId, score, luceneDoc);
 		}
 
 		/**
@@ -209,7 +209,12 @@ public final class PageData {
 			return Collections.unmodifiableMap(fieldValues);
 		}
 
-		private Doc() {
-		}
+		private final int docId;
+		private final float score;
+		private final Map<String, String[]> fieldValues = new HashMap<>();
 	}
+
+	private TotalHits totalHits;
+	private int offset = 0;
+	private List<Doc> hits = new ArrayList<>();
 }

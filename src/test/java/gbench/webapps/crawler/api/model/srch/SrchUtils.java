@@ -117,29 +117,31 @@ public class SrchUtils {
 	}
 
 	/**
+	 * dsl 解析
 	 * 
-	 * @param record
+	 * @param dsl
 	 * @return
 	 */
-	public static Query getquery(final IRecord record) {
-		return getquery(record, null, new BooleanQuery.Builder());
+	public static Query parseDsl(final IRecord dsl) {
+		return parseDsl(dsl, null, new BooleanQuery.Builder());
 	}
 
 	/**
+	 * dsl 解析
 	 * 
-	 * @param record
+	 * @param dsl
 	 * @param key
 	 * @param builder
-	 * @return
+	 * @return Query
 	 */
-	public static Query getquery(final IRecord record, final String key, BooleanQuery.Builder builder) {
+	public static Query parseDsl(final IRecord dsl, final String key, BooleanQuery.Builder builder) {
 		@SuppressWarnings("unchecked")
-		final var subqueries = record.tupleS().map(p -> p.fmap2(e -> {
+		final var subqueries = dsl.tupleS().map(p -> p.fmap2(e -> {
 			final var rec = parse2Term(p._1);
 			final var type = rec.str("type");
 			final var op = (BooleanClause.Occur) rec.get("op");
 			if (e instanceof IRecord r) {
-				return TUP2(op, getquery(r, p._1, new BooleanQuery.Builder()));
+				return TUP2(op, parseDsl(r, p._1, new BooleanQuery.Builder()));
 			} else if (e instanceof Tuple2 tup) {
 				return tup;
 			} else {

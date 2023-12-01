@@ -30,24 +30,24 @@ public class JunitQuery1 {
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
 		// println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(format));
 
-		final var line = REC( //
+		final var dsl = REC( //
 				"must", REC("symbol*", "*权*", "file*", "**") //
-				,"should", REC("py0*", "*quan*", "py1*", "*q*") //
+				, "should", REC("py0*", "*quan*", "py1*", "*q*") //
 		); // line
-		
+
 		final var srchModel = new SrchModel(indexHome, corpusDir, snapHome).initialize();
-		final var q = getquery(line);
+		final var q = parseDsl(dsl);
 		final var pq = srchModel.getPageQuery(q);
 		pq.initialize();
 		System.out.println(format("query:{0},{1}", q.getClass().getSimpleName(), q));
 		final var optional = pq.getData2();
 		println(q);
-		println(optional.map(e->e.hitsStream().toList()).orElse(new ArrayList<>()));
+		println(optional.map(e -> e.hitsStream().toList()).orElse(new ArrayList<>()));
 		println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(format));
 	}
 
 	/**
-	 * 
+	 * parseDsl
 	 */
 	@Test
 	public void bar() {
@@ -55,17 +55,17 @@ public class JunitQuery1 {
 				"must", REC("symbol*", "*quan*", "file*", "*sunzi*"), //
 				"filter", REC("py0*", "*quan*", "py1*", "*q*") //
 		); // line
-		final var q = getquery(line);
+		final var q = parseDsl(line);
 		println(q);
 	}
 
 	/**
-	 * 
+	 * parseDsl
 	 */
 	@Test
 	public void quz() {
 		final var line = REC("+symbol*", "*quan*", "+file*", "*sunzi*"); // line
-		final var q = getquery(line);
+		final var q = parseDsl(line);
 		println("----------", q);
 	}
 
