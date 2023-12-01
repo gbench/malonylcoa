@@ -33,18 +33,16 @@ public class JunitQuery1 {
 		srchCtrl.initialize(indexHome, corpusDir, snapHome);
 		// println(srchCtrl.lookup2("权", "sess1", "agent1", 10).mutate(format));
 
-		final var dsl = REC( //
-				"must", REC("symbol*", "*权*", "file*", "*sunzi*") //
-				, "should", REC("py0*", "*quan*", "py1*", "*q*") //
-		); // line
-
 		final var srchModel = new SrchModel(indexHome, corpusDir, snapHome).initialize();
-		final var q = parseDsl(dsl);
-		final var pq = srchModel.getPageQuery(q);
-		pq.initialize();
-		System.out.println(format("query:{0},{1}", q.getClass().getSimpleName(), q));
+		final var pq = REC( // dsl
+				"must", REC( // must 项目
+						"should", REC("py0*", "*quan*", "py1*", "*q*"), // should 项目
+						"file*", "*sunzi*") //
+		).mutate(e -> srchModel.getPageQuery(parseDsl(e))).initialize(); // dsl
+
+		System.out.println(format("query:{0},{1}", pq.getClass().getSimpleName(), pq));
 		final var optional = pq.getData2();
-		println(optional.map(e -> REC("result", e.getHits2()).mutate(format)));
+		println(optional.map(e -> REC("result", e.getHits2()).mutate(format)).orElse(null));
 		println(srchCtrl.lookup2("权;sunzi", "sess1", "agent1", 10).mutate(format));
 	}
 

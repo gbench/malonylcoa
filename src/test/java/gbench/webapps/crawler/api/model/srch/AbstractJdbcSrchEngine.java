@@ -926,7 +926,7 @@ public abstract class AbstractJdbcSrchEngine {
 		public PageQuery(final IndexReader reader, final Query query) {
 			this.reader = reader;
 			this.searcher = new IndexSearcher(reader);
-			this.query = query;
+			this.query = Objects.requireNonNull(query);
 		}
 
 		/**
@@ -937,19 +937,22 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @param fieldsToLoad   文档的字段集合
 		 * @param exactHitsCount 是否返回所有符合条件的数据数量。
 		 */
-		public void initialize(final int pageSize, final Sort sort, final Collection<String> fieldsToLoad,
+		public PageQuery initialize(final int pageSize, final Sort sort, final Collection<String> fieldsToLoad,
 				final boolean exactHitsCount) {
-			if (pageSize < 0)
+			if (pageSize < 0) {
 				throw new PageQueryException(
 						new IllegalArgumentException("Negative integer is not acceptable for page size."));
+			}
+
 			// reset internal status to prepare for a new search session
 			this.docs = new ScoreDoc[0];
 			this.currentPage = 0;
 			this.pageSize = pageSize;
 			this.exactHitsCount = exactHitsCount;
-			this.query = Objects.requireNonNull(query);
 			this.sort = sort == null ? Sort.INDEXORDER : sort;
 			this.fieldsToLoad = fieldsToLoad == null ? null : Collections.unmodifiableSet(new HashSet<>(fieldsToLoad));
+			
+			return this;
 		}
 
 		/**
@@ -958,9 +961,9 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @param pageSize     页面尺寸
 		 * @param fieldsToLoad 文档的字段集合
 		 */
-		public void initialize(Integer pageSize, final Collection<String> fieldsToLoad) {
-			this.initialize(pageSize == null ? PAGEQUEY_DEFAULT_PAGE_SIZE : pageSize, Sort.INDEXORDER, fieldsToLoad,
-					true);
+		public PageQuery initialize(Integer pageSize, final Collection<String> fieldsToLoad) {
+			return this.initialize(pageSize == null ? PAGEQUEY_DEFAULT_PAGE_SIZE : pageSize, Sort.INDEXORDER,
+					fieldsToLoad, true);
 		}
 
 		/**
@@ -968,8 +971,8 @@ public abstract class AbstractJdbcSrchEngine {
 		 *
 		 * @param pageSize 页面尺寸
 		 */
-		public void initialize(Integer pageSize) {
-			this.initialize(pageSize, null);
+		public PageQuery initialize(Integer pageSize) {
+			return this.initialize(pageSize, null);
 		}
 
 		/**
@@ -977,15 +980,15 @@ public abstract class AbstractJdbcSrchEngine {
 		 *
 		 * @param fieldsToLoad 文档中的显示字段集合
 		 */
-		public void initialize(final Collection<String> fieldsToLoad) {
-			this.initialize(null, fieldsToLoad);
+		public PageQuery initialize(final Collection<String> fieldsToLoad) {
+			return this.initialize(null, fieldsToLoad);
 		}
 
 		/**
 		 * 默认初始
 		 */
-		public void initialize() {
-			this.initialize(null, null);
+		public PageQuery initialize() {
+			return this.initialize(null, null);
 		}
 
 		/**
@@ -999,7 +1002,7 @@ public abstract class AbstractJdbcSrchEngine {
 			// execute search
 			final ScoreDoc after = docs.length == 0 ? null : docs[docs.length - 1];
 			final TopDocs topDocs;
-			
+
 			if (sort != null) {
 				topDocs = searcher.searchAfter(after, query, pageSize, sort);
 			} else {
@@ -1237,12 +1240,16 @@ public abstract class AbstractJdbcSrchEngine {
 			return reader;
 		}
 
+		public String toString() {
+			return format("query:[ {0} ],size:{1},currentPage:{2}", this.query, pageSize, currentPage);
+		}
+
 		private int pageSize = PAGEQUEY_DEFAULT_PAGE_SIZE; // 每一页中的数据条目数
 		private int currentPage = -1; // 当前页号 从0开始。 0 表示无效页号
 		private ScoreDoc[] docs = new ScoreDoc[0];
 		private TotalHits totalHits; // 匹配数据的数量
 		private boolean exactHitsCount; // 是否返回精准的匹配数量， true 返回所有的符合条件的 记录数量，否则 返回 DEFAULT_TOTAL_HITS_THRESHOLD 所定义的数量
-		private Query query; // 数据请求
+		private final Query query; // 数据请求
 		private Sort sort;// 排序方式
 		private Set<String> fieldsToLoad; // 返回文档中的 字段集合。
 		private final IndexSearcher searcher; // 查询器
