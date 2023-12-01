@@ -76,28 +76,30 @@ public class JunitAnalyzer1 {
 	 */
 	public YuhuanAnalyzer getYunHuan(final String corpusDir) {
 		final var trie = new Trie<String>();// 语料库的根节点树
-		final var corpusHome = new File(corpusDir);
+		final var corpusHome = new File(corpusDir); // 语料库路径
 
 		// 构建语料库
 		((corpusHome.isDirectory()) //
 				? Stream.of(corpusHome.listFiles())
-				: Stream.of(new File(FileSystem.path(corpusDir, this.getClass()))))
-				.filter(file -> file.getAbsolutePath().endsWith(".txt")).forEach(file -> {// 创建语料文件
-					readLineS(file).filter(line -> !line.matches("^\\s*$")) // 去除空行
-							.forEach(e -> {// 提取语料词汇
-								Stream.of(e.strip().split("[\n]+")).map(p -> p.split("")) //
-										.forEach(points -> {// 设置词素的节点属性信息
-											Trie.addPoints2Trie(trie, points).addAttribute("category", "word")// 绑定词法类型信息
-													.addAttribute("meaning",
-															Arrays.stream(points).collect(Collectors.joining()));
-										});
-							});// forEach
-				});
+				: Stream.of(new File(FileSystem.path(corpusDir, this.getClass()))) //
+		).filter(file -> file.getAbsolutePath().endsWith(".txt")).forEach(file -> {// 创建语料文件
+			readLineS(file).filter(line -> !line.matches("^\\s*$")) // 去除空行
+					.forEach(e -> {// 提取语料词汇
+						Stream.of(e.strip().split("[\n]+")).map(p -> p.split("")).forEach(points -> {// 设置词素的节点属性信息
+							final var meaning = Arrays.stream(points).collect(Collectors.joining());
+							Trie.addPoints2Trie(trie, points) // 增加节点
+									.addAttribute("category", "word") // 绑定词法类型信息
+									.addAttribute("meaning", meaning); // 词义
+						}); // forEach
+					});// forEach
+		});
 
 		// 打印语料库
-		// Trie.traverse(trie,
-		// e->System.out.println("\t".repeat(e.getLevel())+e.getValue()+"\t
-		// type:"+e.getAttribute("type")));
+		Trie.traverse(trie, e -> {
+			final var line = "\t".repeat(e.getLevel()) + e.getValue() + //
+					"\ttype:" + e.getAttribute("type");
+			System.out.println(line);
+		}); // traverse
 
 		@SuppressWarnings("resource")
 		final var yuhuan = new YuhuanAnalyzer().addProcessor(new ILexProcessor() { // 创建一个 分词器
@@ -109,7 +111,7 @@ public class JunitAnalyzer1 {
 			 * @return 词素
 			 */
 			@Override
-			public Lexeme evaluate(String symbol) {
+			public Lexeme evaluate(final String symbol) {
 				final var cur_trie = trie.getTrie(symbol.split(""));// 提取节点词素
 				if (cur_trie == null)
 					return null;
@@ -141,7 +143,7 @@ public class JunitAnalyzer1 {
 	@Test
 	public void foo() {
 		final var prefix = "F:/slicef/ws/gitws/malonylcoa/src/test/";
-		final var fileHome = FT("$0/java/gbench/webapps/crawler/api/model/data/docs", prefix);
+		final var fileHome = FT("$0/java/gbench/webapps/crawler/api/model/data/docs/zhuzi", prefix);
 		final var corpusDir = FT("$0/java/gbench/webapps/crawler/api/model/data/corpus", prefix);
 
 		Stream.of(new File(fileHome).listFiles()).filter(e -> e.getName().endsWith(".txt")).forEach(file -> {
