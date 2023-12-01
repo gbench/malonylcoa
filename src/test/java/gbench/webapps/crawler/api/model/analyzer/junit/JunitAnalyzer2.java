@@ -26,9 +26,8 @@ public class JunitAnalyzer2 {
 		final var trie = new Trie<String>();// 语料库的根节点树
 		dfm.rowS().forEach(line -> {
 			final var word = line.str("WORD");
-			final var points = word.split("");
 			final var meaning = word;
-			Trie.addPoints2Trie(trie, points) // 增加节点
+			Trie.addPoints2Trie(trie, word) // 增加节点
 					.addAttribute("category", "word") // 绑定词法类型信息
 					.addAttribute("meaning", meaning); // 词义
 		});
@@ -36,7 +35,7 @@ public class JunitAnalyzer2 {
 		// 打印语料库
 		Trie.traverse(trie, e -> {
 			final var line = "\t".repeat(e.getLevel()) + e.getValue() + //
-					"\ttype:" + e.getAttribute("type");
+					"\tcategory:" + e.getAttribute("category");
 			System.out.println(line);
 		}); // traverse
 
@@ -47,8 +46,8 @@ public class JunitAnalyzer2 {
 				final var cur_trie = trie.getTrie(symbol.split(""));// 提取节点词素
 				if (cur_trie == null)
 					return null;
-				final var category = cur_trie.getAttribute("category") + "";
-				return new Lexeme(symbol, category, "unknown");
+				final var category = cur_trie.strAttr("category");
+				return new Lexeme(symbol, category, cur_trie.strAttr("meaning"));
 			}
 
 			@Override

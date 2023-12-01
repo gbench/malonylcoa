@@ -448,7 +448,8 @@ public class Trie<T> {
 	 * @param points 即 line 关键词列表, 点元素路径
 	 * @return points 所在的末梢节点 Trie
 	 */
-	public static <T> Trie<T> addPoints2Trie(final Trie<T> trie, final T[] points) {
+	@SafeVarargs
+	public static <T> Trie<T> addPoints2Trie(final Trie<T> trie, final T... points) {
 		return addPoints2Trie(trie, Arrays.asList(points));
 	}
 
