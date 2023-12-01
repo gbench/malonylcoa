@@ -118,18 +118,18 @@ public class SrchUtils {
 			} // if
 		})).collect(IRecord.mapclc2(e -> (Tuple2<String, Tuple2<BooleanClause.Occur, Query>>) (Object) e));
 
-		Optional.ofNullable(key).map(k -> OCCURS.get(key.toUpperCase())).ifPresentOrElse(occur -> {
+		Optional.ofNullable(key).map(k -> OCCURS.get(key.toUpperCase())).ifPresentOrElse(occur -> { // 键名有效
 			subqueries.values().forEach(p -> builder.add(p._2, occur));
-		}, () -> { // key == null
-			if (subqueries.size() > 1) {
-				subqueries.forEach((k, p) -> {
+		}, () -> { // 贱名无效, key == null
+			if (subqueries.size() > 1) { // 包含多了子组件
+				subqueries.forEach((k, p) -> { // 子组件
 					Optional.ofNullable(k).map(e -> OCCURS.get(e.toUpperCase())).ifPresentOrElse(occur1 -> {
 						builder.add(p._2, occur1);
 					}, () -> {
 						builder.add(p._2, p._1);
-					});
+					}); // ifPresentOrElse
 				}); // forEach
-			} // if
+			} // if subqueries.size() > 1
 		}); // ifPresentOrElse
 
 		return subqueries.size() <= 1 //

@@ -45,10 +45,10 @@ public class JunitAnalyzer2 {
 		@SuppressWarnings("resource")
 		final var yuhuan = new YuhuanAnalyzer().addProcessor(new ILexProcessor() { // 创建一个 分词器
 			/**
-			 * 一个成功的分词需要evaluate返回非空,否则分词器会返回最基础的单词符号
+			 * 符号计算:一个成功的分词需要evaluate返回非空,否则分词器会返回最基础的单词符号
 			 */
 			@Override
-			public Lexeme evaluate(final String symbol) {
+			public Lexeme evaluate(final String symbol) { // 符号计算
 				return corpus.opt(symbol.split("")).map(token -> { // 数据符号
 					final var category = token.strAttr("category"); // 提取corpus词典分类属性
 					final var meaning = token.strAttr("meaning"); // 提取corpus词典意义属性
@@ -56,7 +56,7 @@ public class JunitAnalyzer2 {
 				}).orElseGet(() -> { // 模式识别
 					return predefs.tupleS() // 预定模式检测
 							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
-							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // // 生成词素
+							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // 生成词素
 									.addAttributes("class", "mode") // 补充属性
 					).orElse(null); // 获取词意失败
 				}); // opt
