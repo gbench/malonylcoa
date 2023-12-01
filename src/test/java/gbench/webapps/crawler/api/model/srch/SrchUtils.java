@@ -47,22 +47,7 @@ public class SrchUtils {
 	 * @return {name:名称String,op:操作符BooleanClause.Ocuur,type:类型string}
 	 */
 	public static IRecord parse2Term(final String termline) {
-		final var term_matcher = Pattern.compile("(^\\s*\\S+)\\s*([?$*#!=~])$").matcher(termline);// term行模式
-		final var nameline_pattern = "([-#+])?([^-#+].*)";// 名称行的模式文法
-		Function<String, Tuple2<String, BooleanClause.Occur>> name_parser = (nameline) -> {
-			final var mth = Pattern.compile(nameline_pattern).matcher(nameline.trim());
-			if (!mth.matches()) {
-				return null;
-			}
-			final var grp1 = mth.group(1);
-			final var op = switch (grp1 == null ? "" : grp1) {// 操作符选择
-			case "+" -> BooleanClause.Occur.MUST;
-			case "-" -> BooleanClause.Occur.MUST_NOT;
-			case "#" -> BooleanClause.Occur.FILTER;
-			default -> BooleanClause.Occur.SHOULD;
-			};// switch
-			return TUP2(mth.group(2), op);
-		};// name_parser
+		final var term_matcher = Pattern.compile(TERM_PATTERN).matcher(termline);// term行模式
 		String nameline = termline; // 默认全行作为字段名
 		String type = "="; // 默认采用精准匹配
 
@@ -70,9 +55,11 @@ public class SrchUtils {
 			nameline = term_matcher.group(1);
 			type = term_matcher.group(2);
 		}
-		final var tup = name_parser.apply(nameline);
-		if (tup == null)
+
+		final var tup = namelineParser(nameline);
+		if (tup == null) {
 			return null;
+		}
 
 		return REC("name", tup._1, "type", type, "op", tup._2);
 	}
@@ -91,21 +78,31 @@ public class SrchUtils {
 	 *
 	 * @return Query 归集器
 	 */
-	public static Tuple2<BooleanClause.Occur, Query> parse2Query(Tuple2<String, Term> p) {
-		final var item = parse2Term(p._1);// 语句项目解析
-		if (item == null)
-			return null;
+	public static Tuple2<BooleanClause.Occur, Query> parse2Query(final Tuple2<String, Term> p) {
+		return Optional.ofNullable(parse2Term(p._1)) // 语句项目解析
+				.map(item -> {
+					final Query qry = term2query(item.str("type"), p._2);
+					return TUP2((BooleanClause.Occur) item.get("op"), qry);
+				}).orElse(null);
+	}
 
+	/**
+	 * term2query
+	 * 
+	 * @param type Query 类型
+	 * @param term 检索项
+	 * @return Query
+	 */
+	public static Query term2query(final String type, final Term term) {
 		// switch
-		final Query qry = switch (item.str("type")) {// term 类型
-		case "=" -> new TermQuery(p._2); //
-		case "*" -> new WildcardQuery(p._2);
-		case "-" -> new PrefixQuery(p._2);
-		case "~" -> new FuzzyQuery(p._2);
-		default -> new TermQuery(p._2);
+		final Query qry = switch (type) {// term 类型
+		case "=" -> new TermQuery(term); //
+		case "*" -> new WildcardQuery(term);
+		case "-" -> new PrefixQuery(term);
+		case "~" -> new FuzzyQuery(term);
+		default -> new TermQuery(term);
 		};// 查询选项
-
-		return TUP2((BooleanClause.Occur) item.get("op"), qry);
+		return qry;
 	}
 
 	/**
@@ -120,13 +117,65 @@ public class SrchUtils {
 	}
 
 	/**
+	 * 
+	 * @param record
+	 * @return
+	 */
+	public static Query getquery(final IRecord record) {
+		return getquery(record, null, new BooleanQuery.Builder());
+	}
+
+	/**
+	 * 
+	 * @param record
+	 * @param key
+	 * @param builder
+	 * @return
+	 */
+	public static Query getquery(final IRecord record, final String key, BooleanQuery.Builder builder) {
+		@SuppressWarnings("unchecked")
+		final var subqueries = record.tupleS().map(p -> p.fmap2(e -> {
+			final var rec = parse2Term(p._1);
+			final var type = rec.str("type");
+			final var op = (BooleanClause.Occur) rec.get("op");
+			if (e instanceof IRecord r) {
+				return TUP2(op, getquery(r, p._1, new BooleanQuery.Builder()));
+			} else if (e instanceof Tuple2 tup) {
+				return tup;
+			} else {
+				return TUP2(op, term2query(type, kvp2term(p)));
+			}
+		})).collect(IRecord.mapclc2(e -> (Tuple2<String, Tuple2<BooleanClause.Occur, Query>>) (Object) e));
+
+		Optional.ofNullable(key).map(k -> OCCURS.get(key.toUpperCase())).ifPresentOrElse(occur -> {
+			subqueries.values().forEach(p -> {
+				builder.add(p._2, occur);
+			});
+		}, () -> { // key == null
+			if (subqueries.size() > 1) {
+				subqueries.forEach((k, p) -> {
+					Optional.ofNullable(k).map(e -> OCCURS.get(e.toUpperCase())).ifPresentOrElse(occur1 -> {
+						builder.add(p._2, occur1);
+					}, () -> {
+						builder.add(p._2, p._1);
+					});
+				});
+			}
+		});
+
+		return subqueries.size() < 1 //
+				? subqueries.values().iterator().next()._2 //
+				: builder.build();
+	}
+
+	/**
 	 * 这是一个很难给出合适的名字的函数:它是 在一个accumulator中对一个Tuple2中的value类型为Collection的情况的
 	 * 辅助函数。用以实现 递归分解。
 	 *
 	 * @param vv 集合类型的对象。
 	 * @return Tuple2的列表
 	 */
-	private static List<Tuple2<String, Term>> typecase_for_collection_in_accumulator(Collection<?> vv) {
+	private static List<Tuple2<String, Term>> typecase_for_collection_in_accumulator(final Collection<?> vv) {
 		final var aa = new LinkedList<Tuple2<String, Term>>();
 		for (var v : vv) {
 			if (v instanceof IRecord rec) {
@@ -155,7 +204,7 @@ public class SrchUtils {
 	 * @return Term 项目的编辑器
 	 */
 	public static <U> Collector<Tuple2<String, Object>, List<Tuple2<String, Term>>, U> terms_clc(
-			Function<List<Tuple2<String, Term>>, U> mapper) {
+			final Function<List<Tuple2<String, Term>>, U> mapper) {
 		return Collector.of(LinkedList::new, // 累加器构造
 				accumulator, // 元素累加
 				(aa, bb) -> {
@@ -174,7 +223,7 @@ public class SrchUtils {
 	 * @return 搜集与整理
 	 */
 	public static Collector<Tuple2<String, Object>, List<Tuple2<String, Term>>, BooleanQuery> bool_query_clc(
-			BiConsumer<List<Tuple2<String, Term>>, BooleanQuery.Builder> cs) {
+			final BiConsumer<List<Tuple2<String, Term>>, BooleanQuery.Builder> cs) {
 		return Collector.of(LinkedList::new, // 累加器构造
 				accumulator, // 元素累加
 				(aa, bb) -> {
@@ -276,7 +325,7 @@ public class SrchUtils {
 	 * @param objects 检索条件
 	 * @return Query
 	 */
-	public static Query Q(Object... objects) {
+	public static Query Q(final Object... objects) {
 		return rec2boolquery(REC(objects));
 	}
 
@@ -372,5 +421,34 @@ public class SrchUtils {
 		doc.getFields().forEach(e -> rec.add(e.name(), e.stringValue()));
 		return rec;
 	}
+
+	/**
+	 * 
+	 * @param nameline
+	 * @return
+	 */
+	final static Tuple2<String, BooleanClause.Occur> namelineParser(final String nameline) {
+		final var mth = Pattern.compile(NAMELINE_PATTERN).matcher(nameline.trim());
+		if (!mth.matches()) {
+			return null;
+		}
+		final var grp1 = mth.group(1);
+		final var op = switch (grp1 == null ? "" : grp1) {// 操作符选择
+		case "+" -> BooleanClause.Occur.MUST;
+		case "-" -> BooleanClause.Occur.MUST_NOT;
+		case "#" -> BooleanClause.Occur.FILTER;
+		default -> BooleanClause.Occur.SHOULD;
+		};// switch
+		return TUP2(mth.group(2), op);
+	};// name_parser
+
+	public static String TERM_PATTERN = "(^\\s*\\S+)\\s*([?$*#!=~])$";
+	final static String NAMELINE_PATTERN = "([-#+])?([^-#+].*)";// 名称行的模式文法
+	final static Map<String, BooleanClause.Occur> OCCURS = Stream.of( // (name,Occur)
+			BooleanClause.Occur.FILTER //
+			, BooleanClause.Occur.MUST //
+			, BooleanClause.Occur.MUST_NOT //
+			, BooleanClause.Occur.SHOULD //
+	).collect(IRecord.mapclc2(e -> TUP2(e.name(), e)));
 
 }

@@ -1028,7 +1028,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 *
 		 * @return Optional HitsData
 		 */
-		public Optional<PageData> getDataNoThrow() {
+		public Optional<PageData> getData2() {
 			Optional<PageData> opt = Optional.empty();
 			try {
 				opt = this.getData();
@@ -1142,7 +1142,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 */
 		public Stream<IRecord> hitsStream() {
 			return Stream
-					.iterate(this.docs.length == 0 ? this.getDataNoThrow() : this.nextPageNoThrow(),
+					.iterate(this.docs.length == 0 ? this.getData2() : this.nextPageNoThrow(),
 							i -> this.nextPageNoThrow())
 					.takeWhile(opt -> !opt.isEmpty()).flatMap(opt -> opt.map(hd -> hd.hitsStream()).get());
 		} // hitsStream
@@ -1153,7 +1153,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @return IRecord 流
 		 */
 		public Stream<IRecord> hitsStream2() {
-			return Stream.iterate(this.docs.length == 0 ? this.getDataNoThrow() : this.prevPageNoThrow(),
+			return Stream.iterate(this.docs.length == 0 ? this.getData2() : this.prevPageNoThrow(),
 					i -> this.prevPageNoThrow()).takeWhile(opt -> !opt.isEmpty()).flatMap(opt -> opt.map(hd -> {// 把hd中的文档给予倒序过来。
 						final Collector<Doc, LinkedList<Doc>, Stream<IRecord>> clc = Collector
 								.of(() -> new LinkedList<Doc>(), (aa, a) -> aa.addFirst(a), (aa, bb) -> {

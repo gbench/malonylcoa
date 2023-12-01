@@ -129,8 +129,8 @@ public class SrchController extends AbstractState<SrchController> {
 		final var ss = Arrays.stream((line == null ? " " : line).split("[;\s]+")).map(e -> e.strip())
 				.toArray(String[]::new);
 		final var rec = REC( //
-				"+symbol*", format("*{0}*", ss.length > 0 ? ss[0] : ""), // SHOULD WildcardQuery
-				"+file*", format("*{0}*", ss.length > 1 ? ss[1] : ""));// SHOULD WildcardQuery
+				"+symbol*", format("*{0}*", ss.length > 0 ? ss[0] : ""), // MUST WildcardQuery
+				"+file*", format("*{0}*", ss.length > 1 ? ss[1] : ""));// MUST WildcardQuery
 
 		System.out.println(format("\n#lookup2:\nline:【{0}】\nrec:【{1}】,sessionId:{2},agentId:{3},size:{4}", //
 				line, rec, sessId, agentId, size));
@@ -151,7 +151,7 @@ public class SrchController extends AbstractState<SrchController> {
 		if (!line.equals(this.stateOfT(lineKey, Object.class))) {// 初次访问
 			pageQuery = this.srchModel.getPageQuery(query);
 			pageQuery.initialize(pageSize);
-			optional = pageQuery.getDataNoThrow();
+			optional = pageQuery.getData2();
 
 			// 程序状态
 			this.setState(line, lineKey);// 记录当前检索的请求
