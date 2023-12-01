@@ -155,18 +155,14 @@ public class SrchController extends AbstractState<SrchController> {
 				pageQueryKey, lineKey, pageNumKey, pageTotalKey));
 
 		if (!line.equals(this.stateOfT(lineKey, Object.class))) {// 初次访问
-			pageQuery = this.srchModel.getPageQuery(query);
-			pageQuery.initialize(pageSize);
-			optional = pageQuery.getData2();
-
+			optional = (pageQuery = this.srchModel.getPageQuery(query).initialize(pageSize)).getData2();
 			// 程序状态
 			this.setState(line, lineKey);// 记录当前检索的请求
 			this.setState(pageQuery, pageQueryKey);
 			this.setState(1l, pageNumKey);// 记录行号
 			this.setState((long) Math.ceil(pageQuery.getTotalHits().value / pageSize) + 1, pageTotalKey);
 		} else { // 非初次访问
-			pageQuery = this.stateOfT(pageQueryKey, PageQuery.class);
-			optional = pageQuery.nextPageNoThrow();
+			optional = (pageQuery = this.stateOfT(pageQueryKey, PageQuery.class)).nextPageNoThrow();
 
 			final var pagenum = this.getState(1l, pageNumKey);
 			final var pageTotal = this.getState(1l, pageTotalKey);

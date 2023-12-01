@@ -32,8 +32,8 @@ public class JunitQuery1 {
 				"file*", "*sunzi*" // 文件项目
 		)).mutate(e -> srchModel.getPageQuery(parseDsl(e))).initialize(); // PageQuery
 		@SuppressWarnings("unchecked")
-		final Function<IRecord, String> format = r -> r.get("result") instanceof Collection<?> us
-				? ((Collection<IRecord>) us).stream().map(e -> e.filter("symbol,py0,py1")).toList().toString()
+		final Function<IRecord, String> format = r -> r.get("result") instanceof Collection<?> rs
+				? ((Collection<IRecord>) rs).stream().map(e -> e.filter("symbol,py0,py1")).toList().toString()
 				: "none";
 		System.out.println(format("query:{0},{1}", pq.getClass().getSimpleName(), pq));
 		println(pq.getData2().map(e -> REC("result", e.getHits2()).mutate(format)).orElse(null));
