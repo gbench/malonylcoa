@@ -194,6 +194,17 @@ public abstract class AbstractLexer {
 			return this.attributes;
 		}
 
+		/**
+		 * 结果类型
+		 * 
+		 * @param <T>    返回结果类型
+		 * @param getter 树形映射函数
+		 * @return 树形信息
+		 */
+		public <T> T attrs(final Function<Map<String, Object>, T> getter) {
+			return getter.apply(this.getAttributes());
+		}
+
 		private final Map<String, Object> attributes = new HashMap<>();
 		public final Set<String> tags = new HashSet<String>();
 

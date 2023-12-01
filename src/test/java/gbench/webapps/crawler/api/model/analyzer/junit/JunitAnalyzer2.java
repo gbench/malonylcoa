@@ -56,8 +56,8 @@ public class JunitAnalyzer2 {
 				}).orElseGet(() -> { // 模式识别
 					return predefs.tupleS() // 预定模式检测
 							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
-							.findFirst().map(t -> new Lexeme(symbol, t._1, symbol) //
-									.addAttributes("tags", "mode")) // 生成词素
+							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // // 生成词素
+									.addAttributes("class", "mode"))
 							.orElse(null); // 获取词意失败
 				}); // opt
 			}
@@ -96,8 +96,8 @@ public class JunitAnalyzer2 {
 		final var dfm = excel.autoDetect("t_wenyan").collect(DFrame.dfmclc2);
 		final var yuhuan = this.getYunHuan(dfm);
 
-		yuhuan.analyze("何不按兵束甲，北面而事之？this is a 23,二零二三年").forEach(word -> {
-			println(word);
+		yuhuan.analyzeS("何不按兵束甲，北面而事之？this is a 23,二零二三年", e -> e).forEach(word -> {
+			println(word, word.attrs(IRecord::REC));
 		});
 
 	}

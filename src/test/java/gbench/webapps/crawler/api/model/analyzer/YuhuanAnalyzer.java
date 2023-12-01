@@ -114,14 +114,15 @@ public class YuhuanAnalyzer extends Analyzer {
 	 * @return 分词明细 symbol,category,meaning,含有tags 集合标签
 	 */
 	public List<IRecord> analyze(final String line) {
-
 		return this.analyzeS(line, YuhuanAnalyzer::token2rec).collect(Collectors.toList());
 	}
 
 	/**
 	 * 分词
 	 *
-	 * @param line 数据行
+	 * @param <U>    结果类型
+	 * @param line   数据行
+	 * @param mapper TokenProfile -&gt;u 元素变换函数
 	 * @return 分词明细 symbol,category,meaning,含有tags 集合标签
 	 */
 	public <U> Stream<U> analyzeS(final String line, final Function<TokenProfile, U> mapper) {
@@ -129,6 +130,7 @@ public class YuhuanAnalyzer extends Analyzer {
 			yuhuanLexer = new StreamLexer();
 		}
 		final List<TokenProfile> words = yuhuanLexer.analyze(line);
+
 		return words.stream().map(mapper);
 	}
 
