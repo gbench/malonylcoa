@@ -30,7 +30,7 @@ public class JunitAnalyzer2 {
 		dfm.rowS().forEach(line -> {
 			final var word = line.str("WORD");
 			final var meaning = word;
-			Trie.addPoints2Trie(corpus, word) // 增加节点
+			Trie.addPoints2Trie(corpus, word.split("")) // 增加节点
 					.addAttribute("category", "word") // 绑定词法类型信息
 					.addAttribute("meaning", meaning); // 词义
 		}); // forEach
