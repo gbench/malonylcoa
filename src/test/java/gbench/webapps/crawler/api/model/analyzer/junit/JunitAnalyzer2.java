@@ -96,7 +96,7 @@ public class JunitAnalyzer2 {
 		final var dfm = excel.autoDetect("t_wenyan").collect(DFrame.dfmclc2);
 		final var yuhuan = this.getYunHuan(dfm);
 
-		yuhuan.analyzeS("何不按兵束甲，北面而事之？this is a 23,二零二三年", e -> e).forEach(word -> {
+		yuhuan.analyzeS("何不按兵束甲，北面而事之？this is a 23,二零二三年,圣人之于天下也", e -> e).forEach(word -> {
 			println(word, word.attrs(IRecord::REC));
 		});
 
