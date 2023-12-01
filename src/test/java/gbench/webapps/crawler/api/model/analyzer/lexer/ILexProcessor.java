@@ -25,7 +25,7 @@ public interface ILexProcessor {
 	 * 
 	 * @param name
 	 */
-	public default void setName(String name) {
+	public default void setName(final String name) {
 		// do nothing
 	}
 
@@ -35,7 +35,7 @@ public interface ILexProcessor {
 	 * @param symbol 符号
 	 * @return 词素
 	 */
-	public default Lexeme evaluate(String symbol) {
+	public default Lexeme evaluate(final String symbol) {
 		return new Lexeme(symbol, "unknown", "unknown");
 	}
 
@@ -45,7 +45,7 @@ public interface ILexProcessor {
 	 * @param line 前缀,待检测的字符串
 	 * @return
 	 */
-	public default boolean isPrefix(String line) {
+	public default boolean isPrefix(final String line) {
 		return false;
 	}
 

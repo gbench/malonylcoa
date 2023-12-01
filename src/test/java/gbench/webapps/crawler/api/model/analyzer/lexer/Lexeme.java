@@ -21,7 +21,7 @@ public class Lexeme {
 	 * @param category 类别
 	 * @param meaning  词义解释
 	 */
-	public Lexeme(String word, String category, String meaning) {
+	public Lexeme(final String word, final String category, final String meaning) {
 		this.symbol = word;
 		this.category = category;
 		this.meaning = meaning;
@@ -37,7 +37,7 @@ public class Lexeme {
 	/**
 	 * 重写 hashCode 方法一定要和equals 相匹配 以便可以将该对象用作Map的键值
 	 */
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		if (this.hashCode() == obj.hashCode())
 			return true;
 		return false;

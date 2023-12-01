@@ -100,11 +100,12 @@ public class StreamLexer extends AbstractLexer {
 	 * @return
 	 */
 	public synchronized TokenProfile evaluate(final String symbol) {
-		if (null == symbol)
+		if (null == symbol) {
 			return null;
+		}
 
 		// 依次从各个模块中获取文字解释
-		Optional<TokenProfile> opt = this.processors.keySet().parallelStream()
+		final Optional<TokenProfile> opt = this.processors.keySet().parallelStream()
 				.map(key -> this.processors.get(key).evaluate(symbol)).filter(e -> e != null)
 				.map(lexeme -> new TokenProfile(lexeme.getSymbol(), lexeme.getCategory(), lexeme.getMeaning())
 						.addTags(lexeme.getTags().toArray(String[]::new)) // 添加标签
@@ -130,11 +131,12 @@ public class StreamLexer extends AbstractLexer {
 	 */
 	public synchronized TokenProfile nextToken(final Reader input) {
 		TokenProfile word = null;// 返回值
-		if (input == null)
+		if (input == null) {
 			return null;
+		}
 
 		// 单字符读取函数-扫描器
-		Supplier<Integer> spfunc_scanner = () -> {
+		final Supplier<Integer> spfunc_scanner = () -> {
 			int c = -1;// 默认是无效字符
 			try {
 				// 优先读取堆栈里面的内容
@@ -207,7 +209,7 @@ public class StreamLexer extends AbstractLexer {
 					 * 字符给予压入堆栈，注意这里采用倒序退回，保证了在以后的 再次读取的时候，通过堆栈的pop可以得到正常顺序。
 					 */
 					for (int i = wordBuffer.length() - 1; i > 0; i--) {
-						char i_char = wordBuffer.charAt(i);
+						final char i_char = wordBuffer.charAt(i);
 						this.charsStack.push((int) i_char); // 退掉一个字符
 						characters = wordBuffer.substring(0, i);// 退回后的残基
 						// 对退回后的字符串残基检查
@@ -264,8 +266,7 @@ public class StreamLexer extends AbstractLexer {
 	 * 把一个字符串给予分解成词单元
 	 */
 	public synchronized List<TokenProfile> analyze(final InputStreamReader isr, final boolean close) {
-		// 返回值
-		List<TokenProfile> list = new LinkedList<TokenProfile>();
+		final List<TokenProfile> list = new LinkedList<TokenProfile>(); // 返回值
 		this.reset();// 清空堆栈数据
 		TokenProfile word = this.nextToken(isr);
 		while (word != null) {
@@ -286,16 +287,14 @@ public class StreamLexer extends AbstractLexer {
 	 * 把一个字符串给予分解成词单元
 	 */
 	public synchronized List<TokenProfile> analyze(final String line) {
-		// 把line 打散成粒子态(字节码）
-		InputStream byteStream = new ByteArrayInputStream(line.getBytes());
-		// 再把字节码整理成字符。
-		InputStreamReader isr = new InputStreamReader(byteStream);
+		final InputStream byteStream = new ByteArrayInputStream(line.getBytes()); // 把line 打散成粒子态(字节码）
+		final InputStreamReader isr = new InputStreamReader(byteStream); // 再把字节码整理成字符。
 		return this.analyze(isr, true);
 	}
 
 	// 流式阅读器
 	private Reader streamReader = null;// 阅读器
-	private Stack<Integer> charsStack = new Stack<Integer>(); // 回退词的存储空间, 阅读状态的暂存空间
+	private final Stack<Integer> charsStack = new Stack<Integer>(); // 回退词的存储空间, 阅读状态的暂存空间
 	private int wordOffset = 0;// 单词的偏移位置。
 
 }

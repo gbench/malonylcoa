@@ -176,7 +176,7 @@ public class Trie<T> {
 	 * @param force  对于含有子节点的节点给与强制删除
 	 * @return points 是否是一条词语前缀
 	 */
-	public Trie<T> removeTrie(final T[] points, boolean force) {
+	public Trie<T> removeTrie(final T[] points, final boolean force) {
 		return removeTrie(Arrays.asList(points), force);
 	}
 
@@ -187,10 +187,12 @@ public class Trie<T> {
 	 * @param force  对于含有子节点的节点给与强制删除
 	 * @return points 是否是一条词语前缀
 	 */
-	public Trie<T> removeTrie(final List<T> points, boolean force) {
+	public Trie<T> removeTrie(final List<T> points, final boolean force) {
 		final var trie = this.getTrie(points);
-		if (trie == null)
+		if (trie == null) {
 			return null;
+		}
+
 		final var parent = trie.getParent();
 		if (parent != null) {// 含有父节点
 			final var child = parent.children.get(points.get(points.size() - 1));
@@ -221,20 +223,22 @@ public class Trie<T> {
 			return null;
 		if (this.getValue() == null) {// 根节点
 			final var child = this.children.get(points.get(0));
-			if (child == null)
+			if (child == null) {
 				return null;
-			else
+			} else {
 				return child.recursive_getTrie(points);
+			}
 		} else {// 非根节点
 			if (this.getValue().equals(points.get(0))) {// 根节点比较
 				if (points.size() < 2) {// points 集合中只有一个 点
 					return this;
 				} else {// points 中至少有2个点
 					final var child = this.children.get(points.get(1));// 获取子节点
-					if (child == null)
+					if (child == null) {
 						return null;
-					else
+					} else {
 						return child.recursive_getTrie(points.subList(1, points.size()));// 步进到 子节点比较，移除一个元素之后继续比较
+					}
 				} // if
 			} else {// 前缀不匹配
 				return null;
@@ -248,13 +252,15 @@ public class Trie<T> {
 	 * @return
 	 */
 	public Trie<T> loop_getTrie(final List<T> points) {
-		if (points == null || points.size() < 1)
+		if (points == null || points.size() < 1) {
 			return null;
+		}
 		var trie = this.getValue() == null ? this.getChild(points.get(0)) : this;
-		if (trie == null)
+		if (trie == null) {
 			return null;
+		}
 
-		final var pitr = points.iterator();
+		var pitr = points.iterator();
 		var tval = trie.getValue();// trie 节点值
 		var pval = pitr.next();// 提取第一个节点
 
@@ -482,7 +488,7 @@ public class Trie<T> {
 	protected T value;// 节点的值
 	protected Trie<T> parent;// 父节点
 	protected Map<T, Trie<T>> children = new HashMap<T, Trie<T>>();// 子节点集合
-	protected Map<Object, Object> attributes = new HashMap<Object, Object>();// 属性集合
+	protected final Map<Object, Object> attributes = new HashMap<Object, Object>();// 属性集合
 
 	public static boolean USE_RECURSIVE_GET_TRIE = true; // 是否使用 recursive 版本的 getTrie
 
