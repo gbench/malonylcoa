@@ -1,6 +1,5 @@
 package gbench.webapps.crawler.api.controller;
 
-import org.apache.lucene.search.Query;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -8,8 +7,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
+import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.data.DataApp.Tuple2.P;
-import static gbench.webapps.crawler.api.model.srch.SrchUtils.bool_query_clc;
+import static gbench.webapps.crawler.api.model.srch.SrchUtils.parseDsl;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -128,15 +128,19 @@ public class SrchController extends AbstractState<SrchController> {
 		final var pageSize = size == null || size == 0 ? Integer.MAX_VALUE : size;// 页面大小
 		final var ss = Arrays.stream((line == null ? " " : line).split("[;\s]+")).map(e -> e.strip())
 				.toArray(String[]::new);
-		final var rec = REC( //
-				"+symbol*", format("*{0}*", ss.length > 0 ? ss[0] : ""), // MUST WildcardQuery
-				"+file*", format("*{0}*", ss.length > 1 ? ss[1] : ""));// MUST WildcardQuery
+		final var rec = REC( // 输入信息预处理
+				"keyword", format("*{0}*", ss.length > 0 ? ss[0] : ""), // 关键词
+				"file", format("*{0}*", ss.length > 1 ? ss[1] : "") // 检索文件
+		); // 输入结果分析
+		final var query = REC("must", REC( // MUST 必须项目
+				"should", rb("symbol*,py0*,py1*").get(rec.str("keyword")), // 单词,全拼,简拼字段的SHOULD模糊项匹配
+				"file*", rec.str("file") // 文件字段模糊项目
+		)).mutate(e -> parseDsl(e)); // 解析成Query对象
+		final PageQuery pageQuery;
+		final Optional<PageData> optional;
 
 		System.out.println(format("\n#lookup2:\nline:【{0}】\nrec:【{1}】,sessionId:{2},agentId:{3},size:{4}", //
 				line, rec, sessId, agentId, size));
-		final Query query = rec.collect(bool_query_clc); // 解析成Query对象
-		final PageQuery pageQuery;
-		final Optional<PageData> optional;
 		System.out.println(format("query:{0},{1}", query.getClass().getSimpleName(), query));
 
 		// 设置各种key
@@ -145,6 +149,7 @@ public class SrchController extends AbstractState<SrchController> {
 		final var lineKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "line");
 		final var pageNumKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pagenum");
 		final var pageTotalKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pageTotal");
+
 		System.out.println(format("pageQueryKey:{0},lineKey:{1},pageNumKey:{2},pageTotalKey:{3}", //
 				pageQueryKey, lineKey, pageNumKey, pageTotalKey));
 
