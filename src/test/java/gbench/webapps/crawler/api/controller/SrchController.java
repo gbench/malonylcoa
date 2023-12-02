@@ -18,6 +18,7 @@ import static gbench.webapps.crawler.api.model.srch.SrchUtils.parseDsl;
 import reactor.core.publisher.Mono;
 
 import java.io.File;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -70,25 +71,30 @@ public class SrchController extends AbstractState<SrchController> {
 
 	/**
 	 * 系统参数配置 <br>
+	 * 
+	 * http://localhost:6010/api/srch/config2 <br>
+	 * 
 	 * curl -X POST
 	 * "http://127.0.0.1:8848/nacos/v1/cs/configs?dataId=api.properties&group=DEFAULT_GROUP&content=malonylcoa.crawler.srch.fileHome=$0/java/gbench/webapps/crawler/api/model/data/docs"
 	 * 
 	 * @return 配置信息
 	 */
 	@RequestMapping("/config")
-	public IRecord config(@Value("spring.application.name") String name) {
-		return REC("code", 0, "name", name, //
+	public IRecord config(@Value("${spring.application.name}") String name) {
+		return REC("code", 0, "name", name, "time", LocalDateTime.now(), //
 				"params", REC("prefix", prefix, "indexHome", indexHome, "corpusDir", corpusDir, "snapHome", snapHome,
 						"fileHome", fileHome));
 	}
 
 	/**
-	 * 请求配置信息:转发配置信息
+	 * 请求配置信息:转发配置信息 <br>
+	 * 
+	 * http://localhost:6010/api/srch/config_nacos <br>
 	 * 
 	 * @return 配置信息
 	 */
-	@RequestMapping("/config2")
-	public Mono<IRecord> config2() {
+	@RequestMapping("/config_nacos")
+	public Mono<IRecord> config_nacos() {
 		final var url = "http://crawler-api/api/srch/config"; // api 接口
 		return webBuilder.build().post().uri(url).retrieve().bodyToMono(IRecord.class);
 	}

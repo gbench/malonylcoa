@@ -18,6 +18,8 @@
 		<spring-boot-version>3.0.13</spring-boot-version>
 		<spring-gateway-version>LATEST</spring-gateway-version>
 		<nacos-version>LATEST</nacos-version>
+		<bootstrap-version>LATEST</bootstrap-version>
+		<loadbalancer-version>LATEST</loadbalancer-version>
 		<maven-compiler-plugin-version>3.11.0</maven-compiler-plugin-version>
 		<maven-javadoc-plugin-version>3.6.0</maven-javadoc-plugin-version>
 		<maven-source-plugin-version>3.3.0</maven-source-plugin-version>
@@ -169,7 +171,7 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-bootstrap</artifactId>
-			<version>LATEST</version>
+			<version>${bootstrap-version}</version>
 			<scope>test</scope>
 		</dependency>
 		<!--
@@ -177,7 +179,7 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
-			<version>4.0.4</version>
+			<version>${loadbalancer-version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
