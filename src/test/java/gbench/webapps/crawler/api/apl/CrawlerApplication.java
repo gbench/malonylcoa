@@ -2,6 +2,7 @@ package gbench.webapps.crawler.api.apl;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.ComponentScan;
  *         -Dspring.config.location=classpath:/config/webapps/crawler/api/application.yml
  */
 @ComponentScan(basePackages = { "gbench.webapps.crawler.api" })
+@EnableDiscoveryClient
 @SpringBootApplication
 public class CrawlerApplication {
 

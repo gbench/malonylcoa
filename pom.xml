@@ -14,9 +14,10 @@
 		<jupiter-version>LATEST</jupiter-version>
 		<h2-version>LATEST</h2-version>
 		<mysql-version>LATEST</mysql-version>
-		<lucene.version>9.8.0</lucene.version>
-		<spring-boot-version>3.1.5</spring-boot-version>
-		<spring-gateway-version>4.0.7</spring-gateway-version>
+		<lucene.version>LATEST</lucene.version>
+		<spring-boot-version>3.0.13</spring-boot-version>
+		<spring-gateway-version>LATEST</spring-gateway-version>
+		<nacos-version>LATEST</nacos-version>
 		<maven-compiler-plugin-version>3.11.0</maven-compiler-plugin-version>
 		<maven-javadoc-plugin-version>3.6.0</maven-javadoc-plugin-version>
 		<maven-source-plugin-version>3.3.0</maven-source-plugin-version>
@@ -139,19 +140,44 @@
 			<scope>test</scope>
 		</dependency>
 		<!--
-		https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-			<version>${spring-boot-version}</version>
-			<scope>test</scope>
-		</dependency>
-		<!--
 		https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-gateway -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-gateway</artifactId>
 			<version>${spring-gateway-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.alibaba.nacos/nacos-client -->
+		<!--
+		https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-nacos-discovery -->
+		<dependency>
+			<groupId>com.alibaba.cloud</groupId>
+			<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+			<version>${nacos-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-nacos-config -->
+		<dependency>
+			<groupId>com.alibaba.cloud</groupId>
+			<artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+			<version>${nacos-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-bootstrap -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-bootstrap</artifactId>
+			<version>LATEST</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-loadbalancer -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
+			<version>4.0.4</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

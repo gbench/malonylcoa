@@ -26,6 +26,7 @@ import gbench.util.json.jackson.DataMatrixModule;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
 import gbench.util.json.jackson.IRecordModule;
+import gbench.util.json.jackson.IRecordModule2;
 
 /**
  * Json 工具类
@@ -75,8 +76,10 @@ public class MyJson {
 			javaTimeModule.addSerializer(LocalTime.class,
 					new LocalTimeSerializer(DateTimeFormatter.ofPattern("HH:mm:ss")));
 
-			// IRecord 序列化设置
+			// lisp.IRecord 序列化设置
 			final IRecordModule recModule = new IRecordModule();
+			// DataApp.IRecord 序列化设置
+			final IRecordModule2 recModule2 = new IRecordModule2();
 
 			// DFrame 序列化设置
 			final DFrameModule dfmModule = new DFrameModule();
@@ -84,7 +87,7 @@ public class MyJson {
 			// DataMatrix 序列化设置
 			final DataMatrixModule dmxModule = new DataMatrixModule();
 
-			return of(recModule, javaTimeModule, dfmModule, dmxModule);
+			return of(recModule, recModule2, javaTimeModule, dfmModule, dmxModule);
 		}); // computeIfAbsent
 	}
 
@@ -94,7 +97,6 @@ public class MyJson {
 	 * @return ObjectMapper
 	 */
 	public static ObjectMapper recM() {
-
 		return recM("default_mapper"); // 默认的mapper
 	}
 
@@ -120,9 +122,7 @@ public class MyJson {
 	 * @return 生成 json 字符串
 	 */
 	public static String toJson2(final Object obj) throws JsonProcessingException {
-
 		return recM().writeValueAsString(obj);
-
 	}
 
 	/**

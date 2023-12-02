@@ -1,18 +1,23 @@
 package gbench.webapps.crawler.api.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import static java.text.MessageFormat.*;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.data.DataApp.Tuple2.P;
 import static gbench.webapps.crawler.api.model.srch.SrchUtils.parseDsl;
 
+import reactor.core.publisher.Mono;
+
 import java.io.File;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -20,7 +25,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import static java.text.MessageFormat.*;
 
 import gbench.util.data.DataApp.IRecord;
 import gbench.webapps.crawler.api.model.SrchModel;
@@ -33,6 +37,7 @@ import gbench.webapps.crawler.api.config.param.Param;
  * 检索模型
  */
 @RequestMapping("/api/srch")
+@RefreshScope
 @RestController
 public class SrchController extends AbstractState<SrchController> {
 
@@ -42,10 +47,7 @@ public class SrchController extends AbstractState<SrchController> {
 	 * @return ApplicationRunner
 	 */
 	@Bean
-	ApplicationRunner onStarted(@Value("${gbench.prefix:F:/slicef/ws/gitws/malonylcoa/src/test/}") String prefix,
-			@Value("${gbench.corpusDir:{0}/java/gbench/webapps/crawler/api/model/data/corpus/}") String corpusDir,
-			@Value("${gbench.indexHome:D:/sliced/tmp/crawler/index}") String indexHome,
-			@Value("${gbench.snapHome:D:/sliced/tmp/crawler/snap}") String snapHome) {
+	ApplicationRunner onStarted() {
 		return args -> {
 			this.initialize(indexHome, corpusDir, snapHome);
 		};
@@ -54,9 +56,9 @@ public class SrchController extends AbstractState<SrchController> {
 	/**
 	 * 初始化
 	 * 
-	 * @param indexHome
-	 * @param corpusDir
-	 * @param snapHome
+	 * @param indexHome 索引文件路径
+	 * @param corpusDir 语料库路路径
+	 * @param snapHome  快照文件路径
 	 */
 	public SrchController initialize(final String indexHome, final String corpusDir, final String snapHome) {
 		// 成员属性创建与初始化
@@ -64,6 +66,31 @@ public class SrchController extends AbstractState<SrchController> {
 		this.state.set(REC());// 清空state
 		Trie.USE_RECURSIVE_GET_TRIE = false;// 使用LOOP模式的分词方式
 		return this;
+	}
+
+	/**
+	 * 系统参数配置 <br>
+	 * curl -X POST
+	 * "http://127.0.0.1:8848/nacos/v1/cs/configs?dataId=api.properties&group=DEFAULT_GROUP&content=malonylcoa.crawler.srch.fileHome=$0/java/gbench/webapps/crawler/api/model/data/docs"
+	 * 
+	 * @return 配置信息
+	 */
+	@RequestMapping("/config")
+	public IRecord config(@Value("spring.application.name") String name) {
+		return REC("code", 0, "name", name, //
+				"params", REC("prefix", prefix, "indexHome", indexHome, "corpusDir", corpusDir, "snapHome", snapHome,
+						"fileHome", fileHome));
+	}
+
+	/**
+	 * 请求配置信息:转发配置信息
+	 * 
+	 * @return 配置信息
+	 */
+	@RequestMapping("/config2")
+	public Mono<IRecord> config2() {
+		final var url = "http://crawler-api/api/srch/config"; // api 接口
+		return webBuilder.build().post().uri(url).retrieve().bodyToMono(IRecord.class);
 	}
 
 	/**
@@ -78,9 +105,11 @@ public class SrchController extends AbstractState<SrchController> {
 	@RequestMapping("keywords")
 	public IRecord keywords(final @Param String prefix, final @Param Integer size) {
 		synchronized (this.srchModel) {
-			if (!this.srchModel.readyFlag())
+			if (!this.srchModel.readyFlag()) {
 				this.srchModel.refresh();
-		}
+			} // if
+		} // synchronized
+
 		// 直接返回结果
 		return REC("code", 0, // 错误代码
 				"result", this.srchModel.getKeywords().stream() // 数据结果
@@ -207,7 +236,7 @@ public class SrchController extends AbstractState<SrchController> {
 
 		if (homeFile == null) {
 			return REC("code", 2, // 错误代码
-					"result", MessageFormat.format("fileToBeIndexed 为空,不予执行索引", ""));// REC
+					"result", format("fileToBeIndexed 为空,不予执行索引", ""));// REC
 		}
 
 		// 索引线程
@@ -217,11 +246,10 @@ public class SrchController extends AbstractState<SrchController> {
 				final var files = rec.pathget("files", e -> (Stream<File>) e);
 				final var decomposeTime = rec.pathlng("decompose_time");
 				final var start = this.stateOfLong("indexfiles.start.time");
-				System.out.println(
-						MessageFormat.format("\n## {0} 索引完毕 !\n 索引词条:{1} 条 ,索引文件:{2} 个, 分词历时:{3} s , 索引总历时:{4} s ",
-								this.stateOfString("indexfiles.file.to.be.indexed"), tokens.count(), files.count(),
-								decomposeTime / 1000.0, // 分解结构
-								(System.currentTimeMillis() - start) / 1000.0 // 历时时间
+				System.out.println(format("\n## {0} 索引完毕 !\n 索引词条:{1} 条 ,索引文件:{2} 个, 分词历时:{3} s , 索引总历时:{4} s ",
+						this.stateOfString("indexfiles.file.to.be.indexed"), tokens.count(), files.count(),
+						decomposeTime / 1000.0, // 分解结构
+						(System.currentTimeMillis() - start) / 1000.0 // 历时时间
 				));// println
 
 				this.state("indexfiles.running", false);// 清除运行状态
@@ -240,17 +268,28 @@ public class SrchController extends AbstractState<SrchController> {
 
 			// 返回结果
 			return REC("code", 0, // 错误代码
-					"result", MessageFormat.format("开始索引:{0}！", homeFile));// REC
+					"result", format("开始索引:{0}！", homeFile));// REC
 		} else {
 			// 返回结果
 			return REC("code", 1, // 错误代码
-					"result",
-					MessageFormat.format("{0}正在被索引， 请稍后再予以申请！", this.stateOfString("indexfiles.file.to.be.indexed")));// REC
+					"result", format("{0}正在被索引， 请稍后再予以申请！", this.stateOfString("indexfiles.file.to.be.indexed")));// REC
 		} // 线程文件
 	}
 
-	private SrchModel srchModel;// 搜索APP
+	private SrchModel srchModel; // 搜索APP
 	private ExecutorService es = Executors.newFixedThreadPool(1);// 创建一个线程队列
+	@Autowired
+	private WebClient.Builder webBuilder; // web客户端构建器
+	@Value("${malonylcoa.crawler.srch.prefix:F:/slicef/ws/gitws/malonylcoa/src/test/}")
+	private String prefix;
+	@Value("${malonylcoa.crawler.srch.corpusDir:{0}/java/gbench/webapps/crawler/api/model/data/corpus/}")
+	private String corpusDir;
+	@Value("${malonylcoa.crawler.srch.indexHome:D:/sliced/tmp/crawler/index}")
+	private String indexHome;
+	@Value("${malonylcoa.crawler.srch.snapHome:D:/sliced/tmp/crawler/snap}")
+	private String snapHome;
+	@Value("${malonylcoa.crawler.srch.fileHome:$0/java/gbench/webapps/crawler/api/model/data/docs}")
+	private String fileHome;
 
 }
 
@@ -368,5 +407,4 @@ class AbstractState<SELF> {
 	}
 
 	protected AtomicReference<IRecord> state = new AtomicReference<IRecord>(); // 系统状态
-
 }

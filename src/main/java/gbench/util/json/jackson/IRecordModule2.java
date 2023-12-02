@@ -4,7 +4,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import gbench.util.lisp.*;
+import gbench.util.data.DataApp.IRecord;
 
 /**
  * IRecord 序列号与反序列模块
@@ -12,7 +12,7 @@ import gbench.util.lisp.*;
  * @author xuqinghua
  *
  */
-public class IRecordModule extends SimpleModule {
+public class IRecordModule2 extends SimpleModule {
 
 	/**
 	 * 
@@ -72,8 +72,8 @@ public class IRecordModule extends SimpleModule {
 	/**
 	 * 构造函数
 	 */
-	public IRecordModule() {
-		super("IRecordModule", new Version(0, 0, 1, "0.0.1-SNAPSHOT", "gbench.pubchem", "malonylcoa"));
+	public IRecordModule2() {
+		super("IRecordModule2", new Version(0, 0, 1, "0.0.1-SNAPSHOT", "gbench.pubchem", "malonylcoa"));
 		this.addDeserializer(IRecord.class, new IRecordDeserializer());
 		this.addSerializer(new IRecordSerializer());
 	}

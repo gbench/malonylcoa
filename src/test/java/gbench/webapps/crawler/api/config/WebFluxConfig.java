@@ -2,6 +2,8 @@ package gbench.webapps.crawler.api.config;
 
 import java.util.ArrayList;
 
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -9,14 +11,20 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.codec.DecoderHttpMessageReader;
 import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer;
-
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.json.MyJson;
 import gbench.webapps.crawler.api.config.param.ParamResolver;
 
+/**
+ * 系统配置信息
+ */
 @Configuration
 public class WebFluxConfig implements WebFluxConfigurer {
 
@@ -35,14 +43,48 @@ public class WebFluxConfig implements WebFluxConfigurer {
 	}
 
 	/**
+	 * 带有IRecord类型解析的 ObjectMapper
 	 * 
-	 * @return
+	 * @return ObjectMapper
 	 */
 	@Bean
 	@Order(0)
 	@Primary
 	public ObjectMapper objectMapper() {
-		final ObjectMapper objectMapper = MyJson.recM();
-		return objectMapper;
+		final ObjectMapper objM = MyJson.recM();
+		return objM;
 	}
+
+	/**
+	 * webflux 由于不能block所以不能用,写在这里作为示例 <br>
+	 * 增加 objectMapper IRecord的解析能力,示例 <br>
+	 * restTemplate.getForObject("http://crawler-api/api/srch/config",
+	 * IRecord.class);
+	 * 
+	 * @return restTemplate
+	 */
+	@LoadBalanced
+	@Bean
+	public RestTemplate restTemplate(final ObjectMapper objM) {
+		final var builder = new RestTemplateBuilder();
+		final var converter = new MappingJackson2HttpMessageConverter(objM);
+		final var rt = builder.additionalMessageConverters(converter).build();
+		return rt;
+	}
+
+	/**
+	 * webflux 专用款式
+	 * 
+	 * @return WebClient
+	 */
+	@LoadBalanced
+	@Bean
+	public WebClient.Builder webClientBuilder(final ObjectMapper objM) {
+		return WebClient.builder().codecs(configurer -> {
+			final var codecs = configurer.defaultCodecs();
+			codecs.jackson2JsonDecoder(new Jackson2JsonDecoder(objM));
+			codecs.jackson2JsonEncoder(new Jackson2JsonEncoder(objM));
+		});
+	}
+
 }

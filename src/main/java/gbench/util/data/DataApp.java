@@ -4831,6 +4831,11 @@ public class DataApp {
 			return Objects.hash(this.entrySet());
 		}
 
+		@Override
+		public Iterator<Tuple2<String, Object>> iterator() {
+			return this.entrySet().stream().map(e -> new Tuple2<>(e.getKey(), e.getValue())).iterator();
+		}
+
 		/**
 		 * Iterable 转 List
 		 *
@@ -4952,9 +4957,14 @@ public class DataApp {
 			return new MyRecord(data);
 		}
 
-		@Override
-		public Iterator<Tuple2<String, Object>> iterator() {
-			return this.entrySet().stream().map(e -> new Tuple2<>(e.getKey(), e.getValue())).iterator();
+		/**
+		 * 解析Json
+		 * 
+		 * @param json 解析Json
+		 * @return IRecord
+		 */
+		public static IRecord fromJson(final String json) {
+			return Optional.ofNullable(json).map(JSON::asMap).map(MyRecord::new).orElse(null);
 		}
 
 	}
