@@ -305,7 +305,7 @@ class AbstractState<SELF> {
 	 * bool 类型的状态
 	 * 
 	 * @param name
-	 * @return
+	 * @return boolean
 	 */
 	public boolean stateOfBoolean(String name) {
 		return this.state.get().bool(name);
@@ -315,7 +315,7 @@ class AbstractState<SELF> {
 	 * bool 类型的状态
 	 * 
 	 * @param name
-	 * @return
+	 * @return int
 	 */
 	public int stateOfInteger(String name) {
 		return this.state.get().i4(name);
@@ -325,7 +325,7 @@ class AbstractState<SELF> {
 	 * bool 类型的状态
 	 * 
 	 * @param name
-	 * @return
+	 * @return double
 	 */
 	public double stateOfDouble(String name) {
 		return this.state.get().dbl(name);
@@ -335,7 +335,7 @@ class AbstractState<SELF> {
 	 * bool 类型的状态
 	 * 
 	 * @param name
-	 * @return
+	 * @return long
 	 */
 	public long stateOfLong(String name) {
 		return this.state.get().pathlng(name);
@@ -345,7 +345,7 @@ class AbstractState<SELF> {
 	 * bool 类型的状态
 	 * 
 	 * @param name
-	 * @return
+	 * @return T
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T stateOfT(String name, Class<T> clazz) {
@@ -356,7 +356,7 @@ class AbstractState<SELF> {
 	 * bool 类型的状态
 	 * 
 	 * @param name
-	 * @return
+	 * @return String
 	 */
 	public String stateOfString(String name) {
 		return this.state.get().str(name);
@@ -382,11 +382,12 @@ class AbstractState<SELF> {
 	}
 
 	/**
+	 * 设置状态
 	 * 
 	 * @param <T>
 	 * @param value
 	 * @param strings
-	 * @return
+	 * @return SELF
 	 */
 	public <T> SELF setState(T value, String... strings) {
 		final String key = Arrays.stream(strings).collect(Collectors.joining("."));
@@ -397,7 +398,7 @@ class AbstractState<SELF> {
 	 * bool 类型的状态
 	 * 
 	 * @param name
-	 * @return
+	 * @return SELF
 	 */
 	@SuppressWarnings("unchecked")
 	public SELF state(final String name, final Object value) {
@@ -407,4 +408,5 @@ class AbstractState<SELF> {
 	}
 
 	protected AtomicReference<IRecord> state = new AtomicReference<IRecord>(); // 系统状态
+
 }

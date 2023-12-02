@@ -1,5 +1,5 @@
 spring:
   application:
-    name: gateway
+    name: world-gateway
 server:
   port: 8010
