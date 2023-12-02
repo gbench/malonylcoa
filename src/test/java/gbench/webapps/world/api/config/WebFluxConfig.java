@@ -20,7 +20,7 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.json.MyJson;
-import gbench.webapps.crawler.api.config.param.ParamResolver;
+import gbench.webapps.world.api.config.param.ParamResolver;
 
 /**
  * 系统配置信息
@@ -58,7 +58,7 @@ public class WebFluxConfig implements WebFluxConfigurer {
 	/**
 	 * webflux 由于不能block所以不能用,写在这里作为示例 <br>
 	 * 增加 objectMapper IRecord的解析能力,示例 <br>
-	 * restTemplate.getForObject("http://crawler-api/api/srch/config",
+	 * restTemplate.getForObject("http://world-api/api/srch/config",
 	 * IRecord.class);
 	 * 
 	 * @return restTemplate
