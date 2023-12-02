@@ -32,29 +32,34 @@ public class DataAppConfig {
 	}
 
 	/**
-	 * @param ds
-	 * @param dbreset
-	 * @param datafile
+	 * dataApp
+	 * 
+	 * @param ds       数据源
+	 * @param dbreset  是否重置数据库
+	 * @param datafile 数据初始文件excel全名
 	 * @return MyDataApp
 	 */
 	@Bean
 	public MyDataApp dataApp(final DataSource ds, final @Value("${gbench.dbreset:true}") Boolean dbreset,
 			final @Value("${gbench.datafile:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/world/api/model/data/datafile.xlsx}") String datafile) {
+
 		final var dataApp = new MyDataApp(ds);
-		final var excel = SimpleExcel.of(datafile);
-		for (final var sheet : excel.sheets()) {
-			final var tblname = sheet.getSheetName();
-			final var dfm = excel.autoDetect(tblname).collect(DFrame.dfmclc2);
-			final var proto = dfm
-					.maxBy2((String a, String b) -> b == null ? true : String.valueOf(a).length() > b.length()); // 提取最大长度
-			final var ctsql = ctsql(tblname, proto);
-			final var insql = insql(tblname, dfm);
-			final var qrysql = String.format("select * from %s", tblname);
-			println(ctsql);
-			println(insql);
-			dataApp.sqlmaybe2(ctsql);
-			dataApp.sqlmaybe2(insql);
-			println(dataApp.sqldframe(qrysql));
+		if (dbreset) {
+			final var excel = SimpleExcel.of(datafile);
+			for (final var sheet : excel.sheets()) {
+				final var tblname = sheet.getSheetName();
+				final var dfm = excel.autoDetect(tblname).collect(DFrame.dfmclc2);
+				final var proto = dfm
+						.maxBy2((String a, String b) -> b == null || String.valueOf(a).length() > b.length()); // 提取最大长度
+				final var ctsql = ctsql(tblname, proto);
+				final var insql = insql(tblname, dfm);
+				final var qrysql = String.format("select * from %s", tblname);
+				println(ctsql);
+				println(insql);
+				dataApp.sqlmaybe2(ctsql);
+				dataApp.sqlmaybe2(insql);
+				println(dataApp.sqldframe(qrysql));
+			}
 		}
 
 		return dataApp;

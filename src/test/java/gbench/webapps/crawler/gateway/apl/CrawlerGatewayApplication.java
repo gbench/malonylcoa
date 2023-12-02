@@ -6,12 +6,20 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
- * @author xuqinghua
+ * CrawlerGatewayApplication <br>
  * 
- *         启动参数: <br>
- *         --server.port=8010 或 <br>
- *         VM argument: <br>
- *         -Dspring.config.location=classpath:/config/webapps/crawler/gateway/application.yml
+ * 启动参数: <br>
+ * --server.port=6010 或 <br>
+ * VM argument: <br>
+ * -Dspring.config.location=classpath:/config/webapps/crawler/gateway/application.yml
+ * 
+ * 启动nacos脚本(windows) <br>
+ * set nacos_home=D:\sliced\develop\nacos\nacos-server-2.3.0
+ * %nacos_home%\bin\startup.cmd -m standalone 控制台<br>
+ * <br>
+ * Console: http://127.0.0.1:8848/nacos/index.html
+ * 
+ * @author xuqinghua
  */
 @ComponentScan(basePackages = { "gbench.webapps.crawler.gateway" })
 @SpringBootConfiguration

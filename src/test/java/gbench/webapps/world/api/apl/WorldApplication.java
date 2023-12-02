@@ -5,13 +5,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
+ * WorldApplication <br>
+ * 
+ * 启动参数: <br>
+ * --server.port=6010 或 <br>
+ * VM argument: <br>
+ * -Dspring.config.location=classpath:/config/webapps/world/api/application.yml
+ * 
+ * 启动nacos脚本(windows) <br>
+ * set nacos_home=D:\sliced\develop\nacos\nacos-server-2.3.0
+ * %nacos_home%\bin\startup.cmd -m standalone 控制台<br>
+ * <br>
+ * Console: http://127.0.0.1:8848/nacos/index.html
  * 
  * @author xuqinghua
- * 
- *         启动参数: <br>
- *         --server.port=6010 或 <br>
- *         VM argument: <br>
- *         -Dspring.config.location=classpath:/config/webapps/world/api/application.yml
  */
 @ComponentScan(basePackages = { "gbench.webapps.world.api" })
 @SpringBootApplication
