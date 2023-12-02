@@ -8,7 +8,10 @@ import org.springframework.context.annotation.ComponentScan;
  * 
  * @author xuqinghua
  * 
- *         启动参数: --server.port=6010
+ *         启动参数: <br>
+ *         --server.port=6010 或 <br>
+ *         VM argument: <br>
+ *         -Dspring.config.location=classpath:/config/webapps/world/api/application.yml
  */
 @ComponentScan(basePackages = { "gbench.webapps.world.api" })
 @SpringBootApplication

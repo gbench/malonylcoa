@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: api
+server:
+  port: 6010

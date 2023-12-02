@@ -1,11 +1,11 @@
 package gbench.webapps.crawler.api.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static gbench.util.data.DataApp.IRecord.FT;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.data.DataApp.Tuple2.P;
@@ -42,13 +42,11 @@ public class SrchController extends AbstractState<SrchController> {
 	 * @return ApplicationRunner
 	 */
 	@Bean
-	ApplicationRunner onStarted() {
+	ApplicationRunner onStarted(@Value("${gbench.prefix:F:/slicef/ws/gitws/malonylcoa/src/test/}") String prefix,
+			@Value("${gbench.corpusDir:{0}/java/gbench/webapps/crawler/api/model/data/corpus/}") String corpusDir,
+			@Value("${gbench.indexHome:D:/sliced/tmp/crawler/index}") String indexHome,
+			@Value("${gbench.snapHome:D:/sliced/tmp/crawler/snap}") String snapHome) {
 		return args -> {
-			// 关键构造参数
-			final var prefix = "F:/slicef/ws/gitws/malonylcoa/src/test/";
-			final var corpusDir = FT("$0/java/gbench/webapps/crawler/api/model/data/corpus", prefix);
-			final var indexHome = "D:/sliced/tmp/crawler/index";
-			final var snapHome = "D:/sliced/tmp/crawler/snap";
 			this.initialize(indexHome, corpusDir, snapHome);
 		};
 	}

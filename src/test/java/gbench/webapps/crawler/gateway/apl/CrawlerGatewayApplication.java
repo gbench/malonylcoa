@@ -8,7 +8,10 @@ import org.springframework.context.annotation.ComponentScan;
 /**
  * @author xuqinghua
  * 
- *         启动参数: --server.port=8010
+ *         启动参数: <br>
+ *         --server.port=8010 或 <br>
+ *         VM argument: <br>
+ *         -Dspring.config.location=classpath:/config/webapps/crawler/gateway/application.yml
  */
 @ComponentScan(basePackages = { "gbench.webapps.crawler.gateway" })
 @SpringBootConfiguration
