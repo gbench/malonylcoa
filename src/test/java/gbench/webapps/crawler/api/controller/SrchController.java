@@ -96,7 +96,7 @@ public class SrchController extends AbstractState<SrchController> {
 	@RequestMapping("/config_nacos")
 	public Mono<IRecord> config_nacos() {
 		final var url = "http://crawler-api/api/srch/config"; // api 接口
-		return wb().build().post().uri(url).retrieve().bodyToMono(IRecord.class);
+		return this.webclient().post().uri(url).retrieve().bodyToMono(IRecord.class);
 	}
 
 	/**
@@ -279,6 +279,15 @@ public class SrchController extends AbstractState<SrchController> {
 			return REC("code", 1, // 错误代码
 					"result", format("{0}正在被索引， 请稍后再予以申请！", this.stateOfString("indexfiles.file.to.be.indexed")));// REC
 		} // 线程文件
+	}
+
+	/**
+	 * webclient
+	 * 
+	 * @return webclient
+	 */
+	public WebClient webclient() {
+		return wb().build();
 	}
 
 	/**
