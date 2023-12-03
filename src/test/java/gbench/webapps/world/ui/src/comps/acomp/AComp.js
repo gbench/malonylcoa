@@ -1,4 +1,4 @@
-import { mapGetters } from "vuex";
+import { mapGetters, mapState } from "vuex";
 import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
 
 const AComp = {
@@ -20,9 +20,10 @@ const AComp = {
 		console.log(this.name);
 
 		// 开始信息
-		http_post("/h5/api/component", {name:"AComp"}).then(res => {
+		http_post("/h5/api/component", { name: "AComp" }).then(res => {
 			const data = res.data.data;
-			this.name = this.component = data.name + " @ " + data.time;
+			this.state.name = data.name;
+			this.component = data.name + " @ " + data.time;
 		});
 
 		// sql data 
@@ -39,6 +40,7 @@ const AComp = {
 		 * Getters 数据
 		 */
 		...mapGetters("ACompStore", ["name"]),
+		...mapState("ACompStore", { state: state => state }),
 	}
 
 };
