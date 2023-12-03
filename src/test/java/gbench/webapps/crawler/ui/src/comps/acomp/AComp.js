@@ -96,8 +96,10 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_refresh_click(event) {
-			// 开始信息
-			http_post("/h5/api/srch/refresh", { _: Math.random() }).then(res => {
+			// 开始信息, 
+			http_post("/h5/api/srch/refresh", {
+				_: Math.random() // '_'用于占位符参数，以保证webflux的方法调用,post方法不能没有参数
+			}).then(res => {
 				const lines = res.data.result;
 				alert(JSON.stringify(lines));
 			});

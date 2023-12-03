@@ -11,7 +11,7 @@ const http_post = function (url, data) {
     return axios({
         headers: { // axios 默认 application/json
             "Content-Type": "application/x-www-form-urlencoded",
-            "component-label": "world"
+            "component-label": "crawler"
         },
         method: "post",
         url: url,
@@ -30,7 +30,7 @@ const http_get = function (url, data) {
     return axios({
         headers: { // axios 默认 application/json
             "Content-Type": "application/x-www-form-urlencoded",
-            "component-label": "world"
+            "component-label": "crawler"
         },
         method: "get",
         url: url,
@@ -74,7 +74,7 @@ const sqlquery = function (sql) {
         axios({
             headers: { // axios 默认 application/json
                 "Content-Type": "application/x-www-form-urlencoded",
-                "component-label": "world"
+                "component-label": "crawler"
             },
             method: "post",
             url: "/h5/api/sqlquery",
@@ -111,7 +111,7 @@ const sqlexecute = function (sql) {
         axios({
             headers: { // axios 默认 application/json
                 "Content-Type": "application/x-www-form-urlencoded",
-                "component-label": "world"
+                "component-label": "crawler"
             },
             method: "post",
             url: "/h5/api/sqlexecute",
