@@ -4,9 +4,6 @@ import gbench.util.data.DataApp.IRecord;
 import gbench.util.io.FileSystem;
 import gbench.webapps.crawler.api.model.analyzer.YuhuanAnalyzer;
 
-import static gbench.util.data.DataApp.IRecord.REC;
-import static java.text.MessageFormat.*;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.LinkedList;
@@ -19,6 +16,9 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static gbench.util.data.DataApp.IRecord.REC;
+import static java.text.MessageFormat.format;
 
 /**
  * 会计准则与制度类的文本分析
@@ -66,14 +66,11 @@ public class RulesDecomposer implements IDecomposer {
 	 *              - YuhuanAnalyzer analyzer 分词器 <br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;tokens [out] 类型参数
 	 *              ,tokens的元素是一个IRecord对象需要包括:<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; symbol:关键词,<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; statement:上下文语句摘要, <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段
-	 *              <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; position
-	 *              关键词的索引位置:{rownum,sart,end}的IRecord<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; snapfile
-	 *              快照文件的位置:{rownum,sart,end}的IRecord<br>
+	 *              symbol:关键词,<br>
+	 *              statement:上下文语句摘要, <br>
+	 *              file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段 <br>
+	 *              position 关键词的索引位置:{rownum,sart,end}的IRecord<br>
+	 *              snapfile 快照文件的位置:{rownum,sart,end}的IRecord<br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;files[out] 类型参数处理的文件集合
 	 *              <br>
 	 */
@@ -128,7 +125,8 @@ public class RulesDecomposer implements IDecomposer {
 						"snapfile", snapfile // 快照文件位置路径
 				));// add
 
-				System.out.println(format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", token, // 词法记录
+				System.out.println(format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", //
+						token, // 词法记录
 						statement, // 上下文语句
 						file.getName(), // 文件名称
 						position // 关键词的位置记录
@@ -138,6 +136,7 @@ public class RulesDecomposer implements IDecomposer {
 	} // decompose
 
 	/**
+	 * processFile
 	 * 
 	 * @param br
 	 */
@@ -154,8 +153,8 @@ public class RulesDecomposer implements IDecomposer {
 				if (rec == null) {
 					return;
 				}
-				final var lineS = rec.pathgetS("lines", e -> e + "");
-				final String line = lineS.collect(Collectors.joining("\n"));
+				final var lineS = rec.pathgetS("lines", String::valueOf);
+				final var line = lineS.collect(Collectors.joining("\n"));
 				rules.add(line);
 			};// rule
 
@@ -171,7 +170,7 @@ public class RulesDecomposer implements IDecomposer {
 					} else if (matRule.matches()) {// 规则处理
 						if (arRule.get() != null) {
 							csRule.accept(arRule); // 前一个章节的处理
-						}
+						} // if
 						final var chapter = arChapter.get();// 获取章节对象
 						final var rec = REC("chapter", chapter.get("name"), "lines", new LinkedList<String>());
 						arRule.set(rec);
@@ -182,7 +181,7 @@ public class RulesDecomposer implements IDecomposer {
 						final var rec = arRule.get();
 						if (rec == null) {
 							return;
-						}
+						} // if
 						final var lines = (List<String>) rec.get("lines");
 						lines.add(line);
 					} // if
@@ -191,10 +190,9 @@ public class RulesDecomposer implements IDecomposer {
 
 			if (arRule.get() != null) {
 				csRule.accept(arRule); // 前一个章节的处理
-			}
+			} // if
 
 			return rules.stream();
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		} // try
