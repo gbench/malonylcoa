@@ -9,9 +9,10 @@
     <div>
       检索 <input type="text" v-model="keyword" @blur="on_srch_click($event)"> &nbsp;
       <button @click="on_srch_click($event)">lookup</button> &nbsp;
-      <button @click="on_srch_click2($event)">lookup2</button> &nbsp;
-      <input type="text" v-model="fileHome" />  &nbsp;
+      <button @click="on_srch_click2($event)">lookup2</button> &nbsp; FileHome：&nbsp;
+      <input type="text" v-model="fileHome" style="width:550px;"/>  &nbsp;
       <button @click="on_index_click($event)">Index</button> &nbsp;
+      <button @click="on_refresh_click($event)">refresh</button> &nbsp;
       <div v-if="lines.length>0" style="height:200px; overflow: auto;margin:2px; border:solid 1px red;">
         <data-table :data="lines" />
       </div>

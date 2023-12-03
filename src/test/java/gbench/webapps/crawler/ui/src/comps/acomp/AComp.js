@@ -89,6 +89,18 @@ const AComp = {
 				const lines = res.data.result;
 				alert(JSON.stringify(lines));
 			});
+		},
+
+		/**
+		 * 刷新词汇表
+		 * @param {*} event 
+		 */
+		on_refresh_click(event) {
+			// 开始信息
+			http_post("/h5/api/srch/refresh", { _: Math.random() }).then(res => {
+				const lines = res.data.result;
+				alert(JSON.stringify(lines));
+			});
 		}
 
 	}
