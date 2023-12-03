@@ -101,7 +101,7 @@ public class SrchApp {
 						System.err.println("分词器为 " + this.analyzer.getClass() + " 类型, 不予提供 关键词刷新操作");
 					} // if this.analyzer
 				} else {// 分词器无效
-					System.out.println("分词器为null,请运行intialize初始化或是添加适当的分词器");
+					System.out.println("分词器为null,请运行initialize初始化或是添加适当的分词器");
 				} // if this.analyzer
 
 				if (null != SrchApp.this.corpus)

@@ -217,7 +217,7 @@ public class SrchController extends AbstractState<SrchController> {
 
 	/**
 	 * 刷新关键词列表 <br>
-	 * 请求示例 http://localhost:6010/srch/refresh
+	 * 请求示例 http://localhost:6010/api/srch/refresh
 	 * 
 	 * @return 刷新列表
 	 */
