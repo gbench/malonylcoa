@@ -29,7 +29,8 @@ const AComp = {
 		// 开始信息
 		http_post("/h5/api/component", { name: "AComp" }).then(res => {
 			const data = res.data.data;
-			this.state.name = this.component = data.name + " @ " + data.time;
+			this.state.name = data.name;
+			this.component = data.name + " @ " + data.time;
 		});
 
 		// sql data 
