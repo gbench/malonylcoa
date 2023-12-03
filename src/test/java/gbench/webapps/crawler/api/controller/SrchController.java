@@ -233,13 +233,14 @@ public class SrchController extends AbstractState<SrchController> {
 	 * 全文检索
 	 * 
 	 * 请求示例
-	 * http://localhost:6010/api/srch/indexfiles?homeFile=C:/Users/xuqinghua/Desktop/史记.txt
+	 * 
+	 * http://localhost:6010/api/srch/indexfiles?fileHome=C:/Users/xuqinghua/Desktop/史记.txt
 	 * 
 	 * @param fileHome 原始资料数据文件位置
 	 * @return 检索关键字
 	 */
 	@RequestMapping("indexfiles")
-	public IRecord indexFiles(final String fileHome) {
+	public IRecord indexFiles(final @Param String fileHome) {
 		if (fileHome == null) {
 			return REC("code", 2, // 错误代码
 					"result", format("fileHome 为空,不予执行索引", ""));// REC

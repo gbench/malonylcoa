@@ -15,7 +15,8 @@ const AComp = {
 			component: "-",
 			articles: [],
 			lines: [],
-			keyword:"",
+			keyword: "",
+			fileHome: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/docs"
 		};
 	},
 
@@ -74,6 +75,19 @@ const AComp = {
 			http_post("/h5/api/srch/lookup2", { line: keyword, sessId: 1, agentId: 1, size: 5 }).then(res => {
 				const lines = res.data.result;
 				this.lines = lines;
+			});
+		},
+
+		/**
+		 * 索引函数
+		 * @param {*} event 
+		 */
+		on_index_click(event) {
+			const fileHome = this.fileHome;
+			// 开始信息
+			http_post("/h5/api/srch/indexfiles", { fileHome }).then(res => {
+				const lines = res.data.result;
+				alert(JSON.stringify(lines));
 			});
 		}
 
