@@ -785,14 +785,12 @@ public abstract class AbstractJdbcSrchEngine {
 					}); // forEach : file
 		} // if corpusDir
 
-		// 打印语料库
-		// Trie.traverse(trie,
-		// e->System.out.println("\t".repeat(e.getLevel())+e.getValue()+"\t
-		// type:"+e.getAttribute("type")));
+		if (debug) { // 打印语料库
+			Trie.traverse(corpus, e -> System.out.println("\t".repeat(e.getLevel()) + e.getValue() + //
+					"\ttype:" + e.getAttribute("type")));
+		}
 
-		final var yuhuan = new YuhuanAnalyzer();// 生成玉环的分词器
-
-		// 符号处理器
+		final var yuhuan = new YuhuanAnalyzer(); // 生成玉环的分词器
 		final var symbolProcessor = new ILexProcessor() { // 创建一个 分词器
 
 			/**
@@ -1471,6 +1469,7 @@ public abstract class AbstractJdbcSrchEngine {
 		System.err.print(message);
 	}
 
+	private boolean debug = false;
 	private IndexReader indexReader = null; // 索引库的访问接口
 
 	protected final String SEARCH_FIELD = "search_field";// 检索的字段项目

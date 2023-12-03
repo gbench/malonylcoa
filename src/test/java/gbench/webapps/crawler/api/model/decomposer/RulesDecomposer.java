@@ -9,7 +9,6 @@ import static java.text.MessageFormat.*;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -38,7 +37,6 @@ public class RulesDecomposer implements IDecomposer {
 	 * @return 包含有 start 的一段文本语句
 	 */
 	public static String snippet(final int start, final int end, final String line) {
-
 		final var range = new Integer[] { 0, line.length() };
 		final String pattern = "。!;“”：，";// 分句的标志性标点
 		Stream.of(-start, end).forEach(pos -> {// 检索最近的
@@ -51,8 +49,9 @@ public class RulesDecomposer implements IDecomposer {
 						break;
 					} // if
 				} // for
-				if (flag)
+				if (flag) {
 					break;
+				}
 			} // for
 		});
 
@@ -80,7 +79,6 @@ public class RulesDecomposer implements IDecomposer {
 	 */
 	@SuppressWarnings("unchecked")
 	public void decompose(final IRecord entry) {
-
 		final File file = (File) entry.get("file");
 		final YuhuanAnalyzer yuhuan = (YuhuanAnalyzer) entry.get("analyzer");
 		final ConcurrentLinkedQueue<IRecord> tokens = (ConcurrentLinkedQueue<IRecord>) entry.get("tokens");
@@ -100,8 +98,8 @@ public class RulesDecomposer implements IDecomposer {
 					fname.substring(0, fname.indexOf(".")), rownum);// 快照文件路径
 			final var executors = entry.findOne(ExecutorService.class);
 			if (snapHome != null && executors != null) { // 写入快照文件
-				executors.execute(() -> FileSystem.utf8write(snapfile, () -> line)); // 写入 快照文件,仅当提供了snapHome才给与写入
-																						// snapfile
+				executors.execute(() -> //
+				FileSystem.utf8write(snapfile, () -> line)); // 写入 快照文件,仅当提供了snapHome才给与写入snapfile
 			} else {// 没有配置
 				System.err.println(format("尚未配置线程池(Executors)或快照缓存位置(snapHome),快照文件:{0} 不予进行存储", snapfile));
 			} // if
@@ -113,7 +111,7 @@ public class RulesDecomposer implements IDecomposer {
 			final var rownum = item.get("rownum");// 源文件中的行号
 
 			// 对line行数据进行分词
-			yuhuan.analyze(line).stream().filter(e -> "word".equals(e.get("category"))).forEach(token -> {
+			yuhuan.analyzeS(line).filter(e -> "word".equals(e.get("category"))).forEach(token -> {
 				final var symbol = token.get("symbol");// 关键词
 				final var start = token.i4("start"); // 开始位置
 				final var end = token.i4("end"); // 结束位置
@@ -130,7 +128,7 @@ public class RulesDecomposer implements IDecomposer {
 						"snapfile", snapfile // 快照文件位置路径
 				));// add
 
-				System.out.println(MessageFormat.format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", token, // 词法记录
+				System.out.println(format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", token, // 词法记录
 						statement, // 上下文语句
 						file.getName(), // 文件名称
 						position // 关键词的位置记录
@@ -153,10 +151,11 @@ public class RulesDecomposer implements IDecomposer {
 			final var rules = new LinkedList<String>();
 			final Consumer<AtomicReference<IRecord>> csRule = rule -> { // 行处理
 				final var rec = rule.get();
-				if (rec == null)
+				if (rec == null) {
 					return;
+				}
 				final var lineS = rec.pathgetS("lines", e -> e + "");
-				String line = lineS.collect(Collectors.joining("\n"));
+				final String line = lineS.collect(Collectors.joining("\n"));
 				rules.add(line);
 			};// rule
 
@@ -170,26 +169,30 @@ public class RulesDecomposer implements IDecomposer {
 						arChapter.set(REC("name", name));
 						return;
 					} else if (matRule.matches()) {// 规则处理
-						if (arRule.get() != null)
+						if (arRule.get() != null) {
 							csRule.accept(arRule); // 前一个章节的处理
+						}
 						final var chapter = arChapter.get();// 获取章节对象
 						final var rec = REC("chapter", chapter.get("name"), "lines", new LinkedList<String>());
 						arRule.set(rec);
-						final var ll = (List<String>) rec.get("lines");
-						ll.add(line);
+						final var lines = (List<String>) rec.get("lines");
+						lines.add(line);
 						return;
 					} else {
 						final var rec = arRule.get();
-						if (rec == null)
+						if (rec == null) {
 							return;
-						final var ll = (List<String>) rec.get("lines");
-						ll.add(line);
+						}
+						final var lines = (List<String>) rec.get("lines");
+						lines.add(line);
 					} // if
 				}); // forEach
 			});// bufferedRead
 
-			if (arRule.get() != null)
+			if (arRule.get() != null) {
 				csRule.accept(arRule); // 前一个章节的处理
+			}
+
 			return rules.stream();
 
 		} catch (Exception e) {

@@ -83,8 +83,8 @@ public class SrchController extends AbstractState<SrchController> {
 	@RequestMapping("/config")
 	public IRecord config(@Value("${spring.application.name}") String appName) {
 		return REC("code", 0, "name", appName, "time", LocalDateTime.now(), //
-				"params", REC("prefix", prefix, "indexHome", indexHome, "corpusDir", corpusDir, "snapHome", snapHome,
-						"fileHome", fileHome));
+				"params", REC("indexHome", indexHome, "corpusDir", corpusDir, //
+						"snapHome", snapHome, "fileHome", fileHome));
 	}
 
 	/**
@@ -232,8 +232,7 @@ public class SrchController extends AbstractState<SrchController> {
 	/**
 	 * 全文检索
 	 * 
-	 * 请求示例
-	 * 
+	 * 请求示例 <br>
 	 * http://localhost:6010/api/srch/indexfiles?fileHome=C:/Users/xuqinghua/Desktop/史记.txt
 	 * 
 	 * @param fileHome 原始资料数据文件位置
@@ -311,15 +310,13 @@ public class SrchController extends AbstractState<SrchController> {
 	private ExecutorService es = Executors.newFixedThreadPool(1);// 创建一个线程队列
 	@Autowired
 	private WebClient.Builder wbProto; // web客户端构建器原型,不要直接使用web,而是要使用自定义版本。mywb()以保护原始的wb
-	@Value("${malonylcoa.crawler.srch.prefix:F:/slicef/ws/gitws/malonylcoa/src/test/}")
-	private String prefix;
-	@Value("${malonylcoa.crawler.srch.corpusDir:{0}/java/gbench/webapps/crawler/api/model/data/corpus/}")
+	@Value("${malonylcoa.crawler.srch.corpusDir:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/corpus/}")
 	private String corpusDir;
 	@Value("${malonylcoa.crawler.srch.indexHome:D:/sliced/tmp/crawler/index}")
 	private String indexHome;
 	@Value("${malonylcoa.crawler.srch.snapHome:D:/sliced/tmp/crawler/snap}")
 	private String snapHome;
-	@Value("${malonylcoa.crawler.srch.fileHome:$0/java/gbench/webapps/crawler/api/model/data/docs}")
+	@Value("${malonylcoa.crawler.srch.fileHome:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/docs}")
 	private String fileHome;
 
 }
