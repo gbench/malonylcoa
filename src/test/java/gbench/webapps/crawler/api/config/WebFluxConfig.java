@@ -7,6 +7,7 @@ import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.codec.DecoderHttpMessageReader;
 import org.springframework.http.codec.HttpMessageReader;
@@ -63,8 +64,9 @@ public class WebFluxConfig implements WebFluxConfigurer {
 	 * 
 	 * @return restTemplate
 	 */
-	@LoadBalanced
 	@Bean
+	@Scope("prototype")
+	@LoadBalanced
 	public RestTemplate restTemplate(final ObjectMapper objM) {
 		final var builder = new RestTemplateBuilder();
 		final var converter = new MappingJackson2HttpMessageConverter(objM);
@@ -77,8 +79,9 @@ public class WebFluxConfig implements WebFluxConfigurer {
 	 * 
 	 * @return WebClient
 	 */
-	@LoadBalanced
 	@Bean
+	@Scope("prototype")
+	@LoadBalanced
 	public WebClient.Builder webClientBuilder(final ObjectMapper objM) {
 		return WebClient.builder().codecs(configurer -> {
 			final var codecs = configurer.defaultCodecs();

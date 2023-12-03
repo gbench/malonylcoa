@@ -96,7 +96,7 @@ public class SrchController extends AbstractState<SrchController> {
 	@RequestMapping("/config_nacos")
 	public Mono<IRecord> config_nacos() {
 		final var url = "http://crawler-api/api/srch/config"; // api 接口
-		return webBuilder.build().post().uri(url).retrieve().bodyToMono(IRecord.class);
+		return wb().build().post().uri(url).retrieve().bodyToMono(IRecord.class);
 	}
 
 	/**
@@ -239,7 +239,6 @@ public class SrchController extends AbstractState<SrchController> {
 	@RequestMapping("indexfiles")
 	@SuppressWarnings("unchecked")
 	public IRecord indexFiles(final String homeFile) {
-
 		if (homeFile == null) {
 			return REC("code", 2, // 错误代码
 					"result", format("fileToBeIndexed 为空,不予执行索引", ""));// REC
@@ -282,10 +281,23 @@ public class SrchController extends AbstractState<SrchController> {
 		} // 线程文件
 	}
 
+	/**
+	 * web客户端构建器 <br>
+	 * ### 不要直接使用wbProto,而是要使用自定义版本wb()以保护原始的wbProto ### <br>
+	 * <br>
+	 * 这是一个保护原始wbProto的方法，以保证wbProto不会被污染。<br>
+	 * 构造一个自定义的WebClient.Builder <br>
+	 * 
+	 * @return 自定义的WebClient.Builder
+	 */
+	public WebClient.Builder wb() {
+		return wbProto.clone();
+	}
+
 	private SrchModel srchModel; // 搜索APP
 	private ExecutorService es = Executors.newFixedThreadPool(1);// 创建一个线程队列
 	@Autowired
-	private WebClient.Builder webBuilder; // web客户端构建器
+	private WebClient.Builder wbProto; // web客户端构建器原型,不要直接使用web,而是要使用自定义版本。mywb()以保护原始的wb
 	@Value("${malonylcoa.crawler.srch.prefix:F:/slicef/ws/gitws/malonylcoa/src/test/}")
 	private String prefix;
 	@Value("${malonylcoa.crawler.srch.corpusDir:{0}/java/gbench/webapps/crawler/api/model/data/corpus/}")
