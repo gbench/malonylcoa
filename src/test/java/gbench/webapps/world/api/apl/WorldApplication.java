@@ -11,12 +11,12 @@ import org.springframework.context.annotation.ComponentScan;
  * --server.port=6010 或 <br>
  * VM argument: <br>
  * -Dspring.config.location=classpath:/config/webapps/world/api/application.yml
- * 
- * 启动nacos脚本(windows) <br>
- * set nacos_home=D:\sliced\develop\nacos\nacos-server-2.3.0
- * %nacos_home%\bin\startup.cmd -m standalone 控制台<br>
  * <br>
- * Console: http://127.0.0.1:8848/nacos/index.html
+ * 启动nacos脚本(windows) <br>
+ * set nacos_home=D:\sliced\develop\nacos\nacos-server-2.3.0 <br>
+ * %nacos_home%\bin\startup.cmd -m standalone <br>
+ * <br>
+ * 控制台 Console: http://127.0.0.1:8848/nacos/index.html
  * 
  * @author xuqinghua
  */
