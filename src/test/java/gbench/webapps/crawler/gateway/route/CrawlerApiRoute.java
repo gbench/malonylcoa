@@ -20,11 +20,10 @@ public class CrawlerApiRoute {
 	@Bean
 	public RouteLocator apiRouteLocator(final RouteLocatorBuilder builder) {
 		return builder.routes() //
-				.route(r -> r.path("/world/**").filters(f -> f.stripPrefix(1))
-						.uri(world_api)) //
+				.route(r -> r.path("/crawler/**").filters(f -> f.stripPrefix(1)).uri(crawler_api)) //
 				.build();
 	}
 
-	private String world_api = "http://localhost:6010"; // 接口API
+	private String crawler_api = "lb://crawler-api"; // 接口API,使用lb表示利用服务名进行负载均衡
 
 }
