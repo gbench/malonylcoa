@@ -77,11 +77,12 @@ public class SrchController extends AbstractState<SrchController> {
 	 * curl -X POST
 	 * "http://127.0.0.1:8848/nacos/v1/cs/configs?dataId=crawler-api.properties&group=DEFAULT_GROUP&content=malonylcoa.crawler.srch.fileHome=$0/java/gbench/webapps/crawler/api/model/data/docs"
 	 * 
+	 * @param appName 服务名称
 	 * @return 配置信息
 	 */
 	@RequestMapping("/config")
-	public IRecord config(@Value("${spring.application.name}") String name) {
-		return REC("code", 0, "name", name, "time", LocalDateTime.now(), //
+	public IRecord config(@Value("${spring.application.name}") String appName) {
+		return REC("code", 0, "name", appName, "time", LocalDateTime.now(), //
 				"params", REC("prefix", prefix, "indexHome", indexHome, "corpusDir", corpusDir, "snapHome", snapHome,
 						"fileHome", fileHome));
 	}
@@ -91,11 +92,12 @@ public class SrchController extends AbstractState<SrchController> {
 	 * 
 	 * http://localhost:6010/api/srch/config_nacos <br>
 	 * 
+	 * @param appName 服务名称
 	 * @return 配置信息
 	 */
 	@RequestMapping("/config_nacos")
-	public Mono<IRecord> config_nacos() {
-		final var url = "http://crawler-api/api/srch/config"; // api 接口
+	public Mono<IRecord> config_nacos(@Value("${spring.application.name}") String appName) {
+		final var url = format("http://{0}/api/srch/config", appName); // api 接口
 		return this.webclient().post().uri(url).retrieve().bodyToMono(IRecord.class);
 	}
 
@@ -233,51 +235,52 @@ public class SrchController extends AbstractState<SrchController> {
 	 * 请求示例
 	 * http://localhost:6010/api/srch/indexfiles?homeFile=C:/Users/xuqinghua/Desktop/史记.txt
 	 * 
-	 * @param homeFile 索引文件的起始位置
+	 * @param fileHome 原始资料数据文件位置
 	 * @return 检索关键字
 	 */
 	@RequestMapping("indexfiles")
-	@SuppressWarnings("unchecked")
-	public IRecord indexFiles(final String homeFile) {
-		if (homeFile == null) {
+	public IRecord indexFiles(final String fileHome) {
+		if (fileHome == null) {
 			return REC("code", 2, // 错误代码
-					"result", format("fileToBeIndexed 为空,不予执行索引", ""));// REC
-		}
+					"result", format("fileHome 为空,不予执行索引", ""));// REC
+		} // if
 
 		// 索引线程
 		final Runnable runnable = () -> {// 创建线程 索引文件
-			this.srchModel.indexFiles(homeFile, rec -> { // 索引文件
-				final var tokens = rec.pathget("tokens", e -> (Stream<IRecord>) e);
-				final var files = rec.pathget("files", e -> (Stream<File>) e);
+			this.srchModel.indexFiles(fileHome, rec -> { // 索引文件
+				final var tokens = rec.pathgetS("tokens", IRecord.class);
+				final var files = rec.pathgetS("files", File.class);
 				final var decomposeTime = rec.pathlng("decompose_time");
 				final var start = this.stateOfLong("indexfiles.start.time");
-				System.out.println(format("\n## {0} 索引完毕 !\n 索引词条:{1} 条 ,索引文件:{2} 个, 分词历时:{3} s , 索引总历时:{4} s ",
-						this.stateOfString("indexfiles.file.to.be.indexed"), tokens.count(), files.count(),
-						decomposeTime / 1000.0, // 分解结构
-						(System.currentTimeMillis() - start) / 1000.0 // 历时时间
+				final var pattern = "\n## {0} 索引完毕!\n 索引词条:{1} 条,索引文件:{2} 个, 分词历时:{3} s, 索引总历时:{4} s";
+
+				System.out.println(format(pattern, this.stateOfString("indexfiles.file.to.be.indexed"), tokens.count(),
+						files.count(), decomposeTime / 1000d, /* 分解结构 */
+						(System.currentTimeMillis() - start) / 1000d /* 历时时间 */
 				));// println
 
-				this.state("indexfiles.running", false);// 清除运行状态
-				this.state("indexfiles.file.to.be.indexed", null);// 去除 索引文件
-				this.state("indexfiles.start.time", null);// 去除开始时间
+				this.state("indexfiles.running", false); // 清除运行状态
+				this.state("indexfiles.file.to.be.indexed", null); // 去除索引文件
+				this.state("indexfiles.start.time", null); // 去除开始时间
 			});// 索引文件
 		};
 
 		// 仅当没有文件被索引的时候，开启文件索引功能
 		if (!this.stateOfBoolean("indexfiles.running")) {// 读取indexfiles的执行状态
 			this.state("indexfiles.running", true);// true 表示开始执行
-			this.state("indexfiles.file.to.be.indexed", homeFile);// true 表示开始执行
+			this.state("indexfiles.file.to.be.indexed", fileHome);// true 表示开始执行
 			this.state("indexfiles.start.time", System.currentTimeMillis());// 记录开始时间
 
 			es.execute(runnable);// 开始执行文件索引
 
 			// 返回结果
 			return REC("code", 0, // 错误代码
-					"result", format("开始索引:{0}！", homeFile));// REC
+					"result", format("开始索引:{0}！", fileHome));// REC
 		} else {
 			// 返回结果
 			return REC("code", 1, // 错误代码
-					"result", format("{0}正在被索引， 请稍后再予以申请！", this.stateOfString("indexfiles.file.to.be.indexed")));// REC
+					"result", format("{0}正在被索引， 请稍后再予以申请！", //
+							this.stateOfString("indexfiles.file.to.be.indexed")));// REC
 		} // 线程文件
 	}
 
