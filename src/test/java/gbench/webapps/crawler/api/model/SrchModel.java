@@ -164,11 +164,11 @@ public class SrchModel extends SrchApp {
 	/**
 	 * 索引文件
 	 * 
-	 * @param homeFile 待索引的文件或文件目录
+	 * @param fileHome 待索引的文件或文件目录
 	 * @param cs       索引成功的回调函数,Consumer类型参数为IRecord:
 	 *                 {code:错误代码,tokens:分词列表,files:文件列表,decompose_time:分词时间}->{}
 	 */
-	public void indexFiles(final String homeFile, final Consumer<IRecord> cs) {
+	public void indexFiles(final String fileHome, final Consumer<IRecord> cs) {
 		final var srchEngine = new FileSrchEngine(this.indexHome);
 		final var yuhuan = srchEngine.getYuhuanAnalyzer(corpusHome);
 		srchEngine.setAnalyzer(yuhuan);
@@ -179,7 +179,7 @@ public class SrchModel extends SrchApp {
 		// 分词开始时间
 		final long begTime = System.currentTimeMillis();// 开始时间
 		// 检索每个文件并生成索引
-		traverse(new File(homeFile), file -> {
+		traverse(new File(fileHome), file -> {
 			final var extension = FileSystem.extensionpicker(file.getAbsolutePath()).toLowerCase();// 提取文件扩展名
 			final var dcp = (IDecomposer) decomposers.opt(extension).orElse(dftdcp);// 提取对应分词器
 			dcp.decompose(REC("file", file, // 待处理的文件对象
@@ -190,7 +190,7 @@ public class SrchModel extends SrchApp {
 					"executors", this.executors // 线程池
 			));// decompose
 		});
-		long decomposeTime = System.currentTimeMillis() - begTime; // 分词终止时间
+		final long decomposeTime = System.currentTimeMillis() - begTime; // 分词终止时间
 
 		// 创建索引文件
 		srchEngine.prepareIndexWriter(iwc -> {

@@ -98,14 +98,15 @@ public abstract class AbstractJdbcSrchEngine {
 	/**
 	 * 搜索引擎初始化
 	 */
-	public void initialize() {
+	public AbstractJdbcSrchEngine initialize() {
 		analyzer = this.getYuhuanAnalyzer(this.corpusHome);
+		return this;
 	}
 
 	/**
 	 * 注销关键组件
 	 */
-	public void uninitialize() {
+	public AbstractJdbcSrchEngine uninitialize() {
 		try {
 			if (this.indexReader != null)
 				this.indexReader.close();
@@ -116,6 +117,7 @@ public abstract class AbstractJdbcSrchEngine {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} // try
+		return this;
 	}
 
 	/**
@@ -181,24 +183,25 @@ public abstract class AbstractJdbcSrchEngine {
 	 * @return 与关键字匹配的产品列表, 如果没有匹配返回null
 	 */
 	public List<IRecord> lookup(int start, final Query query, final int hitsPerPage) {
-		List<IRecord> recs = new LinkedList<IRecord>();// 返回结构
+		final List<IRecord> recs = new LinkedList<IRecord>();// 返回结构
+
 		if (query != null) {
 			try {
 				final var home = getIndexHome();
-				if (home.listAll().length <= 0) {
+				if (home.listAll().length <= 0) { // 索引目录
 					System.out.println(String.format("%s索引文件目录内容为空,请先建立然后再检索", home.getDirectory()));
 					return recs;
-				} // 索引目录
-
-				final var reader = this.getIndexReader();
-				final var searcher = new IndexSearcher(reader);
-				recs = doPagingSearch(searcher, query, hitsPerPage);
+				} else { // 索引目录 有效
+					final var reader = this.getIndexReader();
+					final var searcher = new IndexSearcher(reader);
+					recs.addAll(doPagingSearch(searcher, query, hitsPerPage));
+				} //
 			} catch (Exception e) {
 				e.printStackTrace();
 			} // try
 		} else {
 			System.err.println("query 为 null 不予查询");
-		}
+		} // if
 
 		return recs;
 	}
@@ -584,7 +587,7 @@ public abstract class AbstractJdbcSrchEngine {
 	 * @param cs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
 	 */
 	public synchronized void writeIndexes(final Consumer<IndexWriter> cs) {
-		this.writeIndexes(cs, (writer) -> {
+		this.writeIndexes(cs, writer -> {
 			try {
 				writer.forceMerge(1);// 默认合并成一个段
 			} catch (IOException e) {
@@ -599,7 +602,7 @@ public abstract class AbstractJdbcSrchEngine {
 	 * @param primecs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
 	 * @param postcs  执行关闭前的收尾操作，比如 设置 writer.forceMerge(1) 之类的操作
 	 */
-	public synchronized void writeIndexes(final Consumer<IndexWriter> primecs, Consumer<IndexWriter> postcs) {
+	public synchronized void writeIndexes(final Consumer<IndexWriter> primecs, final Consumer<IndexWriter> postcs) {
 		// 索引书写器的配置
 		final var iwc = new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE_OR_APPEND);
 		if (this.indexWriterConfigInitiator != null)
@@ -684,7 +687,7 @@ public abstract class AbstractJdbcSrchEngine {
 	 *
 	 * @return IndexReader
 	 */
-	public <T extends IndexReader> T getIndexReader(Class<T> clazz) {
+	public <T extends IndexReader> T getIndexReader(final Class<T> clazz) {
 		return corece(this.getIndexReader(), clazz);
 	}
 
@@ -757,7 +760,6 @@ public abstract class AbstractJdbcSrchEngine {
 
 			processorCorpuses // 文件分词
 					.filter(file -> file.getAbsolutePath().endsWith(".txt")).forEach(file -> { // 创建语料文件
-
 						final var processorTrie = new Trie<String>();// 语料库的根节点树
 						final var name = file.getName();
 						final var idx = name.indexOf(".");
@@ -779,7 +781,6 @@ public abstract class AbstractJdbcSrchEngine {
 
 											}); // forEach : keyword
 								}); // forEach : line
-
 						processorTrieTuples.add(TUP2(fname, processorTrie)); // fileTries
 					}); // forEach : file
 		} // if corpusDir
@@ -812,7 +813,9 @@ public abstract class AbstractJdbcSrchEngine {
 			 */
 			@Override
 			public Lexeme evaluate(final String symbol) {
-				return (patternMatcher.test(symbol)) ? new Lexeme(symbol, "sym", symbol).addTags(this.getName()) : null;
+				return (patternMatcher.test(symbol)) //
+						? new Lexeme(symbol, "sym", symbol).addTags(this.getName()) //
+						: null;
 			}
 
 			@Override
@@ -834,13 +837,11 @@ public abstract class AbstractJdbcSrchEngine {
 
 		// 符号与关键词的处理器
 		yuhuan.addProcessor(symbolProcessor);
-
 		// 为yuhuan 添加分词processor
 		processorTrieTuples.forEach(processorTrieTuple -> {// 每个分词器带有一个 processorCorpus 是一个特异的 专业词库
 
 			// 构造分词器的 处理器
 			final var processor = new ILexProcessor() { // 创建一个 分词器
-
 				final Trie<String> processorCorpus = processorTrieTuple._2;// 私有处理的词库
 
 				/**
@@ -887,7 +888,6 @@ public abstract class AbstractJdbcSrchEngine {
 			};
 
 			yuhuan.addProcessor(processor);// addProcessor
-
 		});
 
 		// 设置玉环的 分此次词库
@@ -961,7 +961,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @param pageSize     页面尺寸
 		 * @param fieldsToLoad 文档的字段集合
 		 */
-		public PageQuery initialize(Integer pageSize, final Collection<String> fieldsToLoad) {
+		public PageQuery initialize(final Integer pageSize, final Collection<String> fieldsToLoad) {
 			return this.initialize(pageSize == null ? PAGEQUEY_DEFAULT_PAGE_SIZE : pageSize, Sort.INDEXORDER,
 					fieldsToLoad, true);
 		}
@@ -971,7 +971,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 *
 		 * @param pageSize 页面尺寸
 		 */
-		public PageQuery initialize(Integer pageSize) {
+		public PageQuery initialize(final Integer pageSize) {
 			return this.initialize(pageSize, null);
 		}
 
@@ -1021,7 +1021,7 @@ public abstract class AbstractJdbcSrchEngine {
 			System.arraycopy(topDocs.scoreDocs, 0, newDocs, docs.length, topDocs.scoreDocs.length);
 			this.docs = newDocs;
 
-			return Optional.of(
+			return Optional.ofNullable(
 					PageData.of(topDocs.totalHits, topDocs.scoreDocs, currentPage * pageSize, searcher, fieldsToLoad));
 		}
 
@@ -1044,7 +1044,7 @@ public abstract class AbstractJdbcSrchEngine {
 		/**
 		 * 下一页
 		 *
-		 * @return
+		 * @return Optional PageData
 		 */
 		public Optional<PageData> nextPage() throws Exception {
 			if ((this.docs.length == 0) && (currentPage < 0 || query == null)) {
@@ -1126,7 +1126,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 * 不抛出异常版本的prevPageNoThrow 注意 一直向前当到达第一个页时，再执行prevPage会把 currentPage 减成-1,
 		 * 所以如果此时 需要后项操作，请 resetCurrentPage 来设置到第0页位置
 		 *
-		 * @return
+		 * @return Optional PageData
 		 */
 		public Optional<PageData> prevPageNoThrow() {
 			Optional<PageData> opt = Optional.empty();
@@ -1174,8 +1174,6 @@ public abstract class AbstractJdbcSrchEngine {
 		 */
 		public class PageQueryException extends RuntimeException {
 
-			private static final long serialVersionUID = 1L;
-
 			public PageQueryException(String message, Throwable cause) {
 				super(message, cause);
 			}
@@ -1187,6 +1185,8 @@ public abstract class AbstractJdbcSrchEngine {
 			public PageQueryException(String message) {
 				super(message);
 			}
+
+			private static final long serialVersionUID = 1L;
 
 		} // class PageQueryException
 
@@ -1352,18 +1352,17 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @param obj 待转换的对象
 		 * @return Optional 的 byte[] 结构
 		 */
-		public static <T> Optional<byte[]> objectToBytes(T obj) {
+		public static <T> Optional<byte[]> objectToBytes(final T obj) {
 			byte[] bytes = null;
-			final ByteArrayOutputStream out = new ByteArrayOutputStream();
-			final ObjectOutputStream oos;
-			try {
-				oos = new ObjectOutputStream(out);
+			try (final ByteArrayOutputStream out = new ByteArrayOutputStream();
+					final ObjectOutputStream oos = new ObjectOutputStream(out);) {
 				oos.writeObject(obj);
 				oos.flush();
 				bytes = out.toByteArray();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+
 			return Optional.ofNullable(bytes);
 		}
 
@@ -1373,12 +1372,10 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @return Optional T 结构
 		 */
 		@SuppressWarnings("unchecked")
-		public static <T> Optional<T> bytesToObject(byte[] bytes) {
+		public static <T> Optional<T> bytesToObject(final byte[] bytes) {
 			T t = null;
-			final ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-			final ObjectInputStream ois;
-			try {
-				ois = new ObjectInputStream(in);
+			try (final ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+					final ObjectInputStream ois = new ObjectInputStream(in)) {
 				t = (T) ois.readObject();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -1484,8 +1481,8 @@ public abstract class AbstractJdbcSrchEngine {
 	protected Consumer<IndexWriterConfig> indexWriterConfigInitiator = iwc -> {
 	};
 
-	protected Integer PAGEQUEY_DEFAULT_PAGE_SIZE = 10; // 默认分页尺寸大小 写成大写式表示 这是作为 PageQuery的类的默认值
-	protected Integer PAGEQUEY_DEFAULT_TOTAL_HITS_THRESHOLD = 10000; // 默认的最大查询结果数量,超过这个数量值 就不再继续向后查询了。写成大写式表示 这是作为
-	// PageQuery的类的默认值
-
+	// 默认分页尺寸大小 写成大写式表示 这是作为 PageQuery的类的默认值
+	protected final Integer PAGEQUEY_DEFAULT_PAGE_SIZE = 10;
+	// 默认的最大查询结果数量,超过这个数量值 就不再继续向后查询了。写成大写式表示这是作为PageQuery的类的默认值
+	protected final Integer PAGEQUEY_DEFAULT_TOTAL_HITS_THRESHOLD = 10000;
 }

@@ -62,15 +62,17 @@ public class SrchApp {
 		/**
 		 * 搜索引擎初始化
 		 */
-		public void initialize() {
+		public JdbcSrchEngine initialize() {
 			analyzer = this.getYuhuanAnalyzer(SrchApp.this.corpusHome);
+			return this;
 		}
 
 		/**
 		 * @param analyzer 分析器
 		 */
-		public void setAnalyzer(final Analyzer analyzer) {
+		public JdbcSrchEngine setAnalyzer(final Analyzer analyzer) {
 			this.analyzer = analyzer;
+			return this;
 		}
 
 		/**
