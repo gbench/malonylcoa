@@ -149,23 +149,6 @@
 			<version>${spring-gateway-version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.alibaba.nacos/nacos-client -->
-		<!--
-		https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-nacos-discovery -->
-		<dependency>
-			<groupId>com.alibaba.cloud</groupId>
-			<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-			<version>${nacos-version}</version>
-			<scope>test</scope>
-		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-nacos-config -->
-		<dependency>
-			<groupId>com.alibaba.cloud</groupId>
-			<artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
-			<version>${nacos-version}</version>
-			<scope>test</scope>
-		</dependency>
 		<!--
 		https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-bootstrap -->
 		<dependency>
@@ -180,6 +163,22 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-loadbalancer</artifactId>
 			<version>${loadbalancer-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-nacos-discovery -->
+		<dependency>
+			<groupId>com.alibaba.cloud</groupId>
+			<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+			<version>${nacos-version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-nacos-config -->
+		<dependency>
+			<groupId>com.alibaba.cloud</groupId>
+			<artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+			<version>${nacos-version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
