@@ -73,9 +73,9 @@ public class SrchController extends AbstractState<SrchController> {
 	 * 系统参数配置 <br>
 	 * 
 	 * http://localhost:6010/api/srch/config2 <br>
-	 * 
+	 * <br>
 	 * curl -X POST
-	 * "http://127.0.0.1:8848/nacos/v1/cs/configs?dataId=api.properties&group=DEFAULT_GROUP&content=malonylcoa.crawler.srch.fileHome=$0/java/gbench/webapps/crawler/api/model/data/docs"
+	 * "http://127.0.0.1:8848/nacos/v1/cs/configs?dataId=crawler-api.properties&group=DEFAULT_GROUP&content=malonylcoa.crawler.srch.fileHome=$0/java/gbench/webapps/crawler/api/model/data/docs"
 	 * 
 	 * @return 配置信息
 	 */
