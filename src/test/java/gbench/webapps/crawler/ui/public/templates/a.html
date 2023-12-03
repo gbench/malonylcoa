@@ -15,7 +15,7 @@
       <button @click="on_refresh_click($event)">刷新语料库</button> &nbsp;
       <div v-if="lines.length>0" style="height:300px; overflow: auto;margin:2px; border:solid 1px red;">
         <data-table style="width:100%" :data="lines"
-          :tdrender="td=>(n=>td.substr(0,n).replace(/\s+/g,'')+(td.length>n?'...':''))(15).replace(/^[。，]/,'')" />
+          :tdrender="td=>(n=>td.substr(0,n).replace(/\s+/g,'')+(td.length>n?'...':''))(15).replace(/^[。，：”】；]+/,'')" />
       </div>
     </div>
   </div>

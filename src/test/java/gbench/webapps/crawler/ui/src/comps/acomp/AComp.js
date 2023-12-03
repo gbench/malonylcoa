@@ -74,7 +74,7 @@ const AComp = {
 		on_srch_click2(event) {
 			const keyword = this.keyword;
 			// 开始信息
-			http_post("/h5/api/srch/lookup2", { line: keyword, sessId: 1, agentId: 1, size: 5 }).then(res => {
+			http_post("/h5/api/srch/lookup2", { line: keyword, sessId: 1, agentId: 1, size: 10 }).then(res => {
 				const lines = res.data.result;
 				this.lines = lines;
 			});
