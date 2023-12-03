@@ -138,7 +138,7 @@ public class RulesDecomposer implements IDecomposer {
 	/**
 	 * processFile
 	 * 
-	 * @param br
+	 * @param file 待处理的文件
 	 */
 	@SuppressWarnings("unchecked")
 	public Stream<String> processFile(final File file) {
