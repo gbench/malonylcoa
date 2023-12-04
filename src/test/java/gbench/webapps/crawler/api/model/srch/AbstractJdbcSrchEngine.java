@@ -1210,12 +1210,15 @@ public abstract class AbstractJdbcSrchEngine {
 				return corpus.opt(symbol.split("")).map(token -> { // 数据符号
 					final var category = token.strAttr("category"); // 提取corpus词典分类属性
 					final var meaning = token.strAttr("meaning"); // 提取corpus词典意义属性
-					return new Lexeme(symbol, category, meaning); // 返回词素
+					return new Lexeme(symbol, category, meaning) // 返回词素
+							.addTags(this.getName()) // 增加词素标签,由于标记语料库来源
+							.addAttributes("mode", "trie"); // 补充属性表示这是通过进行trie检索生成的
 				}).orElseGet(() -> { // 模式识别
 					return predefs.tupleS() // 预定模式检测
 							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
 							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // 生成词素
-									.addAttributes("class", "mode") // 补充属性
+									.addTags(this.getName()) // 增加词素标签,由于标记语料库来源
+									.addAttributes("mode", "pattern") // 补充属性表示这是通过模式匹配尽心识别的
 					).orElse(null); // 获取词意失败
 				}); // opt
 			}
@@ -1279,7 +1282,8 @@ public abstract class AbstractJdbcSrchEngine {
 						return null;
 					final var category = trieNode.strAttr("category");// 提取分类属性
 					final var meaning = trieNode.strAttr("meaning");// 提取意义属性
-					return new Lexeme(symbol, category, meaning).addTags(this.getName());
+					return new Lexeme(symbol, category, meaning) //
+							.addTags(this.getName()); // 增加词素标签,由于标记语料库来源
 				}
 
 				/**

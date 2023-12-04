@@ -65,15 +65,14 @@ public class Lexeme {
 	}
 
 	/**
-	 * 添加词汇标签
+	 * 添加词汇标签 <br>
+	 * 通常在ILexProcessor的evaluate计算单词意义的时候，进行标记，以满足后续对该词的类型标记。
 	 * 
 	 * @param tags 标签集合
 	 * @return tags 标签集合
 	 */
 	public Lexeme addTags(final String... tags) {
-		Arrays.stream(tags).forEach(tag -> {
-			this.tags.add(tag);
-		});
+		this.tags.addAll(Arrays.asList(tags));
 		return this;
 	}
 
@@ -162,7 +161,11 @@ public class Lexeme {
 		return this.attributes.remove(name);
 	}
 
-	private final Set<String> tags = new HashSet<>();
+	/**
+	 * 词汇的的词义分类标签<br>
+	 * 通常在ILexProcessor的evaluate计算单词意义的时候，进行标记，以满足后续对该词的类型标记。
+	 */
+	private final Set<String> tags = new HashSet<>(); // 预料词汇标签，
 	private final Map<String, Object> attributes = new HashMap<>();
 
 	private final String symbol;// 拼写形式
