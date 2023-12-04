@@ -60,7 +60,7 @@ public class ImageDecomposer implements IDecomposer {
 
 		// 加入处理列表
 		files.add(file);// 记录索引文件
-		yuhuan.analyze(file.getAbsolutePath()).stream() // 对文件目录进行分词
+		yuhuan.analyzeS(file.getAbsolutePath()) // 对文件目录进行分词
 				.filter(e -> "word".equals(e.get("category"))).forEach(rec -> {
 					final var symbol = rec.str("symbol");
 					if (symbol == null)

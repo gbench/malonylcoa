@@ -2,9 +2,6 @@ package gbench.webapps.crawler.api.model.srch;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-
-import static java.text.MessageFormat.format;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,14 +50,14 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
-import static gbench.util.data.DataApp.Tuple2.*;
-
 import gbench.util.chn.PinyinUtil;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.Tuple2;
 import gbench.util.io.FileSystem;
 
+import static java.text.MessageFormat.format;
+import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
+import static gbench.util.data.DataApp.Tuple2.*;
 import static gbench.util.data.DataApp.IRecord.*;
 
 /**
@@ -778,7 +775,6 @@ public abstract class AbstractJdbcSrchEngine {
 																	Arrays.stream(points).collect(Collectors.joining()))
 															.addAttribute("tag", fname);
 												});// Stream.of
-
 											}); // forEach : keyword
 								}); // forEach : line
 						processorTrieTuples.add(TUP2(fname, processorTrie)); // fileTries
@@ -788,10 +784,10 @@ public abstract class AbstractJdbcSrchEngine {
 		if (debug) { // 打印语料库
 			Trie.traverse(corpus, e -> System.out.println("\t".repeat(e.getLevel()) + e.getValue() + //
 					"\ttype:" + e.getAttribute("type")));
-		}
+		} // if
 
 		final var yuhuan = new YuhuanAnalyzer(); // 生成玉环的分词器
-		final var symbolProcessor = new ILexProcessor() { // 创建一个 分词器
+		final var symbolProcessor = new ILexProcessor() { // 创建一个符号处理器
 
 			/**
 			 * 分词词库的名称
@@ -804,33 +800,43 @@ public abstract class AbstractJdbcSrchEngine {
 			}
 
 			/**
-			 * 把符号转换成 词素
-			 *
-			 * @param symbol 符号
-			 * @return 词素
+			 * 符号计算:一个成功的分词需要evaluate返回非空,否则分词器会返回最基础的单词符号
 			 */
 			@Override
-			public Lexeme evaluate(final String symbol) {
-				return (patternMatcher.test(symbol)) //
-						? new Lexeme(symbol, "sym", symbol).addTags(this.getName()) //
-						: null;
+			public Lexeme evaluate(final String symbol) { // 符号计算
+				return corpus.opt(symbol.split("")).map(token -> { // 数据符号
+					final var category = token.strAttr("category"); // 提取corpus词典分类属性
+					final var meaning = token.strAttr("meaning"); // 提取corpus词典意义属性
+					return new Lexeme(symbol, category, meaning); // 返回词素
+				}).orElseGet(() -> { // 模式识别
+					return predefs.tupleS() // 预定模式检测
+							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
+							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // 生成词素
+									.addAttributes("class", "mode") // 补充属性
+					).orElse(null); // 获取词意失败
+				}); // opt
 			}
 
 			@Override
 			public boolean isPrefix(final String line) {
-				return patternMatcher.test(line);
-			}// isPrefix
+				if (predefs.valueS().map(Object::toString).anyMatch(line::matches)) {
+					return true;
+				} else {
+					return corpus.isPrefix(line.split(""));
+				} // if
+			} // isPrefix
 
 			/**
-			 * 模式探测器
+			 * 预定义模式
 			 */
-			final Predicate<String> patternMatcher = line -> Stream.of(// pattern 列表
-					"[a-zA-Z]+", // 英文单词
-					"[a-zA-Z_-]+", // 英文标识符号
-					"[\\d\\.]+", // 阿拉伯数据
-					"[一二三四五六七八九十零百千万亿兆]+", // 中文数字
-					"[一二三四五六七八九十零百千万亿兆\\d]+年([一二三四五六七八九十零百千万亿兆\\d+](月([一二三四五六七八九十零百千万亿兆\\d+]日?)?)?)?") // 日期前缀的判断
-					.anyMatch(line::matches); // isPrefix
+			private final IRecord predefs = IRecord.REC( // 预定义符号
+					"LETTER", "[a-zA-Z]+" // 英文单词
+					, "INDENTIFIER", "[a-zA-Z_-]+" // 英文标识符号
+					, "NUMBER", "[\\d\\.]+" // 阿拉伯数据
+					, "CN_NUMBER", "[一二三四五六七八九十零百千万亿兆]+" // 中文数字
+					, "CN_DATETIME", "[一二三四五六七八九十零百千万亿兆\\d]+年([一二三四五六七八九十零百千万亿兆\\d+](月([一二三四五六七八九十零百千万亿兆\\d+]日?)?)?)?" // 日期时间
+					, "PUNCT", "[-,+*/，。、]" // 标点符号
+			); // 预定义模式
 		};// 符号处理器
 
 		// 符号与关键词的处理器

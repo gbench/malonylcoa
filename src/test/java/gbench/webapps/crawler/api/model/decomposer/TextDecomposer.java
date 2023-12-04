@@ -105,7 +105,7 @@ public class TextDecomposer implements IDecomposer {
 				final var rownum = item.get("rownum");// 源文件中的行号
 
 				// 对line行数据进行分词
-				yuhuan.analyze(line).stream().filter(e -> "word".equals(e.get("category"))).forEach(token -> {
+				yuhuan.analyzeS(line).filter(e -> "word".equals(e.get("category"))).forEach(token -> {
 					final var symbol = token.get("symbol");// 关键词
 					final var start = token.i4("start"); // 开始位置
 					final var end = token.i4("end"); // 结束位置

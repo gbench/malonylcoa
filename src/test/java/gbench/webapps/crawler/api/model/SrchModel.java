@@ -100,7 +100,6 @@ public class SrchModel extends SrchApp {
 		 * @return 索引文档
 		 */
 		public Document token2doc(final DataApp.IRecord token) {
-
 			final var symbol = token.get("symbol");// 检索词
 			final var statement = token.get("statement");// 语句上下文
 			final var file = token.get("file");// 文件名称

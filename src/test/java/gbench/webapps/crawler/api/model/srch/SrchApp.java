@@ -140,13 +140,15 @@ public class SrchApp {
 	 * @param cs       文件处理函数
 	 */
 	public static void traverse(final File homeFile, final Consumer<File> cs) {
-		if (homeFile == null || !homeFile.exists())
+		if (homeFile == null || !homeFile.exists()) {
 			return;
+		}
 
-		if (homeFile.isFile())
+		if (homeFile.isFile()) {
 			cs.accept(homeFile);
-		else if (homeFile.isDirectory())
+		} else if (homeFile.isDirectory()) {
 			Arrays.stream(homeFile.listFiles()).parallel().forEach(f -> traverse(f, cs));
+		}
 	}
 
 	/**
@@ -156,13 +158,15 @@ public class SrchApp {
 	 * @param cs       文件处理函数
 	 */
 	public static void traverse2(final File homeFile, final Consumer<File> cs) {
-		if (homeFile == null || !homeFile.exists())
+		if (homeFile == null || !homeFile.exists()) {
 			return;
+		}
 
-		if (homeFile.isFile())
+		if (homeFile.isFile()) {
 			cs.accept(homeFile);
-		else if (homeFile.isDirectory())
+		} else if (homeFile.isDirectory()) {
 			Arrays.stream(homeFile.listFiles()).forEach(f -> traverse2(f, cs));
+		}
 	}
 
 	/**
