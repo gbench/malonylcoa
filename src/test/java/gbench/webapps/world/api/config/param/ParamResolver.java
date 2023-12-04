@@ -60,6 +60,7 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 		final var type1 = methodParameter.getParameterType();
 		final var type = type0 == Object.class ? type1 : type0;
 		final var qps = serverWebExchange.getRequest().getQueryParams();
+
 		return serverWebExchange.getFormData().map(data -> {
 			final var ll = Optional.ofNullable(data.get(name)).orElse(qps.get(name));
 			final Optional<Object> opt = Optional.ofNullable(ll != null && ll.size() > 0 ? ll.get(0) : null)
