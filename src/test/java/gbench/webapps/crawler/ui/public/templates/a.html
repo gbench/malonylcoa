@@ -12,6 +12,7 @@
       <button @click="on_srch_click2($event)">布尔检索</button> &nbsp; 资料目录：&nbsp;
       <input type="text" v-model="fileHome" /> &nbsp;
       <button @click="on_index_click($event)">重建索引</button> &nbsp;
+      <input type="text" v-model="corpusHome" /> &nbsp; 语料目录： &nbsp;
       <button @click="on_refresh_click($event)">刷新语料库</button> &nbsp;
       <div v-if="lines.length>0" style="height:265px; overflow: auto;margin:2px; border:solid 1px red;">
         <data-table style="width:100%" :data="lines" :tdrender="max_render(40)" />

@@ -2,6 +2,7 @@ package gbench.webapps.crawler.api.model.srch;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +18,8 @@ import gbench.util.io.FileSystem;
 import gbench.webapps.crawler.api.model.analyzer.YuhuanAnalyzer;
 import gbench.webapps.crawler.api.model.analyzer.lexer.Trie;
 import org.apache.lucene.analysis.Analyzer;
+
+import static java.text.MessageFormat.format;
 
 /**
  *
@@ -88,16 +91,21 @@ public class SrchApp {
 		/**
 		 * 暴露分词器词典 <br>
 		 * 刷新关键词列表 & 提取分词器中的词典数据(以便于autocomplete之类的功能使用)。<br>
+		 * 
+		 * @param forced 是否强制刷新
 		 */
 		@SuppressWarnings("unchecked")
-		public void refresh() {
+		public void refresh(boolean forced) {
 			final var begTime = System.currentTimeMillis(); // 记录开始运行时间
 
 			synchronized (keywords) {// 关键词刷新
 				keywords.clear(); // 清空关键词列表
 
 				if (this.analyzer != null) {// 分词器有效
-					if (corpus == null && this.analyzer instanceof YuhuanAnalyzer) {//
+					if ((corpus == null && this.analyzer instanceof YuhuanAnalyzer) || forced) {
+						if (forced) { // 强制刷新标志
+							System.out.println(format("强制刷新语料库:{0} @ {1}", forced, LocalDateTime.now()));
+						} // if
 						SrchApp.this.corpus = ((YuhuanAnalyzer) this.analyzer).findOne(Trie.class);
 					} else {//
 						System.err.println("分词器为 " + this.analyzer.getClass() + " 类型, 不予提供 关键词刷新操作");
@@ -128,8 +136,9 @@ public class SrchApp {
 			if (!Objects.equals(corpusHome, this.corpusHome) && new File(corpusHome).exists()) {
 				this.corpusHome = corpusHome;
 				JdbcSrchEngine.this.setAnalyzer(this.getYuhuanAnalyzer(corpusHome));
+				System.out.println(format("更换语料库目录为：{0}", this.corpusHome));
 			} // if
-			this.refresh(); //
+			this.refresh(true); // 强制刷新
 		}
 
 		private final Set<String> keywords = new HashSet<String>();// 关键词集合

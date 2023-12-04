@@ -219,6 +219,7 @@ public class SrchController extends AbstractState<SrchController> {
 	 * 刷新关键词列表 <br>
 	 * 请求示例 http://localhost:6010/api/srch/refresh
 	 * 
+	 * @param corpusHome 语料库位置
 	 * @return 刷新列表
 	 */
 	@RequestMapping("refresh")
