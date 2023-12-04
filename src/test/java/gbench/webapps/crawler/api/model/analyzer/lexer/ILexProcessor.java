@@ -7,7 +7,7 @@ package gbench.webapps.crawler.api.model.analyzer.lexer;
  * 是判断一个端字符是否构成也能够一个词库中某个词的前缀 <br>
  * 
  * ILexProcessor是计算一个符号序列的词义与分类信息的过程方法的核心与规范。<br>
- * 1）evaluate 计算词汇的符号序列的词义（为symbol关联词义与分类的的逻辑） <br>
+ * 1）evaluate 计算词汇的符号序列的词义（为symbol关联词义与分类(tags)的逻辑） <br>
  * 2）isPrefix 判断一个符号序列是否一个有意义的词汇前缀。
  * 
  * @author XUQINGHUA
@@ -27,6 +27,7 @@ public interface ILexProcessor {
 
 	/**
 	 * 处理器名称
+	 * 
 	 * @param name 处理器名称
 	 */
 	public default void setName(final String name) {
@@ -34,8 +35,9 @@ public interface ILexProcessor {
 	}
 
 	/**
-	 * 把符号转换成 词素 <br>
-	 * evaluate 计算词汇的符号序列的词义（为symbol关联词义与分类的的逻辑） <br>
+	 * 符号关系词义 即 把符号转换成词素 <br>
+	 * <br>
+	 * evaluate 计算词汇的符号序列的词义（为symbol关联词义与分类(tags)的逻辑） <br>
 	 * 
 	 * @param symbol 符号即字符序列
 	 * @return 词素
