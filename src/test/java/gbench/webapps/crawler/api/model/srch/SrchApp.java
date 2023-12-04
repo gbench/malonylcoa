@@ -134,8 +134,8 @@ public class SrchApp {
 		 */
 		public void refresh(final String corpusHome) {
 			if (!Objects.equals(corpusHome, this.corpusHome) && new File(corpusHome).exists()) {
-				this.corpusHome = corpusHome;
-				JdbcSrchEngine.this.setAnalyzer(this.getYuhuanAnalyzer(corpusHome));
+				SrchApp.this.corpusHome = this.corpusHome = corpusHome; // 更新新的语料库目录
+				JdbcSrchEngine.this.setAnalyzer(this.getYuhuanAnalyzer(this.corpusHome));
 				System.out.println(format("更换语料库目录为：{0}", this.corpusHome));
 			} // if
 			this.refresh(true); // 强制刷新
