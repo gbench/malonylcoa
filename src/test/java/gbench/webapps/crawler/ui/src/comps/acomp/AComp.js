@@ -2,6 +2,11 @@ import { mapGetters, mapState } from "vuex";
 import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
 import $ from "jquery";
 
+const removed_srch_keys = "file,search_field,score,py0,py1"; // 查询结果移除键名
+
+/**
+ * 
+ */
 const AComp = {
 
 	template: `<div class="highlight">{{name}}</div>`,
@@ -61,7 +66,7 @@ const AComp = {
 		 * @returns datatable 渲染函数
 		 */
 		max_render(maxsize) {
-			return (td, h, line, i) => (n => 'text,position'.indexOf(h) < 0 ? td
+			return (td, h, line, i) => (n => 'text,snapfile'.indexOf(h) < 0 ? td
 				: td.substr(0, n).replace(/\s+/g, '') + (td.length > n ? '...' : ''))(maxsize)
 				.replace(/^[。，：”】；）]+/, '');
 		},
@@ -79,6 +84,24 @@ const AComp = {
 		},
 
 		/**
+		 * 格式化检索 
+		 * @param {*} e 
+		 * @returns 
+		 */
+		format_srch_line(e) {
+			if (e['snapfile']) {
+				e['snapfile'] = e['snapfile'].replace(/.*\/([^/]+\/[^/]+)$/, "$1");
+			}
+			const json_pos = e['position'].replace(/\=/g, ":");
+			const pos = eval(`(${json_pos})`);
+			if (pos) {
+				e['position'] = `${pos.rownum}#${pos.start},${pos.end - pos.start + 1}`;
+			}
+
+			return e;
+		},
+
+		/**
 		 * 全文检索 
 		 * @param {*} event 
 		 */
@@ -87,7 +110,7 @@ const AComp = {
 			// 开始信息
 			http_post("/h5/api/srch/lookup", { keyword: keyword }).then(res => {
 				const lines = res.data.result;
-				this.lines = lines.map(this.remove_keys("file,search_field,position,score,position,py0,py1"));
+				this.lines = lines.map(this.remove_keys(removed_srch_keys)).map(this.format_srch_line);
 			});
 		},
 
@@ -100,7 +123,7 @@ const AComp = {
 			// 开始信息
 			http_post("/h5/api/srch/lookup2", { line: keyword, sessId: 1, agentId: 1, size: 10 }).then(res => {
 				const lines = res.data.result;
-				this.lines = lines.map(this.remove_keys("file,search_field,position,score,position,py0,py1"));
+				this.lines = lines.map(this.remove_keys(removed_srch_keys)).map(this.format_srch_line);
 			});
 		},
 
