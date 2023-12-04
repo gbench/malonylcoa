@@ -89,12 +89,12 @@ const AComp = {
 		 * @returns 
 		 */
 		format_srch_line(e) {
-			if (e['snapfile']) {
-				e['snapfile'] = e['snapfile'].replace(/.*\/([^/]+\/[^/]+)$/, "$1");
+			if (e['snapfile']) { // 快照文件
+				e['snapfile'] = e['snapfile'].replace(/.*\/([^/]+)\/[^/]+$/, "$1");
 			}
-			const json_pos = e['position'].replace(/\=/g, ":");
+			const json_pos = e['position'].replace(/\=/g, ":"); // 改换成json格式
 			const pos = eval(`(${json_pos})`);
-			if (pos) {
+			if (pos) { // 关键词位置
 				e['position'] = `${pos.rownum}#${pos.start},${pos.end - pos.start + 1}`;
 			}
 
