@@ -60,16 +60,16 @@ public interface ILexProcessor {
 	}
 
 	/**
-	 * 终止连接
+	 * 初始化过程
 	 */
-	public default void uninitialize() {
+	public default void initialize() {
 		// do nothing
 	}
 
 	/**
-	 * 初始化过程
+	 * 终止连接
 	 */
-	public default void initialize() {
+	public default void uninitialize() {
 		// do nothing
 	}
 }
