@@ -22,12 +22,12 @@ module.exports = {
 	devServer: {
 		hot: true,
 		proxy: {
-			'/h5/api/': {// 转换 h5:world的服务端口是8010
+			'/h5/api/': {// 转换 h5:crawler的服务端口是8010
 				target: CRAWLER_SERVER_HOST,
 				secure: true,
 				logLevel: 'debug',
-				changeOrigin: true, //   必须加入否则会导致webpack奔溃
-				pathRewrite: { '^/h5/api': '/crawler/api' },//去除接口标记
+				changeOrigin: true, // 必须加入否则会导致webpack奔溃
+				pathRewrite: { '^/h5/api': '/crawler/api' }, // 转换接口标记
 			}, // world服务器
 		},// proxy
 	},// devServer

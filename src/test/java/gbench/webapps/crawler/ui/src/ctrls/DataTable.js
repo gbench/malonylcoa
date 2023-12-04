@@ -51,19 +51,19 @@ const DataTable = {
         },
 
         /**
-         * 提取表头表头数据
+         * 提取表头数据
          * 
-         * @param {*} dd 列表数据
+         * @param {*} lines 列表数据[数据行]
          * @returns 表头数据
          */
-        heads(dd) {
+        heads(lines) {
             if (this.header) { // 头部函数有效
-                return this.header(dd);
+                return this.header(lines);
             } else { // 头部函数无效
-                if (!dd || dd.length < 1) {
+                if (!lines || lines.length < 1) {
                     return [];
                 } else { // 遍历所有的 数据 元素 获取 完整的 键名列表
-                    return _.reduce(dd.map(e => Object.keys(e)), (acc, cur) => { // 累计元素,当前元素
+                    return _.reduce(lines.map(e => Object.keys(e)), (acc, cur) => { // 累计元素,当前元素
                         const diffs = _.difference(cur, acc); // 提取差异部分，acc 中所没有的部分
                         return _.concat(acc, diffs);
                     });

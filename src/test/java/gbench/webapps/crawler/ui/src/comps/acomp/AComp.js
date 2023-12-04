@@ -54,6 +54,30 @@ const AComp = {
 	 * 
 	 */
 	methods: {
+
+		/**
+		 * 限宽渲染
+		 * @param {*} maxsize 最大字数
+		 * @returns datatable 渲染函数
+		 */
+		max_render(maxsize) {
+			return (td, h, line, i) => (n => 'text,position'.indexOf(h) < 0 ? td
+				: td.substr(0, n).replace(/\s+/g, '') + (td.length > n ? '...' : ''))(maxsize)
+				.replace(/^[。，：”】；）]+/, '');
+		},
+
+		/**
+		 * 删除指定键名序列
+		 * @param {*} keys 键名序列，用逗号分割 
+		 * @returns 
+		 */
+		remove_keys(keys) {
+			return e => { // 行数据调整
+				keys.split(/[,]+/).forEach(k => delete e[k]);  // 删除过滤字段
+				return e;
+			};
+		},
+
 		/**
 		 * 全文检索 
 		 * @param {*} event 
@@ -63,7 +87,7 @@ const AComp = {
 			// 开始信息
 			http_post("/h5/api/srch/lookup", { keyword: keyword }).then(res => {
 				const lines = res.data.result;
-				this.lines = lines;
+				this.lines = lines.map(this.remove_keys("file,search_field,position,score,position,py0,py1"));
 			});
 		},
 
@@ -76,7 +100,7 @@ const AComp = {
 			// 开始信息
 			http_post("/h5/api/srch/lookup2", { line: keyword, sessId: 1, agentId: 1, size: 10 }).then(res => {
 				const lines = res.data.result;
-				this.lines = lines;
+				this.lines = lines.map(this.remove_keys("file,search_field,position,score,position,py0,py1"));
 			});
 		},
 
