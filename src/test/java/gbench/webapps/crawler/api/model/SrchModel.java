@@ -202,6 +202,7 @@ public class SrchModel extends SrchApp {
 	}
 
 	/**
+	 * 初始化函数 <br>
 	 * initialize
 	 */
 	public SrchModel initialize() {
@@ -230,10 +231,12 @@ public class SrchModel extends SrchApp {
 	}
 
 	/**
-	 * 刷新关键词列表
+	 * 刷新关键词列表 & 提取分词器中的词典数据(以便于autocomplete之类的功能使用)。<br>
+	 * 
+	 * @param corpusHome 语料库目录
 	 */
-	public void refresh() {
-		this.fileEngine.refresh();
+	public void refresh(final String corpusHome) {
+		this.fileEngine.refresh(corpusHome);
 	}
 
 	/**

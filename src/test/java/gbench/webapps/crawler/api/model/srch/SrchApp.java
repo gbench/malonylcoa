@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -85,7 +86,8 @@ public class SrchApp {
 		}
 
 		/**
-		 * 刷新关键词列表
+		 * 暴露分词器词典 <br>
+		 * 刷新关键词列表 & 提取分词器中的词典数据(以便于autocomplete之类的功能使用)。<br>
 		 */
 		@SuppressWarnings("unchecked")
 		public void refresh() {
@@ -115,6 +117,19 @@ public class SrchApp {
 			final var duration = System.currentTimeMillis() - begTime; // 持续的时间
 			System.out.println(MessageFormat.format( // 词汇量的分解
 					"FileSrchEngine refresh last for:{0} s, 累积词汇量:{1,number,#} 个", duration / 1000.0, keywords.size())); // 显示刷新过程的时间消耗。
+		}
+
+		/**
+		 * 刷新关键词列表 & 提取分词器中的词典数据(以便于autocomplete之类的功能使用)。<br>
+		 * 
+		 * @param corpusHome 语料库目录,党分词器目录与当前分词器目录不同时候,进行分词器更换
+		 */
+		public void refresh(final String corpusHome) {
+			if (!Objects.equals(corpusHome, this.corpusHome) && new File(corpusHome).exists()) {
+				this.corpusHome = corpusHome;
+				JdbcSrchEngine.this.setAnalyzer(this.getYuhuanAnalyzer(corpusHome));
+			} // if
+			this.refresh(); //
 		}
 
 		private final Set<String> keywords = new HashSet<String>();// 关键词集合

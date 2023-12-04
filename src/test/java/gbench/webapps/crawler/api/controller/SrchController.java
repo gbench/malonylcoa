@@ -114,7 +114,7 @@ public class SrchController extends AbstractState<SrchController> {
 	public IRecord keywords(final @Param String prefix, final @Param Integer size) {
 		synchronized (this.srchModel) {
 			if (!this.srchModel.readyFlag()) {
-				this.srchModel.refresh();
+				this.srchModel.refresh(null); // 提取分词器中的词典数据(以便于autocomplete之类的功能使用)。
 			} // if
 		} // synchronized
 
@@ -222,8 +222,8 @@ public class SrchController extends AbstractState<SrchController> {
 	 * @return 刷新列表
 	 */
 	@RequestMapping("refresh")
-	public IRecord refresh() {
-		es.execute(() -> this.srchModel.refresh());// 执行刷新请求
+	public IRecord refresh(final @Param String corpusHome) {
+		es.execute(() -> this.srchModel.refresh(corpusHome));// 执行刷新请求
 		return REC("code", 0, // 错误代码
 				"result", "刷新请求已经收到" // 数据结果
 		);// REC
