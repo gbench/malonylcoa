@@ -1,7 +1,6 @@
 package gbench.webapps.crawler.api.model.srch;
 
 import java.io.File;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -22,7 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import static java.text.MessageFormat.format;
 
 /**
- *
+ * 检索应用（检索功能的客户端）
  */
 public class SrchApp {
 	/**
@@ -67,7 +66,7 @@ public class SrchApp {
 		 * 搜索引擎初始化
 		 */
 		public JdbcSrchEngine initialize() {
-			analyzer = this.getYuhuanAnalyzer(SrchApp.this.corpusHome);
+			analyzer = buildYuhuanAnalyzer(SrchApp.this.corpusHome);
 			return this;
 		}
 
@@ -95,36 +94,39 @@ public class SrchApp {
 		 * @param forced 是否强制刷新
 		 */
 		@SuppressWarnings("unchecked")
-		public void refresh(boolean forced) {
+		public void refresh(final boolean forced) {
 			final var begTime = System.currentTimeMillis(); // 记录开始运行时间
 
 			synchronized (keywords) {// 关键词刷新
-				keywords.clear(); // 清空关键词列表
+				keywords.clear(); // 清空关键词(语料库词汇缓存)列表
 
 				if (this.analyzer != null) {// 分词器有效
-					if ((corpus == null && this.analyzer instanceof YuhuanAnalyzer) || forced) {
+					if (forced || (corpus == null && this.analyzer instanceof YuhuanAnalyzer)) {
 						if (forced) { // 强制刷新标志
 							System.out.println(format("强制刷新语料库:{0} @ {1}", forced, LocalDateTime.now()));
-						} // if
-						SrchApp.this.corpus = ((YuhuanAnalyzer) this.analyzer).findOne(Trie.class);
+						} // forced
+						if (this.analyzer instanceof YuhuanAnalyzer yuhuan) {
+							SrchApp.this.corpus = yuhuan.findOne(Trie.class); // 提取yuhuan的语料库并在SrchApp保持该引用
+						} // YuhuanAnalyzer yuhuan
 					} else {//
 						System.err.println("分词器为 " + this.analyzer.getClass() + " 类型, 不予提供 关键词刷新操作");
 					} // if this.analyzer
 				} else {// 分词器无效
 					System.out.println("分词器为null,请运行initialize初始化或是添加适当的分词器");
-				} // if this.analyzer
+				} // if 分词器有效
 
-				if (null != SrchApp.this.corpus)
+				if (null != SrchApp.this.corpus) { // 语料库有效
 					SrchApp.this.corpus.traverse(e -> {
-						if ("word".equals(e.getAttribute("category"))) {
+						if ("word".equals(e.getAttribute("category"))) { // 提取word类型的预料词汇
 							keywords.add(e.getPath(cc -> cc.collect(Collectors.joining())));
 						} // if
-					});// traverse
+					}); // traverse
+				} // 语料库有效
 			} // synchronized
 
 			final var duration = System.currentTimeMillis() - begTime; // 持续的时间
-			System.out.println(MessageFormat.format( // 词汇量的分解
-					"FileSrchEngine refresh last for:{0} s, 累积词汇量:{1,number,#} 个", duration / 1000.0, keywords.size())); // 显示刷新过程的时间消耗。
+			System.out.println(format("FileSrchEngine refresh last for:{0} s, 累积词汇量:{1,number,#} 个", // 词汇量的分解
+					duration / 1000.0, keywords.size())); // 显示刷新过程的时间消耗。
 		}
 
 		/**
@@ -135,13 +137,16 @@ public class SrchApp {
 		public void refresh(final String corpusHome) {
 			if (!Objects.equals(corpusHome, this.corpusHome) && new File(corpusHome).exists()) {
 				SrchApp.this.corpusHome = this.corpusHome = corpusHome; // 更新新的语料库目录
-				JdbcSrchEngine.this.setAnalyzer(this.getYuhuanAnalyzer(this.corpusHome));
+				JdbcSrchEngine.this.setAnalyzer(buildYuhuanAnalyzer(this.corpusHome)); // 重新创建分词器
 				System.out.println(format("更换语料库目录为：{0}", this.corpusHome));
 			} // if
 			this.refresh(true); // 强制刷新
 		}
 
-		private final Set<String> keywords = new HashSet<String>();// 关键词集合
+		/**
+		 * 关键词集合 即 语料库词汇缓存
+		 */
+		private final Set<String> keywords = new HashSet<String>(); // 关键词集合
 	}
 
 	/**
@@ -151,10 +156,21 @@ public class SrchApp {
 	 * @return 文件记录集合。
 	 */
 	public List<DataApp.IRecord> searchFiles(final String keyword) {
+		return this.searchFiles(keyword, 50);
+	}
+
+	/**
+	 * 检索文件：
+	 *
+	 * @param keyword 检索关键词
+	 * @param size    返回数据数量
+	 * @return 文件记录集合。
+	 */
+	public List<DataApp.IRecord> searchFiles(final String keyword, final int size) {
 		final var srchEngine = new JdbcSrchEngine(this.indexHome) {
-		};
-		srchEngine.initialize();// 搜索引擎初始化
-		return srchEngine.lookup(keyword, 50);
+		}; // JdbcSrchEngine
+		srchEngine.initialize(); // 搜索引擎初始化
+		return srchEngine.lookup(keyword, size);
 	}
 
 	/**
@@ -166,13 +182,13 @@ public class SrchApp {
 	public static void traverse(final File homeFile, final Consumer<File> cs) {
 		if (homeFile == null || !homeFile.exists()) {
 			return;
-		}
+		} // if
 
 		if (homeFile.isFile()) {
 			cs.accept(homeFile);
 		} else if (homeFile.isDirectory()) {
 			Arrays.stream(homeFile.listFiles()).parallel().forEach(f -> traverse(f, cs));
-		}
+		} // if
 	}
 
 	/**
@@ -184,13 +200,13 @@ public class SrchApp {
 	public static void traverse2(final File homeFile, final Consumer<File> cs) {
 		if (homeFile == null || !homeFile.exists()) {
 			return;
-		}
+		} // if
 
 		if (homeFile.isFile()) {
 			cs.accept(homeFile);
 		} else if (homeFile.isDirectory()) {
 			Arrays.stream(homeFile.listFiles()).forEach(f -> traverse2(f, cs));
-		}
+		} // if
 	}
 
 	/**
@@ -203,11 +219,13 @@ public class SrchApp {
 		traverse(new File(homeFile), cs);
 	}
 
-	protected String indexHome;// 索引文件的的保存位置路径
-	protected String corpusHome;// 语料库的词汇目录
-	protected String snapHome;// 快照文件根目录
+	public static boolean debug = false; // 调试状态标记
+	public static boolean enableImgNameAsKeyword = true; // 是否把图片名称视为关键字,默认为true
+
+	protected String indexHome; // 索引文件的的保存位置路径
+	protected String corpusHome; // 语料库的词汇目录
+	protected String snapHome; // 快照文件根目录
 	protected Trie<String> corpus; // 语料库
-	protected final ExecutorService executors = Executors.newFixedThreadPool(5);// 线程池
-	public static boolean enableImgNameAsKeyword = true;// 是否把图片名称视为关键字,默认为true
-	public static boolean debug = false;// 调试状态标记
+	protected final ExecutorService executors = Executors.newFixedThreadPool(5); // 线程池
+
 }

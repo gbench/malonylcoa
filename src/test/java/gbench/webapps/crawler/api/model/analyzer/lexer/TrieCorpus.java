@@ -13,6 +13,10 @@ import java.util.stream.Stream;
  */
 public class TrieCorpus extends Trie<String> {
 
+	/**
+	 * 
+	 * @param value
+	 */
 	public TrieCorpus(final String value) {
 		super(value);
 	}

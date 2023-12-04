@@ -147,7 +147,7 @@ public class YuhuanAnalyzer extends Analyzer {
 	/**
 	 * 自定义单词处理器
 	 *
-	 * @param processor
+	 * @param processor 每个处理器对应一个特定的语料词库
 	 */
 	public YuhuanAnalyzer addProcessor(final ILexProcessor processor) {
 		this.yuhuanLexer.addProcessor(processor);
@@ -156,17 +156,23 @@ public class YuhuanAnalyzer extends Analyzer {
 
 	/**
 	 * 初始化
+	 * 
+	 * @return YuhuanAnalyzer 本身
 	 */
-	public void initialize() {
+	public YuhuanAnalyzer initialize() {
 		yuhuanLexer = new StreamLexer();
 		yuhuanLexer.initialize();
+		return this;
 	}
 
 	/**
 	 * 注销自己
+	 * 
+	 * @return YuhuanAnalyzer 本身
 	 */
-	public void uinitialize() {
+	public YuhuanAnalyzer uinitialize() {
 		yuhuanLexer.uninitialize();
+		return this;
 	}
 
 	/**

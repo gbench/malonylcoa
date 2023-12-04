@@ -99,7 +99,7 @@ public class StreamLexer extends AbstractLexer {
 	 * 对于一个词进行解释
 	 * 
 	 * @param symbol 符号
-	 * @return
+	 * @return TokenProfile
 	 */
 	public synchronized TokenProfile evaluate(final String symbol) {
 		if (null == symbol) {
@@ -107,15 +107,15 @@ public class StreamLexer extends AbstractLexer {
 		}
 
 		// 依次从各个模块中获取文字解释
-		final Optional<TokenProfile> opt = this.processors.keySet().parallelStream()
+		final Optional<TokenProfile> opt = this.processors.keySet().parallelStream() // 多个处理器并发读取
 				.map(key -> this.processors.get(key).evaluate(symbol)).filter(e -> e != null)
 				.map(lexeme -> new TokenProfile(lexeme.getSymbol(), lexeme.getCategory(), lexeme.getMeaning())
 						.addTags(lexeme.getTags().toArray(String[]::new)) // 添加标签
 						.addAttributes(lexeme.getAttributes())) // 补充词素的属性
-				.findFirst();
+				.findFirst(); // 以最先识别的出来的单词为主
 
 		// 内容输出
-		return opt.isPresent() ? opt.get() : null;
+		return opt.orElse(null);
 	}
 
 	/**
@@ -197,9 +197,9 @@ public class StreamLexer extends AbstractLexer {
 				// 2) 无意义 : 返回 空null
 				word = this.evaluate(characters); // 获取characters的符号意义。
 				if (word != null) {// characters 验证无误这是一个词 这是一次成功的操作
-					if (wordBuffer.length() > 1)// 确保是在此读到了一个新的字符。
+					if (wordBuffer.length() > 1) { // 确保是在此读到了一个新的字符。
 						c = wordBuffer.charAt(wordBuffer.length() - 1);
-					else {// characters 为只有一个字符长度的 单词(这一个单字符的单词没有保存在单词库中,因为moveOn返回false)，所以
+					} else {// characters 为只有一个字符长度的 单词(这一个单字符的单词没有保存在单词库中,因为moveOn返回false)，所以
 							// 不用再去退自负了,继续读下一个字符了。即不退回的读
 						c = spfunc_scanner.get();// 读取一个字符
 					} // if
@@ -228,7 +228,7 @@ public class StreamLexer extends AbstractLexer {
 
 				if (word != null) {// 确定并核实了这就是一个有完整意义的词。
 					// do nothing;
-				} else { // 对于 经过上述努力（ characters的整体检测,characters 部分检测,注意此时characters
+				} else { // 对于 经过上述努力（characters的整体检测,characters 部分检测,注意此时characters
 							// 已经退回到了只有一个字符的长度的词了）我们 依旧无法确定 这个单词的意义，于是干脆 就自定义 一种解释出来。
 					// 这就是 未知 单词类型的 意义所在。保证我们可以对任何字符序列进行分词。这就是 语言逻辑的 魅力，没有意义 我们就构造一种意义。这是
 					// 毛主席：没有条件创造条件 思想 的 编程应用。

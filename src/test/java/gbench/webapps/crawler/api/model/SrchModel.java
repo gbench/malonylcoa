@@ -1,10 +1,7 @@
 package gbench.webapps.crawler.api.model;
 
-import static java.text.MessageFormat.format;
-
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -29,9 +26,13 @@ import gbench.webapps.crawler.api.model.decomposer.TextDecomposer;
 import gbench.webapps.crawler.api.model.srch.SrchApp;
 import gbench.webapps.crawler.api.model.srch.AbstractJdbcSrchEngine.PageQuery;
 
+import static java.text.MessageFormat.format;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
 
+/**
+ * 检索模块（检索业务逻辑额实现）
+ */
 public class SrchModel extends SrchApp {
 	/**
 	 * 构造函数
@@ -143,7 +144,7 @@ public class SrchModel extends SrchApp {
 						writer.updateDocument(T("id", id), doc);// 文档的去重保存
 						// 中间按日志文本输出
 						if (debug)
-							System.out.println(MessageFormat.format( // 文本格式化
+							System.out.println(format( // 文本格式化
 									"[{0,number,#}\t{1}] ---- {2}", // 格式化模板
 									counter.getAndIncrement(),
 									Thread.currentThread().threadId() + "#" + Thread.currentThread().getName(),
@@ -169,7 +170,7 @@ public class SrchModel extends SrchApp {
 	 */
 	public void indexFiles(final String fileHome, final Consumer<IRecord> cs) {
 		final var srchEngine = new FileSrchEngine(this.indexHome);
-		final var yuhuan = srchEngine.getYuhuanAnalyzer(corpusHome);
+		final var yuhuan = FileSrchEngine.buildYuhuanAnalyzer(corpusHome);
 		srchEngine.setAnalyzer(yuhuan);
 		final var tokens = new ConcurrentLinkedQueue<IRecord>(); // 生成一个并发队列，用于接收各个 文档的处理信息。
 		final var files = new ConcurrentLinkedQueue<File>(); // 生成一个并发队列，用于接收各个 文档的处理信息。

@@ -45,11 +45,6 @@ import gbench.webapps.crawler.api.model.analyzer.lexer.ILexProcessor;
 import gbench.webapps.crawler.api.model.analyzer.lexer.Lexeme;
 import gbench.webapps.crawler.api.model.analyzer.lexer.Trie;
 import gbench.webapps.crawler.api.model.srch.PageData.Doc;
-
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
 import gbench.util.chn.PinyinUtil;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.Tuple2;
@@ -72,31 +67,10 @@ import static gbench.util.data.DataApp.IRecord.*;
 public abstract class AbstractJdbcSrchEngine {
 
 	/**
-	 * 把rec记录的指定col展开成多记录对象,增加拼音字段
-	 *
-	 * @param rec 记录对象
-	 * @param col 展开的字段
-	 * @return 文档集合流
-	 */
-	public Stream<Document> expand2docs(final IRecord rec, final String col) {
-		final String name = rec.str(col);// 获取名称项目
-		final List<String> pinyins = PinyinUtil.getPinyins(name);
-		final List<String> names = new LinkedList<>();
-		names.add(name);
-		names.addAll(pinyins);
-		return names.stream().map(e -> {
-			IRecord r = rec.duplicate();
-			r = r.add(SEARCH_FIELD, e);
-			// System.out.println(r);
-			return r;
-		}).map(SrchUtils::rec2doc);
-	}
-
-	/**
 	 * 搜索引擎初始化
 	 */
 	public AbstractJdbcSrchEngine initialize() {
-		analyzer = this.getYuhuanAnalyzer(this.corpusHome);
+		analyzer = buildYuhuanAnalyzer(this.corpusHome);
 		return this;
 	}
 
@@ -284,6 +258,180 @@ public abstract class AbstractJdbcSrchEngine {
 		} // try
 
 		return home;
+	}
+
+	/**
+	 * 书写索引文件<br>
+	 *
+	 * @param cs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
+	 */
+	public synchronized void writeIndexes(final Consumer<IndexWriter> cs) {
+		this.writeIndexes(cs, writer -> {
+			try {
+				writer.forceMerge(1);// 默认合并成一个段
+			} catch (IOException e) {
+				e.printStackTrace();
+			} // try
+		});
+	}
+
+	/**
+	 * 书写索引文件<br>
+	 *
+	 * @param primecs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
+	 * @param postcs  执行关闭前的收尾操作，比如 设置 writer.forceMerge(1) 之类的操作
+	 */
+	public synchronized void writeIndexes(final Consumer<IndexWriter> primecs, final Consumer<IndexWriter> postcs) {
+		// 索引书写器的配置
+		final var iwc = new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE_OR_APPEND);
+		if (this.indexWriterConfigInitiator != null)
+			indexWriterConfigInitiator.accept(iwc);// 配置IndexWriterConfig
+
+		// 使用try 块自动关闭 writer
+		try (final var writer = new IndexWriter(this.getIndexHome(), iwc);) {
+			primecs.accept(writer);//
+			postcs.accept(writer);
+			@SuppressWarnings("unused")
+			final var seqnum = writer.commit();
+			// System.err.println(MessageFormat.format("commit seqnum:{0}", seqnum));
+		} catch (Exception e) {
+			e.printStackTrace();
+		} // try
+	}
+
+	/**
+	 * 书写索引文件<br>
+	 *
+	 * @param cs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
+	 */
+	public synchronized void readIndexes(final Consumer<IndexReader> cs) {
+		// 使用try 块自动关闭 writer
+		try {
+			cs.accept(this.getIndexReader());
+		} catch (Exception e) {
+			e.printStackTrace();
+		} // try
+	}
+
+	/**
+	 * 构造一个索引文件的编写会话：其实这个接口不是事物性质的，之所以叫做 withTransaction 是为了与 Jdbc的命名风格像一致<br>
+	 *
+	 * @param cs 构造了一个类SQL 的Jdbc操作的 API接口 会话
+	 */
+	public synchronized void withTransaction(final Consumer<IndexJdbcSession> cs) {
+		// 写入索引信息
+		this.writeIndexes(writer -> cs.accept(new IndexJdbcSession(writer)));
+	}
+
+	/**
+	 * 对line 进行分词
+	 *
+	 * @param line 待分词的字符串
+	 * @return 分词结果 [{symbol:单词符号,category:单词类型,meaning：单词解释,...}]
+	 */
+	public List<IRecord> analyze(final String line) {
+		if (this.analyzer == null) {
+			System.err.println("analyzer 为 null, 请执行 intialize 初始化 而后在在运行 分词");
+			return null;
+		}
+		if ((analyzer instanceof YuhuanAnalyzer)) {
+			return ((YuhuanAnalyzer) analyzer).analyze(line); // 使用玉环
+		} else {
+			final var recs = YuhuanAnalyzer.splits(analyzer, UUID.randomUUID().toString(), line, false);
+			return recs.stream().map(
+					rec -> rec.derive(REC("symbol", rec.get("value"), "category", rec.get("type"), "meaning", "-"))) // 复制属性
+					.collect(Collectors.toList());
+		} // if
+	}
+
+	/**
+	 * 获取索引读取器
+	 *
+	 * @return IndexReader
+	 */
+	public <T extends IndexReader> T getIndexReader(final Class<T> clazz) {
+		return corece(this.getIndexReader(), clazz);
+	}
+
+	/**
+	 * 获取索引读取器
+	 *
+	 * @return IndexReader
+	 */
+	public IndexReader getIndexReader() {
+		try {
+			if (this.indexReader == null) {
+				this.indexReader = DirectoryReader.open(this.getIndexHome());
+			} else {
+				// 如果 IndexReader 不为空，就使用 DirectoryReader 打开一个索引变更过的 IndexReader 类
+				// 此时要记得把旧的索引对象关闭
+				final IndexReader new_reader = DirectoryReader.openIfChanged((DirectoryReader) this.indexReader);
+				if (new_reader != null) {
+					this.indexReader.close();
+					this.indexReader = new_reader;
+				} // if
+			} // if
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println(MessageFormat.format("请仔细核对目录{0}是否为一个有效的索引文件路径:必须含有索引文件!", this.getIndexHome()));
+		} // try
+
+		return this.indexReader;
+	}
+
+	/**
+	 * 生成一个按页查询的项目对象。 PageQuery 需要经过初始化之后才能够使用
+	 *
+	 * @param query 查询对象
+	 * @return PageQuery
+	 */
+	public PageQuery getPageQuery(final Query query) {
+		return this.getPageQuery(query, true);
+	}
+
+	/**
+	 * 生成一个分页查询对象 PageQuery 需要经过初始化之后才能够使用
+	 *
+	 * @param query 查询对象
+	 * @param binit 是否初始化
+	 * @return PageQuery
+	 */
+	public PageQuery getPageQuery(final Query query, final boolean binit) {
+		final var sbp = this.new PageQuery(this.getIndexReader(), query);
+		if (binit) {
+			sbp.initialize();
+		}
+		return sbp;
+	}
+
+	/**
+	 * 返回一个分词器
+	 *
+	 * @return
+	 */
+	public Analyzer getAnalyzer() {
+		return analyzer;
+	}
+
+	/**
+	 * 把rec记录的指定col展开成多记录对象,增加拼音字段
+	 *
+	 * @param rec 记录对象
+	 * @param col 展开的字段
+	 * @return 文档集合流
+	 */
+	public Stream<Document> expand2docs(final IRecord rec, final String col) {
+		final String name = rec.str(col);// 获取名称项目
+		final List<String> pinyins = PinyinUtil.getPinyins(name);
+		final List<String> names = new LinkedList<>();
+		names.add(name);
+		names.addAll(pinyins);
+		return names.stream().map(e -> {
+			IRecord r = rec.duplicate();
+			r = r.add(SEARCH_FIELD, e);
+			// System.out.println(r);
+			return r;
+		}).map(SrchUtils::rec2doc);
 	}
 
 	/**
@@ -577,337 +725,6 @@ public abstract class AbstractJdbcSrchEngine {
 		private final IRecord attributes = REC();// 会话中的状态数据
 
 	}// SimpleIndexWriter
-
-	/**
-	 * 书写索引文件<br>
-	 *
-	 * @param cs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
-	 */
-	public synchronized void writeIndexes(final Consumer<IndexWriter> cs) {
-		this.writeIndexes(cs, writer -> {
-			try {
-				writer.forceMerge(1);// 默认合并成一个段
-			} catch (IOException e) {
-				e.printStackTrace();
-			} // try
-		});
-	}
-
-	/**
-	 * 书写索引文件<br>
-	 *
-	 * @param primecs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
-	 * @param postcs  执行关闭前的收尾操作，比如 设置 writer.forceMerge(1) 之类的操作
-	 */
-	public synchronized void writeIndexes(final Consumer<IndexWriter> primecs, final Consumer<IndexWriter> postcs) {
-		// 索引书写器的配置
-		final var iwc = new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE_OR_APPEND);
-		if (this.indexWriterConfigInitiator != null)
-			indexWriterConfigInitiator.accept(iwc);// 配置IndexWriterConfig
-
-		// 使用try 块自动关闭 writer
-		try (final var writer = new IndexWriter(this.getIndexHome(), iwc);) {
-			primecs.accept(writer);//
-			postcs.accept(writer);
-			@SuppressWarnings("unused")
-			final var seqnum = writer.commit();
-			// System.err.println(MessageFormat.format("commit seqnum:{0}", seqnum));
-		} catch (Exception e) {
-			e.printStackTrace();
-		} // try
-	}
-
-	/**
-	 * 书写索引文件<br>
-	 *
-	 * @param cs 提供一个IndexWriter的回调函数,IndexWriter 不需要close 使用完由上级来给与关闭。
-	 */
-	public synchronized void readIndexes(final Consumer<IndexReader> cs) {
-		// 使用try 块自动关闭 writer
-		try {
-			cs.accept(this.getIndexReader());
-		} catch (Exception e) {
-			e.printStackTrace();
-		} // try
-	}
-
-	/**
-	 * 构造一个索引文件的编写会话：其实这个接口不是事物性质的，之所以叫做 withTransaction 是为了与 Jdbc的命名风格像一致<br>
-	 *
-	 * @param cs 构造了一个类SQL 的Jdbc操作的 API接口 会话
-	 */
-	public synchronized void withTransaction(final Consumer<IndexJdbcSession> cs) {
-		// 写入索引信息
-		this.writeIndexes(writer -> cs.accept(new IndexJdbcSession(writer)));
-	}
-
-	/**
-	 * 对line 进行分词
-	 *
-	 * @param line 待分词的字符串
-	 * @return 分词结果 [{symbol:单词符号,category:单词类型,meaning：单词解释,...}]
-	 */
-	public List<IRecord> analyze(final String line) {
-		if (this.analyzer == null) {
-			System.err.println("analyzer 为 null, 请执行 intialize 初始化 而后在在运行 分词");
-			return null;
-		}
-		if ((analyzer instanceof YuhuanAnalyzer)) {
-			return ((YuhuanAnalyzer) analyzer).analyze(line); // 使用玉环
-		} else {
-			final var recs = YuhuanAnalyzer.splits(analyzer, UUID.randomUUID().toString(), line, false);
-			return recs.stream().map(
-					rec -> rec.derive(REC("symbol", rec.get("value"), "category", rec.get("type"), "meaning", "-"))) // 复制属性
-					.collect(Collectors.toList());
-		} // if
-	}
-
-	/**
-	 * 类型装换
-	 *
-	 * @param <T>
-	 * @param obj   被转换的对象
-	 * @param clazz 目标类型
-	 * @return T类型的结果
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> T corece(final Object obj, final Class<T> clazz) {
-		if (clazz.isAssignableFrom(obj.getClass())) {
-			return (T) obj;
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * 获取索引读取器
-	 *
-	 * @return IndexReader
-	 */
-	public <T extends IndexReader> T getIndexReader(final Class<T> clazz) {
-		return corece(this.getIndexReader(), clazz);
-	}
-
-	/**
-	 * 获取索引读取器
-	 *
-	 * @return IndexReader
-	 */
-	public IndexReader getIndexReader() {
-		try {
-			if (this.indexReader == null) {
-				this.indexReader = DirectoryReader.open(this.getIndexHome());
-			} else {
-				// 如果 IndexReader 不为空，就使用 DirectoryReader 打开一个索引变更过的 IndexReader 类
-				// 此时要记得把旧的索引对象关闭
-				final IndexReader new_reader = DirectoryReader.openIfChanged((DirectoryReader) this.indexReader);
-				if (new_reader != null) {
-					this.indexReader.close();
-					this.indexReader = new_reader;
-				} // if
-			} // if
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.out.println(MessageFormat.format("请仔细核对目录{0}是否为一个有效的索引文件路径:必须含有索引文件!", this.getIndexHome()));
-		} // try
-
-		return this.indexReader;
-	}
-
-	/**
-	 * 生成一个按页查询的项目对象。 PageQuery 需要经过初始化之后才能够使用
-	 *
-	 * @param query 查询对象
-	 * @return PageQuery
-	 */
-	public PageQuery getPageQuery(final Query query) {
-		return this.getPageQuery(query, true);
-	}
-
-	/**
-	 * 生成一个分页查询对象 PageQuery 需要经过初始化之后才能够使用
-	 *
-	 * @param query 查询对象
-	 * @param binit 是否初始化
-	 * @return PageQuery
-	 */
-	public PageQuery getPageQuery(final Query query, final boolean binit) {
-		final var sbp = this.new PageQuery(this.getIndexReader(), query);
-		if (binit) {
-			sbp.initialize();
-		}
-		return sbp;
-	}
-
-	/**
-	 * 当仅使用YuhuanAnalyzer的 特有分词函数的时候，可以不对 YuhuanAnalyzer进行关闭。
-	 *
-	 * @param corpusDir 语料库路径
-	 * @return YuhuanAnalyzer 返回的YuhuanAnalyzer中包含一个属性corpus 用于保存 分词器所使用的语料信息(词汇表)
-	 */
-	public YuhuanAnalyzer getYuhuanAnalyzer(final String corpusDir) {
-		final var corpus = new Trie<String>();// 语料库的根节点树
-		final var processorTrieTuples = new LinkedList<Tuple2<String, Trie<String>>>(); // Trie 的资料集合
-
-		if (corpusDir != null) {// 遍历 corpusDir 获取 fileTries
-			final var corpusHome = new File(corpusDir);// 语料库的路径
-			final var processorCorpuses = corpusHome.isDirectory() // 构建语料库
-					? Stream.of(corpusHome.listFiles())
-					: Stream.of(new File(FileSystem.path(corpusDir, this.getClass())));
-
-			processorCorpuses // 文件分词
-					.filter(file -> file.getAbsolutePath().endsWith(".txt")).forEach(file -> { // 创建语料文件
-						final var processorTrie = new Trie<String>();// 语料库的根节点树
-						final var name = file.getName();
-						final var idx = name.indexOf(".");
-						final var endIndex = idx == -1 ? idx : file.getName().length();
-						final var fname = name.substring(0, endIndex); // 提取文件名
-
-						FileSystem.readLineS(file).filter(line -> !line.matches("^\\s*$")) // 去除空行
-								.forEach(line -> {// 提取语料词汇
-									Stream.of(line.strip().split("[\n]+")) // 按行进行切分
-											.forEach(keyword -> {// 设置词素 的节点属性信息
-												final var points = keyword.split("");// 把keyword 切分乘字符点
-
-												Stream.of(processorTrie, corpus).forEach(trie -> {// 为trie 增加
-													Trie.addPoints2Trie(trie, points).addAttribute("category", "word")// 绑定词法类型信息
-															.addAttribute("meaning",
-																	Arrays.stream(points).collect(Collectors.joining()))
-															.addAttribute("tag", fname);
-												});// Stream.of
-											}); // forEach : keyword
-								}); // forEach : line
-						processorTrieTuples.add(TUP2(fname, processorTrie)); // fileTries
-					}); // forEach : file
-		} // if corpusDir
-
-		if (debug) { // 打印语料库
-			Trie.traverse(corpus, e -> System.out.println("\t".repeat(e.getLevel()) + e.getValue() + //
-					"\ttype:" + e.getAttribute("type")));
-		} // if
-
-		final var yuhuan = new YuhuanAnalyzer(); // 生成玉环的分词器
-		final var symbolProcessor = new ILexProcessor() { // 创建一个符号处理器
-
-			/**
-			 * 分词词库的名称
-			 *
-			 * @return 分词词库的名称
-			 */
-			@Override
-			public String getName() {
-				return "符号与数字";
-			}
-
-			/**
-			 * 符号计算:一个成功的分词需要evaluate返回非空,否则分词器会返回最基础的单词符号
-			 */
-			@Override
-			public Lexeme evaluate(final String symbol) { // 符号计算
-				return corpus.opt(symbol.split("")).map(token -> { // 数据符号
-					final var category = token.strAttr("category"); // 提取corpus词典分类属性
-					final var meaning = token.strAttr("meaning"); // 提取corpus词典意义属性
-					return new Lexeme(symbol, category, meaning); // 返回词素
-				}).orElseGet(() -> { // 模式识别
-					return predefs.tupleS() // 预定模式检测
-							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
-							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // 生成词素
-									.addAttributes("class", "mode") // 补充属性
-					).orElse(null); // 获取词意失败
-				}); // opt
-			}
-
-			@Override
-			public boolean isPrefix(final String line) {
-				if (predefs.valueS().map(Object::toString).anyMatch(line::matches)) {
-					return true;
-				} else {
-					return corpus.isPrefix(line.split(""));
-				} // if
-			} // isPrefix
-
-			/**
-			 * 预定义模式
-			 */
-			private final IRecord predefs = IRecord.REC( // 预定义符号
-					"LETTER", "[a-zA-Z]+" // 英文单词
-					, "INDENTIFIER", "[a-zA-Z_-]+" // 英文标识符号
-					, "NUMBER", "[\\d\\.]+" // 阿拉伯数据
-					, "CN_NUMBER", "[一二三四五六七八九十零百千万亿兆]+" // 中文数字
-					, "CN_DATETIME", "[一二三四五六七八九十零百千万亿兆\\d]+年([一二三四五六七八九十零百千万亿兆\\d+](月([一二三四五六七八九十零百千万亿兆\\d+]日?)?)?)?" // 日期时间
-					, "PUNCT", "[-,+*/，。、]" // 标点符号
-			); // 预定义模式
-		};// 符号处理器
-
-		// 符号与关键词的处理器
-		yuhuan.addProcessor(symbolProcessor);
-		// 为yuhuan 添加分词processor
-		processorTrieTuples.forEach(processorTrieTuple -> {// 每个分词器带有一个 processorCorpus 是一个特异的 专业词库
-
-			// 构造分词器的 处理器
-			final var processor = new ILexProcessor() { // 创建一个 分词器
-				final Trie<String> processorCorpus = processorTrieTuple._2;// 私有处理的词库
-
-				/**
-				 * 分词词库的名称
-				 *
-				 * @return 分词词库的名称
-				 */
-				@Override
-				public String getName() {
-					final var line = processorTrieTuple._1;
-					final var idx = line.indexOf(".");
-					final var endIndex = idx < 0 ? line.length() : idx;
-					return line.substring(0, endIndex);// 去除扩展名
-				}
-
-				/**
-				 * 把符号转换成 词素
-				 *
-				 * @param symbol 符号
-				 * @return 词素
-				 */
-				@Override
-				public Lexeme evaluate(final String symbol) {
-					final var trieNode = processorCorpus.getTrie(symbol.split(""));// 提取节点词素
-					if (trieNode == null)
-						return null;
-					if (!"word".equals(trieNode.getAttribute("category")))
-						return null;
-					final var category = trieNode.strAttr("category");// 提取分类属性
-					final var meaning = trieNode.strAttr("meaning");// 提取意义属性
-					return new Lexeme(symbol, category, meaning).addTags(this.getName());
-				}
-
-				/**
-				 * 符号检测
-				 *
-				 * @param line 符号字符串
-				 * @return 是否是一个符号前缀
-				 */
-				@Override
-				public boolean isPrefix(final String line) {
-					return processorCorpus.isPrefix(line.split(""));
-				}// isPrefix
-			};
-
-			yuhuan.addProcessor(processor);// addProcessor
-		});
-
-		// 设置玉环的 分此次词库
-		yuhuan.setAttribute("corpus", corpus);// 设置词库竖向
-
-		return yuhuan;
-	}
-
-	/**
-	 * 返回一个分词器
-	 *
-	 * @return
-	 */
-	public Analyzer getAnalyzer() {
-		return analyzer;
-	}
 
 	/**
 	 * 按照页进行搜索:<br>
@@ -1261,6 +1078,232 @@ public abstract class AbstractJdbcSrchEngine {
 	}
 
 	/**
+	 * 字符数组工具类
+	 *
+	 * @author gbench
+	 */
+	public static class ByteArrayUtils {
+
+		/**
+		 * 把一个对象转换成 bytes 数据
+		 *
+		 * @param <T>
+		 * @param obj 待转换的对象
+		 * @return Optional 的 byte[] 结构
+		 */
+		public static <T> Optional<byte[]> objectToBytes(final T obj) {
+			byte[] bytes = null;
+			try (final ByteArrayOutputStream out = new ByteArrayOutputStream();
+					final ObjectOutputStream oos = new ObjectOutputStream(out);) {
+				oos.writeObject(obj);
+				oos.flush();
+				bytes = out.toByteArray();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			return Optional.ofNullable(bytes);
+		}
+
+		/**
+		 * @param <T>
+		 * @param bytes
+		 * @return Optional T 结构
+		 */
+		@SuppressWarnings("unchecked")
+		public static <T> Optional<T> bytesToObject(final byte[] bytes) {
+			T t = null;
+			try (final ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+					final ObjectInputStream ois = new ObjectInputStream(in)) {
+				t = (T) ois.readObject();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+			return Optional.ofNullable(t);
+		}// bytesToObject
+
+	} // class ByteArrayUtils
+
+	/**
+	 * 类型装换
+	 *
+	 * @param <T>
+	 * @param obj   被转换的对象
+	 * @param clazz 目标类型
+	 * @return T类型的结果
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T corece(final Object obj, final Class<T> clazz) {
+		if (clazz.isAssignableFrom(obj.getClass())) {
+			return (T) obj;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * 当仅使用YuhuanAnalyzer的 特有分词函数的时候，可以不对 YuhuanAnalyzer进行关闭。
+	 *
+	 * @param corpusDir 语料库路径
+	 * @return YuhuanAnalyzer 返回的YuhuanAnalyzer中包含一个属性corpus 用于保存 分词器所使用的语料信息(词汇表)
+	 */
+	public static YuhuanAnalyzer buildYuhuanAnalyzer(final String corpusDir) {
+		final var corpus = new Trie<String>();// 语料库的根节点树
+		final var processorTrieTuples = new LinkedList<Tuple2<String, Trie<String>>>(); // Trie 的资料集合
+
+		if (corpusDir != null) {// 遍历 corpusDir 获取 fileTries
+			final var corpusHome = new File(corpusDir);// 语料库的路径
+			final var processorCorpuses = corpusHome.isDirectory() // 构建语料库
+					? Stream.of(corpusHome.listFiles())
+					: Stream.of(new File(FileSystem.path(corpusDir, null)));
+
+			processorCorpuses // 文件分词
+					.filter(file -> file.getAbsolutePath().endsWith(".txt")).forEach(file -> { // 创建语料文件
+						final var processorTrie = new Trie<String>();// 语料库的根节点树
+						final var name = file.getName();
+						final var idx = name.indexOf(".");
+						final var endIndex = idx == -1 ? idx : file.getName().length();
+						final var fname = name.substring(0, endIndex); // 提取文件名
+
+						FileSystem.readLineS(file).filter(line -> !line.matches("^\\s*$")) // 去除空行
+								.forEach(line -> {// 提取语料词汇
+									Stream.of(line.strip().split("[\n]+")) // 按行进行切分
+											.forEach(keyword -> {// 设置词素 的节点属性信息
+												final var points = keyword.split("");// 把keyword 切分乘字符点
+
+												Stream.of(processorTrie, corpus).forEach(trie -> {// 为trie 增加
+													Trie.addPoints2Trie(trie, points).addAttribute("category", "word")// 绑定词法类型信息
+															.addAttribute("meaning",
+																	Arrays.stream(points).collect(Collectors.joining()))
+															.addAttribute("tag", fname);
+												});// Stream.of
+											}); // forEach : keyword
+								}); // forEach : line
+						processorTrieTuples.add(TUP2(fname, processorTrie)); // fileTries
+					}); // forEach : file
+		} // if corpusDir
+
+		if (debug) { // 打印语料库
+			Trie.traverse(corpus, e -> System.out.println("\t".repeat(e.getLevel()) + e.getValue() + //
+					"\ttype:" + e.getAttribute("type")));
+		} // if
+
+		final var yuhuan = new YuhuanAnalyzer(); // 生成玉环的分词器
+		final var symbolProcessor = new ILexProcessor() { // 创建一个符号处理器
+
+			/**
+			 * 分词词库的名称
+			 *
+			 * @return 分词词库的名称
+			 */
+			@Override
+			public String getName() {
+				return "符号与数字";
+			}
+
+			/**
+			 * 符号计算:一个成功的分词需要evaluate返回非空,否则分词器会返回最基础的单词符号
+			 */
+			@Override
+			public Lexeme evaluate(final String symbol) { // 符号计算
+				return corpus.opt(symbol.split("")).map(token -> { // 数据符号
+					final var category = token.strAttr("category"); // 提取corpus词典分类属性
+					final var meaning = token.strAttr("meaning"); // 提取corpus词典意义属性
+					return new Lexeme(symbol, category, meaning); // 返回词素
+				}).orElseGet(() -> { // 模式识别
+					return predefs.tupleS() // 预定模式检测
+							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
+							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // 生成词素
+									.addAttributes("class", "mode") // 补充属性
+					).orElse(null); // 获取词意失败
+				}); // opt
+			}
+
+			@Override
+			public boolean isPrefix(final String line) {
+				if (predefs.valueS().map(Object::toString).anyMatch(line::matches)) {
+					return true;
+				} else {
+					return corpus.isPrefix(line.split(""));
+				} // if
+			} // isPrefix
+
+			/**
+			 * 预定义模式
+			 */
+			private final IRecord predefs = IRecord.REC( // 预定义符号
+					"LETTER", "[a-zA-Z]+" // 英文单词
+					, "INDENTIFIER", "[a-zA-Z_-]+" // 英文标识符号
+					, "NUMBER", "[\\d\\.]+" // 阿拉伯数据
+					, "CN_NUMBER", "[一二三四五六七八九十零百千万亿兆]+" // 中文数字
+					, "CN_DATETIME", "[一二三四五六七八九十零百千万亿兆\\d]+年([一二三四五六七八九十零百千万亿兆\\d+](月([一二三四五六七八九十零百千万亿兆\\d+]日?)?)?)?" // 日期时间
+					, "PUNCT", "[-,+*/，。、]" // 标点符号
+			); // 预定义模式
+		};// 符号处理器
+
+		// 符号与关键词的处理器
+		yuhuan.addProcessor(symbolProcessor);
+		// 为yuhuan 添加分词processor
+		processorTrieTuples.forEach(processorTrieTuple -> {// 每个分词器带有一个 processorCorpus 是一个特异的 专业词库
+
+			// 构造分词器的 处理器
+			final var processor = new ILexProcessor() { // 创建一个 分词器
+				final Trie<String> processorCorpus = processorTrieTuple._2;// 私有处理的词库
+
+				/**
+				 * 分词词库的名称
+				 *
+				 * @return 分词词库的名称
+				 */
+				@Override
+				public String getName() {
+					final var line = processorTrieTuple._1;
+					final var idx = line.indexOf(".");
+					final var endIndex = idx < 0 ? line.length() : idx;
+					return line.substring(0, endIndex);// 去除扩展名
+				}
+
+				/**
+				 * 把符号转换成 词素
+				 *
+				 * @param symbol 符号
+				 * @return 词素
+				 */
+				@Override
+				public Lexeme evaluate(final String symbol) {
+					final var trieNode = processorCorpus.getTrie(symbol.split(""));// 提取节点词素
+					if (trieNode == null)
+						return null;
+					if (!"word".equals(trieNode.getAttribute("category")))
+						return null;
+					final var category = trieNode.strAttr("category");// 提取分类属性
+					final var meaning = trieNode.strAttr("meaning");// 提取意义属性
+					return new Lexeme(symbol, category, meaning).addTags(this.getName());
+				}
+
+				/**
+				 * 符号检测
+				 *
+				 * @param line 符号字符串
+				 * @return 是否是一个符号前缀
+				 */
+				@Override
+				public boolean isPrefix(final String line) {
+					return processorCorpus.isPrefix(line.split(""));
+				}// isPrefix
+			};
+
+			yuhuan.addProcessor(processor);// addProcessor
+		});
+
+		// 设置玉环的 分此次词库
+		yuhuan.setAttribute("corpus", corpus);// 设置词库竖向
+
+		return yuhuan;
+	}
+
+	/**
 	 * 分页检索
 	 *
 	 * @param searcher    搜索器
@@ -1341,54 +1384,6 @@ public abstract class AbstractJdbcSrchEngine {
 	public static Stream<IRecord> docStream2(final IndexReader indexReader) {
 		return docStream(indexReader).map(SrchUtils::doc2rec);
 	}
-
-	/**
-	 * 字符数组工具类
-	 *
-	 * @author gbench
-	 */
-	public static class ByteArrayUtils {
-
-		/**
-		 * 把一个对象转换成 bytes 数据
-		 *
-		 * @param <T>
-		 * @param obj 待转换的对象
-		 * @return Optional 的 byte[] 结构
-		 */
-		public static <T> Optional<byte[]> objectToBytes(final T obj) {
-			byte[] bytes = null;
-			try (final ByteArrayOutputStream out = new ByteArrayOutputStream();
-					final ObjectOutputStream oos = new ObjectOutputStream(out);) {
-				oos.writeObject(obj);
-				oos.flush();
-				bytes = out.toByteArray();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-			return Optional.ofNullable(bytes);
-		}
-
-		/**
-		 * @param <T>
-		 * @param bytes
-		 * @return Optional T 结构
-		 */
-		@SuppressWarnings("unchecked")
-		public static <T> Optional<T> bytesToObject(final byte[] bytes) {
-			T t = null;
-			try (final ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-					final ObjectInputStream ois = new ObjectInputStream(in)) {
-				t = (T) ois.readObject();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-			return Optional.ofNullable(t);
-		}// bytesToObject
-
-	} // class ByteArrayUtils
 
 	/**
 	 * Md5 加密
@@ -1475,7 +1470,8 @@ public abstract class AbstractJdbcSrchEngine {
 		System.err.print(message);
 	}
 
-	private boolean debug = false;
+	public static boolean debug = false; // 调试标记
+
 	private IndexReader indexReader = null; // 索引库的访问接口
 
 	protected final String SEARCH_FIELD = "search_field";// 检索的字段项目
