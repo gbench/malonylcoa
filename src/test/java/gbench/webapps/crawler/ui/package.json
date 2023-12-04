@@ -1,5 +1,5 @@
 {
-  "name": "world",
+  "name": "crawler",
   "version": "1.0.0",
   "description": "npm -y init",
   "main": "index.js",
