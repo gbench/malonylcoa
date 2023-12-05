@@ -55,7 +55,6 @@ public class ImageDecomposer implements IDecomposer {
 						Trie.addPoints2Trie(corpus, keyword.split("")).addAttribute("category", "word")
 								.addAttribute("meaning", keyword);// 记录分词
 					});
-
 		} // 开启 enableImgNameAsKeyword
 
 		// 加入处理列表
@@ -63,8 +62,9 @@ public class ImageDecomposer implements IDecomposer {
 		yuhuan.analyzeS(file.getAbsolutePath()) // 对文件目录进行分词
 				.filter(e -> "word".equals(e.get("category"))).forEach(rec -> {
 					final var symbol = rec.str("symbol");
-					if (symbol == null)
+					if (symbol == null) {
 						return;
+					}
 
 					tokens.add(REC(// 加入字段分析结果
 							"symbol", symbol, // 关键词

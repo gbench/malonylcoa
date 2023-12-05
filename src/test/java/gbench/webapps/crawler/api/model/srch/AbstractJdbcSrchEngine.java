@@ -81,10 +81,10 @@ public abstract class AbstractJdbcSrchEngine {
 		try {
 			if (this.indexReader != null) {
 				this.indexReader.close();
-			}
+			} // if
 			if (this.analyzer != null) {
 				this.analyzer.close();
-			}
+			} // if
 			this.indexReader = null;
 			this.analyzer = null;
 		} catch (Exception e) {

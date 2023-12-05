@@ -76,11 +76,12 @@ public class TextDecomposer implements IDecomposer {
 		files.add(file);// 记录索引文件
 		final var counter = new AtomicLong(0);
 		FileInputStream is = null;// 文件流
+
 		try {
 			is = new FileInputStream(file);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-		}
+		} // try
 		FileSystem.bufferedRead(is, "utf8", br -> {// 以utf8 方式读取文件内容
 			br.lines().filter(line -> {// 过滤掉空行
 				counter.getAndIncrement(); // 生成行号

@@ -41,8 +41,9 @@ public class DecomposeUtils {
 						break;
 					} // if
 				} // for
-				if (flag)
+				if (flag) {
 					break;
+				}
 			} // for
 		});
 

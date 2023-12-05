@@ -93,7 +93,8 @@ public class RulesDecomposer implements IDecomposer {
 			final var fname = file.getName();// 文件名
 			final var snapfile = format("{0}/{1}/snap_{2,number,#}.txt", snapHome,
 					fname.substring(0, fname.indexOf(".")), rownum);// 快照文件路径
-			final var executors = entry.findOne(ExecutorService.class);
+			final var executors = entry.findOne(ExecutorService.class); // 线程执行器
+
 			if (snapHome != null && executors != null) { // 写入快照文件
 				executors.execute(() -> //
 				FileSystem.utf8write(snapfile, () -> line)); // 写入 快照文件,仅当提供了snapHome才给与写入snapfile
