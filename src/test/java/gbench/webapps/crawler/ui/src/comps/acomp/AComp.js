@@ -74,7 +74,7 @@ const AComp = {
 			return (td, h, line, i) => {
 				const s = (n => 'text,snapfile'.indexOf(h) < 0 ? td
 					: td.substr(0, n).replace(/\s+/g, '') + (td.length > n ? '...' : ''))(maxsize)
-					.replace(/^[。，：”】；）]+/, '');
+					.replace(/^[;。，：”】；）]+/, '');
 				return `<a title='${td}'>${s}</a>`;
 			};
 		},
