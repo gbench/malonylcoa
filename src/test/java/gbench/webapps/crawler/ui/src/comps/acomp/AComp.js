@@ -72,10 +72,11 @@ const AComp = {
 		 */
 		max_render(maxsize) {
 			return (td, h, line, i) => {
+				const pattern = /^[;。，：”】；）]+/;
 				const s = (n => 'text,snapfile'.indexOf(h) < 0 ? td
 					: td.substr(0, n).replace(/\s+/g, '') + (td.length > n ? '...' : ''))(maxsize)
-					.replace(/^[;。，：”】；）]+/, '');
-				return `<a title='${td}'>${s}</a>`;
+					.replace(pattern, '');
+				return `<a title='${td.replace(pattern, '')}'>${s}</a>`;
 			};
 		},
 
@@ -105,7 +106,7 @@ const AComp = {
 			if (pos) { // 关键词位置
 				e['position'] = `${pos.rownum}#${pos.start},${pos.end - pos.start + 1}`;
 			}
-
+			e['text'] = e['text'].replace(new RegExp(e['symbol']), `【${e['symbol']}】`); // 修改文本呢内容
 			return e;
 		},
 
