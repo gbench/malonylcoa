@@ -334,8 +334,8 @@ public abstract class AbstractJdbcSrchEngine {
 			System.err.println("analyzer 为 null, 请执行 intialize 初始化 而后在在运行 分词");
 			return null;
 		}
-		if ((analyzer instanceof YuhuanAnalyzer)) {
-			return ((YuhuanAnalyzer) analyzer).analyze(line); // 使用玉环
+		if (analyzer instanceof YuhuanAnalyzer yuhuan) {
+			return yuhuan.analyze(line); // 使用玉环
 		} else {
 			final var recs = YuhuanAnalyzer.splits(analyzer, UUID.randomUUID().toString(), line, false);
 			return recs.stream().map(
@@ -1390,8 +1390,7 @@ public abstract class AbstractJdbcSrchEngine {
 	public static String md5(final Object object) {
 		byte[] secretBytes = null;
 		try {
-			final var bb = object instanceof String ? ((String) object).getBytes()
-					: ByteArrayUtils.objectToBytes(object).get();
+			final var bb = object instanceof String s ? s.getBytes() : ByteArrayUtils.objectToBytes(object).get();
 			secretBytes = MessageDigest.getInstance("md5").digest(bb);
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("没有这个md5算法！");

@@ -39,6 +39,27 @@ public class YuhuanAnalyzer extends Analyzer {
 	}
 
 	/**
+	 * 初始化
+	 * 
+	 * @return YuhuanAnalyzer 本身
+	 */
+	public YuhuanAnalyzer initialize() {
+		yuhuanLexer = new StreamLexer();
+		yuhuanLexer.initialize();
+		return this;
+	}
+
+	/**
+	 * 注销自己
+	 * 
+	 * @return YuhuanAnalyzer 本身
+	 */
+	public YuhuanAnalyzer uinitialize() {
+		yuhuanLexer.uninitialize();
+		return this;
+	}
+
+	/**
 	 * 分词组件
 	 *
 	 * @param fieldName 组件对于使用同一个分词器进行分词，即 重用策略ReuseStrategy 具有标记意义。
@@ -155,27 +176,6 @@ public class YuhuanAnalyzer extends Analyzer {
 	}
 
 	/**
-	 * 初始化
-	 * 
-	 * @return YuhuanAnalyzer 本身
-	 */
-	public YuhuanAnalyzer initialize() {
-		yuhuanLexer = new StreamLexer();
-		yuhuanLexer.initialize();
-		return this;
-	}
-
-	/**
-	 * 注销自己
-	 * 
-	 * @return YuhuanAnalyzer 本身
-	 */
-	public YuhuanAnalyzer uinitialize() {
-		yuhuanLexer.uninitialize();
-		return this;
-	}
-
-	/**
 	 * 这个属性对不是分词器来说不是必须，不过就像设计衣服的时候为 服装缝制个口袋，完全是为了便于 携带数据而做的设计而已。<br>
 	 * 比如把 yuhuan作为参数传递时还需要附加一些关联数据的时候，可以省略一个调用导函数的参数位置。<br>
 	 * 把这个数据写入到 attributes 中就可以了。<br>
@@ -187,10 +187,8 @@ public class YuhuanAnalyzer extends Analyzer {
 	 * @param clazz 属性类型
 	 * @return 属性值 或 null
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> T findOne(final Class<T> clazz) {
-		return (T) attributes.valueS().filter(e -> e != null && clazz.isAssignableFrom(e.getClass())).findFirst()
-				.orElse(null);
+		return (T) attributes.findOne(clazz);
 	}
 
 	/**

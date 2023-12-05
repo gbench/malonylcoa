@@ -26,8 +26,8 @@ public class LexemeAttributeImpl extends AttributeImpl implements LexemeAttribut
 	public void copyTo(final AttributeImpl target) {
 		if (target == null)
 			return;
-		if (target instanceof LexemeAttributeImpl) {// 词素属性设置
-			((LexemeAttributeImpl) target).setLexeme(lexeme);
+		if (target instanceof LexemeAttributeImpl la) {// 词素属性设置
+			la.setLexeme(lexeme);
 		} else {
 			// do nothing
 		} // 词素属性
