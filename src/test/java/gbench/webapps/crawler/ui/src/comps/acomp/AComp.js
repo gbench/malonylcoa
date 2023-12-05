@@ -1,6 +1,7 @@
 import { mapGetters, mapState } from "vuex";
 import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
 import $ from "jquery";
+import moment from "moment";
 
 const removed_srch_keys = "file,search_field,score,py0,py1"; // 查询结果移除键名
 
@@ -21,6 +22,9 @@ const AComp = {
 			articles: [],
 			lines: [],
 			keyword: "",
+			sessId: moment().format("YYYYMMDDHHmmssSSSS"), // 会话id
+			agentId: 1, // 客户端id
+			size: 10, // 页面请求的大小
 			fileHome: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/docs",
 			corpusHome: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/corpus",
 		};
@@ -122,9 +126,26 @@ const AComp = {
 		on_srch_click2(event) {
 			const keyword = this.keyword;
 			// 开始信息
-			http_post("/h5/api/srch/lookup2", { line: keyword, sessId: 1, agentId: 1, size: 10 }).then(res => {
+			http_post("/h5/api/srch/lookup2", {
+				line: keyword, sessId: this.sessId, agentId: this.agentId, size: this.size
+			}).then(res => {
 				const lines = res.data.result;
 				this.lines = lines.map(this.remove_keys(removed_srch_keys)).map(this.format_srch_line);
+			});
+		},
+
+		/**
+		 * 全文检索 
+		 * @param {*} event 
+		 */
+		on_clear_click(event) {
+			const keyword = this.keyword;
+			// 开始信息
+			http_post("/h5/api/srch/clear", {
+				line: keyword, sessId: this.sessId, agentId: this.agentId, size: this.size
+			}).then(res => {
+				const lines = res.data;
+				alert(JSON.stringify(lines));
 			});
 		},
 

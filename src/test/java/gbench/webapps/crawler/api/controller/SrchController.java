@@ -144,7 +144,7 @@ public class SrchController extends AbstractState<SrchController> {
 	}
 
 	/**
-	 * 带有状态的 关键字检索 <br>
+	 * 带有状态的关键字检索 <br>
 	 * 全文检索:待有检索条件的项目检索 <br>
 	 * 请求示例,该请求会记录sessId和agentId组成的请求key,依次遍历请求数据。
 	 * http://localhost:6010/api/srch/lookup2?line=%E6%8D%AD%E9%98%96;guigu&sessId=1&agentId=1&size=1
@@ -171,20 +171,22 @@ public class SrchController extends AbstractState<SrchController> {
 				"should", rb("symbol*,py0*,py1*").get(rec.str("keyword")), // 单词,全拼,简拼字段的SHOULD模糊项匹配
 				"file*", rec.str("file") // 文件字段模糊项目
 		)); // 解析成Query对象
-		final PageQuery pageQuery;
-		final Optional<PageData> optional;
+
 		System.out.println(format("\n#lookup2:\nline:【{0}】\nrec:【{1}】,sessionId:{2},agentId:{3},size:{4}", //
 				line, rec, sessId, agentId, size));
 
 		// 设置各种key
-		final var keyPrefix = format("{0}@{1}", agentId, sessId); // key前缀
-		final var pageQueryKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pageQuery");
-		final var lineKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "line");
-		final var pageNumKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pagenum");
-		final var pageTotalKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pageTotal");
+		final var keys = this.accessorKeys(line, sessId, agentId, size);
+		final var pageQueryKey = keys.str("pageQueryKey");
+		final var lineKey = keys.str("lineKey");
+		final var pageNumKey = keys.str("pageNumKey");
+		final var pageTotalKey = keys.str("pageTotalKey");
 
 		System.out.println(format("pageQueryKey:{0},lineKey:{1},pageNumKey:{2},pageTotalKey:{3}", //
 				pageQueryKey, lineKey, pageNumKey, pageTotalKey));
+
+		final PageQuery pageQuery; // 按页查询
+		final Optional<PageData> optional; // 页面数据
 
 		if (!line.equals(this.stateOfT(lineKey, Object.class))) {// 初次访问
 			optional = (pageQuery = this.srchModel.getPageQuery(queryrec).initialize(pageSize)).getData2();
@@ -195,10 +197,9 @@ public class SrchController extends AbstractState<SrchController> {
 			this.setState((long) Math.ceil(pageQuery.getTotalHits().value / pageSize) + 1, pageTotalKey);
 		} else { // 非初次访问
 			optional = (pageQuery = this.stateOfT(pageQueryKey, PageQuery.class)).nextPageNoThrow();
-
+			// 获取页面状态
 			final var pagenum = this.getState(1l, pageNumKey);
 			final var pageTotal = this.getState(1l, pageTotalKey);
-
 			// 更新程序状态
 			this.setState(optional.isPresent() ? pagenum + 1 : pageTotal, pageNumKey);// 设置当前页
 		} // if
@@ -210,6 +211,24 @@ public class SrchController extends AbstractState<SrchController> {
 				"size", optional.map(e -> e.getTotalHits().value).orElse(0l), // 中数量
 				"result", optional.map(e -> e.hitsStream()).orElse(Stream.of()).toList() // 数据结果
 		);// REC
+	}
+
+	/**
+	 * 清除 lookup2 中的各种状态空值键(需要注意参数需要与lookup2保持一样)
+	 * 
+	 * @param line
+	 * @param sessId
+	 * @param agentId
+	 * @param size
+	 * @return 清除的检索键信息
+	 */
+	@RequestMapping("clear")
+	public IRecord clear(final @Param String line, final @Param String sessId, final @Param String agentId,
+			final Integer size) {
+		final var keys = this.accessorKeys(line, sessId, agentId, size);
+		keys.valueS().map(Object::toString).forEach(this::remove);
+
+		return REC("code", 0, "keys_removed", keys, "time", LocalDateTime.now());
 	}
 
 	/**
@@ -302,6 +321,26 @@ public class SrchController extends AbstractState<SrchController> {
 	 */
 	public WebClient.Builder wb() {
 		return wbProto.clone();
+	}
+
+	/**
+	 * lookup2 的访问key (需要注意参数需要与lookup2保持一样)
+	 * 
+	 * @param line
+	 * @param sessId
+	 * @param agentId
+	 * @param size
+	 * @return IRecord
+	 *         键名映射(keyPrefix;_,pageQueryKey:_,lineKey:_,pageNumKey:_,pageTotalKey:_)
+	 */
+	private IRecord accessorKeys(final String line, final String sessId, final String agentId, final Integer size) {
+		final var keyPrefix = format("{0}@{1}", agentId, sessId); // key前缀
+		final var pageQueryKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pageQuery");
+		final var lineKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "line");
+		final var pageNumKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pagenum");
+		final var pageTotalKey = format("${0}.${1}.${2}", keyPrefix, "lookup2", "pageTotal");
+		return IRecord.rb("keyPrefix,pageQueryKey,lineKey,pageNumKey,pageTotalKey") //
+				.get(keyPrefix, pageQueryKey, lineKey, pageNumKey, pageTotalKey);
 	}
 
 	private SrchModel srchModel; // 搜索APP
@@ -430,6 +469,18 @@ class AbstractState<SELF> {
 	public SELF state(final String name, final Object value) {
 		// 重新设置新的状态信息
 		this.state.set(this.state.get().derive(Arrays.asList(P(name, value))));
+		return (SELF) this;
+	}
+
+	/**
+	 * 删除指定键名属性
+	 * 
+	 * @param name 键名
+	 * @return SELF
+	 */
+	@SuppressWarnings("unchecked")
+	public SELF remove(final String name) {
+		this.state.get().remove(name);
 		return (SELF) this;
 	}
 
