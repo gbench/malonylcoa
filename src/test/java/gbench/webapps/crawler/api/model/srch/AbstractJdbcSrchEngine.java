@@ -90,7 +90,7 @@ public abstract class AbstractJdbcSrchEngine {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} // try
-		
+
 		return this;
 	}
 
@@ -1271,12 +1271,16 @@ public abstract class AbstractJdbcSrchEngine {
 				@Override
 				public Lexeme evaluate(final String symbol) {
 					final var trieNode = processorCorpus.getTrie(symbol.split(""));// 提取节点词素
-					if (trieNode == null)
+					if (trieNode == null) {
 						return null;
-					if (!"word".equals(trieNode.getAttribute("category")))
+					} // if
+					if (!Objects.equals("word", trieNode.getAttribute("category"))) {
 						return null;
+					} // if
+
 					final var category = trieNode.strAttr("category");// 提取分类属性
 					final var meaning = trieNode.strAttr("meaning");// 提取意义属性
+
 					return new Lexeme(symbol, category, meaning) //
 							.addTags(this.getName()); // 增加词素标签,由于标记语料库来源
 				}
@@ -1350,7 +1354,8 @@ public abstract class AbstractJdbcSrchEngine {
 	 */
 	public static ScoreDoc[] search(final ScoreDoc after, final IndexSearcher searcher, final Query query,
 			final int hitsPerPage, final Sort sort) throws IOException {
-		final TopDocs results = after == null ? searcher.search(query, hitsPerPage, sort)
+		final TopDocs results = after == null //
+				? searcher.search(query, hitsPerPage, sort)
 				: searcher.searchAfter(after, query, hitsPerPage, sort);
 		final ScoreDoc[] hits = results.scoreDocs;
 		return hits;
@@ -1398,9 +1403,11 @@ public abstract class AbstractJdbcSrchEngine {
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("没有这个md5算法！");
 		}
-		var md5code = new BigInteger(1, secretBytes).toString(16);
-		for (int i = 0; i < 32 - md5code.length(); i++)
+
+		String md5code = new BigInteger(1, secretBytes).toString(16);
+		for (int i = 0; i < 32 - md5code.length(); i++) {
 			md5code = "0" + md5code;
+		} // for
 
 		return md5code;
 	}
