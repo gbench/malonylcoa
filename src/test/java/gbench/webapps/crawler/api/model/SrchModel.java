@@ -31,7 +31,7 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
 
 /**
- * 检索模块（检索业务逻辑额实现）
+ * 检索模块（检索业务逻辑额实现，将检索功能与索引共嗯适配到SrchEngine）
  */
 public class SrchModel extends SrchEngineAdapter {
 	/**
@@ -43,32 +43,6 @@ public class SrchModel extends SrchEngineAdapter {
 	 */
 	public SrchModel(String indexHome, String corpusHome, String snapHome) {
 		super(indexHome, corpusHome, snapHome);
-	}
-
-	/**
-	 * 表示一个可以抛出异常的函数操作的函数接口 <br>
-	 * 
-	 * @author gbench
-	 *
-	 */
-	@FunctionalInterface
-	interface MaybeThrowable {
-		public void run() throws Throwable;
-	}
-
-	/**
-	 * 这个函数被用于简化 try catch 的程序辨析。自动铺货异常。采用如下的方法就可以简写系统异常了。<br>
-	 * trycatch(()->{....}); <br>
-	 * 对一个可以能抛出异常的操作进行异常捕获，并给与执行。<br>
-	 * 
-	 * @param maybe 可能抛出异常的操作
-	 */
-	public static void trycatch(final MaybeThrowable maybe) {
-		try {
-			maybe.run();
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
 	}
 
 	/**
@@ -159,6 +133,32 @@ public class SrchModel extends SrchEngineAdapter {
 			});// indexTokens
 		}
 
+	}
+
+	/**
+	 * 表示一个可以抛出异常的函数操作的函数接口 <br>
+	 * 
+	 * @author gbench
+	 *
+	 */
+	@FunctionalInterface
+	interface MaybeThrowable {
+		public void run() throws Throwable;
+	}
+
+	/**
+	 * 这个函数被用于简化 try catch 的程序辨析。自动铺货异常。采用如下的方法就可以简写系统异常了。<br>
+	 * trycatch(()->{....}); <br>
+	 * 对一个可以能抛出异常的操作进行异常捕获，并给与执行。<br>
+	 * 
+	 * @param maybe 可能抛出异常的操作
+	 */
+	public static void trycatch(final MaybeThrowable maybe) {
+		try {
+			maybe.run();
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
