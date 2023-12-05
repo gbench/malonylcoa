@@ -71,9 +71,12 @@ const AComp = {
 		 * @returns datatable 渲染函数
 		 */
 		max_render(maxsize) {
-			return (td, h, line, i) => (n => 'text,snapfile'.indexOf(h) < 0 ? td
-				: td.substr(0, n).replace(/\s+/g, '') + (td.length > n ? '...' : ''))(maxsize)
-				.replace(/^[。，：”】；）]+/, '');
+			return (td, h, line, i) => {
+				const s = (n => 'text,snapfile'.indexOf(h) < 0 ? td
+					: td.substr(0, n).replace(/\s+/g, '') + (td.length > n ? '...' : ''))(maxsize)
+					.replace(/^[。，：”】；）]+/, '');
+				return `<a title='${td}'>${s}</a>`;
+			};
 		},
 
 		/**
