@@ -1207,20 +1207,12 @@ public abstract class AbstractJdbcSrchEngine {
 			 */
 			@Override
 			public Lexeme evaluate(final String symbol) { // 符号计算
-				return corpus.opt(symbol.split("")).map(token -> { // 数据符号
-					final var category = token.strAttr("category"); // 提取corpus词典分类属性
-					final var meaning = token.strAttr("meaning"); // 提取corpus词典意义属性
-					return new Lexeme(symbol, category, meaning) // 返回词素
-							.addTags(this.getName()) // 增加词素标签,由于标记语料库来源
-							.addAttributes("mode", "trie"); // 补充属性表示这是通过进行trie检索生成的
-				}).orElseGet(() -> { // 模式识别
-					return predefs.tupleS() // 预定模式检测
-							.filter(p -> symbol.matches(p._2.toString())) // 检索数据
-							.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // 生成词素
-									.addTags(this.getName()) // 增加词素标签,由于标记语料库来源
-									.addAttributes("mode", "pattern") // 补充属性表示这是通过模式匹配尽心识别的
-					).orElse(null); // 获取词意失败
-				}); // opt
+				return predefs.tupleS() // 预定模式检测
+						.filter(p -> symbol.matches(String.valueOf(p._2))) // 检索数据
+						.findFirst().map(p -> new Lexeme(symbol, p._1, symbol) // 生成词素
+								.addTags(this.getName(), p._1) // 增加词素标签,由于标记语料库来源
+								.addAttributes("mode", "pattern") // 补充属性表示这是通过模式匹配尽心识别的
+				).orElse(null); // 获取词意失败,表示该symbolProcessor识别不了，将交由其他的分词器其进行处理
 			}
 
 			@Override
@@ -1236,7 +1228,7 @@ public abstract class AbstractJdbcSrchEngine {
 			 * 预定义模式
 			 */
 			private final IRecord predefs = IRecord.REC( // 预定义符号
-					"LETTER", "[a-zA-Z]+" // 英文单词
+					"WORD", "[a-zA-Z]+" // 英文单词
 					, "INDENTIFIER", "[a-zA-Z_-]+" // 英文标识符号
 					, "NUMBER", "[\\d\\.]+" // 阿拉伯数据
 					, "CN_NUMBER", "[一二三四五六七八九十零百千万亿兆]+" // 中文数字

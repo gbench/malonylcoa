@@ -135,7 +135,8 @@ public class SrchEngineAdapter {
 		 * @param corpusHome 语料库目录,党分词器目录与当前分词器目录不同时候,进行分词器更换
 		 */
 		public void refresh(final String corpusHome) {
-			if (!Objects.equals(corpusHome, this.corpusHome) && new File(corpusHome).exists()) {
+			if (Objects.nonNull(corpusHome) && !Objects.equals(corpusHome, this.corpusHome)
+					&& new File(corpusHome).exists()) {
 				SrchEngineAdapter.this.corpusHome = this.corpusHome = corpusHome; // 更新新的语料库目录
 				EmbededSrchEngine.this.setAnalyzer(buildYuhuanAnalyzer(this.corpusHome)); // 重新创建分词器
 				System.out.println(format("更换语料库目录为：{0}", this.corpusHome));

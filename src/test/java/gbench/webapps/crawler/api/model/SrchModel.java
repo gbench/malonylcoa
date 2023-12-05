@@ -3,6 +3,7 @@ package gbench.webapps.crawler.api.model;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -252,7 +253,8 @@ public class SrchModel extends SrchEngineAdapter {
 	 * @param corpusHome 语料库目录
 	 */
 	public void refresh(final String corpusHome) {
-		this.fileEngine.refresh(corpusHome);
+		this.fileEngine.refresh(Optional.ofNullable(corpusHome) //
+				.orElse(this.corpusHome));
 	}
 
 	/**

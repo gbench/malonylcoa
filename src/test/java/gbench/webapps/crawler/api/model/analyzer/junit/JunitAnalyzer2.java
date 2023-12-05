@@ -24,7 +24,7 @@ public class JunitAnalyzer2 {
 	 * @param dfm 基础词库
 	 * @return YuhuanAnalyzer
 	 */
-	public YuhuanAnalyzer getYunHuan(final DFrame dfm) {
+	public YuhuanAnalyzer buildYuhuanAnalyzer(final DFrame dfm) {
 		final var corpus = new Trie<String>();// 语料库的根节点树
 
 		dfm.rowS().forEach(line -> {
@@ -75,7 +75,7 @@ public class JunitAnalyzer2 {
 			 * 预定义模式
 			 */
 			private final IRecord predefs = IRecord.REC( // 预定义符号
-					"LETTER", "[a-zA-Z]+" // 英文单词
+					"WORD", "[a-zA-Z]+" // 英文单词
 					, "INDENTIFIER", "[a-zA-Z_-]+" // 英文标识符号
 					, "NUMBER", "[\\d\\.]+" // 阿拉伯数据
 					, "CN_NUMBER", "[一二三四五六七八九十零百千万亿兆]+" // 中文数字
@@ -94,7 +94,7 @@ public class JunitAnalyzer2 {
 		final var file = format("{0}/java/gbench/webapps/crawler/api/model/data/datafile.xlsx", home);
 		final var excel = SimpleExcel.of(file);
 		final var dfm = excel.autoDetect("t_wenyan").collect(DFrame.dfmclc2);
-		final var yuhuan = this.getYunHuan(dfm);
+		final var yuhuan = this.buildYuhuanAnalyzer(dfm);
 
 		yuhuan.analyzeS("何不按兵束甲，北面而事之？this is a 23,二零二三年,圣人之于天下也", e -> e).forEach(word -> {
 			println(word, word.attrs(IRecord::REC));
