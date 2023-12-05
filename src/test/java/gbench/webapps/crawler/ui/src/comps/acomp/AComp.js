@@ -6,7 +6,7 @@ import moment from "moment";
 const removed_srch_keys = "file,search_field,score,py0,py1"; // 查询结果移除键名
 
 /**
- * 
+ * AComp 
  */
 const AComp = {
 
@@ -22,9 +22,9 @@ const AComp = {
 			articles: [],
 			lines: [],
 			keyword: "",
-			sessId: moment().format("YYYYMMDDHHmmssSSSS"), // 会话id
+			sessId: moment().format("YYYYMMDDHHmmssSSSS"), // 会话id,每次页面刷新会重新生成
 			agentId: 1, // 客户端id
-			size: 10, // 页面请求的大小
+			lookup2_size: 10, // lookup2的页面请求的大小
 			fileHome: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/docs",
 			corpusHome: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/crawler/api/model/data/corpus",
 		};
@@ -127,7 +127,7 @@ const AComp = {
 			const keyword = this.keyword;
 			// 开始信息
 			http_post("/h5/api/srch/lookup2", {
-				line: keyword, sessId: this.sessId, agentId: this.agentId, size: this.size
+				line: keyword, sessId: this.sessId, agentId: this.agentId, size: this.lookup2_size
 			}).then(res => {
 				const lines = res.data.result;
 				this.lines = lines.map(this.remove_keys(removed_srch_keys)).map(this.format_srch_line);
@@ -142,7 +142,7 @@ const AComp = {
 			const keyword = this.keyword;
 			// 开始信息
 			http_post("/h5/api/srch/clear_lookup2", {
-				line: keyword, sessId: this.sessId, agentId: this.agentId, size: this.size
+				line: keyword, sessId: this.sessId, agentId: this.agentId, size: this.lookup2_size
 			}).then(res => {
 				const lines = res.data;
 				alert(JSON.stringify(lines));
