@@ -23,7 +23,7 @@ import gbench.webapps.crawler.api.model.decomposer.IDecomposer;
 import gbench.webapps.crawler.api.model.decomposer.ImageDecomposer;
 import gbench.webapps.crawler.api.model.decomposer.RulesDecomposer;
 import gbench.webapps.crawler.api.model.decomposer.TextDecomposer;
-import gbench.webapps.crawler.api.model.srch.SrchApp;
+import gbench.webapps.crawler.api.model.srch.SrchEngineAdapter;
 import gbench.webapps.crawler.api.model.srch.AbstractJdbcSrchEngine.PageQuery;
 
 import static java.text.MessageFormat.format;
@@ -33,7 +33,7 @@ import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
 /**
  * 检索模块（检索业务逻辑额实现）
  */
-public class SrchModel extends SrchApp {
+public class SrchModel extends SrchEngineAdapter {
 	/**
 	 * 构造函数
 	 * 

@@ -21,9 +21,9 @@ import org.apache.lucene.analysis.Analyzer;
 import static java.text.MessageFormat.format;
 
 /**
- * 检索应用（检索功能的客户端）
+ * 检索应用（检索功能的客户端,SrchEngine的适配器）
  */
-public class SrchApp {
+public class SrchEngineAdapter {
 	/**
 	 * 构造函数
 	 *
@@ -31,7 +31,7 @@ public class SrchApp {
 	 * @param corpusHome 语料库目录
 	 * @param snapHome   快照库目录
 	 */
-	public SrchApp(final String indexHome, final String corpusHome, final String snapHome) {
+	public SrchEngineAdapter(final String indexHome, final String corpusHome, final String snapHome) {
 		this.indexHome = indexHome;
 		this.corpusHome = corpusHome;
 		this.snapHome = FileSystem.unixpath(snapHome);
@@ -48,8 +48,8 @@ public class SrchApp {
 		 * 构造函数
 		 */
 		public JdbcSrchEngine() {
-			this(SrchApp.this.indexHome);
-			this.corpusHome = SrchApp.this.corpusHome;
+			this(SrchEngineAdapter.this.indexHome);
+			this.corpusHome = SrchEngineAdapter.this.corpusHome;
 		}
 
 		/**
@@ -59,14 +59,14 @@ public class SrchApp {
 		 */
 		public JdbcSrchEngine(final String indexName) {
 			this.indexHome = indexName;
-			this.corpusHome = SrchApp.this.corpusHome;
+			this.corpusHome = SrchEngineAdapter.this.corpusHome;
 		}
 
 		/**
 		 * 搜索引擎初始化
 		 */
 		public JdbcSrchEngine initialize() {
-			analyzer = buildYuhuanAnalyzer(SrchApp.this.corpusHome);
+			analyzer = buildYuhuanAnalyzer(SrchEngineAdapter.this.corpusHome);
 			return this;
 		}
 
@@ -106,7 +106,7 @@ public class SrchApp {
 							System.out.println(format("强制刷新语料库:{0} @ {1}", forced, LocalDateTime.now()));
 						} // forced
 						if (this.analyzer instanceof YuhuanAnalyzer yuhuan) {
-							SrchApp.this.corpus = yuhuan.findOne(Trie.class); // 提取yuhuan的语料库并在SrchApp保持该引用
+							SrchEngineAdapter.this.corpus = yuhuan.findOne(Trie.class); // 提取yuhuan的语料库并在SrchApp保持该引用
 						} // YuhuanAnalyzer yuhuan
 					} else {//
 						System.err.println("分词器为 " + this.analyzer.getClass() + " 类型, 不予提供 关键词刷新操作");
@@ -115,8 +115,8 @@ public class SrchApp {
 					System.out.println("分词器为null,请运行initialize初始化或是添加适当的分词器");
 				} // if 分词器有效
 
-				if (null != SrchApp.this.corpus) { // 语料库有效
-					SrchApp.this.corpus.traverse(e -> {
+				if (null != SrchEngineAdapter.this.corpus) { // 语料库有效
+					SrchEngineAdapter.this.corpus.traverse(e -> {
 						if ("word".equals(e.getAttribute("category"))) { // 提取word类型的预料词汇
 							keywords.add(e.getPath(cc -> cc.collect(Collectors.joining())));
 						} // if
@@ -136,7 +136,7 @@ public class SrchApp {
 		 */
 		public void refresh(final String corpusHome) {
 			if (!Objects.equals(corpusHome, this.corpusHome) && new File(corpusHome).exists()) {
-				SrchApp.this.corpusHome = this.corpusHome = corpusHome; // 更新新的语料库目录
+				SrchEngineAdapter.this.corpusHome = this.corpusHome = corpusHome; // 更新新的语料库目录
 				JdbcSrchEngine.this.setAnalyzer(buildYuhuanAnalyzer(this.corpusHome)); // 重新创建分词器
 				System.out.println(format("更换语料库目录为：{0}", this.corpusHome));
 			} // if
