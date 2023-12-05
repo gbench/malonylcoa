@@ -138,10 +138,10 @@ const AComp = {
 		 * 全文检索 
 		 * @param {*} event 
 		 */
-		on_clear_click(event) {
+		on_clear_lookup2_click(event) {
 			const keyword = this.keyword;
 			// 开始信息
-			http_post("/h5/api/srch/clear", {
+			http_post("/h5/api/srch/clear_lookup2", {
 				line: keyword, sessId: this.sessId, agentId: this.agentId, size: this.size
 			}).then(res => {
 				const lines = res.data;

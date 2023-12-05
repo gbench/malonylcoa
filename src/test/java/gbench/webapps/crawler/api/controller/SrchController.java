@@ -222,13 +222,28 @@ public class SrchController extends AbstractState<SrchController> {
 	 * @param size
 	 * @return 清除的检索键信息
 	 */
-	@RequestMapping("clear")
-	public IRecord clear(final @Param String line, final @Param String sessId, final @Param String agentId,
+	@RequestMapping("clear_lookup2")
+	public IRecord clear_lookup2(final @Param String line, final @Param String sessId, final @Param String agentId,
 			final Integer size) {
 		final var keys = this.accessorKeys(line, sessId, agentId, size);
 		keys.valueS().map(Object::toString).forEach(this::remove);
 
 		return REC("code", 0, "keys_removed", keys, "time", LocalDateTime.now());
+	}
+
+	/**
+	 * 清除所有状态
+	 * 
+	 * 请求示例 http://localhost:6010/api/srch/clear
+	 * 
+	 * @return 清除的检索键信息
+	 */
+	@RequestMapping("clear")
+	public IRecord clear() {
+		final var state = this.state.get().duplicate();
+		state.keys().forEach(this.state.get()::remove);
+
+		return REC("code", 0, "keys_removed", state.keys(), "time", LocalDateTime.now());
 	}
 
 	/**
