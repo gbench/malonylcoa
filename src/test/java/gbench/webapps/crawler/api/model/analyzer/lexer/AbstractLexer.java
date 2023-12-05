@@ -73,8 +73,9 @@ public abstract class AbstractLexer {
 		 * 重写 hashCode 方法一定要和equals 相匹配 以便可以将该对象用作Map的键值
 		 */
 		public boolean equals(final Object obj) {
-			if (this.hashCode() == obj.hashCode())
+			if (this.hashCode() == obj.hashCode()) {
 				return true;
+			}
 			return false;
 		}
 
@@ -251,9 +252,10 @@ public abstract class AbstractLexer {
 	 */
 	public void uninitialize() {
 		this.processors.forEach((key, model) -> {
-			if (model != null)
+			if (model != null) {
 				model.uninitialize();
-		});
+			} // if
+		}); // forEach
 	}
 
 	public Map<String, ILexProcessor> getProcessors() {

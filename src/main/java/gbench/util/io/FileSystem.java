@@ -269,7 +269,7 @@ public class FileSystem {
 	 * @param cs       回调函数 reader->{} ,reader 不需要关闭
 	 */
 	public static void bufferedRead(final InputStream is, final String encoding, final Consumer<BufferedReader> cs) {
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(is, encoding))) {
+		try (final BufferedReader br = new BufferedReader(new InputStreamReader(is, encoding))) {
 			cs.accept(br);
 		} catch (Exception e) {
 			e.printStackTrace();

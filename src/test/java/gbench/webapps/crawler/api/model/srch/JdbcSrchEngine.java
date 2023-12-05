@@ -32,9 +32,9 @@ public class JdbcSrchEngine extends AbstractJdbcSrchEngine {
 	 * @return
 	 */
 	public boolean isExpired() {
-		long modified = getIndexHome().getDirectory().toFile().lastModified();
-		long now = System.currentTimeMillis();// 当前系统时间
-		long elapse = now - modified;// 时间经历时长
+		final long modified = getIndexHome().getDirectory().toFile().lastModified();
+		final long now = System.currentTimeMillis();// 当前系统时间
+		final long elapse = now - modified;// 时间经历时长
 		if (elapse <= expireTime * 1000) {// 没有超时则不予进行索引文件的重建
 			return false;
 		} else {
@@ -53,14 +53,15 @@ public class JdbcSrchEngine extends AbstractJdbcSrchEngine {
 		try {
 			final IndexWriterConfig iwc = new IndexWriterConfig(analyzer);// 索引书写器的配置
 			iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
-			IndexWriter writer = new IndexWriter(this.getIndexHome(), iwc);
+			final IndexWriter writer = new IndexWriter(this.getIndexHome(), iwc);
 			dataApp.sqldframe(sql).stream().flatMap(e -> expand2docs(e, colname)) // 索引源
 					.forEach(doc -> {
 						try {
 							writer.addDocument(doc);
 						} catch (Exception e) {
-						}
-					});
+							// do nothing
+						} // try
+					}); // forEach
 			writer.close();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -81,10 +82,12 @@ public class JdbcSrchEngine extends AbstractJdbcSrchEngine {
 					try {
 						this.getIndexHome().deleteFile(e);
 					} catch (IOException e1) {
+						// do nothing
 					}
 				});
-			} else if (this.getIndexHome().listAll().length > 0)
+			} else if (this.getIndexHome().listAll().length > 0) {
 				return;// 当前系统包含有数缩影文件否在立即创建索引文件
+			} // if
 
 			this.createIndex(sql, colname);
 		} catch (Exception e) {
