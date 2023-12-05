@@ -14,7 +14,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 
 import gbench.util.chn.PinyinUtil;
-import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.io.FileSystem;
 import gbench.util.lisp.Tuple2;
@@ -78,7 +77,7 @@ public class SrchModel extends SrchEngineAdapter {
 		 * @param token 分词分词记录: 一条token是 信息（索引）的基本单元。
 		 * @return 索引文档
 		 */
-		public Document token2doc(final DataApp.IRecord token) {
+		public Document token2doc(final IRecord token) {
 			final var symbol = token.get("symbol");// 检索词
 			final var statement = token.get("statement");// 语句上下文
 			final var file = token.get("file");// 文件名称
@@ -264,6 +263,21 @@ public class SrchModel extends SrchEngineAdapter {
 	 */
 	public PageQuery getPageQuery(final Query query) {
 		return this.fileEngine.getPageQuery(query);
+	}
+
+	/**
+	 * 生成一个按页查询的项目对象。 PageQuery 需要经过初始化之后才能够使用
+	 *
+	 * @param queryrec boolean查询的结构描述，eg.<br>
+	 *                 REC("must", REC( // MUST 必须项目 <br>
+	 *                 "should", rb("symbol*,py0*,py1*").get(rec.str("keyword")), //
+	 *                 单词,全拼,简拼字段的SHOULD模糊项匹配 <br>
+	 *                 "file*", rec.str("file") // 文件字段模糊项目 <br>
+	 *                 )) <br>
+	 * @return PageQuery
+	 */
+	public PageQuery getPageQuery(final IRecord queryrec) {
+		return this.fileEngine.getPageQuery(parseDsl(queryrec));
 	}
 
 	/**

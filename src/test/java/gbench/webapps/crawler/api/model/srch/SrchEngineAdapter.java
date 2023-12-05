@@ -42,7 +42,7 @@ public class SrchEngineAdapter {
 	 *
 	 * @author gbench
 	 */
-	public abstract class EmbededSrchEngine extends AbstractJdbcSrchEngine {
+	public class EmbededSrchEngine extends AbstractJdbcSrchEngine {
 
 		/**
 		 * 构造函数

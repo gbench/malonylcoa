@@ -13,7 +13,6 @@ import static java.text.MessageFormat.*;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.data.DataApp.IRecord.rb;
 import static gbench.util.data.DataApp.Tuple2.P;
-import static gbench.webapps.crawler.api.model.srch.SrchUtils.parseDsl;
 
 import reactor.core.publisher.Mono;
 
@@ -168,16 +167,14 @@ public class SrchController extends AbstractState<SrchController> {
 				"keyword", format("*{0}*", ss.length > 0 ? ss[0] : ""), // 关键词
 				"file", format("*{0}*", ss.length > 1 ? ss[1] : "") // 检索文件
 		); // 输入结果分析
-		final var query = REC("must", REC( // MUST 必须项目
+		final var queryrec = REC("must", REC( // MUST 必须项目
 				"should", rb("symbol*,py0*,py1*").get(rec.str("keyword")), // 单词,全拼,简拼字段的SHOULD模糊项匹配
 				"file*", rec.str("file") // 文件字段模糊项目
-		)).mutate(e -> parseDsl(e)); // 解析成Query对象
+		)); // 解析成Query对象
 		final PageQuery pageQuery;
 		final Optional<PageData> optional;
-
 		System.out.println(format("\n#lookup2:\nline:【{0}】\nrec:【{1}】,sessionId:{2},agentId:{3},size:{4}", //
 				line, rec, sessId, agentId, size));
-		System.out.println(format("query:{0},{1}", query.getClass().getSimpleName(), query));
 
 		// 设置各种key
 		final var keyPrefix = format("{0}@{1}", agentId, sessId); // key前缀
@@ -190,7 +187,7 @@ public class SrchController extends AbstractState<SrchController> {
 				pageQueryKey, lineKey, pageNumKey, pageTotalKey));
 
 		if (!line.equals(this.stateOfT(lineKey, Object.class))) {// 初次访问
-			optional = (pageQuery = this.srchModel.getPageQuery(query).initialize(pageSize)).getData2();
+			optional = (pageQuery = this.srchModel.getPageQuery(queryrec).initialize(pageSize)).getData2();
 			// 程序状态
 			this.setState(line, lineKey);// 记录当前检索的请求
 			this.setState(pageQuery, pageQueryKey);
