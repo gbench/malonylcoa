@@ -38,16 +38,16 @@ public class SrchEngineAdapter {
 	}
 
 	/**
-	 * 内置一个文件索索引擎
+	 * 内置一个嵌入式（依附于adatper）的问资料资料引擎
 	 *
 	 * @author gbench
 	 */
-	public class JdbcSrchEngine extends AbstractJdbcSrchEngine {
+	public abstract class EmbededSrchEngine extends AbstractJdbcSrchEngine {
 
 		/**
 		 * 构造函数
 		 */
-		public JdbcSrchEngine() {
+		public EmbededSrchEngine() {
 			this(SrchEngineAdapter.this.indexHome);
 			this.corpusHome = SrchEngineAdapter.this.corpusHome;
 		}
@@ -57,7 +57,7 @@ public class SrchEngineAdapter {
 		 *
 		 * @param indexName 索引文件位置名称或者目录
 		 */
-		public JdbcSrchEngine(final String indexName) {
+		public EmbededSrchEngine(final String indexName) {
 			this.indexHome = indexName;
 			this.corpusHome = SrchEngineAdapter.this.corpusHome;
 		}
@@ -65,7 +65,7 @@ public class SrchEngineAdapter {
 		/**
 		 * 搜索引擎初始化
 		 */
-		public JdbcSrchEngine initialize() {
+		public EmbededSrchEngine initialize() {
 			analyzer = buildYuhuanAnalyzer(SrchEngineAdapter.this.corpusHome);
 			return this;
 		}
@@ -73,7 +73,7 @@ public class SrchEngineAdapter {
 		/**
 		 * @param analyzer 分析器
 		 */
-		public JdbcSrchEngine setAnalyzer(final Analyzer analyzer) {
+		public EmbededSrchEngine setAnalyzer(final Analyzer analyzer) {
 			this.analyzer = analyzer;
 			return this;
 		}
@@ -137,7 +137,7 @@ public class SrchEngineAdapter {
 		public void refresh(final String corpusHome) {
 			if (!Objects.equals(corpusHome, this.corpusHome) && new File(corpusHome).exists()) {
 				SrchEngineAdapter.this.corpusHome = this.corpusHome = corpusHome; // 更新新的语料库目录
-				JdbcSrchEngine.this.setAnalyzer(buildYuhuanAnalyzer(this.corpusHome)); // 重新创建分词器
+				EmbededSrchEngine.this.setAnalyzer(buildYuhuanAnalyzer(this.corpusHome)); // 重新创建分词器
 				System.out.println(format("更换语料库目录为：{0}", this.corpusHome));
 			} // if
 			this.refresh(true); // 强制刷新
@@ -167,7 +167,7 @@ public class SrchEngineAdapter {
 	 * @return 文件记录集合。
 	 */
 	public List<DataApp.IRecord> searchFiles(final String keyword, final int size) {
-		final var srchEngine = new JdbcSrchEngine(this.indexHome) {
+		final var srchEngine = new EmbededSrchEngine(this.indexHome) {
 		}; // JdbcSrchEngine
 		srchEngine.initialize(); // 搜索引擎初始化
 		return srchEngine.lookup(keyword, size);

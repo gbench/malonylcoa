@@ -31,7 +31,11 @@ import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.webapps.crawler.api.model.srch.SrchUtils.*;
 
 /**
- * 检索模块（检索业务逻辑额实现，将检索功能与索引共嗯适配到SrchEngine）
+ * 检索模块（检索业务逻辑额实现，将检索功能与索引共嗯适配到SrchEngine） <br>
+ * 1) getKeywords 获取关键词语料库 <br>
+ * 2) lookup 关键词检索 <br>
+ * 3) indexFiles 建立关键词索引文件 <br>
+ * 4) refresh 刷新关键词语料库(keywords同步)
  */
 public class SrchModel extends SrchEngineAdapter {
 	/**
@@ -46,12 +50,12 @@ public class SrchModel extends SrchEngineAdapter {
 	}
 
 	/**
-	 * 内置一个文件索索引擎
+	 * 内置一个文件资料索引擎
 	 * 
 	 * @author gbench
 	 *
 	 */
-	public class FileSrchEngine extends JdbcSrchEngine {
+	public class FileSrchEngine extends EmbededSrchEngine {
 		/**
 		 * 构造函数
 		 */
@@ -162,7 +166,47 @@ public class SrchModel extends SrchEngineAdapter {
 	}
 
 	/**
-	 * 索引文件
+	 * 初始化函数 <br>
+	 * initialize
+	 */
+	public SrchModel initialize() {
+		// 成员属性创建与初始化
+		this.fileEngine = new FileSrchEngine();
+		this.fileEngine.initialize();
+		return this;
+	}
+
+	/**
+	 * 是否初始化完毕
+	 *
+	 * @return 是否初始化完毕 true:初始化,false:未初始化
+	 */
+	public boolean readyFlag() {
+		return this.fileEngine.getKeywords().size() > 0;
+	}
+
+	/**
+	 * 获取关键词集合(使用关键词进行索引编制)
+	 *
+	 * @return 关键词集合
+	 */
+	public Set<String> getKeywords() {
+		return this.fileEngine.getKeywords();
+	}
+
+	/**
+	 * 关键字检索
+	 *
+	 * @param keyword     keyword 关键词检索
+	 * @param hitsPerPage 放回列表的最大长度
+	 * @return 与关键字匹配的产品列表, 如果没有匹配返回null
+	 */
+	public List<IRecord> lookup(final String keyword, final int hitsPerPage) {
+		return this.fileEngine.lookup(keyword, hitsPerPage);
+	}
+
+	/**
+	 * 索引文件：建立关键词索引文件
 	 * 
 	 * @param fileHome 待索引的文件或文件目录
 	 * @param cs       索引成功的回调函数,Consumer类型参数为IRecord:
@@ -203,52 +247,13 @@ public class SrchModel extends SrchEngineAdapter {
 	}
 
 	/**
-	 * 初始化函数 <br>
-	 * initialize
-	 */
-	public SrchModel initialize() {
-		// 成员属性创建与初始化
-		this.fileEngine = new FileSrchEngine();
-		this.fileEngine.initialize();
-		return this;
-	}
-
-	/**
-	 * 是否初始化完毕
-	 *
-	 * @return 是否初始化完毕 true:初始化,false:未初始化
-	 */
-	public boolean readyFlag() {
-		return this.fileEngine.getKeywords().size() > 0;
-	}
-
-	/**
-	 * 获取关键词集合(使用关键词进行索引编制)
-	 *
-	 * @return 关键词集合
-	 */
-	public Set<String> getKeywords() {
-		return this.fileEngine.getKeywords();
-	}
-
-	/**
+	 * keywords同步&更新语料库路径位置 <br>
 	 * 刷新关键词列表 & 提取分词器中的词典数据(以便于autocomplete之类的功能使用)。<br>
 	 * 
 	 * @param corpusHome 语料库目录
 	 */
 	public void refresh(final String corpusHome) {
 		this.fileEngine.refresh(corpusHome);
-	}
-
-	/**
-	 * 关键字检索
-	 *
-	 * @param keyword     keyword 关键词检索
-	 * @param hitsPerPage 放回列表的最大长度
-	 * @return 与关键字匹配的产品列表, 如果没有匹配返回null
-	 */
-	public List<IRecord> lookup(final String keyword, final int hitsPerPage) {
-		return this.fileEngine.lookup(keyword, hitsPerPage);
 	}
 
 	/**
