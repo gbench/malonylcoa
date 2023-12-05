@@ -287,8 +287,9 @@ public abstract class AbstractJdbcSrchEngine {
 	public synchronized void writeIndexes(final Consumer<IndexWriter> primecs, final Consumer<IndexWriter> postcs) {
 		// 索引书写器的配置
 		final var iwc = new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE_OR_APPEND);
-		if (this.indexWriterConfigInitiator != null)
+		if (this.indexWriterConfigInitiator != null) {
 			indexWriterConfigInitiator.accept(iwc);// 配置IndexWriterConfig
+		} // if
 
 		// 使用try 块自动关闭 writer
 		try (final var writer = new IndexWriter(this.getIndexHome(), iwc);) {
@@ -336,7 +337,8 @@ public abstract class AbstractJdbcSrchEngine {
 		if (this.analyzer == null) {
 			System.err.println("analyzer 为 null, 请执行 intialize 初始化 而后在在运行 分词");
 			return null;
-		}
+		} // if
+
 		if (analyzer instanceof YuhuanAnalyzer yuhuan) {
 			return yuhuan.analyze(line); // 使用玉环
 		} else {
@@ -403,7 +405,8 @@ public abstract class AbstractJdbcSrchEngine {
 		final var sbp = this.new PageQuery(this.getIndexReader(), query);
 		if (binit) {
 			sbp.initialize();
-		}
+		} // if
+
 		return sbp;
 	}
 
@@ -462,7 +465,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 * @param docs 文档集合
 		 */
 		public void add(final Document[] docs, final boolean bcommit) {
-			for (var doc : docs) {
+			for (final var doc : docs) {
 				try {
 					this.writer.addDocument(doc);
 				} catch (Exception e) {
@@ -508,7 +511,6 @@ public abstract class AbstractJdbcSrchEngine {
 		 */
 		public void sqladd(final IRecord rec) {
 			this.sqladd(new IRecord[] { rec });
-			;
 		}
 
 		/**
@@ -526,8 +528,9 @@ public abstract class AbstractJdbcSrchEngine {
 				@SuppressWarnings("unused")
 				long status = this.writer.updateDocument(term, doc);
 				// System.out.println(MessageFormat.format("update status:{0}", status));
-				if (bcommit)
+				if (bcommit) {
 					this.commit();
+				} // if
 			} catch (Exception e) {
 				e.printStackTrace();
 			} // try
@@ -590,8 +593,9 @@ public abstract class AbstractJdbcSrchEngine {
 		public void remove(final Term[] terms, final boolean bcommit) {
 			try {
 				this.writer.deleteDocuments(terms);
-				if (bcommit)
+				if (bcommit) {
 					this.commit();
+				} // if
 			} catch (Exception e) {
 				e.printStackTrace();
 			} // try
@@ -632,7 +636,8 @@ public abstract class AbstractJdbcSrchEngine {
 				return this.writer.commit();
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
+			} // if
+
 			return -1;
 		}
 
@@ -766,7 +771,7 @@ public abstract class AbstractJdbcSrchEngine {
 			if (pageSize < 0) {
 				throw new PageQueryException(
 						new IllegalArgumentException("Negative integer is not acceptable for page size."));
-			}
+			} // if
 
 			// reset internal status to prepare for a new search session
 			this.docs = new ScoreDoc[0];
@@ -893,7 +898,7 @@ public abstract class AbstractJdbcSrchEngine {
 					return Optional.of(PageData.of(totalHits, part, from, searcher, fieldsToLoad));
 				} else {
 					return getData();
-				}
+				} // if
 			} catch (IOException e) {
 				throw new PageQueryException("Search Failed.", e);
 			}
@@ -925,7 +930,7 @@ public abstract class AbstractJdbcSrchEngine {
 		public Optional<PageData> prevPage() throws Exception {
 			if (currentPage < 0 || query == null) {
 				throw new Exception(new IllegalStateException("Search session not started."));
-			}
+			} // if
 
 			// return to previous page
 			currentPage -= 1;
@@ -933,7 +938,7 @@ public abstract class AbstractJdbcSrchEngine {
 			if (currentPage < 0) {
 				System.err.println("No more previous search results are available.");
 				return Optional.empty();
-			}
+			} // if
 
 			try {
 				// there should be cached results for this page
@@ -943,7 +948,7 @@ public abstract class AbstractJdbcSrchEngine {
 				return Optional.of(PageData.of(totalHits, part, from, searcher, fieldsToLoad));
 			} catch (IOException e) {
 				throw new PageQueryException("Search Failed.", e);
-			}
+			} // try
 		}
 
 		/**
@@ -954,11 +959,13 @@ public abstract class AbstractJdbcSrchEngine {
 		 */
 		public Optional<PageData> prevPageNoThrow() {
 			Optional<PageData> opt = Optional.empty();
+
 			try {
 				opt = this.prevPage();
 			} catch (Exception e) {
 				e.printStackTrace();
-			}
+			} // try
+
 			return opt;
 		}
 
@@ -1096,6 +1103,7 @@ public abstract class AbstractJdbcSrchEngine {
 		 */
 		public static <T> Optional<byte[]> objectToBytes(final T obj) {
 			byte[] bytes = null;
+
 			try (final ByteArrayOutputStream out = new ByteArrayOutputStream();
 					final ObjectOutputStream oos = new ObjectOutputStream(out);) {
 				oos.writeObject(obj);
@@ -1103,7 +1111,7 @@ public abstract class AbstractJdbcSrchEngine {
 				bytes = out.toByteArray();
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
+			} // try
 
 			return Optional.ofNullable(bytes);
 		}
@@ -1116,12 +1124,13 @@ public abstract class AbstractJdbcSrchEngine {
 		@SuppressWarnings("unchecked")
 		public static <T> Optional<T> bytesToObject(final byte[] bytes) {
 			T t = null;
+
 			try (final ByteArrayInputStream in = new ByteArrayInputStream(bytes);
 					final ObjectInputStream ois = new ObjectInputStream(in)) {
 				t = (T) ois.readObject();
 			} catch (Exception e) {
 				e.printStackTrace();
-			}
+			} // try
 
 			return Optional.ofNullable(t);
 		}// bytesToObject
@@ -1142,7 +1151,7 @@ public abstract class AbstractJdbcSrchEngine {
 			return (T) obj;
 		} else {
 			return null;
-		}
+		} // if
 	}
 
 	/**
