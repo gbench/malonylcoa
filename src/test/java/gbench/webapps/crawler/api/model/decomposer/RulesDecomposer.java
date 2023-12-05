@@ -115,6 +115,7 @@ public class RulesDecomposer implements IDecomposer {
 				final var end = token.i4("end"); // 结束位置
 				final var statement = snippet(start, end, line);// 文本片段
 				final var position = REC("rownum", rownum, "start", start, "end", end); // 关键字的位置记录
+				final var tags = token.get("tags"); // 词汇分类标签
 
 				// 语句
 				tokens.add(REC(// 加入字段分析结果
@@ -123,7 +124,8 @@ public class RulesDecomposer implements IDecomposer {
 						"file", fname, // 文件名称
 						"type", "text", // 文本类型
 						"position", position, // 关键字的位置
-						"snapfile", snapfile // 快照文件位置路径
+						"snapfile", snapfile, // 快照文件位置路径
+						"tags", tags // 词汇分类标签
 				));// add
 
 				System.out.println(format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", //

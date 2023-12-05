@@ -60,17 +60,19 @@ public class ImageDecomposer implements IDecomposer {
 		// 加入处理列表
 		files.add(file);// 记录索引文件
 		yuhuan.analyzeS(file.getAbsolutePath()) // 对文件目录进行分词
-				.filter(e -> "word".equals(e.get("category"))).forEach(rec -> {
-					final var symbol = rec.str("symbol");
+				.filter(e -> "word".equals(e.get("category"))).forEach(token -> {
+					final var symbol = token.str("symbol");
 					if (symbol == null) {
 						return;
-					}
+					} // if
+					final var tags = token.get("tags"); // 词汇分类标签
 
 					tokens.add(REC(// 加入字段分析结果
 							"symbol", symbol, // 关键词
 							"statement", file.getAbsolutePath(), // 文件语句
 							"file", file.getName(), // 文件名称
-							"type", "image" // 类型
+							"type", "image", // 类型
+							"tags", tags // 词汇分类标签
 					));// add
 				});// forEach
 	}
