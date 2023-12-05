@@ -79,15 +79,18 @@ public abstract class AbstractJdbcSrchEngine {
 	 */
 	public AbstractJdbcSrchEngine uninitialize() {
 		try {
-			if (this.indexReader != null)
+			if (this.indexReader != null) {
 				this.indexReader.close();
-			if (this.analyzer != null)
+			}
+			if (this.analyzer != null) {
 				this.analyzer.close();
+			}
 			this.indexReader = null;
 			this.analyzer = null;
 		} catch (Exception e) {
 			e.printStackTrace();
 		} // try
+		
 		return this;
 	}
 
