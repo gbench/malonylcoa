@@ -28,7 +28,6 @@ public class DecomposeUtils {
 	 * @return 包含有 start 的一段文本语句
 	 */
 	public static String snippet(final int start, final int end, final String line) {
-
 		final var range = new Integer[] { 0, line.length() };
 		final String pattern = "。!;“”：，";// 分句的标志性标点
 		Stream.of(-start, end).forEach(pos -> {// 检索最近的
@@ -58,20 +57,16 @@ public class DecomposeUtils {
 	 *              - YuhuanAnalyzer analyzer 分词器 <br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;tokens [out] 类型参数
 	 *              ,tokens的元素是一个IRecord对象需要包括:<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; symbol:关键词,<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; statement:上下文语句摘要, <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段
-	 *              <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; position
-	 *              关键词的索引位置:{rownum,sart,end}的IRecord<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; snapfile
-	 *              快照文件的位置:{rownum,sart,end}的IRecord<br>
+	 *              symbol:关键词,<br>
+	 *              statement:上下文语句摘要, <br>
+	 *              file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段 <br>
+	 *              position 关键词的索引位置:{rownum,sart,end}的IRecord<br>
+	 *              snapfile 快照文件的位置:{rownum,sart,end}的IRecord<br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;files[out] 类型参数处理的文件集合
 	 *              <br>
 	 */
 	@SuppressWarnings("unchecked")
 	public static void txtdecompse(IRecord entry) {
-
 		final File file = (File) entry.get("file");
 		final YuhuanAnalyzer yuhuan = (YuhuanAnalyzer) entry.get("analyzer");
 		final ConcurrentLinkedQueue<IRecord> tokens = (ConcurrentLinkedQueue<IRecord>) entry.get("tokens");
@@ -138,20 +133,16 @@ public class DecomposeUtils {
 	 *              - YuhuanAnalyzer analyzer 分词器 <br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;tokens [out] 类型参数
 	 *              ,tokens的元素是一个IRecord对象需要包括:<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; symbol:关键词,<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; statement:上下文语句摘要, <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段
-	 *              <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; position
-	 *              关键词的索引位置:{rownum,sart,end}的IRecord<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; snapfile
-	 *              快照文件的位置:{rownum,sart,end}的IRecord<br>
+	 *              symbol:关键词,<br>
+	 *              statement:上下文语句摘要, <br>
+	 *              file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段 <br>
+	 *              position 关键词的索引位置:{rownum,sart,end}的IRecord<br>
+	 *              snapfile 快照文件的位置:{rownum,sart,end}的IRecord<br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;files[out] 类型参数处理的文件集合
 	 *              <br>
 	 */
 	@SuppressWarnings("unchecked")
 	public static void imgdecompse(final IRecord entry) {
-
 		final File file = (File) entry.get("file");
 		final YuhuanAnalyzer yuhuan = (YuhuanAnalyzer) entry.get("analyzer");
 		final ConcurrentLinkedQueue<IRecord> tokens = (ConcurrentLinkedQueue<IRecord>) entry.get("tokens");
@@ -202,14 +193,11 @@ public class DecomposeUtils {
 	 *              - YuhuanAnalyzer analyzer 分词器 <br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;tokens [out] 类型参数
 	 *              ,tokens的元素是一个IRecord对象需要包括:<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; symbol:关键词,<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; statement:上下文语句摘要, <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段
-	 *              <br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; position
-	 *              关键词的索引位置:{rownum,sart,end}的IRecord<br>
-	 *              &nbsp; &nbsp; &nbsp; &nbsp; snapfile
-	 *              快照文件的位置:{rownum,sart,end}的IRecord<br>
+	 *              symbol:关键词,<br>
+	 *              statement:上下文语句摘要, <br>
+	 *              file:文件名, 以及 type:媒体类型 四个字段 特殊补充字段 <br>
+	 *              position 关键词的索引位置:{rownum,sart,end}的IRecord<br>
+	 *              snapfile 快照文件的位置:{rownum,sart,end}的IRecord<br>
 	 *              - ConcurrentLinkedQueue&lt;IRecord&gt;files[out] 类型参数处理的文件集合
 	 *              <br>
 	 */

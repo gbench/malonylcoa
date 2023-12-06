@@ -72,6 +72,8 @@ public class ImageDecomposer implements IDecomposer {
 							"statement", file.getAbsolutePath(), // 文件语句
 							"file", file.getName(), // 文件名称
 							"type", "image", // 类型
+							"position", REC(), // 关键字的位置
+							"snapfile", "-", // 快照文件位置路径
 							"tags", tags // 词汇分类标签
 					));// add
 				});// forEach

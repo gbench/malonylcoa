@@ -100,13 +100,18 @@ const AComp = {
 		format_srch_line(e) {
 			if (e['snapfile']) { // 快照文件
 				e['snapfile'] = e['snapfile'].replace(/.*\/([^/]+)\/[^/]+$/, "$1");
-			}
+			} // if
 			const json_pos = e['position'].replace(/\=/g, ":"); // 改换成json格式
 			const pos = eval(`(${json_pos})`);
 			if (pos) { // 关键词位置
 				e['position'] = `${pos.rownum}#${pos.start},${pos.end - pos.start + 1}`;
-			}
-			e['text'] = e['text'].replace(new RegExp(e['symbol']), `【${e['symbol']}】`); // 修改文本呢内容
+			} // if
+			const symbol = e['symbol'];
+			const text = e['text'];
+			const tags = e['tags'];
+			e['text'] = text.replace(new RegExp(symbol), `【${symbol}】`); // 修改文本的内容
+			e['tags'] = tags.replace(/^\[|\]$/g, ""); // 去除首尾的括号
+
 			return e;
 		},
 

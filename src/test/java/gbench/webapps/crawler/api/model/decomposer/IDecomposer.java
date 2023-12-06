@@ -3,10 +3,16 @@ package gbench.webapps.crawler.api.model.decomposer;
 import gbench.util.data.DataApp.IRecord;
 
 /**
- * 分词器:解构 把一个 流式子结构的文档给 分解成 索引字段结构 REC(// 加入字段分析结果 "symbol", symbol, // 关键词
- * "statement", statement, // 关键词所在的上下文语句 "file", fname, // 文件名称 "type", "text",
- * // 文本类型 , 图片类型 等 "position", position, // 关键字的位置 "snapfile", snapfile //
- * 快照文件位置路径 );// 索引字段记录
+ * 分词器:解构 把一个 流式子结构的文档给 分解成 索引字段结构 <br>
+ * REC(// 加入字段分析结果 <br>
+ * "symbol", symbol, // 关键词 <br>
+ * "statement", statement, // 关键词所在的上下文语句 <br>
+ * "file", fname, // 文件名称 <br>
+ * "type", "text", // 文本类型 , 图片类型 等 <br>
+ * "position", position, // 关键字的位置{rownum,start,end} <br>
+ * "snapfile", snapfile // 快照文件位置路径 <br>
+ * "tags", tags // 词汇标签 <br>
+ * );// 索引字段记录 <br>
  *
  * @author gbench
  */
