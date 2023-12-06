@@ -11,6 +11,7 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -69,11 +70,14 @@ public class ImageDecomposer implements IDecomposer {
 					if (symbol == null) {
 						return;
 					} // if
-					final var tags = token.get("tags"); // 词汇分类标签
+					final var tags = token.getS("tags", Object::toString).collect(Collectors.toList()); // 词汇分类标签
 					final var statement = file.getAbsolutePath(); // 文件语句
 					final var filename = file.getName(); // 文件名称
-					final var position = REC(); // 关键字的位置
+					final var start = token.i4("start"); // 开始位置
+					final var end = token.i4("end"); // 结束位置
+					final var position = REC("rownum", 1, "start", start, "end", end); // 关键字的位置记录
 
+					tags.add("图片"); // 增加图片标签
 					tokens.add(REC(// 加入字段分析结果
 							"symbol", symbol, // 关键词
 							"statement", statement, // 文件语句
