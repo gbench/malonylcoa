@@ -111,7 +111,7 @@ const AComp = {
 			const symbol = e['symbol'];
 			const text = e['text'];
 			const tags = e['tags'];
-			e['text'] = text.replace(new RegExp(symbol), `【${symbol}】`); // 修改文本的内容
+			e['text'] = text.replace(new RegExp(symbol, "g"), `【${symbol}】`); // 修改文本的内容
 			e['tags'] = tags.replace(/^\[|\]$/g, ""); // 去除首尾的括号
 
 			return e;
