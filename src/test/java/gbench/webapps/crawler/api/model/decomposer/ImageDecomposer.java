@@ -13,6 +13,9 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
+/**
+ * 图片的处理
+ */
 public class ImageDecomposer implements IDecomposer {
 
 	/**
@@ -60,22 +63,32 @@ public class ImageDecomposer implements IDecomposer {
 		// 加入处理列表
 		files.add(file);// 记录索引文件
 		yuhuan.analyzeS(file.getAbsolutePath()) // 对文件目录进行分词
-				.filter(e -> "word".equals(e.get("category"))).forEach(token -> {
+				.filter(e -> "word".equals(e.opt("category").orElse(""))) //
+				.forEach(token -> {
 					final var symbol = token.str("symbol");
 					if (symbol == null) {
 						return;
 					} // if
 					final var tags = token.get("tags"); // 词汇分类标签
+					final var statement = file.getAbsolutePath(); // 文件语句
+					final var filename = file.getName(); // 文件名称
+					final var position = REC(); // 关键字的位置
 
 					tokens.add(REC(// 加入字段分析结果
 							"symbol", symbol, // 关键词
-							"statement", file.getAbsolutePath(), // 文件语句
-							"file", file.getName(), // 文件名称
+							"statement", statement, // 文件语句
+							"file", filename, // 文件名称
 							"type", "image", // 类型
 							"position", REC(), // 关键字的位置
 							"snapfile", "-", // 快照文件位置路径
 							"tags", tags // 词汇分类标签
 					));// add
+
+					System.out.println(MessageFormat.format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", token, // 词法记录
+							statement, // 上下文语句
+							file.getName(), // 文件名称
+							position // 关键词的位置记录
+					));// println
 				});// forEach
 	}
 

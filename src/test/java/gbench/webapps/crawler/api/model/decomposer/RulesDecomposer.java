@@ -109,32 +109,34 @@ public class RulesDecomposer implements IDecomposer {
 			final var rownum = item.get("rownum");// 源文件中的行号
 
 			// 对line行数据进行分词
-			yuhuan.analyzeS(line).filter(e -> "word".equals(e.get("category"))).forEach(token -> {
-				final var symbol = token.get("symbol");// 关键词
-				final var start = token.i4("start"); // 开始位置
-				final var end = token.i4("end"); // 结束位置
-				final var statement = snippet(start, end, line);// 文本片段
-				final var position = REC("rownum", rownum, "start", start, "end", end); // 关键字的位置记录
-				final var tags = token.get("tags"); // 词汇分类标签
+			yuhuan.analyzeS(line) //
+					.filter(e -> "word".equals(e.strOpt("category").orElse("").toLowerCase())) //
+					.forEach(token -> {
+						final var symbol = token.get("symbol");// 关键词
+						final var start = token.i4("start"); // 开始位置
+						final var end = token.i4("end"); // 结束位置
+						final var statement = snippet(start, end, line);// 文本片段
+						final var position = REC("rownum", rownum, "start", start, "end", end); // 关键字的位置记录
+						final var tags = token.get("tags"); // 词汇分类标签
 
-				// 语句
-				tokens.add(REC(// 加入字段分析结果
-						"symbol", symbol, // 关键词
-						"statement", statement, // 关键词所在的上下文语句
-						"file", fname, // 文件名称
-						"type", "text", // 文本类型
-						"position", position, // 关键字的位置
-						"snapfile", snapfile, // 快照文件位置路径
-						"tags", tags // 词汇分类标签
-				));// add
+						// 语句
+						tokens.add(REC(// 加入字段分析结果
+								"symbol", symbol, // 关键词
+								"statement", statement, // 关键词所在的上下文语句
+								"file", fname, // 文件名称
+								"type", "text", // 文本类型
+								"position", position, // 关键字的位置
+								"snapfile", snapfile, // 快照文件位置路径
+								"tags", tags // 词汇分类标签
+						));// add
 
-				System.out.println(format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", //
-						token, // 词法记录
-						statement, // 上下文语句
-						file.getName(), // 文件名称
-						position // 关键词的位置记录
-				));// println
-			});// forEach : tokens
+						System.out.println(format("\n token\t{0}:\n eg:{1}\n file:{2}\n position:{3}", //
+								token, // 词法记录
+								statement, // 上下文语句
+								file.getName(), // 文件名称
+								position // 关键词的位置记录
+						));// println
+					});// forEach : tokens
 		}); // forEach : item
 	} // decompose
 
