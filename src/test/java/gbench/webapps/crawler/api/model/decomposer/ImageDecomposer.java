@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
 /**
- * 图片的处理
+ * 图片的处理与处理
  */
 public class ImageDecomposer implements IDecomposer {
 
@@ -63,7 +63,7 @@ public class ImageDecomposer implements IDecomposer {
 		// 加入处理列表
 		files.add(file);// 记录索引文件
 		yuhuan.analyzeS(file.getAbsolutePath()) // 对文件目录进行分词
-				.filter(e -> "word".equals(e.opt("category").orElse(""))) //
+				.filter(e -> "word".equals(e.strOpt("category").orElse("").toLowerCase())) //
 				.forEach(token -> {
 					final var symbol = token.str("symbol");
 					if (symbol == null) {

@@ -39,6 +39,7 @@ public class RulesDecomposer implements IDecomposer {
 	public static String snippet(final int start, final int end, final String line) {
 		final var range = new Integer[] { 0, line.length() };
 		final String pattern = "。!;“”：，";// 分句的标志性标点
+		
 		Stream.of(-start, end).forEach(pos -> {// 检索最近的
 			for (final var c : pattern.toCharArray()) {// 提取语句段落
 				boolean flag = false;// 是否切分语句完成

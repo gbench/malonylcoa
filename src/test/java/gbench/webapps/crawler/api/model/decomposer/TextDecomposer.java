@@ -16,6 +16,9 @@ import java.util.stream.Stream;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static java.text.MessageFormat.*;
 
+/**
+ * 文本内容的分析与处理
+ */
 public class TextDecomposer implements IDecomposer {
 
 	/**
@@ -27,9 +30,9 @@ public class TextDecomposer implements IDecomposer {
 	 * @return 包含有 start 的一段文本语句
 	 */
 	public static String snippet(final int start, final int end, final String line) {
-
 		final var range = new Integer[] { 0, line.length() };
 		final String pattern = "。!;“”：，";// 分句的标志性标点
+
 		Stream.of(-start, end).forEach(pos -> {// 检索最近的
 			for (final var c : pattern.toCharArray()) {// 提取语句段落
 				boolean flag = false;// 是否切分语句完成
