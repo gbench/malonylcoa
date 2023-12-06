@@ -3,16 +3,23 @@ package gbench.webapps.crawler.api.controller;
 import static gbench.util.lisp.IRecord.REC;
 import static java.time.LocalDateTime.now;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.MediaType;
+
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gbench.util.data.MyDataApp;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.crawler.api.config.param.Param;
+import gbench.webapps.crawler.api.model.MediaModel;
 import reactor.core.publisher.Mono;
 
 /**
@@ -51,7 +58,41 @@ public class ApiController {
 		return Mono.just(ret);
 	}
 
+	/**
+	 * 读取文件 <br>
+	 * <p>
+	 * http://localhost:6010/api/readfile?file=C:/Users/Administrator/Pictures/foods/火锅/火锅1.jpg
+	 *
+	 * @param file     文件绝对路径
+	 * @param response response
+	 * @return 读取文件
+	 * @throws IOException
+	 */
+	@RequestMapping(value = { "/readfile" })
+	public Mono<Void> readfile(final String file, final ServerHttpResponse response) throws IOException {
+		try {
+			final var tup = mediaModel.readFile2(file);
+			final var bufferX = DataBufferUtils.readByteChannel(tup._2::getChannel, new DefaultDataBufferFactory(),
+					4096);
+			final var resp = response;
+			final var header = resp.getHeaders();
+			final var ss = tup._1.split("/");
+			
+			if (ss.length > 0) {
+				header.setContentType(new MediaType(ss[0], ss[1]));
+			} // if
+			
+			return resp.writeWith(bufferX);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} // try
+		
+		return Mono.empty();
+	}
+
 	@Autowired
 	private MyDataApp dataApp;
+	@Autowired
+	private MediaModel mediaModel;
 
 }
