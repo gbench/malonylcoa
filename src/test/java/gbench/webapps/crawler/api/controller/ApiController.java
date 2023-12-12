@@ -22,7 +22,6 @@ import gbench.util.data.MyDataApp;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.crawler.api.config.param.Param;
 import gbench.webapps.crawler.api.model.MediaModel;
-import gbench.webapps.crawler.api.model.storage.StorageService;
 import reactor.core.publisher.Mono;
 
 /**
@@ -100,7 +99,7 @@ public class ApiController {
 	 * @return IRecord
 	 */
 	public IRecord handleFileUpload(@RequestPart("file") final MultipartFile file) {
-		storageService.store(file);
+		mediaModel.store(file);
 		return REC("code", 0, "message", "You successfully uploaded " + file.getOriginalFilename() + "!");
 	}
 
@@ -108,7 +107,5 @@ public class ApiController {
 	private MyDataApp dataApp;
 	@Autowired
 	private MediaModel mediaModel;
-	@Autowired
-	private StorageService storageService;
 
 }
