@@ -2,6 +2,10 @@ package gbench.webapps.crawler.api.model;
 
 import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.Tuple2;
+import gbench.webapps.crawler.api.model.storage.FileSystemStorageService;
+import gbench.webapps.crawler.api.model.storage.StorageProperties;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import static gbench.util.data.DataApp.IRecord.REC;
@@ -14,7 +18,16 @@ import java.util.regex.Pattern;
  * MediaModel
  */
 @Component
-public class MediaModel {
+public class MediaModel extends FileSystemStorageService {
+
+	/**
+	 * MediaModel
+	 * 
+	 * @param properties
+	 */
+	public MediaModel(final @Value("${gbench.storage.location:upload-dir}") String location) {
+		super(new StorageProperties(location));
+	}
 
 	/**
 	 * 读取数据文件

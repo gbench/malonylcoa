@@ -14,12 +14,15 @@ import org.springframework.http.MediaType;
 
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import gbench.util.data.MyDataApp;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.crawler.api.config.param.Param;
 import gbench.webapps.crawler.api.model.MediaModel;
+import gbench.webapps.crawler.api.model.storage.StorageService;
 import reactor.core.publisher.Mono;
 
 /**
@@ -77,22 +80,35 @@ public class ApiController {
 			final var resp = response;
 			final var header = resp.getHeaders();
 			final var ss = tup._1.split("/");
-			
+
 			if (ss.length > 0) {
 				header.setContentType(new MediaType(ss[0], ss[1]));
 			} // if
-			
+
 			return resp.writeWith(bufferX);
 		} catch (Exception e) {
 			e.printStackTrace();
 		} // try
-		
+
 		return Mono.empty();
+	}
+
+	/**
+	 * handleFileUpload
+	 * 
+	 * @param file
+	 * @return IRecord
+	 */
+	public IRecord handleFileUpload(@RequestPart("file") final MultipartFile file) {
+		storageService.store(file);
+		return REC("code", 0, "message", "You successfully uploaded " + file.getOriginalFilename() + "!");
 	}
 
 	@Autowired
 	private MyDataApp dataApp;
 	@Autowired
 	private MediaModel mediaModel;
+	@Autowired
+	private StorageService storageService;
 
 }
