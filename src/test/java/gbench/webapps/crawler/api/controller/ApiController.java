@@ -1,6 +1,7 @@
 package gbench.webapps.crawler.api.controller;
 
 import static gbench.util.lisp.IRecord.REC;
+import static java.text.MessageFormat.format;
 import static java.time.LocalDateTime.now;
 
 import java.io.IOException;
@@ -49,8 +50,7 @@ public class ApiController {
 	 * sql语句查询 <br>
 	 * http://localhost:6010/api/sqlquery?sql=select*from%20t_maozedong%20limit%2020
 	 * 
-	 * @param sql      SQL 语句
-	 * @param exchange post 函数
+	 * @param sql SQL 语句
 	 * @return IRecord
 	 */
 	@RequestMapping("sqlquery")
@@ -70,7 +70,7 @@ public class ApiController {
 	 * @return 读取文件
 	 * @throws IOException
 	 */
-	@RequestMapping(value = { "/readfile" })
+	@RequestMapping(value = { "readfile" })
 	public Mono<Void> readfile(final String file, final ServerHttpResponse response) throws IOException {
 		try {
 			final var tup = mediaModel.readFile2(file);
@@ -98,9 +98,10 @@ public class ApiController {
 	 * @param file
 	 * @return IRecord
 	 */
-	public IRecord handleFileUpload(@RequestPart("file") final MultipartFile file) {
+	@RequestMapping(value = { "upload" })
+	public IRecord upload(@RequestPart("file") final MultipartFile file) {
 		mediaModel.store(file);
-		return REC("code", 0, "message", "You successfully uploaded " + file.getOriginalFilename() + "!");
+		return REC("code", 0, "message", format("You successfully uploaded {0}!", file.getOriginalFilename()));
 	}
 
 	@Autowired
