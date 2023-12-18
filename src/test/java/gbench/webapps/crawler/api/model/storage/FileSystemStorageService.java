@@ -56,9 +56,10 @@ public abstract class FileSystemStorageService implements StorageService {
 	}
 
 	/**
+	 * 数据存储
 	 * 
-	 * @param inputStream
-	 * @param filename
+	 * @param inputStream 输入流
+	 * @param filename    文件名
 	 */
 	public void store(final InputStream inputStream, final String filename) {
 		try {
