@@ -92,9 +92,9 @@ public class ApiController {
 	}
 
 	/**
-	 * handleFileUpload
+	 * upload 文件上传
 	 * 
-	 * @param file
+	 * @param fileMono 文件对象
 	 * @return IRecord
 	 */
 	@RequestMapping(value = { "upload" })
@@ -102,8 +102,9 @@ public class ApiController {
 		return (Mono<IRecord>) fileMono.flatMap(file -> {
 			return DataBufferUtils.join(file.content()).map(d -> {
 				try (final var inputStream = d.asInputStream()) {
-					mediaModel.store(inputStream, file.filename().replaceFirst("\\.([^.]+)$", // 时间戳
-							format("_{0}.$1", UUID.randomUUID())));
+					final var stamp = UUID.randomUUID(); // 印戳标记
+					mediaModel.store(inputStream,
+							file.filename().replaceFirst("\\.([^.]+)$", format("_{0}.$1", stamp)));
 				} catch (Exception e) {
 					e.printStackTrace();
 				} // try
