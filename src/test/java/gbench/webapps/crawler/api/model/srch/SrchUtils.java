@@ -111,7 +111,7 @@ public class SrchUtils {
 
 			if (e instanceof IRecord r) {
 				return TUP2(op, parseDsl(r, p._1, new BooleanQuery.Builder()));
-			} else if (e instanceof Tuple2 tup) {
+			} else if (e instanceof Tuple2<?, ?> tup) {
 				return tup;
 			} else {
 				return TUP2(op, term2query(type, kvp2term(p)));
