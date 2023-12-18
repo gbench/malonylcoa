@@ -1,5 +1,7 @@
 package gbench.webapps.crawler.api.model.storage;
 
+import static java.text.MessageFormat.format;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -15,13 +17,12 @@ import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 
+ * FileSystemStorageService
  */
 public abstract class FileSystemStorageService implements StorageService {
 
-	private final Path rootLocation;
-
 	/**
+	 * FileSystemStorageService
 	 * 
 	 * @param properties
 	 */
@@ -40,15 +41,34 @@ public abstract class FileSystemStorageService implements StorageService {
 			if (file.isEmpty()) {
 				throw new StorageException("Failed to store empty file.");
 			}
-			Path destinationFile = this.rootLocation.resolve(Paths.get(file.getOriginalFilename())).normalize()
+			final Path destinationFile = this.rootLocation.resolve(Paths.get(file.getOriginalFilename())).normalize()
 					.toAbsolutePath();
 			if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
 				// This is a security check
 				throw new StorageException("Cannot store file outside current directory.");
 			}
-			try (InputStream inputStream = file.getInputStream()) {
+			try (final InputStream inputStream = file.getInputStream()) {
 				Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
 			}
+		} catch (IOException e) {
+			throw new StorageException("Failed to store file.", e);
+		}
+	}
+
+	/**
+	 * 
+	 * @param inputStream
+	 * @param filename
+	 */
+	public void store(final InputStream inputStream, final String filename) {
+		try {
+			final Path destinationFile = this.rootLocation.resolve(Paths.get(filename)).normalize().toAbsolutePath();
+			System.out.println(format("destinationFile:{0}", destinationFile));
+			if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
+				// This is a security check
+				throw new StorageException("Cannot store file outside current directory.");
+			}
+			Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
 			throw new StorageException("Failed to store file.", e);
 		}
@@ -99,4 +119,6 @@ public abstract class FileSystemStorageService implements StorageService {
 			throw new StorageException("Could not initialize storage", e);
 		}
 	}
+
+	private final Path rootLocation;
 }

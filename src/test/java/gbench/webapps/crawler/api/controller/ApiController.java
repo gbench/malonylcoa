@@ -12,12 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.MediaType;
-
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import gbench.util.data.MyDataApp;
 import gbench.util.lisp.IRecord;
@@ -99,9 +98,18 @@ public class ApiController {
 	 * @return IRecord
 	 */
 	@RequestMapping(value = { "upload" })
-	public IRecord upload(@RequestPart("file") final MultipartFile file) {
-		mediaModel.store(file);
-		return REC("code", 0, "message", format("You successfully uploaded {0}!", file.getOriginalFilename()));
+	public Mono<IRecord> upload(@RequestPart("file") final Mono<FilePart> fileMono) {
+		return (Mono<IRecord>) fileMono.flatMap(file -> {
+			return DataBufferUtils.join(file.content()).map(d -> {
+				try (final var inputStream = d.asInputStream()) {
+					mediaModel.store(inputStream, file.filename().replaceFirst("\\.([^.]+)$", // 时间戳
+							format("_{0}.$1", UUID.randomUUID())));
+				} catch (Exception e) {
+					e.printStackTrace();
+				} // try
+				return REC("code", 0, "message", format("You successfully uploaded {0}!", file.filename()));
+			}); // DataBufferUtils
+		});
 	}
 
 	@Autowired

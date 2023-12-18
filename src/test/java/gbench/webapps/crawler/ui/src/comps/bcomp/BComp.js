@@ -48,7 +48,7 @@ const BComp = {
                         "Content-Type": "multipart/form-data"
                     }
                 }).then(e => {
-                    const data = e.data();
+                    const data = e.data;
                     alert(JSON.stringify(data));
                 });
         }

@@ -25,7 +25,7 @@ public class MediaModel extends FileSystemStorageService {
 	 * 
 	 * @param properties
 	 */
-	public MediaModel(final @Value("${gbench.storage.location:upload-dir}") String location) {
+	public MediaModel(final @Value("${gbench.storage.location:D:/sliced/tmp/crawler/upload-dir}") String location) {
 		super(new StorageProperties(location));
 	}
 
