@@ -31,91 +31,94 @@ import reactor.core.publisher.Mono;
 @RequestMapping("api")
 public class ApiController {
 
-	/**
-	 * 提取组件模块 <br>
-	 * 
-	 * http://localhost:6010/api/component
-	 * 
-	 * @return IRecord
-	 */
-	@RequestMapping("component")
-	public Mono<IRecord> component(final @Param String name) {
-		return Mono.just(REC("code", "0", "data", //
-				REC("name", Optional.ofNullable(name).map(e -> e.matches("^\\s*$") ? null : e)
-						.orElse("UNNAMED-" + UUID.randomUUID()), "time", now())));
-	}
+    /**
+     * 提取组件模块 <br>
+     * <p>
+     * http://localhost:6010/api/component
+     *
+     * @return IRecord
+     */
+    @RequestMapping("component")
+    public Mono<IRecord> component(final @Param String name) {
+        return Mono.just(REC("code", "0", "data", //
+                REC("name", Optional.ofNullable(name).map(e -> e.matches("^\\s*$") ? null : e)
+                        .orElse("UNNAMED-" + UUID.randomUUID()), "time", now())));
+    }
 
-	/**
-	 * sql语句查询 <br>
-	 * http://localhost:6010/api/sqlquery?sql=select*from%20t_maozedong%20limit%2020
-	 * 
-	 * @param sql SQL 语句
-	 * @return IRecord
-	 */
-	@RequestMapping("sqlquery")
-	public Mono<IRecord> sqlquery(final @Param String sql) {
-		final var ret = IRecord.REC("code", 0);
-		ret.add("data", this.dataApp.sqldframe(sql));
-		return Mono.just(ret);
-	}
+    /**
+     * sql语句查询 <br>
+     * http://localhost:6010/api/sqlquery?sql=select*from%20t_maozedong%20limit%2020
+     *
+     * @param sql SQL 语句
+     * @return IRecord
+     */
+    @RequestMapping("sqlquery")
+    public Mono<IRecord> sqlquery(final @Param String sql) {
+        final var ret = IRecord.REC("code", 0);
+        ret.add("data", this.dataApp.sqldframe(sql));
+        return Mono.just(ret);
+    }
 
-	/**
-	 * 读取文件 <br>
-	 * <p>
-	 * http://localhost:6010/api/readfile?file=C:/Users/Administrator/Pictures/foods/火锅/火锅1.jpg
-	 *
-	 * @param file     文件绝对路径
-	 * @param response response
-	 * @return 读取文件
-	 * @throws IOException
-	 */
-	@RequestMapping(value = { "readfile" })
-	public Mono<Void> readfile(final String file, final ServerHttpResponse response) throws IOException {
-		try {
-			final var tup = mediaModel.readFile2(file);
-			final var bufferX = DataBufferUtils.readByteChannel(tup._2::getChannel, new DefaultDataBufferFactory(),
-					4096);
-			final var resp = response;
-			final var header = resp.getHeaders();
-			final var ss = tup._1.split("/");
+    /**
+     * 读取文件 <br>
+     * <p>
+     * http://localhost:6010/api/readfile?file=C:/Users/Administrator/Pictures/foods/火锅/火锅1.jpg
+     *
+     * @param file     文件绝对路径
+     * @param response response
+     * @return 读取文件
+     * @throws IOException
+     */
+    @RequestMapping(value = {"readfile"})
+    public Mono<Void> readfile(final String file, final ServerHttpResponse response) throws IOException {
+        try {
+            final var tup = mediaModel.readFile2(file);
+            final var bufferX = DataBufferUtils.readByteChannel(tup._2::getChannel, new DefaultDataBufferFactory(),
+                    4096);
+            final var resp = response;
+            final var header = resp.getHeaders();
+            final var ss = tup._1.split("/");
 
-			if (ss.length > 0) {
-				header.setContentType(new MediaType(ss[0], ss[1]));
-			} // if
+            if (ss.length > 0) {
+                header.setContentType(new MediaType(ss[0], ss[1]));
+            } // if
 
-			return resp.writeWith(bufferX);
-		} catch (Exception e) {
-			e.printStackTrace();
-		} // try
+            return resp.writeWith(bufferX);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } // try
 
-		return Mono.empty();
-	}
+        return Mono.empty();
+    }
 
-	/**
-	 * upload 文件上传
-	 * 
-	 * @param fileMono 文件对象
-	 * @return IRecord
-	 */
-	@RequestMapping(value = { "upload" })
-	public Mono<IRecord> upload(@RequestPart("file") final Mono<FilePart> fileMono) {
-		return (Mono<IRecord>) fileMono.flatMap(file -> {
-			return DataBufferUtils.join(file.content()).map(d -> {
-				try (final var inputStream = d.asInputStream()) {
-					final var stamp = UUID.randomUUID(); // 印戳标记
-					mediaModel.store(inputStream,
-							file.filename().replaceFirst("\\.([^.]+)$", format("_{0}.$1", stamp)));
-				} catch (Exception e) {
-					e.printStackTrace();
-				} // try
-				return REC("code", 0, "message", format("You successfully uploaded {0}!", file.filename()));
-			}); // DataBufferUtils
-		});
-	}
+    /**
+     * upload 文件上传
+     *
+     * @param fileMono 文件对象
+     * @return IRecord
+     */
+    @RequestMapping(value = {"upload"})
+    public Mono<IRecord> upload(@RequestPart("file") final Mono<FilePart> fileMono) {
+        return fileMono.flatMap(file -> {
+            return DataBufferUtils.join(file.content()).map(d -> {
+                final var rec = REC("code", 0);
+                try (final var inputStream = d.asInputStream()) {
+                    final var stamp = UUID.randomUUID(); // 印戳标记
+                    final var filename = file.filename().replaceFirst("\\.([^.]+)$", format("_{0}.$1", stamp));
+                    mediaModel.store(inputStream, filename);
+                    rec.add("message", format("You successfully uploaded {0}!", filename), "file", filename);
+                } catch (Exception e) {
+                    rec.add("code", 1);
+                    e.printStackTrace();
+                } // try
+                return rec;
+            }); // DataBufferUtils
+        });
+    }
 
-	@Autowired
-	private MyDataApp dataApp;
-	@Autowired
-	private MediaModel mediaModel;
+    @Autowired
+    private MyDataApp dataApp;
+    @Autowired
+    private MediaModel mediaModel;
 
 }
