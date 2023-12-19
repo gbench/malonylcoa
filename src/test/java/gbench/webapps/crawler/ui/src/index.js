@@ -13,46 +13,46 @@ import "./css/index.css";
 /**
  * 
  */
-$(function () {
-    /**
-     * 加载页面模板，开始进行页面渲染。
-     */
-    function on_loaded(a_tpl, b_tpl) {
+$(function() {
+	/**
+	 * 加载页面模板，开始进行页面渲染。
+	 */
+	function on_loaded(a_tpl, b_tpl) {
 
-        // 添加模板
-        if (a_tpl) AComp.template = a_tpl;
-        if (b_tpl) BComp.template = b_tpl;
+		// 添加模板
+		if (a_tpl) AComp.template = a_tpl;
+		if (b_tpl) BComp.template = b_tpl;
 
-        // 设置路由
-        const routes = [ // 定义控件路由
-            { path: "/", redirect: "/AComp" }, // 设置默认路由
-            { path: "/AComp", component: AComp }, // 
-            { path: "/BComp", component: BComp }, // 
-        ];
+		// 设置路由
+		const routes = [ // 定义控件路由
+			{ path: "/", redirect: "/AComp" }, // 设置默认路由
+			{ path: "/AComp", component: AComp }, // 
+			{ path: "/BComp", component: BComp }, // 
+		];
 
-        // 创建路由
-        const router = createRouter({
-            history: createWebHashHistory(),
-            routes, // (缩写) 相当于 routes: routes
-        }); // 路由对象
+		// 创建路由
+		const router = createRouter({
+			history: createWebHashHistory(),
+			routes, // (缩写) 相当于 routes: routes
+		}); // 路由对象
 
-        // 生成vue对象
-        const app = createApp({});
-        app.component('data-table', DataTable);
-        app.component('autocomplete', AutoComplete);
-        app
-            .use(store)
-            .use(router)
-            .mount('#app');
-    }
+		// 生成vue对象
+		const app = createApp({});
+		app.component('data-table', DataTable);
+		app.component('autocomplete', AutoComplete);
+		app
+			.use(store)
+			.use(router)
+			.mount('#app');
+	}
 
-    // 提取模板
-    $.when( // 加载模板
-        $.get("templates/a.html"), $.get("templates/b.html")
-    ).done((a_tpl, b_tpl) => { // 模板加载
-        on_loaded(a_tpl[0], b_tpl[0]);
-    }).catch(e => { // 加载失败
-        on_loaded();
-    }); // when
+	// 提取模板
+	$.when( // 加载模板
+		$.get("templates/a.html"), $.get("templates/b.html")
+	).done((a_tpl, b_tpl) => { // 模板加载
+		on_loaded(a_tpl[0], b_tpl[0]);
+	}).catch(e => { // 加载失败
+		on_loaded();
+	}); // when
 
 });// ready function
