@@ -36,7 +36,8 @@ public abstract class FileSystemStorageService implements StorageService {
 	}
 
 	@Override
-	public void store(MultipartFile file) {
+	public String store(final MultipartFile file) {
+		String path = null;
 		try {
 			if (file.isEmpty()) {
 				throw new StorageException("Failed to store empty file.");
@@ -49,10 +50,12 @@ public abstract class FileSystemStorageService implements StorageService {
 			}
 			try (final InputStream inputStream = file.getInputStream()) {
 				Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+				path = destinationFile.toAbsolutePath().toString().replace("\\", "/");
 			}
 		} catch (IOException e) {
 			throw new StorageException("Failed to store file.", e);
 		}
+		return path;
 	}
 
 	/**
@@ -66,7 +69,7 @@ public abstract class FileSystemStorageService implements StorageService {
 		try {
 			final Path destinationFile = this.rootLocation.resolve(Paths.get(filename)).normalize().toAbsolutePath();
 			final var file = destinationFile.getParent().toFile();
-			if (file.exists()) {
+			if (!file.exists()) {
 				file.mkdirs();
 			}
 			System.out.println(format("destinationFile:{0}", destinationFile));
