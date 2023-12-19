@@ -105,8 +105,8 @@ public class ApiController {
                 try (final var inputStream = d.asInputStream()) {
                     final var stamp = UUID.randomUUID(); // 印戳标记
                     final var filename = file.filename().replaceFirst("\\.([^.]+)$", format("_{0}.$1", stamp));
-                    mediaModel.store(inputStream, filename);
-                    rec.add("message", format("You successfully uploaded {0}!", filename), "file", filename);
+                    final var path = mediaModel.store(inputStream, filename);
+                    rec.add("message", format("You successfully uploaded {0}!", filename), "path", path);
                 } catch (Exception e) {
                     rec.add("code", 1);
                     e.printStackTrace();

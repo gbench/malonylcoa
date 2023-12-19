@@ -446,7 +446,7 @@ class AbstractState<SELF> {
 	 * 
 	 * @param <T>          返回值类型
 	 * @param defaultValue 默认值 或者 值类型
-	 * @param strings      键名序列
+	 * @param fields      键名序列
 	 * @return 属性的值
 	 */
 	@SuppressWarnings("unchecked")

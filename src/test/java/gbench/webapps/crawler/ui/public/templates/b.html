@@ -1,5 +1,10 @@
 <div>
     <div class="highlight">{{name}}</div>
-    <hr/>
-    上传:<input type="file" @change="on_file_change($event)"/>
+    <hr />
+    上传:<input type="file" @change="on_file_change($event)" />
+    <div v-if="!(/^\s*$/g).test(fileurl)">
+        <a :href="fileurl">
+            <img :src="fileurl" style="width:100px;" />
+        </a>
+    </div>
 </div>

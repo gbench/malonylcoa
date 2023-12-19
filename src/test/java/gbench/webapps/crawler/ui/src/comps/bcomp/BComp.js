@@ -11,7 +11,9 @@ const BComp = {
      * @returns 
      */
     data() {
-        return {};
+        return {
+            fileurl: ""
+        };
     },
 
     /**
@@ -41,16 +43,13 @@ const BComp = {
             const formData = new window.FormData();
             const file = event.target.files[0];
             formData.append("file", file);
-            axios.post(url, formData,
-                {
-                    headers:
-                    {
-                        "Content-Type": "multipart/form-data"
-                    }
-                }).then(e => {
-                    const data = e.data;
-                    alert(JSON.stringify(data));
-                });
+            axios.post(url, formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            }).then(e => {
+                const data = e.data;
+                this.fileurl = `/h5/api/readfile?file=${data.path}`;
+                // alert(JSON.stringify(data));
+            });
         }
     }
 
