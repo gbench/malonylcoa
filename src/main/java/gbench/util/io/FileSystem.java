@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -274,6 +275,45 @@ public class FileSystem {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} // try
+	}
+
+	/**
+	 * pathname2stream 的简写 把一个pathname:既可以是一个绝对路径也可以是一个相对路径，还可以是一个文件名。所以就叫他pathname
+	 * 
+	 * @param pathname 资源的位置 ,relativeClass 参考位置默认为ull
+	 * @return InputStream
+	 */
+	public static InputStream stream(final String pathname) {
+		return FileSystem.pathname2stream(pathname, null);
+	}
+
+	/**
+	 * 把一个pathname:既可以是一个绝对路径也可以是一个相对路径，还可以是一个文件名。所以就叫他pathname
+	 * 
+	 * @param pathname 资源的位置 ,relativeClass 参考位置默认为ull
+	 * @return InputStream
+	 */
+	public static InputStream pathname2stream(final String pathname) {
+		return FileSystem.pathname2stream(pathname, null);
+	}
+
+	/**
+	 * 把一个pathname:既可以是一个绝对路径也可以是一个相对路径，还可以是一个文件名。所以就叫他pathname
+	 * 
+	 * @param pathname      资源的位置
+	 * @param relativeClass 参考位置
+	 * @return InputStream
+	 */
+	@SuppressWarnings("resource")
+	public static InputStream pathname2stream(final String pathname, final Class<?> relativeClass) {
+		final var path = path(pathname, relativeClass);// 提取文件位置。
+		InputStream inputStream = null;
+		try {
+			inputStream = new FileInputStream(path);
+		} catch (FileNotFoundException e) {
+			inputStream = relativeClass.getResourceAsStream(pathname);
+		}
+		return inputStream;
 	}
 
 }
