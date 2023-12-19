@@ -64,6 +64,7 @@ public abstract class FileSystemStorageService implements StorageService {
 	 * @param inputStream 输入流
 	 * @param filename    文件名
 	 */
+	@Override
 	public String store(final InputStream inputStream, final String filename) {
 		String path = null;
 		try {
