@@ -3,14 +3,12 @@ package gbench.util.lisp;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
@@ -21,6 +19,8 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import gbench.util.type.Times;
 
 /**
  * 数据记录对象
@@ -510,7 +510,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return U类型的值
 	 */
 	default LocalDateTime pathldt(final String path) {
-		return this.pathget(path, IRecord::asLocalDateTime);
+		return this.pathget(path, Times::asLocalDateTime);
 	}
 
 	/**
@@ -520,7 +520,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return U类型的值
 	 */
 	default LocalDate pathld(final String path) {
-		return this.pathget(path, IRecord::asLocalDate);
+		return this.pathget(path, Times::asLocalDate);
 	}
 
 	/**
@@ -909,7 +909,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		if (value == null) { // 空结构
 			return defaultValue;
 		} else { // 非空值
-			final LocalDateTime ldt = IRecord.asLocalDateTime(value);
+			final LocalDateTime ldt = Times.asLocalDateTime(value);
 			return Optional.ofNullable(ldt).orElse(defaultValue);
 		} // if
 	}
@@ -2329,138 +2329,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 
 			return aa;
 		} // if
-	}
-
-	/**
-	 * 把一个值对象转换成LocalDateTime
-	 *
-	 * @param value 值对象
-	 * @return LocalDateTime
-	 */
-	static LocalDate asLocalDate(final Object value) {
-		final LocalDateTime ldt = asLocalDateTime(value);
-		return ldt != null ? ldt.toLocalDate() : null;
-	}
-
-	/**
-	 * 把一个值对象转换成LocalDateTime
-	 *
-	 * @param value 值对象
-	 * @return LocalDateTime
-	 */
-	static LocalDateTime asLocalDateTime(final Object value) {
-		final Function<LocalDate, LocalDateTime> ld2ldt = ld -> LocalDateTime.of(ld, LocalTime.of(0, 0));
-		final Function<LocalTime, LocalDateTime> lt2ldt = lt -> LocalDateTime.of(LocalDate.of(0, 1, 1), lt);
-		final Function<Long, LocalDateTime> lng2ldt = lng -> {
-			final Long timestamp = lng;
-			final Instant instant = Instant.ofEpochMilli(timestamp);
-			final ZoneId zoneId = ZoneId.systemDefault();
-			return LocalDateTime.ofInstant(instant, zoneId);
-		};
-
-		final Function<Timestamp, LocalDateTime> timestamp2ldt = timestamp -> lng2ldt.apply(timestamp.getTime());
-
-		final Function<Date, LocalDateTime> dt2ldt = dt -> lng2ldt.apply(dt.getTime());
-
-		final Function<String, LocalTime> str2lt = line -> {
-			LocalTime lt = null;
-			for (String format : "HH:mm:ss,HH:mm,HHmmss,HHmm,HH".split("[,]+")) {
-				try {
-					lt = LocalTime.parse(line, DateTimeFormatter.ofPattern(format));
-				} catch (Exception ex) {
-					// do nothing
-				}
-				if (lt != null)
-					break;
-			}
-			return lt;
-		};
-
-		final Function<String, LocalDate> str2ld = line -> {
-			LocalDate ld = null;
-			for (String format : "yyyy-MM-dd,yyyy-M-d,yyyy/MM/dd,yyyy/M/d,yyyyMMdd".split("[,]+")) {
-				try {
-					ld = LocalDate.parse(line, DateTimeFormatter.ofPattern(format));
-				} catch (Exception ex) {
-					// do nothing
-				}
-				if (ld != null)
-					break;
-			}
-
-			return ld;
-		};
-
-		final Function<String, LocalDateTime> str2ldt = line -> {
-			LocalDateTime ldt = null;
-			final String patterns = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS," //
-					+ "yyyy-MM-dd'T'HH:mm:ss.SSSSSS," //
-					+ "yyyy-MM-dd'T'HH:mm:ss.SSS," //
-					+ "yyyy-MM-dd'T'HH:mm:ss," //
-					+ "yyyy-MM-ddTHH:mm:ss.SSSSSSSSS," //
-					+ "yyyy-MM-ddTHH:mm:ss.SSSSSS," //
-					+ "yyyy-MM-ddTHH:mm:ss.SSS," //
-					+ "yyyy-MM-ddTHH:mm:ss," //
-					+ "yyyy-MM-dd HH:mm:ss," //
-					+ "yyyy-MM-dd HH:mm," //
-					+ "yyyy-MM-dd HH," //
-					+ "yyyy-M-d H:m:s," //
-					+ "yyyy-M-d H:m," //
-					+ "yyyy-M-d H," //
-					+ "yyyy/MM/dd HH:mm:ss," //
-					+ "yyyy/MM/dd HH:mm," //
-					+ "yyyy/MM/dd HH," //
-					+ "yyyy/M/d H:m:s," //
-					+ "yyyy/M/d H:m," //
-					+ "yyyy/M/d H," //
-					+ "yyyyMMddHHmmss," //
-					+ "yyyyMMddHHmm," //
-					+ "yyyyMMddHH"//
-			; // patterns 时间的格式字符串
-
-			for (String format : patterns.split("[,]+")) {
-				try {
-					ldt = LocalDateTime.parse(line, DateTimeFormatter.ofPattern(format));
-				} catch (Exception ex) {
-					// do nothing
-				}
-				if (ldt != null)
-					break;
-			}
-
-			return ldt;
-		};
-
-		if (value instanceof LocalDateTime) {
-			return (LocalDateTime) value;
-		} else if (value instanceof LocalDate) {
-			return ld2ldt.apply((LocalDate) value);
-		} else if (value instanceof LocalTime) {
-			return lt2ldt.apply((LocalTime) value);
-		} else if (value instanceof Number) {
-			return lng2ldt.apply(((Number) value).longValue());
-		} else if (value instanceof Timestamp) {
-			return timestamp2ldt.apply(((Timestamp) value));
-		} else if (value instanceof Date) {
-			return dt2ldt.apply(((Date) value));
-		} else if (value instanceof String) {
-			final String line = (String) value;
-			final LocalDateTime _ldt = str2ldt.apply(line);
-			if (Objects.nonNull(_ldt)) {
-				return _ldt;
-			}
-			final LocalDate _ld = str2ld.apply(line);
-			if (Objects.nonNull(_ld)) {
-				return ld2ldt.apply(_ld);
-			}
-			final LocalTime _lt = str2lt.apply(line);
-			if (Objects.nonNull(_lt)) {
-				return lt2ldt.apply(_lt);
-			}
-			return null;
-		} else {
-			return null;
-		}
 	}
 
 	/**

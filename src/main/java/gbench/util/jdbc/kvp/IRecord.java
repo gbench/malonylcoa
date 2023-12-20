@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import gbench.util.jdbc.Jdbcs;
-import gbench.util.jdbc.json.CronTime;
+import gbench.util.type.Times;
 import gbench.util.jdbc.json.Json;
 import gbench.util.jdbc.node.Node;
 import gbench.util.jdbc.sql.SQL;
@@ -3784,11 +3784,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			if (o instanceof Date)
 				return (Number) ((Date) o).getTime();// 日期转数字,java.sql.timestamp 是 Date的子类
 			if (o instanceof LocalDate)
-				return (Number) (CronTime.ld2dt((LocalDate) o)).getTime();// 日期转数字
+				return (Number) (Times.ld2dt((LocalDate) o)).getTime();// 日期转数字
 			if (o instanceof LocalDateTime)
-				return (Number) (CronTime.ldt2dt((LocalDateTime) o)).getTime();// 日期转数字
+				return (Number) (Times.ldt2dt((LocalDateTime) o)).getTime();// 日期转数字
 			if (o instanceof LocalTime)
-				return (Number) (CronTime.lt2dt((LocalTime) o)).getTime();// 日期转数字
+				return (Number) (Times.lt2dt((LocalTime) o)).getTime();// 日期转数字
 			if (o instanceof Boolean)
 				return ((Boolean) o) ? 1 : 0;
 
@@ -3928,7 +3928,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			return null;
 		if (obj instanceof LocalDateTime)
 			return (LocalDateTime) obj;
-		return CronTime.date2localDateTime(this.date(key));
+		return Times.date2localDateTime(this.date(key));
 	}
 
 	/**
@@ -3950,7 +3950,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return LocalDateTime
 	 */
 	default LocalDateTime ldt(final int idx) {
-		return CronTime.dt2ldt(this.date(idx2key(idx)));
+		return Times.dt2ldt(this.date(idx2key(idx)));
 	}
 
 	/**
@@ -3977,7 +3977,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			return null;
 		if (obj instanceof LocalDate)
 			return (LocalDate) obj;
-		return CronTime.dt2ld(this.date(key));
+		return Times.dt2ld(this.date(key));
 	}
 
 	/**
@@ -4004,7 +4004,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			return null;
 		if (obj instanceof LocalDate)
 			return (LocalDate) obj;
-		return CronTime.dt2ld(this.date(idx));
+		return Times.dt2ld(this.date(idx));
 	}
 
 	/**
@@ -4031,7 +4031,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			return null;
 		if (obj instanceof LocalTime)
 			return (LocalTime) obj;
-		return CronTime.dt2lt(this.date(key));
+		return Times.dt2lt(this.date(key));
 	}
 
 	/**
@@ -4058,7 +4058,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			return null;
 		if (obj instanceof LocalTime)
 			return (LocalTime) obj;
-		return CronTime.dt2lt(this.date(idx));
+		return Times.dt2lt(this.date(idx));
 	}
 
 	/**
@@ -4100,9 +4100,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			if (o instanceof Date)
 				return (Date) o;
 			if (o instanceof LocalDateTime)
-				return CronTime.ldt2dt((LocalDateTime) o);
+				return Times.ldt2dt((LocalDateTime) o);
 			if (o instanceof LocalDate)
-				return CronTime.ld2dt((LocalDate) o);
+				return Times.ld2dt((LocalDate) o);
 			if (o instanceof Timestamp)
 				date = new Date(((Timestamp) o).getTime());
 			else if (o instanceof Number || o instanceof LongNode) {
@@ -7814,17 +7814,17 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 							} else if (src == Timestamp.class && target == LocalDate.class) {// Timestamp ->
 																								// LocalDate
 								final Date d = ((Timestamp) value);
-								fld.set(obj, CronTime.dt2ld(d));
+								fld.set(obj, Times.dt2ld(d));
 								return;
 							} else if (src == Timestamp.class && target == LocalDateTime.class) {// Timestamp ->
 																									// LocalDateTime
 								final Date d = ((Timestamp) value);
-								fld.set(obj, CronTime.dt2ldt(d));
+								fld.set(obj, Times.dt2ldt(d));
 								return;
 							} else if (src == Timestamp.class && target == LocalTime.class) {// Timestamp ->
 																								// LocalTime
 								final Date d = ((Timestamp) value);
-								fld.set(obj, CronTime.dt2lt(d));
+								fld.set(obj, Times.dt2lt(d));
 								return;
 							}
 
@@ -7833,15 +7833,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 								fld.set(obj, d);
 								return;
 							} else if (src == LocalDateTime.class && target == Timestamp.class) {// LocalDateTime->Timestamp
-								final Timestamp d = new Timestamp(CronTime.ldt2dt((LocalDateTime) value).getTime());
+								final Timestamp d = new Timestamp(Times.ldt2dt((LocalDateTime) value).getTime());
 								fld.set(obj, d);
 								return;
 							} else if (src == LocalDate.class && target == Timestamp.class) {// LocalDateTime->Timestamp
-								final Timestamp d = new Timestamp(CronTime.ld2dt((LocalDate) value).getTime());
+								final Timestamp d = new Timestamp(Times.ld2dt((LocalDate) value).getTime());
 								fld.set(obj, d);
 								return;
 							} else if (src == LocalTime.class && target == Timestamp.class) {// LocalDateTime->Timestamp
-								final Timestamp d = new Timestamp(CronTime.lt2dt((LocalTime) value).getTime());
+								final Timestamp d = new Timestamp(Times.lt2dt((LocalTime) value).getTime());
 								fld.set(obj, d);
 								return;
 							}
@@ -7888,11 +7888,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 									// 设置时间字段
 
 								if (fld.getType() == LocalDate.class) {// LocalDate
-									fld.set(obj, CronTime.dt2ld(date));
+									fld.set(obj, Times.dt2ld(date));
 								} else if (fld.getType() == LocalDateTime.class) {// LocalDateTime
-									fld.set(obj, CronTime.dt2ldt(date));
+									fld.set(obj, Times.dt2ldt(date));
 								} else if (fld.getType() == LocalTime.class) {// LocalTime
-									fld.set(obj, CronTime.dt2lt(date));
+									fld.set(obj, Times.dt2lt(date));
 								} else {
 									fld.set(obj, date);
 								} // if(fld.getType() == LocalDate.class)

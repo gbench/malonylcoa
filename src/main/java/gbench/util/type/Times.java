@@ -1,5 +1,6 @@
-package gbench.util.jdbc.json;
+package gbench.util.type;
 
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -8,14 +9,16 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
  * 基本时间操作函数
  */
-public class CronTime {
+public class Times {
 	/**
 	 * 
 	 * @param localDate 日期值
@@ -277,7 +280,7 @@ public class CronTime {
 	 */
 	public static LocalDateTime ldt(final int year, final int mon, final int day, final int hour, final int min,
 			final int sec) {
-		return CronTime.ldt(year, mon, day, hour, min, sec, 0);
+		return Times.ldt(year, mon, day, hour, min, sec, 0);
 	}
 
 	/**
@@ -291,7 +294,7 @@ public class CronTime {
 	 * @return 日期时间
 	 */
 	public static LocalDateTime ldt(int year, int mon, int day, int hour, int min) {
-		return CronTime.ldt(year, mon, day, hour, min, 0, 0);
+		return Times.ldt(year, mon, day, hour, min, 0, 0);
 	}
 
 	/**
@@ -304,7 +307,7 @@ public class CronTime {
 	 * @return 日期时间
 	 */
 	public static LocalDateTime ldt(final int year, final int mon, final int day, final int hour) {
-		return CronTime.ldt(year, mon, day, hour, 0, 0, 0);
+		return Times.ldt(year, mon, day, hour, 0, 0, 0);
 	}
 
 	/**
@@ -316,7 +319,7 @@ public class CronTime {
 	 * @return 日期时间
 	 */
 	public static LocalDateTime ldt(int year, int mon, int day) {
-		return CronTime.ldt(year, mon, day, 0, 0, 0, 0);
+		return Times.ldt(year, mon, day, 0, 0, 0, 0);
 	}
 
 	/**
@@ -327,7 +330,7 @@ public class CronTime {
 	 * @return 日期时间
 	 */
 	public static LocalDateTime ldt(final int year, final int mon) {
-		return CronTime.ldt(year, mon, 0, 0, 0, 0, 0);
+		return Times.ldt(year, mon, 0, 0, 0, 0, 0);
 	}
 
 	/**
@@ -337,7 +340,7 @@ public class CronTime {
 	 * @return 日期时间
 	 */
 	public static LocalDateTime ldt(final int year) {
-		return CronTime.ldt(year, 0, 0, 0, 0, 0, 0);
+		return Times.ldt(year, 0, 0, 0, 0, 0, 0);
 	}
 
 	/**
@@ -615,6 +618,138 @@ public class CronTime {
 	 */
 	public static DateTimeFormatter dtf(String pattern) {
 		return DateTimeFormatter.ofPattern(pattern);
+	}
+
+	/**
+	 * 把一个值对象转换成LocalDateTime
+	 *
+	 * @param value 值对象
+	 * @return LocalDateTime
+	 */
+	public static LocalDate asLocalDate(final Object value) {
+		final LocalDateTime ldt = asLocalDateTime(value);
+		return ldt != null ? ldt.toLocalDate() : null;
+	}
+
+	/**
+	 * 把一个值对象转换成LocalDateTime
+	 *
+	 * @param value 值对象
+	 * @return LocalDateTime
+	 */
+	public static LocalDateTime asLocalDateTime(final Object value) {
+		final Function<LocalDate, LocalDateTime> ld2ldt = ld -> LocalDateTime.of(ld, LocalTime.of(0, 0));
+		final Function<LocalTime, LocalDateTime> lt2ldt = lt -> LocalDateTime.of(LocalDate.of(0, 1, 1), lt);
+		final Function<Long, LocalDateTime> lng2ldt = lng -> {
+			final Long timestamp = lng;
+			final Instant instant = Instant.ofEpochMilli(timestamp);
+			final ZoneId zoneId = ZoneId.systemDefault();
+			return LocalDateTime.ofInstant(instant, zoneId);
+		};
+
+		final Function<Timestamp, LocalDateTime> timestamp2ldt = timestamp -> lng2ldt.apply(timestamp.getTime());
+
+		final Function<Date, LocalDateTime> dt2ldt = dt -> lng2ldt.apply(dt.getTime());
+
+		final Function<String, LocalTime> str2lt = line -> {
+			LocalTime lt = null;
+			for (String format : "HH:mm:ss,HH:mm,HHmmss,HHmm,HH".split("[,]+")) {
+				try {
+					lt = LocalTime.parse(line, DateTimeFormatter.ofPattern(format));
+				} catch (Exception ex) {
+					// do nothing
+				}
+				if (lt != null)
+					break;
+			}
+			return lt;
+		};
+
+		final Function<String, LocalDate> str2ld = line -> {
+			LocalDate ld = null;
+			for (String format : "yyyy-MM-dd,yyyy-M-d,yyyy/MM/dd,yyyy/M/d,yyyyMMdd".split("[,]+")) {
+				try {
+					ld = LocalDate.parse(line, DateTimeFormatter.ofPattern(format));
+				} catch (Exception ex) {
+					// do nothing
+				}
+				if (ld != null)
+					break;
+			}
+
+			return ld;
+		};
+
+		final Function<String, LocalDateTime> str2ldt = line -> {
+			LocalDateTime ldt = null;
+			final String patterns = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS," //
+					+ "yyyy-MM-dd'T'HH:mm:ss.SSSSSS," //
+					+ "yyyy-MM-dd'T'HH:mm:ss.SSS," //
+					+ "yyyy-MM-dd'T'HH:mm:ss," //
+					+ "yyyy-MM-ddTHH:mm:ss.SSSSSSSSS," //
+					+ "yyyy-MM-ddTHH:mm:ss.SSSSSS," //
+					+ "yyyy-MM-ddTHH:mm:ss.SSS," //
+					+ "yyyy-MM-ddTHH:mm:ss," //
+					+ "yyyy-MM-dd HH:mm:ss," //
+					+ "yyyy-MM-dd HH:mm," //
+					+ "yyyy-MM-dd HH," //
+					+ "yyyy-M-d H:m:s," //
+					+ "yyyy-M-d H:m," //
+					+ "yyyy-M-d H," //
+					+ "yyyy/MM/dd HH:mm:ss," //
+					+ "yyyy/MM/dd HH:mm," //
+					+ "yyyy/MM/dd HH," //
+					+ "yyyy/M/d H:m:s," //
+					+ "yyyy/M/d H:m," //
+					+ "yyyy/M/d H," //
+					+ "yyyyMMddHHmmss," //
+					+ "yyyyMMddHHmm," //
+					+ "yyyyMMddHH"//
+			; // patterns 时间的格式字符串
+
+			for (String format : patterns.split("[,]+")) {
+				try {
+					ldt = LocalDateTime.parse(line, DateTimeFormatter.ofPattern(format));
+				} catch (Exception ex) {
+					// do nothing
+				}
+				if (ldt != null)
+					break;
+			}
+
+			return ldt;
+		};
+
+		if (value instanceof LocalDateTime) {
+			return (LocalDateTime) value;
+		} else if (value instanceof LocalDate) {
+			return ld2ldt.apply((LocalDate) value);
+		} else if (value instanceof LocalTime) {
+			return lt2ldt.apply((LocalTime) value);
+		} else if (value instanceof Number) {
+			return lng2ldt.apply(((Number) value).longValue());
+		} else if (value instanceof Timestamp) {
+			return timestamp2ldt.apply(((Timestamp) value));
+		} else if (value instanceof Date) {
+			return dt2ldt.apply(((Date) value));
+		} else if (value instanceof String) {
+			final String line = (String) value;
+			final LocalDateTime _ldt = str2ldt.apply(line);
+			if (Objects.nonNull(_ldt)) {
+				return _ldt;
+			}
+			final LocalDate _ld = str2ld.apply(line);
+			if (Objects.nonNull(_ld)) {
+				return ld2ldt.apply(_ld);
+			}
+			final LocalTime _lt = str2lt.apply(line);
+			if (Objects.nonNull(_lt)) {
+				return lt2ldt.apply(_lt);
+			}
+			return null;
+		} else {
+			return null;
+		}
 	}
 
 	public static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

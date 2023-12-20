@@ -52,7 +52,7 @@ import gbench.util.jdbc.annotation.JdbcPreparedQuery;
 import gbench.util.jdbc.annotation.JdbcQuery;
 import gbench.util.jdbc.function.SQLExceptionalFunction;
 import gbench.util.jdbc.function.ThrowableFunction;
-import gbench.util.jdbc.json.CronTime;
+import gbench.util.type.Times;
 import gbench.util.jdbc.json.Json;
 import gbench.util.jdbc.kvp.Column;
 import gbench.util.jdbc.kvp.IColumn;
@@ -1980,13 +1980,13 @@ public class Jdbc implements IManagedStreams {
 		final Function<Object, Object> mapper = (o) -> {
 			final var clazz = o == null ? Objects.class : o.getClass();
 			if (o instanceof Date) {
-				return CronTime.sdf.format((Date) o);
+				return Times.sdf.format((Date) o);
 			} else if (o instanceof LocalTime) {
-				return CronTime.sdf.format(CronTime.lt2dt((LocalTime) o));
+				return Times.sdf.format(Times.lt2dt((LocalTime) o));
 			} else if (o instanceof LocalDate) {
-				return CronTime.sdf.format(CronTime.ld2dt((LocalDate) o));
+				return Times.sdf.format(Times.ld2dt((LocalDate) o));
 			} else if (o instanceof LocalDateTime) {
-				return CronTime.sdf.format(CronTime.ldt2dt((LocalDateTime) o));
+				return Times.sdf.format(Times.ldt2dt((LocalDateTime) o));
 			} else if (Number.class.isAssignableFrom(clazz) || clazz == short.class || clazz == int.class
 					|| clazz == long.class || clazz == float.class || clazz == double.class) {
 				return o + "";
