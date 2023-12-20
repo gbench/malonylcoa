@@ -581,9 +581,9 @@ public class Jdbc implements IManagedStreams {
 	 * @param <T>                     访问接口 类的类型
 	 * @param itf                     访问接口
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．<br>
-	 *                                是一个(m,a,p,j)->p 的形式<br>
+	 *                                是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -601,9 +601,9 @@ public class Jdbc implements IManagedStreams {
 	 * @param <T>                     访问接口 类的类型
 	 * @param itf                     访问接口
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．<br>
-	 *                                是一个(m,a,p,j)->p 的形式 <br>
+	 *                                是一个(m,a,p,j)-&gt;p 的形式 <br>
 	 *                                method(m) 方法对象, <br>
-	 *                                params(a args) 参数列表:name->value, <br>
+	 *                                params(a args) 参数列表:name-&gt;value, <br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -622,20 +622,21 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 * 需要有一个Map<?,?>的构造函数<br>
+	 * 需要有一个Map&lt;?,?&gt;的构造函数<br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>        访问接口 类的类型
 	 * @param itf        访问接口
-	 * @param jdbcConfig jdbc的配置：driver,url,user,password<r> 也可以直接加入一个 jdbcClass键
+	 * @param jdbcConfig jdbc的配置：driver,url,user,password<br>
+	 *                   也可以直接加入一个 jdbcClass键
 	 *                   jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                   需要有一个 Map<?,?>的构造函数 <br>
+	 *                   需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                   jdbcClass键还可以直接是一个类对象：<br>
 	 *                   jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 *                   需要有一个Map<?,?>的构造函数 <br>
+	 *                   需要有一个Map&lt;?,?&gt;的构造函数 <br>
 	 *                   或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 *                   MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，<br>
 	 *                   选取第一个。<br>
@@ -652,21 +653,21 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数<br>
+	 * Map&lt;?,?&gt;的构造函数<br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>                     访问接口 类的类型
 	 * @param itf                     访问接口
-	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<r> 也可以直接加入一个
-	 *                                jdbcClass键
+	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<br>
+	 *                                也可以直接加入一个 jdbcClass键
 	 *                                jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                jdbcClass键还可以直接是一个类对象：
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 *                                MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 *
@@ -674,7 +675,7 @@ public class Jdbc implements IManagedStreams {
 	 *                                <br>
 	 *                                是一个(m,a,p,j)->p 的形式 <br>
 	 *                                method(m) 方法对象, <br>
-	 *                                params(a args) 参数列表:name->value, <br>
+	 *                                params(a args) 参数列表:name-&gt;value, <br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力, <br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -692,20 +693,21 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数<br>
+	 * Map&lt;?,?&gt;的构造函数<br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>        访问接口 类的类型
 	 * @param itf        访问接口
-	 * @param jdbcConfig jdbc的配置：driver,url,user,password<r> 也可以直接加入一个 jdbcClass键
+	 * @param jdbcConfig jdbc的配置：driver,url,user,password<br>
+	 *                   也可以直接加入一个 jdbcClass键
 	 *                   jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                   需要有一个 Map<?,?>的构造函数 <br>
+	 *                   需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                   jdbcClass键还可以直接是一个类对象：
 	 *                   jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass 需要有一个
-	 *                   Map<?,?>的构造函数 <br>
+	 *                   Map&lt;?,?&gt;的构造函数 <br>
 	 *                   或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                   MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * @return 数据库访问的代理接口
@@ -721,27 +723,27 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数<br>
+	 * Map&lt;?,?&gt;的构造函数<br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.add("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>                     访问接口 类的类型
 	 * @param itf                     访问接口
-	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<r> 也可以直接加入一个
-	 *                                jdbcClass键
+	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<br>
+	 *                                也可以直接加入一个 jdbcClass键
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                jdbcClass键还可以直接是一个类对象：
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                                MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．
 	 *                                是一个(m,a,p,j)->p 的形式 <br>
 	 *                                method(m) 方法对象, <br>
-	 *                                params(a args) 参数列表:name->value, <br>
+	 *                                params(a args) 参数列表:name-&gt;value, <br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力, <br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -759,20 +761,20 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数<br>
+	 * Map&lt;?,?&gt;的构造函数<br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&gt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>         访问接口 类的类型
 	 * @param itf         访问接口
-	 * @param interceptor SqlInterceptor<List<IRecord>>:方法执行的接获函数,返回一个
-	 *                    List<IRecord>,如果非空，表示完成接获<br>
+	 * @param interceptor SqlInterceptor&lt;List&lt;IRecord&gt;&gt;:方法执行的接获函数,返回一个
+	 *                    List&lt;IRecord&gt;,如果非空，表示完成接获<br>
 	 *                    代理对象的执行结果就是该interceptor所接获的结果，反之就是 就会继续执行。后续的操作。<br>
-	 *                    是一个(m,a,p,j)->p 的形式<br>
+	 *                    是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                    method(m) 方法对象,<br>
-	 *                    params(a args) 参数列表:name->value,<br>
+	 *                    params(a args) 参数列表:name-&gt;value,<br>
 	 *                    sqlpattern(p pattern) sql模板 ，sql
 	 *                    模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                    jdbc(j) 当前连接的数据库对象．<br>
@@ -790,29 +792,30 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.add("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数<br>
+	 * Map&lt;?,?&gt;的构造函数<br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.add("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>         访问接口 类的类型
 	 * @param itf         访问接口
-	 * @param jdbcConfig  jdbc的配置：driver,url,user,password<r> 也可以直接加入一个 jdbcClass键
+	 * @param jdbcConfig  jdbc的配置：driver,url,user,password<br>
+	 *                    也可以直接加入一个 jdbcClass键
 	 *                    jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                    需要有一个 Map<?,?>的构造函数 <br>
+	 *                    需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                    jdbcClass键还可以直接是一个类对象：
 	 *                    jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass 需要有一个
-	 *                    Map<?,?>的构造函数 <br>
+	 *                    Map&lt;?,?&gt;的构造函数 <br>
 	 *                    或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                    MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 *
-	 * @param interceptor SqlInterceptor<List<IRecord>>:方法执行的接获函数,返回一个
+	 * @param interceptor SqlInterceptor&lt;List&lt;IRecord&gt;&gt;:方法执行的接获函数,返回一个
 	 *                    List<IRecord>,如果非空，表示完成接获
 	 *                    代理对象的执行结果就是该interceptor所接获的结果，反之就是 就会继续执行。后续的操作。<br>
-	 *                    是一个(m,a,p,j)->p 的形式<br>
+	 *                    是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                    method(m) 方法对象,<br>
-	 *                    params(a args) 参数列表:name->value,<br>
+	 *                    params(a args) 参数列表:name-&gt;value,<br>
 	 *                    sqlpattern(p pattern) sql模板 ，sql
 	 *                    模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                    jdbc(j) 当前连接的数据库对象．<br>
@@ -831,29 +834,30 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数<br>
+	 * Map&lt;?,?&gt;的构造函数<br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>         访问接口 类的类型
 	 * @param itf         访问接口
-	 * @param jdbcConfig  jdbc的配置：driver,url,user,password<r> 也可以直接加入一个 jdbcClass键
+	 * @param jdbcConfig  jdbc的配置：driver,url,user,password<br>
+	 *                    也可以直接加入一个 jdbcClass键
 	 *                    jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                    需要有一个 Map<?,?>的构造函数 <br>
+	 *                    需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                    jdbcClass键还可以直接是一个类对象：
 	 *                    jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass 需要有一个
-	 *                    Map<?,?>的构造函数 <br>
+	 *                    Map&lt;?,?&gt;的构造函数 <br>
 	 *                    或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                    MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 *
-	 * @param interceptor SqlInterceptor<List<IRecord>>:方法执行的接获函数,返回一个
-	 *                    List<IRecord>,如果非空，表示完成接获<br>
+	 * @param interceptor SqlInterceptor&lt;List&lt;IRecord&gt;&gt;:方法执行的接获函数,返回一个
+	 *                    List&lt;IRecord&gt;,如果非空，表示完成接获<br>
 	 *                    代理对象的执行结果就是该interceptor所接获的结果，反之就是 就会继续执行。后续的操作。<br>
-	 *                    是一个(m,a,p,j)->p 的形式<br>
+	 *                    是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                    method(m) 方法对象,<br>
-	 *                    params(a args) 参数列表:name->value,<br>
+	 *                    params(a args) 参数列表:name-&gt;value,<br>
 	 *                    sqlpattern(p pattern) sql模板 ，sql
 	 *                    模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                    jdbc(j) 当前连接的数据库对象．<br>
@@ -871,27 +875,28 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password<br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数 jdbcClass键还可以直接是一个类对象：
-	 * jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass 需要有一个 Map<?,?>的构造函数 <br>
+	 * Map&lt;?,?&gt;的构造函数 jdbcClass键还可以直接是一个类对象：
+	 * jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass 需要有一个 Map&lt;?,?&gt;的构造函数
+	 * <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。
 	 * 
 	 * @param <T>                     访问接口 类的类型
 	 * @param itf                     访问接口
-	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<r> 也可以直接加入一个
-	 *                                jdbcClass键
+	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<br>
+	 *                                也可以直接加入一个 jdbcClass键
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                jdbcClass键还可以直接是一个类对象：
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                                MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 *
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．
-	 *                                是一个(m,a,p,j)->p 的形式<br>
+	 *                                是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -911,28 +916,29 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password <br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数 jdbcClass键还可以直接是一个类对象：
-	 * jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass 需要有一个 Map<?,?>的构造函数 <br>
+	 * Map&lt;?,?&gt;的构造函数 jdbcClass键还可以直接是一个类对象：
+	 * jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass 需要有一个 Map&lt;?,?&gt;的构造函数
+	 * <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。
 	 * 
 	 * @param <T>                     访问接口 类的类型
 	 * @param <U>                     JdbcPostProcessor 的返回结果类型：这是一个类型占位符
 	 * @param itf                     访问接口 <br>
-	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<r> 也可以直接加入一个
-	 *                                jdbcClass键
+	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<br>
+	 *                                也可以直接加入一个 jdbcClass键
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                jdbcClass键还可以直接是一个类对象：
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                                MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．<br>
 	 *                                是一个(m,a,p,j)->p 的形式 <br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．
@@ -941,7 +947,7 @@ public class Jdbc implements IManagedStreams {
 	 *                                sqlpattern_preprocessor 处理之后才给予调用的。<br>
 	 *                                也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．
@@ -959,29 +965,29 @@ public class Jdbc implements IManagedStreams {
 	 * 请确保jdbcConfig 含有有效的driver,url,user,password<br>
 	 * 也可以直接加入一个 jdbcClass键
 	 * jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
-	 * Map<?,?>的构造函数 <br>
+	 * Map&lt;?,?&gt;的构造函数 <br>
 	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 * 需要有一个 Map<?,?>的构造函数 <br>
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param <T>                     访问接口 类的类型
 	 * @param <U>                     jdbcPostProcessor的返回结果的类型
 	 * @param itf                     访问接口
-	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<r> 也可以直接加入一个
-	 *                                jdbcClass键：
+	 * @param jdbcConfig              jdbc的配置：driver,url,user,password<br>
+	 *                                也可以直接加入一个 jdbcClass键：
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                jdbcClass键还可以直接是一个类对象：
 	 *                                jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
-	 *                                需要有一个 Map<?,?>的构造函数 <br>
+	 *                                需要有一个 Map&lt;?,?&gt;的构造函数 <br>
 	 *                                或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                                MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * 
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．
-	 *                                是一个(m,a,p,j)->p 的形式<br>
+	 *                                是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -990,7 +996,7 @@ public class Jdbc implements IManagedStreams {
 	 *                                sqlpattern_preprocessor 处理之后才给予调用的。<br>
 	 *                                也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -1207,7 +1213,6 @@ public class Jdbc implements IManagedStreams {
 	 * 对于其他的传入的(比如直接传递,而不是采用方法反射,比如IJdbcSession.sql2records(sql)系列函数) <br>
 	 * 参见方法:IJdbcSession.sql2records(final String sqlpattern, final IRecord params)
 	 * <br>
-	 * <br>
 	 * preprocessor 是不会对sql进行处理的,所以 如果需要调用 namedsql_processor 做参数
 	 * 填充,需要先手动的把sql进行进行预处理 <br>
 	 * 
@@ -1226,7 +1231,6 @@ public class Jdbc implements IManagedStreams {
 	 * 并不会对 没有在namedsqls中存贮的sql语句调用preprocessor做预处理。<br>
 	 * 对于其他的传入的(比如直接传递,而不是采用方法反射,比如IJdbcSession.sql2records(sql)系列函数) <br>
 	 * 参见方法:IJdbcSession.sql2records(final String sqlpattern, final IRecord params)
-	 * <br>
 	 * <br>
 	 * preprocessor 是不会对sql进行处理的,所以 如果需要调用 namedsql_processor 做参数
 	 * 填充,需要先手动的把sql进行进行预处理 <br>
@@ -1253,9 +1257,9 @@ public class Jdbc implements IManagedStreams {
 	 *                     调用一个未标记的接口函数，故意造成调用失败，致使Jdbc返回返回代理对象结构。
 	 *                     proxy内部包含，连接器，sqlpattern 解析器，一级后置收尾处理器，当前的数据库连接操作对象jdbc等
 	 *                     代理的内部结构，可以通过IRecord。都是 作为单例的模式包装在IRecord
-	 *                     之中。因此可以通过的IRecordfindOne(Class<?>)的方式来提取，进而被使用。
+	 *                     之中。因此可以通过的IRecordfindOne(Class&lt;?&gt;)的方式来提取，进而被使用。
 	 * @param sharpPattern sharppattern 的名称。如妹没有#开头，会自动添加一个#符号。作为标记。
-	 * @param params       占位符变量的 值定义容器{key->value}的集合。key 就是占位符的名称会根据 sharp占位符
+	 * @param params       占位符变量的 值定义容器{key-&gt;value}的集合。key 就是占位符的名称会根据 sharp占位符
 	 *                     "#(\\w+)" 的规则，即是否以井号 开头的标识符号（identifier），来
 	 *                     对sharpPattern所标记SQL语句（也可以不是SQL遇见的一种DSL)提取，进而做值替换。随有点绕口，但是很简单。
 	 * @return pattern 所对应的数据操作语句。占位符变量也已经用params 做了替换。非数字类型会被自动的添加上 双引号“"”
@@ -1295,8 +1299,9 @@ public class Jdbc implements IManagedStreams {
 
 		final var sqlpattern = (sharppattern == null || sharppattern.matches("\\s*")) ? "#" + method.getName()
 				: sharppattern;// 默认的sqlpattern为方法名
-		final var sharp_matcher = Pattern.compile("#+([a-z_][a-z0-9_]+)", Pattern.CASE_INSENSITIVE).matcher(sqlpattern);// namedsql
-																														// 是一个用＃号作为前缀的名称
+		// namedsql 是一个用＃号作为前缀的名称
+		final var sharp_matcher = Pattern.compile("#+([a-z_][a-z0-9_]+)", Pattern.CASE_INSENSITIVE).matcher(sqlpattern);
+
 		if (!sharp_matcher.matches())
 			return sqlpattern;// 非namedsql
 
@@ -1317,7 +1322,7 @@ public class Jdbc implements IManagedStreams {
 	 * 一个典型使用 namedsql进行创建数据库接机口的案例是如下情形：<br>
 	 * 定义接口 <br>
 	 * interface UserDatabase { <br>
-	 * @JdbcExecute("#createTable") <br>
+	 * &#064;JdbcExecute("#createTable") <br>
 	 * public void createTable(String tableName); <br>
 	 * }<br>
 	 * //提取命名SQL的集合。 <br>
@@ -1341,7 +1346,7 @@ public class Jdbc implements IManagedStreams {
 	 * values (#name,#password,#sex,#address,#birth,#phonenumber,#email) <br>
 	 *
 	 * 根据接口 <br>
-	 * @JdbcExecute({"#insertUser"}) <br>
+	 * &#064;JdbcExecute({"#insertUser"}) <br>
 	 * public void insertUser(String tableName,String name,String password,String
 	 * sex,String address, <br>
 	 * Date birth,String phonenumber,String email); <br>
@@ -1351,7 +1356,7 @@ public class Jdbc implements IManagedStreams {
 	 * values (''{1}'',''{2}'',''{3}'',''{4}'',''{5,date,yyyy-MM-dd
 	 * HH:mm:ss}'',''{6}'',''{7}'') <br>
 	 * 
-	 * @param namedsqls 命名sql集合：{#key1->sql1,#key1->sql2,...},
+	 * @param namedsqls 命名sql集合：{#key1-&gt;sql1,#key1-&gt;sql2,...},
 	 * @return 变换后的sqlapttern 可以被 MessageFormat处理的SQL语句。
 	 */
 	public static SqlPatternPreprocessor namedsql_processor(final Map<String, String> namedsqls) {
@@ -1405,9 +1410,9 @@ public class Jdbc implements IManagedStreams {
 	 * @param itf                     访问接口
 	 * @param jdbc                    数据库访问接口
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．
-	 *                                是一个(m,a,p,j)->p 的形式<br>
+	 *                                是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -1415,7 +1420,7 @@ public class Jdbc implements IManagedStreams {
 	 *                                sqlpattern_preprocessor 处理之后才给予调用的。
 	 *                                也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -1438,7 +1443,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．<br>
 	 *                                是一个(m,a,p,j)->p 的形式 <br>
 	 *                                method(m) 方法对象, <br>
-	 *                                params(a args) 参数列表:name->value, <br>
+	 *                                params(a args) 参数列表:name-&gt;value, <br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -1446,7 +1451,7 @@ public class Jdbc implements IManagedStreams {
 	 *                                sqlpattern_preprocessor 处理之后才给予调用的。<br>
 	 *                                也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
 	 *                                method(m) 方法对象,<br>
-	 *                                params(a args) 参数列表:name->value,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
 	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
@@ -1729,7 +1734,7 @@ public class Jdbc implements IManagedStreams {
 	 *                             sqlpattern_preprocessor 处理之后才给予调用的。<br>
 	 *                             也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
 	 *                             method(m) 方法对象,<br>
-	 *                             params(a args) 参数列表:name->value,<br>
+	 *                             params(a args) 参数列表:name-&gt;value,<br>
 	 *                             sqlpattern(p pattern) sql模板 ，sql
 	 *                             模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                             jdbc(j) 当前连接的数据库对象．
@@ -1796,9 +1801,10 @@ public class Jdbc implements IManagedStreams {
 	 * @param sqlinterceptor       SQL方法执行拦截器：需要注意 sqlinterceptor 是在
 	 *                             sqlpattern_preprocessor 处理之后才给予调用的。
 	 *                             也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;
-	 *                             method(m) 方法对象, params(a args) 参数列表:name->value,
-	 *                             sqlpattern(p pattern) sql模板 ，sql
-	 *                             模板通称会携带模板参数，以完成分数据库，分表的能力, jdbc(j) 当前连接的数据库对象．
+	 *                             method(m) 方法对象, params(a args)
+	 *                             参数列表:name-&gt;value, sqlpattern(p pattern) sql模板
+	 *                             ，sql 模板通称会携带模板参数，以完成分数据库，分表的能力, jdbc(j)
+	 *                             当前连接的数据库对象．
 	 * @return 执行结果
 	 */
 	private static Object handlePreparedExecute(final Jdbc jdbc, final JdbcPreparedExecute[] jces, final Method method,
@@ -1809,12 +1815,10 @@ public class Jdbc implements IManagedStreams {
 			return null;
 
 		final var _patterns = jces[0].value();// sql语句模板数组
-		final String[] patterns = (_patterns == null || _patterns.length < 1) ? new String[] { null } : _patterns; // 没有传入sqlpattern
-																													// 代表一个采用默认
-																													// pattern
-																													// 需要用pattern_preprocessor
-																													// 来解析。
+		// 没有传入sqlpattern 代表一个采用默认 pattern 需要用pattern_preprocessor 来解析。
+		final String[] patterns = (_patterns == null || _patterns.length < 1) ? new String[] { null } : _patterns;
 		final var pargs = params(method, args);// 构造参数对象
+
 		return jdbc.withConnection(conn -> {// 开启事务管理
 			for (var pattern : patterns) {// sql语句模板 :当pattern 为null的时候，pattern_preprocessor
 											// 会为其左方法签名的解释。不过需要namedsql_processor配置。
@@ -1880,7 +1884,7 @@ public class Jdbc implements IManagedStreams {
 	 *                             sqlpattern_preprocessor 处理之后才给予调用的。<br>
 	 *                             也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
 	 *                             method(m) 方法对象,<br>
-	 *                             params(a args) 参数列表:name->value,<br>
+	 *                             params(a args) 参数列表:name-&gt;value,<br>
 	 *                             sqlpattern(p pattern) sql模板 ，sql
 	 *                             模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                             jdbc(j) 当前连接的数据库对象．<br>
@@ -1931,7 +1935,7 @@ public class Jdbc implements IManagedStreams {
 	 *                             sqlpattern_preprocessor 处理之后才给予调用的。<br>
 	 *                             也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
 	 *                             method(m) 方法对象,<br>
-	 *                             params(a args) 参数列表:name->value,<br>
+	 *                             params(a args) 参数列表:name-&gt;value,<br>
 	 *                             sqlpattern(p pattern) sql模板 ，sql
 	 *                             模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
 	 *                             jdbc(j) 当前连接的数据库对象．<br>
@@ -3359,8 +3363,8 @@ public class Jdbc implements IManagedStreams {
 	 * 对于短路的流，注意调用 stream.close() 来释放数据库连接, 或者 是 调用 jdbc.clear 来给与清空。<br>
 	 *
 	 * @param sql    查询语句
-	 * @param mapper 结果变换函数 IRecord->T
-	 * @return 执行结果集合的List<T>
+	 * @param mapper 结果变换函数 IRecord-&gt;T
+	 * @return 执行结果集合的List&lt;T&gt;
 	 */
 	public <T> List<T> sqlmutate(final String sql, final Function<IRecord, T> mapper) {
 		return this.sql2recordS(sql).map(mapper).collect(Collectors.toList());
@@ -3437,7 +3441,7 @@ public class Jdbc implements IManagedStreams {
 	 * 返回的结果集：就是一个中以key值为列名：ColumnLabel
 	 *
 	 * @param sql 查询语句
-	 * @param rec prepared statement 的位置参数 integer->value ,integer 从1开始
+	 * @param rec prepared statement 的位置参数 integer-&gt;value ,integer 从1开始
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> psql2records(final String sql, final IRecord rec) {
@@ -3458,7 +3462,7 @@ public class Jdbc implements IManagedStreams {
 	 * 对于短路的流，注意调用 stream.close() 来释放数据库连接, 或者 是 调用 jdbc.clear 来给与清空。<br>
 	 *
 	 * @param sql 查询语句
-	 * @param rec prepared statement 的位置参数 integer->value ,integer 从1开始
+	 * @param rec prepared statement 的位置参数 integer-&gt;value ,integer 从1开始
 	 * @return 执行结果集合的 IRecord 流
 	 */
 	public Stream<IRecord> psql2recordS(final String sql, final IRecord rec) {
@@ -3492,8 +3496,8 @@ public class Jdbc implements IManagedStreams {
 	 * 返回的结果集：就是一个中以key值为列名：ColumnLabel
 	 *
 	 * @param sql    查询语句
-	 * @param params prepared statement 的位置参数 integer->value ,integer 从1开始
-	 *               参数序号从1开始。1->xxx,2->yyy..
+	 * @param params prepared statement 的位置参数 integer-&gt;value ,integer 从1开始
+	 *               参数序号从1开始。1-&lt;xxx,2-&lt;yyy.
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public Optional<IRecord> psql2maybe(final String sql, final IRecord params) {
@@ -3509,7 +3513,7 @@ public class Jdbc implements IManagedStreams {
 	 * 返回的结果集：就是一个中以key值为列名：ColumnLabel
 	 *
 	 * @param sql    查询语句
-	 * @param params prepared statement 的位置参数 integer->value ,integer 从1开始
+	 * @param params prepared statement 的位置参数 integer-&gt;value ,integer 从1开始
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public Optional<IRecord> psql2maybe(final String sql, final Map<String, Object> params) {
@@ -3525,7 +3529,7 @@ public class Jdbc implements IManagedStreams {
 	 * 返回的结果集：就是一个中以key值为列名：ColumnLabel
 	 * 
 	 * @param sql         查询语句
-	 * @param params      prepared statement 的位置参数 integer->value ,integer 从1开始
+	 * @param params      prepared statement 的位置参数 integer-&gt;value ,integer 从1开始
 	 * @param targetClass 期待的结果类型的class
 	 * @param <T>         期待的结果类型的
 	 * @return 执行结果集合的 IRecord 列表
@@ -3577,7 +3581,7 @@ public class Jdbc implements IManagedStreams {
 	 * 返回的结果集：就是一个中以key值为列名：ColumnLabel
 	 *
 	 * @param sql    查询语句
-	 * @param params prepared statement的位置参数 序列: 参数序号从1开始。1->xxx,2->yyy..
+	 * @param params prepared statement的位置参数 序列: 参数序号从1开始。1-&lt;xxx,2-&lt;yyy.
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public <T> T psql2get(String sql, IRecord params, Class<T> targetClass) {

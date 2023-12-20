@@ -13,6 +13,9 @@ open module gbench.malonylcoa {
 	exports gbench.util.function;
 	exports gbench.util.io;
 	exports gbench.util.json;
+	exports gbench.util.jdbc;
+	exports gbench.util.jdbc.kvp;
+	exports gbench.util.jdbc.sql;
 	exports gbench.util.lisp;
 	exports gbench.util.math;
 	exports gbench.util.math.algebra;

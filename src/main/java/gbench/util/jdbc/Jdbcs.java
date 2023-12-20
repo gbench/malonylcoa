@@ -153,7 +153,7 @@ public class Jdbcs {
 	 * 这个应该是 最常用的生成结构：自动补充根节点 <br>
 	 *
 	 * 从List&lt;IRecord&gt;结构生成节点树 <br>
-	 * 当rootId 在List<IRecord> 中不存在的时候,在地宫创建一个根节点 <br>
+	 * 当rootId 在List&lt;IRecord&gt; 中不存在的时候,在地宫创建一个根节点 <br>
 	 * REC("id",rootId,"name","根节点","pid",null) 添加到recs之中 <br>
 	 *
 	 * @param recs   节点集合，节点需要包含由id,pid两个字段
@@ -218,7 +218,7 @@ public class Jdbcs {
 	 *
 	 * @param recs   字段书加粗
 	 * @param rootId 根节点id， 根节点是通过字符串即对象的toString然后trim 的形式进行比较的。
-	 * @return 树形结构的根节点： Node &ltIRecordT&gt; 类型的根节点
+	 * @return 树形结构的根节点： Node &lt;IRecordT&gt; 类型的根节点
 	 */
 	public static Node<IRecord> buildTree(final List<IRecord> recs, final Object rootId,
 			final Map<String, ?> mappings) {
@@ -321,7 +321,7 @@ public class Jdbcs {
 	 * 
 	 * @param root 根节点
 	 * @param cs   回调函数 返回 false 终止遍历.
-	 * @throws Throwable
+	 * @throws Exception
 	 */
 	public static <T, U extends Node<T>> void traverse_throws2(final U root, final BiConsumerThrows<U, Integer> cs)
 			throws Exception {
@@ -386,7 +386,7 @@ public class Jdbcs {
 	 * 
 	 * @param root 根节点
 	 * @param cs   回调函数 返回 false 终止遍历.
-	 * @throws Throwable
+	 * @throws Exception
 	 */
 	public static <T> void traverse_throws(final Node<T> root, final BiConsumerThrows<Node<T>, Integer> cs)
 			throws Exception {

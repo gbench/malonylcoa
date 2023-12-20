@@ -15,8 +15,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import gbench.util.data.xls.SimpleExcel;
-import gbench.util.data.xls.StrMatrix;
 import gbench.util.io.FileSystem;
 import gbench.util.jdbc.kvp.IRecord;
 
@@ -224,76 +222,6 @@ public interface IJdbcApp {
 		if (lineS == null)
 			return new HashMap<String, String>();// 返回一个空的namedsqls
 		return namedsqls(lineS);
-	}
-
-	/**
-	 * 加载EXCEL文件
-	 * 
-	 * @param excelFile     excel文件名称
-	 * @param relativeClass excelFile的相对位置：以class的文件为基准
-	 * @return SimpleExcel 对象
-	 */
-	static SimpleExcel loadExcel(final String excelFile, final Class<?> relativeClass) {
-		return SimpleExcel.of(excelFile);
-	}
-
-	/**
-	 * 自动检测excel中的数据区域内容
-	 * 
-	 * @param excelFile     excel文件名称
-	 * @param sheetName     sheet名称
-	 * @param relativeClass excelFile的相对位置：以class的文件为基准
-	 * @return StrMatrix 对象
-	 */
-	static StrMatrix xlsAutoDetect(final String excelFile, final String sheetName, final Class<?> relativeClass) {
-		final var excel = loadExcel(excelFile, relativeClass);
-		final var strmx = excel.autoDetect(sheetName);
-		excel.close();
-		return strmx;
-	}
-
-	/**
-	 * 自动检测excel中的数据区域内容
-	 * 
-	 * @param excelFile     excel文件名称
-	 * @param shtid         sheet的编号从 0开始
-	 * @param relativeClass excelFile的相对位置：以class的文件为基准
-	 * @return StrMatrix 对象
-	 */
-	static StrMatrix xlsAutoDetect(final String excelFile, final int shtid, final Class<?> relativeClass) {
-		final var excel = loadExcel(excelFile, relativeClass);
-		final var strmx = excel.autoDetect(shtid);
-		excel.close();
-		return strmx;
-	}
-
-	/**
-	 * 自动检测excel中的数据区域内容
-	 * 
-	 * @param sheetAddress  path!sheetName,当没有sheetName默认为第一号sheet
-	 *                      例如：clinics.xlsx!cytokines
-	 * @param relativeClass excelFile的相对位置：以class的文件为基准
-	 * @return StrMatrix 对象
-	 */
-	static StrMatrix xlsAutoDetect(final String sheetAddress, final Class<?> relativeClass) {
-		final var ss = sheetAddress.split("[!]+");// 分解出地址内容:[0] 文件路径,[1]:sheetName
-		final var excelFile = ss[0];
-		final var excel = loadExcel(excelFile, relativeClass);
-		final StrMatrix strmx = ss.length > 1 ? excel.autoDetect(ss[1]) : excel.autoDetect(0);
-		excel.close();
-		return strmx;
-	}
-
-	/**
-	 * 自动检测excel中的数据区域内容:并把结果转换 成IRecord类型的 Stream<IRecord>
-	 * 
-	 * @param sheetAddress  path!sheetName,当没有sheetName默认为第一号sheet
-	 *                      例如：clinics.xlsx!cytokines
-	 * @param relativeClass excelFile的相对位置：以class的文件为基准
-	 * @return IRecord类型的Stream<IRecord> 对象
-	 */
-	static Stream<IRecord> sht2recs(final String sheetAddress, final Class<?> relativeClass) {
-		return xlsAutoDetect(sheetAddress, relativeClass).rowS(IRecord::REC);
 	}
 
 	/**

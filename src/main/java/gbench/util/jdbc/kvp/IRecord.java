@@ -7435,10 +7435,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * SUPplier<LinkedList>的一个简写：这是一个容器生运算符 <br>
 	 * 生成一个 列表：使用示例 <br>
 	 * e.collect(supll(Object.class), (List<Object>aa,
-	 * KVPair<String,Object>a)->{aa.add( MFT( "{0}[{1}]", a.key(),a.value() ) );},
-	 * <br>
+	 * KVPair&lt;String,Object&gt;a)-&gt;{aa.add( MFT( "{0}[{1}]", a.key(),a.value()
+	 * ) );}, <br>
 	 * cbll(Object.class) <br>
-	 * ).stream().map(f->f+"").collect(Collectors.joining("*")), <br>
+	 * ).stream().map(f-&lt;f+"").collect(Collectors.joining("*")), <br>
 	 * 
 	 * @param <R>   容器中的元素的类型
 	 * @param clazz 容器中的元素的类型的class
@@ -7452,7 +7452,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * ComBiner<LinkedList> 的一个简写：这是一个操作运算符 e.collect(supll(Object.class),
 	 * (List<Object>aa, KVPair<String,Object>a)->{aa.add( MFT( "{0}[{1}]",
 	 * a.key(),a.value() ) );}, cbll(Object.class)
-	 * ).stream().map(f->f+"").collect(Collectors.joining("*")),
+	 * ).stream().map(f-&lt;f+"").collect(Collectors.joining("*")),
 	 * 
 	 * @param <R>   容器中的元素的类型
 	 * @param clazz 容器中的元素的类型的class
