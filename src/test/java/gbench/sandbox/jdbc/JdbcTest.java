@@ -11,6 +11,7 @@ import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.Jdbc;
 import gbench.util.jdbc.annotation.JdbcConfig;
+import gbench.util.jdbc.sql.SQL;
 
 /**
  * 
@@ -40,7 +41,7 @@ public class JdbcTest {
 	 * @author gbench
 	 *
 	 */
-	@JdbcConfig(url = "jdbc:mysql://localhost:3309/erp?serverTimezone=Asia/Shanghai", user = "root", password = "123456")
+	@JdbcConfig(url = "jdbc:h2:mem:erp;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", user = "root", password = "123456")
 	interface MySQL extends IMySQL { // 数据接口
 	}
 
@@ -50,10 +51,17 @@ public class JdbcTest {
 		println("db", mysql.getDbName());
 		final var jdbc = mysql.getProxy().findOne(Jdbc.class);
 		jdbc.withTransaction(sess -> {
+			final var proto = REC("id", 1, "name", "zhangsan", "address", "shanghai");
+			final var sql = SQL.of("t_user", proto);
+			sess.sqlexecute(sql.createTable().get(2));
+			for (int i = 0; i < 10; i++) {
+				final var rec = proto.derive("id", i, "name", String.format("%s%d", proto.str("name"), i));
+				sess.sql2execute(SQL.of("t_user", rec).insert());
+			}
 			println(sess.sql2u("show tables", dfmclc));
 		});
 		println("------------------------------------------------------");
-		final var dfm = mysql.sqlqueryS("select * from t_contract limit ##cnt", REC("cnt", 5)).collect(dfmclc);
+		final var dfm = mysql.sqlqueryS("select * from t_user limit ##cnt", REC("cnt", 5)).collect(dfmclc);
 		println(dfm);
 	}
 
