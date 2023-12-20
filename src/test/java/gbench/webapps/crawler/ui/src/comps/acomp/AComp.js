@@ -40,7 +40,7 @@ const AComp = {
 		http_post("/h5/api/component", { name: "AComp" }).then(res => {
 			const data = res.data.data;
 			this.state.name = data.name;
-			this.component = data.name + " @ " + data.time;
+			this.component = data.name +" In " + data.service + " @ " + data.time;
 		});
 
 		// sql data 
