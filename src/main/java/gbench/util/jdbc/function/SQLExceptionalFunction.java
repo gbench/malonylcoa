@@ -1,4 +1,4 @@
-package gbench.util.jdbc;
+package gbench.util.jdbc.function;
 
 import java.sql.SQLException;
 
@@ -9,6 +9,6 @@ import java.sql.SQLException;
  * @param <U> 返回类型
  * @author xuqinghua
  */
-public interface FunctionWithSQLException<T, U> {
-	U apply(T t) throws SQLException;
+public interface SQLExceptionalFunction<T, U> {
+	U apply(final T t) throws SQLException;
 }

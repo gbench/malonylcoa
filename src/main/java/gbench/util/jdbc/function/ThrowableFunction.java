@@ -1,4 +1,4 @@
-package gbench.util.jdbc;
+package gbench.util.jdbc.function;
 
 /**
  * 带有抛出异常的函数
@@ -7,6 +7,6 @@ package gbench.util.jdbc;
  * @param <U> 返回类型
  * @author xuqinghua
  */
-public interface FunctionWithException<T, U> {
-	U apply(T t) throws Exception;
+public interface ThrowableFunction<T, U> {
+	U apply(final T t) throws Throwable;
 }

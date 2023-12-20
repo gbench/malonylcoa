@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import gbench.util.jdbc.Jdbc.SQL_MODE;
+import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.sql.SQL;
 import gbench.util.jdbc.sql.Term;
@@ -161,7 +162,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 * @throws Exception
 	 */
-	default <X> IJdbcSession<T, X> bind(final FunctionWithException<D, X> mapper) throws SQLException, Exception {
+	default <X> IJdbcSession<T, X> bind(final ExceptionalFunction<D, X> mapper) throws SQLException, Exception {
 
 		final var d = this.getData();// 提取monad中的数据
 		return d == null ? null : this.fmap(d, mapper);// 这句是关键如果 当前数据为null 则不再做继续传递的操作。
@@ -183,7 +184,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 * @throws Exception
 	 */
-	default <X> Optional<IJdbcSession<T, X>> bindOpt(final FunctionWithException<D, X> mapper)
+	default <X> Optional<IJdbcSession<T, X>> bindOpt(final ExceptionalFunction<D, X> mapper)
 			throws SQLException, Exception {
 		return Optional.ofNullable(this.bind(mapper));
 	}
@@ -213,7 +214,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 * @throws Exception
 	 */
-	default <X> IJdbcSession<T, X> monad(final FunctionWithException<D, X> mapper) throws SQLException, Exception {
+	default <X> IJdbcSession<T, X> monad(final ExceptionalFunction<D, X> mapper) throws SQLException, Exception {
 
 		return fmap(this.getData(), mapper);
 	}
@@ -229,7 +230,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 * @throws Exception
 	 */
-	default <X, S> IJdbcSession<T, X> monad(final S start, final FunctionWithException<S, X> mapper)
+	default <X, S> IJdbcSession<T, X> monad(final S start, final ExceptionalFunction<S, X> mapper)
 			throws SQLException, Exception {
 
 		return fmap(start, mapper);
@@ -246,7 +247,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 * @throws Exception
 	 */
-	default <X, S> IJdbcSession<T, X> fmap(final S start, final FunctionWithException<S, X> mapper)
+	default <X, S> IJdbcSession<T, X> fmap(final S start, final ExceptionalFunction<S, X> mapper)
 			throws SQLException, Exception {
 
 		// s2d 是对 new IJdbcSession<T, X>() 中的数据 data 字段的初始化。

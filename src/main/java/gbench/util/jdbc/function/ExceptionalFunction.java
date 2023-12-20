@@ -18,5 +18,5 @@ public interface ExceptionalFunction<T, U> {
 	 * @throws Exception 异常
 	 * @throws Throwable 抛出物
 	 */
-	U apply(T t) throws Exception, Throwable;
+	U apply(final T t) throws Exception;
 }

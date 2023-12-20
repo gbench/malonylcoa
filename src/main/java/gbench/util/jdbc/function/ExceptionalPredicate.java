@@ -17,5 +17,5 @@ public interface ExceptionalPredicate<T> {
 	 * @throws Exception 异常
 	 * @throws Throwable 抛出物
 	 */
-	Boolean test(T t) throws Exception, Throwable;
+	Boolean test(final T t) throws Exception;
 }

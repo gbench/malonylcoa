@@ -17,5 +17,5 @@ public interface ExceptionalSupplier<T> {
 	 * @throws Exception 异常
 	 * @throws Throwable 抛出物
 	 */
-	T get() throws Exception, Throwable;
+	T get() throws Exception;
 }

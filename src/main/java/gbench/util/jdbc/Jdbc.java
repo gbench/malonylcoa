@@ -50,6 +50,8 @@ import gbench.util.jdbc.annotation.JdbcExecute;
 import gbench.util.jdbc.annotation.JdbcPreparedExecute;
 import gbench.util.jdbc.annotation.JdbcPreparedQuery;
 import gbench.util.jdbc.annotation.JdbcQuery;
+import gbench.util.jdbc.function.SQLExceptionalFunction;
+import gbench.util.jdbc.function.ThrowableFunction;
 import gbench.util.jdbc.json.CronTime;
 import gbench.util.jdbc.json.Json;
 import gbench.util.jdbc.kvp.Column;
@@ -2838,7 +2840,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws Throwable 异常原因。使用Throwable的好处是可以很方便的进行二次异常封装（兼容多种异常类型）这样就可以建立起与JDBC
 	 *                   SQL异常的最完整偶联机制。
 	 */
-	public <T> T pconn_query_throws(final Connection conn, final FunctionWithThrowable<ResultSet, T> transformer,
+	public <T> T pconn_query_throws(final Connection conn, final ThrowableFunction<ResultSet, T> transformer,
 			final String sql, final Object[] params) throws Throwable {
 
 		PreparedStatement pstmt = null;
@@ -2909,7 +2911,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 * @throws SQLException
 	 */
-	public <T> T withConnection_throws(final FunctionWithThrowable<Connection, T> callbacks,
+	public <T> T withConnection_throws(final ThrowableFunction<Connection, T> callbacks,
 			final Connection connection) throws SQLException {
 
 		final var ar = new AtomicReference<T>(); // 单值容器
@@ -2935,7 +2937,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param <T>       回调函数的返回值类型
 	 * @return 执行结果集合的 IRecord 列表
 	 */
-	public <T> T withConnection(final FunctionWithThrowable<Connection, T> callbacks) {
+	public <T> T withConnection(final ThrowableFunction<Connection, T> callbacks) {
 
 		T res = null;
 		try {
@@ -3985,7 +3987,7 @@ public class Jdbc implements IManagedStreams {
 			ArrayList<String[]> jks = null; // json 值的列名集合:展开字段序列，索引从0开始，0,1,2 依次对应 第一，第二，第三等．
 
 			// 把rec(含有复合字段：jsn的多key字段）cook(转换)成 扁平的结构
-			FunctionWithSQLException<IRecord, IRecord> lambda_cook = rec -> {// 默认为需要 展开 含有 展开列名
+			SQLExceptionalFunction<IRecord, IRecord> lambda_cook = rec -> {// 默认为需要 展开 含有 展开列名
 																				// 即jks不是全部为null,含有json值列名集合
 				for (int i = 0; i < n; i++) {// 逐列添加数据
 					final var label = labels.get(i);// 列名
