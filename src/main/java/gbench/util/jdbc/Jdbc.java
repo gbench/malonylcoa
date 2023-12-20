@@ -806,7 +806,7 @@ public class Jdbc implements IManagedStreams {
 	 *                    MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 *
 	 * @param interceptor SqlInterceptor&lt;List&lt;IRecord&gt;&gt;:方法执行的接获函数,返回一个
-	 *                    List<IRecord>,如果非空，表示完成接获
+	 *                    List&lt;IRecord&gt;,如果非空，表示完成接获
 	 *                    代理对象的执行结果就是该interceptor所接获的结果，反之就是 就会继续执行。后续的操作。<br>
 	 *                    是一个(m,a,p,j)-&gt;p 的形式<br>
 	 *                    method(m) 方法对象,<br>

@@ -666,7 +666,7 @@ public class Jdbcs {
 	 * b:[1, 2, 3, 9, 10, 11] <br>
 	 * -------------------------------- <br>
 	 * 对比： <br>
-	 * var a = new LinkedList<Integer>();// 使用链表方便进行拆解。 <br>
+	 * var a = new LinkedList&lt;Integer&gt;();// 使用链表方便进行拆解。 <br>
 	 * a.addAll(asList(0,1,2,3,4,5,6,7)); <br>
 	 * var b = a.subList(1, 4);// 返回的是一个视图 <br>
 	 * b.addAll(asList(9,10,11)); <br>
@@ -1788,7 +1788,7 @@ public class Jdbcs {
 	 * 
 	 * @param start  开始数值
 	 * @param step   步长
-	 * @param tester 测试函数:(i,t)-> true|false, i 索引从start开始，t 当前的数值。
+	 * @param tester 测试函数:(i,t)-&gt; true|false, i 索引从start开始，t 当前的数值。
 	 * @return
 	 */
 	public static <T> Predicate<T> i_for(long start, long step, final BiPredicate<Long, T> tester) {
@@ -1799,8 +1799,8 @@ public class Jdbcs {
 	/**
 	 * 包装一个计数器:计数变量从init开始,每次增加 step
 	 * 
-	 * Stream.iterate(0, i-&t;i+1).takeWhile(i_for(6)).forEach(System.out::println);
-	 * Stream.iterate(0,t-&gt;t<6, i-&gt;i+1).forEach(System.out::println);
+	 * Stream.iterate(0, i-&lt;i+1).takeWhile(i_for(6)).forEach(System.out::println);
+	 * Stream.iterate(0,t-&gt;t&lt;6, i-&gt;i+1).forEach(System.out::println);
 	 * 
 	 * @param n 序列的长度
 	 * @return Predicate 的谓词判断
@@ -1832,7 +1832,7 @@ public class Jdbcs {
 	/**
 	 * 为一个类型为T的流中的每个元素 <br>
 	 * 分配一个索引号，索引号从0开始 Key-&gt;Value:<br>
-	 * 0-&t;t1,1-&gt;t1,2-&gt;t2,...,n-1-&gt;tn-1,... <br>
+	 * 0-&lt;t1,1-&gt;t1,2-&gt;t2,...,n-1-&gt;tn-1,... <br>
 	 * NATS(10).map(kvp()).forEach(System.out::println);<br>
 	 * <br>
 	 * 索引号 从0开始
@@ -2062,13 +2062,13 @@ public class Jdbcs {
 
 	/**
 	 * comprehensive(LittleTree::NN,"1:10:2") 示例程序 数组的comprehensive 用法示例
-	 * comprehensive(s->s.split(","),"1,2,3,4","a,b,c,d").forEach(System.out::println);
+	 * comprehensive(s-&gt;s.split(","),"1,2,3,4","a,b,c,d").forEach(System.out::println);
 	 * 
 	 * @param <S>    源数据类型
 	 * @param <T>    目标的数据元素类型
 	 * @param parser S对象解析函数
 	 * @param ss     数据源集合。
-	 * @return List<IRecord> 结构的元素 结合
+	 * @return Stream&lt;IRecord&gt; 结构的IRecord流 ，每个IRecord元素是倒序的。
 	 */
 	@SafeVarargs
 	public static <S, T> List<IRecord> comprehensive(final Function<S, T[]> parser, final S... ss) {
@@ -2079,13 +2079,13 @@ public class Jdbcs {
 	/**
 	 * comprehensive 的别名 comprehensive(LittleTree::NN,"1:10:2") 示例程序
 	 * 数组的comprehensive 用法示例
-	 * comprehensive(s->s.split(","),"1,2,3,4","a,b,c,d").forEach(System.out::println);
+	 * comprehensive(s-&gt;s.split(","),"1,2,3,4","a,b,c,d").forEach(System.out::println);
 	 * 
 	 * @param <S>    源数据类型
 	 * @param <T>    目标的数据元素类型
 	 * @param parser S对象解析函数
 	 * @param ss     数据源集合。
-	 * @return List<IRecord> 结构的元素 结合
+	 * @return Stream&lt;IRecord&gt; 结构的IRecord流 ，每个IRecord元素是倒序的。
 	 */
 	@SafeVarargs
 	public static <S, T> List<IRecord> cph(final Function<S, T[]> parser, final S... ss) {
@@ -2097,14 +2097,14 @@ public class Jdbcs {
 	 * comprehensive(LittleTree::NN,"1:10:2") 示例程序 <br>
 	 * 数组的comprehensive <br>
 	 * 用法示例 <br>
-	 * comprehensive(s->s.split(","),"1,2,3,4","a,b,c,d").forEach(System.out::println);
+	 * comprehensive(s-&gt;s.split(","),"1,2,3,4","a,b,c,d").forEach(System.out::println);
 	 * <br>
 	 * 
 	 * @param <S>    源数据类型
 	 * @param <T>    目标的数据元素类型
 	 * @param parser S对象解析函数
 	 * @param ss     数据源集合。
-	 * @return Stream<IRecord> 结构的IRecord流 ，每个IRecord元素是倒序的。
+	 * @return Stream&lt;IRecord&gt; 结构的IRecord流 ，每个IRecord元素是倒序的。
 	 */
 	@SafeVarargs
 	public static <S, T> Stream<IRecord> cph2(final Function<S, T[]> parser, final S... ss) {

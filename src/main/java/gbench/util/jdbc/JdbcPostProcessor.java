@@ -16,7 +16,7 @@ public interface JdbcPostProcessor<T> {
 	 * 后续处理的方法
 	 *
 	 * @param result jdbc 的处理结果
-	 * @return <T> 先前的Jdbc的处理结果。这个类型是根据 接口返回类型而侦测出来的，一般不需要给予更改。
+	 * @return 先前的Jdbc的处理结果。这个类型是根据 接口返回类型而侦测出来的，一般不需要给予更改。
 	 */
 	Object process(final Method method, final IRecord params, final Jdbc jdbc, final T result);
 }

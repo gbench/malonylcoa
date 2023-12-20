@@ -2028,7 +2028,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * 当且仅当key值不存在的才给予:compute,否则直接返回键值，属于名称来源于 Java Map compute 就是获取并变换设置。相当于
-	 * get&set: <br>
+	 * get&amp;set: <br>
 	 * final var value = this.get(idx);<br>
 	 * if(value!=null)return (U)value; <br>
 	 * final var u = mapper.apply(key); <br>
@@ -2764,7 +2764,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这是模仿tensorflow 的session.run 把当前IRecord 视作一个 ops
 	 * 集合{key0,op0,key1:op1,key2:op2,...}<br>
 	 * 进行一个这样的运算:{key0:op0.apply(x,y),key1:op1.apply(x,y),key2:op2.apply(x,y)} <br>
-	 * 将fx视为一个二元函数列表：为每个二元函数 apply 参数 x,y并求职 <br>
+	 * 将fx视为一个二元函数列表：为每个二元函数 apply 参数 x,y并求值 <br>
 	 * 
 	 * @param x 输入参数 x
 	 * @param y 输入参数 y
@@ -2902,7 +2902,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>    检索的目标对象的类型
 	 * @param <U>    变换结果
 	 * @param clazz  目标值的类型
-	 * @param mapper T->U 的变换函数
+	 * @param mapper T-&gt;U 的变换函数
 	 * @return 检索成功返回该值，不成功 null
 	 */
 	default <T, U> U findOne2(Class<T> clazz, Function<T, U> mapper) {
@@ -2922,13 +2922,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 普通函数求职<br>
+	 * 普通函数求值<br>
 	 * 强制类型转换，把key 作为T 类型数据,转换成函数,一般用于lambda表达式提取<br>
 	 * 
 	 * @param <T> 函数的参数类型
 	 * @param <U> 函数返回值类型
-	 * @param var dm = new DataMatrix&lt;&gt; (rec.rowL(),Integer.class); 就构造了一个
-	 *            DataMatrix
+	 * @param key 键名
 	 * @param arg 字段名, 提交各key:t2u 函数的 参数对象
 	 * @return 调用与key绑定的t2u.apply(arg)
 	 */
@@ -2946,8 +2945,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <FUNC>       函数类型
 	 * @param <U>          目标结果类型
-	 * @param key          var dm = new DataMatrix&lt;&gt;
-	 *                     (rec.rowL(),Integer.class); 就构造了一个 DataMatrix
+	 * @param key          键名
 	 * @param functorClass 函数类
 	 * @param args         函数的实际参数
 	 * @return 调用与key绑定的t2u.apply(arg)
@@ -2986,7 +2984,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 强制类型转换，<br>
 	 * 一般用于lambda表达式类型的值<br>
-	 * 把key 作为T->U类型函数:t2u<br>
+	 * 把key 作为T-&gt;U类型函数:t2u<br>
 	 * 返回一个 应用了 arg:T的结果u:U类型 ,t2u.apply(arg)<br>
 	 * <br>
 	 * 
@@ -3009,7 +3007,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 强制类型转换，<br>
 	 * 一般用于lambda表达式类型的值<br>
-	 * 把key 作为T->U类型函数:t2u<br>
+	 * 把key 作为T-&gt;U类型函数:t2u<br>
 	 * 返回一个 应用了 arg:T的结果u:U类型 ,t2u.apply(arg)<br>
 	 * <br>
 	 * 
@@ -4419,7 +4417,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 否则 生成一个 Map的复制品(clone) <br>
 	 *
 	 * @param key 需要进行分解的字段名：一般为json结构的列
-	 * @return Map<String, Object>
+	 * @return Map&lt;String, Object&gt;
 	 */
 	@SuppressWarnings("unchecked")
 	default Map<String, Object> asMap(final String key) {
@@ -4446,7 +4444,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把idx列转换成Map结构
 	 *
 	 * @param idx 列索引从0开始
-	 * @return Map<String, Object>
+	 * @return Map&lt;String, Object&gt;
 	 */
 	default Map<String, Object> asMap(final int idx) {
 		final String key = this.idx2key(idx);
@@ -6073,8 +6071,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * S:结果类型为Stream <br>
 	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
 	 * <br>
-	 * var dm = new DataMatrix<> (rec.rr2rowS(),Integer.class); 就构造了一个 DataMatrix
-	 * 对象。
+	 * var dm = new DataMatrix&lt;&gt; (rec.rowS(),Integer.class);
+	 * (rec.rr2rowS(),Integer.class); 就构造了一个 DataMatrix 对象。
 	 * 
 	 * @return 生成一个hashmap 的集合
 	 */
@@ -6091,7 +6089,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * S:结果类型为Stream <br>
 	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
 	 * <br>
-	 * var dm = new DataMatrix<> (rec.rowS(),Integer.class); 就构造了一个 DataMatrix
+	 * var dm = new DataMatrix&lt;&gt; (rec.rowS(),Integer.class); 就构造了一个 DataMatrix
 	 * 对象。<br>
 	 * 
 	 * @param <T>   值类型
@@ -6404,7 +6402,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 提取列值集合：通通返回List &lt;Object&gt
+	 * 提取列值集合：通通返回List &lt;Object&gt;
 	 * 
 	 * @return 列集合每个列族使一个U类型的列表
 	 */
@@ -6417,7 +6415,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *
 	 * @param <T>  源数据列表的元素类型
 	 * @param <U>  目标列的结果类型
-	 * @param tt2u 列值转换函数:tt->u
+	 * @param tt2u 列值转换函数:tt-&gt;u
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
 	default <T, U> List<U> columnL(Function<List<T>, U> tt2u) {
@@ -6438,7 +6436,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *
 	 * @param <T>  源数据列表的元素类型
 	 * @param <U>  目标列的结果类型
-	 * @param tt2u 列值转换函数:tt->u
+	 * @param tt2u 列值转换函数:tt-&gt;u
 	 * @return 列集合每个列族使一个IRecord类型的流
 	 */
 	@SuppressWarnings("unchecked")
@@ -9092,10 +9090,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 制作一个Map<String,Object>
+	 * 制作一个Map&lt;String,Object&gt;
 	 * 
 	 * @param tt 列表元素
-	 * @return Map<String,Object>
+	 * @return Map&lt;String,Object&gt;
 	 */
 	static Map<String, Object> M(final Object... tt) {
 		return _REC(tt).toMap();
@@ -9110,7 +9108,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 把一个 IRecord节点 转换成 一个 树形结构 Node &lt String &gt;
+	 * 把一个 IRecord节点 转换成 一个 树形结构 Node &lt; String &gt;
 	 * 
 	 * @param rec      IRecord 对象
 	 * @param rootName 根节点名称 , 默认值(null) 为 "root"
@@ -9247,7 +9245,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>        Stream 元素类型
 	 * @param <K>        classifier 生的K的类型
 	 * 
-	 * @return Map& lt;K,List&gt;K&gt;&gt;
+	 * @return Map&lt;K,List&gt;K&gt;&gt;
 	 */
 	static <T, K> Collector<T, ?, Map<K, List<T>>> groupby(final Function<T, K> classifier) {
 		return Collectors.groupingBy(classifier);
@@ -9773,7 +9771,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 把一个函数t2u 应用到一个 List<T>类型的容器类型
+	 * 把一个函数t2u 应用到一个 List&lt;T&gt;类型的容器类型
 	 * 
 	 * @param <T> 列表的元素的类型
 	 * @param <U> 函数t2u的返回结果
@@ -9839,7 +9837,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>           元素类型
 	 * @param <U>           变换结果类型
 	 * @param stream        元素的流数据
-	 * @param fx            真前缀的变换函数:tt->u
+	 * @param fx            真前缀的变换函数:tt-&gt;u
 	 * @param reverse       是否对数据进行倒转
 	 * @param include_empty 是否包含空列表。true 表示包含空集合
 	 * @return List&lt;U&gt;
@@ -9873,7 +9871,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>     元素类型
 	 * @param <U>     fx:变换结果类型
 	 * @param stream  元素的流数据
-	 * @param fx      真前缀的变换函数:tt->u
+	 * @param fx      真前缀的变换函数:tt-&gt;u
 	 * @param reverse 是否对数据进行倒转
 	 * @return List&lt;U&gt; U的集合
 	 */
@@ -9888,7 +9886,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>    元素类型
 	 * @param <U>    变换结果类型
 	 * @param stream 元素的流数据
-	 * @param fx     真前缀的变换函数:tt->u
+	 * @param fx     真前缀的变换函数:tt-&gt;u
 	 * @return List&lt;U&gt; U 的集合
 	 */
 	static <T, U> List<U> scan(final Stream<T> stream, final Function<List<T>, U> fx) {
@@ -9906,7 +9904,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>         目标类型数据的class
 	 * @param targetClass 目标类型
-	 * @return obj->T 的实例函数
+	 * @return obj-&gt;T 的实例函数
 	 */
 	static <T> Function<Object, T> coerce(final Class<T> targetClass) {
 		return obj -> IRecord.obj2target(obj, targetClass);// 创立一个 key为0的值为为obj的recourd 然后使用IRecord的类型转换方法进行类型转换。
