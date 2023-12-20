@@ -1,12 +1,14 @@
 package gbench.webapps.world.api.controller;
 
 import static gbench.util.lisp.IRecord.REC;
+import static java.text.MessageFormat.format;
 import static java.time.LocalDateTime.now;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,17 +25,34 @@ import reactor.core.publisher.Mono;
 public class ApiController {
 
 	/**
+	 * 模块信息 <br>
+	 * <p>
+	 * http://localhost:6010/api/info
+	 *
+	 * @return IRecord
+	 */
+	@RequestMapping("info")
+	public Mono<IRecord> info() {
+		return Mono.just(REC("code", "0", "data", //
+				REC("service", format("{0}:{1}", appname, port), //
+						"time", now())));
+	}
+
+	/**
 	 * 提取组件模块 <br>
-	 * 
+	 * <p>
 	 * http://localhost:6010/api/component
-	 * 
+	 *
 	 * @return IRecord
 	 */
 	@RequestMapping("component")
 	public Mono<IRecord> component(final @Param String name) {
 		return Mono.just(REC("code", "0", "data", //
-				REC("name", Optional.ofNullable(name).map(e -> e.matches("^\\s*$") ? null : e)
-						.orElse("UNNAMED-" + UUID.randomUUID()), "time", now())));
+				REC("name",
+						Optional.ofNullable(name).map(e -> e.matches("^\\s*$") ? null : e)
+								.orElse("UNNAMED-" + UUID.randomUUID()), //
+						"service", format("{0}:{1}", appname, port), //
+						"time", now())));
 	}
 
 	/**
@@ -53,5 +72,10 @@ public class ApiController {
 
 	@Autowired
 	private MyDataApp dataApp;
+
+	@Value("${server.port}")
+	private String port;
+	@Value("${spring.application.name}")
+	private String appname;
 
 }
