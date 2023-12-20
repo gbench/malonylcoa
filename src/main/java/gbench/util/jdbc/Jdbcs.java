@@ -2169,7 +2169,7 @@ public class Jdbcs {
 	 * 构造出一个可以捕获抛出异常的一元函数 <br>
 	 * 
 	 * 用法示例：<br>
-	 * Stream.of("trycach用法示例").forEach(line->{ // 书写一行数据 <br>
+	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
 	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
 	 * 构造函数 <br>
@@ -2203,7 +2203,7 @@ public class Jdbcs {
 	/**
 	 * 构造出一个可以捕获抛出异常的一元消费函数 <br>
 	 * 用法示例：<br>
-	 * Stream.of("trycach用法示例").forEach(line->{ // 书写一行数据 <br>
+	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
 	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
 	 * 构造函数 <br>
@@ -2225,7 +2225,7 @@ public class Jdbcs {
 	/**
 	 * 构造出一个可以捕获抛出异常的一元消费函数 <br>
 	 * 用法示例：<br>
-	 * Stream.of("trycach用法示例").forEach(line->{ // 书写一行数据 <br>
+	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
 	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
 	 * 构造函数 <br>
@@ -2254,7 +2254,7 @@ public class Jdbcs {
 	 * 构造出一个可以捕获抛出异常的一元函数 <br>
 	 * 
 	 * 用法示例：<br>
-	 * Stream.of("trycach用法示例").forEach(line->{ // 书写一行数据 <br>
+	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
 	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
 	 * 构造函数 <br>
@@ -2385,7 +2385,7 @@ public class Jdbcs {
 	 * 组合两个函数 <br>
 	 * 
 	 * 用法示例：<br>
-	 * Stream.of("trycach用法示例").forEach(line->{ // 书写一行数据 <br>
+	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
 	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
 	 * 构造函数 <br>

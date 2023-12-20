@@ -391,7 +391,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param params     sharp变量的形参与实际参数的对应关系
 	 * @param collector  归集器 [rec]-&gt;u
 	 * @return U 类型的结果
-	 * @throws SQLException;
+	 * @throws SQLException SQLException
 	 */
 	default <U> U sql2u(final String sqlpattern, final IRecord params, final Collector<IRecord, ?, U> collector)
 			throws SQLException {
@@ -622,7 +622,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param params     sharp变量的形参与实际参数的对应关系
 	 * @param spp        sqlpattern 的解释器
 	 * @return IRecord 类型的结果集合
-	 * @throws Exception
+	 * @throws SQLException SQLException
 	 */
 	default List<IRecord> sql2records(final String sqlpattern, final IRecord params, final SqlPatternPreprocessor spp)
 			throws SQLException {
@@ -1148,7 +1148,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param params     prepared sql 语句中占位符参数的值集合，位置从1开始
 	 * @param collector  归集器 [rec]-&gt;u
 	 * @return U 类型的结果
-	 * @throws SQLException;
+	 * @throws SQLException SQLException
 	 */
 	default <U> U psql2u(final String sqlpattern, final Map<Integer, ?> params,
 			final Collector<IRecord, ?, U> collector) throws SQLException {

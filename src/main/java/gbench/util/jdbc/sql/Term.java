@@ -42,7 +42,6 @@ public class Term {
 	 * 符号处理器
 	 * 
 	 * @param data 数据字符串
-	 * @return s->bool 判断谓词
 	 */
 	public final Predicate<String> symbol_handler = (final String data) -> {
 		final var SYMBOL_PATTERN = "\\s*([_$a-z][a-z0-9]*)\\s*";// 符号模式
@@ -60,7 +59,6 @@ public class Term {
 	 * foreach 的处理
 	 * 
 	 * @param data 数据字符串
-	 * @return s->bool 判断谓词
 	 */
 	public final Predicate<String> foreach_handler = (final String data) -> {
 		final var FOREACH_PATTERN = "foreach\\s+([a-z_]+)\\s+in\\s+([a-z%-_]+)\\s+(.+)";// foreach 模式
@@ -93,8 +91,7 @@ public class Term {
 	/**
 	 * 符号处理器
 	 * 
-	 * @param data 源数据
-	 * @return s->bool 判断谓词
+	 * data 源数据
 	 */
 	public final Predicate<String> where_handler = (final String data) -> {
 		final String WHERE_PATTERN = "where\\s+(.+)";// foreach 模式
@@ -301,7 +298,7 @@ public class Term {
 		/**
 		 * SQL语句格式化输出
 		 * 
-		 * @param map 参数列表 key->value
+		 * @param map 参数列表 key-&gt;value
 		 * @return 字符换
 		 */
 		public String toString(final Map<String, Object> map) {
@@ -500,8 +497,7 @@ public class Term {
 					return foreachExpr;
 				final Class<?> entriesCls = entriesObject.getClass();
 				if (entriesObject instanceof Collection || entriesCls.isArray()) {
-					final Collection<Object> entries = entriesCls.isArray()
-							? Arrays.asList((Object[]) entriesObject)
+					final Collection<Object> entries = entriesCls.isArray() ? Arrays.asList((Object[]) entriesObject)
 							: (Collection<Object>) entriesObject;
 					if (entries.size() > 0) {// 集合类非空
 						final var opt = entries.stream().filter(entry -> !(entry instanceof IRecord)).findAny(); // 是否存在非

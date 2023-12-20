@@ -102,7 +102,7 @@ public class SimpleRecord implements IRecord {
 	/**
 	 * 键值对儿的流
 	 * 
-	 * @return Stream<KVPair<String,Object>> 的流
+	 * @return Stream&lt;KVPair&lt;String,Object&gt;&gt; 的流
 	 */
 	@Override
 	public Stream<KVPair<String, Object>> stream() {

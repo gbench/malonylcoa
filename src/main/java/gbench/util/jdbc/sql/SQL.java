@@ -499,7 +499,7 @@ public class SQL {
 	 * 
 	 * @return [ <br>
 	 *         0:drop table, <br>
-	 *         1:drop table if exists & create, <br>
+	 *         1:drop table if exists &amp; create, <br>
 	 *         2:create, <br>
 	 *         3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中, 索引3就变成了唯一约束了,后续的项目也会提前),
 	 *         <br>
@@ -521,7 +521,7 @@ public class SQL {
 	 * @param intkey_autocrement 对于int 类型的key 是否增加自增长
 	 * @return [ <br>
 	 *         0:drop table, <br>
-	 *         1:drop table if exists & create, <br>
+	 *         1:drop table if exists &amp; create, <br>
 	 *         2:create, <br>
 	 *         3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中, 索引3就变成了唯一约束了,后续的项目也会提前),
 	 *         <br>
