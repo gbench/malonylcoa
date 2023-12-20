@@ -141,7 +141,7 @@ public class SQL {
 	 * 而不管该字段是否是真的为为数字类型，即使是字符串也不加引号。会覆盖掉%的规则 <br>
 	 * 例子： kvset 中的字段标识符的 正则表达式的格式为：[_0-9a-z\\$]+,即java 中标识符的规则。 <br>
 	 * 其中以$结尾的字段一般用于标识这是一个数字类型的字段。<br>
-	 * 1、List<IRecord> kvset = Arrays.asList( <br>
+	 * 1、List&lt;IRecord&gt; kvset = Arrays.asList( <br>
 	 * REC2("name","id","value",437), <br>
 	 * REC2("name","name","value","张三"), <br>
 	 * REC2("name","sex","value","男"), <br>
@@ -176,7 +176,7 @@ public class SQL {
 	 * select * from t_student where id in ( ${ foreach id in users id } ) <br>
 	 * 生成: select * from t_student where id in ('1', '2', '3', '4' ) <br>
 	 *
-	 * @param rec 被替换数据的 键值对
+	 * @param rec 被替换数据的键值对
 	 * @return 替换后的sql语句。
 	 */
 	public String string(final IRecord rec) {
@@ -193,8 +193,8 @@ public class SQL {
 	 */
 	public String string(final Map<String, Object> map) {
 		String s = this.string();
-		final Function<Object, String> escape = (obj) -> (obj + "").replace("(", "\\(").replace(")", "\\)")
-				.replace("$", "\\$");
+		final Function<Object, String> escape = (obj) -> (obj + "").replace("(", "\\(").replace(")", "\\)").replace("$",
+				"\\$");
 		for (Term term : this.terms()) {
 			// try {// 确保出现错误依旧可以运行
 			if (term.getType() == Term.TermType.SYMBOL) {// 记录符号
@@ -471,7 +471,6 @@ public class SQL {
 	/**
 	 * 生成select的sql语句
 	 * 
-	 * @param flds select 的字段列表，其中字符串中的 ' 和 “ 会被转义
 	 * @return select * from name where sqlctx
 	 */
 	public String select() {
@@ -818,8 +817,7 @@ public class SQL {
 
 		buffer = new StringBuffer();
 		buffer.append("create table ").append(table).append("(\n\t");
-		String flds = rec.kvs().stream().map(e -> e.key() + " " + e.value() + "")
-				.collect(Collectors.joining(",\n\t"));
+		String flds = rec.kvs().stream().map(e -> e.key() + " " + e.value() + "").collect(Collectors.joining(",\n\t"));
 		buffer.append(flds);
 		buffer.append("\n)");
 		buffer.append(" comment '").append(brief).append("';");

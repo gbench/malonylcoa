@@ -5151,7 +5151,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T> fx 目标结果类型
 	 * @param <X> fx 函数的源数据类型
 	 * @param fx  真后缀的变换函数: [(k,x)]-&gt;t
-	 * @return List<T> fx真后缀处理结果的集合
+	 * @return List&lt;T&gt; fx真后缀处理结果的集合
 	 */
 	@SuppressWarnings("unchecked")
 	default <X, T> List<T> scanr(final Function<List<KVPair<String, X>>, T> fx) {
@@ -5166,7 +5166,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T> fx 目标结果类型
 	 * @param <X> fx 函数的源数据类型
 	 * @param fx  真后缀的变换函数: xx-&gt;t
-	 * @return List<T> fx真后缀处理结果的集合
+	 * @return List&lt;T&gt; fx真后缀处理结果的集合
 	 */
 	default <X, T> List<T> scanr2(final Function<List<X>, T> fx) {
 		return this.scanr2(fx, e -> e);
@@ -8043,20 +8043,20 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * 示例:<br>
 	 * REC3(REC("a/b/c",123,"a/b/d",456),REC("e/f",7,"g",8)).dfs_forone((p,v)->{<br>
-	 * System.out.println(p+"--->"+v); <br>
+	 * System.out.println(p+"---&gt;"+v); <br>
 	 * });<br>
 	 * 结构如下:<br>
-	 * /g--->8 <br>
-	 * /a/b/c--->123 <br>
-	 * /a/b/d--->456 <br>
-	 * /e/f--->7 <br>
+	 * /g---&gt;8 <br>
+	 * /a/b/c---&gt;123 <br>
+	 * /a/b/d---&gt;456 <br>
+	 * /e/f---&gt;7 <br>
 	 * <br>
 	 * 注意:<br>
 	 * 不同Record 之间的同名键名 会彼此覆盖:比如 REC3(REC("a",123,"a/b/c",234)). <br>
-	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -> { <br>
-	 * System.out.println(p + "--->" + v); <br>
+	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -&gt; { <br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * }); <br>
-	 * 会只生成 /a/b/c--->234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * a/b/c 表示 a是一个复合结构，因此 原来的 单值 123,就被替换换。<br>
 	 * 即 一个层级节点：只能要么是 复合节点，要么是单值节点 不能二者兼具。 <br>
 	 * REC3(REC("a",1),REC("a",2)) 会把 同名的key 合并在一起:值别拼接到一个数组中。即 a:[1,2] <br>
@@ -8081,20 +8081,20 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 示例:<br>
 	 * REC3(L(REC("a/b/c",123,"a/b/d",456),REC("e/f",7,"g",8))).dfs_forone((p,v)->{
 	 * <br>
-	 * System.out.println(p+"--->"+v); <br>
+	 * System.out.println(p+"---&gt;"+v); <br>
 	 * });<br>
 	 * 结构如下:<br>
-	 * /g--->8 <br>
-	 * /a/b/c--->123 <br>
-	 * /a/b/d--->456 <br>
-	 * /e/f--->7 <br>
+	 * /g---&gt;8 <br>
+	 * /a/b/c---&gt;123 <br>
+	 * /a/b/d---&gt;456 <br>
+	 * /e/f---&gt;7 <br>
 	 * <br>
 	 * 注意:<br>
 	 * 不同Record 之间的同名键名 会彼此覆盖:比如 REC3(REC("a",123,"a/b/c",234)). <br>
-	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -> { <br>
-	 * System.out.println(p + "--->" + v); <br>
+	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -&gt; { <br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * }); <br>
-	 * 会只生成 /a/b/c--->234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * a/b/c 表示 a是一个复合结构，因此 原来的 单值 123,就被替换换。<br>
 	 * 即 一个层级节点：只能要么是 复合节点，要么是单值节点 不能二者兼具。<br>
 	 * 
@@ -8118,22 +8118,22 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把一个扁平结构的 recs 转换成一个层级结构的IRecord <br>
 	 * 示例:<br>
 	 * var rec = REC("a/b/c",123,"a/b/d",456,"e/f",7,"g",8); <br>
-	 * REC3(rec,REC()).dfs_forone((p,v)->{<br>
-	 * System.out.println(p+"--->"+v); <br>
+	 * REC3(rec,REC()).dfs_forone((p,v)-&gt;{ <br>
+	 * System.out.println(p+"---&gt;"+v); <br>
 	 * });<br>
 	 * 结构如下:<br>
-	 * /g--->8 <br>
-	 * /a/b/c--->123 <br>
-	 * /a/b/d--->456 <br>
-	 * /e/f--->7 <br>
+	 * /g---&gt;8 <br>
+	 * /a/b/c---&gt;123 <br>
+	 * /a/b/d---&gt;456 <br>
+	 * /e/f---&gt;7 <br>
 	 * 
 	 * <br>
 	 * 注意:<br>
 	 * 不同Record 之间的同名键名 会彼此覆盖:比如 REC3(REC("a",123,"a/b/c",234)). <br>
-	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -> { <br>
-	 * System.out.println(p + "--->" + v); <br>
+	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -&gt; { <br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * }); <br>
-	 * 会只生成 /a/b/c--->234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * a/b/c 表示 a是一个复合结构，因此 原来的 单值 123,就被替换换。<br>
 	 * 即 一个层级节点：只能要么是 复合节点，要么是单值节点 不能二者兼具。<br>
 	 * 
@@ -8159,22 +8159,22 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把一个扁平结构的 recs 转换成一个层级结构的IRecord <br>
 	 * 示例:<br>
 	 * var rec = REC("a/b/c",123,"a/b/d",456,"e/f",7,"g",8); <br>
-	 * REC3(rec,REC()).dfs_forone((p,v)->{ <br>
-	 * System.out.println(p+"--->"+v); <br>
+	 * REC3(rec,REC()).dfs_forone((p,v)-&gt;{ <br>
+	 * System.out.println(p+"---&gt;"+v); <br>
 	 * });<br>
 	 * 结构如下:<br>
-	 * /g--->8 <br>
-	 * /a/b/c--->123 <br>
-	 * /a/b/d--->456 <br>
-	 * /e/f--->7 <br>
+	 * /g---&gt;8 <br>
+	 * /a/b/c---&gt;123 <br>
+	 * /a/b/d---&gt;456 <br>
+	 * /e/f---&gt;7 <br>
 	 * 
 	 * <br>
 	 * 注意:<br>
 	 * 不同Record 之间的同名键名 会彼此覆盖:比如 REC3(REC("a",123,"a/b/c",234)). <br>
-	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -> { <br>
-	 * System.out.println(p + "--->" + v); <br>
+	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -&gt; { <br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * }); <br>
-	 * 会只生成 /a/b/c--->234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * a/b/c 表示 a是一个复合结构，因此 原来的 单值 123,就被替换换。<br>
 	 * 即 一个层级节点：只能要么是 复合节点，要么是单值节点 不能二者兼具。<br>
 	 * 
@@ -8199,22 +8199,22 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把一个扁平结构的 recs 转换成一个层级结构的IRecord <br>
 	 * 示例:<br>
 	 * var rec = REC("a/b/c",123,"a/b/d",456,"e/f",7,"g",8); <br>
-	 * REC3(rec,REC()).dfs_forone((p,v)->{ <br>
-	 * System.out.println(p+"--->"+v); <br>
+	 * REC3(rec,REC()).dfs_forone((p,v)-&gt;{ <br>
+	 * System.out.println(p+"---&gt;"+v); <br>
 	 * });<br>
 	 * 结构如下:<br>
-	 * /g--->8 <br>
-	 * /a/b/c--->123 <br>
-	 * /a/b/d--->456 <br>
-	 * /e/f--->7 <br>
+	 * /g---&gt;8 <br>
+	 * /a/b/c---&gt;123 <br>
+	 * /a/b/d---&gt;456 <br>
+	 * /e/f---&gt;7 <br>
 	 * 
 	 * <br>
 	 * 注意:<br>
 	 * 不同Record 之间的同名键名 会彼此覆盖:比如 REC3(REC("a",123,"a/b/c",234)). <br>
-	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -> { <br>
-	 * System.out.println(p + "--->" + v); <br>
+	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -&gt; { <br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * }); <br>
-	 * 会只生成 /a/b/c--->234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * a/b/c 表示 a是一个复合结构，因此 原来的 单值 123,就被替换换。<br>
 	 * 即 一个层级节点：只能要么是 复合节点，要么是单值节点 不能二者兼具。<br>
 	 * 
@@ -8240,22 +8240,22 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把一个扁平结构的 recs 转换成一个层级结构的IRecord <br>
 	 * 示例:<br>
 	 * var rec = REC("a/b/c",123,"a/b/d",456,"e/f",7,"g",8); <br>
-	 * REC3(rec,REC()).dfs_forone((p,v)->{ <br>
-	 * System.out.println(p+"--->"+v); <br>
+	 * REC3(rec,REC()).dfs_forone((p,v)-&gt;{ <br>
+	 * System.out.println(p+"---&gt;"+v); <br>
 	 * });<br>
 	 * 结构如下:<br>
-	 * /g--->8 <br>
-	 * /a/b/c--->123 <br>
-	 * /a/b/d--->456 <br>
-	 * /e/f--->7 <br>
+	 * /g---&gt;8 <br>
+	 * /a/b/c---&gt;123 <br>
+	 * /a/b/d---&gt;456 <br>
+	 * /e/f---&gt;7 <br>
 	 * 
 	 * <br>
 	 * 注意:<br>
 	 * 不同Record 之间的同名键名 会彼此覆盖:比如 REC3(REC("a",123,"a/b/c",234)). <br>
-	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -> { <br>
-	 * System.out.println(p + "--->" + v); <br>
+	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -&gt; { <br>
+	 * System.out.println(p + "---&gt;" + v); <br>
 	 * }); <br>
-	 * 会只生成 /a/b/c--->234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * a/b/c 表示 a是一个复合结构，因此 原来的 单值 123,就被替换换。<br>
 	 * 即 一个层级节点：只能要么是 复合节点，要么是单值节点 不能二者兼具。<br>
 	 * 
@@ -8284,22 +8284,22 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把一个扁平结构的 recs 转换成一个层级结构的IRecord <br>
 	 * 示例:<br>
 	 * var rec = REC("a/b/c",123,"a/b/d",456,"e/f",7,"g",8); <br>
-	 * REC3(rec,REC()).dfs_forone((p,v)->{ <br>
-	 * System.out.println(p+"--->"+v); <br>
+	 * REC3(rec,REC()).dfs_forone((p,v)-&gt;{ <br>
+	 * System.out.println(p+"---&gt;"+v); <br>
 	 * });<br>
 	 * 结构如下:<br>
-	 * /g--->8 <br>
-	 * /a/b/c--->123 <br>
-	 * /a/b/d--->456 <br>
-	 * /e/f--->7 <br>
+	 * /g---&gt;8 <br>
+	 * /a/b/c---&gt;123 <br>
+	 * /a/b/d---&gt;456 <br>
+	 * /e/f---&gt;7 <br>
 	 * 
 	 * <br>
 	 * 注意:<br>
 	 * 不同Record 之间的同名键名 会彼此覆盖:比如 REC3(REC("a",123,"a/b/c",234)). <br>
-	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -> { <br>
-	 * System.out.println(p + "--->" + v); <br>
+	 * REC3(REC("a",123,"a/b/c",234)).dfs_forone((p, v) -&gt; { <br>
+	 * System.out.println(p + "---&gt;" + v); <br>
 	 * }); <br>
-	 * 会只生成 /a/b/c--->234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
+	 * 会只生成 /a/b/c---&gt;234 一条记录。原因是 "a"的123被"a/b/c" 给覆盖掉了。<br>
 	 * a/b/c 表示 a是一个复合结构，因此 原来的 单值 123,就被替换换。<br>
 	 * 即 一个层级节点：只能要么是 复合节点，要么是单值节点 不能二者兼具。<br>
 	 * 
@@ -8545,8 +8545,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * final var ai = new AtomicInteger(0); <br>
 	 * Elem.cph2(asList(digits,digits,digits,digits,digits)).map(IRecord::L2REC)
 	 * <br>
-	 * .map(path->REC(JOIN(path.ss().subList(0, 4)), ai.getAndIncrement() )) // 生成一个
-	 * path2value结构,这是一种阶层结构的方法方法 <br>
+	 * .map(path-&gt;REC(JOIN(path.ss().subList(0, 4)), ai.getAndIncrement() )) //
+	 * 生成一个 path2value结构,这是一种阶层结构的方法方法 <br>
 	 * .collect(llclc(IRecord::RECMERGE2)) // 阶层化 Record 集合 <br>
 	 * .dfs_forall2(System.out::println); <br>
 	 * 
@@ -8876,7 +8876,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> tt 的元素类型
 	 * @param tt  列表元素
-	 * @return List<T>
+	 * @return List&lt;T&gt;
 	 */
 	@SafeVarargs
 	static <T> List<T> L(final T... tt) {
@@ -8888,7 +8888,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> tt 的元素类型
 	 * @param tt  列表元素
-	 * @return Stream<T>
+	 * @return Stream&lt;T&gt;
 	 */
 	@SafeVarargs
 	static <T> Stream<T> S(final T... tt) {
@@ -9154,9 +9154,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数
 	 * 
-	 * rr:Collection<IRecord> recs 记录集合 row:Map 行记录 S:结果类型为Stream 主要用途就是 完成 IRecord
-	 * 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如 var dm = new
-	 * DataMatrix<> (rr2rowS(recs),Integer.class); 就构造了一个 DataMatrix 对象。
+	 * rr:Collection&lt;IRecord&gt; recs 记录集合 row:Map 行记录 S:结果类型为Stream 主要用途就是 完成
+	 * IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如 var dm = new
+	 * DataMatrix&lt;&gt; (rr2rowS(recs),Integer.class); 就构造了一个 DataMatrix 对象。
 	 * 
 	 * @param recs record 集合
 	 * @return 生成一个hashmap 的集合
@@ -9169,9 +9169,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数
 	 * 
-	 * rr:Collection<IRecord> recs 记录集合 row:Map 行记录 S:结果类型为Stream 主要用途就是 完成 IRecord
-	 * 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如 var dm = new
-	 * DataMatrix<> (rr2rowS(recs),Integer.class); 就构造了一个 DataMatrix 对象。
+	 * rr:Collection&lt;IRecord&gt; recs 记录集合 row:Map 行记录 S:结果类型为Stream 主要用途就是 完成
+	 * IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如 var dm = new
+	 * DataMatrix&lt;&gt; (rr2rowS(recs),Integer.class); 就构造了一个 DataMatrix 对象。
 	 * 
 	 * @param stream records 的集合
 	 * @return 生成一个hashmap 的集合
@@ -9184,7 +9184,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数 r:record 单条记录 row:Map 行记录
 	 * s:结果类型为Stream 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord
-	 * 的独立。而设置这个函数。比如 var dm = new DataMatrix<> (rr2rowS(recs),Integer.class);
+	 * 的独立。而设置这个函数。比如 var dm = new DataMatrix&lt;&gt; (rr2rowS(recs),Integer.class);
 	 * 就构造了一个 DataMatrix 对象。
 	 * 
 	 * @param rec 的单元素：但也把他视为只有一个元素的集合。
@@ -9201,8 +9201,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 可以唯一标识 record的字段属性。
 	 * 
 	 * 比如: final var rr = jdbc.sql2records(sql); final var map =
-	 * rr.stream().collect(Collectors.groupingBy(e->e.str("name"),// name 唯一标识e
-	 * atomic_collector(e->e.get("cnt"))));// rr->map
+	 * rr.stream().collect(Collectors.groupingBy(e-&gt;e.str("name"),// name 唯一标识e
+	 * atomic_collector(e-&gt;e.get("cnt"))));// rr-&gt;map
 	 * 
 	 * 但值容器：即只保存一个值。 把一个T类型的元素给归约成一个U类型的单个元素。
 	 * 
@@ -9222,9 +9222,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * final var rr = jdbc.sql2records(sql); <br>
 	 * final var map =
-	 * rr.stream().collect(groupby(e->e.str("name"),e->e.get("cnt"))); <br>
+	 * rr.stream().collect(groupby(e-&gt;e.str("name"),e-&gt;e.get("cnt"))); <br>
 	 * 
-	 * 制作一个分组器 把一个 Stream<U> 给份组成也成一个Map<K,U>
+	 * 制作一个分组器 把一个 Stream&lt;U&gt; 给份组成也成一个Map&lt;K,U&gt;
 	 * 
 	 * @param classifier T 类型的分类器，classifier 会申城一个键类型。
 	 * @param t2u        把T类型给转换成U类型
@@ -9258,7 +9258,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 通过 delimiter 连接骑起来
 	 * 
 	 * @param delimiter 分隔符
-	 * @return 用delimiter 分割的Stream<String>
+	 * @return 用delimiter 分割的Stream&lt;String&gt;
 	 */
 	static Collector<CharSequence, ?, String> join(final CharSequence delimiter) {
 		return Collectors.joining(delimiter);

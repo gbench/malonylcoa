@@ -2171,19 +2171,19 @@ public class Jdbcs {
 	 * 用法示例：<br>
 	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
-	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
+	 * compose_ef(BufferedWriter::new,(ExceptionalFunction&lt;String,FileWriter&gt;)FileWriter::new);//
 	 * 构造函数 <br>
 	 * final var bw =
 	 * Optional.of("d:/sliced/tmp/a.txt").map(trycatch(constructor)).get();// 创建书写器
 	 * <br>
-	 * Stream.of(bw).forEach(trycatch2(writer->writer.append(line)));// 书写内容 <br>
+	 * Stream.of(bw).forEach(trycatch2(writer-&gt;writer.append(line)));// 书写内容 <br>
 	 * Stream.of(bw).forEach(trycatch3(Writer::close)); // 关闭书写器 <br>
 	 * }); <br>
 	 * 
 	 * @param <T>               源数据类型
 	 * @param <U>               解雇数据类型
-	 * @param exceptionFunction 一个可以抛出异常的函数 t->u
-	 * @return 剥夺掉异常的函数 ： 一元函数 t->u
+	 * @param exceptionFunction 一个可以抛出异常的函数 t-&gt;u
+	 * @return 剥夺掉异常的函数 ： 一元函数 t-&gt;u
 	 */
 	public static <T, U> Function<T, U> trycatch(final ExceptionalFunction<T, U> exceptionFunction) {
 
@@ -2205,18 +2205,18 @@ public class Jdbcs {
 	 * 用法示例：<br>
 	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
-	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
+	 * compose_ef(BufferedWriter::new,(ExceptionalFunction&gt;String,FileWriter&gt;)FileWriter::new);//
 	 * 构造函数 <br>
 	 * final var bw =
 	 * Optional.of("d:/sliced/tmp/a.txt").map(trycatch(constructor)).get();// 创建书写器
 	 * <br>
-	 * Stream.of(bw).forEach(trycatch2(writer->writer.append(line)));// 书写内容 <br>
+	 * Stream.of(bw).forEach(trycatch2(writer-&gt;writer.append(line)));// 书写内容 <br>
 	 * Stream.of(bw).forEach(trycatch3(Writer::close)); // 关闭书写器 <br>
 	 * }); <br>
 	 * 
 	 * @param <T>               源数据类型
-	 * @param exceptionFunction 一个可以抛出异常的函数 t->?
-	 * @return 剥夺掉异常的函数 ： 消费函数 t->{}
+	 * @param exceptionFunction 一个可以抛出异常的函数 t-&gt;?
+	 * @return 剥夺掉异常的函数 ： 消费函数 t-&gt;{}
 	 */
 	public static <T> Consumer<T> trycatch2(final ExceptionalFunction<T, ?> exceptionFunction) {
 		return fun2cs(trycatch(exceptionFunction));
@@ -2227,18 +2227,18 @@ public class Jdbcs {
 	 * 用法示例：<br>
 	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
-	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
+	 * compose_ef(BufferedWriter::new,(ExceptionalFunction&lt;String,FileWriter&gt;)FileWriter::new);//
 	 * 构造函数 <br>
 	 * final var bw =
 	 * Optional.of("d:/sliced/tmp/a.txt").map(trycatch(constructor)).get();// 创建书写器
 	 * <br>
-	 * Stream.of(bw).forEach(trycatch2(writer->writer.append(line)));// 书写内容 <br>
+	 * Stream.of(bw).forEach(trycatch2(writer-&gt;writer.append(line)));// 书写内容 <br>
 	 * Stream.of(bw).forEach(trycatch3(Writer::close)); // 关闭书写器 <br>
 	 * }); <br>
 	 * 
 	 * @param <T>         源数据类型
-	 * @param exceptioncs 一个可以抛出异常的 消费函数 t->{}
-	 * @return 剥夺掉异常的函数 ： 消费函数 t->{}
+	 * @param exceptioncs 一个可以抛出异常的 消费函数 t-&gt;{}
+	 * @return 剥夺掉异常的函数 ： 消费函数 t-&gt;{}
 	 */
 	public static <T> Consumer<T> trycatch3(final ExceptionalConsumer<T> exceptioncs) {
 		return t -> {
@@ -2256,19 +2256,19 @@ public class Jdbcs {
 	 * 用法示例：<br>
 	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
-	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
+	 * compose_ef(BufferedWriter::new,(ExceptionalFunction&lt;String,FileWriter&gt;)FileWriter::new);//
 	 * 构造函数 <br>
 	 * final var bw =
 	 * Optional.of("d:/sliced/tmp/a.txt").map(trycatch(constructor)).get();// 创建书写器
 	 * <br>
-	 * Stream.of(bw).forEach(trycatch2(writer->writer.append(line)));// 书写内容 <br>
+	 * Stream.of(bw).forEach(trycatch2(writer-&gt;writer.append(line)));// 书写内容 <br>
 	 * Stream.of(bw).forEach(trycatch3(Writer::close)); // 关闭书写器 <br>
 	 * }); <br>
 	 * 
 	 * @param <T>               源数据类型
 	 * @param <U>               解雇数据类型
-	 * @param exceptionFunction 一个可以抛出异常的函数 t->bool
-	 * @return 剥夺掉异常的函数: 谓词判断函数 t->bool
+	 * @param exceptionFunction 一个可以抛出异常的函数 t-&gt;bool
+	 * @return 剥夺掉异常的函数: 谓词判断函数 t-&gt;bool
 	 */
 	public static <T, U> Predicate<T> trycatch4(final ExceptionalPredicate<T> exceptionPredicate) {
 
@@ -2289,7 +2289,7 @@ public class Jdbcs {
 	 * 把一个函数转换成消费函数
 	 * 
 	 * @param <T>  源数据类型
-	 * @param func 一个T为参数的一元函数 t->?
+	 * @param func 一个T为参数的一元函数 t-&gt;?
 	 * @return 消费函数 cosnumer&lt;T&gt;
 	 */
 	public static <T> Consumer<T> fun2cs(Function<T, ?> func) {
@@ -2302,9 +2302,9 @@ public class Jdbcs {
 	 * @param <T> 第一个参数类型
 	 * @param <U> 第二个参数类型
 	 * @param <V> 第三个参数类型
-	 * @param ftu t->u
-	 * @param fuv u->v
-	 * @return t->v
+	 * @param ftu t-&gt;u
+	 * @param fuv u-&gt;v
+	 * @return t-&gt;v
 	 */
 	public static <T, U, V> Function<T, V> compose_f(final Function<U, V> fuv, final Function<T, U> ftu) {
 		return fuv.compose(ftu);
@@ -2317,10 +2317,10 @@ public class Jdbcs {
 	 * @param <U> 第二个参数类型
 	 * @param <V> 第三个参数类型
 	 * @param <X> 第四个参数类型
-	 * @param ftu t->u
-	 * @param fuv u->v
-	 * @param fvx v->x
-	 * @return t->x
+	 * @param ftu t-&gt;u
+	 * @param fuv u-&gt;v
+	 * @param fvx v-&gt;x
+	 * @return t-&gt;x
 	 */
 	public static <T, U, V, X> Function<T, X> compose_f(final Function<V, X> fvx, final Function<U, V> fuv,
 			final Function<T, U> ftu) {
@@ -2335,11 +2335,11 @@ public class Jdbcs {
 	 * @param <V> 第三个参数类型
 	 * @param <X> 第四个参数类型
 	 * @param <Y> 第五个参数类型
-	 * @param ftu t->u
-	 * @param fuv u->v
-	 * @param fvx v->x
-	 * @param fxy x->y
-	 * @return t->y
+	 * @param ftu t-&gt;u
+	 * @param fuv u-&gt;v
+	 * @param fvx v-&gt;x
+	 * @param fxy x-&gt;y
+	 * @return t-&gt;y
 	 */
 	public static <T, U, V, X, Y> Function<T, Y> compose_f(final Function<X, Y> fxy, final Function<V, X> fvx,
 			final Function<U, V> fuv, final Function<T, U> ftu) {
@@ -2356,12 +2356,12 @@ public class Jdbcs {
 	 * @param <Y> 第五个参数类型
 	 * @param <Y> 第六个参数类型
 	 * @param <Z> 第七个参数类型
-	 * @param ftu t->u
-	 * @param fuv u->v
-	 * @param fvx v->x
-	 * @param fxy x->y
-	 * @param fyz y->z
-	 * @return t->z
+	 * @param ftu t-&gt;u
+	 * @param fuv u-&gt;v
+	 * @param fvx v-&gt;x
+	 * @param fxy x-&gt;y
+	 * @param fyz y-&gt;z
+	 * @return t-&gt;z
 	 */
 	public static <T, U, V, X, Y, Z> Function<T, Z> compose_f(final Function<Y, Z> fyz, final Function<X, Y> fxy,
 			final Function<V, X> fvx, final Function<U, V> fuv, final Function<T, U> ftu) {
@@ -2373,9 +2373,9 @@ public class Jdbcs {
 	 * 
 	 * @param <T> 第一个参数类型
 	 * @param <U> 第二个参数类型
-	 * @param ftu t->u
-	 * @param cs  u->{}
-	 * @return t->{}
+	 * @param ftu t-&gt;u
+	 * @param cs  u-&gt;{}
+	 * @return t-&gt;{}
 	 */
 	public static <T, U> Consumer<T> compose_cs(final Consumer<U> cs, final Function<T, U> ftu) {
 		return t -> cs.accept(ftu.apply(t));
@@ -2387,21 +2387,21 @@ public class Jdbcs {
 	 * 用法示例：<br>
 	 * Stream.of("trycach用法示例").forEach(line-&gt;{ // 书写一行数据 <br>
 	 * final var constructor =
-	 * compose_ef(BufferedWriter::new,(ExceptionalFunction<String,FileWriter>)FileWriter::new);//
+	 * compose_ef(BufferedWriter::new,(ExceptionalFunction&lt;String,FileWriter&gt;)FileWriter::new);//
 	 * 构造函数 <br>
 	 * final var bw =
 	 * Optional.of("d:/sliced/tmp/a.txt").map(trycatch(constructor)).get();// 创建书写器
 	 * <br>
-	 * Stream.of(bw).forEach(trycatch2(writer->writer.append(line)));// 书写内容 <br>
+	 * Stream.of(bw).forEach(trycatch2(writer-&gt;writer.append(line)));// 书写内容 <br>
 	 * Stream.of(bw).forEach(trycatch3(Writer::close)); // 关闭书写器 <br>
 	 * }); <br>
 	 * 
 	 * @param <T> 第一个参数类型
 	 * @param <U> 第二个参数类型
 	 * @param <V> 第三个参数类型
-	 * @param ftu t->u
-	 * @param fuv u->v
-	 * @return t->v
+	 * @param ftu t-&gt;u
+	 * @param fuv u-&gt;v
+	 * @return t-&gt;v
 	 */
 	public static <T, U, V> ExceptionalFunction<T, V> compose_ef(final ExceptionalFunction<U, V> fuv,
 			final ExceptionalFunction<T, U> ftu) {

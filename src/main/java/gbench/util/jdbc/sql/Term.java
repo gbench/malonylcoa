@@ -41,7 +41,7 @@ public class Term {
 	/**
 	 * 符号处理器
 	 * 
-	 * @param data 数据字符串
+	 * data 数据字符串
 	 */
 	public final Predicate<String> symbol_handler = (final String data) -> {
 		final var SYMBOL_PATTERN = "\\s*([_$a-z][a-z0-9]*)\\s*";// 符号模式
@@ -58,7 +58,7 @@ public class Term {
 	/**
 	 * foreach 的处理
 	 * 
-	 * @param data 数据字符串
+	 * data 数据字符串
 	 */
 	public final Predicate<String> foreach_handler = (final String data) -> {
 		final var FOREACH_PATTERN = "foreach\\s+([a-z_]+)\\s+in\\s+([a-z%-_]+)\\s+(.+)";// foreach 模式
