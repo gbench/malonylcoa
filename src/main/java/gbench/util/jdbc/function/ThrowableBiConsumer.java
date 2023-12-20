@@ -5,7 +5,6 @@ package gbench.util.jdbc.function;
  * @author gbench accept 返回 false终止遍历
  * @param <T> 输入参数1类型 用在 traverse_throws T类型就是节点类型
  * @param <U> 输入参数2的类型 用在 traverse_throws U类型就是当前节点所在阶层的数值的类型那个
- * @throws Exception 异常
  */
 public interface ThrowableBiConsumer<T, U> {
 	/**

@@ -9,15 +9,16 @@ open module gbench.malonylcoa {
 	requires pinyin4j;
 
 	exports gbench.util.array;
+	exports gbench.util.chn;
 	exports gbench.util.data;
 	exports gbench.util.function;
 	exports gbench.util.io;
-	exports gbench.util.json;
 	exports gbench.util.jdbc;
 	exports gbench.util.jdbc.annotation;
 	exports gbench.util.jdbc.function;
 	exports gbench.util.jdbc.kvp;
 	exports gbench.util.jdbc.sql;
+	exports gbench.util.json;
 	exports gbench.util.lisp;
 	exports gbench.util.math;
 	exports gbench.util.math.algebra;
