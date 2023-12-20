@@ -210,7 +210,6 @@ public class Jdbc implements IManagedStreams {
 	 * 执行prepared statment
 	 * 
 	 * @param conn 数据库连接
-	 * @return 查询的结果集合
 	 * @throws SQLException
 	 */
 	public static void executeWithConnection(final Connection conn, final String sql) throws SQLException {
@@ -222,7 +221,6 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param conn 数据库连接
 	 * @param sql  prepare sql语句的处理
-	 * @return 查询的结果集合
 	 * @throws SQLException
 	 */
 	public static void executeWithConnection(final Connection conn, String sql, Consumer<PreparedStatement> prepare)
@@ -235,7 +233,6 @@ public class Jdbc implements IManagedStreams {
 	 * 执行prepared statment
 	 * 
 	 * @param pstmt parepared statement 生成器
-	 * @return 无
 	 * @throws SQLException
 	 */
 	public static void preparedExecute(final Supplier<PreparedStatement> pstmt) throws SQLException {
@@ -247,7 +244,6 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param pstmt   parepared statement 生成器
 	 * @param prepare parepared statement的参数准备
-	 * @return 无
 	 * @throws SQLException
 	 */
 	public static void preparedExecute(Supplier<PreparedStatement> pstmt, Consumer<PreparedStatement> prepare)
@@ -369,7 +365,6 @@ public class Jdbc implements IManagedStreams {
 	 * 即不会移动ResultSet的cursor。所以第一条数据的时候需要在外部进行rs.next()<br>
 	 * 
 	 * @param rs      结果集合
-	 * @param indices 列号索引序列,从1开始
 	 * @return 当前行的对象数组,出现异常则返回null
 	 */
 	public static Object[] readlineA(final ResultSet rs) {

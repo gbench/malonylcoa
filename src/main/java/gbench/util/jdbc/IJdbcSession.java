@@ -107,7 +107,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * 
 	 * @param key   属性的键值
 	 * @param value 属性的值
-	 * @return 自身的 IJdbcSession<T,D> 的实例，用以实现链式编程
+	 * @return 自身的 IJdbcSession&lt;T,D&gt; 的实例，用以实现链式编程
 	 */
 	default IJdbcSession<T, D> setAttribute(Object key, Object value) {
 		this.getAttributes().put(key, value);
@@ -118,7 +118,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * 设置属性
 	 * 
 	 * @param attributes 待设置的属性集合
-	 * @return 自身的 IJdbcSession<T,D> 的实例，用以实现链式编程
+	 * @return 自身的 IJdbcSession&lt;T,D&gt; 的实例，用以实现链式编程
 	 */
 	default IJdbcSession<T, D> setAttributes(final Map<Object, Object> attributes) {
 		this.getAttributes().putAll(attributes);
@@ -128,7 +128,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 清空属性集合
 	 * 
-	 * @return 自身的 IJdbcSession<T,D> 的实例，用以实现链式编程
+	 * @return 自身的 IJdbcSession&lt;T,D&gt; 的实例，用以实现链式编程
 	 */
 	default IJdbcSession<T, D> clearAttributes() {
 		this.getAttributes().clear();
@@ -348,7 +348,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 *
 	 * @param <U>       归集器结果类型
 	 * @param sql       sql 语句
-	 * @param collector 归集器 [rec]->u
+	 * @param collector 归集器 [rec]-&gt;u
 	 * @return U 类型的结果
 	 * @throws SQLException
 	 */
@@ -363,7 +363,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 *
 	 * @param <U>       归集器结果类型
 	 * @param sql       sql 语句, 调用 sql.string2() 生成 查询文本
-	 * @param collector 归集器 [rec]->u
+	 * @param collector 归集器 [rec]-&gt;u
 	 * @return U 类型的结果
 	 * @throws SQLException
 	 */
@@ -374,12 +374,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 查询结果并给予归集<br>
 	 * 使用自身带有的spp(sqlpattern
-	 * 的解释器,前提需要设置Class<SqlPatternPreprocessor>为键值的属性)执行sql语句查询出结果集合.<br>
+	 * 的解释器,前提需要设置Class&lt;SqlPatternPreprocessor&gt;为键值的属性)执行sql语句查询出结果集合.<br>
 	 * 比如：传入与sharp标号语句：让spp 从其语句库中检索。<br>
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name)); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name)); <br>
 	 * 
 	 * <br>
@@ -389,7 +389,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param <U>        归集器结果类型
 	 * @param sqlpattern sql模板：可以是一个sharp语句标记：比如#getUser,用于从模板文件中提取脚本，也可以是函数有sharp变量的语句模板。
 	 * @param params     sharp变量的形参与实际参数的对应关系
-	 * @param collector  归集器 [rec]->u
+	 * @param collector  归集器 [rec]-&gt;u
 	 * @return U 类型的结果
 	 * @throws SQLException;
 	 */
@@ -407,7 +407,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name),spp); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name),spp); <br>
 	 * 
 	 * <br>
@@ -418,7 +418,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param sqlpattern sql模板：可以是一个sharp语句标记：比如#getUser,用于从模板文件中提取脚本，也可以是函数有sharp变量的语句模板。
 	 * @param params     sharp变量的形参与实际参数的对应关系
 	 * @param spp        sqlpattern 的解释器
-	 * @param collector  归集器 [rec]->u
+	 * @param collector  归集器 [rec]-&gt;u
 	 * @return IRecord 类型的结果集合
 	 * @throws SQLException
 	 */
@@ -556,12 +556,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 
 	/**
 	 * 使用自身带有的spp(sqlpattern
-	 * 的解释器,前提需要设置Class<SqlPatternPreprocessor>为键值的属性)执行sql语句查询出结果集合.<br>
+	 * 的解释器,前提需要设置Class&lt;SqlPatternPreprocessor&gt;为键值的属性)执行sql语句查询出结果集合.<br>
 	 * 比如：传入与sharp标号语句：让spp 从其语句库中检索。<br>
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name)); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name)); <br>
 	 * 
 	 * <br>
@@ -579,12 +579,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 
 	/**
 	 * 使用自身带有的spp(sqlpattern
-	 * 的解释器,前提需要设置Class<SqlPatternPreprocessor>为键值的属性)执行sql语句查询出结果集合.<br>
+	 * 的解释器,前提需要设置Class&lt;SqlPatternPreprocessor&gt;为键值的属性)执行sql语句查询出结果集合.<br>
 	 * 比如：传入与sharp标号语句：让spp 从其语句库中检索。<br>
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name)); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name)); <br>
 	 * 
 	 * <br>
@@ -606,7 +606,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name),spp); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name),spp); <br>
 	 * 
 	 * <br>
@@ -651,12 +651,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 
 	/**
 	 * 使用 spp 的 sql2get 使用自身带有的spp(sqlpattern
-	 * 的解释器,前提需要设置Class<SqlPatternPreprocessor>为键值的属性)执行sql语句查询出结果集合.<br>
+	 * 的解释器,前提需要设置Class&lt;SqlPatternPreprocessor&gt;为键值的属性)执行sql语句查询出结果集合.<br>
 	 * 比如：传入与sharp标号语句：让spp 从其语句库中检索。<br>
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name)); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name)); <br>
 	 * 
 	 * <br>
@@ -816,12 +816,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 
 	/**
 	 * 使用自身带有的spp(sqlpattern
-	 * 的解释器,前提需要设置Class<SqlPatternPreprocessor>为键值的属性)执行sql语句不产生结果集合.<br>
+	 * 的解释器,前提需要设置Class&lt;SqlPatternPreprocessor&gt;为键值的属性)执行sql语句不产生结果集合.<br>
 	 * 比如：传入与sharp标号语句：让spp 从其语句库中检索。<br>
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name)); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name)); <br>
 	 * <br>
 	 * 如果没有配置spp,则使用 Term.FT做变量填充,用FT 填充变量的时候不需要
@@ -851,7 +851,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name),spp); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name),spp); <br>
 	 *
 	 * @param sqlpattern sql模板：可以是一个sharp语句标记：比如#getUser,用于从模板文件中提取脚本，也可以是函数有sharp变量的语句模板。
@@ -1119,7 +1119,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param <U>       归集器结果类型
 	 * @param sql       sql 语句,调用 sql.string2() 生成 查询文本
 	 * @param params    prepared sql 语句中占位符参数的值集合，位置从1开始
-	 * @param collector 归集器 [rec]->u
+	 * @param collector 归集器 [rec]-&gt;u
 	 * @return U 类型的结果
 	 * @throws SQLException
 	 */
@@ -1132,12 +1132,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 查询结果并给予归集<br>
 	 * 使用自身带有的spp(sqlpattern
-	 * 的解释器,前提需要设置Class<SqlPatternPreprocessor>为键值的属性)执行sql语句查询出结果集合.<br>
+	 * 的解释器,前提需要设置Class&lt;SqlPatternPreprocessor&gt;为键值的属性)执行sql语句查询出结果集合.<br>
 	 * 比如：传入与sharp标号语句：让spp 从其语句库中检索。<br>
 	 * final var recs = sess.sql2records("#getCytokines",REC("name",name)); <br>
 	 * 或者是直接传入带有sharp变量编号(比如下图的“#name”)的语句让spp解析。<br>
 	 * final var recs = sess.sql2records( <br>
-	 * "MATCH (n)-[:Secrete]->(b) where b.name=#name RETURN n.name as host",<br>
+	 * "MATCH (n)-[:Secrete]-&gt;(b) where b.name=#name RETURN n.name as host",<br>
 	 * REC("name",name)); <br>
 	 * 
 	 * <br>
@@ -1146,7 +1146,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param <U>        归集器结果类型
 	 * @param sqlpattern sql模板：可以是一个sharp语句标记：比如#getUser,用于从模板文件中提取脚本，也可以是函数有sharp变量的语句模板。
 	 * @param params     prepared sql 语句中占位符参数的值集合，位置从1开始
-	 * @param collector  归集器 [rec]->u
+	 * @param collector  归集器 [rec]-&gt;u
 	 * @return U 类型的结果
 	 * @throws SQLException;
 	 */
@@ -1162,7 +1162,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param <U>       归集器结果类型
 	 * @param sql       prepared sql 语句
 	 * @param params    prepared sql 语句中占位符参数的值集合，位置从1开始
-	 * @param collector 归集器 [rec]->u
+	 * @param collector 归集器 [rec]-&gt;u
 	 * @return 查询结果集合
 	 * @throws SQLException
 	 */
@@ -1183,7 +1183,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param <U>       结果类型
 	 * @param sql       prepared sql 语句
 	 * @param params    prepared sql 语句中占位符参数的值序列
-	 * @param collector 归集器 [rec]->u
+	 * @param collector 归集器 [rec]-&gt;u
 	 * @return 查询结果集合
 	 * @throws SQLException
 	 */
@@ -1199,7 +1199,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param <U>       结果类型
 	 * @param sql       prepared sql 数据操作语句
 	 * @param params    prepared sql 语句中占位符参数的值数组
-	 * @param collector 归集器 [rec]->u
+	 * @param collector 归集器 [rec]-&gt;u
 	 * @return 查询结果集合
 	 * @throws SQLException
 	 */

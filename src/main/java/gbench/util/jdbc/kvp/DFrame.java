@@ -11,7 +11,7 @@ import gbench.util.jdbc.Jdbcs;
 
 /**
  * DataFrame 数据框，(key,[v0,v1,...]) 结构的键值对集合 kvs 即值元素为集合类型的KVPs.<br>
- * 术语来源于R，<r>
+ * 术语来源于R，<br>
  * 
  * @author gbench
  *

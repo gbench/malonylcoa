@@ -83,8 +83,8 @@ import static gbench.util.jdbc.Jdbcs.*;
  * IRecord 需要具有递归的含义，也就是IRecord的元素也可以是IRecord. <br>
  * IRecord 不仅表现出结构化，还要表现出类似于LISP 列表计算。也就是可以依附于符号(key)<br>
  * 的绑定类型,而表现出值的计算的能力。比如:<br>
- * public default <T,U> U get(String key,T t,Function<T,U> t2u)，<br>
- * 就把一个key,绑定到一个Function<T,U> t2u 然后对vlaue 进行计算。<br>
+ * public default &lt;T,U&gt; U get(String key,T t,Function<T,U> t2u)，<br>
+ * 就把一个key,绑定到一个Function&lt;T,U&gt; t2u 然后对vlaue 进行计算。<br>
  * 另外key->value 中的value 不仅可以是数值,还可以是函数。<br>
  * 这样key:value 就不是一个静态意义，而是一个动态的概念了。比如：<br>
  * &nbsp;interface FOO{ void foo();};<br>
@@ -2006,7 +2006,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * 当且仅当key值不存在的才给予:compute,否则直接返回键值，属于名称来源于 Java Map <br>
-	 * compute 就是获取并变换设置。相当于 get&set: <br>
+	 * compute 就是获取并变换设置。相当于 get&amp;set: <br>
 	 * final var value = this.get(idx);<br>
 	 * if(value!=null)return (U)value; <br>
 	 * final var u = mapper.apply(idx); this.set(key, u); <br>
@@ -2051,14 +2051,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * 当且仅当key值不存在的才给予:compute,否则直接返回键值，属于名称来源于 Java Map <br>
-	 * compute 就是获取并变换设置。相当于 get&set: <br>
+	 * compute 就是获取并变换设置。相当于 get&amp;set: <br>
 	 * U u = mapper.apply(idx,get(key)) <br>
 	 * set(key,u); <br>
 	 * 
 	 * @param <T>    变换的t2u源数据类型
 	 * @param <U>    变换的t2u的目标结果类型
 	 * @param idx    键名索引 从0开始
-	 * @param mapper 二元函数(key,value)->u
+	 * @param mapper 二元函数(key,value)-&gt;u
 	 * @return 值变换后的数据。 U类型
 	 */
 	default <T, U> U computeIfAbsent(final Integer idx, final BiFunction<Integer, T, U> mapper) {
@@ -2074,7 +2074,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * 当且仅当key值不存在的才给予:compute,否则直接返回键值，属于名称来源于 Java Map <br>
-	 * compute 就是获取并变换设置。相当于 get&set: <br>
+	 * compute 就是获取并变换设置。相当于 get&amp;set: <br>
 	 * U u = mapper.apply(key,get(key,t2u)) <br>
 	 * set(key,u); <br>
 	 * 
@@ -2096,7 +2096,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 获取并变换设置。相当于 相当于 get&set: <br>
+	 * 获取并变换设置。相当于 相当于 get&amp;set: <br>
 	 * U u = get(key,t2u) <br>
 	 * set(key,u); <br>
 	 * 
@@ -2114,7 +2114,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 获取并变换设置。相当于 get&set: <br>
+	 * 获取并变换设置。相当于 get&amp;set: <br>
 	 * U u = get(key,t2u) <br>
 	 * set(key,u); <br>
 	 * 
@@ -2131,7 +2131,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 获取并变换设置。相当于 相当于 get&set: <br>
+	 * 获取并变换设置。相当于 相当于 get&amp;set: <br>
 	 * U u = mapper.apply(key, (T)get(key)); <br>
 	 * set(key,u); <br>
 	 * 
@@ -2183,15 +2183,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * k->t->u <br>
-	 * 获取并变换设置。相当于 相当于 get&set: <br>
+	 * k-&gt;t-&gt;u <br>
+	 * 获取并变换设置。相当于 相当于 get&amp;set: <br>
 	 * U u = mapper.apply(key, (T)get(key)); <br>
 	 * set(key,u); <br>
 	 * 
 	 * @param <T>    变换的mapper源数据类型
 	 * @param <U>    变换的mapper额目标结果类型
 	 * @param key    键名
-	 * @param mapper 二元值变换函数 (key,value0)->value1
+	 * @param mapper 二元值变换函数 (key,value0)-&gt;value1
 	 * @return 值变换后的数据。
 	 */
 	default <T, U> U compute(final String key, final BiFunction<String, T, U> mapper) {
@@ -2726,10 +2726,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 把键key的视作一个 Function &lt;List<IRecord>,IRecord &gt; 的函数
+	 * 把键key的视作一个 Function &lt;List&lt;IRecord&gt;,IRecord &gt; 的函数
 	 * 
 	 * @param key 字段名
-	 * @return Function &lt;List<IRecord>,IRecord &gt;
+	 * @return Function &lt;List&lt;IRecord&gt;,IRecord &gt;
 	 */
 	@SuppressWarnings("unchecked")
 	default Function<List<IRecord>, IRecord> fxx(final String key) {
@@ -2743,7 +2743,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * 把键key的视作一个 BiFunction &lt;List &lt; IRecord &gt;, List &lt; IRecord
-	 * &gt;,IRecord &gt,IRecord &gt;
+	 * &gt;,IRecord &gt;,IRecord &gt;
 	 * 
 	 * @param key 字段名
 	 * @return BiFunction &lt;List &lt; IRecord &gt;,&lt; IRecord &gt;,IRecord &gt;
@@ -2927,7 +2927,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> 函数的参数类型
 	 * @param <U> 函数返回值类型
-	 * @param key 字段名, key 业与一个(Function<T,U> t2u 绑定。
+	 * @param var dm = new DataMatrix&lt;&gt; (rec.rowL(),Integer.class); 就构造了一个
+	 *            DataMatrix
 	 * @param arg 字段名, 提交各key:t2u 函数的 参数对象
 	 * @return 调用与key绑定的t2u.apply(arg)
 	 */
@@ -2945,7 +2946,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <FUNC>       函数类型
 	 * @param <U>          目标结果类型
-	 * @param key          key 字段名, key 业与一个(Function<T,U> t2u 绑定。
+	 * @param key          var dm = new DataMatrix&lt;&gt;
+	 *                     (rec.rowL(),Integer.class); 就构造了一个 DataMatrix
 	 * @param functorClass 函数类
 	 * @param args         函数的实际参数
 	 * @return 调用与key绑定的t2u.apply(arg)
@@ -3015,7 +3017,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <U> t2u即key值 的结果类型
 	 * @param key 字段名 即 t2u的函数的键名
 	 * @param arg t2u的具体参数
-	 * @param obj 结果类型U的对象载体,其实就一为了方便提供 Class<U>的类型提取,null表示Object类型
+	 * @param obj 结果类型U的对象载体,其实就一为了方便提供 Class&lt;U&gt;的类型提取,null表示Object类型
 	 * @return U类型数据
 	 */
 	@SuppressWarnings("unchecked")
@@ -3097,7 +3099,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <R>         规约结果的类型
 	 * @param supplier    容器:()->r0
 	 * @param accumulator 累加:(r0,kv)->r1
-	 * @param combiner    合并器:(r1,r2)->r3
+	 * @param combiner    合并器:(r1,r2)-&gt;r3
 	 * @return 规约的结果 R
 	 */
 	default <R> R collect(final Supplier<R> supplier, final BiConsumer<R, KVPair<String, Object>> accumulator,
@@ -3110,8 +3112,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <R>         结果的类型
 	 * @param initial     初始值:r0
-	 * @param accumulator 累加器:(r0,kv)->r1
-	 * @param combiner    合并器:(r1,r2)->r3
+	 * @param accumulator 累加器:(r0,kv)-&gt;r1
+	 * @param combiner    合并器:(r1,r2)-&gt;r3
 	 * @return 规约的结果 R
 	 */
 	default <R> R collect(final R initial, final BiConsumer<AtomicReference<R>, KVPair<String, Object>> accumulator,
@@ -3199,7 +3201,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <R>     规约结果的类型
 	 * @param kv2r    KV值转换成R类型数据。kv->r
 	 * @param initial 初始值:r0
-	 * @param reducer 规约算法:(r0,r1)->r2
+	 * @param reducer 规约算法:(r0,r1)-&gt;r2
 	 * @return 规约的结果 R
 	 */
 	default <R> R reduce(final Function<KVPair<String, ?>, R> kv2r, final R initial, final BinaryOperator<R> reducer) {
@@ -3266,7 +3268,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把KV值规约到一个整型
 	 *
 	 * @param initial 初始值:r0
-	 * @param reducer 规约算法:(r0,r1)->r2
+	 * @param reducer 规约算法:(r0,r1)-&gt;r2
 	 * @return 规约的结果
 	 */
 	default Integer reduce(final Integer initial, BinaryOperator<Integer> reducer) {
@@ -3277,7 +3279,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把KV值规约到一个数值:Double 类型
 	 *
 	 * @param initial 初始值:r0
-	 * @param reducer 规约算法:(r0,r1)->r2
+	 * @param reducer 规约算法:(r0,r1)-&gt;r2
 	 * @return 规约的结果
 	 */
 	default Double reduce(final Double initial, final BinaryOperator<Double> reducer) {
@@ -3288,7 +3290,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把KV值规约到一个数值R:Long 类型
 	 *
 	 * @param initial 初始值:r0
-	 * @param reducer 规约算法:(r0,r1)->r2
+	 * @param reducer 规约算法:(r0,r1)-&gt;r2
 	 * @return 规约的结果
 	 */
 	default Long reduce(final Long initial, final BinaryOperator<Long> reducer) {
@@ -4413,7 +4415,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * 把key列转换成Map结构 <br>
-	 * 当且仅当 key 所代表的数据是一个Map<String,Object> 的实例返回一个 key 的value对象。<br>
+	 * 当且仅当 key 所代表的数据是一个Map&lt;String,Object&gt; 的实例返回一个 key 的value对象。<br>
 	 * 否则 生成一个 Map的复制品(clone) <br>
 	 *
 	 * @param key 需要进行分解的字段名：一般为json结构的列
@@ -4618,11 +4620,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 返回一个 LinkedHashMap<String,T>
+	 * 返回一个 LinkedHashMap&lt;String,T&gt;
 	 * 
 	 * @param <T>    LinkedHashMap 中的值得类型
 	 * @param tclass 值类型 :null 表示Object.class
-	 * @return LinkedHashMap<String,T>
+	 * @return LinkedHashMap&lt;String,T&gt;
 	 */
 	@SuppressWarnings("unchecked")
 	default <T> LinkedHashMap<String, T> toLhm(final Class<T> tclass) {
@@ -4634,9 +4636,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 返回一个 LinkedHashMap<String,T>
+	 * 返回一个 LinkedHashMap&lt;String,T&gt;
 	 * 
-	 * @return LinkedHashMap<String,T>
+	 * @return LinkedHashMap&lt;String,T&gt;
 	 */
 	default LinkedHashMap<String, Object> toLhm() {
 		return toLhm(null);
@@ -5072,7 +5074,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * map2recs(别名);
 	 * 
 	 * @param idx 列索引 从0开始
-	 * @returnIRecord 的流 [rec]
+	 * @return IRecord 的流 [rec]
 	 */
 	default Stream<IRecord> recS(final int idx) {
 		return this.recS(this.idx2key(idx));
@@ -5099,8 +5101,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> fx 目标结果类型
 	 * @param <X> fx 函数的源数据类型
-	 * @param fx  真后缀的变换函数: [(k,x)]->t
-	 * @return List<T> fx真前缀处理结果的集合
+	 * @param fx  真后缀的变换函数: [(k,x)]-&gt;t
+	 * @return List&lt;T&gt; fx真前缀处理结果的集合
 	 */
 	@SuppressWarnings("unchecked")
 	default <X, T> List<T> scanl(final Function<List<KVPair<String, X>>, T> fx) {
@@ -5115,8 +5117,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> fx 目标结果类型
 	 * @param <X> fx 函数的源数据类型
-	 * @param fx  真前缀的变换函数:xx->t
-	 * @return List<T> fx真前缀处理结果的集合
+	 * @param fx  真前缀的变换函数:xx-&gt;t
+	 * @return List&lt;T&gt; fx真前缀处理结果的集合
 	 */
 	default <X, T> List<T> scanl2(final Function<List<X>, T> fx) {
 		return scanl2(fx, e -> e);
@@ -5129,7 +5131,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>      目标结果类型
 	 * @param <X>      fx 函数的源数据类型
 	 * @param <U>      目标结果：finisher 的返回类型
-	 * @param fx       真前缀的变换函数:xx->t
+	 * @param fx       真前缀的变换函数:xx-&gt;t
 	 * @param finisher 结果呈递函数:对fx作用后的真后缀集tt，进行再加工 递呈 最终结果 U: tt->u
 	 * @return U finisher 呈递 的目标结果
 	 */
@@ -5148,7 +5150,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> fx 目标结果类型
 	 * @param <X> fx 函数的源数据类型
-	 * @param fx  真后缀的变换函数: [(k,x)]->t
+	 * @param fx  真后缀的变换函数: [(k,x)]-&gt;t
 	 * @return List<T> fx真后缀处理结果的集合
 	 */
 	@SuppressWarnings("unchecked")
@@ -5163,7 +5165,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> fx 目标结果类型
 	 * @param <X> fx 函数的源数据类型
-	 * @param fx  真后缀的变换函数: xx->t
+	 * @param fx  真后缀的变换函数: xx-&gt;t
 	 * @return List<T> fx真后缀处理结果的集合
 	 */
 	default <X, T> List<T> scanr2(final Function<List<X>, T> fx) {
@@ -5178,7 +5180,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>      fx 目标结果类型
 	 * @param <X>      fx 函数的源数据类型
 	 * @param <U>      目标结果：finisher 的返回类型
-	 * @param fx       真后缀的变换函数: xx->t
+	 * @param fx       真后缀的变换函数: xx-&gt;t
 	 * @param finisher 结果呈递函数:对fx作用后的真后缀集tt，进行再加工 递呈 最终结果 U: tt->u
 	 * @return U finisher呈递的目标结果
 	 */
@@ -5803,7 +5805,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 则b 就是： 1:A --> a 2:B --> b 4:D --> null 3:null --> c
 	 * 
 	 * @param rec 另外的一个连接对象
-	 * @return {key->TUP2<Object,Object>}的 Map
+	 * @return {key-&gt;TUP2&lt;Object,Object&gt;}的 Map
 	 */
 	default IRecord join(final IRecord rec) {
 		return REC(join(this, rec));
@@ -5824,7 +5826,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param rec  另外的一个连接对象
 	 * @param keys 新生记录的键值名称
-	 * @return {key->TUP2<Object,Object>}的 Map
+	 * @return {key-&gt;TUP2&lt;Object,Object&gt;}的 Map
 	 */
 	default List<IRecord> join2rr(IRecord rec, String[] keys) {
 		final var rr = new LinkedList<IRecord>();
@@ -5847,7 +5849,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param rec  另外的一个连接对象
 	 * @param keys 新生记录的键值名称 ,用逗号分割
-	 * @return {key->TUP2<Object,Object>}的 Map
+	 * @return {key-&gt;TUP2&lt;Object,Object&gt;}的 Map
 	 */
 	default List<IRecord> join2rr(final IRecord rec, final String keys) {
 		return join2rr(rec, (keys == null ? "key,v1,v2" : keys).split("[,]+"));
@@ -5866,7 +5868,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * /煤焦油/徐州市龙山制焦有限公司 1.60138826E7 (null) <br>
 	 * 
 	 * @param rec 另外的一个连接对象 keys 新生记录的键值名称:默认为[key,v1,v2]
-	 * @return {key->TUP2<Object,Object>}的 Map
+	 * @return {key-&gt;TUP2&lt;Object,Object&gt;}的 Map
 	 */
 	default List<IRecord> join2rr(final IRecord rec) {
 		return join2rr(rec, (String) null);
@@ -6108,7 +6110,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * row:Map 行记录 <br>
 	 * L:结果类型为List <br>
 	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
-	 * <b> var dm = new DataMatrix<> (rec.rowS(),Integer.class); 就构造了一个 DataMatrix
+	 * <br>
+	 * var dm = new DataMatrix&lt;&gt; (rec.rowS(),Integer.class); 就构造了一个 DataMatrix
 	 * 对象。<br>
 	 * 
 	 * @param <T>   值类型
@@ -6128,7 +6131,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * L:结果类型为List<br>
 	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
 	 * <br>
-	 * var dm = new DataMatrix<> (rec.rowL(),Integer.class); 就构造了一个 DataMatrix
+	 * var dm = new DataMatrix&lt;&gt; (rec.rowL(),Integer.class); 就构造了一个 DataMatrix
 	 * 对象。<br>
 	 * 
 	 * @return 生成一个hashmap 的集合<br>
@@ -6158,7 +6161,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>    结果类型 Target
 	 * @param <V>    源数据的值类型 Value
-	 * @param mapper 元素类型格式化函数,类型为， (key:String,value:Object)->new_value
+	 * @param mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value
 	 * @param hh     列名序列,若为空则采用EXCEL格式的列名称(0:A,1:B,...),如果列表不够也采用excelname给予填充区别只不过添加了一个前缀"_"
 	 * @return 返回以hh值为列名的行列表
 	 */
@@ -6209,7 +6212,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>    转换mapper的 结果类型
 	 * @param <V>    源数据的值类型 Value
-	 * @param mapper 元素类型格式化函数,类型为， (key:String,value:Object)->new_value
+	 * @param mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value
 	 *               hh列名序列,默认为keys
 	 * @return 返回以key值为列名的行列表
 	 */
@@ -6582,7 +6585,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param key_formatter  键名内容初始化
 	 * @param cell_formatter 键值元素内容初始化
-	 * @Return 格式化字符串
+	 * @return 格式化字符串
 	 */
 	default String toString2(final Function<Object, String> key_formatter,
 			final Function<Object, String> cell_formatter) {
@@ -6621,7 +6624,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 按照列进行展示 对DataFrame进行初始化
 	 * 
 	 * @param cell_formatter 元素内容初始化
-	 * @Return 格式化字符串
+	 * @return 格式化字符串
 	 */
 	default String toString2(final Function<Object, String> cell_formatter) {
 		return this.toString2(null, cell_formatter);
@@ -6649,7 +6652,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * 按照列进行展示 对DataFrame进行初始化
 	 * 
-	 * @Return 格式化字符串
+	 * @return 格式化字符串
 	 */
 	default String toString2() {
 		return toString2(null);
@@ -6659,7 +6662,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * Unpivot a DataFrame from wide to long format, optionally leaving identifiers
 	 * set <br>
 	 * 
-	 * - mapper 元素类型格式化函数,类型为， (key:String,value:Object)->new_value <br>
+	 * - mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value <br>
 	 * - hh
 	 * 列名序列,若为空则采用EXCEL格式的列名称(0:A,1:B,...),如果列表不够也采用excelname给予填充区别只不过添加了一个前缀"_"
 	 * <br>
@@ -6682,7 +6685,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 术语来源于：R reshape, 接口 原型来源于 pandas Unpivot a DataFrame from wide to long
 	 * format, optionally leaving identifiers set <br>
 	 * 
-	 * - mapper 元素类型格式化函数,类型为， (key:String,value:Object)->new_value <br>
+	 * - mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value <br>
 	 * - hh
 	 * 列名序列,若为空则采用EXCEL格式的列名称(0:A,1:B,...),如果列表不够也采用excelname给予填充区别只不过添加了一个前缀"_"
 	 * <br>
@@ -6706,7 +6709,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * format, optionally leaving identifiers set <br>
 	 * 
 	 * @param <T>        中间结果类型: 由 mapper: (k:String,o:Object)->t:T 生成。
-	 * @param mapper     元素类型格式化函数,类型为， (key:String,value:Object)->new_value:T
+	 * @param mapper     元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value:T
 	 * @param hh         列名序列,若为空则采用EXCEL格式的列名称(0:A,1:B,...),如果列表不够也采用excelname给予填充区别只不过添加了一个前缀"_"
 	 * 
 	 * @param id_vars    标识变量集合 Column(s) to use as identifier variables.
@@ -6770,7 +6773,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * set <br>
 	 * 
 	 * @param <T>        中间结果类型: 由 mapper: (k:String,o:Object)->t:T 生成。
-	 * @param mapper     元素类型格式化函数,类型为， (key:String,value:Object)->new_value:T
+	 * @param mapper     元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value:T
 	 * @param hh         列名序列,若为空则采用EXCEL格式的列名称(0:A,1:B,...),如果列表不够也采用excelname给予填充区别只不过添加了一个前缀"_"
 	 * 
 	 * @param id_vars    Column(s) to use as identifier variables.
