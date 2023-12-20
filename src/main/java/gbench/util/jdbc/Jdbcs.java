@@ -37,8 +37,8 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.KVPair;
 import gbench.util.jdbc.kvp.SimpleRecord;
 import gbench.util.jdbc.kvp.Tuple2;
-import gbench.util.jdbc.node.Node;
-import gbench.util.jdbc.node.TrieNode;
+import gbench.util.tree.Node;
+import gbench.util.tree.TrieNode;
 
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -242,7 +242,7 @@ public class Jdbcs {
 		final Supplier<Node<IRecord>> sp_root = () -> new Node<>(final_root);
 		// 获得子节点
 		final Function<Node<IRecord>, List<Node<IRecord>>> get_children = (node) -> {
-			final var nid = node.recget(id);
+			final var nid = node.get(id);
 			return null == nid ? new ArrayList<Node<IRecord>>() : recs.stream().filter(e -> { // 父子节点关系
 				final var b = nid.equals(e.get(pid)) || (nid.toString()).equals(e.str(pid));
 				return b;

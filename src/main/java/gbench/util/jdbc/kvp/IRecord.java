@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 import gbench.util.jdbc.Jdbcs;
 import gbench.util.type.Times;
-import gbench.util.jdbc.node.Node;
+import gbench.util.tree.Node;
 import gbench.util.jdbc.sql.SQL;
 
 import java.io.Serializable;
@@ -9136,7 +9136,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 				if (value instanceof IRecord)
 					((IRecord) value).foreach(new BCS(node)); // 节点关系处理
 				else
-					node.prop(finalvk, value);
+					node.attrSet(finalvk, value);
 			}
 
 			private final KVPair<Node<String>, Object> parent2value;// 上级节点 与 当前节点
