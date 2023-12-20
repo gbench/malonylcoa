@@ -95,7 +95,8 @@ public class JdbcTest {
 	@Test
 	public void foo() {
 		// 创造一个IJdbcApp接口应用
-		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspeb("sqls/test.sql", this.getClass()), JdbcApp.class);
+		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/test.sql";
+		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspeb(sqlfile), JdbcApp.class);
 		println("db", jdbcApp.getDbName()); // 检索数据库名
 
 		jdbcApp.withTransaction(sess -> { // 准备数据
