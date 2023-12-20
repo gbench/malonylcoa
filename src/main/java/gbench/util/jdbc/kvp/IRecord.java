@@ -7354,7 +7354,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param pathkeys  路径 keys, 使用"[,/\\\\]+"进行分割
 	 * @param value_key 值 的key名
-	 * @return BiFunction<String,Object,IRecord>
+	 * @return BiFunction&lt;String,Object,IRecord&gt;
 	 */
 	static BiFunction<String, Object, IRecord> pv2rec_eval(final String pathkeys, String value_key) {
 		return pv2rec_eval(pathkeys.split("[,/\\\\]+"), value_key);
@@ -7375,7 +7375,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param pathkeys  路径 keys 对层级信息(path)进行分解：维度分解的键名序列
 	 * @param value_key 值 key 值键名
-	 * @return BiFunction<String,Object,IRecord> 一个 path,value 转record 的 计算器
+	 * @return BiFunction&lt;String,Object,IRecord&gt; 一个 path,value 转record 的 计算器
 	 */
 	static BiFunction<String, Object, IRecord> pv2rec_eval(final String[] pathkeys, String value_key) {
 		return (path, value) -> {
@@ -7433,9 +7433,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * SUPplier<LinkedList>的一个简写：这是一个容器生运算符 <br>
+	 * SUPplier&lt;LinkedList&gt;的一个简写：这是一个容器生运算符 <br>
 	 * 生成一个 列表：使用示例 <br>
-	 * e.collect(supll(Object.class), (List<Object>aa,
+	 * e.collect(supll(Object.class), (List&lt;Object&gt;aa,
 	 * KVPair&lt;String,Object&gt;a)-&gt;{aa.add( MFT( "{0}[{1}]", a.key(),a.value()
 	 * ) );}, <br>
 	 * cbll(Object.class) <br>
@@ -7450,9 +7450,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * ComBiner<LinkedList> 的一个简写：这是一个操作运算符 e.collect(supll(Object.class),
-	 * (List<Object>aa, KVPair<String,Object>a)->{aa.add( MFT( "{0}[{1}]",
-	 * a.key(),a.value() ) );}, cbll(Object.class)
+	 * ComBiner&lt;LinkedList&gt; 的一个简写：这是一个操作运算符 e.collect(supll(Object.class),
+	 * (List&lt;Object&gt;aa, KVPair&lt;String,Object&gt;a)-&gt;{aa.add( MFT(
+	 * "{0}[{1}]", a.key(),a.value() ) );}, cbll(Object.class)
 	 * ).stream().map(f-&lt;f+"").collect(Collectors.joining("*")),
 	 * 
 	 * @param <R>   容器中的元素的类型
@@ -9113,7 +9113,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param rec      IRecord 对象
 	 * @param rootName 根节点名称 , 默认值(null) 为 "root"
 	 * @param valuekey IRecord KVPair的 value 值在 Node 的props 中的键值名,默认值 为 "value"
-	 * @return Node &lt String &gt;
+	 * @return Node &lt; String &gt;
 	 */
 	static Node<String> TREENODE(final IRecord rec, final String rootName, final String valuekey) {
 
@@ -9809,8 +9809,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 遮住scanl具有相似意义，差别是split2prefixes 返回的是List<字符串> 二者在原理上一致 line 待分解的字符序列 分解成
-	 * 所有的字串名称。 一般用于数据钻取的分层处理。累加性运算的Key-Value 表达具有普遍意义。
+	 * 遮住scanl具有相似意义，差别是split2prefixes 返回的是List&lt;String&gt; 二者在原理上一致 line 待分解的字符序列
+	 * 分解成 所有的字串名称。 一般用于数据钻取的分层处理。累加性运算的Key-Value 表达具有普遍意义。
 	 * 
 	 * 把 [a,b,c] 解析成 /a,/a/b,/a/b/c 的序列，这个对于累加数据的钻取，累加性运算的Key-Value 表达具有普遍意义。
 	 * 

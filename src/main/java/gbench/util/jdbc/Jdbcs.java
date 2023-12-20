@@ -1799,7 +1799,8 @@ public class Jdbcs {
 	/**
 	 * 包装一个计数器:计数变量从init开始,每次增加 step
 	 * 
-	 * Stream.iterate(0, i-&lt;i+1).takeWhile(i_for(6)).forEach(System.out::println);
+	 * Stream.iterate(0,
+	 * i-&lt;i+1).takeWhile(i_for(6)).forEach(System.out::println);
 	 * Stream.iterate(0,t-&gt;t&lt;6, i-&gt;i+1).forEach(System.out::println);
 	 * 
 	 * @param n 序列的长度
@@ -2265,9 +2266,9 @@ public class Jdbcs {
 	 * Stream.of(bw).forEach(trycatch3(Writer::close)); // 关闭书写器 <br>
 	 * }); <br>
 	 * 
-	 * @param <T>               源数据类型
-	 * @param <U>               解雇数据类型
-	 * @param exceptionFunction 一个可以抛出异常的函数 t-&gt;bool
+	 * @param <T>                源数据类型
+	 * @param <U>                解雇数据类型
+	 * @param exceptionPredicate 一个可以抛出异常的函数 t-&gt;bool
 	 * @return 剥夺掉异常的函数: 谓词判断函数 t-&gt;bool
 	 */
 	public static <T, U> Predicate<T> trycatch4(final ExceptionalPredicate<T> exceptionPredicate) {

@@ -499,7 +499,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * sql2records Extend 增强版的sql2records <br>
 	 * 使用内置的 SqlPatternPreprocessor(spp) 对 sql 进行预处理<bar> 比如：<br>
-	 * jdbc.withTransaction(sess->{ <br>
+	 * jdbc.withTransaction(sess-&gt;{ <br>
 	 * final var recs = sess.sql2records_ex("#getTables"); <br>
 	 * },Jdbc.M(SqlPatternPreprocessor.class,spp)); <br>
 	 * <p>
