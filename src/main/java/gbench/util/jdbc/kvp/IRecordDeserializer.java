@@ -23,13 +23,26 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
  */
 public class IRecordDeserializer extends StdDeserializer<IRecord> {
 
-	private static final long serialVersionUID = 637227298143614828L;
-
 	/**
 	 * 构造函数
 	 */
 	protected IRecordDeserializer() {
 		super(IRecord.class);
+	}
+
+	@Override
+	public IRecord deserialize(final JsonParser jp, final DeserializationContext ctxt)
+			throws IOException, JsonProcessingException {
+
+		final JsonNode node = jp.getCodec().readTree(jp);
+		final Map<String, Object> mm = new LinkedHashMap<>();
+		node.fieldNames().forEachRemaining(name -> {
+			final JsonNode jsnode = node.get(name);
+			final Object value = jsnode2value(jsnode);
+			mm.put(name, value);
+		}); // if forEachRemaining
+
+		return IRecord.REC(mm);
 	}
 
 	/**
@@ -97,19 +110,6 @@ public class IRecordDeserializer extends StdDeserializer<IRecord> {
 		return value;
 	}
 
-	@Override
-	public IRecord deserialize(final JsonParser jp, final DeserializationContext ctxt)
-			throws IOException, JsonProcessingException {
-
-		final JsonNode node = jp.getCodec().readTree(jp);
-		final Map<String, Object> mm = new LinkedHashMap<>();
-		node.fieldNames().forEachRemaining(name -> {
-			final JsonNode jsnode = node.get(name);
-			final Object value = jsnode2value(jsnode);
-			mm.put(name, value);
-		}); // if forEachRemaining
-
-		return IRecord.REC(mm);
-	}
+	private static final long serialVersionUID = 637227298143614828L;
 
 }

@@ -14,8 +14,6 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
  */
 public class IRecordSerializer extends StdSerializer<IRecord> {
 
-	private static final long serialVersionUID = -6713069486531158400L;
-
 	/**
 	 * 序列化
 	 */
@@ -36,5 +34,7 @@ public class IRecordSerializer extends StdSerializer<IRecord> {
 			generator.writeObjectField(kvp.key(), kvp.value());
 		generator.writeEndObject();
 	}
+
+	private static final long serialVersionUID = -6713069486531158400L;
 
 }
