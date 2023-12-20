@@ -90,18 +90,9 @@ public class FileSystem {
 	 * nullgbench/web/apps/finance/kline/eg2001_900000 <br>
 	 * 
 	 * @param file  文件路径
-	 * @param clazz 相对于位置的基点：与file文件同级的目录的class文件,null 则返回file本身
+	 * @param clazz 相对于位置的基点,文件路径次采用clazz纪念性资源读取，<br>
+	 *              当clazz为null时使用ClassLoader.getSystemResource读取，也就是classpath:
 	 * @return file的文件的路径：可以通过new File(path(file,class)) 可以直接读取文件。<br>
-	 *         当采用jar问运行的时候是相对路径： <br>
-	 *         比如：path
-	 *         for(file:nullgbench/web/apps/finance/kline/eg2001_60000,class:null):
-	 *         <br>
-	 *         nullgbench/web/apps/finance/kline/eg2001_60000 <br>
-	 *         new File(new File(path(file,class)))。getAbsolutePath(): <br>
-	 *         却可以返回相对于运行路径D:\sliced\ws\gitws\moxi-agent\moxi\target的绝对路径 <br>
-	 *         D:\sliced\ws\gitws\moxi-agent\moxi\target\nullgbench\web\apps\finance\kline\eg2001_60000
-	 *         <br>
-	 *
 	 *         当文件展开运行的时候是绝对路径：
 	 */
 	public static String path(final String file, final Class<?> clazz) {
@@ -113,12 +104,12 @@ public class FileSystem {
 		) { // 判断是否是绝对路径
 			return file;
 		} else {// 构造一个相对于clazz所在位置的文件路径。
-			ClassLoader classLoader = clazz != null ? clazz.getClassLoader() // 根据classloader 以资源的方式获取路径
-					: FileSystem.class.getClassLoader();// 默认为FileSystem.class所在的根路径位置。
 			String home = null;// 基准根路径
 			try {// 注意需要采用.toURI()把：包路径
-				home = classLoader.getResource("").toURI().getPath() + // classLoader 下的根路径
-						(clazz == null ? "" : clazz.getPackage().getName().replace(".", "/")); // 非空的clazz加入相对于类根路径
+				home = clazz != null //
+						? clazz.getResource("").toURI().getPath() // 非空的clazz加入相对于类根路径
+						: FileSystem.class.getResource("").getPath().replace( 
+								FileSystem.class.getPackageName().replace(".", "/"),"");
 			} catch (URISyntaxException e) {
 				e.printStackTrace();
 			}

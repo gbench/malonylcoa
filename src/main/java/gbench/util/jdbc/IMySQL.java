@@ -1,6 +1,7 @@
 package gbench.util.jdbc;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import gbench.util.jdbc.annotation.JdbcExecute;
 import gbench.util.jdbc.annotation.JdbcQuery;
@@ -12,7 +13,7 @@ import gbench.util.jdbc.kvp.IRecord;
  * @author gbench
  *
  */
-public interface ISqlDatabase {
+public interface IMySQL {
 	/**
 	 * 创建一个数据库
 	 * 
@@ -24,7 +25,7 @@ public interface ISqlDatabase {
 	/**
 	 * 获取数据库名称
 	 */
-	@JdbcQuery("select database() database")
+	@JdbcQuery("select database() db")
 	String getDbName();
 
 	/**
@@ -80,6 +81,43 @@ public interface ISqlDatabase {
 		final var sql = spp.handle(null, params, sqlpattern, jdbc);
 
 		return sql;
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。 <br>
+	 *                   #标记的参数会被添加引号: select * from user where name=#name <br>
+	 *                   ##标记的参数不会添加引号: select * from user limit ##cnt <br>
+	 * @param params     sharp变量的占位符参数
+	 * @return IRecord 流
+	 */
+	default Stream<IRecord> sqlqueryS(final String sqlpattern, final IRecord params) {
+		final var proxy = this.getProxy();
+		final var spp = proxy.findOne(SqlPatternPreprocessor.class);
+		final var jdbc = proxy.findOne(Jdbc.class);
+		final var sql = spp.handle(null, params, sqlpattern, jdbc);
+
+		return jdbc.sql2recordS(sql);
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
+	 * @param params     sharp变量的占位符参数
+	 * @return IRecord 流
+	 */
+	default Stream<IRecord> sqlqueryS(final String sqlpattern) {
+		return this.sqlqueryS(sqlpattern, null);
 	}
 
 	/**

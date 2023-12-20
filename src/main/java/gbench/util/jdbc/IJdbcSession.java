@@ -643,7 +643,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 		final var _targetClass = targetClass == null ? (Class<U>) Object.class : targetClass;
 		return this.sql2maybe(sql, _targetClass)
 				.orElse((Boolean.class.isAssignableFrom(_targetClass) || boolean.class.isAssignableFrom(_targetClass)) // Maybe
-																														// 没有值的时候
+						// 没有值的时候
 						? (U) (Object) false // targetClass 类型为布尔类型的时候 返回 false
 						: null); // targetClass 为其他类型的时候 返回 null
 	}
@@ -1093,8 +1093,8 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 		} else {
 			var _sqlpattern = sqlpattern;// sql语句的模式
 			if (params != null && spp != null && "namedsql_processor_escape_brace".equals(spp.name())) { // 手动完成参数
-																											// _sqlpattern
-																											// 的预处理
+				// _sqlpattern
+				// 的预处理
 				for (int i = 0; i < params.size(); i++) {
 					final var v = params.get(i);
 					if (v instanceof String)
@@ -1103,7 +1103,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 				_sqlpattern = Jdbcs.MFT_ESCAPE(sqlpattern); // 对 SQL模版进行预处理
 			} // if
 			final var sql = spp.handle(null, params, _sqlpattern, null); // 参数填充,调用spp
-																			// 进行参数填充的时候需要对_sqlpattern预处理
+			// 进行参数填充的时候需要对_sqlpattern预处理
 			return sql;
 		}
 	}
@@ -1526,13 +1526,18 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 		final var pstmt = Jdbc.pstmt(connection, update_flag ? SQL_MODE.UPDATE : SQL_MODE.QUERY, sql, params); // 创建查询语句
 
 		ResultSet _rs = null;
-		if (update_flag) {
-			pstmt.execute();
-			_rs = pstmt.getGeneratedKeys();
-			if (_rs == null)
-				_rs = pstmt.getResultSet();
-		} else {
-			_rs = pstmt.executeQuery();
+		try {
+			if (update_flag) {
+				pstmt.execute();
+				_rs = pstmt.getGeneratedKeys();
+				if (_rs == null)
+					_rs = pstmt.getResultSet();
+			} else {
+				_rs = pstmt.executeQuery();
+			}
+		} catch (SQLException e) {
+			System.out.println(String.format("error sql:%s", sql));
+			throw e;
 		}
 
 		final var rs = _rs;

@@ -49,6 +49,27 @@ public interface IJdbcApp {
 	}
 
 	/**
+	 * NamedSql_Processor Preprocessor (NSPP) SqlPatternPreprocessor 的处理类
+	 * 
+	 * @param sqlfile sql 文件的名称,可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
+	 * @return SqlPatternPreprocessor
+	 */
+	static SqlPatternPreprocessor nspp(String sqlfile) {
+		return nspp(sqlfile, null);
+	}
+
+	/**
+	 * Named Sql Preprocessor Escaped Brace (NSPEB) SqlPatternPreprocessor 的处理类 对
+	 * ‘{’进行转义，以以提供Neo4j类型的数据库处理。
+	 * 
+	 * @param sqlfile sql文件的名称，可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
+	 * @return SqlPatternPreprocessor
+	 */
+	static SqlPatternPreprocessor nspeb(final String sqlfile) {
+		return nspeb(sqlfile, null);
+	}
+
+	/**
 	 * Named Sql Preprocessor Escaped Brace (NSPEB) SqlPatternPreprocessor 的处理类 对
 	 * ‘{’进行转义，以以提供Neo4j类型的数据库处理。
 	 * 
@@ -199,7 +220,7 @@ public interface IJdbcApp {
 	static Map<String, String> namedsqls(final String sqlfile, final Class<?> clazz) {
 		if (sqlfile == null)
 			return new HashMap<String, String>();// 返回一个空的namedsqls
-		final var lineS = FileSystem.readLineS(new File(FileSystem.path(sqlfile, clazz)), "");
+		final var lineS = FileSystem.readLineS(new File(FileSystem.path(sqlfile, clazz)), "utf8");
 		if (lineS == null)
 			return new HashMap<String, String>();// 返回一个空的namedsqls
 		return namedsqls(lineS);
