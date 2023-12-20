@@ -1783,7 +1783,7 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 包装一个计数器:计数变量从init开始,每次增加 step 这就是模拟for(long i = start;i<end;i+=step) 的语句。
+	 * 包装一个计数器:计数变量从init开始,每次增加 step 这就是模拟for(long i = start;i&lt;end;i+=step) 的语句。
 	 * 用于对一个stream进行遍历和截取。
 	 * 
 	 * @param start  开始数值

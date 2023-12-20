@@ -364,7 +364,7 @@ public class Jdbc implements IManagedStreams {
 	 * 不对结果集合ResultSet做任何改变,游标位置需要事先设置好<br>
 	 * 即不会移动ResultSet的cursor。所以第一条数据的时候需要在外部进行rs.next()<br>
 	 * 
-	 * @param rs      结果集合
+	 * @param rs 结果集合
 	 * @return 当前行的对象数组,出现异常则返回null
 	 */
 	public static Object[] readlineA(final ResultSet rs) {

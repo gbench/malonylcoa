@@ -83,7 +83,7 @@ import static gbench.util.jdbc.Jdbcs.*;
  * IRecord 需要具有递归的含义，也就是IRecord的元素也可以是IRecord. <br>
  * IRecord 不仅表现出结构化，还要表现出类似于LISP 列表计算。也就是可以依附于符号(key)<br>
  * 的绑定类型,而表现出值的计算的能力。比如:<br>
- * public default &lt;T,U&gt; U get(String key,T t,Function<T,U> t2u)，<br>
+ * public default &lt;T,U&gt; U get(String key,T t,Function&lt;T,U&gt; t2u)，<br>
  * 就把一个key,绑定到一个Function&lt;T,U&gt; t2u 然后对vlaue 进行计算。<br>
  * 另外key->value 中的value 不仅可以是数值,还可以是函数。<br>
  * 这样key:value 就不是一个静态意义，而是一个动态的概念了。比如：<br>
