@@ -100,7 +100,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * 添加一个新的键值对儿(key,value).根据具体的IRecord的不同 对于已经存在的key：若允许同名字段，则添加新的键值对儿，<br>
-	 * 若不允许同名key 则修改key的值位vlaue
+	 * 若不允许同名key 则修改key的值位value
 	 * 
 	 * @param key   字段名: key 会调用 toString作为进行键名转换
 	 * @param value 字段值 任意对象 可以为null
@@ -969,7 +969,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
 	 * 
 	 * @param path 键名序列：键名额层级结构 , 键名分隔符的 regex "[/]+"
-	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
 	default Optional<String> path2optstr(final String path) {
@@ -990,7 +989,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
 	 * 
 	 * @param path 键名序列：键名额层级结构 , 键名分隔符的 regex "[/]+"
-	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
 	default Optional<Number> path2optnum(final String path) {
@@ -1011,7 +1009,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
 	 * 
 	 * @param path 键名序列：键名额层级结构 , 键名分隔符的 regex "[/]+"
-	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
 	default Optional<Integer> path2optint(final String path) {
@@ -1032,7 +1029,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
 	 * 
 	 * @param path 键名序列：键名额层级结构 , 键名分隔符的 regex "[/]+"
-	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
 	default Optional<Double> path2optdbl(final String path) {
@@ -2480,8 +2476,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]),比如 <br>
 	 * Integer,Long,Double等，把当前集合中的值集合转换成 一维数组<br>
 	 * 
-	 * @param <U>         mapper 目标元素的类型
-	 * @param tt2u_mapper [o]->u 的数组变换函数
+	 * @param <U>    mapper 目标元素的类型
+	 * @param mapper [o]->u 的数组变换函数
 	 * @return U类型结果
 	 */
 	default <U> U arrayOf(final Function<Object[], U> mapper) {

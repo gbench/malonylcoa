@@ -1216,8 +1216,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 查询结果集合
 	 *
-	 * @param sql    prepared sql 语句
-	 * @param params params sql 语句中占位符参数的值集合，位置从1开始
+	 * @param sql prepared sql 语句
 	 * @return 查询结果集合
 	 * @throws SQLException
 	 */

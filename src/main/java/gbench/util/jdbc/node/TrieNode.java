@@ -31,8 +31,6 @@ public class TrieNode<T> {
 
 	/**
 	 * 前缀树的节点
-	 * 
-	 * @param name 节点字符
 	 */
 	public TrieNode() {
 		this(null, null, null);
@@ -364,7 +362,7 @@ public class TrieNode<T> {
 	/**
 	 * 获取子节点
 	 * 
-	 * @param i 子节点的偏移序列,偏移从0开始
+	 * @param indices 子节点的偏移序列,偏移从0开始
 	 * @return 获取节点
 	 */
 	public TrieNode<T> childAt(final int... indices) {
@@ -426,8 +424,8 @@ public class TrieNode<T> {
 	/**
 	 * mutate the current node
 	 * 
-	 * @param <U>    the result type
-	 * @param mapper the mutator trienode->u
+	 * @param <U>     the result type
+	 * @param mutator the mutator trienode->u
 	 * @return U type result
 	 */
 	public <U> U mutate(final Function<TrieNode<T>, U> mutator) {
@@ -595,9 +593,8 @@ public class TrieNode<T> {
 	/**
 	 * 节点属性
 	 * 
-	 * @param <X>    源数据类型
-	 * @param path   属性路径
-	 * @param mapper 数值值映射 x->u
+	 * @param <X>  源数据类型
+	 * @param path 属性路径
 	 * @return Double 结果 类型
 	 */
 	public <X> Double pattr2dbl(final String path) {
@@ -607,9 +604,8 @@ public class TrieNode<T> {
 	/**
 	 * 节点属性
 	 * 
-	 * @param <X>    源数据类型
-	 * @param path   属性路径
-	 * @param mapper 数值值映射 x->u
+	 * @param <X>  源数据类型
+	 * @param path 属性路径
 	 * @return Number 结果 类型
 	 */
 	public <X> Number pattr2num(final String path) {
@@ -619,9 +615,8 @@ public class TrieNode<T> {
 	/**
 	 * 节点属性
 	 * 
-	 * @param <X>    源数据类型
-	 * @param path   属性路径
-	 * @param mapper 数值值映射 x->u
+	 * @param <X>  源数据类型
+	 * @param path 属性路径
 	 * @return String 结果 类型
 	 */
 	public <X> String pattr2str(final String path) {
