@@ -4,6 +4,7 @@ import static gbench.util.io.Output.println;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
@@ -35,8 +36,13 @@ public class FilterConfig {
 		return (exchange, chain) -> {
 			final var req = exchange.getRequest();
 			final var method = req.getMethod();
-			if (HttpMethod.POST.compareTo(method) == 0) { // POST
+			final var contentType = req.getHeaders().getContentType();
+			println(contentType, LocalDateTime.now());
+
+			if (HttpMethod.POST.compareTo(method) == 0 && //
+					Objects.equals("application/x-www-form-urlencoded", contentType)) { // POST
 				println("GATEWAY", HttpMethod.POST, LocalDateTime.now());
+
 				return DataBufferUtils.join(exchange.getRequest().getBody()) //
 						.flatMap(dataBuffer -> {
 							final var bytes = new byte[dataBuffer.readableByteCount()];

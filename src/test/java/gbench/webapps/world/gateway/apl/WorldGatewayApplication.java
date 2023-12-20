@@ -9,7 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
  * WorldGatewayApplication <br>
  * 
  * 启动参数: <br>
- * --server.port=6010 或 <br>
+ * --server.port=8010 或 <br>
  * VM argument: <br>
  * -Dspring.config.location=classpath:/config/webapps/world/gateway/application.yml
  * <br>
