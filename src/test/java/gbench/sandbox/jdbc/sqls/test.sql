@@ -1,9 +1,20 @@
-
 -- --------------------------
 -- # getAllTables
 -- --------------------------
 show tables;
 
+-- --------------------------
+-- # getUsers
+-- #cnt
+-- --------------------------
+select * from t_user limit ##cnt
+
+-- --------------------------
+-- # updateUserById
+-- #name
+-- #id
+-- --------------------------
+update t_user set name=#name where id=##id
 
 -- --------------------------
 -- # getTablesOf

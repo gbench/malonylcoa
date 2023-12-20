@@ -5,16 +5,22 @@ import static gbench.util.jdbc.IJdbcApp.nspeb;
 import static gbench.util.jdbc.kvp.DFrame.dfmclc;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
+import java.util.List;
+import java.util.Random;
+
 import org.junit.jupiter.api.Test;
 
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
-import gbench.util.jdbc.Jdbc;
 import gbench.util.jdbc.annotation.JdbcConfig;
+import gbench.util.jdbc.annotation.JdbcExecute;
+import gbench.util.jdbc.annotation.JdbcQuery;
 import gbench.util.jdbc.sql.SQL;
+import gbench.util.jdbc.kvp.DFrame;
+import gbench.util.jdbc.kvp.IRecord;
 
 /**
- * 
+ * 使用 JDK 代理的方式,根据接口的注解@JdbcQuery,@JdbcExecute自动填充对象的SQL语句实现数据库操作
  */
 public class JdbcTest {
 
@@ -42,27 +48,68 @@ public class JdbcTest {
 	 *
 	 */
 	@JdbcConfig(url = "jdbc:h2:mem:erp;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", user = "root", password = "123456")
-	interface MySQL extends IMySQL { // 数据接口
+	interface JdbcApp extends IMySQL { // 数据接口
+
+		/**
+		 * 使用注解 引用 sql文件中 SQL语句
+		 * 
+		 * @param cnt 返回的记录数量
+		 * @return 返回值
+		 */
+		@JdbcQuery
+		List<IRecord> getUsers(final int cnt);
+
+		/**
+		 * 更新指定用户额名称
+		 * 
+		 * @param name 用户名称
+		 * @param id   用户id
+		 */
+		@JdbcExecute
+		void updateUserById(final String name, final int id);
+
+		/**
+		 * 默认函数处理,直接使用jdbc处理sql
+		 * 
+		 * @param jdbc
+		 * @return DFrame
+		 */
+		default DFrame getUsers() {
+			return jdbc().sql2recordS("select * from t_user").collect(DFrame.dfmclc);
+		}
+
 	}
 
 	@Test
 	public void foo() {
-		final var mysql = IJdbcApp.newDBInstance(() -> nspeb("sqls/test.sql", this.getClass()), MySQL.class);
-		println("db", mysql.getDbName());
-		final var jdbc = mysql.getProxy().findOne(Jdbc.class);
-		jdbc.withTransaction(sess -> {
-			final var proto = REC("id", 1, "name", "zhangsan", "address", "shanghai");
+		// 创造一个IJdbcApp接口应用
+		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspeb("sqls/test.sql", this.getClass()), JdbcApp.class);
+		println("db", jdbcApp.getDbName());
+		jdbcApp.withTransaction(sess -> { // 准备数据
+			final var proto = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690611", "sex", 1,
+					"address", "shanghai");
 			final var sql = SQL.of("t_user", proto);
 			sess.sqlexecute(sql.createTable().get(2));
 			for (int i = 0; i < 10; i++) {
-				final var rec = proto.derive("id", i, "name", String.format("%s%d", proto.str("name"), i));
+				final var aa = "北京,天津,上海,重庆,广州".split(",");
+				final var rec = proto.derive("id", i, //
+						"name", String.format("%s%d", proto.str("name"), i), //
+						"sex", i % 2, //
+						"address", aa[new Random().nextInt(aa.length)] //
+				);
 				sess.sql2execute(SQL.of("t_user", rec).insert());
 			}
-			println(sess.sql2u("show tables", dfmclc));
+			println("show tables", sess.sql2u("show tables", dfmclc));
 		});
 		println("------------------------------------------------------");
-		final var dfm = mysql.sqlqueryS("select * from t_user limit ##cnt", REC("cnt", 5)).collect(dfmclc);
+		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", REC("cnt", 5));
 		println(dfm);
+		println("------------------------------------------------------");
+		println("getUsers(5)", jdbcApp.getUsers(5));
+		println("------------------------------------------------------");
+		// 修改用户名称
+		jdbcApp.updateUserById("zhangsan100", 1);
+		println("getUsers()", jdbcApp.getUsers());
 	}
 
 }

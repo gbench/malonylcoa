@@ -1,10 +1,12 @@
 package gbench.util.jdbc;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import gbench.util.jdbc.annotation.JdbcExecute;
 import gbench.util.jdbc.annotation.JdbcQuery;
+import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 
 /**
@@ -112,6 +114,44 @@ public interface IMySQL {
 	 * params:REC("name","张三") <br>
 	 * 返回值:select * from user where name="张三" <br>
 	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。 <br>
+	 *                   #标记的参数会被添加引号: select * from user where name=#name <br>
+	 *                   ##标记的参数不会添加引号: select * from user limit ##cnt <br>
+	 * @param params     sharp变量的占位符参数
+	 * @return DFrame
+	 */
+	default DFrame sqldframe(final String sqlpattern, final IRecord params) {
+		final var proxy = this.getProxy();
+		final var spp = proxy.findOne(SqlPatternPreprocessor.class);
+		final var jdbc = proxy.findOne(Jdbc.class);
+		final var sql = spp.handle(null, params, sqlpattern, jdbc);
+
+		return jdbc.sql2recordS(sql).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。 <br>
+	 *                   #标记的参数会被添加引号: select * from user where name=#name <br>
+	 *                   ##标记的参数不会添加引号: select * from user limit ##cnt <br>
+	 * @return DFrame
+	 */
+	default DFrame sqldframe(final String sqlpattern) {
+		return this.sqldframe(sqlpattern, null);
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
 	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
 	 * @param params     sharp变量的占位符参数
 	 * @return IRecord 流
@@ -128,6 +168,47 @@ public interface IMySQL {
 	 */
 	default String getSqlPattern(final String sqlpattern) {
 		return this.getSql(sqlpattern, null);
+	}
+
+	/**
+	 * 获取jdbc 对象
+	 * 
+	 * @param jdbc jdbc 对象 由代理进行传入
+	 * @return jdbc 对象
+	 */
+	default Jdbc getJdbc(final Jdbc jdbc) {
+		return jdbc;
+	}
+
+	/**
+	 * 获取jdbc对象
+	 * 
+	 * @return jdbc
+	 */
+	default Jdbc jdbc() {
+		return this.getJdbc(null);
+	}
+
+	/**
+	 * 指定session 执行DataManipulation．:Session 是Monad对象。因此可以进行函数式的状态编程<br>
+	 * <p>
+	 * 发起创建一个IJdbcSession对象，并通过IJdbcSession急性数据库操作<br>
+	 * 事务处理,每一个事务，系统会动态的创建出一个 session 对象（IJdbcSession），这个Session
+	 * 对象拥有一个UUID类型的对象标识。<br>
+	 * 在一次事务性的会话IJdbcSession中：共享一个数据库连接，并且出现操作失败（sql操作)，将给予先前的动作回滚．<br>
+	 * 事务只能对DML语句进行操作，对数据定义类语句DDL无法操作，例如建表、建立索引、建立分区等。<br>
+	 * 一般采用如下方式调用此函数：<br>
+	 * jdbc.withTransaction(sess->{session.sql2records("show databases");});<br>
+	 *
+	 * @param dm DataManipulation 代表，数据操作的具体过程 dm 的数据如果需要会馆请使用dm所提供的session
+	 *           来操作数据,通常采用lamba表达式来给予 创建操作过程：sess->{写入你的操作代码}.
+	 *           需要注意对于withTransaction创建的会话IJdbcSession 是以monad 容器。其初始数据为Object类型
+	 *           值为null.
+	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
+	 *         result:sess的结果属性},参见Jdbc.newInstance
+	 */
+	default IRecord withTransaction(final DataManipulation<IJdbcSession<UUID, Object>> dm) {
+		return this.jdbc().withTransaction(dm);
 	}
 
 	/**
