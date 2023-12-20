@@ -1419,10 +1419,10 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 测试函数的执行时间： 例如： timeit(p->{ final List<List<?>> directions =
-	 * LIST(iterate(0,i->i<10,i->i+1).map(e->asList(1,0,-1)));// 价格的变动方向 final var
-	 * ff = cph(directions);// 生成涨跌列表
-	 * ff.forEach(e->e.compute("total",o->e.reduce(kv2int,0, (a,b)->a+b)));
+	 * 测试函数的执行时间： 例如： timeit(p-&gt;{ final List&lt;List&lt;?&gt;7&gt; directions =
+	 * LIST(iterate(0,i-&gt;i&lt;10,i->i+1).map(e-&gt;asList(1,0,-1)));// 价格的变动方向
+	 * final var ff = cph(directions);// 生成涨跌列表
+	 * ff.forEach(e-&gt;e.compute("total",o-&gt;e.reduce(kv2int,0, (a,b)-&gt;a+b)));
 	 * System.out.println(FMT2(ff)); //结果输出 },args,true);
 	 * 
 	 * @param <T>    cons的参数的类型
@@ -1799,8 +1799,8 @@ public class Jdbcs {
 	/**
 	 * 包装一个计数器:计数变量从init开始,每次增加 step
 	 * 
-	 * Stream.iterate(0, i->i+1).takeWhile(i_for(6)).forEach(System.out::println);
-	 * Stream.iterate(0,t->t<6, i->i+1).forEach(System.out::println);
+	 * Stream.iterate(0, i-&t;i+1).takeWhile(i_for(6)).forEach(System.out::println);
+	 * Stream.iterate(0,t-&gt;t<6, i-&gt;i+1).forEach(System.out::println);
 	 * 
 	 * @param n 序列的长度
 	 * @return Predicate 的谓词判断
@@ -1831,8 +1831,8 @@ public class Jdbcs {
 
 	/**
 	 * 为一个类型为T的流中的每个元素 <br>
-	 * 分配一个索引号，索引号从0开始 Key->Value:<br>
-	 * 0->t1,1->t1,2->t2,...,n-1->tn-1,... <br>
+	 * 分配一个索引号，索引号从0开始 Key-&gt;Value:<br>
+	 * 0-&t;t1,1-&gt;t1,2-&gt;t2,...,n-1-&gt;tn-1,... <br>
 	 * NATS(10).map(kvp()).forEach(System.out::println);<br>
 	 * <br>
 	 * 索引号 从0开始
@@ -1846,8 +1846,8 @@ public class Jdbcs {
 
 	/**
 	 * 为一个类型为T的流中的每个元素 <br>
-	 * 分配一个索引号，索引号从start开始 Key->Value:<br>
-	 * start->t0,start+1->t1,start+2->t2,...,start+n-1->tn-1,... <br>
+	 * 分配一个索引号，索引号从start开始 Key-&lt;Value:<br>
+	 * start-&lt;t0,start+1-&lt;t1,start+2-&lt;t2,...,start+n-1-&lt;tn-1,... <br>
 	 * NATS(10).map(kvp(0)).forEach(System.out::println);<br>
 	 * 
 	 * @param <T>   KVPair 的值类型，这其实就是为一个值 T,分配一个索引号。主要用于对流中的数据进行索引。
@@ -1860,8 +1860,8 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 为一个类型为T的流中的每个元素 分配一个索引号，索引号从0开始 Key->Value:<br>
-	 * 0->t1,1->t1,2->t2,...,n-1->tn-1,... <br>
+	 * 为一个类型为T的流中的每个元素 分配一个索引号，索引号从0开始 Key-&lt;Value:<br>
+	 * 0-&lt;t1,1-&lt;t1,2-&lt;t2,...,n-1-&lt;tn-1,... <br>
 	 * NATS(10).map(kvp_int()).forEach(System.out::println);<br>
 	 * <br>
 	 * 索引号 从0开始
@@ -1874,8 +1874,8 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 为一个类型为T的流中的每个元素 分配一个索引号，索引号从start开始 Key->Value:<br>
-	 * start->t0,start+1->t1,start+2->t2,...,start+n-1->tn-1,... <br>
+	 * 为一个类型为T的流中的每个元素 分配一个索引号，索引号从start开始 Key-&lt;Value:<br>
+	 * start-&lt;t0,start+1-&lt;t1,start+2-&lt;t2,...,start+n-1-&lt;tn-1,... <br>
 	 * NATS(10).map(kvp_int(0)).forEach(System.out::println);<br>
 	 * 
 	 * @param <T>   KVPair 的值类型，这其实就是为一个值 T,分配一个索引号。主要用于对流中的数据进行索引。
@@ -1887,8 +1887,8 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 为一个类型为T的流中的每个元素 分配一个索引号，索引号从start开始 Key->Value:<br>
-	 * start->t0,start+1->t1,start+2->t2,...,start+n-1->tn-1,... <br>
+	 * 为一个类型为T的流中的每个元素 分配一个索引号，索引号从start开始 Key-&lt;Value:<br>
+	 * start-&lt;t0,start+1-&lt;t1,start+2-&lt;t2,...,start+n-1-&lt;tn-1,... <br>
 	 * NATS(10).map(kvp_int(0)).forEach(System.out::println);<br>
 	 * 
 	 * @param <T>           KVPair 的值类型，这其实就是为一个值 T,分配一个索引号。主要用于对流中的数据进行索引。
@@ -1896,8 +1896,8 @@ public class Jdbcs {
 	 * @param key_generator 键名索引的映射器，把数值类型的序号索引转变成其他的数据类型，<br>
 	 *                      这个一般用于按照某种key_generator的函数规则来规律的生成K类型。比如 按照列序进行矩阵生成的功能。
 	 *                      例如：
-	 *                      nvec.stream(kvp_int(NVec.modeOf(10,1))).sorted((a,b)->a._1().compareTo(b._1()))<br>
-	 *                      .map(e -> e._2()).collect(aaclc(NVec::new));<br>
+	 *                      nvec.stream(kvp_int(NVec.modeOf(10,1))).sorted((a,b)-&lt;a._1().compareTo(b._1()))<br>
+	 *                      .map(e -&lt; e._2()).collect(aaclc(NVec::new));<br>
 	 *                      详见 matlib的NVec <br>
 	 * @return 键值对儿 (int,t) 的生成函数，为值 按照 key_generator 编制一个 K类型 编号
 	 */
@@ -1907,7 +1907,7 @@ public class Jdbcs {
 
 	/**
 	 * 为一个类型为T的流中的每个元素 分配一个索引号，索引号从start开始 Key->Value:<br>
-	 * start->t0,start+1->t1,start+2->t2,...,start+n-1->tn-1,... <br>
+	 * start-&lt;t0,start+1-&lt;t1,start+2-&lt;t2,...,start+n-1-&lt;tn-1,... <br>
 	 * NATS(10).map(kvp_int(0)).forEach(System.out::println);<br>
 	 * 
 	 * @param <T>           KVPair 的值类型，这其实就是为一个值 T,分配一个索引号。主要用于对流中的数据进行索引。
@@ -1917,8 +1917,8 @@ public class Jdbcs {
 	 *                      这个一般用于按照某种key_generator的函数规则来规律的生成K类型。比如
 	 *                      按照列序进行矩阵生成的功能。<br>
 	 *                      例如：
-	 *                      nvec.stream(kvp_int(NVec.modeOf(10,1))).sorted((a,b)->a._1().compareTo(b._1()))<br>
-	 *                      .map(e -> e._2()).collect(aaclc(NVec::new)); <br>
+	 *                      nvec.stream(kvp_int(NVec.modeOf(10,1))).sorted((a,b)-&lt;a._1().compareTo(b._1()))<br>
+	 *                      .map(e -&lt; e._2()).collect(aaclc(NVec::new)); <br>
 	 *                      详见 matlib的NVec <br>
 	 * @return 键值对儿 (int,t) 的生成函数，为值 按照 key_generator 编制一个 K类型 编号
 	 */
@@ -1930,7 +1930,7 @@ public class Jdbcs {
 
 	/**
 	 * key_generator 根据key 生成 相应的主键。
-	 * NATS(10).map(kvp(t->t%2)).forEach(System.out::println);
+	 * NATS(10).map(kvp(t-&lt;t%2)).forEach(System.out::println);
 	 * 
 	 * @param <K>           键值名类型
 	 * @param <T>           键值类型

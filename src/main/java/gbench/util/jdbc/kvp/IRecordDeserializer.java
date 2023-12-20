@@ -48,8 +48,6 @@ public class IRecordDeserializer extends StdDeserializer<IRecord> {
 	/**
 	 * 单层节点转换的ObjectNode变为IRecord
 	 * 
-	 * @param node 节点
-	 * @return
 	 */
 	public static Function<ObjectNode, IRecord> node2rec = IRecordDeserializer::objnode2rec;
 

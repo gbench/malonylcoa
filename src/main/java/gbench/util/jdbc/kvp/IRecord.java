@@ -9247,15 +9247,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>        Stream 元素类型
 	 * @param <K>        classifier 生的K的类型
 	 * 
-	 * @return Map<K,List<K>
+	 * @return Map& lt;K,List&gt;K&gt;&gt;
 	 */
 	static <T, K> Collector<T, ?, Map<K, List<T>>> groupby(final Function<T, K> classifier) {
 		return Collectors.groupingBy(classifier);
 	}
 
 	/**
-	 * 使用示例 var s = ll.stream().map(e->e.toString()).collect(join("\n")); 把String
-	 * <String> 通过 delimiter 连接骑起来
+	 * 使用示例 var s = ll.stream().map(e-&gt;e.toString()).collect(join("\n")); 把String
+	 * 通过 delimiter 连接骑起来
 	 * 
 	 * @param delimiter 分隔符
 	 * @return 用delimiter 分割的Stream<String>

@@ -66,7 +66,7 @@ public interface IMySQL {
 	List<IRecord> getAll(String tableName, int maxSize);
 
 	/**
-	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
 	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
 	 * sqlpattern: select * from user where name=#name <br>
 	 * params:REC("name","张三") <br>
@@ -86,7 +86,7 @@ public interface IMySQL {
 	}
 
 	/**
-	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
 	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
 	 * sqlpattern: select * from user where name=#name <br>
 	 * params:REC("name","张三") <br>
@@ -108,7 +108,7 @@ public interface IMySQL {
 	}
 
 	/**
-	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
 	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
 	 * sqlpattern: select * from user where name=#name <br>
 	 * params:REC("name","张三") <br>
@@ -130,7 +130,7 @@ public interface IMySQL {
 	}
 
 	/**
-	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
 	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
 	 * sqlpattern: select * from user where name=#name <br>
 	 * params:REC("name","张三") <br>
@@ -146,7 +146,7 @@ public interface IMySQL {
 	}
 
 	/**
-	 * 调用SqlPatternPreprocessor 处理后的对。sqlpattern SqlPatternPreprocessor &
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
 	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
 	 * sqlpattern: select * from user where name=#name <br>
 	 * params:REC("name","张三") <br>
