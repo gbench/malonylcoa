@@ -4,13 +4,14 @@ open module gbench.malonylcoa {
 	requires com.fasterxml.jackson.core;
 	requires transitive com.fasterxml.jackson.databind;
 	requires com.fasterxml.jackson.datatype.jsr310;
-	requires org.apache.poi.poi;
-	requires org.apache.poi.ooxml;
+	requires transitive org.apache.poi.poi;
+	requires transitive org.apache.poi.ooxml;
 	requires pinyin4j;
 
 	exports gbench.util.array;
 	exports gbench.util.chn;
 	exports gbench.util.data;
+	exports gbench.util.data.xls;
 	exports gbench.util.function;
 	exports gbench.util.io;
 	exports gbench.util.jdbc;
