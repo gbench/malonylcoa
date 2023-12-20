@@ -69,6 +69,15 @@ public class JdbcTest {
 		void updateUserById(final String name, final int id);
 
 		/**
+		 * 更新指定用户额名称
+		 * 
+		 * @param name 用户名称
+		 * @param id   用户id
+		 */
+		@JdbcExecute
+		void removeUserById(final int id);
+
+		/**
 		 * 默认函数处理,直接使用jdbc处理sql
 		 * 
 		 * @param jdbc
@@ -80,35 +89,39 @@ public class JdbcTest {
 
 	}
 
+	/**
+	 * 数据库操作示例
+	 */
 	@Test
 	public void foo() {
 		// 创造一个IJdbcApp接口应用
 		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspeb("sqls/test.sql", this.getClass()), JdbcApp.class);
-		println("db", jdbcApp.getDbName());
+		println("db", jdbcApp.getDbName()); // 检索数据库名
+
 		jdbcApp.withTransaction(sess -> { // 准备数据
 			final var proto = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690611", "sex", 1,
 					"address", "shanghai");
-			final var sql = SQL.of("t_user", proto);
-			sess.sqlexecute(sql.createTable().get(2));
+			final var sql = SQL.of("t_user", proto); // 原型数据
+			sess.sqlexecute(sql.createTable().get(2)); // 创建数据
 			for (int i = 0; i < 10; i++) {
-				final var aa = "北京,天津,上海,重庆,广州".split(",");
-				final var rec = proto.derive("id", i, //
+				final var cities = "北京,天津,上海,重庆,广州".split(",");
+				final var line = proto.derive("id", i, //
 						"name", String.format("%s%d", proto.str("name"), i), //
 						"sex", i % 2, //
-						"address", aa[new Random().nextInt(aa.length)] //
-				);
-				sess.sql2execute(SQL.of("t_user", rec).insert());
-			}
+						"address", cities[new Random().nextInt(cities.length)] //
+				); // 数据行
+				sess.sql2execute(SQL.of("t_user", line).insert()); // 插入数据
+			} // for
 			println("show tables", sess.sql2u("show tables", dfmclc));
-		});
+		}); // withTransaction
 		println("------------------------------------------------------");
 		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", REC("cnt", 5));
 		println(dfm);
 		println("------------------------------------------------------");
 		println("getUsers(5)", jdbcApp.getUsers(5));
 		println("------------------------------------------------------");
-		// 修改用户名称
-		jdbcApp.updateUserById("zhangsan100", 1);
+		jdbcApp.updateUserById("zhangsan100", 1); // 修改数据
+		jdbcApp.removeUserById(8); // 删除数据
 		println("getUsers()", jdbcApp.getUsers());
 	}
 

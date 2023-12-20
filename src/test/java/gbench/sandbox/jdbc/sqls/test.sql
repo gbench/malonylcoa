@@ -17,6 +17,12 @@ select * from t_user limit ##cnt
 update t_user set name=#name where id=##id
 
 -- --------------------------
+-- # removeUserById
+-- #id
+-- --------------------------
+delete from t_user where id=##id
+
+-- --------------------------
 -- # getTablesOf
 -- #schema : 细胞名称
 -- --------------------------
