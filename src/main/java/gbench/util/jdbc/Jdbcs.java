@@ -29,7 +29,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import gbench.util.jdbc.function.BiConsumerThrows;
+import gbench.util.jdbc.function.ThrowableBiConsumer;
 import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.function.ExceptionalPredicate;
@@ -307,7 +307,7 @@ public class Jdbcs {
 	 * @param cs    回调函数
 	 * @param level 阶层数
 	 */
-	protected static <T> void traverse_throws(final Node<T> root, final BiConsumerThrows<Node<T>, Integer> cs,
+	protected static <T> void traverse_throws(final Node<T> root, final ThrowableBiConsumer<Node<T>, Integer> cs,
 			final int level) throws Exception {
 		if (root != null) {
 			if (cs.accept(root, level))
@@ -323,7 +323,7 @@ public class Jdbcs {
 	 * @param cs   回调函数 返回 false 终止遍历.
 	 * @throws Exception
 	 */
-	public static <T, U extends Node<T>> void traverse_throws2(final U root, final BiConsumerThrows<U, Integer> cs)
+	public static <T, U extends Node<T>> void traverse_throws2(final U root, final ThrowableBiConsumer<U, Integer> cs)
 			throws Exception {
 		traverse_throws2(root, cs, 0);
 	}
@@ -337,10 +337,10 @@ public class Jdbcs {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T, U extends Node<T>> void traverse_throws2(final U root,
-			final BiConsumerThrows<? super U, Integer> cs, int level) throws Exception {
+			final ThrowableBiConsumer<? super U, Integer> cs, int level) throws Exception {
 
 		if (root != null) {
-			BiConsumerThrows<U, Integer> cs1 = (BiConsumerThrows<U, Integer>) cs;
+			ThrowableBiConsumer<U, Integer> cs1 = (ThrowableBiConsumer<U, Integer>) cs;
 			if (cs.accept(root, level))
 				for (Node<T> e : root.getChildren())
 					traverse_throws2((U) e, cs1, level + 1);
@@ -388,7 +388,7 @@ public class Jdbcs {
 	 * @param cs   回调函数 返回 false 终止遍历.
 	 * @throws Exception
 	 */
-	public static <T> void traverse_throws(final Node<T> root, final BiConsumerThrows<Node<T>, Integer> cs)
+	public static <T> void traverse_throws(final Node<T> root, final ThrowableBiConsumer<Node<T>, Integer> cs)
 			throws Exception {
 		traverse_throws(root, cs, 0);
 	}

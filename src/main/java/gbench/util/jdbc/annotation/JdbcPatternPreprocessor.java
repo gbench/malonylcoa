@@ -93,7 +93,7 @@ public abstract class JdbcPatternPreprocessor {
 	 * 在接口函数中实例化：按照如下实现，就可以 <br>
 	 * Jdbc.newInstance(xxxDatabase.class,new JdbcPatternPreprocessor(){ <br>
 	 * }::handle); <br>
-	 * callbacks=REC("methodName",(PPARG)pp->{return pparg.pattern}); <br>
+	 * callbacks=REC("methodName",(PPARG)pp-&gt;{return pparg.pattern}); <br>
 	 */
 	protected IRecord callbacks;
 }

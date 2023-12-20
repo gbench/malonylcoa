@@ -15,7 +15,6 @@ public interface ExceptionalPredicate<T> {
 	 * @param t 函数参数
 	 * @return U类型的函数
 	 * @throws Exception 异常
-	 * @throws Throwable 抛出物
 	 */
 	Boolean test(final T t) throws Exception;
 }

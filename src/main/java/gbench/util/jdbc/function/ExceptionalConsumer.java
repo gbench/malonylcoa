@@ -13,7 +13,6 @@ public interface ExceptionalConsumer<T> {
 	 * 数据消费函数
 	 * 
 	 * @param t 函数参数
-	 * @return U类型的函数
 	 * @throws Exception 异常
 	 */
 	void accept(final T t) throws Exception;

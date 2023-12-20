@@ -15,7 +15,6 @@ public interface ExceptionalSupplier<T> {
 	 * 
 	 * @return T类型的结果
 	 * @throws Exception 异常
-	 * @throws Throwable 抛出物
 	 */
 	T get() throws Exception;
 }

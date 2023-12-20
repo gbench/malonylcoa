@@ -14,6 +14,8 @@ open module gbench.malonylcoa {
 	exports gbench.util.io;
 	exports gbench.util.json;
 	exports gbench.util.jdbc;
+	exports gbench.util.jdbc.annotation;
+	exports gbench.util.jdbc.function;
 	exports gbench.util.jdbc.kvp;
 	exports gbench.util.jdbc.sql;
 	exports gbench.util.lisp;
