@@ -1,12 +1,9 @@
-package gbench.util.jdbc.json;
+package gbench.util.jdbc.kvp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import gbench.util.jdbc.kvp.IRecord;
-import gbench.util.jdbc.kvp.LinkedRecord;
 
 import java.util.Optional;
 import java.util.Map;
