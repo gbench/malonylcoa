@@ -48,6 +48,7 @@ import gbench.util.io.FileSystem;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
 import gbench.util.lisp.Tuple2;
+import gbench.util.type.Times;
 
 /**
  * EXCEL 数据文件的处理与分析工具
@@ -926,7 +927,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 读取指定区域的数据内容
 	 * 
 	 * @param rangedef 数据区域
-	 * @param keys 键名列表
+	 * @param keys     键名列表
 	 * @return 数据区域的数据内容
 	 */
 	public StrMatrix range(final RangeDef rangedef, final List<String> keys) {
@@ -1070,7 +1071,7 @@ public class SimpleExcel implements AutoCloseable {
 					}
 
 					// 日期类型
-					final LocalDateTime ldt = IRecord.asLocalDateTime(value);
+					final LocalDateTime ldt = Times.asLocalDateTime(value);
 					if (ldt != null) {
 						cell.setCellValue(ldt);
 						final short fmt = workbook.createDataFormat().getFormat("yyyy-MM-dd HH:mm:ss");
