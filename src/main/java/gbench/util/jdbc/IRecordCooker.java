@@ -11,7 +11,7 @@ import gbench.util.jdbc.kvp.IRecord;
  *
  * @author gbench
  */
-public interface RecordCooker {
+public interface IRecordCooker {
 	/**
 	 * 准备一下开始工作
 	 * 

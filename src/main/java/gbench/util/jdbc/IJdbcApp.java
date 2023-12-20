@@ -42,7 +42,7 @@ public interface IJdbcApp {
 	 * @param clazz   sqlfile 相对基路径
 	 * @return SqlPatternPreprocessor
 	 */
-	static SqlPatternPreprocessor nspp(String sqlfile, Class<?> clazz) {
+	static ISqlPatternPreprocessor nspp(String sqlfile, Class<?> clazz) {
 		return namedsql_processor(namedsqls(sqlfile, clazz));
 	}
 
@@ -52,7 +52,7 @@ public interface IJdbcApp {
 	 * @param sqlfile sql 文件的名称,可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
 	 * @return SqlPatternPreprocessor
 	 */
-	static SqlPatternPreprocessor nspp(String sqlfile) {
+	static ISqlPatternPreprocessor nspp(String sqlfile) {
 		return nspp(sqlfile, null);
 	}
 
@@ -63,7 +63,7 @@ public interface IJdbcApp {
 	 * @param sqlfile sql文件的名称，可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
 	 * @return SqlPatternPreprocessor
 	 */
-	static SqlPatternPreprocessor nspeb(final String sqlfile) {
+	static ISqlPatternPreprocessor nspeb(final String sqlfile) {
 		return nspeb(sqlfile, null);
 	}
 
@@ -75,11 +75,11 @@ public interface IJdbcApp {
 	 * @param clazz   sqlfile 相对基路径
 	 * @return SqlPatternPreprocessor
 	 */
-	static SqlPatternPreprocessor nspeb(final String sqlfile, final Class<?> clazz) {
+	static ISqlPatternPreprocessor nspeb(final String sqlfile, final Class<?> clazz) {
 
 		final var spp = namedsql_processor_escape_brace(namedsqls(sqlfile, clazz)); //
 		final var status = IRecord.REC("times", 0);// 状态数据
-		return new SqlPatternPreprocessor() { // 构造匿名类并 指定 SqlPatternPreprocessor 的名称
+		return new ISqlPatternPreprocessor() { // 构造匿名类并 指定 SqlPatternPreprocessor 的名称
 
 			@Override
 			public String handle(Method method, IRecord params, String sqlpattern, Jdbc jdbc) { // 默认的处理
@@ -166,7 +166,7 @@ public interface IJdbcApp {
 	 * @param dbClazz      数据库类型
 	 * @return 数据库接口实例
 	 */
-	static <T> T newDBInstance(final Supplier<SqlPatternPreprocessor> spp_supplier, final Class<T> dbClazz) {
+	static <T> T newDBInstance(final Supplier<ISqlPatternPreprocessor> spp_supplier, final Class<T> dbClazz) {
 		return Jdbc.newInstance(dbClazz, spp_supplier.get());
 	}
 

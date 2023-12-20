@@ -18,7 +18,7 @@ import gbench.util.jdbc.kvp.IRecord;
  *
  */
 @FunctionalInterface
-public interface SqlPatternPreprocessor {
+public interface ISqlPatternPreprocessor {
 	/**
 	 * sql 模板的参数的预处理函数。 <br>
 	 * 比如可以有这样一种预处理的实现SQL变换的预处理实现，当然也可以采用 另外的自定义实现 等。 <br>

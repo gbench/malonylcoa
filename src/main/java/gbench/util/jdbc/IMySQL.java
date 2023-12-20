@@ -78,7 +78,7 @@ public interface IMySQL {
 	 */
 	default String getSql(final String sqlpattern, final IRecord params) {
 		final var proxy = this.getProxy();
-		final var spp = proxy.findOne(SqlPatternPreprocessor.class);
+		final var spp = proxy.findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = proxy.findOne(Jdbc.class);
 		final var sql = spp.handle(null, params, sqlpattern, jdbc);
 
@@ -100,7 +100,7 @@ public interface IMySQL {
 	 */
 	default Stream<IRecord> sqlqueryS(final String sqlpattern, final IRecord params) {
 		final var proxy = this.getProxy();
-		final var spp = proxy.findOne(SqlPatternPreprocessor.class);
+		final var spp = proxy.findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = proxy.findOne(Jdbc.class);
 		final var sql = spp.handle(null, params, sqlpattern, jdbc);
 
@@ -122,7 +122,7 @@ public interface IMySQL {
 	 */
 	default DFrame sqldframe(final String sqlpattern, final IRecord params) {
 		final var proxy = this.getProxy();
-		final var spp = proxy.findOne(SqlPatternPreprocessor.class);
+		final var spp = proxy.findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = proxy.findOne(Jdbc.class);
 		final var sql = spp.handle(null, params, sqlpattern, jdbc);
 
@@ -206,7 +206,7 @@ public interface IMySQL {
 	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
-	default IRecord withTransaction(final DataManipulation<IJdbcSession<UUID, Object>> dm) {
+	default IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm) {
 		return this.jdbc().withTransaction(dm);
 	}
 

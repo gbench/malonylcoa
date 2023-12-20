@@ -11,7 +11,7 @@ import gbench.util.jdbc.kvp.IRecord;
  * @author xuqinghua
  */
 @FunctionalInterface
-public interface JdbcPostProcessor<T> {
+public interface IJdbcPostProcessor<T> {
 	/**
 	 * 后续处理的方法
 	 *

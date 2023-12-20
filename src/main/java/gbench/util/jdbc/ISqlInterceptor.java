@@ -15,7 +15,7 @@ import gbench.util.jdbc.kvp.IRecord;
  * @param <T> 返回结果的类型
  */
 @FunctionalInterface
-public interface SqlInterceptor<T> {
+public interface ISqlInterceptor<T> {
 	/**
 	 * 拦截器：如果结果返回null则给予放行,否则方法给予放行
 	 * 

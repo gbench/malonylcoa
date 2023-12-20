@@ -566,7 +566,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static <T> T newInstance(final Class<T> itf) {
 
-		return newInstance(itf, (SqlPatternPreprocessor) null);
+		return newInstance(itf, (ISqlPatternPreprocessor) null);
 	}
 
 	/**
@@ -584,7 +584,7 @@ public class Jdbc implements IManagedStreams {
 	 *                                jdbc(j) 当前连接的数据库对象．<br>
 	 * @return 书苦苦访问的代理对象
 	 */
-	public static <T> T newInstance(final Class<T> itf, final SqlPatternPreprocessor sqlpattern_preprocessor) {
+	public static <T> T newInstance(final Class<T> itf, final ISqlPatternPreprocessor sqlpattern_preprocessor) {
 
 		return newInstance(itf, (Map<String, String>) null, sqlpattern_preprocessor);
 	}
@@ -605,8 +605,8 @@ public class Jdbc implements IManagedStreams {
 	 * @param jdbc_postprocessor      事后处理
 	 * @return 书苦苦访问的代理对象
 	 */
-	public static <T> T newInstance(final Class<T> itf, final SqlPatternPreprocessor sqlpattern_preprocessor,
-			final JdbcPostProcessor<?> jdbc_postprocessor) {
+	public static <T> T newInstance(final Class<T> itf, final ISqlPatternPreprocessor sqlpattern_preprocessor,
+			final IJdbcPostProcessor<?> jdbc_postprocessor) {
 
 		return newInstance(itf, (Map<?, ?>) null, sqlpattern_preprocessor, jdbc_postprocessor);
 	}
@@ -639,7 +639,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static <T> T newInstance(final Class<T> itf, final IRecord jdbcConfig) {
 
-		return newInstance(itf, jdbcConfig, (SqlPatternPreprocessor) null);
+		return newInstance(itf, jdbcConfig, (ISqlPatternPreprocessor) null);
 	}
 
 	/**
@@ -677,7 +677,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 书苦苦访问的代理对象
 	 */
 	public static <T> T newInstance(final Class<T> itf, final IRecord jdbcConfig,
-			final SqlPatternPreprocessor sqlpattern_preprocessor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor) {
 
 		return newInstance(itf, jdbcConfig.toMap(), sqlpattern_preprocessor);
 	}
@@ -709,7 +709,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static <T> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig) {
 
-		return newInstance(itf, jdbcConfig, (SqlPatternPreprocessor) null);
+		return newInstance(itf, jdbcConfig, (ISqlPatternPreprocessor) null);
 	}
 
 	/**
@@ -745,9 +745,9 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static <T> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig,
-			final SqlPatternPreprocessor sqlpattern_preprocessor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor) {
 
-		return newInstance(itf, jdbcConfig, sqlpattern_preprocessor, (SqlInterceptor<List<IRecord>>) null);
+		return newInstance(itf, jdbcConfig, sqlpattern_preprocessor, (ISqlInterceptor<List<IRecord>>) null);
 	}
 
 	/**
@@ -775,10 +775,10 @@ public class Jdbc implements IManagedStreams {
 	 *                    jdbc(j) 当前连接的数据库对象．<br>
 	 * @return 数据库访问的代理接口
 	 */
-	public static <T> T newInstance(final Class<T> itf, final SqlInterceptor<List<IRecord>> interceptor) {
+	public static <T> T newInstance(final Class<T> itf, final ISqlInterceptor<List<IRecord>> interceptor) {
 
-		return newInstance(itf, (Map<String, String>) null, (SqlPatternPreprocessor) null,
-				(SqlInterceptor<List<IRecord>>) interceptor);
+		return newInstance(itf, (Map<String, String>) null, (ISqlPatternPreprocessor) null,
+				(ISqlInterceptor<List<IRecord>>) interceptor);
 	}
 
 	/**
@@ -817,10 +817,10 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static <T> T newInstance(final Class<T> itf, final IRecord jdbcConfig,
-			final SqlInterceptor<List<IRecord>> interceptor) {
+			final ISqlInterceptor<List<IRecord>> interceptor) {
 
 		final Map<?, ?> cfg = jdbcConfig == null ? null : jdbcConfig.toMap();
-		return newInstance(itf, cfg, (SqlPatternPreprocessor) null, (SqlInterceptor<List<IRecord>>) interceptor);
+		return newInstance(itf, cfg, (ISqlPatternPreprocessor) null, (ISqlInterceptor<List<IRecord>>) interceptor);
 	}
 
 	/**
@@ -859,9 +859,9 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static <T> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig,
-			final SqlInterceptor<List<IRecord>> interceptor) {
+			final ISqlInterceptor<List<IRecord>> interceptor) {
 
-		return newInstance(itf, jdbcConfig, (SqlPatternPreprocessor) null, (SqlInterceptor<List<IRecord>>) interceptor);
+		return newInstance(itf, jdbcConfig, (ISqlPatternPreprocessor) null, (ISqlInterceptor<List<IRecord>>) interceptor);
 	}
 
 	/**
@@ -899,9 +899,9 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static <T, U> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig,
-			final SqlPatternPreprocessor sqlpattern_preprocessor, final JdbcPostProcessor<U> jdbc_postprocessor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor, final IJdbcPostProcessor<U> jdbc_postprocessor) {
 
-		return newInstance(itf, jdbcConfig, sqlpattern_preprocessor, (SqlInterceptor<List<IRecord>>) null,
+		return newInstance(itf, jdbcConfig, sqlpattern_preprocessor, (ISqlInterceptor<List<IRecord>>) null,
 				jdbc_postprocessor);
 	}
 
@@ -949,9 +949,9 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static <T, U> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig,
-			final SqlPatternPreprocessor sqlpattern_preprocessor, final SqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor, final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
-		return newInstance(itf, jdbcConfig, sqlpattern_preprocessor, sqlinterceptor, (JdbcPostProcessor<U>) null);
+		return newInstance(itf, jdbcConfig, sqlpattern_preprocessor, sqlinterceptor, (IJdbcPostProcessor<U>) null);
 	}
 
 	/**
@@ -999,8 +999,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static <T, U> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig,
-			final SqlPatternPreprocessor sqlpattern_preprocessor, final SqlInterceptor<List<IRecord>> sqlinterceptor,
-			final JdbcPostProcessor<U> jdbcPostProcessor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor, final ISqlInterceptor<List<IRecord>> sqlinterceptor,
+			final IJdbcPostProcessor<U> jdbcPostProcessor) {
 
 		final var jc = itf.getAnnotation(JdbcConfig.class);// 获取jdbc的配置
 		final var jcfg = IRecord.REC(null == jdbcConfig ? new HashMap<String, String>() : jdbcConfig);// 提供默认数据库配置
@@ -1214,7 +1214,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param namedsqls sql语句。 name->sql
 	 * @return SqlPatternPreprocessor
 	 */
-	public static SqlPatternPreprocessor namedsql_processor_escape_brace(final Map<String, String> namedsqls) {
+	public static ISqlPatternPreprocessor namedsql_processor_escape_brace(final Map<String, String> namedsqls) {
 
 		return namedsql_processor(namedsqls, Jdbcs::MFT_ESCAPE);
 	}
@@ -1234,7 +1234,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param preprocessor sql语句 的预处理器：例如对 neo4j的转义。
 	 * @return SqlPatternPreprocessor
 	 */
-	public static SqlPatternPreprocessor namedsql_processor(final Map<String, String> namedsqls,
+	public static ISqlPatternPreprocessor namedsql_processor(final Map<String, String> namedsqls,
 			final Function<String, String> preprocessor) {
 
 		if (namedsqls != null)
@@ -1263,7 +1263,7 @@ public class Jdbc implements IManagedStreams {
 
 		if (proxy == null)
 			return null;
-		final var processor = proxy.findOne(SqlPatternPreprocessor.class);
+		final var processor = proxy.findOne(ISqlPatternPreprocessor.class);
 		if (processor == null)
 			return null;
 		final var tpl = processor.handle(null, null, // 把processor 视作一个Map<String,String>的namedSql
@@ -1354,7 +1354,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param namedsqls 命名sql集合：{#key1-&gt;sql1,#key1-&gt;sql2,...},
 	 * @return 变换后的sqlapttern 可以被 MessageFormat处理的SQL语句。
 	 */
-	public static SqlPatternPreprocessor namedsql_processor(final Map<String, String> namedsqls) {
+	public static ISqlPatternPreprocessor namedsql_processor(final Map<String, String> namedsqls) {
 
 		return (final Method method, final IRecord params, final String sqlpattern, final Jdbc jdbc) -> {
 			// 自动侦测SQL Pattern 或者 mehtod sharp pattern
@@ -1422,9 +1422,9 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static synchronized <T> T newInstance(final Class<T> itf, final Jdbc jdbc,
-			final SqlPatternPreprocessor sqlpattern_preprocessor, final SqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor, final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
-		return newInstance(itf, jdbc, sqlpattern_preprocessor, sqlinterceptor, (JdbcPostProcessor<?>) null);
+		return newInstance(itf, jdbc, sqlpattern_preprocessor, sqlinterceptor, (IJdbcPostProcessor<?>) null);
 	}
 
 	/**
@@ -1455,14 +1455,14 @@ public class Jdbc implements IManagedStreams {
 	 */
 	@SuppressWarnings("unchecked")
 	public static synchronized <T, U> T newInstance(final Class<T> itf, final Jdbc jdbc,
-			final SqlPatternPreprocessor sqlpattern_preprocessor, // sql 语句模板的处理
-			final SqlInterceptor<List<IRecord>> sqlinterceptor, // jdbc的sql 执行拦截
-			final JdbcPostProcessor<U> jdbc_postprocessor) { // jdbc_postprocessor 的jdbc处理结果最终递交。
+			final ISqlPatternPreprocessor sqlpattern_preprocessor, // sql 语句模板的处理
+			final ISqlInterceptor<List<IRecord>> sqlinterceptor, // jdbc的sql 执行拦截
+			final IJdbcPostProcessor<U> jdbc_postprocessor) { // jdbc_postprocessor 的jdbc处理结果最终递交。
 
 		// 定义代码拦截器
-		final SqlInterceptor<List<IRecord>> interceptor = // 方法的前置拦截器
+		final ISqlInterceptor<List<IRecord>> interceptor = // 方法的前置拦截器
 				sqlinterceptor == null ? (m, a, s, j) -> null : sqlinterceptor;// 定义拦截器
-		final JdbcPostProcessor<U> postprocessor = // jdbc 处理结果的最终 称帝的处理包装结果。
+		final IJdbcPostProcessor<U> postprocessor = // jdbc 处理结果的最终 称帝的处理包装结果。
 				jdbc_postprocessor == null ? (m, a, j, r) -> r : jdbc_postprocessor;// 定义后置处理器:默认不做处理e->e
 		// 创建数据库操作的代理对象。
 		final var t = (T) Proxy.newProxyInstance(itf.getClassLoader(), new Class<?>[] { itf },
@@ -1496,7 +1496,7 @@ public class Jdbc implements IManagedStreams {
 					///////////////////////////////////////////////////////////////////////
 					// sql查询的执行
 					final JdbcQuery[] jcqs = method.getAnnotationsByType(JdbcQuery.class);
-					final SqlPatternPreprocessor pattern_preprocessor = sqlpattern_preprocessor == null
+					final ISqlPatternPreprocessor pattern_preprocessor = sqlpattern_preprocessor == null
 							? (m, a, p, j) -> p
 							: sqlpattern_preprocessor;// sql pattern 预处理。
 					if (jcqs != null && jcqs.length > 0) {// 查询优先
@@ -1520,7 +1520,7 @@ public class Jdbc implements IManagedStreams {
 					final JdbcPreparedQuery[] jcq2s = method.getAnnotationsByType(JdbcPreparedQuery.class);
 					// 这一段代码是一种示例：用于演示每个annotaion 都可以自定义
 					// SqlPatternPreprocessor,其实与采用pattern_preprocessor效果一样
-					final SqlPatternPreprocessor pattern_preprocessor2 = sqlpattern_preprocessor == null
+					final ISqlPatternPreprocessor pattern_preprocessor2 = sqlpattern_preprocessor == null
 							? (m, a, p, j) -> p
 							: sqlpattern_preprocessor;// 演示使用一个专用的 pattern_preprocessor2
 					if (jcq2s != null && jcq2s.length > 0) {// 查询优先
@@ -1736,8 +1736,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果
 	 */
 	private static Object handleJdbcExecute(final Jdbc jdbc, final JdbcExecute[] jces, final Method method,
-			final Object[] args, final SqlPatternPreprocessor pattern_preprocessor,
-			final SqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final Object[] args, final ISqlPatternPreprocessor pattern_preprocessor,
+			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		// 非法的执行SQL语句则直接返回
 		if (jces == null || jces.length < 1)
@@ -1803,8 +1803,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果
 	 */
 	private static Object handlePreparedExecute(final Jdbc jdbc, final JdbcPreparedExecute[] jces, final Method method,
-			final Object[] args, final SqlPatternPreprocessor pattern_preprocessor,
-			final SqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final Object[] args, final ISqlPatternPreprocessor pattern_preprocessor,
+			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		if (jces == null || jces.length < 1)
 			return null;
@@ -1886,8 +1886,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return SQL 查询结果
 	 */
 	private static Object handleJdbcQuery(final Jdbc jdbc, final JdbcQuery[] jcqs, final Method method,
-			final Object[] args, final SqlPatternPreprocessor pattern_preprocessor,
-			final SqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final Object[] args, final ISqlPatternPreprocessor pattern_preprocessor,
+			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		// 非法参数直接返回
 		if (jcqs == null || jcqs.length < 1)
@@ -1937,8 +1937,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return SQL 查询结果
 	 */
 	private static Object handleJdbcPreparedQuery(final Jdbc jdbc, final JdbcPreparedQuery[] jcq2s, final Method method,
-			final Object[] args, final SqlPatternPreprocessor pattern_preprocessor,
-			final SqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final Object[] args, final ISqlPatternPreprocessor pattern_preprocessor,
+			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		// 条件检测
 		if (jcq2s == null || jcq2s.length < 1)
@@ -2294,7 +2294,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
-	public synchronized IRecord withTransaction(final DataManipulation<IJdbcSession<UUID, Object>> dm) {
+	public synchronized IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm) {
 		return this.withTransaction(dm, (IJdbcSession<UUID, Object>) null, (Map<Object, Object>) null);
 	}
 
@@ -2319,7 +2319,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
-	public synchronized IRecord withTransaction(final DataManipulation<IJdbcSession<UUID, Object>> dm,
+	public synchronized IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm,
 			final Map<Object, Object> sessAttributes) {
 		return this.withTransaction(dm, (IJdbcSession<UUID, Object>) null, sessAttributes);
 	}
@@ -2338,7 +2338,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
 	 *         result:sess的结果属性}, 参见Jdbc.newInstance
 	 */
-	public synchronized IRecord withTransaction(final DataManipulation<IJdbcSession<UUID, Object>> dm,
+	public synchronized IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm,
 			final IJdbcSession<UUID, Object> sess, final Map<Object, Object> sessAttributes) {
 
 		boolean success = true;// 执行状态，不是成功就是失败，判断标志就是 completed是否爆出异常
@@ -2532,7 +2532,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public <T> T psql2apply(final String sql, final Map<Integer, Object> params, final Jdbc.SQL_MODE mode,
-			final QueryHandler<T> qh) {
+			final IQueryHandler<T> qh) {
 
 		return psql2apply(sql, params, this.getConnection(), true, mode, qh);
 	}
@@ -2547,7 +2547,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public <T> T psql2apply(final String sql, final Map<Integer, Object> params, final Connection conn,
-			final Jdbc.SQL_MODE mode, final QueryHandler<T> qh) {
+			final Jdbc.SQL_MODE mode, final IQueryHandler<T> qh) {
 
 		return psql2apply(sql, params, conn, true, mode, qh);
 	}
@@ -2598,7 +2598,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public <T> T psql2apply(final String sql, final Map<Integer, Object> params, final Connection conn,
-			final boolean close, final Jdbc.SQL_MODE mode, final QueryHandler<T> qh) {
+			final boolean close, final Jdbc.SQL_MODE mode, final IQueryHandler<T> qh) {
 
 		T ret = null;
 		try {
@@ -2657,7 +2657,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param params sql 中的占位符参数
 	 * @return 执行结果集合的 IRecord 列表
 	 */
-	public <T> T psql2apply_throws(final String sql, final Map<Integer, Object> params, final QueryHandler<T> qh)
+	public <T> T psql2apply_throws(final String sql, final Map<Integer, Object> params, final IQueryHandler<T> qh)
 			throws SQLException {
 
 		return psql2apply_throws(sql, params, this.getConnection(), true, SQL_MODE.QUERY_SCROLL, qh);
@@ -2683,7 +2683,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public <T> T psql2apply_throws(final String sql, final Map<Integer, Object> params, final Connection conn,
-			final boolean close, final Jdbc.SQL_MODE mode, final QueryHandler<T> qh) throws SQLException {
+			final boolean close, final Jdbc.SQL_MODE mode, final IQueryHandler<T> qh) throws SQLException {
 
 		PreparedStatement stmt = null;// 查询语句
 		ResultSet rs = null;// 结果集对象
@@ -3978,7 +3978,7 @@ public class Jdbc implements IManagedStreams {
 		final Supplier<IRecord> recsup = (null == recSupplier) ? finalProto::duplicate : recSupplier;// 构造默认的记录结构生成器
 
 		// 烹饪 数据的方法，老子道德经曰：治大国，若烹小鲜, Json值字段的记录生成器
-		final RecordCooker jsnCooker = new RecordCooker() {
+		final IRecordCooker jsnCooker = new IRecordCooker() {
 			int n;
 			ResultSet rs;
 			ResultSetMetaData rsm; // n:结果集合的列数量;rs:查询的结果集,rsm:结果集合的字段描述
@@ -4044,7 +4044,7 @@ public class Jdbc implements IManagedStreams {
 		};// jsnCooker
 
 		// 简单记录生成器:这个记录生成器已经随着JsonCooker lamba_cook变得意义不大了．但我还是用他，因为简单．
-		final RecordCooker simpleCooker = new RecordCooker() {
+		final IRecordCooker simpleCooker = new IRecordCooker() {
 			int n;
 			ResultSet rs;
 			ResultSetMetaData rsm;
@@ -4063,7 +4063,7 @@ public class Jdbc implements IManagedStreams {
 			}// cook
 		};// simpleCooker
 
-		final RecordCooker cooker = jsncol2keys.isPresent() ? jsnCooker : simpleCooker;// 选择一个合适的厨师
+		final IRecordCooker cooker = jsncol2keys.isPresent() ? jsnCooker : simpleCooker;// 选择一个合适的厨师
 		// final RecordCooker cooker = jsnCooker;
 
 		// 代码在这里才是真正的开始，以上都是准备工作．准备活动要有条不紊，可以慢（此处的慢是缜密与完备）但不能乱．行动之时要快如闪电．

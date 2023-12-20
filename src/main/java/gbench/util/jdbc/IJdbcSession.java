@@ -422,7 +422,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @return IRecord 类型的结果集合
 	 * @throws SQLException
 	 */
-	default <U> U sql2u(final String sqlpattern, final IRecord params, final SqlPatternPreprocessor spp,
+	default <U> U sql2u(final String sqlpattern, final IRecord params, final ISqlPatternPreprocessor spp,
 			final Collector<IRecord, ?, U> collector) throws SQLException {
 		return this.sql2recordS(spp.handle(null, params, sqlpattern, null)).collect(collector);
 	}
@@ -624,7 +624,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @return IRecord 类型的结果集合
 	 * @throws SQLException SQLException
 	 */
-	default List<IRecord> sql2records(final String sqlpattern, final IRecord params, final SqlPatternPreprocessor spp)
+	default List<IRecord> sql2records(final String sqlpattern, final IRecord params, final ISqlPatternPreprocessor spp)
 			throws SQLException {
 		return this.sql2records(this.sqlparse(sqlpattern, params, spp));
 	}
@@ -835,7 +835,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 */
 	default boolean sqlexecute(final String sqlpattern, final IRecord params) throws SQLException {
-		final var spp = (SqlPatternPreprocessor) this.getAttribute(SqlPatternPreprocessor.class);
+		final var spp = (ISqlPatternPreprocessor) this.getAttribute(ISqlPatternPreprocessor.class);
 		final var _sql = this.sqlparse(sqlpattern, params);// 解释sql
 		final var sql = spp != null && spp.name().equals("namedsql_processor_escape_brace") ? Jdbcs.MFT(_sql) // 把采用了
 				// namedsql_processor_escape_brace
@@ -860,7 +860,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @return 执行的sql语句是否返回了一个结果集合
 	 * @throws SQLException
 	 */
-	default boolean sqlexecute(final String sqlpattern, final IRecord params, final SqlPatternPreprocessor spp)
+	default boolean sqlexecute(final String sqlpattern, final IRecord params, final ISqlPatternPreprocessor spp)
 			throws SQLException {
 		return this.sqlexecute(this.sqlparse(sqlpattern, params, spp));
 	}
@@ -1072,7 +1072,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @return 使用params填充 sqlpattern 的字符串
 	 */
 	default String sqlparse(final String sqlpattern, final IRecord params) {
-		final var spp = (SqlPatternPreprocessor) this.getAttribute(SqlPatternPreprocessor.class);
+		final var spp = (ISqlPatternPreprocessor) this.getAttribute(ISqlPatternPreprocessor.class);
 		return this.sqlparse(sqlpattern, params, spp);
 	}
 
@@ -1088,7 +1088,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param spp        SqlPatternPreprocesso模版参数 模版的预处理参数
 	 * @return 使用params填充 sqlpattern 的字符串
 	 */
-	default String sqlparse(final String sqlpattern, final IRecord params, final SqlPatternPreprocessor spp) {
+	default String sqlparse(final String sqlpattern, final IRecord params, final ISqlPatternPreprocessor spp) {
 		if (spp == null) {
 			return Term.FT(sqlpattern, params); // 默认使用Term.FT来进行填充
 		} else {

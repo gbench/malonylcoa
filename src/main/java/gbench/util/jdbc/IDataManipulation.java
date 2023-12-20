@@ -15,7 +15,7 @@ import java.sql.SQLException;
  *            则个会话对象需要由事务的创建者来给予提供。
  * @author gbench
  */
-public interface DataManipulation<T> {
+public interface IDataManipulation<T> {
 	/**
 	 * 这个函数主要是通过异常 throw Exception 来表示执行失败
 	 *

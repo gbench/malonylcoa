@@ -13,7 +13,7 @@ import java.sql.Statement;
  *
  * @param <T> 返回值类型
  */
-public interface QueryHandler<T> {
+public interface IQueryHandler<T> {
 	/**
 	 * 對查詢結果進行處理（結果已經被生成道了rs之中）
 	 * 

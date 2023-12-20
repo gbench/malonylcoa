@@ -186,7 +186,7 @@ public class XJdbcSession<T, D, X> implements IJdbcSession<T, D> {
 	 * @param cs        session 会话 session -> {}
 	 * @return DataManipulation 数据操作的会话
 	 */
-	public static <T, D, X> DataManipulation<IJdbcSession<T, D>> OPEN(final Collector<IRecord, ?, X> collector,
+	public static <T, D, X> IDataManipulation<IJdbcSession<T, D>> OPEN(final Collector<IRecord, ?, X> collector,
 			final ExceptionalConsumer<? super XJdbcSession<T, D, X>> cs) {
 
 		return session -> { // 简单的会话封装 IJdbcSession -> XJdbcSession
