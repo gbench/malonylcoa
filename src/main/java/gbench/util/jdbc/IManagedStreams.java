@@ -30,12 +30,14 @@ public interface IManagedStreams {
 	 * 把所有的活动的流都给予清空 清空指定的 流对象
 	 * 
 	 * @param stream 指定的流对象
+	 * @return jdbc 本身 便于 实现链式编程
 	 */
-	default void clear(final Stream<?> stream) {
+	default IManagedStreams clear(final Stream<?> stream) {
 		if (this.getActiveStreams().contains(stream)) {
 			this.getActiveStreams().remove(stream);
 		}
 		stream.close();
+		return this;
 	}
 
 	/**
@@ -44,8 +46,9 @@ public interface IManagedStreams {
 	 * @param stream 托管的流对象
 	 * @return jdbc 本身 便于 实现链式编程
 	 */
-	default void add(final Stream<?> stream) {
+	default IManagedStreams add(final Stream<?> stream) {
 		this.getActiveStreams().add(stream);
+		return this;
 	}
 
 	/**

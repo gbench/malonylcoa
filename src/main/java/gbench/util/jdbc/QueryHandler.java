@@ -11,7 +11,7 @@ import java.sql.Statement;
  * 
  * @author gbench
  *
- * @param <T>
+ * @param <T> 返回值类型
  */
 public interface QueryHandler<T> {
 	/**

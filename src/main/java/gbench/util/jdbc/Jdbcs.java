@@ -62,7 +62,7 @@ public class Jdbcs {
 	/**
 	 * 这是对一下的数据结构进行实现。<br>
 	 * LittleTree.buildTree(categories,0,REC2("id","id","pid","pid"));<br>
-	 * 从List<Tree> 结构生成节点树 <br>
+	 * 从List&lt;IRecord&gt;结构生成节点树 <br>
 	 * 根节点id 默认为 "0"; <br>
 	 * 
 	 * @param recs 节点集合，节点需要包含由id,pid两个字段
@@ -75,7 +75,7 @@ public class Jdbcs {
 	/**
 	 * 这是对一下的数据结构进行实现。<br>
 	 * LittleTree.buildTree(categories,0,REC2("id","id","pid","pid")); <br>
-	 * 从List<Tree> 结构生成节点树 <br>
+	 * 从List&lt;IRecord&gt; 结构生成节点树 <br>
 	 * 根节点id 默认为 "0"; <br>
 	 * 
 	 * @param <T>  节点元素的值类型
@@ -122,7 +122,7 @@ public class Jdbcs {
 	/**
 	 * 这个应该是 最常用的生成结构 <br>
 	 *
-	 * 从List<Tree> 结构生成节点树 <br>
+	 * 从List&lt;IRecord&gt;结构生成节点树 <br>
 	 *
 	 * @param recs   节点集合，节点需要包含由id,pid两个字段
 	 * @param rootId 根节点id， 根节点是通过字符串即对象的toString然后trim 的形式进行比较的。
@@ -135,7 +135,7 @@ public class Jdbcs {
 	/**
 	 * 这个应该是 最常用的生成结构 <br>
 	 *
-	 * 从List<Tree> 结构生成节点树 <br>
+	 * 从List&lt;IRecord&gt;结构生成节点树 <br>
 	 *
 	 * @param <T>         节点元素的值类型
 	 * @param <U>         返回结果类型
@@ -152,7 +152,7 @@ public class Jdbcs {
 	/**
 	 * 这个应该是 最常用的生成结构：自动补充根节点 <br>
 	 *
-	 * 从List<Tree> 结构生成节点树 <br>
+	 * 从List&lt;IRecord&gt;结构生成节点树 <br>
 	 * 当rootId 在List<IRecord> 中不存在的时候,在地宫创建一个根节点 <br>
 	 * REC("id",rootId,"name","根节点","pid",null) 添加到recs之中 <br>
 	 *
@@ -168,7 +168,7 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 从List<Tree> 结构生成节点树 <br>
+	 * 从List&lt;IRecord&gt;结构生成节点树 <br>
 	 * 使用示例: <br>
 	 * LittleTree.buildTree(categories,0,REC2("id","id","pid","p_id")); <br>
 	 *
@@ -182,7 +182,7 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 从List<Tree> 结构生成节点树,生成一个U结构的树 <br>
+	 * 从List&lt;IRecord&gt;结构生成节点树,生成一个U结构的树 <br>
 	 * 使用示例: LittleTree.buildTree(categories,0,REC2("id","id","pid","p_id")); <br>
 	 * 
 	 * @param <T>         节点元素的值类型
@@ -214,10 +214,10 @@ public class Jdbcs {
 	}
 
 	/**
-	 * 从List<Tree> 结构生成节点树 <br>
+	 * 从List&lt;IRecord&gt;结构生成节点树 <br>
 	 *
-	 * @param rootId   根节点id， 根节点是通过字符串即对象的toString然后trim 的形式进行比较的。
-	 * @param mappings 节点id,父节点id 与IRecord集合recs中的属性字段的对应关系
+	 * @param recs   字段书加粗
+	 * @param rootId 根节点id， 根节点是通过字符串即对象的toString然后trim 的形式进行比较的。
 	 * @return 树形结构的根节点： Node &ltIRecordT&gt; 类型的根节点
 	 */
 	public static Node<IRecord> buildTree(final List<IRecord> recs, final Object rootId,
@@ -531,7 +531,7 @@ public class Jdbcs {
 	/**
 	 * 字符串解析: "1:10",解析成 1,2,3,4,5,6,7,8,9 1 inclusive, 10 exclusive
 	 * 
-	 * @param line
+	 * @param line 字符串描述
 	 * @return 数组序列。
 	 */
 	public static Integer[] NN(final String line) {
@@ -541,8 +541,6 @@ public class Jdbcs {
 	/**
 	 * 字符串序列解析(函数): "1:10",解析成 1,2,3,4,5,6,7,8,9 1 inclusive, 10 exclusive
 	 * 
-	 * @param line
-	 * @return 数组序列。
 	 */
 	public static Function<String, Integer[]> series = Jdbcs::NN;
 

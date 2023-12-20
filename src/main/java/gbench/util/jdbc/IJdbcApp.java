@@ -108,21 +108,21 @@ public interface IJdbcApp {
 	}
 
 	/**
-	 * 创建数据库接口实例 注意：当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new HashMap<String,String>() 的
-	 * spp.
+	 * 创建数据库接口实例 注意：当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
+	 * HashMap&lt;String,String&gt;() 的 spp.
 	 * 
 	 * @param <T>     数据库类型
 	 * @param sqlfile sql语句脚本。 可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
 	 * @param dbClazz 数据库类型
 	 * @return 数据库接口实例
 	 */
-	static <T> T newNsppDBInstance(String sqlfile, Class<T> dbClazz) {
+	static <T> T newNsppDBInstance(final String sqlfile, final Class<T> dbClazz) {
 		return newDBInstance(() -> nspp(sqlfile, dbClazz), dbClazz);
 	}
 
 	/**
-	 * 创建数据库接口实例 注意：当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new HashMap<String,String>() 的
-	 * spp.
+	 * 创建数据库接口实例 注意：当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
+	 * HashMap&lt;String,String&gt;() 的 spp.
 	 * 
 	 * @param <T>                  数据库类型
 	 * @param sqlfile              sql语句脚本。
@@ -131,7 +131,7 @@ public interface IJdbcApp {
 	 * @param sqlFileRelativeClass sqlfile 相对基路径
 	 * @return 数据库接口实例
 	 */
-	static <T> T newNsppDBInstance(String sqlfile, Class<T> dbClazz, Class<?> sqlFileRelativeClass) {
+	static <T> T newNsppDBInstance(final String sqlfile, final Class<T> dbClazz, final Class<?> sqlFileRelativeClass) {
 		return newDBInstance(() -> nspp(sqlfile, sqlFileRelativeClass), dbClazz);
 	}
 
@@ -143,7 +143,7 @@ public interface IJdbcApp {
 	 * @param dbClazz 数据库类型
 	 * @return 数据库接口实例
 	 */
-	static <T> T newNspebDBInstance(String sqlfile, Class<T> dbClazz) {
+	static <T> T newNspebDBInstance(final String sqlfile, final Class<T> dbClazz) {
 		return newDBInstance(() -> nspeb(sqlfile, dbClazz), dbClazz);
 	}
 
@@ -156,7 +156,7 @@ public interface IJdbcApp {
 	 * @param sqlFileRelativeClass sqlfile 相对基路径
 	 * @return 数据库接口实例
 	 */
-	static <T> T newNspebDBInstance(String sqlfile, Class<T> dbClazz, Class<?> sqlFileRelativeClass) {
+	static <T> T newNspebDBInstance(final String sqlfile, final Class<T> dbClazz, final Class<?> sqlFileRelativeClass) {
 		return newDBInstance(() -> nspeb(sqlfile, sqlFileRelativeClass), dbClazz);
 	}
 
@@ -168,7 +168,7 @@ public interface IJdbcApp {
 	 * @param dbClazz      数据库类型
 	 * @return 数据库接口实例
 	 */
-	static <T> T newDBInstance(Supplier<SqlPatternPreprocessor> spp_supplier, Class<T> dbClazz) {
+	static <T> T newDBInstance(final Supplier<SqlPatternPreprocessor> spp_supplier, final Class<T> dbClazz) {
 		return Jdbc.newInstance(dbClazz, spp_supplier.get());
 	}
 
@@ -200,8 +200,8 @@ public interface IJdbcApp {
 	 * values (#name,#password,#sex,#address,#birth,#phonenumber,#email) <br>
 	 * 
 	 * @param lines 命名sql 的行的数据流
-	 * @return {name->sql},当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
-	 *         HashMap<String,String>()
+	 * @return {name-&gt;sql},当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
+	 *         HashMap&lt;String,String&gt;()
 	 */
 	static Map<String, String> namedsqls(final Stream<String> lines) {
 		final var namedsqls = parse2namedsqls(lines);
@@ -212,10 +212,10 @@ public interface IJdbcApp {
 	 * 相对于clazz的存在位置的sqlfile的namedsql
 	 * 
 	 * @param sqlfile sql 文件的名称，当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
-	 *                HashMap<String,String>()
+	 *                HashMap&lt;String,String&gt;()
 	 * @param clazz   sqlfile 相对基路径
-	 * @return {name->sql},当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
-	 *         HashMap<String,String>()
+	 * @return {name-&gt;sql},当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
+	 *         HashMap&lt;String,String&gt;()
 	 */
 	static Map<String, String> namedsqls(final String sqlfile, final Class<?> clazz) {
 		if (sqlfile == null)
@@ -245,7 +245,7 @@ public interface IJdbcApp {
 	 * @param relativeClass excelFile的相对位置：以class的文件为基准
 	 * @return StrMatrix 对象
 	 */
-	static StrMatrix xlsAutoDetect(final String excelFile, String sheetName, final Class<?> relativeClass) {
+	static StrMatrix xlsAutoDetect(final String excelFile, final String sheetName, final Class<?> relativeClass) {
 		final var excel = loadExcel(excelFile, relativeClass);
 		final var strmx = excel.autoDetect(sheetName);
 		excel.close();
@@ -260,7 +260,7 @@ public interface IJdbcApp {
 	 * @param relativeClass excelFile的相对位置：以class的文件为基准
 	 * @return StrMatrix 对象
 	 */
-	static StrMatrix xlsAutoDetect(final String excelFile, int shtid, final Class<?> relativeClass) {
+	static StrMatrix xlsAutoDetect(final String excelFile, final int shtid, final Class<?> relativeClass) {
 		final var excel = loadExcel(excelFile, relativeClass);
 		final var strmx = excel.autoDetect(shtid);
 		excel.close();
@@ -305,7 +305,7 @@ public interface IJdbcApp {
 	 * @param t2id 唯一值 id
 	 * @return 唯一值的数据源流
 	 */
-	static <T, U> Stream<T> distinct(Collection<T> cc, Function<T, U> t2id) {
+	static <T, U> Stream<T> distinct(final Collection<T> cc, final Function<T, U> t2id) {
 		@SuppressWarnings("unchecked")
 		final var collector = Collector.of(() -> new AtomicReference<T>(null), (atom, a) -> atom.set((T) a),
 				(aa, bb) -> aa.get() == null ? bb : aa);

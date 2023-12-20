@@ -153,7 +153,6 @@ public interface IMySQL {
 	 * 返回值:select * from user where name="张三" <br>
 	 * 
 	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
-	 * @param params     sharp变量的占位符参数
 	 * @return IRecord 流
 	 */
 	default Stream<IRecord> sqlqueryS(final String sqlpattern) {

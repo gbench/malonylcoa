@@ -9235,14 +9235,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <K>        classifier 生的K的类型
 	 * @param <U>        t2u 生成的Value值。
 	 * 
-	 * @return Map<K,U>
+	 * @return Map&lt;K,U&gt;
 	 */
 	static <T, K, U> Collector<T, ?, Map<K, U>> groupby(final Function<T, K> classifier, final Function<T, U> t2u) {
 		return Collectors.groupingBy(classifier, atomic_collector(t2u));
 	}
 
 	/**
-	 * 对Stream<T> 中的元素进行 classifier 分组。
+	 * 对Stream&lt;T&gt; 中的元素进行 classifier 分组。
 	 * 
 	 * @param classifier 分组函数
 	 * 
@@ -9271,7 +9271,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param rr  一个records 列表
 	 * @param key 列名：分类依据
-	 * @return 对rr进行分类的映射:Map<String,List<IRecord>
+	 * @return 对rr进行分类的映射:Map&lt;String,List&lt;IRecord&gt;&gt;
 	 */
 	static Map<String, List<IRecord>> classify(final List<IRecord> rr, final String key) {
 		var mm = rr.parallelStream().filter(Objects::nonNull).collect(groupby(e -> {
@@ -9844,7 +9844,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param fx            真前缀的变换函数:tt->u
 	 * @param reverse       是否对数据进行倒转
 	 * @param include_empty 是否包含空列表。true 表示包含空集合
-	 * @return List<U>
+	 * @return List&lt;U&gt;
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, U> List<U> scan(final Stream<T> stream, final Function<List<T>, U> fx, boolean reverse,
@@ -9877,7 +9877,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param stream  元素的流数据
 	 * @param fx      真前缀的变换函数:tt->u
 	 * @param reverse 是否对数据进行倒转
-	 * @return List<U> U的集合
+	 * @return List&lt;U&gt; U的集合
 	 */
 	static <T, U> List<U> scan(final Stream<T> stream, final Function<List<T>, U> fx, boolean reverse) {
 		return scan(stream, fx, reverse, false);
@@ -9891,7 +9891,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <U>    变换结果类型
 	 * @param stream 元素的流数据
 	 * @param fx     真前缀的变换函数:tt->u
-	 * @return List<U> U 的集合
+	 * @return List&lt;U&gt; U 的集合
 	 */
 	static <T, U> List<U> scan(final Stream<T> stream, final Function<List<T>, U> fx) {
 		return scan(stream, fx, false);
@@ -10356,7 +10356,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 对于 非法的数字类型 返回 null
 	 * 
 	 * @param <T> 函数的参数类型
-	 * @return t->dbl
+	 * @return t-&gt;dbl
 	 */
 	static <T> Function<T, Double> obj2dbl() {
 		return IRecord.obj2dbl(null);
@@ -10368,7 +10368,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>          函数的参数类型
 	 * @param defaultValue 非法的数字类型 返回 的默认值
-	 * @return t->dbl
+	 * @return t-&gt;dbl
 	 */
 	static <T> Function<T, Double> obj2dbl(final Number defaultValue) {
 		return (T obj) -> {
@@ -10576,7 +10576,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 统计搜集工具
 	 * 
-	 * @param t2lng 元素变换函数 kvp->long
+	 * @param t2lng 元素变换函数 kvp-&gt;long
 	 * @return 长整型统计对象
 	 */
 	static Collector<KVPair<String, Object>, ?, LongSummaryStatistics> lng_stats2(
@@ -10590,7 +10590,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>    归纳元素类型
 	 * @param <U>    返回结果类型
 	 * @param mapper 列表变换函数 records -> U
-	 * @reutrn U 类型的对象
+	 * @return U 类型的对象
 	 */
 	static <T, U> Collector<T, List<T>, U> llclc(final Function<List<T>, U> mapper) {
 		return Collector.of(ArrayList::new, List::add, (aa, bb) -> {
@@ -10603,19 +10603,19 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * List Collector : 对一个 List&lt;IRecord&gt; 进行归纳: 不进行数据变换
 	 * 
 	 * @param <T> 归纳元素类型
-	 * @reutrn List&lt;T&gt; T 类型的列表
+	 * @return List&lt;T&gt; T 类型的列表
 	 */
 	static <T> Collector<T, List<T>, List<T>> llclc() {
 		return llclc(e -> e);
 	}
 
 	/**
-	 * Stream Collector : 对一个 List<T> 进行归纳: ss 表示 mapper 是一个流Stream->U
+	 * Stream Collector : 对一个 List&lt;T&gt; 进行归纳: ss 表示 mapper 是一个流Stream-&gt;U
 	 * 
 	 * @param <T>    归纳元素类型
 	 * @param <U>    返回结果类型
-	 * @param mapper 流变换函数 records -> U
-	 * @reutrn U 类型的对象
+	 * @param mapper 流变换函数 records -&gt; U
+	 * @return U 类型的对象
 	 */
 	static <T, U> Collector<T, List<T>, U> ssclc(final Function<Stream<T>, U> mapper) {
 		final Collector<T, List<T>, List<T>> clc = llclc(); // 获取链表归集器
@@ -10623,12 +10623,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Array Collector : 对一个 List<T> 进行归纳: ss 表示 mapper 是一个流Stream->U
+	 * Array Collector : 对一个 List&lt;T&gt; 进行归纳: ss 表示 mapper 是一个流Stream-&gt;U
 	 * 
 	 * @param <T>    归纳元素类型
 	 * @param <U>    返回结果类型
 	 * @param mapper 流变换函数 tt-> U
-	 * @reutrn U 类型的对象
+	 * @return U 类型的对象
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, U> Collector<T, List<T>, U> aaclc(final Function<T[], U> mapper) {

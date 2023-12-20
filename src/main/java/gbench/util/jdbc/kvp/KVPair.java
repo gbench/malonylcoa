@@ -228,11 +228,11 @@ public class KVPair<K, V> extends Tuple2<K, V> {
 	}
 
 	/**
-	 * 把 key 视为 一个 Function<V,U> 函数，调用 用 value 来调用 key行数 获取执行结果。<br>
+	 * 把 key 视为 一个 Function&lt;V,U&gt; 函数，调用 用 value 来调用 key行数 获取执行结果。<br>
 	 * 即 实现 一个 key(value) 形式的 数据调用 <br>
 	 * U类型 需要在 语句外部指定例如 final var Integer = kvp.evaluate(); <br>
 	 * 
-	 * @param <T> key 的函数类型是一个 K->U 类型函数，这是 一个辅助类型，不需要传递的。
+	 * @param <T> key 的函数类型是一个 K-&gt;U 类型函数，这是 一个辅助类型，不需要传递的。
 	 * @param <U> 返回的结果类型
 	 * @return U 类型的数据对象
 	 */
@@ -242,7 +242,7 @@ public class KVPair<K, V> extends Tuple2<K, V> {
 	}
 
 	/**
-	 * 把 key 视为 一个 Function<V,U> 函数，调用 用 value 来调用 key行数 获取执行结果。<br>
+	 * 把 key 视为 一个 Function&lt;V,U&gt; 函数，调用 用 value 来调用 key行数 获取执行结果。<br>
 	 * 
 	 * @param <T>    key 的函数类型
 	 * @param <U>    结果类型
@@ -258,7 +258,7 @@ public class KVPair<K, V> extends Tuple2<K, V> {
 	 * 
 	 * @param <X>    目标结果第一位置 类型
 	 * @param <Y>    目标结果第二位置 类型
-	 * @param mapper 变换函数 (t,u)->(x,y)
+	 * @param mapper 变换函数 (t,u)-&gt;(x,y)
 	 * @return (x,y)二元组
 	 */
 	public <X, Y> KVPair<X, Y> fmapK(final Function<KVPair<K, V>, KVPair<X, Y>> mapper) {

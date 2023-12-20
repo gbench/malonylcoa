@@ -14,13 +14,15 @@ import gbench.util.jdbc.kvp.IRecord;
  * 这里提供一个半成品的IJdbcSession的实现，以方便具体IJdbcSession的具体实现，没必要每次都从零开始 <br>
  * 可以从AbstractJdbcSession开始，<br>
  *
+ * @param <T> 交易
+ * @param <D> 数据类型
  * @author gbench
  */
 public abstract class AbstractJdbcSession<T, D> implements IJdbcSession<T, D> {
 
 	@Override
-	public void clear(final Stream<?> stream) {
-
+	public IManagedStreams clear(final Stream<?> stream) {
+		return this;
 	}
 
 	/**
@@ -30,10 +32,10 @@ public abstract class AbstractJdbcSession<T, D> implements IJdbcSession<T, D> {
 	 * @return 转义字符
 	 */
 	private String unescape(final String line) {
-		final var _sql = line != null && (line.indexOf("'{'") >= 0 || line.indexOf("''") >= 0) // 对于含有 brace
-																								// 转义的语句 给予转回
-				? MessageFormat.format(line, (Object[]) null)
-				: line;
+		final var _sql = line != null //
+				&& (line.indexOf("'{'") >= 0 || line.indexOf("''") >= 0) // 对于含有 brace 转义的语句 给予转回
+						? MessageFormat.format(line, (Object[]) null)
+						: line;
 		return _sql;
 	}
 

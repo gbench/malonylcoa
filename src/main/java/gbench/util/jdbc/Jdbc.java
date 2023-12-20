@@ -78,7 +78,7 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param supplierConn 链接贩卖商，也就是不适用传统的DriverManager,而是第三方来提供。
 	 */
-	public Jdbc(Supplier<Connection> supplierConn) {
+	public Jdbc(final Supplier<Connection> supplierConn) {
 		this.supplierConn = supplierConn;// 初始化连接贩卖商
 	}
 
@@ -2126,10 +2126,10 @@ public class Jdbc implements IManagedStreams {
 	}
 
 	/**
-	 * 快速构造一个Map&ltObject,Object&gt的对象:快送构造Map的方法
+	 * 快速构造一个Map&lt;Object,Object&gt;的对象:快送构造Map的方法
 	 *
 	 * @param oo key1,value1,key2,value2的序列
-	 * @return Map&ltObject,Object&gt的对象
+	 * @return Map&lt;Object,Object&gt;的对象
 	 */
 	public static Map<Object, Object> M(final Object... oo) {
 		final var map = new LinkedHashMap<>();
@@ -2911,8 +2911,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 * @throws SQLException
 	 */
-	public <T> T withConnection_throws(final ThrowableFunction<Connection, T> callbacks,
-			final Connection connection) throws SQLException {
+	public <T> T withConnection_throws(final ThrowableFunction<Connection, T> callbacks, final Connection connection)
+			throws SQLException {
 
 		final var ar = new AtomicReference<T>(); // 单值容器
 		final var need_close = connection == null;// 外部没有提供数据库连接,则使用自创建的数据库连接。此时在使用完毕后，需要给予关闭。否则连接由外部给予关闭。
@@ -3988,7 +3988,7 @@ public class Jdbc implements IManagedStreams {
 
 			// 把rec(含有复合字段：jsn的多key字段）cook(转换)成 扁平的结构
 			SQLExceptionalFunction<IRecord, IRecord> lambda_cook = rec -> {// 默认为需要 展开 含有 展开列名
-																				// 即jks不是全部为null,含有json值列名集合
+																			// 即jks不是全部为null,含有json值列名集合
 				for (int i = 0; i < n; i++) {// 逐列添加数据
 					final var label = labels.get(i);// 列名
 					final String[] seqkeys = jks.get(i);// 对应于第i列（从０开始）的json keys,seqkeys表述key的序列，受到scala影响的命名．

@@ -58,8 +58,6 @@ public class DFrame extends LinkedRecord {
 
 	/**
 	 * 数据框归集器
-	 * 
-	 * @return dframe 归集器
 	 */
 	public static Collector<IRecord, ?, DFrame> dfmclc = Collector.of( //
 			(Supplier<List<IRecord>>) () -> new LinkedList<IRecord>(), //
