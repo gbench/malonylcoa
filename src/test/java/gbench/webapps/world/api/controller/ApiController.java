@@ -73,9 +73,9 @@ public class ApiController {
 	@Autowired
 	private MyDataApp dataApp;
 
-	@Value("${server.port}")
+	@Value("${server.port:6010}")
 	private String port;
-	@Value("${spring.application.name}")
+	@Value("${spring.application.name:world-api}")
 	private String appname;
 
 }

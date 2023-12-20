@@ -139,9 +139,9 @@ public class ApiController {
 	@Autowired
 	private MediaModel mediaModel;
 
-	@Value("${server.port}")
+	@Value("${server.port:6010}")
 	private String port;
-	@Value("${spring.application.name}")
+	@Value("${spring.application.name:crawler-api}")
 	private String appname;
 
 }
