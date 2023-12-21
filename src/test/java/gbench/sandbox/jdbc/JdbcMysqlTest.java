@@ -116,8 +116,15 @@ public class JdbcMysqlTest {
 			println("#updateUserById 3", sess.sql2execute("#updateUserById", rb("id,name").get(3, "张三"))); // 使用语句标号提取语句并执行
 		}); // withTransaction
 		println("------------------------------------------------------");
+		final var sql = jdbcApp.getSql("select * from t_user limit ##cnt", REC("cnt", 5));
+		println("sql", sql);
+		final var sql2 = jdbcApp.getSql("#updateUserById", rb("id,name").get(3, "张三"));
+		println("sql2", sql2);
+		println("------------------------------------------------------");
 		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", REC("cnt", 5));
-		println(dfm);
+		println("dfm", dfm);
+		final var dfm2 = jdbcApp.sqldframe("#getUsers", REC("cnt", 5));
+		println("dfm2", dfm2);
 		println("------------------------------------------------------");
 		println("getUsers(5)", jdbcApp.getUsers(5));
 		println("------------------------------------------------------");
