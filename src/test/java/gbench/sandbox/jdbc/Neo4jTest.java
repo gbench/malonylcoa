@@ -40,8 +40,8 @@ public class Neo4jTest {
 				"张三/李四", R("rel", "喜欢", "张三.address", "上海", "张三.father", "lisi", //
 						"张三.birth", now(), "李四.phone", "1812074620"),
 				"李四/王五/赵六", R("rel", "喜欢", "2#address", "北京", "1#age", 25, "2#height", 1.98), //
-				"赵六/王八", R("rel", "喜欢", "2#address", "北京"), //
-				"陈七/王八", R("rel", "喜欢", "$address", "中国") //
+				"赵六/朱八", R("rel", "喜欢", "2#address", "北京"), //
+				"陈七/朱八", R("rel", "喜欢", "$address", "中国") //
 		).fmap(IRecord::STRING2REC, o -> (IRecord) o);
 		final var g = app.graph(pvec);
 		println(g);
