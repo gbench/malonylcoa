@@ -8015,6 +8015,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 				} else if (o instanceof Map) {
 					final var map = (Map<?, ?>) o;
 					return REC(map);
+				} else if (o instanceof Iterable aa) {
+					final var rec = REC();
+					for (var a : aa) {
+						if (a instanceof Tuple2 t) {
+							rec.add(t._1, t._2);
+						} // if
+					} // for
+					return rec;
 				} else { // 空项目
 					return REC();
 				} // if

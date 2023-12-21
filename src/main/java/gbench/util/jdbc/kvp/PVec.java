@@ -106,6 +106,17 @@ public class PVec<K, V> extends ArrayList<Tuple2<K, V>> {
 	}
 
 	/**
+	 * 变换成其他对象
+	 * 
+	 * @param <U>    其他对象
+	 * @param mapper m-&gt;u
+	 * @return U 类型的对象
+	 */
+	public <U> U mutate2(final Function<Map<K, V>, U> mapper) {
+		return mapper.apply(this.toMap());
+	}
+
+	/**
 	 * 分组归集
 	 * 
 	 * @param <U>  归集值类型
@@ -123,10 +134,10 @@ public class PVec<K, V> extends ArrayList<Tuple2<K, V>> {
 	 * @param vmapper V的归集器
 	 * @return PVec
 	 */
-	public <U> PVec<K, U> groupBy(Function<List<V>, U> vmapper) {
+	public <U> PVec<K, U> groupBy(final Function<List<V>, U> vmapper) {
 		final var m = new LinkedHashMap<K, List<V>>();
 		this.forEach((k, v) -> {
-			m.computeIfAbsent(k, _k -> new LinkedList<>());
+			m.computeIfAbsent(k, _k -> new LinkedList<>()).add(v);
 		});
 		return m.entrySet().stream().map(e -> Tuple2.of(e.getKey(), vmapper.apply(e.getValue())))
 				.collect(PVec.pveclc());
@@ -236,10 +247,9 @@ public class PVec<K, V> extends ArrayList<Tuple2<K, V>> {
 	/**
 	 * 单值 归集,pvec归集器,pvec3 表示这是一个 对T类型(Three的开头字母,也是pvecXclc系列的发生序号)的元素 归集。
 	 *
-	 * @param <T>    源数据元素类型
-	 * @param <K>    键名类型
-	 * @param <V>    键值类型
-	 * @param mapper 元组转换器 t-&gt;(k,v)
+	 * @param <T> 源数据元素类型
+	 * @param <K> 键名类型
+	 * @param <V> 键值类型
 	 * @return 把T类型的流归结成PVec&lt;K,U&gt; 类型的归集器
 	 */
 	public static <T, K, V> Collector<? super Tuple2<K, V>, ?, PVec<K, V>> pveclc() {

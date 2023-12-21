@@ -13,6 +13,8 @@ import static gbench.util.jdbc.kvp.IRecord.*;
 import static gbench.util.jdbc.kvp.PVec.PVEC;
 import static java.time.LocalDateTime.now;
 
+import java.util.stream.Collectors;
+
 /**
  * Neo4jTest
  */
@@ -38,7 +40,6 @@ public class Neo4jTest {
 				"赵六/王八", R("rel", "喜欢", "2#address", "北京"), //
 				"陈七/王八", R("rel", "喜欢", "$address", "中国") //
 		).fmap(IRecord::STRING2REC, o -> (IRecord) o);
-		System.out.println(pvec.unzip());
 		final var g = app.graph(pvec);
 		System.out.println(g);
 
@@ -51,5 +52,19 @@ public class Neo4jTest {
 		final var line = spp.handle(null, null, "#createLine", null); // 提取数sql语句定义
 		System.out.println(line);
 	} // foo0
+
+	/**
+	 * 测试 PVec
+	 */
+	@Test
+	public void bar() {
+		final var pvec = PVEC(1, 2, 3, 4);
+		System.out.println(pvec.unzip());
+		System.out.println(pvec.hashCode());
+		System.out.println(pvec.clone().hashCode());
+		System.out.println(pvec.clone().equals(pvec));
+		System.out.println(pvec.groupBy(Collectors.toList()));
+		System.out.println(pvec.mutate(IRecord::REC));
+	}
 
 }
