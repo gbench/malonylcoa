@@ -37,8 +37,8 @@ RETURN pct,sum(amount)
 -- #name: 性别
 -- --------------------------
 create 
-(##a :Vertex {name:#customer,vlblk:#a}),
-(##b :Vertex {name:#product,vlblk:#b}),
+(##a :Vertex {name:#a,vlblk:#a}),
+(##b :Vertex {name:#b,vlblk:#b}),
 (##a)-[e##transcode :Edge {from:#a,to:#b,elblk:'##a-##b'}]->(##b)
 
 
