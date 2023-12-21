@@ -113,7 +113,7 @@ public class JdbcTest {
 				); // 数据行
 				sess.sql2execute(SQL.of("t_user", line).insert()); // 插入数据
 			} // for
-			println("show tables", sess.sql2u("show tables", dfmclc));
+			println("#getAllTables", sess.sql2u("#getAllTables", dfmclc)); // 使用语句标号提取语句并执行
 		}); // withTransaction
 		println("------------------------------------------------------");
 		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", REC("cnt", 5));

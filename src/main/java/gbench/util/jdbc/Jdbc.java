@@ -861,7 +861,8 @@ public class Jdbc implements IManagedStreams {
 	public static <T> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig,
 			final ISqlInterceptor<List<IRecord>> interceptor) {
 
-		return newInstance(itf, jdbcConfig, (ISqlPatternPreprocessor) null, (ISqlInterceptor<List<IRecord>>) interceptor);
+		return newInstance(itf, jdbcConfig, (ISqlPatternPreprocessor) null,
+				(ISqlInterceptor<List<IRecord>>) interceptor);
 	}
 
 	/**
@@ -949,7 +950,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static <T, U> T newInstance(final Class<T> itf, final Map<?, ?> jdbcConfig,
-			final ISqlPatternPreprocessor sqlpattern_preprocessor, final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor,
+			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		return newInstance(itf, jdbcConfig, sqlpattern_preprocessor, sqlinterceptor, (IJdbcPostProcessor<U>) null);
 	}
@@ -1422,7 +1424,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库访问的代理接口
 	 */
 	public static synchronized <T> T newInstance(final Class<T> itf, final Jdbc jdbc,
-			final ISqlPatternPreprocessor sqlpattern_preprocessor, final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
+			final ISqlPatternPreprocessor sqlpattern_preprocessor,
+			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		return newInstance(itf, jdbc, sqlpattern_preprocessor, sqlinterceptor, (IJdbcPostProcessor<?>) null);
 	}

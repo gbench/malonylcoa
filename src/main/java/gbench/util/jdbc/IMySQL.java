@@ -1,5 +1,6 @@
 package gbench.util.jdbc;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -207,7 +208,11 @@ public interface IMySQL {
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
 	default IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm) {
-		return this.jdbc().withTransaction(dm);
+		final var attrs = new HashMap<Object, Object>();
+		final var spp = this.getProxy().findOne(ISqlPatternPreprocessor.class);
+		final var jdbc = this.jdbc();
+		attrs.put(ISqlPatternPreprocessor.class, spp); // 增加值类型
+		return jdbc.withTransaction(dm, attrs);
 	}
 
 	/**

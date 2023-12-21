@@ -138,11 +138,19 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 设置属性
 	 * 
-	 * @param key 属性的键值
+	 * @param key 属性的键值，当key为class类型的时候，若依据键名检索的结果为null，则尝试进行findOne操作即从attributes的值中提取key类型类的对象
 	 * @return 属性的值，如果不存在返回空
 	 */
-	default Object getAttribute(Object key) {
-		return this.getAttributes().get(key);
+	default Object getAttribute(final Object key) {
+		return Optional.ofNullable(this.getAttributes().get(key)).orElseGet(() -> {
+			if (key instanceof Class<?> clazz) { // 尝试做findOne操作
+				final var valOpt = this.getAttributes().values().stream()
+						.filter(e -> clazz.isAssignableFrom(e.getClass())).findFirst(); // 值对象
+				return valOpt.orElse(null);
+			} else { //
+				return null;
+			}
+		});
 	}
 
 	/**
