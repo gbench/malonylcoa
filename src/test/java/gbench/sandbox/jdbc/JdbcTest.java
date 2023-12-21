@@ -3,6 +3,7 @@ package gbench.sandbox.jdbc;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.IJdbcApp.nspeb;
 import static gbench.util.jdbc.kvp.IRecord.REC;
+import static gbench.util.jdbc.kvp.IRecord.rb;
 
 import java.util.List;
 import java.util.Random;
@@ -112,7 +113,7 @@ public class JdbcTest {
 				); // 数据行
 				sess.sql2execute(SQL.of("t_user", line).insert()); // 插入数据
 			} // for
-			println("#getAllTables", sess.sql2dframe("#getAllTables")); // 使用语句标号提取语句并执行
+			println("#getUsers 3", sess.sql2dframe("#getUsers", rb("cnt").get(3))); // 使用语句标号提取语句并执行
 		}); // withTransaction
 		println("------------------------------------------------------");
 		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", REC("cnt", 5));
