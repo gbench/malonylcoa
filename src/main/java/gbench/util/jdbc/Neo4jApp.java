@@ -70,14 +70,14 @@ import static gbench.util.jdbc.Jdbcs.SET_FIELD_OF_ANNOTATION;
  * 是我们对数据进行的操作算法基础。 <br>
  * Value 一般被称为 值对象，Label 一般被称为 Key对象/符号对象。于是 又可以通过基本的(key物质,value:意识)的
  * (认,知)或称为阴阳辩证关系。<br>
- * 所谓阴阳辩证 就是这是many2many 是一种可以 通过 拆分成: key(符号形式, one)->value(内容意义 many),即通过 通过符号来
+ * 所谓阴阳辩证 就是这是many2many 是一种可以 通过 拆分成: key(符号形式, one)-&gt;value(内容意义 many),即通过 通过符号来
  * 启发意义 的 认知逻辑。<br>
- * 亦可以反过来通过:内容意义的value即心有所想one->key(表达手段与方式many）的 实践逻辑。而这二者的合并 就会构成 认知实践循环：<br>
- * many2one->one2many 其阴阳互变的动态结构，说到阴阳就是强调这种动态过程。<br>
- * 这里采用 key->value作为一种记录的文法规则:（旨在表达一种正处于向其对立面即 辩证的二 元变化的动态过程：阳到阴 或是
+ * 亦可以反过来通过:内容意义的value即心有所想one-&gt;key(表达手段与方式many）的 实践逻辑。而这二者的合并 就会构成 认知实践循环：<br>
+ * many2one-&gt;one2many 其阴阳互变的动态结构，说到阴阳就是强调这种动态过程。<br>
+ * 这里采用 key-&gt;value作为一种记录的文法规则:（旨在表达一种正处于向其对立面即 辩证的二 元变化的动态过程：阳到阴 或是
  * 阴到阳)。表示我们对这个变换过程的观察角度：<br>
  * 这其实是一种思路的表达逻辑注意这非实际事实（事实事实是无法单向表达的，需要辩证论述），它只是为现象的方便理解，而构造出的语言或表达，即我们愿意如此相信或是想象而已。<br>
- * 这是一种以key开始,用vlaue结束的记法约定：这里的key与value就像会计的复式记账法一样,仅作为一种 方向标记、占位符,而已：<br>
+ * 这是一种以key开始,用value结束的记法约定：这里的key与value就像会计的复式记账法一样,仅作为一种 方向标记、占位符,而已：<br>
  * 而key,value到底是什么,即key到是代表符号形式还是内容意义，则是取决于我们能的表达需要。即我们当前的 状态：是认知还是实践。<br>
  * 这里需要有用目的即主观的方向性来做解释。即用什么养的内容value来解释key的这种形式。<br>
  * - 当我们是处于认知方向:key 就是符号形式，手段方法 ，value 是 内容意义。<br>
@@ -98,22 +98,21 @@ import static gbench.util.jdbc.Jdbcs.SET_FIELD_OF_ANNOTATION;
  *       		"张三.birth",LocalDateTime.now(), 
  *       		"李四.phone","1812074620"
  *       		), 
- *       		"李四/王五/赵六", R("rel","喜欢","2 #
- *       			address","北京","1#age",25,"2#height",1.98), <br>
- *       			"赵六/王八", R("rel","喜欢","2 # address","北京"), <br>
- *       		"陈七/王八", R("rel","喜欢","$address","中国") <br>
- *       	).apply2kvs(IRecord::STRING2REC,e->(IRecord)e)); <br>
- *       	System.out.println(g); <br>
+ *       		"李四/王五/赵六", R("rel","喜欢","2#address","北京","1#age",25,"2#height",1.98), 
+ *       			"赵六/王八", R("rel","喜欢","2#address","北京"), 
+ *       		"陈七/王八", R("rel","喜欢","$address","中国") 
+ *       	).applyForKvs(IRecord::STRING2REC,e->(IRecord)e),PVec::new); 
+ *       	System.out.println(g); 
  * 
  *       	// 数据库主要构件的创建。 
  *       	final var database = IJdbcApp.newNspebDBInstance("neo4j.sql", Database.class);
  *       	// 根据SQL语句模板文件neo4j.sql 生成代理数据库 
  *       	final var proxy = database.getProxy();// 提取代理对象 
  *       	final var jdbc = proxy.findOne(Jdbc.class); // 提取jdbc  
- *       	final var spp = proxy.findOne(SqlPatternPreprocessor.class);// 提取SQLPattern 处理器 
+ *       	final var spp = proxy.findOne(ISqlPatternPreprocessor.class);// 提取SQLPattern 处理器 
  *       	final var line = spp.handle(null, null, "#createLine", null); //提取数sql语句定义
- *       	final var jdbc = Neo4jApp.getJdbc(); <br>
- *       	jdbc.withTransaction(sess->{ <br>
+ *       	final var jdbc = Neo4jApp.getJdbc();
+ *       	jdbc.withTransaction(sess -> { 
  *       		sess.sqlexecute("match (a:Vertex)-[e]->(b:Vertex) delete a,e,b"); 
  *       		sess.sqlexecute(format("create {0}",g)); <br>
  *       		final var mm = sess.sql2records("match (a:Vertex)-[e]->(b:Vertex) return a,e,b");
@@ -356,7 +355,7 @@ public class Neo4jApp {
 		 * 这里采用 key->value作为一种记录的文法规则:（旨在表达一种正处于向其对立面即 辩证的二 元变化的动态过程：阳到阴 或是
 		 * 阴到阳)。表示我们对这个变换过程的观察角度：<br>
 		 * 这其实是一种思路的表达逻辑注意这非实际事实（事实事实是无法单向表达的，需要辩证论述），它只是为现象的方便理解，而构造出的语言或表达，即我们愿意如此相信或是想象而已。<br>
-		 * 这是一种以key开始,用vlaue结束的记法约定：这里的key与value就像会计的复式记账法一样,仅作为一种 方向标记、占位符,而已：<br>
+		 * 这是一种以key开始,用value结束的记法约定：这里的key与value就像会计的复式记账法一样,仅作为一种 方向标记、占位符,而已：<br>
 		 * 而key,value到底是什么,即key到是代表符号形式还是内容意义，则是取决于我们能的表达需要。即我们当前的 状态：是认知还是实践。<br>
 		 * 这里需要有用目的即主观的方向性来做解释。即用什么养的内容value来解释key的这种形式。<br>
 		 * - 当我们是处于认知方向:key 就是符号形式，手段方法 ，value 是 内容意义。<br>
@@ -510,7 +509,7 @@ public class Neo4jApp {
 		 * 为顶点或边增加一个属性
 		 * 
 		 * @param key 顶点名 或者 边名 用于唯一标注 图元素的 对象
-		 * @param rec 属性名 ,属性名称,[(key0,vlaue0),(key1,vlaue1),...]的序列
+		 * @param rec 属性名 ,属性名称,[(key0,value0),(key1,value1),...]的序列
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph setAttributeSet(final String key, final IRecord rec) {
@@ -522,7 +521,7 @@ public class Neo4jApp {
 		 * 为顶点或边增加一个属性
 		 * 
 		 * @param key 顶点名 或者 边名 用于唯一标注 图元素的 对象
-		 * @param rec 属性名 ,属性名称,[(key0,vlaue0),(key1,vlaue1),...]的序列
+		 * @param rec 属性名 ,属性名称,[(key0,value0),(key1,value1),...]的序列
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addAttributeSet(final String key, final IRecord rec) {
@@ -533,7 +532,7 @@ public class Neo4jApp {
 		 * 为顶点或边增加一个属性
 		 * 
 		 * @param vertex 顶点名 用于唯一标注 图元素的对象
-		 * @param rec    属性名 ,属性名称,[(key0,vlaue0),(key1,vlaue1),...]的序列
+		 * @param rec    属性名 ,属性名称,[(key0,value0),(key1,value1),...]的序列
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addVertexAttributeSet(final String vertex, final IRecord rec) {
@@ -544,7 +543,7 @@ public class Neo4jApp {
 		 * 为顶点增加一个属性
 		 * 
 		 * @param vertices 顶点结合
-		 * @param rec      属性名 ,属性名称,[(key0,vlaue0),(key1,vlaue1),...]的序列
+		 * @param rec      属性名 ,属性名称,[(key0,value0),(key1,value1),...]的序列
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addVertexAttributeSet(IRecord vertices, IRecord rec) {
@@ -556,7 +555,7 @@ public class Neo4jApp {
 		 * 为顶点增加一个属性
 		 * 
 		 * @param v   顶点对象
-		 * @param rec 属性名 ,属性名称,[(key0,vlaue0),(key1,vlaue1),...]的序列
+		 * @param rec 属性名 ,属性名称,[(key0,value0),(key1,value1),...]的序列
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addVertexAttributeSet(VertexInfo v, IRecord rec) {
@@ -591,7 +590,7 @@ public class Neo4jApp {
 		 * 为顶点增加一个属性
 		 * 
 		 * @param tup 边的开始与结束顶点。
-		 * @param rec 属性名 ,属性名称,[(key0,vlaue0),(key1,vlaue1),...]的序列
+		 * @param rec 属性名 ,属性名称,[(key0,value0),(key1,value1),...]的序列
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addEdgeAttributeSet(EdgeInfo tup, IRecord rec) {
@@ -1682,6 +1681,64 @@ public class Neo4jApp {
 	 */
 	public Graph graph(final PVec<IRecord, IRecord> edgeLineInfos) {
 		return graph(edgeLineInfos, false, null, null);
+	}
+
+	/**
+	 * 
+	 * 生成一个图结构 <br>
+	 * 
+	 * 图是边路径的集合 ,边路径边路径 是一个IRecord 结构，每个 IRecord 表示一条 顶点路径 即 IRecord 的每个
+	 * KVPair(顶点阶层号,顶点名) 代表一个顶点。 <br>
+	 * 比如STRING2REC(“A/B/C”) 表示KVP("0","A"),KVP("1","B"),KVP("2","C") 三个顶点 ：第0层的A，
+	 * 第1层的B，第2层的C <br>
+	 * 边路径属性信息一般为 边得属性 或是 构成的顶点属性 定义 路径中的顶点索引号（从0开始）#订单顶点属性名 的 IRecord <br>
+	 * 
+	 * 由于一条路径可以通过一个字符串来表示(比如"A/B/C"),于是 我们把 路径作为 key,而 用一个存储该路径的属性以及顶点信息的IRecord作为
+	 * 值value即:构造一个 <br>
+	 * [(边路径,边路径的属性信息)] 的KVPair集合 即 IRecord 来定义一个图 结构<br>
+	 * 
+	 * <br>
+	 * 边路径的属性信息分为两类:<br>
+	 * 
+	 * 1)边属性 : 属性名不需要用前缀标识,比如 REC("张三/苹果",REC("name","购买")) <br>
+	 * 表示 边 “张三/苹果” 的 name属性为 购买 , 即 顶点 张三 与顶点 苹果 是购买关系 <br>
+	 * <br>
+	 * 2)顶点属性 : 顶点属性需要用 前缀标识,比如 REC("苹果/水蜜桃", <br>
+	 * REC("1#origin","烟台","2#origin","南汇","$type","商品")) 表示 <br>
+	 * 苹果的产品origin产地是 烟台,水蜜桃的origin产地是南汇, 注意这里 没有设置 边“苹果/水蜜桃” 的属性<br>
+	 * #用于根据 路径中的顶点序号(阶层号,从0开始)设置顶点属性,<br>
+	 * $则为所有顶点都设置属性 <br>
+	 * 
+	 * 边属性与顶点属性可以在一个IRecord 同时设置边 与 顶点属性性 比如: <br>
+	 * REC("张三/苹果",REC("name","购买","quantity",5,"date","2020-07-25","0#sex","男","0#birth","1982-6-11","1#price",5.8,"1#quality","大个"))
+	 * <br>
+	 * 表示:<br>
+	 * 张三 性别男 出生日期为 1982-6-11 在 2020-07-25 购买了 5斤 苹果，苹果的价格是5.8元,等级为大个。 <br>
+	 * <br>
+	 * 
+	 * 示例：<br>
+	 * final var rel3 =
+	 * app.graph(REC2((Object[])"张三/李四,喜欢1,李四/王五,喜欢2,王五/张三,喜欢3".split(",")) <br>
+	 * .apply2kvs(IRecord::STRING2REC, e->REC("rel",e)));<br>
+	 * 生成一个图结构 <br>
+	 * 
+	 * 对边属性字段,可以在定义 边属性的同时，指定顶点属性，顶点属性的语法是 (顶点名)(分隔符)(属性名)
+	 * 分隔符包括：".","$","#",其中#表示边顶点的序号,0表示开始顶点,<br>
+	 * 其余表示二号顶点。<br>
+	 * REC2("张三/李四",R("rel","喜欢","张三.address","上海"), // 张三的address为上海 <br>
+	 * "李四/王五/赵六",R("rel","喜欢","2 # address","北京"),// 赵六的address为北京 <br>
+	 * "陈七/王八",R("rel","喜欢","$address","中国") // 陈七 和王八 address 都设置为中国。 <br>
+	 * ).apply2keys(IRecord::STRING2REC)// 顶点定义。
+	 * 
+	 * 不对边进行倒转。reverse 默认为false <br>
+	 * 
+	 * @param edgeLineInfos 数据行 IRecord的流:IRecord记录的 属性Graph.EDGE_ATTR_KEY
+	 *                      会被视作边属性。而给予添加到 EdgeInfo之中。<br>
+	 *                      边定义->边属性,比如：STRING2REC("zhansan/lisi")->REC(“relation",”同学“)
+	 * @return Graph 图结构
+	 */
+	public <U extends Tuple2<IRecord, IRecord>> Graph graph(final Iterable<U> edgeLineInfos) {
+		return graph(new PVec<>(edgeLineInfos), false, null, null);
 	}
 
 	/**

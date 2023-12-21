@@ -3,6 +3,7 @@ package gbench.util.jdbc.kvp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -23,6 +24,18 @@ public class PVec<K, V> extends ArrayList<Tuple2<K, V>> {
 	public <U extends Tuple2<K, V>> PVec(final Iterable<U> pairs) {
 		super();
 		pairs.forEach(this::add);
+	}
+
+	/**
+	 * 构造函数
+	 *
+	 * @param pairs 键值对儿集合
+	 */
+	public <U extends Tuple2<K, V>> PVec(final Map<? extends K, ? extends V> pairs) {
+		super();
+		pairs.forEach((k, v) -> {
+			this.add(new Tuple2<>(k, v));
+		});
 	}
 
 	/**
@@ -53,7 +66,7 @@ public class PVec<K, V> extends ArrayList<Tuple2<K, V>> {
 	 * @param mapper 元组转换器 t-&gt;(k,v)
 	 * @return 把T类型的流归结成PVec&lt;K,U&gt; 类型的归集器
 	 */
-	public static <T, K, V> Collector<T, ?, PVec<K, V>> pveclc(final Function<T, Tuple2<K, V>> mapper) {
+	public static <T, K, V> Collector<T, ?, PVec<K, V>> pveclc(final Function<T, ? extends Tuple2<K, V>> mapper) {
 		return Collector.of(ArrayList::new, (List<Tuple2<K, V>> aa, T t) -> aa.add(mapper.apply(t)), (aa, bb) -> {
 			aa.addAll(bb);
 			return aa;

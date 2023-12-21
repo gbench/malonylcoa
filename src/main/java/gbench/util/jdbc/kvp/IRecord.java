@@ -4656,6 +4656,21 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 分别对keys 和 values 进行变换。 toMap2 函数的别名。
+	 * 
+	 * @param <T>         key 的类型
+	 * @param <U>         value 的类型
+	 * @param keymapper   key 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
+	 * @param valuemapper value 的变换函数:把原来的Object类型的Value,转换成U类型的值。
+	 * @param finisher    map-&gt;V
+	 * @return {(t, u)} 的Map
+	 */
+	default <T, U, V> V applyForKvs(final Function<String, T> keymapper, Function<Object, U> valuemapper,
+			final Function<Map<T, U>, V> finisher) {
+		return finisher.apply(this.applyForKvs(keymapper, valuemapper));
+	}
+
+	/**
 	 * 对键名集合进行Map,不对value 进行变换
 	 * 
 	 * @param <T>       key 的类型
