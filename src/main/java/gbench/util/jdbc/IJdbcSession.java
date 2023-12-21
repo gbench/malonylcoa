@@ -845,10 +845,8 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	default boolean sqlexecute(final String sqlpattern, final IRecord params) throws SQLException {
 		final var spp = (ISqlPatternPreprocessor) this.getAttribute(ISqlPatternPreprocessor.class);
 		final var _sql = this.sqlparse(sqlpattern, params);// 解释sql
-		final var sql = spp != null && spp.name().equals("namedsql_processor_escape_brace") ? Jdbcs.MFT(_sql) // 把采用了
-				// namedsql_processor_escape_brace
-				// 转义的
-				// 字符给转义回来
+		final var sql = spp != null && spp.name().equals("namedsql_processor_escape_brace") //
+				? Jdbcs.MFT(_sql) // 把采用了 namedsql_processor_escape_brace 转义的 字符给转义回来
 				: _sql;
 		return this.sqlexecute(sql);
 	}
