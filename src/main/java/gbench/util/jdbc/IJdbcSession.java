@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 
 import gbench.util.jdbc.Jdbc.SQL_MODE;
 import gbench.util.jdbc.function.ExceptionalFunction;
+import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.sql.SQL;
 import gbench.util.jdbc.sql.Term;
@@ -348,6 +349,22 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 		};// IJdbcSession
 
 	}// fmap
+
+	/**
+	 * 查询结果并给予归集<br>
+	 * 执行sql语句查询出结果集合。不会尝试调用spp 进行sql解析 <br>
+	 * u 结果 会被 保存到 session 的 result 的 属性 之中。
+	 *
+	 * @param <U> 归集器结果类型
+	 * @param sql sql 语句
+	 * @return U 类型的结果
+	 * @throws SQLException
+	 */
+	default DFrame sql2dframe(final String sql) throws SQLException {
+		@SuppressWarnings("unchecked")
+		final var collector = (Collector<IRecord, ?, DFrame>) this.getAttribute(Collector.class);
+		return this.sql2u(sql, IRecord.REC(), collector);
+	}
 
 	/**
 	 * 查询结果并给予归集<br>

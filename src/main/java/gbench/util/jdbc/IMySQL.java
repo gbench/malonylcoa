@@ -3,6 +3,7 @@ package gbench.util.jdbc;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import gbench.util.jdbc.annotation.JdbcExecute;
@@ -212,6 +213,7 @@ public interface IMySQL {
 		final var spp = this.getProxy().findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = this.jdbc();
 		attrs.put(ISqlPatternPreprocessor.class, spp); // 增加值类型
+		attrs.put(Collector.class, DFrame.dfmclc); // 增加值类型
 		return jdbc.withTransaction(dm, attrs);
 	}
 
