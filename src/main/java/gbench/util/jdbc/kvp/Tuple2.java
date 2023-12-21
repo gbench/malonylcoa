@@ -448,6 +448,19 @@ public class Tuple2<T, U> implements Serializable {
 	 * @return (m,n) 的二元组
 	 */
 	public static <M, N> Tuple2<M, N> TUP2(final M m, final N n) {
+		return Tuple2.of(m, n);
+	}
+
+	/**
+	 * 创建一个二元组
+	 * 
+	 * @param <M> 1号位置的元素类型
+	 * @param <N> 2号位置的元素类型
+	 * @param m   1号位置的元素的值
+	 * @param n   2号位置的元素的值
+	 * @return (m,n) 的二元组
+	 */
+	public static <M, N> Tuple2<M, N> of(final M m, final N n) {
 		return new Tuple2<>(m, n);
 	}
 
@@ -509,8 +522,7 @@ public class Tuple2<T, U> implements Serializable {
 	 * @param recycle 是否进行循环补位
 	 * @return [[k1,v1],[k2,v2],...] 的二元组集合。
 	 */
-	public static <K, V> List<Tuple2<K, V>> zip(final Collection<K> kk, final Collection<V> vv,
-			final boolean recycle) {
+	public static <K, V> List<Tuple2<K, V>> zip(final Collection<K> kk, final Collection<V> vv, final boolean recycle) {
 		final var tups = new LinkedList<Tuple2<K, V>>();
 		final var kitr = kk.iterator();
 		final var vitr = vv.iterator();

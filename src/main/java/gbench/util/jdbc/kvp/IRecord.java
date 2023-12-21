@@ -8710,11 +8710,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * 默认的delim "[,/\\\\]+"<br>
 	 * 
-	 * @param line 带解析的数据行
+	 * @param line 带解析的数据行,line 会被 String.valueOf 强制转为 字符串
 	 * @return 解析行的line而得到的IRecord
 	 */
-	static IRecord STRING2REC(final String line) {
-		return A2REC(line.split("[,/\\\\]+"));
+	static IRecord STRING2REC(final Object line) {
+		return A2REC(String.valueOf(line).split("[,/\\\\]+"));
 	}
 
 	/**

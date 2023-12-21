@@ -8,10 +8,9 @@ import gbench.util.jdbc.ISqlPatternPreprocessor;
 import gbench.util.jdbc.Neo4jApp;
 import gbench.util.jdbc.annotation.JdbcConfig;
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.util.jdbc.kvp.PVec;
 
 import static gbench.util.jdbc.kvp.IRecord.*;
-import static gbench.util.jdbc.kvp.SimpleRecord.REC2;
+import static gbench.util.jdbc.kvp.PVec.PVEC;
 import static java.time.LocalDateTime.now;
 
 /**
@@ -32,13 +31,14 @@ public class Neo4jTest {
 	@Test
 	public void foo() {
 		final var app = new Neo4jApp(true);
-		final var pvec = REC2( //
+		final var pvec = PVEC( //
 				"张三/李四", R("rel", "喜欢", "张三.address", "上海", "张三.father", "lisi", //
 						"张三.birth", now(), "李四.phone", "1812074620"),
 				"李四/王五/赵六", R("rel", "喜欢", "2#address", "北京", "1#age", 25, "2#height", 1.98), //
 				"赵六/王八", R("rel", "喜欢", "2#address", "北京"), //
 				"陈七/王八", R("rel", "喜欢", "$address", "中国") //
-		).applyForKvs(IRecord::STRING2REC, e -> (IRecord) e, PVec::new);
+		).fmap(IRecord::STRING2REC, o -> (IRecord) o);
+		System.out.println(pvec.unzip());
 		final var g = app.graph(pvec);
 		System.out.println(g);
 
