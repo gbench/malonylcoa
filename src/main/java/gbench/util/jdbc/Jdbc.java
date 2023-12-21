@@ -1248,38 +1248,6 @@ public class Jdbc implements IManagedStreams {
 	}
 
 	/**
-	 * 根据代理对象结构： 提取sharpPattern 中的数据操作语句 <br>
-	 * 
-	 * @param proxy        代理对象结构：一般是通过Jdbc.newInstance
-	 *                     调用一个未标记的接口函数，故意造成调用失败，致使Jdbc返回返回代理对象结构。
-	 *                     proxy内部包含，连接器，sqlpattern 解析器，一级后置收尾处理器，当前的数据库连接操作对象jdbc等
-	 *                     代理的内部结构，可以通过IRecord。都是 作为单例的模式包装在IRecord
-	 *                     之中。因此可以通过的IRecordfindOne(Class&lt;?&gt;)的方式来提取，进而被使用。
-	 * @param sharpPattern sharppattern 的名称。如妹没有#开头，会自动添加一个#符号。作为标记。
-	 * @param params       占位符变量的 值定义容器{key-&gt;value}的集合。key 就是占位符的名称会根据 sharp占位符
-	 *                     "#(\\w+)" 的规则，即是否以井号 开头的标识符号（identifier），来
-	 *                     对sharpPattern所标记SQL语句（也可以不是SQL遇见的一种DSL)提取，进而做值替换。随有点绕口，但是很简单。
-	 * @return pattern 所对应的数据操作语句。占位符变量也已经用params 做了替换。非数字类型会被自动的添加上 双引号“"”
-	 */
-	public static String parseSharpPattern(final IRecord proxy, final String sharpPattern, final IRecord params) {
-
-		if (proxy == null)
-			return null;
-		final var processor = proxy.findOne(ISqlPatternPreprocessor.class);
-		if (processor == null)
-			return null;
-		final var tpl = processor.handle(null, null, // 把processor 视作一个Map<String,String>的namedSql
-				Jdbcs.MFT(sharpPattern.startsWith("#") ? "{0}" : "#{0}", sharpPattern), null);// namesql 的模板
-		if (tpl == null)
-			return null;
-		final var sql = substitute(tpl, "#+(\\w+)", params, // 对模板中的参数的位置 采用 params 中的数据来给予替换。
-				(pat, t) -> pat.startsWith("##") ? t + "" // 对于以两个#开头的变量视作强制字符类型不加引号。
-						: Jdbcs.MFT(t instanceof Number ? "{0,number,0}" : "\"{0}\"", t));// 根据参数类型决定是否添加引号。
-
-		return sql;
-	}
-
-	/**
 	 * 其实就是提取在方法Method上的标记比如annotation:JdbcQuery,JdbcExecute中的value 值。 根据方法签名提取 对含有
 	 * 井号#的pattern 进行侦测，如果侦测出来就用sharppattern_todetect所表标的内容，作为键值在
 	 * 在sharppattern_defs进行检索，并对method上的标记
