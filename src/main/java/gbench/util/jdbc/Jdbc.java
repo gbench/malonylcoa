@@ -3066,7 +3066,7 @@ public class Jdbc implements IManagedStreams {
 
 		T t = null;
 
-		final BiFunction<Object[][], String[], T> _mxbuilder = (ooo, hh) -> mxbuilder.apply(ooo2sss(ooo), hh);
+		final BiFunction<Object[][], String[], T> _mxbuilder = (ooo, hh) -> mxbuilder.apply(casts(ooo), hh);
 		try {
 			t = this.pmatrix_throws(_mxbuilder, sql, pp);
 		} catch (Exception e) {
@@ -3771,20 +3771,22 @@ public class Jdbc implements IManagedStreams {
 	/**
 	 * 把一个对象数组转换成一个字符串数组。
 	 *
-	 * @param ooo 对象二维数据
+	 * @param objs 对象二维数据
 	 * @return 字符串二维数组
 	 */
-	public static String[][] ooo2sss(final Object[][] ooo) {
-		final int height = ooo.length;
-		final int width = ooo[0].length;
-		String[][] sss = new String[height][];
-		for (int i = 0; i < height; i++) {
-			sss[i] = new String[width];
-			for (int j = 0; j < width; j++)
-				sss[i][j] = ooo[i][j] + "";
-		}
+	public static String[][] casts(final Object[][] objs) {
+		final int height = objs.length;
+		final int width = objs[0].length;
+		final String[][] strs = new String[height][];
 
-		return sss;
+		for (int i = 0; i < height; i++) {
+			strs[i] = new String[width];
+			for (int j = 0; j < width; j++) {
+				strs[i][j] = String.valueOf(objs[i][j]);
+			} // for
+		} // for
+
+		return strs;
 	}
 
 	/**
@@ -3822,8 +3824,10 @@ public class Jdbc implements IManagedStreams {
 	public static String[] labels2(final ResultSet rs) throws SQLException {
 
 		String[] aa = null;
-		if (rs == null)
+		if (rs == null) {
 			return null;
+		}
+
 		final var rsm = rs.getMetaData();
 		final var n = rsm.getColumnCount();
 		aa = new String[n];
@@ -3843,12 +3847,16 @@ public class Jdbc implements IManagedStreams {
 
 		final var mm = new HashMap<Integer, String>();
 		try {
-			if (rs == null)
+			if (rs == null) {
 				return mm;
+			}
+
 			final var rsm = rs.getMetaData();
 			final var n = rsm.getColumnCount();
-			for (int i = 1; i <= n; i++)
+			for (int i = 1; i <= n; i++) {
 				mm.put(i, rsm.getColumnLabel(i));
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -3993,28 +4001,32 @@ public class Jdbc implements IManagedStreams {
 			ArrayList<String[]> jks = null; // json 值的列名集合:展开字段序列，索引从0开始，0,1,2 依次对应 第一，第二，第三等．
 
 			// 把rec(含有复合字段：jsn的多key字段）cook(转换)成 扁平的结构
-			SQLExceptionalFunction<IRecord, IRecord> lambda_cook = rec -> {// 默认为需要 展开 含有 展开列名
-																			// 即jks不是全部为null,含有json值列名集合
+			SQLExceptionalFunction<IRecord, IRecord> lambda_cook = rec -> {// 默认为需要 展开 含有 展开列名 即jks不是全部为null,含有json值列名集合
 				for (int i = 0; i < n; i++) {// 逐列添加数据
 					final var label = labels.get(i);// 列名
 					final String[] seqkeys = jks.get(i);// 对应于第i列（从０开始）的json keys,seqkeys表述key的序列，受到scala影响的命名．
 					Object value = rs.getObject(i + 1);// 列值
 					if (seqkeys != null) {// 需要对jsn字段给予展开,剪开的键名序列不为空
-						if (value == null)
+						if (value == null) {
 							value = "{}";// 空对象，保证value有效
+						}
+
 						@SuppressWarnings("unchecked")
 						Map<String, Object> jsnmap = Json.json2obj(value, Map.class);// json 展开成关联数组 Map
 						if (jsnmap == null) {// 默认值的字段填充
 							jsnmap = new HashMap<>();
-							for (var key : seqkeys)
+							for (var key : seqkeys) {
 								rec.add(key, null);// 为了保证key名称存在，不过对于Map结构的rec，这是无效的．
+							} // for
 						} // if jsnmap==null
-							// 提取jsnmap中的seqkeys中的键名数据，并把他们置如结果记录里面去．
+
+						// 提取jsnmap中的seqkeys中的键名数据，并把他们置如结果记录里面去．
 						new LinkedRecord(seqkeys, jsnmap).forEach2(rec::add);
 					} else {// 不需要对jsn列进行展开
 						rec.add(label, value);
 					} // if 逐列添加数据
 				} /* for */
+
 				return rec;
 			}; // lambda_cook
 
@@ -4076,9 +4088,10 @@ public class Jdbc implements IManagedStreams {
 		// 代码在这里才是真正的开始，以上都是准备工作．准备活动要有条不紊，可以慢（此处的慢是缜密与完备）但不能乱．行动之时要快如闪电．
 		final List<IRecord> ll = psql2apply_throws(sql, params, con, close, mode, (conn, stmt, rs, rsm, n) -> { // 结果集合的生成．
 			final var recs = new LinkedList<IRecord>();
-			cooker.initialize(n, rs, rsm);// 在烹饪之前准备一下，cooker 准备．．．，Ｇo! Go!! Go!!!
-			while (rs.next())
+			cooker.initialize(n, rs, rsm);// 在烹饪之前准备一下，cooker 准备。。。 Go! Go!! Go!!!
+			while (rs.next()) {
 				recs.add(cooker.cook(recsup.get()));// 數據遍历,把rec煮熟一下再放入结果集recs中
+			} // while
 			return recs;
 		});// sqlquery 查詢結果集
 
