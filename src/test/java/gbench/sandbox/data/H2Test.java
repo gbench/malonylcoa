@@ -91,7 +91,7 @@ public class H2Test {
 			final var dfm = sess.sql2x(String.format("select * from %s", tblname)) // 查询数据
 					.foreach(r -> r.compute("address", H2db::json)); // 地址类型转换
 			println(dfm);
-			println("unit", dfm.get(0).pathi4("address/building/unit"));
+			println("unit:", dfm.get(0).pathi4("address/building/unit"));
 			println("delete:", sess.sql2execute(String.format("delete from %s where id=%d", tblname, 2))); // 删除数据
 			println("data:", sess.sql2x(String.format("select * from %s", tblname)) // 查询数据
 					.foreach(r -> r.compute("address", H2db::json))); // 地址类型转换
