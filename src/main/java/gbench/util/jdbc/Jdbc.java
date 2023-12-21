@@ -1998,7 +1998,7 @@ public class Jdbc implements IManagedStreams {
 		};// 变换函数
 
 		return substitute(line, Pattern.compile(pattern), params,
-				(pat, e) -> Jdbcs.MFT(!pat.startsWith("##") ? "\"{0}\"" : "{0}", mapper.apply(e)));
+				(pat, e) -> Jdbcs.MFT(!pat.startsWith("##") ? "''{0}''" : "{0}", mapper.apply(e)));
 	}
 
 	/**
@@ -2016,7 +2016,7 @@ public class Jdbc implements IManagedStreams {
 	public static String quote_substitute(final String line, final Pattern pattern, final IRecord params) {
 
 		return substitute(line, pattern, params,
-				(pat, e) -> !pat.startsWith("##") ? Jdbcs.MFT("\"{0}\"", e + "") : e + "");
+				(pat, e) -> !pat.startsWith("##") ? Jdbcs.MFT("''{0}''", e + "") : e + "");
 	}
 
 	/**

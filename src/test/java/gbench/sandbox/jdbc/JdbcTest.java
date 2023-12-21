@@ -1,7 +1,7 @@
 package gbench.sandbox.jdbc;
 
 import static gbench.util.io.Output.println;
-import static gbench.util.jdbc.IJdbcApp.nspeb;
+import static gbench.util.jdbc.IJdbcApp.nspp;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
 
@@ -96,7 +96,7 @@ public class JdbcTest {
 	public void foo() {
 		// 创造一个IJdbcApp接口应用
 		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/test.sql";
-		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspeb(sqlfile), JdbcApp.class);
+		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspp(sqlfile), JdbcApp.class);
 		println("db", jdbcApp.getDbName()); // 检索数据库名
 
 		jdbcApp.withTransaction(sess -> { // 准备数据
@@ -114,6 +114,7 @@ public class JdbcTest {
 				sess.sql2execute(SQL.of("t_user", line).insert()); // 插入数据
 			} // for
 			println("#getUsers 3", sess.sql2dframe("#getUsers", rb("cnt").get(3))); // 使用语句标号提取语句并执行
+			println("#updateUserById 3", sess.sql2execute("#updateUserById", rb("id,name").get(3, "张三"))); // 使用语句标号提取语句并执行
 		}); // withTransaction
 		println("------------------------------------------------------");
 		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", REC("cnt", 5));

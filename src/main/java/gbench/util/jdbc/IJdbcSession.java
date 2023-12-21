@@ -876,7 +876,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @return IRecord 类型的结果集合
 	 * @throws SQLException
 	 */
-	default boolean sqlexecute(final String sqlpattern, final IRecord params) throws SQLException {
+	default boolean sql2execute(final String sqlpattern, final IRecord params) throws SQLException {
 		final var spp = (ISqlPatternPreprocessor) this.getAttribute(ISqlPatternPreprocessor.class);
 		final var _sql = this.sqlparse(sqlpattern, params);// 解释sql
 		final var sql = spp != null && spp.name().equals("namedsql_processor_escape_brace") //
