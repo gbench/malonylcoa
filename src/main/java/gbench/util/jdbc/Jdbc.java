@@ -668,7 +668,7 @@ public class Jdbc implements IManagedStreams {
 	 *
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．
 	 *                                <br>
-	 *                                是一个(m,a,p,j)->p 的形式 <br>
+	 *                                是一个(m,a,p,j)-&gt;p 的形式 <br>
 	 *                                method(m) 方法对象, <br>
 	 *                                params(a args) 参数列表:name-&gt;value, <br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
@@ -736,7 +736,7 @@ public class Jdbc implements IManagedStreams {
 	 *                                或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
 	 *                                MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
 	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．
-	 *                                是一个(m,a,p,j)->p 的形式 <br>
+	 *                                是一个(m,a,p,j)-&gt;p 的形式 <br>
 	 *                                method(m) 方法对象, <br>
 	 *                                params(a args) 参数列表:name-&gt;value, <br>
 	 *                                sqlpattern(p pattern) sql模板 ，sql
