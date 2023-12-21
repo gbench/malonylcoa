@@ -6194,7 +6194,7 @@ public class DataApp {
 		 * 行数据流
 		 *
 		 * @param <U>    变换器的结果类型
-		 * @param mapper 行记录便器 rec->u
+		 * @param mapper 行记录便器 rec-&gt;u
 		 * @return 行数据流 [u]
 		 */
 		public <U> Stream<U> rowS(final Function<IRecord, U> mapper) {
@@ -6267,7 +6267,7 @@ public class DataApp {
 		 * @param <T>    原数据类型
 		 * @param <U>    目标数据类型
 		 * @param name   列名
-		 * @param mapper 列元素的数据变换 t->u
+		 * @param mapper 列元素的数据变换 t-&gt;u
 		 * @return 列数据的流
 		 */
 		@SuppressWarnings("unchecked")
@@ -6281,7 +6281,7 @@ public class DataApp {
 		 * @param <T>    原数据类型
 		 * @param <U>    目标数据类型
 		 * @param name   列名
-		 * @param mapper 列元素的数据变换 t->u
+		 * @param mapper 列元素的数据变换 t-&gt;u
 		 * @return 列数据的列表
 		 */
 		public <T, U> List<U> cols(final String name, final Function<T, U> mapper) {
@@ -6312,7 +6312,7 @@ public class DataApp {
 		 * 数组元素归集
 		 *
 		 * @param <T>       元素类型
-		 * @param collector 归集器 [m] -> T 归集类型
+		 * @param collector 归集器 [m] -&gt; T 归集类型
 		 * @return T类型的结果
 		 */
 		public <T> T collect(final Collector<? super IRecord, ?, T> collector) {
@@ -6323,7 +6323,7 @@ public class DataApp {
 		 * 数组元素归集
 		 *
 		 * @param <T>       元素类型
-		 * @param collector 归集器 [m] -> T 归集类型
+		 * @param collector 归集器 [m] -&gt; T 归集类型
 		 * @return T类型的结果
 		 */
 		public <T> T collect2(final Collector<? super Map<String, Object>, ?, T> collector) {
@@ -6334,7 +6334,7 @@ public class DataApp {
 		 * 结果类型
 		 *
 		 * @param <T>    结果类型
-		 * @param mapper 结果变换 dfm -> t
+		 * @param mapper 结果变换 dfm -&gt; t
 		 * @return T类型值
 		 */
 		public <T> T mutate(final Function<DFrame, T> mapper) {
@@ -6342,9 +6342,20 @@ public class DataApp {
 		}
 
 		/**
+		 * 遍历函数(带有返回值)
+		 * 
+		 * @param action 遍历函数
+		 * @return DFrame
+		 */
+		public DFrame foreach(Consumer<? super IRecord> action) {
+			this.forEach(action);
+			return this;
+		}
+
+		/**
 		 * Haskell Functor
 		 *
-		 * @param mapper rec->rec_new
+		 * @param mapper rec-&gt;rec_new
 		 * @return DFrame
 		 */
 		public DFrame fmap(final Function<IRecord, IRecord> mapper) {
@@ -6356,8 +6367,8 @@ public class DataApp {
 		 *
 		 * @param <T>    元素类型
 		 * @param <U>    结果类型
-		 * @param mapper 变换函数 obj->t
-		 * @param gen    生成函数 (kk,tt)->u
+		 * @param mapper 变换函数 obj-&gt;t
+		 * @param gen    生成函数 (kk,tt)-&gt;u
 		 * @return U数据类型
 		 */
 		public <T, U> U arrayOf(final Function<Object, T> mapper,

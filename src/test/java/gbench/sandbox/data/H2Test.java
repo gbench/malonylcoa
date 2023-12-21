@@ -88,10 +88,13 @@ public class H2Test {
 			sess.sql2execute(insql(tblname, line.derive("id", 2, "name", "zhangsan2", "phone", "18601690611") // 插入数据2
 					.pset("address/building/room", 202)));
 			sess.sql2execute(String.format("update %s set name='%s' where id=%d", tblname, "zhangsan1", 1)); // 修改数据
-			final var dfm = sess.sql2x(String.format("select * from %s", tblname)); // 查询数据
-			dfm.forEach(r -> r.compute("address", H2db::json)); // 地址类型转换
+			final var dfm = sess.sql2x(String.format("select * from %s", tblname)) // 查询数据
+					.foreach(r -> r.compute("address", H2db::json)); // 地址类型转换
 			println(dfm);
 			println("unit", dfm.get(0).pathi4("address/building/unit"));
+			println("delete:", sess.sql2execute(String.format("delete from %s where id=%d", tblname, 2))); // 删除数据
+			println("data:", sess.sql2x(String.format("select * from %s", tblname)) // 查询数据
+					.foreach(r -> r.compute("address", H2db::json))); // 地址类型转换
 		}); // withTransaction
 	}
 
