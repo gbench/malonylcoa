@@ -83,13 +83,16 @@ public class H2Test {
 					REC("city", "shanghai", "district", "changning", "street", "fahuazhen", "nong", 101, "building",
 							REC("unit", 11, "room", 201)));
 			final var tblname = "t_individual";
-			sess.sql2execute(ctsql(tblname, line));
-			sess.sql2execute(insql(tblname, line));
-			final var p = sess.sql2x(String.format("select * from %s", tblname));
-			p.forEach(r -> r.compute("address", H2db::json)); // 地址类型转换
-			println(p);
-			println("unit", p.get(0).pathi4("address/building/unit"));
-		});
+			sess.sql2execute(ctsql(tblname, line)); // 创建表
+			sess.sql2execute(insql(tblname, line)); // 插入数据1
+			sess.sql2execute(insql(tblname, line.derive("id", 2, "name", "zhangsan2", "phone", "18601690611") // 插入数据2
+					.pset("address/building/room", 202)));
+			sess.sql2execute(String.format("update %s set name='%s' where id=%d", tblname, "zhangsan1", 1)); // 修改数据
+			final var dfm = sess.sql2x(String.format("select * from %s", tblname)); // 查询数据
+			dfm.forEach(r -> r.compute("address", H2db::json)); // 地址类型转换
+			println(dfm);
+			println("unit", dfm.get(0).pathi4("address/building/unit"));
+		}); // withTransaction
 	}
 
 	/**

@@ -974,7 +974,7 @@ public class DataApp {
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
 		 * @param key    键名
-		 * @param mapper 元素值变换函数 t->u
+		 * @param mapper 元素值变换函数 t-&gt;u
 		 * @return U类型的流
 		 */
 		default <T, U> Stream<U> getS(final String key, final Function<T, U> mapper) {
@@ -988,7 +988,7 @@ public class DataApp {
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
 		 * @param idx    键名索引,从0开始
-		 * @param mapper 元素值变换函数 t->u
+		 * @param mapper 元素值变换函数 t-&gt;u
 		 * @return U类型的流
 		 */
 		default <T, U> Stream<U> getS(final int idx, final Function<T, U> mapper) {
@@ -1002,7 +1002,7 @@ public class DataApp {
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
 		 * @param key    键名
-		 * @param mapper 元素值变换函数 t->u
+		 * @param mapper 元素值变换函数 t-&gt;u
 		 * @return U类型的列表
 		 */
 		default <T, U> List<U> gets(final String key, final Function<T, U> mapper) {
@@ -1016,7 +1016,7 @@ public class DataApp {
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
 		 * @param idx    键名索引,从0开始
-		 * @param mapper 元素值变换函数 t->u
+		 * @param mapper 元素值变换函数 t-&gt;u
 		 * @return U类型的列表
 		 */
 		default <T, U> List<U> gets(final int idx, final Function<T, U> mapper) {
@@ -1214,13 +1214,27 @@ public class DataApp {
 		}
 
 		/**
+		 * 批量添加键值列表 <br>
+		 * 元组信息添加到对象本身
+		 *
+		 * @param <T>  参数列表元素类型
+		 * @param objs Map结构(IRecord也是Map结构) 或是 键名,键值 序列。即 build(map) 或是
+		 *             build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
+		 *             kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
+		 * @return 复制的新的对象
+		 */
+		@SuppressWarnings("unchecked")
+		default <T> IRecord derive(final T... objs) {
+			return this.duplicate().add(REC(objs));
+		}
+
+		/**
 		 * 把idx转key
 		 *
 		 * @param idx 键名索引 从0开始
 		 * @return 索引转键名
 		 */
 		default String keyOf(final int idx) {
-
 			final List<String> kk = this.keys();
 			return idx < kk.size() ? kk.get(idx) : null;
 		}
@@ -1236,13 +1250,61 @@ public class DataApp {
 		 * @param <T>          元素类型
 		 * @param <U>          结果类型
 		 * @param path         键名路径
-		 * @param preprocessor 预处理器 x->y
-		 * @param mapper       值变换函数 t->u
+		 * @param preprocessor 预处理器 x-&gt;y
+		 * @param mapper       值变换函数 t-&gt;u
 		 * @return U类型的值
 		 */
 		default <X, Y, T, U> U pget(final String path, final BiFunction<String, X, Y> preprocessor,
 				final Function<T, U> mapper) {
 			return this.pathget(path, mapper);
+		}
+
+		/**
+		 * 根据路径提取数据 (pathget 的别名 ) <br>
+		 * <p>
+		 * 可以识别的值类型IRecord,Map,Collection,Array其中Collection和Array 的 key为索引序号，从开始
+		 *
+		 * @param <X>          元素类型
+		 * @param <Y>          元素类型Y 需要为
+		 *                     IRecord,Map,Collection,Array其中Collection和Array任一
+		 * @param <T>          元素类型
+		 * @param <U>          结果类型
+		 * @param path         键名路径
+		 * @param preprocessor 预处理器 x-&gt;y
+		 * @param mapper       值变换函数 t-&gt;u
+		 * @return U类型的值
+		 */
+		default <X, Y, T, U> U pget(final String path, final Function<T, U> mapper) {
+			return this.pathget(path, mapper);
+		}
+
+		/**
+		 * 根据路径设置数据 (pathget 的别名 ) <br>
+		 * <p>
+		 * 可以识别的值类型IRecord,Map,Collection,Array其中Collection和Array 的 key为索引序号，从开始
+		 *
+		 * @param <X>   元素类型
+		 * @param <Y>   元素类型Y 需要为 IRecord,Map,Collection,Array其中Collection和Array任一
+		 * @param <T>   元素类型
+		 * @param <U>   结果类型
+		 * @param path  键名路径
+		 * @param value 数据值
+		 * @return IRecord 对象本省
+		 */
+		default <X, Y, T, U> IRecord pset(final String path, final Object value) {
+			final var pp = path.split("[/,]+");
+			final var n = pp.length;
+
+			if (n < 2) {
+				this.set(path, value);
+			} else {
+				final var parent = Arrays.copyOfRange(pp, 0, n - 1);
+				final var r = this.pathget(parent, (k, e) -> e, e -> (IRecord) e);
+				if (null != r) {
+					r.set(pp[n - 1], value);
+				} // if
+			} // if
+			return this;
 		}
 
 		/**
@@ -1277,8 +1339,8 @@ public class DataApp {
 		 * @param <T>          元素类型
 		 * @param <U>          结果类型
 		 * @param path         键名路径
-		 * @param preprocessor 预处理器 x->y
-		 * @param mapper       值变换函数 t->u
+		 * @param preprocessor 预处理器 x-&gt;y
+		 * @param mapper       值变换函数 t-&gt;u
 		 * @return U类型的值
 		 */
 		@SuppressWarnings("unchecked")
@@ -1307,8 +1369,8 @@ public class DataApp {
 		 * @param <T>          元素类型
 		 * @param <U>          结果类型
 		 * @param path         键名路径
-		 * @param preprocessor 预处理器 x->y
-		 * @param mapper       值变换函数 t->u
+		 * @param preprocessor 预处理器 x-&gt;y
+		 * @param mapper       值变换函数 t-&gt;u
 		 * @return U类型的值
 		 */
 		default <X, Y, T, U> U pathget(final String path, final BiFunction<String, X, Y> preprocessor,
@@ -1322,7 +1384,7 @@ public class DataApp {
 		 * @param <T>    元素类型
 		 * @param <U>    结果类型
 		 * @param path   键名路径 如 a/b/c
-		 * @param mapper 值变换函数 t->u
+		 * @param mapper 值变换函数 t-&gt;u
 		 * @return U类型的值
 		 */
 		default <T, U> U pathget(final String path, final Function<T, U> mapper) {
@@ -1336,7 +1398,7 @@ public class DataApp {
 		 * @param <T>    元素类型
 		 * @param <U>    结果（流）：元素类型
 		 * @param path   键名路径 如 a/b/c
-		 * @param mapper 元素值变换函数 t->u
+		 * @param mapper 元素值变换函数 t-&gt;u
 		 * @return U类型的流
 		 */
 		@SuppressWarnings("unchecked")
@@ -1363,9 +1425,9 @@ public class DataApp {
 		 * 根据路径提取数据 <br>
 		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
-		 * @param <T>        结果（流）：元素类型
-		 * @param path       键名路径 如 a/b/c
-		 * @param typeholder 元素值变换函数 t->u
+		 * @param <T>    结果（流）：元素类型
+		 * @param path   键名路径 如 a/b/c
+		 * @param mapper 元素值变换函数 t-&gt;u
 		 * @return U类型的流
 		 */
 		@SuppressWarnings("unchecked")
