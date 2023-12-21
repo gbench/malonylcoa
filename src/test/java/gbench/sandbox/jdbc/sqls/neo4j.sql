@@ -41,6 +41,6 @@ RETURN pct,sum(amount)
 create 
 (##a :Vertex {name:#a,vlblk:#a}),
 (##b :Vertex {name:#b,vlblk:#b}),
-(##a)-[e##transcode :Edge {from:#a,to:#b,elblk:'##a-##b'}]->(##b)
+(##a)-[e##transcode :Edge {from:#a,to:#b,elblk:"##a-##b"}]->(##b)
 
 
