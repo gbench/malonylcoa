@@ -2058,9 +2058,9 @@ public class Jdbc implements IManagedStreams {
 	 *
 	 * @param line     待解析的行数据
 	 * @param pattern  变量名的pattern
-	 * @param params   变量的定义：{name->value}
+	 * @param params   变量的定义：{name-&gt;value}
 	 * @param callback 二元函数：使用params中的值替换pattern结构的变量的时候，对值的操作函数。把对象转换成字符串的方法。<br>
-	 *                 (pat,value)->String, pat 是匹配的模式的字符串,value 是在params 与 pat
+	 *                 (pat,value)-&gt;String, pat 是匹配的模式的字符串,value 是在params 与 pat
 	 *                 中的key 为 pat的 group(1)的数据值。
 	 * @return 解析后的结果
 	 */
@@ -2083,17 +2083,17 @@ public class Jdbc implements IManagedStreams {
 	 *
 	 * @param line     待解析的行数据
 	 * @param pattern  变量名的pattern,必须在pattern中使用分组标识出：pattern 标识的变量名称！ 否则就会之际返回
-	 * @param params   变量的定义：{name->value},
+	 * @param params   变量的定义：{name-&gt;value},
 	 *                 对于满足line中的pattern,但是尚未再params找到对应值的数据，将其给予再line中删除，即替换为空白。
 	 * @param callback 二元函数：使用params中的值替换pattern结构的变量的时候，对值的操作函数。把对象转换成字符串的方法。<br>
-	 *                 (pat,value)->String, pat 是匹配的模式的字符串,value 是在params 与 pat
+	 *                 (pat,value)-&gt;String, pat 是匹配的模式的字符串,value 是在params 与 pat
 	 *                 中的key 为 pat的 <br>
 	 *                 group(1)的数据值。
 	 * @return 解析后的结果，对于满足line中的pattern,但是尚未再params找到对应值的数据，将其给予再line中删除，即替换为空白。
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> String substitute(final String line, final Pattern pattern, final IRecord params,
-			BiFunction<String, T, String> callback) {
+			final BiFunction<String, T, String> callback) {
 
 		var matcher = pattern.matcher(line);
 		var _line = line;
