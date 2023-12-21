@@ -32,9 +32,11 @@ WITH e.to as pct,e.quantity as quantity,e.price as price,e.quantity*e.price as a
 RETURN pct,sum(amount)
 
 -- --------------------------
--- 创建数据行
+-- 创建一个带有交易代码的关系
 -- # createLine
--- #name: 性别
+-- #a: 节点a
+-- #b: 节点b
+-- #transcode: 交易代码
 -- --------------------------
 create 
 (##a :Vertex {name:#a,vlblk:#a}),

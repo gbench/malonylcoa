@@ -9,10 +9,13 @@ import gbench.util.jdbc.Neo4jApp;
 import gbench.util.jdbc.annotation.JdbcConfig;
 import gbench.util.jdbc.kvp.IRecord;
 
+import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.*;
 import static gbench.util.jdbc.kvp.PVec.PVEC;
+import static java.lang.String.format;
 import static java.time.LocalDateTime.now;
 
+import java.util.Random;
 import java.util.stream.Collectors;
 
 /**
@@ -41,7 +44,7 @@ public class Neo4jTest {
 				"陈七/王八", R("rel", "喜欢", "$address", "中国") //
 		).fmap(IRecord::STRING2REC, o -> (IRecord) o);
 		final var g = app.graph(pvec);
-		System.out.println(g);
+		println(g);
 
 		// 数据库主要构件的创建。
 		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/neo4j.sql";
@@ -50,7 +53,11 @@ public class Neo4jTest {
 		final var proxy = database.getProxy();// 提取代理对象
 		final var spp = proxy.findOne(ISqlPatternPreprocessor.class);// 提取SQLPattern 处理器
 		final var line = spp.handle(null, null, "#createLine", null); // 提取数sql语句定义
-		System.out.println(line);
+		println("语句定义 line", line);
+		final var line1 = spp.handle(null, //
+				REC("a", "张三", "b", "李四", "transcode", format("TX%05d", new Random().nextInt(10000))), //
+				"#createLine", null); // 替换参数
+		println("替换参数,line1", line1);
 	} // foo0
 
 	/**
@@ -59,12 +66,13 @@ public class Neo4jTest {
 	@Test
 	public void bar() {
 		final var pvec = PVEC(1, 2, 3, 4);
-		System.out.println(pvec.unzip());
-		System.out.println(pvec.hashCode());
-		System.out.println(pvec.clone().hashCode());
-		System.out.println(pvec.clone().equals(pvec));
-		System.out.println(pvec.groupBy(Collectors.toList()));
-		System.out.println(pvec.mutate(IRecord::REC));
+		println("unzip", pvec.unzip());
+		println("hashCode", pvec.hashCode());
+		println("clone hashCode", pvec.clone().hashCode());
+		println("equals", pvec.clone().equals(pvec));
+		println("=", pvec.clone() == pvec);
+		println("groupBy", pvec.groupBy(Collectors.toList()));
+		println("mutate", pvec.mutate(IRecord::REC));
 	}
 
 }
