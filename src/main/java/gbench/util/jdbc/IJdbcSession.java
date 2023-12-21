@@ -838,8 +838,9 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 */
 	default boolean sqlexecute(final String sql) throws SQLException {
 		var _sql = sql.strip(); // 去除多余的首尾空格
-		if (_sql.startsWith("#"))
+		if (_sql.startsWith("#")) {
 			_sql = this.sqlparse(_sql, IRecord.REC());
+		}
 		return psqlexecute(_sql, (Object[]) null); // 直接执行SQL语句
 	}
 
