@@ -22,7 +22,7 @@ import gbench.util.jdbc.kvp.IRecord;
 /**
  * 使用 JDK 代理的方式,根据接口的注解@JdbcQuery,@JdbcExecute自动填充对象的SQL语句实现数据库操作
  */
-public class JdbcTest {
+public class JdbcMysqlTest {
 
 	/**
 	 * mysql 数据库操作接口<br>
@@ -95,7 +95,7 @@ public class JdbcTest {
 	@Test
 	public void foo() {
 		// 创造一个IJdbcApp接口应用
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/test.sql";
+		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
 		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspp(sqlfile), JdbcApp.class);
 		println("db", jdbcApp.getDbName()); // 检索数据库名
 
