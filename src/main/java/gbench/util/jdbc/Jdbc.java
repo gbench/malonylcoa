@@ -1975,7 +1975,7 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param line    待解析的行数据
 	 * @param pattern 变量名的pattern
-	 * @param params  变量的定义：{name->value}
+	 * @param params  变量的定义：{name-&gt;value}
 	 * @return 解析后的结果
 	 */
 	public static String quote_substitute(final String line, final String pattern, final IRecord params) {
@@ -2010,7 +2010,7 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param line    待解析的行数据
 	 * @param pattern 变量名的pattern
-	 * @param params  变量的定义：{name->value}
+	 * @param params  变量的定义：{name-&gt;value}
 	 * @return 解析后的结果
 	 */
 	public static String quote_substitute(final String line, final Pattern pattern, final IRecord params) {
