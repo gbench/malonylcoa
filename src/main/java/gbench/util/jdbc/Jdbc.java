@@ -2043,6 +2043,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 解析后的结果
 	 */
 	public static String substitute(final String line, final Pattern pattern, final IRecord params) {
+
 		return substitute(line, pattern, params, (pat, e) -> e + "");
 	}
 
@@ -2065,7 +2066,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 解析后的结果
 	 */
 	public static <T> String substitute(final String line, final String pattern, final IRecord params,
-			BiFunction<String, T, String> callback) {
+			final BiFunction<String, T, String> callback) {
 
 		return Jdbc.substitute(line, Pattern.compile(pattern), params, callback);
 	}
@@ -2095,25 +2096,15 @@ public class Jdbc implements IManagedStreams {
 	public static <T> String substitute(final String line, final Pattern pattern, final IRecord params,
 			final BiFunction<String, T, String> callback) {
 
-		var matcher = pattern.matcher(line);
-		var _line = line;
-		var times = 10000;// 最大的替换次数
-		while (matcher.find()) {
-			if (times <= 0) {
-				System.err.println("替换次数超过1000次，给予终止替换");
-			}
-			if (matcher.groupCount() < 1) {
-				System.err.println("必须在pattern中使用分组标识出：pattern 标识的变量名称！");
-				return line;//
-			} // if
-			final var key = matcher.group(1);// 提取pattern所标识的变量
-			final var value = params.get(key);// 提取该pattern所标识的变量的值。
-			final var s = callback.apply(matcher.group(), (T) value);// 获取替换值的字符串标识。
-			_line = matcher.replaceFirst(s == null ? "" : s);// 更新此次匹配的结果
-			matcher = pattern.matcher(_line);
-		} // while
+		final var matcher = pattern.matcher(line);
+		final var __line = matcher.replaceAll(r -> {
+			final var key = r.group(1); // 提取pattern所标识的变量
+			final var value = params.get(key); // 提取该pattern所标识的变量的值。
+			final var s = callback.apply(r.group(), (T) value); // 获取替换值的字符串标识。
+			return s;
+		});
 
-		return _line;// 结果返回
+		return __line;
 	}
 
 	/**
@@ -2124,6 +2115,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 方法对象
 	 */
 	public static Method methodOf(final Class<?> clazz, final String name) {
+
 		return Arrays.stream(clazz.getDeclaredMethods()).filter(e -> e.getName().equals(name)).findFirst().get();
 	}
 
@@ -2134,6 +2126,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return Map&lt;Object,Object&gt;的对象
 	 */
 	public static Map<Object, Object> M(final Object... oo) {
+
 		final var map = new LinkedHashMap<>();
 		if (oo != null && oo.length > 0) {
 			for (int i = 0; i + 1 < oo.length; i += 2) {
@@ -2147,6 +2140,7 @@ public class Jdbc implements IManagedStreams {
 	 * 创建jdbc连接对象
 	 */
 	public void init(final String driver, final String url, final String user, final String password) {
+
 		this.supplierConn = () -> {// 自己提供数据库连接
 			Connection conn = null;// 数据库连接
 			try {
@@ -2173,6 +2167,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 表格存在 返回 true,表格不存在返回false
 	 */
 	public boolean tblExists(final String tableName) {
+
 		return this.sql2records("show tables like '" + tableName + "'").size() > 0;
 	}
 
@@ -2183,6 +2178,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库存在 返回 true,数据库不存在返回false
 	 */
 	public boolean dbExists(final String database) {
+
 		return this.sql2records("show databases like '" + database + "'").size() > 0;
 	}
 
@@ -2195,7 +2191,8 @@ public class Jdbc implements IManagedStreams {
 	 *         an update count or there are no results
 	 */
 	public boolean createTable(final String tableName, final String defs) {
-		String sql = MessageFormat.format("create table {0} ( {1} ) ", defs);
+
+		final String sql = MessageFormat.format("create table {0} ( {1} ) ", defs);
 		return this.sqlexecute(sql);
 	}
 
@@ -2208,7 +2205,8 @@ public class Jdbc implements IManagedStreams {
 	 *         an update count or there are no results
 	 */
 	public boolean createTable(final String tableName, final String... defs) {
-		String sql = MessageFormat.format("create table {0} ( {1} ) ", tableName,
+
+		final String sql = MessageFormat.format("create table {0} ( {1} ) ", tableName,
 				String.join(",", Arrays.asList(defs)));
 		return this.sqlexecute(sql);
 	}
@@ -2222,12 +2220,14 @@ public class Jdbc implements IManagedStreams {
 	 *         an update count or there are no results
 	 */
 	public boolean createTableIfNotExists(final String tableName, final String... defs) {
+
 		if (this.tblExists(tableName))
 			return false;
 		final String sql = MessageFormat.format("create table {0} ( {1} ) ", tableName,
 				String.join(",", Arrays.asList(defs)));
 		if (debug)
 			System.out.println("jdbc:createTableIfNotExists:" + sql);
+
 		return this.sqlexecute(sql);
 	}
 
@@ -2237,6 +2237,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 数据库连接
 	 */
 	public Connection getConnection() {
+
 		final Connection conn = supplierConn.get();
 		return conn;
 	}
@@ -2249,6 +2250,7 @@ public class Jdbc implements IManagedStreams {
 	 *         an update count or there are no results
 	 */
 	public boolean sqlexecute(final String sql) {
+
 		return psqlexecute(sql, (Map<Integer, Object>) null);
 	}
 
@@ -2260,6 +2262,7 @@ public class Jdbc implements IManagedStreams {
 	 *         an update count or there are no results
 	 */
 	public boolean psqlexecute(final String sql, final Map<Integer, Object> params) {
+
 		return psqlexecute(sql, params, this.getConnection(), true);
 	}
 
@@ -2272,10 +2275,14 @@ public class Jdbc implements IManagedStreams {
 	 *         an update count or there are no results
 	 */
 	public boolean psqlexecute(final String sql, final Object[] oo) {
+
 		final Map<Integer, Object> params = new HashMap<>();
-		if (oo != null)
-			for (int i = 0; i < oo.length; i++)
+		if (oo != null) {
+			for (int i = 0; i < oo.length; i++) {
 				params.put(i + 1, oo[i]);
+			}
+		}
+
 		return psqlexecute(sql, params, this.getConnection(), true);
 	}
 
@@ -2298,6 +2305,7 @@ public class Jdbc implements IManagedStreams {
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
 	public synchronized IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm) {
+
 		return this.withTransaction(dm, (IJdbcSession<UUID, Object>) null, (Map<Object, Object>) null);
 	}
 
@@ -2324,6 +2332,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public synchronized IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm,
 			final Map<Object, Object> sessAttributes) {
+
 		return this.withTransaction(dm, (IJdbcSession<UUID, Object>) null, sessAttributes);
 	}
 
