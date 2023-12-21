@@ -103,7 +103,7 @@ public class JdbcTest {
 			final var proto = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690611", "sex", 1,
 					"address", "shanghai");
 			final var sql = SQL.of("t_user", proto); // 原型数据
-			sess.sqlexecute(sql.createTable().get(2)); // 创建数据
+			sess.sqlexecute(sql.ctsqls().get(2)); // 创建数据
 			for (int i = 0; i < 10; i++) {
 				final var cities = "北京,天津,上海,重庆,广州".split(",");
 				final var line = proto.derive("id", i, //
@@ -111,7 +111,7 @@ public class JdbcTest {
 						"sex", i % 2, //
 						"address", cities[new Random().nextInt(cities.length)] //
 				); // 数据行
-				sess.sql2execute(SQL.of("t_user", line).insert()); // 插入数据
+				sess.sql2execute(SQL.of("t_user", line).insql()); // 插入数据
 			} // for
 			println("#getUsers 3", sess.sql2dframe("#getUsers", rb("cnt").get(3))); // 使用语句标号提取语句并执行
 			println("#updateUserById 3", sess.sql2execute("#updateUserById", rb("id,name").get(3, "张三"))); // 使用语句标号提取语句并执行

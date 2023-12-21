@@ -378,8 +378,23 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 */
 	default DFrame sql2dframe(final String sql, final IRecord params) throws SQLException {
+		return this.sql2u(sql, params);
+	}
+
+	/**
+	 * 查询结果并给予归集<br>
+	 * 执行sql语句查询出结果集合。不会尝试调用spp 进行sql解析 <br>
+	 * u 结果 会被 保存到 session 的 result 的 属性 之中。
+	 *
+	 * @param <U>    归集器结果类型
+	 * @param sql    sql 语句
+	 * @param params 语句参数
+	 * @return U 类型的结果
+	 * @throws SQLException
+	 */
+	default <U> U sql2u(final String sql, final IRecord params) throws SQLException {
 		@SuppressWarnings("unchecked")
-		final var collector = (Collector<IRecord, ?, DFrame>) this.getAttribute(Collector.class);
+		final var collector = (Collector<IRecord, ?, U>) this.getAttribute(Collector.class);
 		return this.sql2u(sql, params, collector);
 	}
 

@@ -234,7 +234,7 @@ public class SQL {
 	 * @return insert SQL 语句
 	 */
 	public String insert(final IRecord rec) {
-		return insert(rec, kv -> kv.value() != null);
+		return insql(rec, kv -> kv.value() != null);
 	}
 
 	/**
@@ -243,8 +243,8 @@ public class SQL {
 	 * @param pfilter 插入的字段过滤器
 	 * @return insert SQL 语句
 	 */
-	public String insert(final Predicate<KVPair<String, Object>> pfilter) {
-		return this.insert(this.sqlctx, pfilter);
+	public String insql(final Predicate<KVPair<String, Object>> pfilter) {
+		return this.insql(this.sqlctx, pfilter);
 	}
 
 	/**
@@ -254,7 +254,7 @@ public class SQL {
 	 * @param pfilter 插入的字段过滤器
 	 * @return insert SQL 语句
 	 */
-	public String insert(final IRecord rec, final Predicate<KVPair<String, Object>> pfilter) {
+	public String insql(final IRecord rec, final Predicate<KVPair<String, Object>> pfilter) {
 		final StringBuilder buffer = new StringBuilder();
 		final var initialCapacity = 30; // 默认30个字段
 		final var flds = new ArrayList<String>(initialCapacity);// 字段列表
@@ -308,8 +308,8 @@ public class SQL {
 	 * @param pfilter 插入的字段过滤器
 	 * @return insert SQL 语句
 	 */
-	public String insert(final List<IRecord> recs, final Predicate<KVPair<String, Object>> pfilter) {
-		return recs.stream().map(rec -> this.insert(rec, pfilter)).collect(Collectors.joining(";\n"));
+	public String insql(final List<IRecord> recs, final Predicate<KVPair<String, Object>> pfilter) {
+		return recs.stream().map(rec -> this.insql(rec, pfilter)).collect(Collectors.joining(";\n"));
 	}
 
 	/**
@@ -317,8 +317,8 @@ public class SQL {
 	 * 
 	 * @return insert 插入语句
 	 */
-	public String insert() {
-		final var line = this.insert(this.sqlctx, kv -> kv.value() != null);
+	public String insql() {
+		final var line = this.insql(this.sqlctx, kv -> kv.value() != null);
 		return line.endsWith(";") ? line : (line + ";");
 	}
 
@@ -345,7 +345,7 @@ public class SQL {
 	 * @param which 更新范围,IRecord 解构个字段采用and 进行过滤,String 类型直接拼接到 update 语句结尾
 	 * @return 更新的sql语句
 	 */
-	public String update(IRecord recA, IRecord recB, Object which) {
+	public String upsql(IRecord recA, IRecord recB, Object which) {
 		StringBuilder buffer = new StringBuilder();
 		buffer.append("update ").append(this.name());
 
@@ -409,8 +409,8 @@ public class SQL {
 	 *                 类型直接拼接到 update 语句结尾
 	 * @return 更新后的sql 语句
 	 */
-	public String update(IRecord newData, Object whichone) {
-		return this.update(this.getSqlCtxAsOneRecord(), newData, whichone);
+	public String upsql(IRecord newData, Object whichone) {
+		return this.upsql(this.getSqlCtxAsOneRecord(), newData, whichone);
 	}
 
 	/**
@@ -432,11 +432,11 @@ public class SQL {
 	 * @param ids 用作过滤条件的 字段名称 ,比如 <br>
 	 * @return update 语句
 	 */
-	public String update2(String... ids) {
+	public String upsql2(String... ids) {
 		final var newData = this.getSqlCtxAsOneRecord();
 		final var ss = Arrays.asList(ids);
 		final var empty = IRecord.builder(newData.filter(kvp -> !ss.contains(kvp._1()))).get(UUID.randomUUID());
-		return this.update(empty, newData, newData.filter(ids));
+		return this.upsql(empty, newData, newData.filter(ids));
 	}
 
 	/**
@@ -444,8 +444,8 @@ public class SQL {
 	 * 
 	 * @return update 语句
 	 */
-	public String update2() {
-		return this.update2("id");
+	public String upsql2() {
+		return this.upsql2("id");
 	}
 
 	/**
@@ -484,7 +484,7 @@ public class SQL {
 	 * @return 更新数据的sql
 	 */
 	public String update(IRecord newData) {
-		return this.update(this.getSqlCtxAsOneRecord(), newData, null);
+		return this.upsql(this.getSqlCtxAsOneRecord(), newData, null);
 	}
 
 	/**
@@ -505,8 +505,8 @@ public class SQL {
 	 *         4:unique constraints <br>
 	 *         ],3和4 根据record设置 可能包含。 <br>
 	 */
-	public List<String> createTable() {
-		return this.createTable(false);
+	public List<String> ctsqls() {
+		return this.ctsqls(false);
 	}
 
 	/**
@@ -527,7 +527,7 @@ public class SQL {
 	 *         4:unique constraints <br>
 	 *         ],3和4 根据record设置 可能包含。 <br>
 	 */
-	public List<String> createTable(final boolean intkey_autocrement) {
+	public List<String> ctsqls(final boolean intkey_autocrement) {
 		final List<String> sqls = new LinkedList<>();// sql 语句集合
 		final StringBuilder buffer = new StringBuilder();
 
@@ -650,7 +650,7 @@ public class SQL {
 		if (this.string() != null) {
 			return this.string() + (terms().size() <= 0 ? "" : "\nterms:" + terms());
 		} else {
-			return this.insert();
+			return this.insql();
 		}
 	}
 
