@@ -710,6 +710,18 @@ public class SQL {
 	}
 
 	/**
+	 * of的别名 &amp; 命名SQL语句对象，每个SQL都有一个名字
+	 * 
+	 * @param name SQL语句的名，可以是文本字符串，由于标识SQL，便于检索
+	 * @param recs 行数据，SQL 语句的上下文数据：比如插入的操作的，插入记录.数据的键名
+	 *             采用普通命名:即name,不需要加入格式化标记,比如#name,或##name
+	 * @return SQL对象
+	 */
+	public static SQL sql(final String name, final IRecord... recs) {
+		return SQL.of(name, recs);
+	}
+
+	/**
 	 * 命名SQL语句对象，每个SQL都有一个名字 <br>
 	 * name SQL语句的任意名称 <br>
 	 * 

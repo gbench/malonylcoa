@@ -4,7 +4,7 @@ import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.IJdbcApp.nspp;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
-import static gbench.util.jdbc.sql.SQL.nsql;
+import static gbench.util.jdbc.sql.SQL.sql;
 
 import java.util.List;
 import java.util.Random;
@@ -102,7 +102,7 @@ public class JdbcMysqlTest {
 		jdbcApp.withTransaction(sess -> { // 准备数据
 			final var proto = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690611", "sex", 1,
 					"address", "shanghai");
-			sess.sql2execute(nsql("t_user", proto).ctsqls().get(2)); // 创建数据表
+			sess.sql2execute(sql("t_user", proto).ctsqls().get(2)); // 创建数据表
 			for (int i = 0; i < 10; i++) {
 				final var cities = "北京,天津,上海,重庆,广州".split(",");
 				final var dataline = proto.derive("id", i, //
@@ -110,7 +110,7 @@ public class JdbcMysqlTest {
 						"sex", i % 2, //
 						"address", cities[new Random().nextInt(cities.length)] //
 				); // 数据行
-				sess.sql2execute(nsql("t_user", dataline).insql()); // 插入数据
+				sess.sql2execute(sql("t_user", dataline).insql()); // 插入数据
 			} // for
 			println("#getUsers 3", sess.sql2dframe("#getUsers", rb("cnt").get(3))); // 使用语句标号提取语句并执行
 			println("#updateUserById 3", sess.sql2execute("#updateUserById", rb("id,name").get(3, "张三"))); // 使用语句标号提取语句并执行
