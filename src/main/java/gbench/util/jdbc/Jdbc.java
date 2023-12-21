@@ -1362,42 +1362,45 @@ public class Jdbc implements IManagedStreams {
 			// 自动侦测SQL Pattern 或者 mehtod sharp pattern
 			final var namedSqlpattern = parseJdbcMethodSharpPattern(method, sqlpattern, namedsqls);
 			var line = namedSqlpattern;// 对namedSqlpattern 进行数据处理。
-			if (method == null)
+
+			if (method == null) { // 方法名为空
 				return params != null // 根据参数数据的不同进行数据变换
 						? Jdbc.quote_substitute(line, "#+(\\w+)", params) // 采用参数sharpPattern进行数据替换
 						: line; // 不予进行方法参数回填。
-			final var ai = new AtomicInteger(0);// 计数变量
-			final var pp = method.getParameters();// 方法的参数集合
-			for (final String key : params.keys()) {// 遍历方法参数。
-				final var i = ai.getAndIncrement();// 获取当前的参数位置
-				final var rawfmt = "{" + i + "}"; // 原始类型
-				final var type = pp[i].getType();// 获取参数类型
-				final var numfmt = "{" + i + ",number,#}"; // 数值格式
-				final var datefmt = "''{" + i + ",date,yyyy-MM-dd HH:mm:ss}''"; // 日期类型。
-				final var defaultfmt = "''{" + i + "}''"; // 默认格式
-				var isnumber = false; // 是否是数字格式
-				var isdate = false; // 是否是日期类型
-				var placeholder = defaultfmt;// 默认的占位符的式样，加上单引号
+			} else { // 方法名不为空
+				final var ai = new AtomicInteger(0);// 计数变量
+				final var pp = method.getParameters();// 方法的参数集合
+				for (final String key : params.keys()) {// 遍历方法参数。
+					final var i = ai.getAndIncrement();// 获取当前的参数位置
+					final var rawfmt = "{" + i + "}"; // 原始类型
+					final var type = pp[i].getType();// 获取参数类型
+					final var numfmt = "{" + i + ",number,#}"; // 数值格式
+					final var datefmt = "''{" + i + ",date,yyyy-MM-dd HH:mm:ss}''"; // 日期类型。
+					final var defaultfmt = "''{" + i + "}''"; // 默认格式
+					var isnumber = false; // 是否是数字格式
+					var isdate = false; // 是否是日期类型
+					var placeholder = defaultfmt;// 默认的占位符的式样，加上单引号
 
-				if (Number.class.isAssignableFrom(type) || type == short.class || type == int.class
-						|| type == long.class || type == float.class || type == double.class) { // 数值格式
-					placeholder = numfmt;
-					isnumber = true;
-				} else if (Date.class.equals(type)) { // 时间格式
-					isdate = true;
-					placeholder = datefmt;
-				} else { // 默认处理
-					// placeholder = defaultfmt;// 默认格式
-				}
+					if (Number.class.isAssignableFrom(type) || type == short.class || type == int.class
+							|| type == long.class || type == float.class || type == double.class) { // 数值格式
+						placeholder = numfmt;
+						isnumber = true;
+					} else if (Date.class.equals(type)) { // 时间格式
+						isdate = true;
+						placeholder = datefmt;
+					} else { // 默认处理
+						// placeholder = defaultfmt;// 默认格式
+					}
 
-				// 更新 sql模板,把参数名更换成位置序号
-				line = line.replace("##" + key, isnumber ? numfmt : isdate ? datefmt : rawfmt) // 数值格式
-						.replace("#" + key, placeholder); // 默认格式
-			} // for
+					// 更新 sql模板,把参数名更换成位置序号
+					line = line.replace("##" + key, isnumber ? numfmt : isdate ? datefmt : rawfmt) // 数值格式
+							.replace("#" + key, placeholder); // 默认格式
+				} // for
 
-			// System.out.println(line);
-			return line;// 返回处理后的sql 语句模板。
-		};// (Method method,IRecord params,String sqlpattern,Jdbc jdbc)->
+				// System.out.println(line);
+				return line;// 返回处理后的sql 语句模板。
+			}
+		}; // (Method method,IRecord params,String sqlpattern,Jdbc jdbc)->
 	}
 
 	/**
@@ -1708,8 +1711,10 @@ public class Jdbc implements IManagedStreams {
 
 		final var pp = method.getParameters();
 		final var map = new LinkedHashMap<String, Object>();// 命名参数:需要注意这里采用LinkedHashMap以保持原来参数的顺序。
-		for (int i = 0; i < pp.length; i++)
+
+		for (int i = 0; i < pp.length; i++) {
 			map.put(pp[i].getName(), args[i]);
+		} // for
 
 		return new LinkedRecord(map);
 	}
@@ -1747,31 +1752,31 @@ public class Jdbc implements IManagedStreams {
 			return null;
 
 		final var _patterns = jces[0].value();// sql语句模板数组
-		final String[] patterns = (_patterns == null || _patterns.length < 1) ? new String[] { null } : _patterns; // 没有传入sqlpattern
-																													// 代表一个采用默认
-																													// pattern
-																													// 需要用pattern_preprocessor
-																													// 来解析。
+		// 没有传入sqlpattern 代表一个采用默认 pattern 需要用pattern_preprocessor// 来解析。
+		final String[] patterns = (_patterns == null || _patterns.length < 1) ? new String[] { null } : _patterns;
 		final var pargs = params(method, args);// 构造参数对象
 		return jdbc.withTransaction(sess -> {// 开启事务管理
 			for (var pattern : patterns) { // sql语句模板 :当pattern 为null的时候，pattern_preprocessor
-											// 会为其左方法签名的解释。不过需要namedsql_processor配置。
+				// 会为其左方法签名的解释。不过需要namedsql_processor配置。
 				final var dd = sqlinterceptor.intercept(method, pargs, pattern, jdbc);
-				if (dd != null)
+				if (dd != null) {
 					continue;// 非空表示拦截
-				// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
+				} // if
+					// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
 				final var sqlPattern = pattern_preprocessor.handle(method, pargs, pattern, jdbc);
 				final var sqlLines = MessageFormat.format(sqlPattern, args);// 提取SQL语句,并添加参数
 				if (sqlLines == null) {// 方法的SQL语句模板解释失败
-					throw new Exception(
-							Jdbcs.MFT("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!", method.getName()));
+					throw new Exception(String.format("无法为方法%s解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!",
+							method.getName()));
 				} // lines
 				final String[] sqls = sqlLines.split(";\\s*\n+");// 尝试对sqls 进行多语句解析。位于行末的分号给予分解
 				for (final var sql : sqls) {// 依次执行SQL语句
-					if (sql.matches("\\s*"))
+					if (sql.matches("\\s*")) {
 						continue;
-					if (debug)
+					} // if
+					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery:" + sql);
+					} // if
 					sess.sql2execute2int(sql);
 				} // for sql:sqls
 			} // for var pattern:patterns
@@ -1809,8 +1814,9 @@ public class Jdbc implements IManagedStreams {
 			final Object[] args, final ISqlPatternPreprocessor pattern_preprocessor,
 			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
-		if (jces == null || jces.length < 1)
+		if (jces == null || jces.length < 1) {
 			return null;
+		} // if
 
 		final var _patterns = jces[0].value();// sql语句模板数组
 		// 没有传入sqlpattern 代表一个采用默认 pattern 需要用pattern_preprocessor 来解析。
@@ -1819,23 +1825,26 @@ public class Jdbc implements IManagedStreams {
 
 		return jdbc.withConnection(conn -> {// 开启事务管理
 			for (var pattern : patterns) {// sql语句模板 :当pattern 为null的时候，pattern_preprocessor
-											// 会为其左方法签名的解释。不过需要namedsql_processor配置。
+				// 会为其左方法签名的解释。不过需要namedsql_processor配置。
 				final var dd = sqlinterceptor.intercept(method, pargs, pattern, jdbc);
-				if (dd != null)
+				if (dd != null) {
 					continue;// 非空表示拦截
-				//// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
+				} // if
+					// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
 				final var patternLines = pattern_preprocessor.handle(method, pargs, pattern, jdbc);
 				if (patternLines == null) {// 方法的SQL语句模板解释失败
-					throw new Exception(
-							Jdbcs.MFT("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!", method.getName()));
+					throw new Exception(String.format("无法为方法%s解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!",
+							method.getName()));
 				} // lines
 				final String[] tpl_patterns = patternLines.split(";\\s*\n+");// 尝试对sqls 进行多语句解析，位于行末的分号给予分解
 				for (final var tpl_pattern : tpl_patterns) {// 依次执行SQL语句
-					if (tpl_pattern.matches("\\s*"))
+					if (tpl_pattern.matches("\\s*")) {
 						continue;
+					} // if
 					final var sqltpl = MessageFormat.format(tpl_pattern, args);// 提取SQL语句
-					if (debug)
+					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery:" + sqltpl);
+					} // if
 					final var pstmt = pudt_stmt(conn, sqltpl);
 					jdbc.pstmt_execute_throws(pstmt, sqltpl.contains("?") ? args : null, true);
 				} // for sql:sqls
@@ -1893,32 +1902,38 @@ public class Jdbc implements IManagedStreams {
 			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		// 非法参数直接返回
-		if (jcqs == null || jcqs.length < 1)
+		if (jcqs == null || jcqs.length < 1) {
 			return null;
+		} else {
+			// 通用jdbc 查询
+			return Jdbc.handleGenericQuery(jdbc, () -> {
+				final var params = params(method, args);
+				List<IRecord> recs = sqlinterceptor.intercept(method, params, jcqs[0].value(), jdbc);
 
-		// 通用jdbc 查询
-		return Jdbc.handleGenericQuery(jdbc, () -> {
-			final var params = params(method, args);
-			final var oo = sqlinterceptor.intercept(method, params, jcqs[0].value(), jdbc);
-			if (oo != null)
-				return (List<IRecord>) oo;// 方法截取
+				if (recs != null) {
+					return recs;// 方法截取
+				} else {
+					final var _params = params(method, args);
+					final var pattern = pattern_preprocessor.handle(method, _params, jcqs[0].value(), jdbc);// 模式处理
+					final var sql = MessageFormat.format(pattern, args);// SQL语句组装
 
-			final var pattern = pattern_preprocessor.handle(method, params(method, args), jcqs[0].value(), jdbc);// 模式处理
-			final var sql = MessageFormat.format(pattern, args);// SQL语句组装
-			if (debug)
-				System.out.println("jdbc:handleJdbcQuery:" + sql);// 调试信息
-			List<IRecord> recs = new LinkedList<>();
-			try {
-				recs = jdbc.sql2records_throws(sql);// 执行SQL查询
-			} catch (Exception e) {
-				final var new_param = params.aoks2rec(k -> params.get(k) instanceof Number ? "##" + k : "#" + k);
-				final var new_sql = Term.FT(sql, new_param);
-				recs = jdbc.sql2records(new_sql);// 执行SQL查询
-			} // try
+					if (debug) {
+						System.out.println("jdbc:handleJdbcQuery:" + sql);// 调试信息
+					} // debug
 
-			// 结果返回
-			return recs;
-		}, method, args);// handleGenericQuery
+					try {
+						recs = jdbc.sql2records_throws(sql);// 执行SQL查询
+					} catch (Exception e) {
+						final var new_param = params
+								.aoks2rec(k -> params.get(k) instanceof Number ? "##" + k : "#" + k);
+						final var new_sql = Term.FT(sql, new_param);
+						recs = jdbc.sql2records(new_sql);// 执行SQL查询
+					} // try
+
+					return recs; // 结果返回
+				} // if
+			}, method, args);// handleGenericQuery
+		} // if
 	}
 
 	/**
@@ -1944,25 +1959,38 @@ public class Jdbc implements IManagedStreams {
 			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		// 条件检测
-		if (jcq2s == null || jcq2s.length < 1)
+		if (jcq2s == null || jcq2s.length < 1) {
 			return null;
+		} else { // 通用查询
+			return Jdbc.handleGenericQuery(jdbc, () -> {
+				final var params = params(method, args);
+				List<IRecord> recs = sqlinterceptor.intercept(method, params, jcq2s[0].value(), jdbc);
+				if (recs != null) {
+					return recs;// 方法截取
+				} else {
+					final var preparedSqlpattern = pattern_preprocessor.handle(method, params, jcq2s[0].value(), jdbc);
+					final var preparedSql = MessageFormat.format(preparedSqlpattern, args);// SQL语句组装
+					if (debug) {
+						System.out.println("jdbc:handleJdbcQuery2:preparedsql" + preparedSql);
+					} // if
+					recs = jdbc.precords(preparedSql, args);// prepared SQL 执行查询
 
-		// 通用查询
-		return Jdbc.handleGenericQuery(jdbc, () -> {
-			final var params = params(method, args);
-			final var oo = sqlinterceptor.intercept(method, params, jcq2s[0].value(), jdbc);
-			if (oo != null)
-				return oo;// 方法截取
+					return recs; // 检索结果返回
+				} // if
+			}, method, args);// handleGenericQuery
+		} // if
+	}
 
-			final var preparedSqlpattern = pattern_preprocessor.handle(method, params, jcq2s[0].value(), jdbc);
-			final var preparedSql = MessageFormat.format(preparedSqlpattern, args);// SQL语句组装
-			if (debug)
-				System.out.println("jdbc:handleJdbcQuery2:preparedsql" + preparedSql);
-			final var recs = jdbc.precords(preparedSql, args);// prepared SQL 执行查询
-
-			// 检索结果返回
-			return recs;
-		}, method, args);// handleGenericQuery
+	/**
+	 * 添加引号
+	 * 
+	 * @param mapper 值变换函数
+	 * @return 添加引号函数
+	 */
+	public static BiFunction<String, Object, String> quote(final Function<Object, Object> mapper) {
+		return (pat, e) -> {
+			return String.format(!pat.startsWith("##") ? "'%s'" : "%s", mapper.apply(e));
+		};
 	}
 
 	/**
@@ -1979,6 +2007,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 解析后的结果
 	 */
 	public static String quote_substitute(final String line, final String pattern, final IRecord params) {
+
 		final Function<Object, Object> mapper = (o) -> {
 			final var clazz = o == null ? Objects.class : o.getClass();
 			if (o instanceof Date) {
@@ -1991,14 +2020,13 @@ public class Jdbc implements IManagedStreams {
 				return Times.sdf.format(Times.ldt2dt((LocalDateTime) o));
 			} else if (Number.class.isAssignableFrom(clazz) || clazz == short.class || clazz == int.class
 					|| clazz == long.class || clazz == float.class || clazz == double.class) {
-				return o + "";
+				return String.valueOf(o);
 			} else {
 				return o;
 			} // if
 		};// 变换函数
 
-		return substitute(line, Pattern.compile(pattern), params,
-				(pat, e) -> Jdbcs.MFT(!pat.startsWith("##") ? "''{0}''" : "{0}", mapper.apply(e)));
+		return substitute(line, Pattern.compile(pattern), params, quote(mapper));
 	}
 
 	/**
@@ -2015,8 +2043,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static String quote_substitute(final String line, final Pattern pattern, final IRecord params) {
 
-		return substitute(line, pattern, params,
-				(pat, e) -> !pat.startsWith("##") ? Jdbcs.MFT("''{0}''", e + "") : e + "");
+		return substitute(line, pattern, params, quote(String::valueOf));
 	}
 
 	/**
@@ -2039,7 +2066,7 @@ public class Jdbc implements IManagedStreams {
 	 *
 	 * @param line    待解析的行数据
 	 * @param pattern 变量名的pattern
-	 * @param params  变量的定义：{name->value}
+	 * @param params  变量的定义：{name-&gt;value}
 	 * @return 解析后的结果
 	 */
 	public static String substitute(final String line, final Pattern pattern, final IRecord params) {
@@ -2060,15 +2087,15 @@ public class Jdbc implements IManagedStreams {
 	 * @param line     待解析的行数据
 	 * @param pattern  变量名的pattern
 	 * @param params   变量的定义：{name-&gt;value}
-	 * @param callback 二元函数：使用params中的值替换pattern结构的变量的时候，对值的操作函数。把对象转换成字符串的方法。<br>
+	 * @param replacer 二元函数：使用params中的值替换pattern结构的变量的时候，对值的操作函数。把对象转换成字符串的方法。<br>
 	 *                 (pat,value)-&gt;String, pat 是匹配的模式的字符串,value 是在params 与 pat
 	 *                 中的key 为 pat的 group(1)的数据值。
 	 * @return 解析后的结果
 	 */
 	public static <T> String substitute(final String line, final String pattern, final IRecord params,
-			final BiFunction<String, T, String> callback) {
+			final BiFunction<String, T, String> replacer) {
 
-		return Jdbc.substitute(line, Pattern.compile(pattern), params, callback);
+		return Jdbc.substitute(line, Pattern.compile(pattern), params, replacer);
 	}
 
 	/**
@@ -2086,7 +2113,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param pattern  变量名的pattern,必须在pattern中使用分组标识出：pattern 标识的变量名称！ 否则就会之际返回
 	 * @param params   变量的定义：{name-&gt;value},
 	 *                 对于满足line中的pattern,但是尚未再params找到对应值的数据，将其给予再line中删除，即替换为空白。
-	 * @param callback 二元函数：使用params中的值替换pattern结构的变量的时候，对值的操作函数。把对象转换成字符串的方法。<br>
+	 * @param replacer 二元函数：使用params中的值替换pattern结构的变量的时候，对值的操作函数。把对象转换成字符串的方法。<br>
 	 *                 (pat,value)-&gt;String, pat 是匹配的模式的字符串,value 是在params 与 pat
 	 *                 中的key 为 pat的 <br>
 	 *                 group(1)的数据值。
@@ -2094,17 +2121,17 @@ public class Jdbc implements IManagedStreams {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> String substitute(final String line, final Pattern pattern, final IRecord params,
-			final BiFunction<String, T, String> callback) {
+			final BiFunction<String, T, String> replacer) {
 
 		final var matcher = pattern.matcher(line);
-		final var __line = matcher.replaceAll(r -> {
+		final var _line = matcher.replaceAll(r -> {
 			final var key = r.group(1); // 提取pattern所标识的变量
 			final var value = params.get(key); // 提取该pattern所标识的变量的值。
-			final var s = callback.apply(r.group(), (T) value); // 获取替换值的字符串标识。
-			return s;
-		});
+			final var _value = replacer.apply(r.group(), (T) value); // 获取替换值的字符串标识。
+			return _value;
+		}); // 变换后的结果
 
-		return __line;
+		return _line;
 	}
 
 	/**
