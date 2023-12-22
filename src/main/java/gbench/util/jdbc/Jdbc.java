@@ -1058,7 +1058,7 @@ public class Jdbc implements IManagedStreams {
 					? _jdbc
 					: (jdbcConfig == null || jdbcConfig.size() < 1) && (jc == null) //
 							? null // 没有默认配置
-							: new Jdbc(// 使用Jdbc创建对象
+							: new Jdbc( // 使用Jdbc创建对象
 									jcfg.computeIfAbsent("driver", k -> jc == null ? null : jc.driver()),
 									jcfg.computeIfAbsent("url", k -> jc == null ? null : jc.url()),
 									jcfg.computeIfAbsent("user", k -> jc == null ? null : jc.user()),
