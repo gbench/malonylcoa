@@ -290,7 +290,7 @@ public class Jdbc implements IManagedStreams {
 			throws SQLException {
 
 		T t = null;// 返回结果
-		try (var stmt = pstmt.get()) {
+		try (final var stmt = pstmt.get()) {
 			if (prepare != null) {
 				prepare.accept(stmt);
 			}
@@ -360,7 +360,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static String[] colnames(final ResultSet rs, final int[] indices) {
 
-		String[] ret = new String[indices.length];// 默认的非法结果
+		final String[] ret = new String[indices.length];// 默认的非法结果
 		try {
 			final var rsm = rs.getMetaData();
 			for (int i = 0; i < indices.length; i++) {
@@ -505,7 +505,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 结果集数据的records 集合
 	 * @throws SQLException
 	 */
-	public static List<IRecord> readlines(final ResultSet rs, boolean close) throws SQLException {
+	public static List<IRecord> readlines(final ResultSet rs, final boolean close) throws SQLException {
 
 		return Jdbc.readlineS(rs, close).collect(Collectors.toList());
 	}
@@ -536,7 +536,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 结果集数据的record的流
 	 * @throws SQLException
 	 */
-	public static Stream<IRecord> readlineS(final ResultSet rs, boolean close) throws SQLException {
+	public static Stream<IRecord> readlineS(final ResultSet rs, final boolean close) throws SQLException {
 
 		return Jdbc.readlineS(rs, () -> {
 			if (close) { // 关闭操作
@@ -1184,10 +1184,11 @@ public class Jdbc implements IManagedStreams {
 				final var key = key_matcher.group(2);
 				add2namedsqls.get();
 				keys.add(key);
-
 			} else {
-				if (p_comment.matcher(line).matches())
+				if (p_comment.matcher(line).matches()) {
 					return;
+				}
+
 				final var _line = remove_inline_comments // 是否移除行内注释
 						? line.replaceAll("--\\s+.*$", "") // 去除行内的尾部注释 ,由 --空格 引导的内容被省略掉。
 						: line;// 不移除行内注释
