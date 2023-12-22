@@ -272,17 +272,17 @@ public class SQL {
 					Object value = e.value();
 					// value 数据类型格式化
 					if (value instanceof LocalDateTime) {
-						value = Jdbcs.MFT("{0}", dtf1.format((LocalDateTime) value));
+						value = Jdbcs.format("{0}", dtf1.format((LocalDateTime) value));
 					} else if (value instanceof Date) {
-						value = Jdbcs.MFT("{0}", sdf.format((Date) value));
+						value = Jdbcs.format("{0}", sdf.format((Date) value));
 					} else if (value instanceof LocalTime) {
-						value = Jdbcs.MFT("{0}", dtf1.format((LocalTime) value));
+						value = Jdbcs.format("{0}", dtf1.format((LocalTime) value));
 					} else if (value instanceof LocalDate) {
-						value = Jdbcs.MFT("{0}", dtf2.format((LocalDate) value));
+						value = Jdbcs.format("{0}", dtf2.format((LocalDate) value));
 					} else {
 						// do nothing
 					} // if
-					final var fldvalue = Jdbcs.MFT("''{0}''", (value + "").replace("'", "\\'")); // 格式化字段值
+					final var fldvalue = Jdbcs.format("''{0}''", (value + "").replace("'", "\\'")); // 格式化字段值
 					final var fldname = parseFieldName(e.key()).str("name");// 获取字段名
 					final var i = flds.indexOf(fldname);// fldname的索引位置,如果>0 表示业已存在一个同名的字段，需要给予覆盖。
 					if (i < 0) {// 字段名不存在
@@ -381,7 +381,7 @@ public class SQL {
 			buffer.append(" set ");
 			// 字段修改 set field = value
 			buffer.append(kvs.stream().filter(kv -> !"id".equals(kv.key()) || kv.value() != null) // 过滤掉id==null 的键值
-					.map(e -> e.key() + "=" + Jdbcs.MFT(e.value() == null ? "null" : "''{0}''",
+					.map(e -> e.key() + "=" + Jdbcs.format(e.value() == null ? "null" : "''{0}''",
 							(e.value() instanceof Number ? e.value().toString() : e.value()) // e.value 的格式化
 					)) // map
 					.collect(Collectors.joining(",")));
@@ -575,12 +575,12 @@ public class SQL {
 				} // if
 			} // if
 			if (!flag)
-				constraints.add(Jdbcs.MFT("alter table {0} add constraint primary key pk_{0} ({1});", name,
+				constraints.add(Jdbcs.format("alter table {0} add constraint primary key pk_{0} ({1});", name,
 						primaryKeys.stream().map(e -> e._1().toLowerCase()).collect(Collectors.joining(","))));
 		} // primaryKeys.size
 
 		if (uniqueKeys.size() > 0) {// 唯一约束
-			constraints.add(Jdbcs.MFT("alter table {0} add constraint unique uq_{0} ({1});", name.toLowerCase(),
+			constraints.add(Jdbcs.format("alter table {0} add constraint unique uq_{0} ({1});", name.toLowerCase(),
 					String.join(",", uniqueKeys)));
 		}
 		final var flds = String.join(",\n\t", fldDefs.values());
@@ -897,7 +897,7 @@ public class SQL {
 			// return "TIMESTAMP";
 			return "DATETIME";
 		} else {
-			return Jdbcs.MFT("VARCHAR({0})", size == null ? 512 : size.intValue());
+			return Jdbcs.format("VARCHAR({0})", size == null ? 512 : size.intValue());
 		}
 	}
 

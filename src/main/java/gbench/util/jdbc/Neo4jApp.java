@@ -23,7 +23,6 @@ import gbench.util.jdbc.annotation.JdbcConfig;
 
 import static gbench.util.jdbc.Jdbcs.ANNO;
 import static gbench.util.jdbc.Jdbcs.LIST;
-import static gbench.util.jdbc.Jdbcs.MFT;
 import static gbench.util.jdbc.kvp.IRecord.*;
 import static gbench.util.jdbc.kvp.SimpleRecord.REC2;
 import static gbench.util.jdbc.Jdbcs.SET_FIELD_OF_ANNOTATION;
@@ -165,7 +164,7 @@ public class Neo4jApp {
 	 */
 	public Neo4jApp(boolean discardLevel) {
 		if (discardLevel)
-			this.set_intialize_handler(g -> g.setVertex_name_renderer(e -> MFT("v{0}", e.value())));
+			this.set_intialize_handler(g -> g.setVertex_name_renderer(e -> Jdbcs.format("v{0}", e.value())));
 	}
 
 	/**
@@ -332,7 +331,7 @@ public class Neo4jApp {
 				Function<VertexInfo, String> vertex_label_renderer,
 				Function<VertexInfo, String> vertex_attrs_renderer) {
 
-			return v -> MFT("({0} :{1} '{'{2}})", vertex_name_renderer.apply(v), vertex_label_renderer.apply(v),
+			return v -> Jdbcs.format("({0} :{1} '{'{2}})", vertex_name_renderer.apply(v), vertex_label_renderer.apply(v),
 					vertex_attrs_renderer.apply(v));// 顶点描绘器。
 		}
 
@@ -371,7 +370,7 @@ public class Neo4jApp {
 				Function<EdgeInfo, String> edge_name_renderer, Function<EdgeInfo, String> edge_label_renderer,
 				Function<EdgeInfo, String> edge_attrs_renderer) {
 
-			return tup -> MFT("({0})-[{1} :{2} '{'{3}}]->({4})", vertex_name_renderer.apply(tup.startNode()),
+			return tup -> Jdbcs.format("({0})-[{1} :{2} '{'{3}}]->({4})", vertex_name_renderer.apply(tup.startNode()),
 					edge_name_renderer.apply(tup), edge_label_renderer.apply(tup), edge_attrs_renderer.apply(tup),
 					vertex_name_renderer.apply(tup.endNode()));
 		}
@@ -583,7 +582,7 @@ public class Neo4jApp {
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addEdgeAttributeSet(String edgeName, IRecord rec) {
-			return this.addAttributeSet(MFT("e{0}", md5(edgeName)), rec);
+			return this.addAttributeSet(Jdbcs.format("e{0}", md5(edgeName)), rec);
 		}
 
 		/**
@@ -813,7 +812,7 @@ public class Neo4jApp {
 			 * 数据格式化
 			 */
 			public String toString() {
-				return MFT("{0}-->{1} with {2}", this.startNode(), this.endNode(), this.attributes);
+				return Jdbcs.format("{0}-->{1} with {2}", this.startNode(), this.endNode(), this.attributes);
 			}
 
 			private static final long serialVersionUID = 1L;
@@ -1236,7 +1235,7 @@ public class Neo4jApp {
 			if (obj instanceof Number)
 				return obj + "";
 			else
-				return MFT("\"{0}\"", obj + "");
+				return Jdbcs.format("\"{0}\"", obj + "");
 		}
 
 		/**
@@ -1275,7 +1274,7 @@ public class Neo4jApp {
 		 * @param v (顶点层号,顶点名)
 		 */
 		private Function<VertexInfo, String> vertex_name_renderer = (v) -> // 顶点名称生成器:
-		MFT("v{0}{1}", v.key(), v.value());
+		Jdbcs.format("v{0}{1}", v.key(), v.value());
 
 		/**
 		 * 顶点标签渲染器
@@ -1283,7 +1282,7 @@ public class Neo4jApp {
 		 * @param v (顶点层号,顶点名)
 		 */
 		private Function<VertexInfo, String> vertex_label_renderer = (v) -> // 顶点标签序列生成器 :
-		String.join(":", Collections.singletonList(MFT("{0}", "Vertex"))); // 默认顶点名为 Vertex
+		String.join(":", Collections.singletonList(Jdbcs.format("{0}", "Vertex"))); // 默认顶点名为 Vertex
 
 		/**
 		 * 顶点属性渲染器
@@ -1291,10 +1290,10 @@ public class Neo4jApp {
 		 * @param v (顶点层号,顶点名)
 		 */
 		private Function<VertexInfo, String> vertex_attrs_renderer = (v) -> // 顶点属性
-		Stream.of(MFT("level:{0}", quote(v.key())), // 顶点阶层
-				MFT("name:{0}", quote(vertex_name_renderer.apply(v))), // 顶点名称
-				MFT("{0}", this.getAttributeSet(vertex_name_renderer.apply(v)).kvs().stream()
-						.map(p -> MFT("{0}:{1}", p.key(), quote(p.value()))).collect(Collectors.joining(",")))// 顶点属性
+		Stream.of(Jdbcs.format("level:{0}", quote(v.key())), // 顶点阶层
+				Jdbcs.format("name:{0}", quote(vertex_name_renderer.apply(v))), // 顶点名称
+				Jdbcs.format("{0}", this.getAttributeSet(vertex_name_renderer.apply(v)).kvs().stream()
+						.map(p -> Jdbcs.format("{0}:{1}", p.key(), quote(p.value()))).collect(Collectors.joining(",")))// 顶点属性
 		).filter(e -> e.length() > 0).collect(Collectors.joining(","));
 
 		/**
@@ -1302,7 +1301,7 @@ public class Neo4jApp {
 		 * 
 		 * @param tup 边结构,(起始点(顶点层号:顶点名),终止点:(顶点层号:顶点名))
 		 */
-		private Function<EdgeInfo, String> edge_name_renderer = (tup) -> MFT("e{0}", md5(MFT("{0}-{1}",
+		private Function<EdgeInfo, String> edge_name_renderer = (tup) -> Jdbcs.format("e{0}", md5(Jdbcs.format("{0}-{1}",
 				vertex_name_renderer.apply(tup.startNode()), vertex_name_renderer.apply(tup.endNode()))));
 
 		/**
@@ -1311,7 +1310,7 @@ public class Neo4jApp {
 		 * @param tup 边结构,(起始点(顶点层号:顶点名),终止点:(顶点层号:顶点名))
 		 */
 		private Function<EdgeInfo, String> edge_label_renderer = (tup) -> String.join(":",
-				Collections.singletonList(MFT("{0}", "Edge")));
+				Collections.singletonList(Jdbcs.format("{0}", "Edge")));
 
 		/**
 		 * 边属性渲染器
@@ -1319,11 +1318,11 @@ public class Neo4jApp {
 		 * @param tup 边结构,(起始点(顶点层号:顶点名),终止点:(顶点层号:顶点名))
 		 */
 		private Function<EdgeInfo, String> edge_attrs_renderer = (tup) -> Stream
-				.of(MFT("from:{0}", quote(vertex_name_renderer.apply(tup.startNode()))),
-						MFT("to:{0}", quote(vertex_name_renderer.apply(tup.endNode()))),
-						MFT("{0}", this.getAttributeSet(edge_name_renderer.apply(tup)).kvs().stream()
+				.of(Jdbcs.format("from:{0}", quote(vertex_name_renderer.apply(tup.startNode()))),
+						Jdbcs.format("to:{0}", quote(vertex_name_renderer.apply(tup.endNode()))),
+						Jdbcs.format("{0}", this.getAttributeSet(edge_name_renderer.apply(tup)).kvs().stream()
 								.filter(e -> !this.is_vertex_attribute_name.test(e.key()))// 过滤掉顶点属性
-								.map(p -> MFT("{0}:{1}", p.key(), quote(p.value()))).collect(Collectors.joining(",")))// MFT顶点属性
+								.map(p -> Jdbcs.format("{0}:{1}", p.key(), quote(p.value()))).collect(Collectors.joining(",")))// Jdbcs.format顶点属性
 				).filter(e -> e.length() > 0).collect(Collectors.joining(","));// edge_attrs_renderer
 
 		/**
@@ -1458,8 +1457,8 @@ public class Neo4jApp {
 
 								if (autoconvert_sve2vtx && edge._2() == null) {// 单顶点边，表示这是一个顶点数据，所有边属性均复制到顶点中区。
 									if (!g.is_vertex_attribute_name.test(atrribute_name_pattern) && // 直接不满足顶点属性
-											g.is_vertex_attribute_name.test(MFT("${0}", atrribute_name_pattern))) {// 添加上$前缀满足顶点属性。
-										atrribute_name_pattern = MFT("${0}", atrribute_name_pattern);// 为atrribute_name_pattern
+											g.is_vertex_attribute_name.test(Jdbcs.format("${0}", atrribute_name_pattern))) {// 添加上$前缀满足顶点属性。
+										atrribute_name_pattern = Jdbcs.format("${0}", atrribute_name_pattern);// 为atrribute_name_pattern
 																										// 添加上$前缀，自动生成为顶点属性。
 									} // 把边属性转换成顶点属性。
 								} // 单顶点的边
@@ -1505,7 +1504,7 @@ public class Neo4jApp {
 
 									if (vv.size() > 0) {
 										vv.forEach(v -> {
-											// System.out.println(MFT("为顶点:{0} 添加 属性 {1},
+											// System.out.println(Jdbcs.format("为顶点:{0} 添加 属性 {1},
 											// @边[{2}]",v,REC(attr_name,atrribute_value),edge) );
 											g.addVertexAttributeSet(v, REC(attr_name, atrribute_value));// 仅当名称有效。
 											if (this.on_vertex_event != null)
@@ -2237,7 +2236,7 @@ public class Neo4jApp {
 		final var final_elblk = elblk == null ? "elblk" : elblk;
 		final var final_vlblk = vlblk == null ? "vlblk" : vlblk;
 		neo4jApp.set_intialize_handler(g -> {
-			g.setVertex_name_renderer(e -> MFT(final_pov + e.value()));// 顶点名称采用V做前缀
+			g.setVertex_name_renderer(e -> Jdbcs.format(final_pov + e.value()));// 顶点名称采用V做前缀
 			g.setVertex_label_renderer(e -> {
 				final var vname = g.getVertexName(e); // 顶点的名称
 				final var lbls = g.getAttributeSet(vname).lla(final_vlblk, s -> s + "");// 提取顶点的label属性

@@ -326,7 +326,7 @@ public class KVPair<K, V> extends Tuple2<K, V> {
 	 * 格式化输出
 	 */
 	public String toString() {
-		return Jdbcs.MFT("({0}:{1})", _1(), _2());
+		return Jdbcs.format("({0}:{1})", _1(), _2());
 	}
 
 	/**

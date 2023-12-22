@@ -1436,7 +1436,7 @@ public class Jdbcs {
 		final var ai = new AtomicInteger(0);
 		final var th = new Thread(() -> {
 			while (ai.get() >= 0) {
-				System.out.println(MFT(". {0} S passed", ai.getAndIncrement()));
+				System.out.println(format(". {0} S passed", ai.getAndIncrement()));
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {
@@ -1450,7 +1450,7 @@ public class Jdbcs {
 		final var end = isnano ? System.nanoTime() : System.currentTimeMillis();
 		final var last = end - start;
 		ai.set(-1);// 停止计时器
-		System.out.println(MFT("\nlast for:{0} {1}", last, isnano ? "ns" : "ms"));
+		System.out.println(format("\nlast for:{0} {1}", last, isnano ? "ns" : "ms"));
 		return last;
 	};
 
@@ -1636,7 +1636,7 @@ public class Jdbcs {
 	 * @param arguments 参数列表
 	 * @return 数据格式化
 	 */
-	public static String MFT(final String pattern, final Object... arguments) {
+	public static String format(final String pattern, final Object... arguments) {
 		return MessageFormat.format(pattern, arguments);
 	}
 
@@ -1646,7 +1646,7 @@ public class Jdbcs {
 	 * @param line 源字符串
 	 * @return 转义后的字符串
 	 */
-	public static String MFT_ESCAPE(final String line) {
+	public static String format_escape(final String line) {
 		final var l1 = line.replace("'", "''"); // 转义单引号
 		final var l2 = l1.replace("{", "'{'"); // 转义左括号
 		return l2;

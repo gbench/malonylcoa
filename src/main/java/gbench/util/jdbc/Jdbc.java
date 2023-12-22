@@ -1038,14 +1038,15 @@ public class Jdbc implements IManagedStreams {
 					final var jdbcClass = jdbcConfig.get("jdbcClass");// 提取jdbc Class
 					if (jdbcClass != null) {
 						@SuppressWarnings("unchecked")
-						final Class<Jdbc> jdbcClazz = jdbcClass instanceof Class<?> ? (Class<Jdbc>) jdbcClass // 直接转换成Jdbc
-																												// 类对象
+						final Class<Jdbc> jdbcClazz = jdbcClass instanceof Class<?> //
+								? (Class<Jdbc>) jdbcClass // 直接转换成Jdbc 类对象
 								: (Class<Jdbc>) Class.forName(jdbcClass.toString()); // 通过类名加载类对象。
 						if (jdbcClazz != null) { // jdbcClazz 可非空判断
 							final var ctor = jdbcClazz.getConstructor(Map.class);
 							ctor.setAccessible(true);
-							if (ctor != null)
+							if (ctor != null) {
 								_jdbc = ctor.newInstance(jdbcConfig);
+							}
 						} // if jdbcClazz 可非空判断
 					} // if
 				} catch (Exception ex) {
@@ -1055,18 +1056,17 @@ public class Jdbc implements IManagedStreams {
 
 			final var jdbc = _jdbc != null // _jdbc 的构造优先。
 					? _jdbc
-					: (jdbcConfig == null || jdbcConfig.size() < 1) && (jc == null) ? null // 没有默认配置
+					: (jdbcConfig == null || jdbcConfig.size() < 1) && (jc == null) //
+							? null // 没有默认配置
 							: new Jdbc(// 使用Jdbc创建对象
 									jcfg.computeIfAbsent("driver", k -> jc == null ? null : jc.driver()),
 									jcfg.computeIfAbsent("url", k -> jc == null ? null : jc.url()),
 									jcfg.computeIfAbsent("user", k -> jc == null ? null : jc.user()),
-									jcfg.computeIfAbsent("password", k -> jc == null ? null : jc.password())); // new
-																												// Jdbc
-																												// 船舰jdbc对象
+									jcfg.computeIfAbsent("password", k -> jc == null ? null : jc.password()));
 
 			if (jdbc == null) {
-				System.err.println(
-						Jdbcs.MFT("尚未配置Jdbc实例,无法处理 数据库连接操作,因为jdbc的配置:\njdbc:{0},\n@JdbcConfig:{1}！", jdbcConfig, jc));
+				System.err.println(Jdbcs.format("尚未配置Jdbc实例,无法处理 数据库连接操作,因为jdbc的配置:\njdbc:{0},\n@JdbcConfig:{1}！",
+						jdbcConfig, jc));
 			} // if jdbc==null
 
 			objT = newInstance(itf, jdbc, sqlpattern_preprocessor, sqlinterceptor, jdbcPostProcessor);
@@ -1230,7 +1230,7 @@ public class Jdbc implements IManagedStreams {
 	}
 
 	/**
-	 * namedsql_processor 对namedsqls中的‘{’,‘'’进行转义：防止Jdbcs.MFTer把他误认为参数。 <br>
+	 * namedsql_processor 对namedsqls中的‘{’,‘'’进行转义：防止Jdbcs.formater把他误认为参数。 <br>
 	 * 注意:<br>
 	 * namedsql_processor_escape_brace的 preprocessor 只会对 namedsqls 中的所包含的语句进行处理,<br>
 	 * 并不会对 没有在namedsqls中存贮的sql语句调用preprocessor做预处理。<br>
@@ -1240,16 +1240,16 @@ public class Jdbc implements IManagedStreams {
 	 * preprocessor 是不会对sql进行处理的,所以 如果需要调用 namedsql_processor 做参数
 	 * 填充,需要先手动的把sql进行进行预处理 <br>
 	 * 
-	 * @param namedsqls sql语句。 name->sql
+	 * @param namedsqls sql语句。 name-&gt;sql
 	 * @return SqlPatternPreprocessor
 	 */
 	public static ISqlPatternPreprocessor namedsql_processor_escape_brace(final Map<String, String> namedsqls) {
 
-		return namedsql_processor(namedsqls, Jdbcs::MFT_ESCAPE);
+		return namedsql_processor(namedsqls, Jdbcs::format_escape);
 	}
 
 	/**
-	 * namedsql_processor 对namedsqls中的‘{’进行转义：防止Jdbcs.MFTer把他误认为参数。<br>
+	 * namedsql_processor 对namedsqls中的‘{’进行转义：防止Jdbcs.formater把他误认为参数。<br>
 	 * 注意:<br>
 	 * namedsql_processor的 preprocessor 只会对 namedsqls 中的所包含的语句进行处理,<br>
 	 * 并不会对 没有在namedsqls中存贮的sql语句调用preprocessor做预处理。<br>
@@ -1289,18 +1289,20 @@ public class Jdbc implements IManagedStreams {
 	public static String parseJdbcMethodSharpPattern(final Method method, final String sharppattern,
 			final Map<String, String> sharppattern_defs) {
 
-		final var sqlpattern = (sharppattern == null || sharppattern.matches("\\s*")) ? "#" + method.getName()
+		final var sqlpattern = (sharppattern == null || sharppattern.matches("\\s*")) //
+				? "#" + method.getName()
 				: sharppattern;// 默认的sqlpattern为方法名
 		// namedsql 是一个用＃号作为前缀的名称
 		final var sharp_matcher = Pattern.compile("#+([a-z_][a-z0-9_]+)", Pattern.CASE_INSENSITIVE).matcher(sqlpattern);
 
-		if (!sharp_matcher.matches())
+		if (!sharp_matcher.matches()) {
 			return sqlpattern;// 非namedsql
+		}
 
 		final var namedSqlpattern = sharppattern_defs.get(sharp_matcher.group(1));// 提取sqlpattern
 		if (namedSqlpattern == null) {// namedsqls 中无法对应
-			System.out
-					.println(Jdbcs.MFT("in {0} 无法对应到:{1}", method == null ? "\"方法缺失\"" : method.getName(), sqlpattern));
+			System.out.println(
+					Jdbcs.format("in {0} 无法对应到:{1}", method == null ? "\"方法缺失\"" : method.getName(), sqlpattern));
 			return sqlpattern;//
 		} // if
 
@@ -1349,7 +1351,7 @@ public class Jdbc implements IManagedStreams {
 	 * HH:mm:ss}'',''{6}'',''{7}'') <br>
 	 * 
 	 * @param namedsqls 命名sql集合：{#key1-&gt;sql1,#key1-&gt;sql2,...},
-	 * @return 变换后的sqlapttern 可以被 Jdbcs.MFT处理的SQL语句。
+	 * @return 变换后的sqlapttern 可以被 Jdbcs.format处理的SQL语句。
 	 */
 	public static ISqlPatternPreprocessor namedsql_processor(final Map<String, String> namedsqls) {
 
@@ -1576,7 +1578,7 @@ public class Jdbc implements IManagedStreams {
 					// 方法注释解析：Jdbc所不能理解的方法
 					///////////////////////////////////////////////////////////////////////
 					final var params = params(method, args);
-					final var message = Jdbcs.MFT(
+					final var message = Jdbcs.format(
 							"方法：{0},参数:{1}，超出了Jdbc所能理解的范围，代理失败。但是这个方法会把代理的对象的结构信息也给返回出去，\n"
 									+ "可以作为访问:sqlinterceptor，sqlpattern_preprocessor，jdbc_postprocessorjdbc等对象的一个入口。",
 							method.getName(), params);
@@ -1765,10 +1767,10 @@ public class Jdbc implements IManagedStreams {
 				} // if
 					// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
 				final var sqlPattern = pattern_preprocessor.handle(method, pargs, pattern, jdbc);
-				final var sqlLines = Jdbcs.MFT(sqlPattern, args);// 提取SQL语句,并添加参数
+				final var sqlLines = Jdbcs.format(sqlPattern, args);// 提取SQL语句,并添加参数
 				if (sqlLines == null) {// 方法的SQL语句模板解释失败
-					throw new Exception(
-							Jdbcs.MFT("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!", method.getName()));
+					throw new Exception(Jdbcs.format("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!",
+							method.getName()));
 				} // lines
 				final String[] sqls = sqlLines.split(";\\s*\n+");// 尝试对sqls 进行多语句解析。位于行末的分号给予分解
 				for (final var sql : sqls) {// 依次执行SQL语句
@@ -1793,7 +1795,7 @@ public class Jdbc implements IManagedStreams {
 	 * 会视作两条sql 语句 <br>
 	 * <p>
 	 * sqlpattern 和sqltpl 的区别就是<br>
-	 * sqlpattern 是{0},{1},等 Jdbcs.MFT 格式的模板，用于匹配 参数 <br>
+	 * sqlpattern 是{0},{1},等 Jdbcs.format 格式的模板，用于匹配 参数 <br>
 	 * sqltpl 是sqlpattern被解析后的结果，其中的参数是 ?的占位符，用于对PreparedStatement的处理。 <br>
 	 * 执行的处理<br>
 	 *
@@ -1834,15 +1836,15 @@ public class Jdbc implements IManagedStreams {
 					// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
 				final var patternLines = pattern_preprocessor.handle(method, pargs, pattern, jdbc);
 				if (patternLines == null) {// 方法的SQL语句模板解释失败
-					throw new Exception(
-							Jdbcs.MFT("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!", method.getName()));
+					throw new Exception(Jdbcs.format("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!",
+							method.getName()));
 				} // lines
 				final String[] tpl_patterns = patternLines.split(";\\s*\n+");// 尝试对sqls 进行多语句解析，位于行末的分号给予分解
 				for (final var tpl_pattern : tpl_patterns) {// 依次执行SQL语句
 					if (tpl_pattern.matches("\\s*")) {
 						continue;
 					} // if
-					final var sqltpl = Jdbcs.MFT(tpl_pattern, args);// 提取SQL语句
+					final var sqltpl = Jdbcs.format(tpl_pattern, args);// 提取SQL语句
 					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery:" + sqltpl);
 					} // if
@@ -1916,7 +1918,7 @@ public class Jdbc implements IManagedStreams {
 				} else {
 					final var _params = params(method, args);
 					final var pattern = pattern_preprocessor.handle(method, _params, jcqs[0].value(), jdbc);// 模式处理
-					final var sql = Jdbcs.MFT(pattern, args);// SQL语句组装
+					final var sql = Jdbcs.format(pattern, args);// SQL语句组装
 
 					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery:" + sql);// 调试信息
@@ -1970,7 +1972,7 @@ public class Jdbc implements IManagedStreams {
 					return recs;// 方法截取
 				} else {
 					final var preparedSqlpattern = pattern_preprocessor.handle(method, params, jcq2s[0].value(), jdbc);
-					final var preparedSql = Jdbcs.MFT(preparedSqlpattern, args);// SQL语句组装
+					final var preparedSql = Jdbcs.format(preparedSqlpattern, args);// SQL语句组装
 					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery2:preparedsql" + preparedSql);
 					} // if
@@ -1991,7 +1993,7 @@ public class Jdbc implements IManagedStreams {
 	public static BiFunction<String, Object, String> quote(final Function<Object, Object> mapper) {
 
 		return (pat, e) -> {
-			return Jdbcs.MFT(!pat.startsWith("##") ? "''{0}''" : "{0}", mapper.apply(e));
+			return Jdbcs.format(!pat.startsWith("##") ? "''{0}''" : "{0}", mapper.apply(e));
 		};
 	}
 
@@ -2180,7 +2182,7 @@ public class Jdbc implements IManagedStreams {
 				}
 				conn = DriverManager.getConnection(url, user, password);
 			} catch (Exception e) {
-				System.err.println(Jdbcs.MFT("jdbc connection error for,driver:{0},url:{1},user:{2},password:{3}",
+				System.err.println(Jdbcs.format("jdbc connection error for,driver:{0},url:{1},user:{2},password:{3}",
 						driver, url, user, password));
 				e.printStackTrace();
 			} // try
@@ -2220,7 +2222,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public boolean createTable(final String tableName, final String defs) {
 
-		final String sql = Jdbcs.MFT("create table {0} ( {1} ) ", defs);
+		final String sql = Jdbcs.format("create table {0} ( {1} ) ", defs);
 		return this.sqlexecute(sql);
 	}
 
@@ -2234,7 +2236,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public boolean createTable(final String tableName, final String... defs) {
 
-		final String sql = Jdbcs.MFT("create table {0} ( {1} ) ", tableName, String.join(",", Arrays.asList(defs)));
+		final String sql = Jdbcs.format("create table {0} ( {1} ) ", tableName, String.join(",", Arrays.asList(defs)));
 		return this.sqlexecute(sql);
 	}
 
@@ -2252,7 +2254,7 @@ public class Jdbc implements IManagedStreams {
 			return false;
 		}
 
-		final String sql = Jdbcs.MFT("create table {0} ( {1} ) ", tableName, String.join(",", Arrays.asList(defs)));
+		final String sql = Jdbcs.format("create table {0} ( {1} ) ", tableName, String.join(",", Arrays.asList(defs)));
 		if (debug) {
 			System.out.println("jdbc:createTableIfNotExists:" + sql);
 		}
@@ -2918,7 +2920,7 @@ public class Jdbc implements IManagedStreams {
 
 				for (int i = 0; i < params.length; i++) { // 模板参数遍历。
 					if (i > pcnt) {// 参数设置超过了 PreparedStatement 所能容纳的参数个数。
-						System.err.println(Jdbcs.MFT(
+						System.err.println(Jdbcs.format(
 								"参数#{2}设置超过了 PreparedStatement 所能容纳的参数个数{3}。参数设置提前终止！\n"
 										+ "set-warnnings:pconn_query_throws-sql:{0},params:{1}",
 								sql, Arrays.asList(params), i, pcnt));
@@ -2929,7 +2931,7 @@ public class Jdbc implements IManagedStreams {
 						try { // 只有当参数param[i]不为空才给予进行模板参数填充。
 							pstmt.setObject(i + 1, params[i]);// 模板参数填充，注意模板参数需要从 1开始。
 						} catch (Exception x) {
-							System.err.println(Jdbcs.MFT("set-error:pconn_query_throws-sql:{0},params:{1}", sql,
+							System.err.println(Jdbcs.format("set-error:pconn_query_throws-sql:{0},params:{1}", sql,
 									Arrays.asList(params)));
 							throw x;// 一旦出现设置失败，立即异常抛出。因为参数设置师表就表名，该SQL语句执行不了，尽早告知用户程序，给予处理解决，别浪费时间做无用功。
 						} // if params[i]!=null try

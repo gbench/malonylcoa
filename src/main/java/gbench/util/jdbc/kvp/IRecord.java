@@ -3231,7 +3231,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default String vvjoin(String delim) {
 		return this.foldLeft((String) null,
-				(r, kv) -> MFT("{0}{1}{2}", r == null ? "" : r, r == null ? "" : delim, kv._2()));
+				(r, kv) -> Jdbcs.format("{0}{1}{2}", r == null ? "" : r, r == null ? "" : delim, kv._2()));
 	};
 
 	/**
@@ -3242,7 +3242,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default String vvjoin() {
 		final var delim = "/";
 		return this.foldLeft((String) null,
-				(r, kv) -> MFT("{0}{1}{2}", r == null ? "" : r, r == null ? "" : delim, kv._2()));
+				(r, kv) -> Jdbcs.format("{0}{1}{2}", r == null ? "" : r, r == null ? "" : delim, kv._2()));
 	};
 
 	/**
@@ -7580,7 +7580,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			final var n = seed.getAndIncrement();
 			return n == 0 ? "#" : n + "";// 行号生成器
 		};
-		return JOIN(Arrays.stream(line.split("\n")).map(e -> MFT("{0}\t{1}", rownum.get(), e)), // 行格式化
+		return JOIN(Arrays.stream(line.split("\n")).map(e -> Jdbcs.format("{0}\t{1}", rownum.get(), e)), // 行格式化
 				"\n");// JOIN 行连接
 	}
 

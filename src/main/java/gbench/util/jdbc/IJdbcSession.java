@@ -339,7 +339,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 			 * @return 解析之后的sql
 			 */
 			private String sqlparse_unescape(final String sqlpattern) {
-				return Jdbcs.MFT(this.sqlparse(sqlpattern, null));
+				return Jdbcs.format(this.sqlparse(sqlpattern, null));
 			}
 
 			private X data = outer_data; // 计算映射结果
@@ -894,7 +894,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 		final var spp = (ISqlPatternPreprocessor) this.getAttribute(ISqlPatternPreprocessor.class);
 		final var _sql = this.sqlparse(sqlpattern, params);// 解释sql
 		final var sql = spp != null && spp.name().equals("namedsql_processor_escape_brace") //
-				? Jdbcs.MFT(_sql) // 把采用了 namedsql_processor_escape_brace 转义的 字符给转义回来
+				? Jdbcs.format(_sql) // 把采用了 namedsql_processor_escape_brace 转义的 字符给转义回来
 				: _sql;
 		return this.sqlexecute(sql);
 	}
@@ -1153,9 +1153,9 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 				for (int i = 0; i < params.size(); i++) {
 					final var v = params.get(i);
 					if (v instanceof String)
-						params.set(i, Jdbcs.MFT_ESCAPE((String) v));
+						params.set(i, Jdbcs.format_escape((String) v));
 				} // for
-				_sqlpattern = Jdbcs.MFT_ESCAPE(sqlpattern); // 对 SQL模版进行预处理
+				_sqlpattern = Jdbcs.format_escape(sqlpattern); // 对 SQL模版进行预处理
 			} // if
 			final var sql = spp.handle(null, params, _sqlpattern, null); // 参数填充,调用spp
 			// 进行参数填充的时候需要对_sqlpattern预处理
@@ -1665,7 +1665,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 */
 	static <T, D, X> Function<X, IRecord> FTBLGET(IJdbcSession<T, D> sess, String table, String idfld) {
 		return Jdbcs.trycatch(x -> sess.sql2get(
-				Jdbcs.MFT(x == null ? "select * from {0} where isnull({1})" : "select * from {0} where {1}=''{2}''",
+				Jdbcs.format(x == null ? "select * from {0} where isnull({1})" : "select * from {0} where {1}=''{2}''",
 						table, idfld, x.toString().replace("\\", "\\\\") // 转义"\n"
 				))); // trycatch
 	}
@@ -1686,7 +1686,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 */
 	static <T, D, X> Function<X, List<IRecord>> FTBLGETS(IJdbcSession<T, D> sess, String table, String idfld) {
 		return Jdbcs.trycatch(x -> sess.sql2records(
-				Jdbcs.MFT(x == null ? "select * from {0} where isnull({1})" : "select * from {0} where {1}=''{2}''",
+				Jdbcs.format(x == null ? "select * from {0} where isnull({1})" : "select * from {0} where {1}=''{2}''",
 						table, idfld, x.toString().replace("\\", "\\\\") // 转义"\n"
 				))); // trycatch
 	}
