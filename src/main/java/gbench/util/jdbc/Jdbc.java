@@ -2666,7 +2666,7 @@ public class Jdbc implements IManagedStreams {
 
 		return psql2apply_throws(sql, params, (conn, stmt, rs, rsm, n) -> {
 			rs.last();
-			Object[][] oo = new Object[rs.getRow()][n];
+			final Object[][] oo = new Object[rs.getRow()][n];
 			rs.beforeFirst();
 			while (rs.next()) {
 				for (int j = 1; j <= n; j++) {
@@ -2769,12 +2769,15 @@ public class Jdbc implements IManagedStreams {
 			throw e;// 把捕获的异常继续跑出去
 		} finally {
 			try {
-				if (rs != null)
+				if (rs != null) {
 					rs.close();
-				if (stmt != null)
+				}
+				if (stmt != null) {
 					stmt.close();
-				if (close && conn != null)
+				}
+				if (close && conn != null) {
 					conn.close();
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 				throw e; // 把捕获的异常继续跑出去
@@ -2782,8 +2785,9 @@ public class Jdbc implements IManagedStreams {
 		} // try
 
 		final long endTime = System.currentTimeMillis();
-		if (debug)
+		if (debug) {
 			System.out.println("last for:" + (endTime - begTime) + "ms");
+		}
 
 		return ret;
 	}
@@ -2920,7 +2924,7 @@ public class Jdbc implements IManagedStreams {
 						break;
 					} // i>pcnt
 
-					if (params[i] != null)
+					if (params[i] != null) {
 						try { // 只有当参数param[i]不为空才给予进行模板参数填充。
 							pstmt.setObject(i + 1, params[i]);// 模板参数填充，注意模板参数需要从 1开始。
 						} catch (Exception x) {
@@ -2928,6 +2932,7 @@ public class Jdbc implements IManagedStreams {
 									Arrays.asList(params)));
 							throw x;// 一旦出现设置失败，立即异常抛出。因为参数设置师表就表名，该SQL语句执行不了，尽早告知用户程序，给予处理解决，别浪费时间做无用功。
 						} // if params[i]!=null try
+					} // if
 				} // for 模板参数遍历。
 
 			} else if (pcnt < 0) {// 非法数值表明getParameterCount无法获得参数数量
@@ -3033,6 +3038,7 @@ public class Jdbc implements IManagedStreams {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
 		return ll;
 	}
 
@@ -3072,12 +3078,15 @@ public class Jdbc implements IManagedStreams {
 			final var recs = new LinkedList<IRecord>();
 			final var lbls = labels(rs);
 			final int n = lbls.size();// 结果集的列标签(列名）
+
 			while (rs.next()) {
 				final var rec = new LinkedRecord();
-				for (int i = 1; i <= n; i++)
+				for (int i = 1; i <= n; i++) {
 					rec.set(lbls.get(i), rs.getObject(i));
+				}
 				recs.add(rec);
-			}
+			} // while
+
 			return recs;
 		}, sql, params), connection);// withConnection
 	}
@@ -3146,8 +3155,9 @@ public class Jdbc implements IManagedStreams {
 
 			while (rs.next()) {
 				var oo = new Object[n];
-				for (int i = 1; i <= n; i++)
+				for (int i = 1; i <= n; i++) {
 					oo[i - 1] = rs.getObject(i);
+				}
 				recs.add(oo);
 			}
 			return mxbuilder.apply(recs.toArray(Object[][]::new), lbls);
@@ -3178,8 +3188,9 @@ public class Jdbc implements IManagedStreams {
 		final Supplier<String> alias = () -> "table" + UUID.randomUUID().toString().replace("-", "");// 表格别名
 		final String big_query = "select count(*) cnt from (" + sql + ") " + alias.get();
 		final Optional<IRecord> opt = this.sql2maybe(big_query);
-		if (!opt.isPresent())
+		if (!opt.isPresent()) {
 			return new LinkedList<>();
+		}
 		final int cnt = opt.get().i4("cnt");// 首先读取记录条目数
 		final int BATCH_SIZE = Math.abs(fecthsize) > 0 ? Math.abs(fecthsize) : 30000;// 默认块大小为30000
 		final List<String> sub_sqls = new ArrayList<>(10);
@@ -3187,8 +3198,9 @@ public class Jdbc implements IManagedStreams {
 			for (int i = 0; i < cnt; i += BATCH_SIZE) {
 				final int start = i;
 				int end = (i + BATCH_SIZE) - 1;// 结束标记
-				if (end > cnt)
+				if (end > cnt) {
 					end = cnt;
+				}
 				sub_sqls.add("select * from (" + sql + ") " + alias.get() + " limit " + start + "," + BATCH_SIZE);// 定义子任务处理范围批量大小
 			} // for
 		} else {// 没有超过batchsize不予分割
@@ -3201,6 +3213,7 @@ public class Jdbc implements IManagedStreams {
 			final Object aa[] = new Object[n];// 结果集列表
 			final Semaphore semaphore = new Semaphore(1 - n);
 			final AtomicInteger counter = new AtomicInteger();// 计数器
+
 			sub_sqls.forEach(e -> new Thread(() -> {
 				final int i = counter.getAndIncrement();// 线程编号,领取一个任务号,然后执行
 				final String stmt = sub_sqls.get(i);// 获得待执行的sql语句
@@ -3220,12 +3233,15 @@ public class Jdbc implements IManagedStreams {
 				System.out.println("" + Thread.currentThread().getName() + " last for " + (endTime - begTime) + "ms");
 				semaphore.release();
 			}).start());
+
 			try {
 				semaphore.acquire();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			return ll.size() > 0 ? ll
+
+			return ll.size() > 0 //
+					? ll
 					: Stream.of(aa).map(e -> (List<IRecord>) e).flatMap(Collection::stream)
 							.collect(Collectors.toList());
 		} else {
@@ -3271,7 +3287,7 @@ public class Jdbc implements IManagedStreams {
 			final Column<?>[] finalcc = new Column<?>[n];// 初始化空間
 			try {
 				// 获得列名
-				Function<Integer, KVPair<String, Integer>> colname = (i) -> {
+				final Function<Integer, KVPair<String, Integer>> colname = (i) -> {
 					String name = null;
 					try {
 						name = rsm.getColumnLabel(i);
@@ -3314,6 +3330,7 @@ public class Jdbc implements IManagedStreams {
 	public Optional<IRecord> sql2maybe(final String sql) {
 
 		final List<IRecord> recs = this.sql2records(sql);
+
 		if (recs.size() > 1) {
 			System.out.println(sql + "\n返回多条(" + recs.size() + ")数据，仅截取第一条返回！");
 		}
@@ -3479,6 +3496,7 @@ public class Jdbc implements IManagedStreams {
 	public List<IRecord> sql2records(final String sql, final Map<Integer, Object> params, final IRecord jsn2keysrec) {
 
 		final Map<String, String[]> jsn2keys = new HashMap<>();
+
 		jsn2keysrec.stream().forEach(kvp -> {
 			Object obj = kvp._2();
 			String[] oo = null;
@@ -3687,12 +3705,15 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> psql2records(final String sql, final Object[] oo) {
+
 		final Map<Integer, Object> params = new HashMap<>();
+
 		if (oo != null) {
 			for (int i = 0; i < oo.length; i++) {
 				params.put(i + 1, oo[i]);
-			}
+			} // for
 		}
+
 		return this.psql2records(sql, params, this.getConnection(), true, SQL_MODE.QUERY, null, Optional.empty());
 	}
 
@@ -3707,12 +3728,15 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 流
 	 */
 	public Stream<IRecord> psql2recordS(final String sql, final Object[] oo) {
+
 		final Map<Integer, Object> params = new HashMap<>();
+
 		if (oo != null) {
 			for (int i = 0; i < oo.length; i++) {
 				params.put(i + 1, oo[i]);
 			} // for
 		} // if
+
 		return this.psql2recordS(sql, params);
 	}
 
@@ -3837,8 +3861,8 @@ public class Jdbc implements IManagedStreams {
 	 * @param recSupplier 行记录的数据格式
 	 * @return 执行结果集合的 IRecord 列表
 	 */
-	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params, Connection con,
-			boolean close, final Supplier<IRecord> recSupplier) {
+	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params, final Connection con,
+			final boolean close, final Supplier<IRecord> recSupplier) {
 
 		return this.psql2records(sql, params, con, close, SQL_MODE.QUERY, recSupplier, Optional.empty());
 	}
