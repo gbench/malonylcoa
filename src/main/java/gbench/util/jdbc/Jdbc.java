@@ -11,7 +11,6 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -79,6 +78,7 @@ public class Jdbc implements IManagedStreams {
 	 * @param supplierConn 链接贩卖商，也就是不适用传统的DriverManager,而是第三方来提供。
 	 */
 	public Jdbc(final Supplier<Connection> supplierConn) {
+
 		this.supplierConn = supplierConn;// 初始化连接贩卖商
 	}
 
@@ -87,7 +87,8 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param ds 数据源
 	 */
-	public Jdbc(DataSource ds) {
+	public Jdbc(final DataSource ds) {
+
 		this.supplierConn = () -> {
 			Connection conn = null;
 			try {
@@ -107,7 +108,8 @@ public class Jdbc implements IManagedStreams {
 	 * @param user     数据库用户
 	 * @param password 数据库密码
 	 */
-	public Jdbc(String driver, String url, String user, String password) {
+	public Jdbc(final String driver, final String url, final String user, final String password) {
+
 		this.init(driver, url, user, password);
 	}
 
@@ -116,8 +118,9 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param rec: 需要包含key:driver,url, user, password
 	 */
-	public Jdbc(IRecord rec) {
-		var props = rec.toProps();
+	public Jdbc(final IRecord rec) {
+
+		final var props = rec.toProps();
 		this.init(props.getProperty("driver"), props.getProperty("url"), props.getProperty("user"),
 				props.getProperty("password"));
 	}
@@ -127,8 +130,9 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param map: 需要包含key:driver,url, user, password
 	 */
-	public Jdbc(Map<?, ?> map) {
-		var props = IRecord.REC(map).toProps();
+	public Jdbc(final Map<?, ?> map) {
+
+		final var props = IRecord.REC(map).toProps();
 		this.init(props.getProperty("driver"), props.getProperty("url"), props.getProperty("user"),
 				props.getProperty("password"));
 	}
@@ -138,7 +142,8 @@ public class Jdbc implements IManagedStreams {
 	 * 
 	 * @param props: 需要包含key:driver,url, user, password
 	 */
-	public Jdbc(Properties props) {
+	public Jdbc(final Properties props) {
+
 		this.init(props.getProperty("driver"), props.getProperty("url"), props.getProperty("user"),
 				props.getProperty("password"));
 	}
@@ -152,6 +157,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static List<IRecord> queryWithConnection(final Connection conn, final String query) throws SQLException {
+
 		final var pstmt = conn.prepareStatement(query);// 生成SQL语句
 		return preparedQuery(() -> pstmt, null);
 	}
@@ -179,6 +185,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static List<IRecord> preparedQuery(final Supplier<PreparedStatement> pstmt) throws SQLException {
+
 		return preparedQuery(pstmt, (Consumer<PreparedStatement>) null);
 	}
 
@@ -213,6 +220,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static void executeWithConnection(final Connection conn, final String sql) throws SQLException {
+
 		executeWithConnection(conn, sql, (Consumer<PreparedStatement>) null);
 	}
 
@@ -223,8 +231,9 @@ public class Jdbc implements IManagedStreams {
 	 * @param sql  prepare sql语句的处理
 	 * @throws SQLException
 	 */
-	public static void executeWithConnection(final Connection conn, String sql, Consumer<PreparedStatement> prepare)
-			throws SQLException {
+	public static void executeWithConnection(final Connection conn, final String sql,
+			final Consumer<PreparedStatement> prepare) throws SQLException {
+
 		final var pstmt = conn.prepareStatement(sql);
 		preparedExecute(() -> pstmt, prepare);
 	}
@@ -236,6 +245,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static void preparedExecute(final Supplier<PreparedStatement> pstmt) throws SQLException {
+
 		preparedExecute(pstmt, (Consumer<PreparedStatement>) null, (BiFunction<Boolean, PreparedStatement, ?>) null);
 	}
 
@@ -246,8 +256,9 @@ public class Jdbc implements IManagedStreams {
 	 * @param prepare parepared statement的参数准备
 	 * @throws SQLException
 	 */
-	public static void preparedExecute(Supplier<PreparedStatement> pstmt, Consumer<PreparedStatement> prepare)
-			throws SQLException {
+	public static void preparedExecute(final Supplier<PreparedStatement> pstmt,
+			final Consumer<PreparedStatement> prepare) throws SQLException {
+
 		preparedExecute(pstmt, prepare, (BiFunction<Boolean, PreparedStatement, ?>) null);
 	}
 
@@ -259,8 +270,9 @@ public class Jdbc implements IManagedStreams {
 	 * @return callback 处理的结果
 	 * @throws SQLException
 	 */
-	public static <T> T preparedExecute(Supplier<PreparedStatement> pstmt,
-			BiFunction<Boolean, PreparedStatement, T> callback) throws SQLException {
+	public static <T> T preparedExecute(final Supplier<PreparedStatement> pstmt,
+			final BiFunction<Boolean, PreparedStatement, T> callback) throws SQLException {
+
 		return preparedExecute(pstmt, (Consumer<PreparedStatement>) null, callback);
 	}
 
@@ -274,7 +286,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static <T> T preparedExecute(final Supplier<PreparedStatement> pstmt,
-			final Consumer<PreparedStatement> prepare, BiFunction<Boolean, PreparedStatement, T> callback)
+			final Consumer<PreparedStatement> prepare, final BiFunction<Boolean, PreparedStatement, T> callback)
 			throws SQLException {
 
 		T t = null;// 返回结果
@@ -298,6 +310,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 以 列名列表为 键名的 IRecorder.Builder
 	 */
 	public static IRecord.Builder linebuilder(final ResultSet rs) {
+
 		return IRecord.rb(Jdbc.colnames(rs));
 	}
 
@@ -308,7 +321,8 @@ public class Jdbc implements IManagedStreams {
 	 * @param indices 列号索引序列,从1开始
 	 * @return 以 列名列表为 键名的 IRecorder.Builder
 	 */
-	public static IRecord.Builder linebuilder(final ResultSet rs, int[] indices) {
+	public static IRecord.Builder linebuilder(final ResultSet rs, final int[] indices) {
+
 		return IRecord.rb(Jdbc.colnames(rs, indices));
 	}
 
@@ -319,6 +333,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 当前行的对象数组,出现异常则返回null
 	 */
 	public static String[] colnames(final ResultSet rs) {
+
 		ResultSetMetaData rsm;
 		String[] ret = null;
 		try {
@@ -343,7 +358,8 @@ public class Jdbc implements IManagedStreams {
 	 * @param indices 列号索引序列,从1开始
 	 * @return 当前行的对象数组,出现异常则返回null
 	 */
-	public static String[] colnames(final ResultSet rs, int[] indices) {
+	public static String[] colnames(final ResultSet rs, final int[] indices) {
+
 		String[] ret = new String[indices.length];// 默认的非法结果
 		try {
 			final var rsm = rs.getMetaData();
@@ -368,12 +384,13 @@ public class Jdbc implements IManagedStreams {
 	 * @return 当前行的对象数组,出现异常则返回null
 	 */
 	public static Object[] readlineA(final ResultSet rs) {
+
 		ResultSetMetaData rsm;
 		Object[] ret = null;
 		try {
 			rsm = rs.getMetaData();
 			final var n = rsm.getColumnCount();
-			int[] indices = new int[n];
+			final int[] indices = new int[n];
 			for (int i = 0; i < n; i++) {
 				indices[i] = i + 1;
 			} // for
@@ -395,7 +412,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 当前行的对象数组
 	 */
 	public static Object[] readlineA(final ResultSet rs, final int[] indices) {
-		Object[] ret = new Object[indices.length];// 默认的非法结果
+
+		final Object[] ret = new Object[indices.length];// 默认的非法结果
 		try {
 			for (int i = 0; i < indices.length; i++) {
 				final var idx = indices[i];
@@ -419,6 +437,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 结果集数据的record的表示,出现异常则返回null
 	 */
 	public static IRecord readline(final ResultSet rs) {
+
 		final var rec = IRecord.REC();
 		try {
 			return Jdbc.readline(rs, Jdbc.labels2(rs));
@@ -438,6 +457,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 结果集数据的record的表示,出现异常则返回null
 	 */
 	public static IRecord readline(final ResultSet rs, final String[] lbls) {
+
 		IRecord rec = null;// 默认的非法结果
 		try {
 			rec = IRecord.REC();
@@ -466,6 +486,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 结果集数据的record的表示,出现异常则返回null
 	 */
 	public static IRecord readline2(final ResultSet rs, final String[] lbls) {
+
 		try {
 			final var n = rs.getMetaData().getColumnCount();
 			return Jdbc.readline(rs, Jdbc.adjustLabels(n, lbls));
@@ -485,6 +506,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static List<IRecord> readlines(final ResultSet rs, boolean close) throws SQLException {
+
 		return Jdbc.readlineS(rs, close).collect(Collectors.toList());
 	}
 
@@ -498,6 +520,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static Stream<IRecord> readlineS(final ResultSet rs) throws SQLException {
+
 		return Jdbc.readlineS(rs, false);
 	}
 
@@ -534,6 +557,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public static Stream<IRecord> readlineS(final ResultSet rs, final Runnable callback) throws SQLException {
+
 		final var lbls = Jdbc.labels2(rs);
 		final var stopflag = new AtomicBoolean(false); // 是否达到末端
 		final Stream<IRecord> stream = !rs.next() // 检查是否存在有后继
@@ -1195,15 +1219,17 @@ public class Jdbc implements IManagedStreams {
 
 		final var placeholder = Pattern.compile("#+([a-z_][a-z0-9_]+)", Pattern.CASE_INSENSITIVE).matcher(line);
 		final var params = new LinkedHashSet<String>();
+
 		// 提取所有位置参数
-		while (placeholder.find())
+		while (placeholder.find()) {
 			params.add(placeholder.group(1));
+		}
 
 		return params;
 	}
 
 	/**
-	 * namedsql_processor 对namedsqls中的‘{’,‘'’进行转义：防止MessageFormater把他误认为参数。 <br>
+	 * namedsql_processor 对namedsqls中的‘{’,‘'’进行转义：防止Jdbcs.MFTer把他误认为参数。 <br>
 	 * 注意:<br>
 	 * namedsql_processor_escape_brace的 preprocessor 只会对 namedsqls 中的所包含的语句进行处理,<br>
 	 * 并不会对 没有在namedsqls中存贮的sql语句调用preprocessor做预处理。<br>
@@ -1222,7 +1248,7 @@ public class Jdbc implements IManagedStreams {
 	}
 
 	/**
-	 * namedsql_processor 对namedsqls中的‘{’进行转义：防止MessageFormater把他误认为参数。<br>
+	 * namedsql_processor 对namedsqls中的‘{’进行转义：防止Jdbcs.MFTer把他误认为参数。<br>
 	 * 注意:<br>
 	 * namedsql_processor的 preprocessor 只会对 namedsqls 中的所包含的语句进行处理,<br>
 	 * 并不会对 没有在namedsqls中存贮的sql语句调用preprocessor做预处理。<br>
@@ -1322,7 +1348,7 @@ public class Jdbc implements IManagedStreams {
 	 * HH:mm:ss}'',''{6}'',''{7}'') <br>
 	 * 
 	 * @param namedsqls 命名sql集合：{#key1-&gt;sql1,#key1-&gt;sql2,...},
-	 * @return 变换后的sqlapttern 可以被 MessageFormat处理的SQL语句。
+	 * @return 变换后的sqlapttern 可以被 Jdbcs.MFT处理的SQL语句。
 	 */
 	public static ISqlPatternPreprocessor namedsql_processor(final Map<String, String> namedsqls) {
 
@@ -1518,9 +1544,10 @@ public class Jdbc implements IManagedStreams {
 					// SQL语句的执行:JdbcExecute
 					final JdbcExecute[] jces = method.getAnnotationsByType(JdbcExecute.class);
 					synchronized (jdbc) {// 保持执行操作同步运行．
-						if (jces != null && jces.length > 0)
+						if (jces != null && jces.length > 0) {
 							return postprocessor.process(method, params(method, args), jdbc, (U) // 结果呈递
 							handleJdbcExecute(jdbc, jces, method, args, pattern_preprocessor, interceptor));
+						} // if
 					} // synchronized (jdbc)
 
 					///////////////////////////////////////////////////////////////////////
@@ -1529,18 +1556,20 @@ public class Jdbc implements IManagedStreams {
 					// SQL语句的执行:PreparedExecute
 					final JdbcPreparedExecute[] jce2s = method.getAnnotationsByType(JdbcPreparedExecute.class);
 					synchronized (jdbc) {// 保持执行操作同步运行．
-						if (jce2s != null && jce2s.length > 0)
+						if (jce2s != null && jce2s.length > 0) {
 							return postprocessor.process(method, params(method, args), jdbc, (U) // 结果呈递
 							handlePreparedExecute(jdbc, jce2s, method, args, pattern_preprocessor, interceptor));
+						} // if
 					} // synchronized (jdbc)
 
 					///////////////////////////////////////////////////////////////////////
 					// 方法注释解析：默认方法 -没有注释但是默认方法
 					///////////////////////////////////////////////////////////////////////
 					// 如果以上的注解都没有处理成功，尝试执行函数的默认方法：默认函数的处理
-					if (isDefaultMethod(method))
+					if (isDefaultMethod(method)) {
 						return postprocessor.process(method, params(method, args), jdbc, (U) // 结果呈递
 						Jdbc.handleDefaultMethod(proxy, method, args, jdbc));
+					}
 
 					///////////////////////////////////////////////////////////////////////
 					// 方法注释解析：Jdbc所不能理解的方法
@@ -1602,11 +1631,13 @@ public class Jdbc implements IManagedStreams {
 			if (oo != null && oo.length > 0) {
 				var tt = method.getParameterTypes();
 				mm.forEach((cls, v) -> {
-					for (int i = 0; i < tt.length; i++)
-						if ((tt[i] == cls) && oo[i] == null)
+					for (int i = 0; i < tt.length; i++) {
+						if ((tt[i] == cls) && oo[i] == null) {
 							oo[i] = v;
-				});// foreach
-			}
+						} // if
+					} // for
+				}); // foreach
+			} // if
 		};// inject
 
 		final var mm = new HashMap<Class<?>, Object>();
@@ -1716,15 +1747,16 @@ public class Jdbc implements IManagedStreams {
 			final ISqlInterceptor<List<IRecord>> sqlinterceptor) {
 
 		// 非法的执行SQL语句则直接返回
-		if (jces == null || jces.length < 1)
+		if (jces == null || jces.length < 1) {
 			return null;
+		}
 
 		final var _patterns = jces[0].value();// sql语句模板数组
 		// 没有传入sqlpattern 代表一个采用默认 pattern 需要用pattern_preprocessor// 来解析。
 		final String[] patterns = (_patterns == null || _patterns.length < 1) ? new String[] { null } : _patterns;
 		final var pargs = params(method, args);// 构造参数对象
 		return jdbc.withTransaction(sess -> {// 开启事务管理
-			for (var pattern : patterns) { // sql语句模板 :当pattern 为null的时候，pattern_preprocessor
+			for (final var pattern : patterns) { // sql语句模板 :当pattern 为null的时候，pattern_preprocessor
 				// 会为其左方法签名的解释。不过需要namedsql_processor配置。
 				final var dd = sqlinterceptor.intercept(method, pargs, pattern, jdbc);
 				if (dd != null) {
@@ -1732,10 +1764,10 @@ public class Jdbc implements IManagedStreams {
 				} // if
 					// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
 				final var sqlPattern = pattern_preprocessor.handle(method, pargs, pattern, jdbc);
-				final var sqlLines = MessageFormat.format(sqlPattern, args);// 提取SQL语句,并添加参数
+				final var sqlLines = Jdbcs.MFT(sqlPattern, args);// 提取SQL语句,并添加参数
 				if (sqlLines == null) {// 方法的SQL语句模板解释失败
-					throw new Exception(String.format("无法为方法%s解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!",
-							method.getName()));
+					throw new Exception(
+							Jdbcs.MFT("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!", method.getName()));
 				} // lines
 				final String[] sqls = sqlLines.split(";\\s*\n+");// 尝试对sqls 进行多语句解析。位于行末的分号给予分解
 				for (final var sql : sqls) {// 依次执行SQL语句
@@ -1760,7 +1792,7 @@ public class Jdbc implements IManagedStreams {
 	 * 会视作两条sql 语句 <br>
 	 * <p>
 	 * sqlpattern 和sqltpl 的区别就是<br>
-	 * sqlpattern 是{0},{1},等 MessageFormat 格式的模板，用于匹配 参数 <br>
+	 * sqlpattern 是{0},{1},等 Jdbcs.MFT 格式的模板，用于匹配 参数 <br>
 	 * sqltpl 是sqlpattern被解析后的结果，其中的参数是 ?的占位符，用于对PreparedStatement的处理。 <br>
 	 * 执行的处理<br>
 	 *
@@ -1792,7 +1824,7 @@ public class Jdbc implements IManagedStreams {
 		final var pargs = params(method, args);// 构造参数对象
 
 		return jdbc.withConnection(conn -> {// 开启事务管理
-			for (var pattern : patterns) {// sql语句模板 :当pattern 为null的时候，pattern_preprocessor
+			for (final var pattern : patterns) {// sql语句模板 :当pattern 为null的时候，pattern_preprocessor
 				// 会为其左方法签名的解释。不过需要namedsql_processor配置。
 				final var dd = sqlinterceptor.intercept(method, pargs, pattern, jdbc);
 				if (dd != null) {
@@ -1801,15 +1833,15 @@ public class Jdbc implements IManagedStreams {
 					// 提取SQL语句模板,会自动为 null的pattern 提供方法签名的解释
 				final var patternLines = pattern_preprocessor.handle(method, pargs, pattern, jdbc);
 				if (patternLines == null) {// 方法的SQL语句模板解释失败
-					throw new Exception(String.format("无法为方法%s解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!",
-							method.getName()));
+					throw new Exception(
+							Jdbcs.MFT("无法为方法{0}解析出正确的SQL语句，请确保为Jdbc对象安装了正确的pattern_preprocessor!", method.getName()));
 				} // lines
 				final String[] tpl_patterns = patternLines.split(";\\s*\n+");// 尝试对sqls 进行多语句解析，位于行末的分号给予分解
 				for (final var tpl_pattern : tpl_patterns) {// 依次执行SQL语句
 					if (tpl_pattern.matches("\\s*")) {
 						continue;
 					} // if
-					final var sqltpl = MessageFormat.format(tpl_pattern, args);// 提取SQL语句
+					final var sqltpl = Jdbcs.MFT(tpl_pattern, args);// 提取SQL语句
 					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery:" + sqltpl);
 					} // if
@@ -1883,7 +1915,7 @@ public class Jdbc implements IManagedStreams {
 				} else {
 					final var _params = params(method, args);
 					final var pattern = pattern_preprocessor.handle(method, _params, jcqs[0].value(), jdbc);// 模式处理
-					final var sql = MessageFormat.format(pattern, args);// SQL语句组装
+					final var sql = Jdbcs.MFT(pattern, args);// SQL语句组装
 
 					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery:" + sql);// 调试信息
@@ -1937,7 +1969,7 @@ public class Jdbc implements IManagedStreams {
 					return recs;// 方法截取
 				} else {
 					final var preparedSqlpattern = pattern_preprocessor.handle(method, params, jcq2s[0].value(), jdbc);
-					final var preparedSql = MessageFormat.format(preparedSqlpattern, args);// SQL语句组装
+					final var preparedSql = Jdbcs.MFT(preparedSqlpattern, args);// SQL语句组装
 					if (debug) {
 						System.out.println("jdbc:handleJdbcQuery2:preparedsql" + preparedSql);
 					} // if
@@ -1956,8 +1988,9 @@ public class Jdbc implements IManagedStreams {
 	 * @return 添加引号函数
 	 */
 	public static BiFunction<String, Object, String> quote(final Function<Object, Object> mapper) {
+
 		return (pat, e) -> {
-			return String.format(!pat.startsWith("##") ? "'%s'" : "%s", mapper.apply(e));
+			return Jdbcs.MFT(!pat.startsWith("##") ? "''{0}''" : "{0}", mapper.apply(e));
 		};
 	}
 
@@ -2146,9 +2179,8 @@ public class Jdbc implements IManagedStreams {
 				}
 				conn = DriverManager.getConnection(url, user, password);
 			} catch (Exception e) {
-				System.err.println(
-						MessageFormat.format("jdbc connection error for,driver:{0},url:{1},user:{2},password:{3}",
-								driver, url, user, password));
+				System.err.println(Jdbcs.MFT("jdbc connection error for,driver:{0},url:{1},user:{2},password:{3}",
+						driver, url, user, password));
 				e.printStackTrace();
 			} // try
 			return conn;
@@ -2187,7 +2219,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public boolean createTable(final String tableName, final String defs) {
 
-		final String sql = MessageFormat.format("create table {0} ( {1} ) ", defs);
+		final String sql = Jdbcs.MFT("create table {0} ( {1} ) ", defs);
 		return this.sqlexecute(sql);
 	}
 
@@ -2201,8 +2233,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public boolean createTable(final String tableName, final String... defs) {
 
-		final String sql = MessageFormat.format("create table {0} ( {1} ) ", tableName,
-				String.join(",", Arrays.asList(defs)));
+		final String sql = Jdbcs.MFT("create table {0} ( {1} ) ", tableName, String.join(",", Arrays.asList(defs)));
 		return this.sqlexecute(sql);
 	}
 
@@ -2216,12 +2247,14 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public boolean createTableIfNotExists(final String tableName, final String... defs) {
 
-		if (this.tblExists(tableName))
+		if (this.tblExists(tableName)) {
 			return false;
-		final String sql = MessageFormat.format("create table {0} ( {1} ) ", tableName,
-				String.join(",", Arrays.asList(defs)));
-		if (debug)
+		}
+
+		final String sql = Jdbcs.MFT("create table {0} ( {1} ) ", tableName, String.join(",", Arrays.asList(defs)));
+		if (debug) {
 			System.out.println("jdbc:createTableIfNotExists:" + sql);
+		}
 
 		return this.sqlexecute(sql);
 	}
@@ -2505,10 +2538,11 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<Boolean> sqlbatch(final List<String> sqls) {
 
-		if (sqls == null)
+		if (sqls == null) {
 			return null;
+		}
 		final Connection conn = this.getConnection();
-		List<Boolean> bb = sqls.stream().filter(e -> e != null && e.length() > 0 && !e.matches("^[\\s]*$"))// 滤除空语句
+		final List<Boolean> bb = sqls.stream().filter(e -> e != null && e.length() > 0 && !e.matches("^[\\s]*$"))// 滤除空语句
 				.map(sql -> psqlexecute(sql, null, conn, false)).collect(Collectors.toList());
 		try {
 			conn.close();
@@ -2526,8 +2560,10 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<Boolean> sqlbatch(final String[] sqls) {
 
-		if (sqls == null)
+		if (sqls == null) {
 			return null;
+		}
+
 		return this.sqlbatch(Arrays.asList(sqls));
 	}
 
@@ -2590,6 +2626,7 @@ public class Jdbc implements IManagedStreams {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
 		return t;
 	}
 
@@ -2631,19 +2668,22 @@ public class Jdbc implements IManagedStreams {
 			rs.last();
 			Object[][] oo = new Object[rs.getRow()][n];
 			rs.beforeFirst();
-			while (rs.next())
-				for (int j = 1; j <= n; j++)
+			while (rs.next()) {
+				for (int j = 1; j <= n; j++) {
 					oo[rs.getRow() - 1][j - 1] = rs.getObject(j);
-			Function<Integer, String> foo = i -> {
+				} // for
+			} // while
+
+			final Function<Integer, String> foo = i -> {
 				String s = null;
 				try {
 					s = rsm.getColumnLabel(i);
 				} catch (Exception ignored) {
 				}
-				;
 				return s;
 			};
-			List<String> hh = Stream.iterate(1, i -> i + 1).map(foo).limit(n).collect(Collectors.toList());
+			final List<String> hh = Stream.iterate(1, i -> i + 1).map(foo).limit(n).collect(Collectors.toList());
+
 			return producer.apply(oo, hh);
 		});
 	}
@@ -2761,12 +2801,15 @@ public class Jdbc implements IManagedStreams {
 	public boolean pstmt_execute_throws(final PreparedStatement pstmt, final Map<Integer, Object> params,
 			final boolean close) throws SQLException {
 
-		if (params != null)
-			for (var i : params.keySet())
+		if (params != null) {
+			for (final var i : params.keySet()) {
 				pstmt.setObject(i, params.get(i));
+			} // for
+		} // if
 		final boolean b = pstmt.execute();
-		if (close)
+		if (close) {
 			pstmt.close();
+		} // if
 
 		return b;
 	}
@@ -2789,8 +2832,9 @@ public class Jdbc implements IManagedStreams {
 				pstmt.setObject(i + 1, params[i]);
 			}
 		final var b = pstmt.execute();
-		if (close)
+		if (close) {
 			pstmt.close();
+		}
 
 		return b;
 	}
@@ -2824,11 +2868,13 @@ public class Jdbc implements IManagedStreams {
 	public boolean pconn_execute_throws(final Connection conn, final String sql, final Object... pp)
 			throws SQLException {
 
-		if (pp == null)
+		if (pp == null) {
 			return false;
+		}
 		final Map<Integer, Object> params = new HashMap<>();
-		for (int i = 1; i <= pp.length; i++)
+		for (int i = 1; i <= pp.length; i++) {
 			params.put(i, pp[i]);
+		}
 
 		return pstmt_execute_throws(conn.prepareStatement(sql), params, true);
 	}
@@ -2853,7 +2899,6 @@ public class Jdbc implements IManagedStreams {
 		ResultSet rs = null;
 		T t = null;// 目标结果
 		try {
-
 			pstmt = conn.prepareStatement(sql);// 制作Prepare 语句。
 			var pcnt = -1;// 默认参数非法
 			try {// 检查是否可以使用getParameterCount
@@ -2886,7 +2931,6 @@ public class Jdbc implements IManagedStreams {
 				} // for 模板参数遍历。
 
 			} else if (pcnt < 0) {// 非法数值表明getParameterCount无法获得参数数量
-
 				for (int i = 0; i < params.length; i++) { // 模板参数遍历。
 					pstmt.setObject(i + 1, params[i]);// 模板参数填充，注意模板参数需要从 1开始。
 				} // for 模板参数遍历。
@@ -2899,10 +2943,12 @@ public class Jdbc implements IManagedStreams {
 			System.out.println("pconn_query_throws,error sql:" + sql);
 			throw e;// 抛出异常 原因。
 		} finally {
-			if (pstmt != null)
+			if (pstmt != null) {
 				pstmt.close();
-			if (rs != null)
+			}
+			if (rs != null) {
 				rs.close();
+			}
 		} // try
 
 		// 返回目标结果。
@@ -3001,9 +3047,12 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<IRecord> precords_throws(final Connection connection, final String sql, Map<Integer, Object> params)
 			throws SQLException {
+
 		final Object[] _params = params == null ? new Object[] {} : params.values().toArray();// preparedSQL的模板参数列表。
-		if (params != null)
+		if (params != null) {
 			params.forEach((i, d) -> _params[i - 1] = params.get(i));// 矫正 参数位置
+		}
+
 		return precords_throws(connection, sql, _params);
 	}
 
@@ -3050,6 +3099,7 @@ public class Jdbc implements IManagedStreams {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
 		return t;
 	}
 
@@ -3111,6 +3161,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return record 数据集合
 	 */
 	public List<IRecord> bigdataQuery(final String largesql) {
+
 		return blockquery(largesql, 30000);
 	}
 
@@ -3191,6 +3242,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IColumn<?>> sql2ll(final String sql) {
+
 		return Arrays.asList(sql2cols(sql, this.getConnection(), true));
 	}
 
@@ -3201,6 +3253,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public IColumn<?>[] sql2cols(final String sql) {
+
 		return sql2cols(sql, this.getConnection(), true);
 	}
 
@@ -3229,16 +3282,17 @@ public class Jdbc implements IManagedStreams {
 
 				// 构造表头
 				Stream.iterate(1, i -> i + 1).limit(n).map(colname).forEach((kv) -> {
-					Column<?> c = new Column<>(kv.key());
+					final Column<?> c = new Column<>(kv.key());
 					finalcc[kv.value() - 1] = c;
 				});
 
 				// 遍歷數據
 				while (rs.next()) {
 					for (int i = 0; i < n; i++) {
-						Object obj = rs.getObject(i + 1);
-						if (finalcc[i].getType() == null && obj != null)
+						final Object obj = rs.getObject(i + 1);
+						if (finalcc[i].getType() == null && obj != null) {
 							finalcc[i].setType(obj.getClass());
+						}
 						finalcc[i].addObject(obj);
 					} // for
 				} // while
@@ -3258,9 +3312,12 @@ public class Jdbc implements IManagedStreams {
 	 * @return 单条数据的结果集
 	 */
 	public Optional<IRecord> sql2maybe(final String sql) {
-		List<IRecord> recs = this.sql2records(sql);
-		if (recs.size() > 1)
+
+		final List<IRecord> recs = this.sql2records(sql);
+		if (recs.size() > 1) {
 			System.out.println(sql + "\n返回多条(" + recs.size() + ")数据，仅截取第一条返回！");
+		}
+
 		return recs.stream().findFirst();
 	}
 
@@ -3270,7 +3327,8 @@ public class Jdbc implements IManagedStreams {
 	 * @param sql 查询语句
 	 * @return 单条数据的结果集
 	 */
-	public <T> Optional<T> sql2maybe(final String sql, Class<T> tclazz) {
+	public <T> Optional<T> sql2maybe(final String sql, final Class<T> tclazz) {
+
 		return sql2maybe(sql).map(e -> IRecord.rec2obj(e, tclazz));
 	}
 
@@ -3281,7 +3339,8 @@ public class Jdbc implements IManagedStreams {
 	 * @param tclazz 目标结果类型
 	 * @return 单条数据的结果集
 	 */
-	public <T> T sql2get(final String sql, Class<T> tclazz) {
+	public <T> T sql2get(final String sql, final Class<T> tclazz) {
+
 		return sql2maybe(sql).map(e -> IRecord.rec2obj(e, tclazz)).get();
 	}
 
@@ -3293,9 +3352,12 @@ public class Jdbc implements IManagedStreams {
 	 * @return 单条数据的结果集
 	 */
 	public Optional<IRecord> sql2maybe(final String sql, final Jdbc.SQL_MODE mode) {
-		List<IRecord> recs = this.sql2records(sql, mode);
-		if (recs.size() > 1)
+
+		final List<IRecord> recs = this.sql2records(sql, mode);
+		if (recs.size() > 1) {
 			System.out.println(sql + "\n返回多条(" + recs.size() + ")数据，仅截取第一条返回！");
+		}
+
 		return recs.stream().findFirst();
 	}
 
@@ -3307,6 +3369,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> sql2records(final String sql) {
+
 		return this.psql2records(sql, null, this.getConnection(), true, SQL_MODE.QUERY, null, Optional.empty());
 	}
 
@@ -3318,6 +3381,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 流
 	 */
 	public Stream<IRecord> sql2recordS(final String sql) {
+
 		return this.psql2recordS(sql, (Map<Integer, Object>) null);
 	}
 
@@ -3329,6 +3393,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> sql2records(final String sql, final Jdbc.SQL_MODE mode) {
+
 		return this.psql2records(sql, null, this.getConnection(), true, mode, null, Optional.empty());
 	}
 
@@ -3340,8 +3405,11 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> sql2records(final String sql, final Connection conn, final Jdbc.SQL_MODE mode) {
-		if (conn == null)
+
+		if (conn == null) {
 			return new LinkedList<>();
+		}
+
 		return this.psql2records(sql, null, conn, false, mode, null, Optional.empty());
 	}
 
@@ -3355,6 +3423,7 @@ public class Jdbc implements IManagedStreams {
 	 * @throws SQLException
 	 */
 	public List<IRecord> sql2records_throws(final String sql) throws SQLException {
+
 		return this.psql2records_throws(sql, null, this.getConnection(), true, SQL_MODE.QUERY, null, Optional.empty());
 	}
 
@@ -3369,6 +3438,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的List&lt;T&gt;
 	 */
 	public <T> List<T> sqlmutate(final String sql, final Function<IRecord, T> mapper) {
+
 		return this.sql2recordS(sql).map(mapper).collect(Collectors.toList());
 	}
 
@@ -3383,6 +3453,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> sql2records(final String sql, final Map<String, String[]> jsn2keys) {
+
 		return this.psql2records(sql, null, this.getConnection(), true, SQL_MODE.QUERY, null, Optional.of(jsn2keys));
 	}
 
@@ -3394,6 +3465,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> sql2records(final String sql, final IRecord jsn2keysrec) {
+
 		return this.sql2records(sql, null, jsn2keysrec);
 	}
 
@@ -3616,9 +3688,11 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<IRecord> psql2records(final String sql, final Object[] oo) {
 		final Map<Integer, Object> params = new HashMap<>();
-		if (oo != null)
-			for (int i = 0; i < oo.length; i++)
+		if (oo != null) {
+			for (int i = 0; i < oo.length; i++) {
 				params.put(i + 1, oo[i]);
+			}
+		}
 		return this.psql2records(sql, params, this.getConnection(), true, SQL_MODE.QUERY, null, Optional.empty());
 	}
 
@@ -3650,6 +3724,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 列表
 	 */
 	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params) {
+
 		return this.psql2records(sql, params, this.getConnection(), true, SQL_MODE.QUERY, null, Optional.empty());
 	}
 
@@ -3705,6 +3780,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params,
 			final Supplier<IRecord> recSupplier) {
+
 		return this.psql2records(sql, params, this.getConnection(), true, SQL_MODE.QUERY, recSupplier,
 				Optional.empty());
 	}
@@ -3719,6 +3795,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params, final boolean close,
 			final Supplier<IRecord> recSupplier) {
+
 		return this.psql2records(sql, params, this.getConnection(), close, SQL_MODE.QUERY, recSupplier,
 				Optional.empty());
 	}
@@ -3733,6 +3810,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params, final Connection conn,
 			final boolean close) {
+
 		return this.psql2records(sql, params, conn, close, SQL_MODE.QUERY, null, Optional.empty());
 	}
 
@@ -3747,6 +3825,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params, Connection con,
 			boolean close, Jdbc.SQL_MODE mode) {
+
 		return this.psql2records(sql, params, con, close, mode, null, Optional.empty());
 	}
 
@@ -3760,11 +3839,13 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public List<IRecord> psql2records(final String sql, final Map<Integer, Object> params, Connection con,
 			boolean close, final Supplier<IRecord> recSupplier) {
+
 		return this.psql2records(sql, params, con, close, SQL_MODE.QUERY, recSupplier, Optional.empty());
 	}
 
 	@Override
 	public Set<Stream<?>> getActiveStreams() {
+
 		return this.activeStreams.getActiveStreams();
 	}
 
@@ -3797,6 +3878,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 把标签数组调整成长度为n
 	 */
 	public static String[] adjustLabels(final int n, final String[] lbls) throws SQLException {
+
 		var labels = lbls == null ? new String[] { "" } : lbls;
 		final var sz = labels == null ? 0 : labels.length; // labels的长度
 		if (sz < n) {
@@ -3831,8 +3913,9 @@ public class Jdbc implements IManagedStreams {
 		final var rsm = rs.getMetaData();
 		final var n = rsm.getColumnCount();
 		aa = new String[n];
-		for (int i = 1; i <= n; i++)
+		for (int i = 1; i <= n; i++) {
 			aa[i - 1] = rsm.getColumnLabel(i);
+		}
 
 		return aa;
 	}
@@ -3920,8 +4003,9 @@ public class Jdbc implements IManagedStreams {
 			final var pcnt = pm.getParameterCount(); // paramcnt;
 			if (pcnt > 0 && params != null && params.size() > 0) {
 				for (final var paramIndex : params.keySet()) {
-					if (pcnt < paramIndex)
+					if (pcnt < paramIndex) {
 						continue;// 对于超出sql的参数位置范围的 参数给予舍弃
+					} // if
 					final var value = params.get(paramIndex);
 					ps.setObject(paramIndex, value);// 设置参数
 				} // for
