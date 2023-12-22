@@ -4052,26 +4052,29 @@ public class Jdbc implements IManagedStreams {
 	/**
 	 * 返回的结果集(不会返回空值,null,失败也返回长度为0的list） 该方法依赖于：psql2apply_throws
 	 * 
-	 * @param sql          查询语句
-	 * @param params       语句参数
-	 * @param con          數據庫連接
-	 * @param close        是否關閉連接
-	 * @param mode         sql语句的执行模式查询还是更新
-	 * @param recSupplier  行记录的数据格式
-	 * @param _jsncol2keys 把json列按照指定的序列结构给予展开，即一jsn列表换成多列(keys) _jsncol2keys是一个
-	 *                     {json列名->展开序列keys}的结构的Map :
-	 *                     比如｛product->[id,name,description]｝
+	 * @param sql         查询语句
+	 * @param params      语句参数
+	 * @param con         數據庫連接
+	 * @param close       是否關閉連接
+	 * @param mode        sql语句的执行模式查询还是更新
+	 * @param recSupplier 行记录的数据格式
+	 * @param jsncol2keys 把json列按照指定的序列结构给予展开，即一jsn列表换成多列(keys) _jsncol2keys是一个
+	 *                    {json列名->展开序列keys}的结构的Map :
+	 *                    比如｛product->[id,name,description]｝
 	 *
 	 * @return 执行结果集合的 IRecord 列表,返回结果不为null,可以是一个没有数据的List
 	 */
 	public List<IRecord> psql2records_throws(final String sql, final Map<Integer, Object> params, final Connection con,
 			final boolean close, final Jdbc.SQL_MODE mode, final Supplier<IRecord> recSupplier,
-			Optional<Map<String, String[]>> _jsncol2keys) throws SQLException {
+			final Optional<Map<String, String[]>> jsncol2keys) throws SQLException {
 
 		// System.out.println(sql);
-		final Optional<Map<String, String[]>> jsncol2keys = (!_jsncol2keys.isPresent()) ? Optional.empty()
-				: _jsncol2keys;// 保证jsncol2keys结构非空
-		final Optional<Map<String, String[]>> finaljsncol2keys = jsncol2keys == null ? Optional.empty() : jsncol2keys;
+		final Optional<Map<String, String[]>> _jsncol2keys = (!jsncol2keys.isPresent()) //
+				? Optional.empty()
+				: jsncol2keys;// 保证jsncol2keys结构非空
+		final Optional<Map<String, String[]>> finaljsncol2keys = _jsncol2keys == null //
+				? Optional.empty() //
+				: _jsncol2keys;
 		final IRecord proto = new LinkedRecord(); // 采用原型法进行记录创建
 		final IRecord finalProto = proto;// 转换成 final 类型，java的lambda的要求，这个有点恶心，哈哈！
 		final Supplier<IRecord> recsup = (null == recSupplier) ? finalProto::duplicate : recSupplier;// 构造默认的记录结构生成器
@@ -4081,8 +4084,8 @@ public class Jdbc implements IManagedStreams {
 			int n;
 			ResultSet rs;
 			ResultSetMetaData rsm; // n:结果集合的列数量;rs:查询的结果集,rsm:结果集合的字段描述
-			ArrayList<String> labels = null;// 列的显示名(label),name 是实际名
-			ArrayList<String[]> jks = null; // json 值的列名集合:展开字段序列，索引从0开始，0,1,2 依次对应 第一，第二，第三等．
+			ArrayList<String> labels; // 列的显示名(label),name 是实际名
+			ArrayList<String[]> jks; // json 值的列名集合:展开字段序列，索引从0开始，0,1,2 依次对应 第一，第二，第三等．
 
 			// 把rec(含有复合字段：jsn的多key字段）cook(转换)成 扁平的结构
 			SQLExceptionalFunction<IRecord, IRecord> lambda_cook = rec -> {// 默认为需要 展开 含有 展开列名 即jks不是全部为null,含有json值列名集合
@@ -4131,13 +4134,16 @@ public class Jdbc implements IManagedStreams {
 					String[] cc = finaljsncol2keys.isPresent() ? finaljsncol2keys.get().get(label) : null;// 展开json中的复合列
 					jks.add((cc != null && cc.length > 0) ? cc : null); // 展开键值序列：cc就是展开之后扁平列名集合
 				} // for i
-					// 根据是否含有json字段判断是否开启
-				if (finaljsncol2keys.isEmpty())
+
+				// 根据是否含有json字段判断是否开启
+				if (finaljsncol2keys.isEmpty()) {
 					lambda_cook = rec -> {
-						for (int i = 0; i < n; i++)
+						for (int i = 0; i < n; i++) {
 							rec.add(labels.get(i), rs.getObject(i + 1));
+						} // for
 						return rec;
 					};
+				} // if
 			}// initialize
 
 			// 把rec(含有复合字段：jsn的多key字段）cook(转换成)扁平的结构
@@ -4161,12 +4167,12 @@ public class Jdbc implements IManagedStreams {
 			public IRecord cook(IRecord rec) throws SQLException {// 数据烹饪方法：把一个空白记录，赋予内容
 				for (int i = 0; i < n; i++) {
 					rec.add(rsm.getColumnLabel(i + 1), rs.getObject(i + 1));
-				}
+				} // for
 				return rec;
 			}// cook
 		};// simpleCooker
 
-		final IRecordCooker cooker = jsncol2keys.isPresent() ? jsnCooker : simpleCooker;// 选择一个合适的厨师
+		final IRecordCooker cooker = _jsncol2keys.isPresent() ? jsnCooker : simpleCooker;// 选择一个合适的厨师
 		// final RecordCooker cooker = jsnCooker;
 
 		// 代码在这里才是真正的开始，以上都是准备工作．准备活动要有条不紊，可以慢（此处的慢是缜密与完备）但不能乱．行动之时要快如闪电．
