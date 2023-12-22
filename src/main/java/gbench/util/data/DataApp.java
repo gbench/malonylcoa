@@ -1264,14 +1264,12 @@ public class DataApp {
 		 * <p>
 		 * 可以识别的值类型IRecord,Map,Collection,Array其中Collection和Array 的 key为索引序号，从开始
 		 *
-		 * @param <X>          元素类型
-		 * @param <Y>          元素类型Y 需要为
-		 *                     IRecord,Map,Collection,Array其中Collection和Array任一
-		 * @param <T>          元素类型
-		 * @param <U>          结果类型
-		 * @param path         键名路径
-		 * @param preprocessor 预处理器 x-&gt;y
-		 * @param mapper       值变换函数 t-&gt;u
+		 * @param <X>    元素类型
+		 * @param <Y>    元素类型Y 需要为 IRecord,Map,Collection,Array其中Collection和Array任一
+		 * @param <T>    元素类型
+		 * @param <U>    结果类型
+		 * @param path   键名路径
+		 * @param mapper 值变换函数 t-&gt;u
 		 * @return U类型的值
 		 */
 		default <X, Y, T, U> U pget(final String path, final Function<T, U> mapper) {
@@ -1425,13 +1423,13 @@ public class DataApp {
 		 * 根据路径提取数据 <br>
 		 * 可以识别的 值类型 包括: Collection,數組,Map,Stream,其他类型视为一个单个元素的流[a]。
 		 *
-		 * @param <T>    结果（流）：元素类型
-		 * @param path   键名路径 如 a/b/c
-		 * @param mapper 元素值变换函数 t-&gt;u
+		 * @param <T>        结果（流）：元素类型
+		 * @param path       键名路径 如 a/b/c
+		 * @param typeholder 结果类型占位符可以为 (T)null
 		 * @return U类型的流
 		 */
 		@SuppressWarnings("unchecked")
-		default <T> Stream<T> pathgetS(final String path, T typeholder) {
+		default <T> Stream<T> pathgetS(final String path, final T typeholder) {
 			return this.pathgetS(path, e -> (T) e);
 		}
 
