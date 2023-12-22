@@ -173,6 +173,22 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		return this.add(kvp.key(), kvp.value());
 	}
 
+	/*
+	 * 增加键值列表
+	 * 
+	 * @param kvs 键,值序列:key0,value0,key1,value1,....
+	 * 
+	 * @return 当前的IRecord 以保证可以链式编程。
+	 */
+	default IRecord add(final Object... kvs) {
+		for (int i = 0; i < kvs.length - 1; i += 2) {
+			final var key = kvs[i];
+			final var value = kvs[i + 1];
+			this.add(key, value);
+		} // for
+		return this;
+	}
+
 	/**
 	 * 把键值序列 变换成一个T类型的数据流。
 	 * 
