@@ -866,6 +866,6 @@ public class Tuple2<T, U> implements Serializable {
 	}
 
 	private static final long serialVersionUID = -9103479443503056191L;
-	T _1; // 1号位置元素
-	U _2; // 2号位置元素
+	protected T _1; // 1号位置元素
+	protected U _2; // 2号位置元素
 }

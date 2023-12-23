@@ -3176,7 +3176,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <R> R rcollect2(final int key_idx, final int value_idx,
 			final Collector<KVPair<String, ?>, List<KVPair<String, Object>>, R> collector) {
-		return this.rows2().map(e -> KVPair.KVP(e.str(key_idx), e.get(value_idx))).collect(collector);
+		return this.rowS().map(e -> KVPair.KVP(e.str(key_idx), e.get(value_idx))).collect(collector);
 	}
 
 	/**
@@ -3192,7 +3192,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <R> R rcollect2(final String key_name, final String value_name,
 			final Collector<KVPair<String, ?>, List<KVPair<String, Object>>, R> collector) {
-		return this.rows2().map(e -> KVPair.KVP(e.str(key_name), e.get(value_name))).collect(collector);
+		return this.rowS().map(e -> KVPair.KVP(e.str(key_name), e.get(value_name))).collect(collector);
 	}
 
 	/**
@@ -6096,77 +6096,53 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数 <br>
+	 * 返回行列表:<br>
+	 * final var dfm = REC( <br>
+	 * "A",L("a","b","c"), // 第一列 <br>
+	 * "B",L(1,2,3), // 第二列 <br>
+	 * "C",A(2,4,6,10), // 第三列 <br>
+	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
+	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
+	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * );// dfm <br>
 	 * 
-	 * row:Map 行记录 <br>
-	 * S:结果类型为Stream <br>
-	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
-	 * <br>
-	 * var dm = new DataMatrix&lt;&gt; (rec.rowS(),Integer.class);
-	 * (rec.rr2rowS(),Integer.class); 就构造了一个 DataMatrix 对象。
+	 * 返回:<br>
+	 * A:a B:1 C:2 D:3 E:31 <br>
+	 * A:b B:2 C:4 D:6 E:61 <br>
+	 * A:c B:3 C:6 D:9 E:91 <br>
+	 * A:a B:1 C:10 D:3 E:31 <br>
 	 * 
-	 * @return 生成一个hashmap 的集合
+	 * @return 返回以key值为列名的行 的流
 	 */
-	@SuppressWarnings("unchecked")
-	default Stream<Map<String, ?>> rowS() {
-		return (Stream<Map<String, ?>>) (Object) Stream.of(this.toMap());
+	default Stream<IRecord> rowS() {
+		return this.rows().stream();
 	}
 
 	/**
 	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数 <br>
+	 * 返回行列表:<br>
+	 * final var dfm = REC( <br>
+	 * "A",L("a","b","c"), // 第一列 <br>
+	 * "B",L(1,2,3), // 第二列 <br>
+	 * "C",A(2,4,6,10), // 第三列 <br>
+	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
+	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
+	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * );// dfm <br>
 	 * 
-	 * row:Map 行记录 <br>
-	 * S:结果类型为Stream <br>
-	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
-	 * <br>
-	 * var dm = new DataMatrix&lt;&gt; (rec.rowS(),Integer.class); 就构造了一个 DataMatrix
-	 * 对象。<br>
+	 * 返回:<br>
+	 * A:a B:1 C:2 D:3 E:31 <br>
+	 * A:b B:2 C:4 D:6 E:61 <br>
+	 * A:c B:3 C:6 D:9 E:91 <br>
+	 * A:a B:1 C:10 D:3 E:31 <br>
 	 * 
-	 * @param <T>   值类型
-	 * @param clazz 值类型class
-	 * @return 生成一个hashmap 的集合
+	 * @param predicate 检索过滤谓词
+	 * @return 返回以key值为列名的行 的流
 	 */
-	@SuppressWarnings("unchecked")
-	default <T> Stream<Map<String, T>> rowS(final Class<T> clazz) {
-		return (Stream<Map<String, T>>) (Object) Stream.of(this.toMap());
-	}
-
-	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数<br>
-	 * 
-	 * row:Map 行记录 <br>
-	 * L:结果类型为List <br>
-	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
-	 * <br>
-	 * var dm = new DataMatrix&lt;&gt; (rec.rowS(),Integer.class); 就构造了一个 DataMatrix
-	 * 对象。<br>
-	 * 
-	 * @param <T>   值类型
-	 * @param clazz 值类型class
-	 * @return 生成一个hashmap 的集合
-	 */
-	@SuppressWarnings("unchecked")
-	default <T> List<Map<String, T>> rowL(final Class<T> clazz) {
-		return (List<Map<String, T>>) (Object) Collections.singletonList(this.toMap());
-	}
-
-	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数<br>
-	 * 
-	 * row:Map 行记录<br>
-	 * L:结果类型为List<br>
-	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
-	 * <br>
-	 * var dm = new DataMatrix&lt;&gt; (rec.rowL(),Integer.class); 就构造了一个 DataMatrix
-	 * 对象。<br>
-	 * 
-	 * @return 生成一个hashmap 的集合<br>
-	 */
-	default List<Map<String, Object>> rowL() {
-		return Collections.singletonList(this.toMap());
+	default Stream<IRecord> rowS(final Predicate<IRecord> predicate) {
+		return this.rowS().filter(predicate);
 	}
 
 	/**
@@ -6280,53 +6256,39 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 返回行列表:<br>
-	 * final var dfm = REC( <br>
-	 * "A",L("a","b","c"), // 第一列 <br>
-	 * "B",L(1,2,3), // 第二列 <br>
-	 * "C",A(2,4,6,10), // 第三列 <br>
-	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
-	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
-	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * );// dfm <br>
+	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数<br>
 	 * 
-	 * 返回:<br>
-	 * A:a B:1 C:2 D:3 E:31 <br>
-	 * A:b B:2 C:4 D:6 E:61 <br>
-	 * A:c B:3 C:6 D:9 E:91 <br>
-	 * A:a B:1 C:10 D:3 E:31 <br>
+	 * row:Map 行记录 <br>
+	 * L:结果类型为List <br>
+	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
+	 * <br>
+	 * var dm = new DataMatrix&lt;&gt; (rec.rowS(),Integer.class); 就构造了一个 DataMatrix
+	 * 对象。<br>
 	 * 
-	 * @return 返回以key值为列名的行 的流
+	 * @param <T>   值类型
+	 * @param clazz 值类型class
+	 * @return 生成一个hashmap 的集合
 	 */
-	default Stream<IRecord> rows2() {
-		return this.rows().stream();
+	@SuppressWarnings("unchecked")
+	default <T> List<Map<String, T>> rows2(final Class<T> clazz) {
+		return (List<Map<String, T>>) (Object) Collections.singletonList(this.toMap());
 	}
 
 	/**
 	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 返回行列表:<br>
-	 * final var dfm = REC( <br>
-	 * "A",L("a","b","c"), // 第一列 <br>
-	 * "B",L(1,2,3), // 第二列 <br>
-	 * "C",A(2,4,6,10), // 第三列 <br>
-	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
-	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
-	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * );// dfm <br>
+	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数<br>
 	 * 
-	 * 返回:<br>
-	 * A:a B:1 C:2 D:3 E:31 <br>
-	 * A:b B:2 C:4 D:6 E:61 <br>
-	 * A:c B:3 C:6 D:9 E:91 <br>
-	 * A:a B:1 C:10 D:3 E:31 <br>
+	 * row:Map 行记录<br>
+	 * L:结果类型为List<br>
+	 * 主要用途就是 完成 IRecord 向 DataMatrix的转换，但是为了保证DataMatrix 与IRecord 的独立。而设置这个函数。比如
+	 * <br>
+	 * var dm = new DataMatrix&lt;&gt; (rec.rowL(),Integer.class); 就构造了一个 DataMatrix
+	 * 对象。<br>
 	 * 
-	 * @param predicate 检索过滤谓词
-	 * @return 返回以key值为列名的行 的流
+	 * @return 生成一个hashmap 的集合<br>
 	 */
-	default Stream<IRecord> rows2(final Predicate<IRecord> predicate) {
-		return this.rows2().filter(predicate);
+	default List<Map<String, Object>> rows2() {
+		return Collections.singletonList(this.toMap());
 	}
 
 	/**
@@ -6335,7 +6297,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param rowid 行号索引：从0开始
 	 * @return rowid所标记行记录
 	 */
-	default IRecord row(int rowid) {
+	default IRecord row(final int rowid) {
 		final var rows = this.rows((name, e) -> e, this.keys());
 		if (rows == null || rows.size() < 1 || rows.size() <= rowid)
 			return null;
@@ -6348,7 +6310,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param idx 列名索引，从0开始
 	 * @return idx 所标识的列(key)的元素集合
 	 */
-	default List<Object> column(Integer idx) {
+	default List<Object> column(final Integer idx) {
 		return this.lla(idx, e -> e);
 	}
 
@@ -6361,7 +6323,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u 列值转换函数:t->u
 	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
 	 */
-	default <T, U> List<U> column(Integer idx, Function<T, U> t2u) {
+	default <T, U> List<U> column(final Integer idx, final Function<T, U> t2u) {
 		return this.lla(idx, t2u);
 	}
 
@@ -6377,7 +6339,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return idx 所标识的列(key)的元素集合(强制姐转换为T类型)
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> List<T> column(String colName, Class<T> targetClass) {
+	default <T> List<T> column(final String colName, final Class<T> targetClass) {
 		return this.lla(colName, e -> (T) e);
 	}
 
@@ -6390,7 +6352,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u        列值转换函数 :t->u
 	 * @return columnName 所标识的列(key)的经过t2u变换后的元素集合
 	 */
-	default <T, U> List<U> column(String columnName, Function<T, U> t2u) {
+	default <T, U> List<U> column(final String columnName, final Function<T, U> t2u) {
 		return this.lla(columnName, t2u);
 	}
 
@@ -6406,7 +6368,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param targetClass 列的值类型类
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> List<T> column(Integer idx, Class<T> targetClass) {
+	default <T> List<T> column(final Integer idx, final Class<T> targetClass) {
 		return this.lla(idx, e -> (T) e);
 	}
 
@@ -6418,7 +6380,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u 列值转换函数:t->u
 	 * @return 列集合每个列族使一个U类型的列表
 	 */
-	default <T, U> List<List<U>> columns(Function<T, U> t2u) {
+	default <T, U> List<List<U>> columns(final Function<T, U> t2u) {
 		return this.keys().stream().map(name -> this.lla(name, t2u)).collect(Collectors.toList());
 	}
 
@@ -6432,7 +6394,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 列集合每个列族使一个U类型的列表
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> List<List<T>> columns(Class<T> targetClass) {
+	default <T> List<List<T>> columns(final Class<T> targetClass) {
 		return this.keys().stream().map(name -> this.lla(name, e -> (T) e)).collect(Collectors.toList());
 	}
 
@@ -6453,7 +6415,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param tt2u 列值转换函数:tt-&gt;u
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
-	default <T, U> List<U> columnL(Function<List<T>, U> tt2u) {
+	default <T, U> List<U> columnL(final Function<List<T>, U> tt2u) {
 		return this.columns2(tt2u).collect(Collectors.toList());
 	}
 
@@ -8889,7 +8851,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 一个 rec->R 的函数
 	 */
 	static <R> Function<IRecord, R> ROWSCLC(final Collector<IRecord, List<IRecord>, R> collector) {
-		return rec -> rec.rows2().collect(collector);
+		return rec -> rec.rowS().collect(collector);
 	}
 
 	/**
@@ -11044,7 +11006,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return rec->[rec]
 	 */
 	static Function<IRecord, Stream<IRecord>> subset(final Predicate<IRecord> predicate) {
-		return rec -> rec.rows2(predicate);
+		return rec -> rec.rowS(predicate);
 	}
 
 	/**

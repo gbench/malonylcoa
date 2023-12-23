@@ -74,3 +74,30 @@ select c.account, bs.*  -- 账户(科目) 余额信息
 	bs left join t_coa c on substr(bs.acctnum,1,4) = c.acctnum
 	order by bs.acctnum,c.account  -- 依据科目编号和账户名称进行排序
             
+-- --------------------------
+-- 计算的指定账册的试算平衡表(H2版本)
+-- 因为h2没有if函数,故将其替换成casewhen
+-- # trialBalanceForH2
+-- #bksys_id : 账册号码
+-- --------------------------
+select c.account, bs.*  -- 账户(科目) 余额信息 
+	from ( select acctnum, sum(dr) dr, sum(cr) cr, sum(balance) balance -- 账簿的科目余额信息
+	    from ( select a.title, a.acctnum, -- 科目标题&科目编号
+	            casewhen(a.drcr = 1,amount,0) dr, -- 生成借方余额: 核算的本质就是用衍生的方式创造概念
+	            casewhen(a.drcr = -1,amount,0) cr, -- 生成贷方余额: 基础概念与衍生概念的关系就是核算的结构 
+	            a.drcr*amount balance -- drcr标记,令借方余额为正,贷方余额为负.
+	        from t_accts a inner join ( select * from t_journal 
+	            where bksys_id = #bksys_id ) j on a.journal_id = j.id -- 分录关联账簿
+	    ) t0 group by t0.acctnum ) -- 余额信息表
+	bs left join t_coa c on substr(bs.acctnum,1,4) = c.acctnum
+	order by bs.acctnum,c.account  -- 依据科目编号和账户名称进行排序
+
+-- --------------------------
+-- 插入订单数据
+-- # addOrder
+-- #name : 订单名称
+-- #shipper : 乙方
+-- #receiver : 甲方
+-- --------------------------	
+insert into t_order(name,shipper,receiver,receive_address,amount,details,create_time)
+values (#name,#shipper,#receiver,#receive_address,#amount,#details,#create_time)

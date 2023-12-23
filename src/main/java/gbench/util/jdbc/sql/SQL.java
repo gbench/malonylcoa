@@ -549,9 +549,11 @@ public class SQL {
 			final var key = e.key().strip();// 提取主键描述字符串
 			final var fldrec = parseFieldName(key);// 接卸字段描述
 			final var value = e.value(); // 键值
-			final var type = ((e.value() == null) ? "varchar(512)" // 默认类型为 字符串
-					: javaType2SqlType(value instanceof Class<?> ? (Class<?>) value : value.getClass(),
-							fldrec.i4("size")));
+			final var type = ((e.value() == null) //
+					? "varchar(512)" // 默认类型为 字符串
+					: javaType2SqlType(value instanceof Class<?> //
+							? (Class<?>) value
+							: value.getClass(), fldrec.i4("size")));
 			if (fldrec.bool("primarykey"))
 				primaryKeys.add(Tuple2.TUP2(fldrec.str("name"), type));// 加入主键
 			if (fldrec.bool("uniquekey"))
@@ -896,6 +898,9 @@ public class SQL {
 				|| cls.equals(LocalTime.class)) {
 			// return "TIMESTAMP";
 			return "DATETIME";
+		} else if (cls == Map.class || cls == IRecord.class
+				|| ((cls instanceof Class<?>) && Iterable.class.isAssignableFrom(((Class<?>) cls)))) {
+			return "JSON";
 		} else {
 			return Jdbcs.format("VARCHAR({0})", size == null ? 512 : size.intValue());
 		}

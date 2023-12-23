@@ -235,7 +235,7 @@ public class H2db {
 	 * @return Map&lt;String,Object&gt;
 	 */
 	public static Map<String, Object> asMap(final byte[] bb) {
-		return json(bb).toMap();
+		return Optional.ofNullable(json(bb)).map(IRecord::toMap).orElse(null);
 	}
 
 	/**

@@ -1997,7 +1997,7 @@ public class Jdbc implements IManagedStreams {
 	public static BiFunction<String, Object, String> quote(final Function<Object, Object> mapper) {
 
 		return (pat, e) -> {
-			return Jdbcs.format(!pat.startsWith("##") ? "''{0}''" : "{0}", mapper.apply(e));
+			return Jdbcs.format(!pat.startsWith("##") ? "''{0}''" : "{0}", Jdbc.asString(mapper.apply(e)));
 		};
 	}
 
@@ -2038,6 +2038,26 @@ public class Jdbc implements IManagedStreams {
 	}
 
 	/**
+	 * 把一個值對象轉換成字符串
+	 * 
+	 * @param obj 值對象
+	 * @return 字符串
+	 */
+	public static String asString(final Object obj) {
+		
+		String line = null;
+		final var _obj = obj instanceof Stream s ? s.toList() : obj;
+		
+		if (_obj instanceof Map || _obj instanceof Iterable || _obj instanceof IRecord) {
+			line = Json.obj2json(_obj);
+		} else {
+			line = String.valueOf(_obj);
+		} // if
+		
+		return line;
+	}
+
+	/**
 	 * 值替换的时候 自动为值添加商英文双引号“"”，但是对于以double sharp 开头的pat 不予添加引号。
 	 * 用params中的值替换line中的各种pattern的内容。 但是对于以double sharp 开头的pat 不予添加引号。
 	 * 
@@ -2051,7 +2071,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static String quote_substitute(final String line, final Pattern pattern, final IRecord params) {
 
-		return substitute(line, pattern, params, quote(String::valueOf));
+		return substitute(line, pattern, params, quote(Jdbc::asString));
 	}
 
 	/**
@@ -2065,7 +2085,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static String substitute(final String line, final String pattern, final IRecord params) {
 
-		return substitute(line, Pattern.compile(pattern), params, (pat, e) -> e + "");
+		return substitute(line, Pattern.compile(pattern), params, (pat, e) -> Jdbc.asString(e));
 	}
 
 	/**
@@ -2079,7 +2099,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static String substitute(final String line, final Pattern pattern, final IRecord params) {
 
-		return substitute(line, pattern, params, (pat, e) -> e + "");
+		return substitute(line, pattern, params, (pat, e) -> Jdbc.asString(e));
 	}
 
 	/**
