@@ -164,7 +164,7 @@ public class JdbcMysqlTest {
 			// 订单处理
 			final var orders = sess.sql2dframe("#getOrdersByCID", REC("bksys_id", 1, "company_id", 1));
 			println("orders", orders);
-			println("按照列遍历");
+			println("按照列顺序进行遍历");
 			orders.foreach((String name, List<String> col) -> {
 				println(name, col);
 			});
