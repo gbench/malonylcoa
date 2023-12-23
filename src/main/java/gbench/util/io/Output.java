@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 public class Output {
 
 	/**
-	 * 行数据输出
+	 * 行数据输出（带有换行）
 	 * 
 	 * @param <T>     参数类型
 	 * @param objects 输出的
@@ -26,7 +26,7 @@ public class Output {
 	}
 
 	/**
-	 * 行数据输出
+	 * 行数据输出（不换行）
 	 * 
 	 * @param <T>     参数类型
 	 * @param objects 输出的

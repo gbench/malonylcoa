@@ -1,7 +1,6 @@
 package gbench.sandbox.jdbc;
 
 import static gbench.sandbox.data.h2.H2db.imports;
-import static gbench.util.io.Output.print;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
@@ -105,9 +104,9 @@ public class JdbcH2Test {
 
 			final var companydfm = sess.sql2dframe("select * from t_company");
 			final var productdfm = sess.sql2dframe("select id,name,price from t_product");
-			final var t_order = buildOrder(companydfm, productdfm, stores);
-			sess.sql2execute(println(sql("t_order", t_order).ctsqls(true).get(2)));
-			for (int i = 0; i < 5; i++) {
+			final var order_proto = buildOrder(companydfm, productdfm, stores); // 数据原型
+			sess.sql2execute(println(sql("t_order", order_proto).ctsqls(true).get(2))); // 创建数据表
+			for (int i = 0; i < 100; i++) { // 创建数据表
 				sess.sql2execute("#addOrder", buildOrder(companydfm, productdfm, stores));
 			} // for
 			println(sess.sql2dframe("select * from t_order").forEachByRow(processor("details")));
