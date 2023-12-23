@@ -95,9 +95,7 @@ public class JdbcMysqlTest {
 	 * @param jdbcApp
 	 */
 	public void run(final JdbcApp jdbcApp) {
-
 		println("db", jdbcApp.getDbName()); // 检索数据库名
-
 		jdbcApp.withTransaction(sess -> { // 准备数据
 			final var proto = REC("id", 1, "name", "zhangsan", "password", 123456, "phone", "18601690611", "sex", 1,
 					"address", "shanghai");
@@ -153,7 +151,7 @@ public class JdbcMysqlTest {
 		final var dbname = String.format("malonylcoa_%s", "bar"); // 更换一个数据库
 		final var url = String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
 		final var driver = "org.h2.Driver";
-		final IRecord h2_rec_1 = IRecord.REC("url", url, "driver", driver, "user", "root", "password", "123456");
+		final var h2_rec_1 = IRecord.REC("url", url, "driver", driver, "user", "root", "password", "123456");
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, JdbcApp.class, h2_rec_1);
 		this.run(jdbcApp);
 	}
