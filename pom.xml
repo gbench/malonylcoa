@@ -14,6 +14,7 @@
 		<jupiter-version>LATEST</jupiter-version>
 		<h2-version>LATEST</h2-version>
 		<mysql-version>LATEST</mysql-version>
+		<pgsql-version>LATEST</pgsql-version>
 		<lucene.version>LATEST</lucene.version>
 		<spring-boot-version>3.2.0</spring-boot-version>
 		<spring-gateway-version>LATEST</spring-gateway-version>
@@ -37,15 +38,29 @@
 		</dependencies>
 	</dependencyManagement>
 
+	<!-- 
+		使用 mvn dependency:analyze 进行依赖分析与产看
+	-->
 	<dependencies>
+		<!--
+		https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
 		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
 			<version>${jackson-version}</version>
 		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
+			<version>${jackson-version}</version>
+		</dependency>
+		<!--
+		https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-jsr310 -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
 			<version>${jackson-version}</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
@@ -58,18 +73,6 @@
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>${poi-version}</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-scratchpad -->
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-scratchpad</artifactId>
-			<version>${poi-version}</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-excelant -->
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-excelant</artifactId>
 			<version>${poi-version}</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.belerweb/pinyin4j -->
@@ -112,7 +115,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>42.6.0</version>
+			<version>${pgsql-version}</version>
 			<scope>test</scope>
 		</dependency>
 		<!-- lucene核心库 -->
