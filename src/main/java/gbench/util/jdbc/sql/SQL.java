@@ -16,11 +16,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import gbench.util.jdbc.Jdbcs;
 import gbench.util.jdbc.kvp.IRecord;
@@ -256,52 +258,7 @@ public class SQL {
 	 * @return insert SQL 语句
 	 */
 	public String insql(final IRecord rec, final Predicate<KVPair<String, Object>> pfilter) {
-		final StringBuilder buffer = new StringBuilder();
-		final var initialCapacity = 30; // 默认30个字段
-		final var flds = new ArrayList<String>(initialCapacity);// 字段列表
-		final var vals = new ArrayList<String>(initialCapacity);// 指端值列表 与flds 一一对应
-		Predicate<KVPair<String, Object>> pfiltertmp = pfilter;
-		if (pfiltertmp == null)
-			pfiltertmp = (kv) -> true;
-		final Predicate<KVPair<String, Object>> pft = pfiltertmp;
-		final var dtf1 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-		final var dtf2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-		final var sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-		rec.stream().filter(pft) // 删除空值字符串
-				.forEach(e -> {
-					Object value = e.value();
-					// value 数据类型格式化
-					if (value instanceof LocalDateTime) {
-						value = Jdbcs.format("{0}", dtf1.format((LocalDateTime) value));
-					} else if (value instanceof Date) {
-						value = Jdbcs.format("{0}", sdf.format((Date) value));
-					} else if (value instanceof LocalTime) {
-						value = Jdbcs.format("{0}", dtf1.format((LocalTime) value));
-					} else if (value instanceof LocalDate) {
-						value = Jdbcs.format("{0}", dtf2.format((LocalDate) value));
-					} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord) {
-						value = Json.obj2json(value);
-					} else {
-						// do nothing
-					} // if
-					final var fldvalue = Jdbcs.format("''{0}''", (value + "").replace("'", "\\'")); // 格式化字段值
-					final var fldname = parseFieldName(e.key()).str("name");// 获取字段名
-					final var i = flds.indexOf(fldname);// fldname的索引位置,如果>0 表示业已存在一个同名的字段，需要给予覆盖。
-					if (i < 0) {// 字段名不存在
-						flds.add(fldname);
-						vals.add(fldvalue);
-					} else { // 覆盖原先的字段与字段值
-						vals.set(i, fldvalue); // 覆盖对应位置的字段值。
-					} // if
-				});// forEach
-
-		buffer.append("insert into ").append(this.name).append(" (");
-		buffer.append(String.join(",", flds));
-		buffer.append(") values (");
-		buffer.append(String.join(",", vals));
-		buffer.append(")");
-		return buffer.toString();
+		return null;
 	}
 
 	/**
@@ -311,8 +268,71 @@ public class SQL {
 	 * @param pfilter 插入的字段过滤器
 	 * @return insert SQL 语句
 	 */
-	public String insql(final List<IRecord> recs, final Predicate<KVPair<String, Object>> pfilter) {
-		return recs.stream().map(rec -> this.insql(rec, pfilter)).collect(Collectors.joining(";\n"));
+	public String insql(final Iterable<IRecord> recs, final Predicate<KVPair<String, Object>> pfilter) {
+		final StringBuilder buffer = new StringBuilder();
+		final var initialCapacity = 30; // 默认30个字段
+		final var ar = new AtomicReference<List<String>>();
+		final var values = new ArrayList<List<String>>(initialCapacity);// 指端值列表 与flds 一一对应
+		final Predicate<KVPair<String, Object>> pft = pfilter == null ? (kv) -> true : pfilter;
+		final var dtf1 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		final var dtf2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		final var sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		for (final var rec : recs) {
+			final var vals = new ArrayList<String>(initialCapacity);// 指端值列表 与flds 一一对应
+			final var flds = ar.get() == null ? new ArrayList<String>(initialCapacity) : null;// 字段列表
+			if (ar.get() == null) {
+				ar.set(flds);
+			}
+			rec.stream().filter(pft) // 删除空值字符串
+					.forEach(e -> {
+						Object value = e.value();
+						// value 数据类型格式化
+						if (value instanceof LocalDateTime) {
+							value = Jdbcs.format("{0}", dtf1.format((LocalDateTime) value));
+						} else if (value instanceof Date) {
+							value = Jdbcs.format("{0}", sdf.format((Date) value));
+						} else if (value instanceof LocalTime) {
+							value = Jdbcs.format("{0}", dtf1.format((LocalTime) value));
+						} else if (value instanceof LocalDate) {
+							value = Jdbcs.format("{0}", dtf2.format((LocalDate) value));
+						} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord) {
+							value = Json.obj2json(value);
+						} else {
+							// do nothing
+						} // if
+						final var fldvalue = Jdbcs.format("''{0}''", (value + "").replace("'", "\\'")); // 格式化字段值
+						final var fldname = parseFieldName(e.key()).str("name");// 获取字段名
+						final var i = ar.get().indexOf(fldname);
+						// fldname的索引位置,如果>0 表示业已存在一个同名的字段，需要给予覆盖。
+						final var flag = flds != null && i < 1;
+						if (flag) {// 字段名不存在
+							flds.add(fldname);
+							vals.add(fldvalue);
+						} else { // 覆盖原先的字段与字段值
+							if (vals.size() <= i) {
+								vals.add(fldvalue);
+							} else {
+								vals.set(i, fldvalue); // 覆盖对应位置的字段值。
+							}
+						} // if
+					});// forEach
+
+			if (flds != null) {
+				ar.set(flds);
+			}
+
+			values.add(vals);
+		}
+
+		final var flds = ar.get(); // 提取字段列表
+		buffer.append("insert into ").append(this.name).append(" (");
+		buffer.append(String.join(",", flds));
+		buffer.append(") values ");
+		final var line = values.stream().map(vals -> String.format("(%s)", String.join(",", vals))) //
+				.collect(Collectors.joining(",\n"));
+		buffer.append(line);
+		buffer.append("");
+		return buffer.toString();
 	}
 
 	/**
@@ -724,6 +744,18 @@ public class SQL {
 	 */
 	public static SQL sql(final String name, final IRecord... recs) {
 		return SQL.of(name, recs);
+	}
+
+	/**
+	 * of的别名 &amp; 命名SQL语句对象，每个SQL都有一个名字
+	 * 
+	 * @param name SQL语句的名，可以是文本字符串，由于标识SQL，便于检索
+	 * @param recs 行数据，SQL 语句的上下文数据：比如插入的操作的，插入记录.数据的键名
+	 *             采用普通命名:即name,不需要加入格式化标记,比如#name,或##name
+	 * @return SQL对象
+	 */
+	public static SQL sql(final String name, final Iterable<IRecord> recs) {
+		return SQL.of(name, StreamSupport.stream(recs.spliterator(), false).toArray(IRecord[]::new));
 	}
 
 	/**
