@@ -161,11 +161,10 @@ public interface IJdbcApp {
 	/**
 	 * NamedSqlpreProcessor Escaped Brace 创建数据库接口实例
 	 * 
-	 * @param <T>                  数据库类型
-	 * @param sqlfile              sql语句脚本,可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
-	 * @param dbClazz              数据库类型
-	 * @param sqlFileRelativeClass sqlfile 相对基路径
-	 * @param dbConfig             数据库配置
+	 * @param <T>      数据库类型
+	 * @param sqlfile  sql语句脚本,可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
+	 * @param dbClazz  数据库类型
+	 * @param dbConfig 数据库配置
 	 * @return 数据库接口实例
 	 */
 	static <T> T newNspebDBInstance(final String sqlfile, final Class<T> dbClazz, final IRecord dbConfig) {
