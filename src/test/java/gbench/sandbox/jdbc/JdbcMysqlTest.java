@@ -153,7 +153,7 @@ public class JdbcMysqlTest {
 		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
 		final var dbname = "hitler"; // 更换一个数据库
 		final var url = String.format("jdbc:mysql://127.0.0.1:3309/%s?serverTimezone=UTC", dbname);
-		final var driver = "org.h2.Driver";
+		final var driver = "com.mysql.cj.jdbc.Driver";
 		final var mysql_rec = REC("url", url, "driver", driver, "user", "root", "password", "123456");
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, JdbcApp.class, mysql_rec);
 

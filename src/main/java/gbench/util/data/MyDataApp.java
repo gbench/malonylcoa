@@ -41,6 +41,13 @@ public class MyDataApp extends DataApp {
 	}
 
 	/**
+	 * @param dsrec 数据源配置
+	 */
+	public MyDataApp(final Map<?, ?> dsrec) {
+		super(ds(dsrec));
+	}
+
+	/**
 	 * 自定义数据源
 	 *
 	 * @param rec {user,password,url,driver}

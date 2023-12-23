@@ -1,0 +1,38 @@
+package gbench.sandbox.jdbc;
+
+import static gbench.sandbox.data.h2.H2db.imports;
+import static gbench.util.io.Output.println;
+import static gbench.util.jdbc.kvp.IRecord.REC;
+
+import org.junit.jupiter.api.Test;
+
+import gbench.util.data.MyDataApp;
+import gbench.util.jdbc.IJdbcApp;
+import gbench.util.jdbc.IMySQL;
+
+/**
+ * 
+ */
+public class JdbcH2Test {
+
+	@Test
+	public void qux() {
+		// 创造一个IJdbcApp接口应用
+		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
+		final var dbname = "hitler"; // 更换一个数据库
+		final var url = String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
+		final var driver = "org.h2.Driver";
+		final var mysql_rec = REC("url", url, "driver", driver, "user", "root", "password", "123456");
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec);
+		final var tables = "t_company,t_product,t_company_product,t_customer,t_coa,t_accts,t_journal,t_bksys"
+				.split("[,]+");
+
+		// 数据初始导入
+		new MyDataApp(mysql_rec.toMap()).withTransaction(imports(tables));
+		jdbcApp.withTransaction(sess -> {
+			println("all tables", sess.sql2dframe("#getAllTables"));
+			println("t_product", sess.sql2dframe("select * from t_product"));
+		});
+	}
+
+}
