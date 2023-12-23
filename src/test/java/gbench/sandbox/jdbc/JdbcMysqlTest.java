@@ -93,14 +93,14 @@ public class JdbcMysqlTest {
 			println("#updateUserById 3", sess.sql2execute("#updateUserById", rb("id,name").get(3, "张三"))); // 使用语句标号提取语句并执行
 		}); // withTransaction
 		println("------------------------------------------------------");
-		final var sql = jdbcApp.getSql("select * from t_user limit ##cnt", REC("cnt", 5));
+		final var sql = jdbcApp.getSql("select * from t_user limit ##cnt", "cnt", 5);
 		println("sql", sql);
 		final var sql2 = jdbcApp.getSql("#updateUserById", rb("id,name").get(3, "张三"));
 		println("sql2", sql2);
 		println("------------------------------------------------------");
-		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", REC("cnt", 5));
+		final var dfm = jdbcApp.sqldframe("select * from t_user limit ##cnt", "cnt", 5);
 		println("dfm", dfm);
-		final var dfm2 = jdbcApp.sqldframe("#getUsers", REC("cnt", 5));
+		final var dfm2 = jdbcApp.sqldframe("#getUsers", "cnt", 5);
 		println("dfm2", dfm2);
 		println("------------------------------------------------------");
 		println("getUsers(5)", jdbcApp.getUsers(5));
@@ -160,10 +160,10 @@ public class JdbcMysqlTest {
 		println("db", jdbcApp.getDbName()); // 检索数据库名
 		jdbcApp.withTransaction(sess -> {
 			println("all tables", sess.sql2dframe("#getAllTables"));
-			println("t_coa", sess.sql2dframe("select * from t_coa limit 5"));
-			println("trialBalance", sess.sql2dframe("#trialBalance", REC("bksys_id", 1)));
+			println("t_coa", sess.sql2dframe("select * from t_coa limit ##cnt", "cnt", 3));
+			println("trialBalance", sess.sql2dframe("#trialBalance", "bksys_id", 1));
 			// 订单处理
-			final var orders = sess.sql2dframe("#getOrdersByCID", REC("bksys_id", 1, "company_id", 1));
+			final var orders = sess.sql2dframe("#getOrdersByCID", "bksys_id", 1, "company_id", 1);
 			println("orders", orders);
 			println("按照列顺序进行遍历");
 			orders.foreach((String name, List<String> col) -> {

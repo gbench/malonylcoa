@@ -75,6 +75,21 @@ public interface IMySQL {
 	 * 返回值:select * from user where name="张三" <br>
 	 * 
 	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
+	 * @param params     sharp变量的占位符参数,键,值序列
+	 * @return SqlPatternPreprocessor 处理后的SQL语句。
+	 */
+	default String getSql(final String sqlpattern, final Object... params) {
+		return this.getSql(sqlpattern, IRecord.REC(params));
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
 	 * @param params     sharp变量的占位符参数
 	 * @return SqlPatternPreprocessor 处理后的SQL语句。
 	 */
@@ -119,6 +134,23 @@ public interface IMySQL {
 	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。 <br>
 	 *                   #标记的参数会被添加引号: select * from user where name=#name <br>
 	 *                   ##标记的参数不会添加引号: select * from user limit ##cnt <br>
+	 * @param params     sharp变量的占位符参数,语句参数,键,值间隔序列
+	 * @return DFrame
+	 */
+	default DFrame sqldframe(final String sqlpattern, final Object... params) {
+		return this.sqldframe(sqlpattern, IRecord.REC(params));
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。 <br>
+	 *                   #标记的参数会被添加引号: select * from user where name=#name <br>
+	 *                   ##标记的参数不会添加引号: select * from user limit ##cnt <br>
 	 * @param params     sharp变量的占位符参数
 	 * @return DFrame
 	 */
@@ -144,7 +176,7 @@ public interface IMySQL {
 	 * @return DFrame
 	 */
 	default DFrame sqldframe(final String sqlpattern) {
-		return this.sqldframe(sqlpattern, null);
+		return this.sqldframe(sqlpattern, (IRecord) null);
 	}
 
 	/**
@@ -168,7 +200,7 @@ public interface IMySQL {
 	 * @return SqlPatternPreprocessor 处理后的SQL语句。
 	 */
 	default String getSqlPattern(final String sqlpattern) {
-		return this.getSql(sqlpattern, null);
+		return this.getSql(sqlpattern, (IRecord) null);
 	}
 
 	/**
