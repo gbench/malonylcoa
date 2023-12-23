@@ -1157,6 +1157,10 @@ public class Jdbc implements IManagedStreams {
 	public static Map<String, String> parse2namedsqls(final Stream<String> lines,
 			final boolean remove_inline_comments) {
 
+		if (null == lines) { // 空值返回
+			return new HashMap<>();
+		} // if
+
 		final var namedsqls = new HashMap<String, String>();
 		final var p = Pattern.compile("^([\\s-])*#\\s+([^\\s#]+)\\s*$");// key 标记
 		final var p_comment = Pattern.compile("^([\\s]*)--.*$");// key 标记
@@ -3542,6 +3546,7 @@ public class Jdbc implements IManagedStreams {
 	public List<IRecord> psql2records(final String sql, final IRecord rec) {
 
 		final Map<Integer, Object> params = new HashMap<>();
+
 		rec.foreach((k, v) -> {// 位置解析
 			Integer key = Integer.parseInt(k);
 			params.put(key, v);
@@ -3561,8 +3566,8 @@ public class Jdbc implements IManagedStreams {
 	 * @return 执行结果集合的 IRecord 流
 	 */
 	public Stream<IRecord> psql2recordS(final String sql, final IRecord rec) {
-		final Map<Integer, Object> params = new HashMap<>();
 
+		final Map<Integer, Object> params = new HashMap<>();
 		rec.foreach((k, v) -> {// 位置解析
 			Integer key = Integer.parseInt(k);
 			params.put(key, v);
@@ -3883,6 +3888,7 @@ public class Jdbc implements IManagedStreams {
 	 * @return 字符串二维数组
 	 */
 	public static String[][] casts(final Object[][] objs) {
+
 		final int height = objs.length;
 		final int width = objs[0].length;
 		final String[][] strs = new String[height][];
@@ -3966,7 +3972,6 @@ public class Jdbc implements IManagedStreams {
 			for (int i = 1; i <= n; i++) {
 				mm.put(i, rsm.getColumnLabel(i));
 			}
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -4066,7 +4071,7 @@ public class Jdbc implements IManagedStreams {
 			boolean close, Jdbc.SQL_MODE mode, final Supplier<IRecord> recSupplier,
 			Optional<Map<String, String[]>> jsncol2keys) {
 
-		List<IRecord> ll = new LinkedList<>();
+		List<IRecord> ll = null;
 		try {
 			ll = this.psql2records_throws(sql, params, con, close, mode, recSupplier, jsncol2keys);
 		} catch (Exception e) {

@@ -47,7 +47,7 @@ public class JdbcMysqlTest {
 	 * @author gbench
 	 *
 	 */
-	@JdbcConfig(url = "jdbc:h2:mem:erp;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", user = "root", password = "123456")
+	@JdbcConfig(url = "jdbc:h2:mem:malonylcoa;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", user = "root", password = "123456")
 	interface JdbcApp extends IMySQL { // 数据接口
 
 		/**
@@ -90,13 +90,12 @@ public class JdbcMysqlTest {
 	}
 
 	/**
-	 * 数据库操作示例
+	 * 执行 JdbcApp 数据处理
+	 * 
+	 * @param jdbcApp
 	 */
-	@Test
-	public void foo() {
-		// 创造一个IJdbcApp接口应用
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
-		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspp(sqlfile), JdbcApp.class);
+	public void run(final JdbcApp jdbcApp) {
+
 		println("db", jdbcApp.getDbName()); // 检索数据库名
 
 		jdbcApp.withTransaction(sess -> { // 准备数据
@@ -131,6 +130,32 @@ public class JdbcMysqlTest {
 		jdbcApp.updateUserById("zhangsan100", 1); // 修改数据
 		jdbcApp.removeUserById(8); // 删除数据
 		println("getUsers()", jdbcApp.getUsers());
+	}
+
+	/**
+	 * 数据库操作示例
+	 */
+	@Test
+	public void foo() {
+		// 创造一个IJdbcApp接口应用
+		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
+		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspp(sqlfile), JdbcApp.class);
+		this.run(jdbcApp);
+	}
+
+	/**
+	 * 使用指定配置来创建
+	 */
+	@Test
+	public void bar() {
+		// 创造一个IJdbcApp接口应用
+		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
+		final var dbname = String.format("malonylcoa_%s", "bar"); // 更换一个数据库
+		final var url = String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
+		final var driver = "org.h2.Driver";
+		final IRecord h2_rec_1 = IRecord.REC("url", url, "driver", driver, "user", "root", "password", "123456");
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, JdbcApp.class, h2_rec_1);
+		this.run(jdbcApp);
 	}
 
 }
