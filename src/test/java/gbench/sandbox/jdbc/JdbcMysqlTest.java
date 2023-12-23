@@ -157,6 +157,7 @@ public class JdbcMysqlTest {
 		final var mysql_rec = REC("url", url, "driver", driver, "user", "root", "password", "123456");
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, JdbcApp.class, mysql_rec);
 
+		println("db", jdbcApp.getDbName()); // 检索数据库名
 		jdbcApp.withTransaction(sess -> {
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_coa", sess.sql2dframe("select * from t_coa limit 5"));
