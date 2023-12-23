@@ -161,7 +161,13 @@ public class JdbcMysqlTest {
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_coa", sess.sql2dframe("select * from t_coa limit 5"));
 			println("trialBalance", sess.sql2dframe("#trialBalance", REC("bksys_id", 1)));
-			println("getOrdersByCID", sess.sql2dframe("#getOrdersByCID", REC("bksys_id", 1, "company_id", 1)));
+			// 订单处理
+			final var orders = sess.sql2dframe("#getOrdersByCID", REC("bksys_id", 1, "company_id", 1));
+			println("orders", orders);
+			println("按照列遍历");
+			orders.foreach((String name, List<String> col) -> {
+				println(name, col);
+			});
 		});
 	}
 
