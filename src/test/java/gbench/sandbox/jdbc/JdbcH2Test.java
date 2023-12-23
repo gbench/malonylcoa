@@ -8,9 +8,9 @@ import static gbench.util.jdbc.sql.SQL.sql;
 
 import java.util.Random;
 
+import static java.time.LocalDateTime.now;
 import static java.util.stream.Collectors.summarizingDouble;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -61,22 +61,22 @@ public class JdbcH2Test {
 	 */
 	final static IRecord buildOrder(final DFrame companydfm, final DFrame productdfm, final String[] stores) {
 
-		final var rnd = new Random();
+		final var rnd = new Random(); // 随机值
 		final var parts = sample(companydfm, 2); // 订单各方
 		final var products = sample(productdfm, 2); // 选择产品
-		final var shipper = parts.get(0);
-		final var receiver = parts.get(1);
-		final var receive_address = stores[rnd.nextInt(stores.length)];
-		final var items = products.stream().map(e -> e.add(//
-				"price", e.dbl("price") * rnd.nextDouble(1d), //
-				"quantity", rnd.nextInt(100))) //
-				.map(e -> e.add("", e.dbl("price") * e.dbl("quantity"))).toList();
-		final var amount = items.stream().collect(summarizingDouble(e -> e.dbl("price") * e.dbl("quantity"))).getSum();
-		final var rb = rb("#id,name,shipper,receiver,receive_address,amount,details,create_time");
-		final var details = REC("flag", false, "amount", amount, "items", items);
-		final var order = rb.get(1, products.get(0).get("name"), shipper.get("id"), //
-				receiver.get("id"), receive_address, amount, details, LocalDateTime.now());
-		return order;
+		final var shipper = parts.get(0); // 发货放
+		final var receiver = parts.get(1); // 收货方
+		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
+		final var items = products.stream() // 产品记录
+				.map(e -> e.add("price", e.dbl("price") * rnd.nextDouble(1d), "quantity", 1 + rnd.nextInt(100))) // 价格调整
+				.map(e -> e.add("amount", e.dbl("price") * e.dbl("quantity"))).toList(); // 订单行项目
+		final var amount = items.stream().collect(summarizingDouble(e -> e.dbl("price") * e.dbl("quantity"))).getSum(); // 订单金额
+		final var rb = rb("#id,name,shipper,receiver,receive_address,amount,details,create_time"); // 订单结构
+		final var details = REC("flag", false, "amount", amount, "items", items); // 订单详情
+		final var t_order = rb.get(1, products.get(0).get("name"), shipper.get("id"), receiver.get("id"),
+				receive_address, amount, details, now()); // 订单记录
+
+		return t_order;
 	}
 
 	@Test
@@ -91,25 +91,49 @@ public class JdbcH2Test {
 		final var tables = "t_company,t_product,t_company_product,t_customer,t_coa,t_accts,t_journal,t_bksys"
 				.split("[,]+"); // 基础数据表
 		final var cp_sql = "select * from t_company_product where company_id=##cid"; // 公司产品
-		final var stores = "北京,天津,重庆,上海,广州,深圳".split("[,]+");
+		final var stores = "北京,天津,重庆,上海,广州,深圳".split("[,]+"); // 仓库地址
 
 		// 数据初始导入
-		new MyDataApp(h2_rec.toMap()).withTransaction(imports(tables));
+		new MyDataApp(h2_rec.toMap()).withTransaction(imports(tables)); // 导入订单数据
 		// 数据操作
 		jdbcApp.withTransaction(sess -> {
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_product", sess.sql2dframe("select * from t_product limit ##cnt", "cnt", 2));
 			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachByRow(processor("attrs")));
-			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1));
+			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 
-			final var companydfm = sess.sql2dframe("select * from t_company");
-			final var productdfm = sess.sql2dframe("select id,name,price from t_product");
-			final var order_proto = buildOrder(companydfm, productdfm, stores); // 数据原型
-			sess.sql2execute(println(sql("t_order", order_proto).ctsqls(true).get(2))); // 创建数据表
-			for (int i = 0; i < 100; i++) { // 创建数据表
-				sess.sql2execute("#addOrder", buildOrder(companydfm, productdfm, stores));
+			final var companydfm = sess.sql2dframe("select * from t_company"); // 公司信息
+			final var productdfm = sess.sql2dframe("select id,name,price,price_striked from t_product cp"); // 产品信息
+			final var order_proto = buildOrder(companydfm, productdfm, stores); // 数据原型 )
+			sess.sqlexecute("drop table t_company_product");
+
+			for (final var c : companydfm.rows()) {
+				for (final var p : productdfm.rows()) {
+					final var cid = c.get("id");
+					final var pid = p.get("id");
+					final var cprb = rb("#id,company_id,product_id,attrs,create_time,update_time");
+					final var attrs = REC("url", "C:/Users/Administrator/Pictures/fumarate/sale.jpg", //
+							"price", p.get("price"), "price_striked", p.get("price_striked"));
+					final var cp = cprb.get(1, cid, pid, attrs, now(), now());
+					final var tname = "t_company_product"; // 公司产品
+
+					if (!sess.isTablePresent(tname)) { // 创建数据表
+						sess.sql2execute(println(sql(tname, cp).ctsqls(true).get(2))); // 创建数据表
+					}
+					final var s = sql(tname, cp.remove("#id")).insql();
+					sess.sql2execute(s); // 插入数据
+				}
+			}
+			if (!sess.isTablePresent("t_order")) { // 表不存在则创建
+				sess.sql2execute(println(sql("t_order", order_proto).ctsqls(true).get(2))); // 创建数据表
+			}
+			for (int i = 0; i < 10; i++) { // 创建数据表
+				sess.sql2execute("#addOrder", buildOrder(companydfm, productdfm, stores)); // 创建订单
 			} // for
-			println(sess.sql2dframe("select * from t_order").forEachByRow(processor("details")));
+			println("t_order", sess.sql2dframe("select * from t_order") //
+					.forEachByRow(processor("details"))); // 查看订单记录
+			println("t_company_product", sess.sql2dframe("select * from t_company_product limit 20,25") //
+					.forEachByRow(processor("attrs"))); // 查看订单记录
 		});
 	}
 

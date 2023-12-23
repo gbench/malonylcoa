@@ -1,6 +1,7 @@
 package gbench.util.jdbc;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -1573,6 +1574,56 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 */
 	default <X> Function<X, List<IRecord>> ftblgets(final String table, final String idfld) {
 		return FTBLGETS(this, table, idfld);
+	}
+
+	/**
+	 * 判断数据库表是否存在 <br>
+	 * <p>
+	 * 对于 返回数据库所有表 的异常情况的处理 <br>
+	 * mysql8.0的驱动，在5.5之前nullCatalogMeansCurrent属性默认为true,8.0中默认为false， <br>
+	 * 所以导致DatabaseMetaData.getTables()加载了全部的无关表。<br>
+	 *
+	 * @param tableName 表名(表名区分大小写)
+	 * @return 表是否存在
+	 */
+	default boolean isTablePresent(final String tableName) {
+		return this.isTablePresent(tableName, null, null);
+	}
+
+	/**
+	 * 判断数据库表是否存在 <br>
+	 * <p>
+	 * 对于 返回数据库所有表 的异常情况的处理 <br>
+	 * mysql8.0的驱动，在5.5之前nullCatalogMeansCurrent属性默认为true,8.0中默认为false， <br>
+	 * 所以导致DatabaseMetaData.getTables()加载了全部的无关表。<br>
+	 *
+	 * @param tableName 表名(表名区分大小写)
+	 * @param schema    表模式（表分组）
+	 * @param catalog   数据库
+	 * @return 表是否存在
+	 */
+	default boolean isTablePresent(final String tableName, final String schema, final String catalog) {
+		final Connection conn = this.getConnection();
+		ResultSet tables = null;
+		boolean flag = false;
+
+		try {
+			final DatabaseMetaData databaseMetaData = conn.getMetaData();
+			final String[] JDBC_METADATA_TABLE_TYPES = { "TABLE" };
+			tables = databaseMetaData.getTables(catalog, schema, tableName, JDBC_METADATA_TABLE_TYPES);
+			flag = tables.next();
+		} catch (final Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				tables.close();
+			} catch (final Exception e) {
+				System.err.println("Error closing meta data tables:" + e);
+				e.printStackTrace();
+			}
+		}
+
+		return flag;
 	}
 
 	/**

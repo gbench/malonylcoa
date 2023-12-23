@@ -1830,7 +1830,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <U> List<U> lla(final int idx, final Class<U> uclass) {
-		return llapply(idx, u -> (U) u);
+		return lls(idx, u -> (U) u);
 	}
 
 	/**
@@ -1858,7 +1858,35 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	default <T, U> List<U> lla(final int idx, final Function<T, U> t2u) {
-		return llapply(idx, t2u);
+		return lls(idx, t2u);
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T> 字段key所以对应的列表数据的元素的类型
+	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param key 列表类型的字段的名称
+	 * @param t2u 对key字段的元素数据进行变换的结构
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <T, U> List<U> lls(final String key, final Function<T, U> t2u) {
+		return llapply(key, t2u);
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T> 字段key所以对应的列表数据的元素的类型
+	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param key 列表类型的字段的名称
+	 * @param t2u 对key字段的元素数据进行变换的结构
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <T, U> Stream<U> llS(final String key, final Function<T, U> t2u) {
+		return this.lls(key, t2u).stream();
 	}
 
 	/**
@@ -1871,8 +1899,22 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
 	 */
-	default <T, U> List<U> llapply(final int idx, final Function<T, U> t2u) {
+	default <T, U> List<U> lls(final int idx, final Function<T, U> t2u) {
 		return llapply(idx2key(idx), t2u);
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T> 字段key所以对应的列表数据的元素的类型
+	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param idx 列表类型的字段的索引号从0开始
+	 * @param t2u 对key字段的元素数据进行变换的结构
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <T, U> Stream<U> llS(final int idx, final Function<T, U> t2u) {
+		return this.lls(idx, t2u).stream();
 	}
 
 	/**
@@ -4332,7 +4374,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return {obj0,obj1,obj2,...}
 	 */
 	default List<Object> oo(final int index) {
-		return llapply(index, identity);
+		return lls(index, identity);
 	}
 
 	/**
@@ -4343,7 +4385,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return {obj0,obj1,obj2,...}
 	 */
 	default List<Object> oo(final int index, final List<Object> default_value) {
-		final var oo = llapply(index, identity);
+		final var oo = lls(index, identity);
 		return oo == null ? default_value : oo;
 	}
 

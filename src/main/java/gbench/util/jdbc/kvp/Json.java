@@ -4,10 +4,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 
 import java.util.Optional;
 import java.util.Map;
 import java.util.List;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.LinkedHashMap;
 
 /**
@@ -261,4 +272,15 @@ public class Json {
 	} // Json模式
 
 	public static final ObjectMapper objM = new ObjectMapper();// 默认实现的ObjectMapper
+	static {
+		final JavaTimeModule javaTimeModule = new JavaTimeModule();
+		javaTimeModule.addSerializer(Date.class,
+				new DateSerializer(false, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")));
+		javaTimeModule.addSerializer(LocalDateTime.class,
+				new LocalDateTimeSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+		javaTimeModule.addSerializer(LocalDate.class,
+				new LocalDateSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+		javaTimeModule.addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ofPattern("HH:mm:ss")));
+		objM.registerModule(javaTimeModule);
+	}
 }

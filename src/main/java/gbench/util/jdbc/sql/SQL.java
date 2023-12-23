@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import gbench.util.jdbc.Jdbcs;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.jdbc.kvp.Json;
 import gbench.util.jdbc.kvp.KVPair;
 import gbench.util.jdbc.kvp.SimpleRecord;
 import gbench.util.jdbc.kvp.Tuple2;
@@ -279,6 +280,8 @@ public class SQL {
 						value = Jdbcs.format("{0}", dtf1.format((LocalTime) value));
 					} else if (value instanceof LocalDate) {
 						value = Jdbcs.format("{0}", dtf2.format((LocalDate) value));
+					} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord) {
+						value = Json.obj2json(value);
 					} else {
 						// do nothing
 					} // if
@@ -587,7 +590,7 @@ public class SQL {
 		}
 		final var flds = String.join(",\n\t", fldDefs.values());
 
-		buffer.append("create table ").append(name).append("(\n\t");
+		buffer.append("create table ").append(name).append(" (\n\t");
 		buffer.append(flds);
 		buffer.append("\n) ");
 		buffer.append(" comment '").append(name).append("';");
