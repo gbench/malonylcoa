@@ -34,9 +34,8 @@ public class JdbcH2Test {
 		jdbcApp.withTransaction(sess -> {
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_product", sess.sql2dframe("select * from t_product limit ##cnt", "cnt", 2));
-			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).fmap(e->{
+			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachByRow(e -> {
 				e.compute("attrs", H2db::asMap);
-				return e;
 			}));
 		});
 	}
