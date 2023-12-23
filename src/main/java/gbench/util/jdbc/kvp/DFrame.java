@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
@@ -32,6 +33,16 @@ public class DFrame extends LinkedRecord {
 	 */
 	public DFrame(final Map<?, ?> data) {
 		data.forEach(this::add);
+	}
+
+	/**
+	 * 按照行进行遍历变换函数(带有返回值)
+	 * 
+	 * @param mapper 变换函数
+	 * @return DFrame 新创建的DFrame
+	 */
+	public DFrame fmap(final Function<? super IRecord, IRecord> mapper) {
+		return this.rows().stream().map(mapper).collect(DFrame.dfmclc);
 	}
 
 	/**

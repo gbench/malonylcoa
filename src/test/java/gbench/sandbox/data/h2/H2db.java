@@ -229,19 +229,35 @@ public class H2db {
 	}
 
 	/**
+	 * 解析json成IRecord
 	 * 
-	 * @param bb
-	 * @return
+	 * @param bb 字符串字节
+	 * @return Map&lt;String,Object&gt;
+	 */
+	public static Map<String, Object> asMap(final byte[] bb) {
+		return json(bb).toMap();
+	}
+
+	/**
+	 * 解析json成IRecord
+	 * 
+	 * @param bb 字符串字节
+	 * @return IRecord
 	 */
 	public static IRecord json(final byte[] bb) {
+		if (bb == null) {
+			return null;
+		}
+
 		final var d = (new String(bb)).replace("\\\"", "\"");
 		return REC(d.substring(1, d.length() - 1));
 	}
 
 	/**
+	 * 解析json
 	 * 
-	 * @param bb
-	 * @return
+	 * @param bb 字符串字节
+	 * @return Json 对象
 	 */
 	public static Object jsons(final byte[] bb) {
 		final var d = (new String(bb)).replace("\\\"", "\"");

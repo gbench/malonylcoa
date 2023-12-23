@@ -6201,22 +6201,26 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		final List<String> final_hh = hh == null
 				? LIST(Stream.iterate(0, i -> i + 1).limit(shape._2()).map(Jdbcs::excelname))// 生成excel列名
 				: hh;
-		if (hh != null)
+		if (hh != null) {
 			Stream.iterate(hh.size(), i -> i < shape._2(), i -> i + 1).forEach(i -> final_hh.add(excelname(i)));
+		}
 		final var keys = this.keys().toArray(String[]::new);
 		for (int j = 0; j < shape._2(); j++) {// 列号
 			final var col = this.lla(keys[j], e -> e);// 提取name列
-			if (col == null)
+			if (col == null) {
 				continue;
+			}
 			final var size = col.size();// 列大小
 			for (int i = 0; i < shape._1(); i++) { // 列名索引
-				if (rows.size() <= i)
+				if (rows.size() <= i) {
 					rows.add(REC());
+				}
 				final var row = rows.get(i);// 提取i 行的数据记录。
 				final var key = final_hh.get(j);
 				row.add(key, mapper.apply(keys[j], (V) col.get(i % size)));
 			} // for i
 		} // keys
+
 		return rows;
 	}
 
