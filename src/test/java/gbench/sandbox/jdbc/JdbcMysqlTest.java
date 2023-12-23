@@ -140,6 +140,12 @@ public class JdbcMysqlTest {
 
 	/**
 	 * 使用指定配置来创建
+	 * <p>
+	 * 数据库界面参见应用: <br>
+	 * https://gitee.com/gbench/gcloud/tree/develop/projs/fumarate/src/test/resources/mall
+	 * <p>
+	 * 数据表参见应用:
+	 * https://gitee.com/gbench/gcloud/blob/develop/projs/fumarate/src/test/resources/mall/src/comps/ecomp/EComp.js
 	 */
 	@Test
 	public void quz() {
@@ -154,6 +160,8 @@ public class JdbcMysqlTest {
 		jdbcApp.withTransaction(sess -> {
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_coa", sess.sql2dframe("select * from t_coa limit 5"));
+			println("trialBalance", sess.sql2dframe("#trialBalance", REC("bksys_id", 1)));
+			println("getOrdersByCID", sess.sql2dframe("#getOrdersByCID", REC("bksys_id", 1, "company_id", 1)));
 		});
 	}
 
