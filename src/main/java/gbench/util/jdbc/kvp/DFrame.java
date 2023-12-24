@@ -2,6 +2,7 @@ package gbench.util.jdbc.kvp;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,7 +50,98 @@ public class DFrame extends LinkedRecord {
 	 */
 	public DFrame many2one(final String key, final Object oneId) {
 
-		return this.filterRows(key, oneId);
+		return this.filterBy(key, oneId);
+	}
+
+	/**
+	 * 洗牌式乱序
+	 * 
+	 * @return 洗牌式乱序
+	 */
+	public DFrame shuffle() {
+
+		return this.rowS().map(e -> Tuple2.of(Math.random(), e)) // 加入排序字段
+				.sorted((a, b) -> Objects.compare(a._1(), b._1(), null)).map(e -> e._2) //
+				.collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 提取头前n个元素
+	 * 
+	 * @param n 头前元素的数量
+	 * @return 提取头前n个元素
+	 */
+	public DFrame head(final int n) {
+
+		return this.rowS().limit(n).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 提取头前n个元素
+	 * 
+	 * @return 提取头前n个元素
+	 */
+	public IRecord head() {
+
+		return this.rowS().findAny().orElse(null);
+	}
+
+	/**
+	 * 尾部元素(除掉第一个元素后的剩余)
+	 * 
+	 * @return 尾部元素
+	 */
+	public DFrame tail() {
+
+		return this.rowS().skip(1).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 尾部元素
+	 * 
+	 * @param n 提取n个尾部元素,当n大于整个长度的时候，返回整个元素
+	 * @return 尾部元素
+	 */
+	public DFrame tail(final int n) {
+
+		final var rows = this.rows();
+		final var len = rows.size();
+		final var startIndex = len - n; // 起始索引
+		final var sublist = rows.subList(startIndex < 0 ? 0 : startIndex, len);
+
+		return sublist.stream().collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 拆分头前n个元素和所有后续元素
+	 * 
+	 * @param n 头前元素的数量
+	 * @return (头前n个元素,剩余元素数量)
+	 */
+	public Tuple2<DFrame, DFrame> carcdr(final int n) {
+
+		return Tuple2.of(this.rowS().limit(n).collect(DFrame.dfmclc), this.rowS().skip(n).collect(DFrame.dfmclc));
+	}
+
+	/**
+	 * 拆分头前n个元素和所有后续元素
+	 * 
+	 * @return (head,tail)
+	 */
+	public Tuple2<IRecord, DFrame> carcdr() {
+
+		return Tuple2.of(this.rowS().limit(1).findAny().orElse(null), this.rowS().skip(1).collect(DFrame.dfmclc));
+	}
+
+	/**
+	 * 按照行进行排序
+	 * 
+	 * @param comparator 行元比较器
+	 * @return DFrame
+	 */
+	public DFrame sortBy(final Comparator<? super IRecord> comparator) {
+
+		return this.rowS().sorted(comparator).collect(DFrame.dfmclc);
 	}
 
 	/**
@@ -58,7 +150,7 @@ public class DFrame extends LinkedRecord {
 	 * @param predicate 筛选条件
 	 * @return 指定条件
 	 */
-	public DFrame filterRows(final Predicate<IRecord> predicate) {
+	public DFrame filterBy(final Predicate<IRecord> predicate) {
 
 		return this.rowS().filter(predicate).collect(DFrame.dfmclc);
 	}
@@ -70,9 +162,9 @@ public class DFrame extends LinkedRecord {
 	 * @param obj 键值
 	 * @return 指定键值的数据行
 	 */
-	public DFrame filterRows(final String key, final Object obj) {
+	public DFrame filterBy(final String key, final Object obj) {
 
-		return this.filterRows(e -> Objects.equals(e.get(key), obj));
+		return this.filterBy(e -> Objects.equals(e.get(key), obj));
 	}
 
 	/**
@@ -81,7 +173,7 @@ public class DFrame extends LinkedRecord {
 	 * @param predicate 筛选条件
 	 * @return 指定条件
 	 */
-	public DFrame filterRowsNot(final Predicate<IRecord> predicate) {
+	public DFrame filterByNot(final Predicate<IRecord> predicate) {
 
 		return this.rowS().filter(predicate).collect(DFrame.dfmclc);
 	}
@@ -93,9 +185,9 @@ public class DFrame extends LinkedRecord {
 	 * @param obj 键值
 	 * @return 指定键值的数据行
 	 */
-	public DFrame filterRowsNot(final String key, final Object obj) {
+	public DFrame filterByNot(final String key, final Object obj) {
 
-		return this.filterRows(e -> !Objects.equals(e.get(key), obj));
+		return this.filterBy(e -> !Objects.equals(e.get(key), obj));
 	}
 
 	/**
@@ -104,7 +196,7 @@ public class DFrame extends LinkedRecord {
 	 * @param mapper 变换函数
 	 * @return DFrame 新创建的DFrame
 	 */
-	public DFrame fmapByRow(final Function<? super IRecord, IRecord> mapper) {
+	public DFrame fmapBy(final Function<? super IRecord, IRecord> mapper) {
 
 		return this.rows().stream().map(mapper).collect(DFrame.dfmclc);
 	}
@@ -115,7 +207,7 @@ public class DFrame extends LinkedRecord {
 	 * @param action 变换函数
 	 * @return DFrame 新创建的DFrame
 	 */
-	public DFrame forEachByRow(final Consumer<? super IRecord> action) {
+	public DFrame forEachBy(final Consumer<? super IRecord> action) {
 
 		return this.rows().stream().map(e -> {
 			action.accept(e);

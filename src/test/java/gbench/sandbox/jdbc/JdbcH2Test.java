@@ -55,7 +55,7 @@ public class JdbcH2Test {
 		final var part_b = parts.get(1); // 乙方 发货方 shipper
 		final var parta_id = part_a.get("id"); // 甲方id
 		final var partb_id = part_b.get("id"); // 乙方id, 产品是由partb转移到parta的
-		final var products = sample(cps.many2one("company_id", partb_id), 5); // 选择产品
+		final var products = sample(cps.many2one("company_id", partb_id), 5); // 选择5个产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_b.str("name"), partb_id, products));
 
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
@@ -168,7 +168,7 @@ public class JdbcH2Test {
 		jdbcApp.withTransaction(sess -> {
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_product", sess.sql2dframe("select * from t_product limit ##cnt", "cnt", 2));
-			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachByRow(processor("attrs")));
+			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachBy(processor("attrs")));
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 
 			final var cs = sess.sql2dframe("select * from t_company"); // 公司信息
@@ -186,8 +186,8 @@ public class JdbcH2Test {
 			}); // 重新设置公司产品
 
 			// 订单数据处理
-			final var cps = sess.sql2dframe("select * from ##tbl", "tbl", cp_name).forEachByRow(processor("attrs"))
-					.fmapByRow(e -> e.path2rec("attrs").add(e.filter("id,company_id,product_id"))); // 公司产品
+			final var cps = sess.sql2dframe("select * from ##tbl", "tbl", cp_name).forEachBy(processor("attrs"))
+					.fmapBy(e -> e.path2rec("attrs").add(e.filter("id,company_id,product_id"))); // 公司产品
 			final Supplier<IRecord> os = () -> buildOrder(cs, cps, stores, now()); // 订单生成函数,order supplier
 			final var o_partitions = partitions(iterate(os.get(), i -> os.get()).limit(size), batch_size); // 公司产能品数据
 			final var o_proto = proto_of(o_partitions);// 数据原型
@@ -200,7 +200,7 @@ public class JdbcH2Test {
 			// 数据查看
 			println("------------------------------------ 数据查看 ------------------------------------");
 			for (final var p : Arrays.asList(P(or_name, "details"), P(cp_name, "attrs"))) { // 订单数据与公司产品数据
-				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachByRow(processor(p._2())));
+				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachBy(processor(p._2())));
 			}
 
 			// 试算平衡2
@@ -213,6 +213,7 @@ public class JdbcH2Test {
 	 */
 	@Test
 	public void bar() {
+		
 		final var rb = rb("#id,name,sex,attrs,borth,description"); // #用于标识主键
 		final var proto = proto_of( // 原型数据
 				rb.get(1, "zhangsan", "male", REC("city", "zhongguo shanghai"), LocalDate.now(), "民族英雄"), //
