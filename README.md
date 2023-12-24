@@ -44,7 +44,7 @@ final var mysql_rec = REC("url", "jdbc:mysql://127.0.0.1:3309/hitler?serverTimez
 final var h2_rec = REC("url", String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", "malonylcoa"), "driver", "org.h2.Driver","user", "root", "password", "123456");
 
 // 查看数据表
-final var dataApp = new MyDataApp(h2_sql);
+final var dataApp = new MyDataApp(mysql_rec);
 dataApp.sqldframe("show tables");
 dataApp.withTransaction(sess -> sess.setData(sess.sql2pdS("show tables").fmap2(t -> nd(t.toList()))));
 
