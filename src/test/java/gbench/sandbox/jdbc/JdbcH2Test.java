@@ -200,6 +200,9 @@ public class JdbcH2Test {
 			for (final var p : Arrays.asList(P(or_name, "details"), P(cp_name, "attrs"))) { // 订单数据与公司产品数据
 				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachByRow(processor(p._2())));
 			}
+
+			// 试算平衡2
+			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 		});
 	}
 
