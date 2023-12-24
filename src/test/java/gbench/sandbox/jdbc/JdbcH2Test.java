@@ -105,6 +105,7 @@ public class JdbcH2Test {
 	 * @return 公司产品
 	 */
 	public List<IRecord> buildCPs(final DFrame cs, final DFrame ps) {
+
 		final var cps = new LinkedList<IRecord>();
 		for (final var c : cs.rows()) {
 			for (final var p : ps.rows()) {
