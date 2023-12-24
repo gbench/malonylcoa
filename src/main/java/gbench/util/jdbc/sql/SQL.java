@@ -1,5 +1,7 @@
 package gbench.util.jdbc.sql;
 
+import static gbench.util.jdbc.kvp.IRecord.REC;
+
 import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
@@ -965,6 +967,30 @@ public class SQL {
 	 */
 	public static IRecord proto_of(final Iterable<? extends IRecord> partitions) {
 		return proto_of(StreamSupport.stream(partitions.spliterator(), false));
+	}
+	
+	/**
+	 * create table sql
+	 * 
+	 * @param name  表名
+	 * @param proto 数据原型
+	 * @return create table sql
+	 */
+	public static String ctsql(final String name, final IRecord proto) {
+
+		return sql(name, REC("#id", 1).add(proto)).ctsqls(true).get(2);
+	}
+
+	/**
+	 * 数据插入
+	 * 
+	 * @param name 数据表
+	 * @param data 数据原型
+	 * @return 数据插入 insert sql
+	 */
+	public static String insql(final String name, final List<IRecord> data) {
+
+		return sql(name, data).insql();
 	}
 
 	/**

@@ -23,6 +23,8 @@ import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.kvp.Tuple2.P;
+import static gbench.util.jdbc.sql.SQL.ctsql;
+import static gbench.util.jdbc.sql.SQL.insql;
 import static gbench.util.jdbc.sql.SQL.proto_of;
 import static gbench.util.jdbc.sql.SQL.sql;
 import static gbench.util.jdbc.Jdbcs.sample;
@@ -115,30 +117,6 @@ public class JdbcH2Test {
 	final static Consumer<? super IRecord> processor(final String key) {
 
 		return e -> e.compute(key, H2db::asMap); // 属性处理
-	}
-
-	/**
-	 * create table sql
-	 * 
-	 * @param name  表名
-	 * @param proto 数据原型
-	 * @return create table sql
-	 */
-	public static String ctsql(final String name, final IRecord proto) {
-
-		return sql(name, REC("#id", 1).add(proto)).ctsqls(true).get(2);
-	}
-
-	/**
-	 * 数据插入
-	 * 
-	 * @param name 数据表
-	 * @param data 数据原型
-	 * @return 数据插入 insert sql
-	 */
-	public static String insql(final String name, final List<IRecord> data) {
-
-		return sql(name, data).insql();
 	}
 
 	/**
