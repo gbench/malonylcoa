@@ -2489,7 +2489,7 @@ public class Jdbcs {
 	/**
 	 * 数据分组
 	 * 
-	 * @param<T> 元素类型
+	 * @param <T> 元素类型
 	 * @param dataS 数据列表
 	 * @param size  分组长度
 	 * @return 数据分组

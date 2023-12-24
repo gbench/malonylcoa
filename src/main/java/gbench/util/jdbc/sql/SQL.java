@@ -22,9 +22,11 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import gbench.util.jdbc.Jdbcs;
+import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Json;
 import gbench.util.jdbc.kvp.KVPair;
@@ -274,9 +276,6 @@ public class SQL {
 		final var ar = new AtomicReference<List<String>>();
 		final var values = new ArrayList<List<String>>(initialCapacity);// 指端值列表 与flds 一一对应
 		final Predicate<KVPair<String, Object>> pft = pfilter == null ? (kv) -> true : pfilter;
-		final var dtf1 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-		final var dtf2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-		final var sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		for (final var rec : recs) {
 			final var vals = new ArrayList<String>(initialCapacity);// 指端值列表 与flds 一一对应
 			final var flds = ar.get() == null ? new ArrayList<String>(initialCapacity) : null;// 字段列表
@@ -285,22 +284,7 @@ public class SQL {
 			}
 			rec.stream().filter(pft) // 删除空值字符串
 					.forEach(e -> {
-						Object value = e.value();
-						// value 数据类型格式化
-						if (value instanceof LocalDateTime) {
-							value = Jdbcs.format("{0}", dtf1.format((LocalDateTime) value));
-						} else if (value instanceof Date) {
-							value = Jdbcs.format("{0}", sdf.format((Date) value));
-						} else if (value instanceof LocalTime) {
-							value = Jdbcs.format("{0}", dtf1.format((LocalTime) value));
-						} else if (value instanceof LocalDate) {
-							value = Jdbcs.format("{0}", dtf2.format((LocalDate) value));
-						} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord) {
-							value = Json.obj2json(value);
-						} else {
-							// do nothing
-						} // if
-						final var fldvalue = Jdbcs.format("''{0}''", (value + "").replace("'", "\\'")); // 格式化字段值
+						final var fldvalue = asString(e.value());
 						final var fldname = parseFieldName(e.key()).str("name");// 获取字段名
 						final var i = ar.get().indexOf(fldname);
 						// fldname的索引位置,如果>0 表示业已存在一个同名的字段，需要给予覆盖。
@@ -572,11 +556,11 @@ public class SQL {
 			final var key = e.key().strip();// 提取主键描述字符串
 			final var fldrec = parseFieldName(key);// 接卸字段描述
 			final var value = e.value(); // 键值
-			final var type = ((e.value() == null) //
+			final var type = (e.value() == null) //
 					? "varchar(512)" // 默认类型为 字符串
 					: javaType2SqlType(value instanceof Class<?> //
 							? (Class<?>) value
-							: value.getClass(), fldrec.i4("size")));
+							: value.getClass(), fldrec.i4("size"));
 			if (fldrec.bool("primarykey"))
 				primaryKeys.add(Tuple2.TUP2(fldrec.str("name"), type));// 加入主键
 			if (fldrec.bool("uniquekey"))
@@ -942,6 +926,62 @@ public class SQL {
 	}
 
 	/**
+	 * 获得原型
+	 * 
+	 * @param <U>        数据元素
+	 * @param partitions 数据分组
+	 * @return IRecord
+	 */
+	public static <U extends List<IRecord>> IRecord proto_of(final Map<? extends Integer, U> partitions) {
+
+		return proto_of(partitions.entrySet().stream().flatMap(e -> e.getValue().stream()));
+	}
+
+	/**
+	 * 获得原型
+	 * 
+	 * @param partitions 数据分组
+	 * @return IRecord
+	 */
+	public static IRecord proto_of(final Stream<? extends IRecord> partitions) {
+
+		final var dfm = partitions.collect(DFrame.dfmclc);
+		final var proto = dfm.aov2rec((List<Object> v) -> { // 提取
+			return v.stream().map(e -> new Tuple2<>(SQL.asString(e), e))
+					.sorted((a, b) -> -(a._1().length() - b._1().length())) // 获取最长长度作为原型
+					.findFirst().map(e -> e._2()).get();
+		});
+		return proto;
+	}
+
+	/**
+	 * 
+	 * @param obj
+	 * @return
+	 */
+	public static String asString(final Object obj) {
+
+		var value = obj;
+
+		// value 数据类型格式化
+		if (value instanceof LocalDateTime) {
+			value = Jdbcs.format("{0}", dtf1.format((LocalDateTime) value));
+		} else if (value instanceof Date) {
+			value = Jdbcs.format("{0}", sdf.format((Date) value));
+		} else if (value instanceof LocalTime) {
+			value = Jdbcs.format("{0}", dtf1.format((LocalTime) value));
+		} else if (value instanceof LocalDate) {
+			value = Jdbcs.format("{0}", dtf2.format((LocalDate) value));
+		} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord) {
+			value = Json.obj2json(value);
+		} else {
+			// do nothing
+		} // if
+		final var fldvalue = Jdbcs.format("''{0}''", (value + "").replace("'", "\\'")); // 格式化字段值
+		return fldvalue;
+	}
+
+	/**
 	 * 生成SQL语句: 依赖于字段反射，从obj(pojo)重提取属性数据，给予闯将对应ORM 关系映射里的 数据库表<br>
 	 * 生成的表名默认为 obj的类名 :obj.getClass()。getSimpleName()
 	 * 
@@ -1020,6 +1060,14 @@ public class SQL {
 			Term.TERM_PATTERN, // unix 变量格式
 			"#{1,2}([_a-zA-z0-9]+)" // mybatis 变量格式
 	};
+
+	/**
+	 * 时间是格式化
+	 */
+	final static DateTimeFormatter dtf1 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	final static DateTimeFormatter dtf2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
 	private String name = null;// sql 名称
 	private String sqltpl = null;// sql 语句模板， 占位符即模板参数式样：#xxx 字符串类型, ##xxx 数值类型,或是 ${xxx}
 	private List<IRecord> sqlctx = null;// sql 上下文{参数集}
