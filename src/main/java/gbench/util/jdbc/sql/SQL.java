@@ -236,16 +236,6 @@ public class SQL {
 	}
 
 	/**
-	 * 插入一条数据记录到name所在的表中
-	 * 
-	 * @param rec 模板命名参数的键值对儿集合：用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
-	 * @return insert SQL 语句
-	 */
-	public String insert(final IRecord rec) {
-		return insql(rec, kv -> kv.value() != null);
-	}
-
-	/**
 	 * 插入数据
 	 * 
 	 * @param pfilter 插入的字段过滤器
@@ -253,17 +243,6 @@ public class SQL {
 	 */
 	public String insql(final Predicate<KVPair<String, Object>> pfilter) {
 		return this.insql(this.sqlctx, pfilter);
-	}
-
-	/**
-	 * 插入数据
-	 * 
-	 * @param rec     插入的数据的字段列表，用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
-	 * @param pfilter 插入的字段过滤器
-	 * @return insert SQL 语句
-	 */
-	public String insql(final IRecord rec, final Predicate<KVPair<String, Object>> pfilter) {
-		return null;
 	}
 
 	/**
@@ -316,7 +295,7 @@ public class SQL {
 		buffer.append(String.join(",", flds));
 		buffer.append(") values ");
 		final var line = values.stream().map(vals -> String.format("(%s)", String.join(",", vals))) //
-				.collect(Collectors.joining(",\n"));
+				.collect(Collectors.joining(",\n  "));
 		buffer.append(line);
 		buffer.append("");
 		return buffer.toString();
