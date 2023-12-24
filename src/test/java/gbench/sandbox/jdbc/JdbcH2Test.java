@@ -3,6 +3,7 @@ package gbench.sandbox.jdbc;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import static gbench.sandbox.data.h2.H2db.imports;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
+import static gbench.util.jdbc.kvp.Tuple2.P;
 import static gbench.util.jdbc.sql.SQL.sql;
 import static java.time.LocalDateTime.now;
 import static java.util.stream.Collectors.groupingBy;
@@ -73,9 +75,10 @@ public class JdbcH2Test {
 
 		final var rnd = new Random(); // 随机值
 		final var parts = sample(companydfm.rowS(), 2); // 订单各方
-		final var parta_id = parts.getFirst().i4("id");
-		final var products = sample(cpdfm.rowS().filter(e -> Objects.equals(e.i4("company_id"), parta_id)), 5); // 选择产品
-		println("-------------------", parta_id, products);
+		final var part_a = parts.getFirst();
+		final var parta_id = part_a.get("id");
+		final var products = sample(cpdfm.rowS().filter(e -> Objects.equals(e.get("company_id"), parta_id)), 5); // 选择产品
+		println(String.format("company product ---- %s[%s] ----- %s", part_a.str("name"), parta_id, products));
 		final var shipper = parts.get(0); // 发货放
 		final var receiver = parts.get(1); // 收货方
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
@@ -189,7 +192,7 @@ public class JdbcH2Test {
 				.split("[,]+"); // 基础数据表
 		final var cp_sql = "select * from t_company_product where company_id=##cid"; // 公司产品
 		final var stores = "北京,天津,重庆,上海,广州,深圳".split("[,]+"); // 仓库地址
-		final var top10 = "select * from ##tbl";
+		final var top10 = "select * from ##tbl limit 10";
 		final var size = 1000; // 数据量
 		final var batch_size = 10; // 批次大小
 
@@ -228,8 +231,10 @@ public class JdbcH2Test {
 			}); // 重新设置公司产品
 
 			// 数据查看
-			println("t_order", sess.sql2dframe(top10, "tbl", or_name).forEachByRow(processor("details"))); // 查看订单记录
-			println("t_company_product", sess.sql2dframe(top10, "tbl", cp_name).forEachByRow(processor("attrs"))); // 查看订单记录
+			println("------------------------------------ 数据查看 ------------------------------------");
+			for (final var p : Arrays.asList(P(or_name, "details"), P(cp_name, "attrs"))) { // 订单数据与公司产品数据
+				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachByRow(processor(p._2())));
+			}
 		});
 	}
 

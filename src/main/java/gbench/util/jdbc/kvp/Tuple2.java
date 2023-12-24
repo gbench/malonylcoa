@@ -466,14 +466,28 @@ public class Tuple2<T, U> implements Serializable {
 
 	/**
 	 * 创建一个二元组
+	 * 
+	 * @param <M> 1号位置的元素类型
+	 * @param <N> 2号位置的元素类型
+	 * @param m   1号位置的元素的值
+	 * @param n   2号位置的元素的值
+	 * @return (m,n) 的二元组
+	 */
+	public static <M, N> Tuple2<M, N> P(final M m, final N n) {
+		return Tuple2.of(m, n);
+	}
+
+	/**
+	 * 创建一个二元组
 	 *
 	 * @param <T> 元素类型
 	 * @param tt  键值序列
 	 * @return 元组(tt[0], tt[1])
 	 */
 	public static <T> Tuple2<T, T> TUP2(final T[] tt) {
-		if (tt == null || tt.length < 1)
+		if (tt == null || tt.length < 1) {
 			return null;
+		}
 		final var n = tt.length;
 		return TUP2(tt[0 % n], tt[1 % n]);
 	}
