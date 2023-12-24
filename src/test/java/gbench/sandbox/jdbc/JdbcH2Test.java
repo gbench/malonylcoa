@@ -176,11 +176,10 @@ public class JdbcH2Test {
 			final var cp_name = "t_company_product"; // 公司产品表名
 			final var or_name = "t_order"; // 订单名称
 			final var cp_partitions = partitions(buildCPs(cs, ps), batch_size); // 公司产品数据
-			final var cp_proto = proto_of(cp_partitions);
 
 			// 公司产品数据
 			sess.sqlexecute("drop table t_company_product"); // 移除公司产品数据
-			sess.sql2execute(println(ctsql(cp_name, cp_proto))); // 创建数据表
+			sess.sql2execute(println(ctsql(cp_name, proto_of(cp_partitions)))); // 创建数据表
 			batch_handlers(cp_partitions, partition -> { // 公司产品
 				println("cp ids", sess.sql2execute(println(insql(cp_name, partition))));// 插入数据
 			}); // 重新设置公司产品
@@ -190,9 +189,8 @@ public class JdbcH2Test {
 					.fmapBy(e -> e.rec("attrs").add(e.filter("id,company_id,product_id"))); // 公司产品
 			final Supplier<IRecord> os = () -> buildOrder(cs, cps, stores, now()); // 订单生成函数,order supplier
 			final var o_partitions = partitions(iterate(os.get(), i -> os.get()).limit(size), batch_size); // 公司产能品数据
-			final var o_proto = proto_of(o_partitions);// 数据原型
 
-			sess.sql2execute(println(ctsql(or_name, o_proto))); // 创建数据表
+			sess.sql2execute(println(ctsql(or_name, proto_of(o_partitions)))); // 创建数据表
 			batch_handlers(o_partitions, partition -> { // 订单数据
 				println("order ids", sess.sql2execute(println(insql(or_name, partition))));// 插入数据
 			}); // 重新设置公司产品
