@@ -187,7 +187,7 @@ public class JdbcH2Test {
 
 			// 订单数据处理
 			final var cps = sess.sql2dframe("select * from ##tbl", "tbl", cp_name).forEachBy(processor("attrs"))
-					.fmapBy(e -> e.path2rec("attrs").add(e.filter("id,company_id,product_id"))); // 公司产品
+					.fmapBy(e -> e.rec("attrs").add(e.filter("id,company_id,product_id"))); // 公司产品
 			final Supplier<IRecord> os = () -> buildOrder(cs, cps, stores, now()); // 订单生成函数,order supplier
 			final var o_partitions = partitions(iterate(os.get(), i -> os.get()).limit(size), batch_size); // 公司产能品数据
 			final var o_proto = proto_of(o_partitions);// 数据原型
