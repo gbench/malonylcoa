@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -560,7 +561,16 @@ public class SQL {
 					? "varchar(512)" // 默认类型为 字符串
 					: javaType2SqlType(value instanceof Class<?> //
 							? (Class<?>) value
-							: value.getClass(), fldrec.i4("size"));
+							: value.getClass(), Optional.ofNullable(fldrec.i4("size")).orElseGet(() -> { // 根据示例数据值提取长度
+								final int size = Optional.ofNullable(asString(value)) //
+										.map(String::length).map(length -> {
+											final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
+											// final var format = "%s ----> %d[原长度] , %d[1.5倍长度]";
+											// System.out.println(String.format(format, value, length, len_15));
+											return len_15; // 1.5 倍长度
+										}).orElse(null);
+								return size; // 字段长度
+							}));
 			if (fldrec.bool("primarykey"))
 				primaryKeys.add(Tuple2.TUP2(fldrec.str("name"), type));// 加入主键
 			if (fldrec.bool("uniquekey"))
@@ -596,7 +606,7 @@ public class SQL {
 
 		buffer.append("create table ").append(name).append(" (\n\t");
 		buffer.append(flds);
-		buffer.append("\n) ");
+		buffer.append("\n)");
 		buffer.append(" comment '").append(name).append("';");
 		sqls.add(buffer.toString());
 		sqls.add(buffer.substring(sqls.get(0).length()));
@@ -935,6 +945,26 @@ public class SQL {
 	public static <U extends List<IRecord>> IRecord proto_of(final Map<? extends Integer, U> partitions) {
 
 		return proto_of(partitions.entrySet().stream().flatMap(e -> e.getValue().stream()));
+	}
+
+	/**
+	 * 获得原型
+	 * 
+	 * @param partitions 数据分组
+	 * @return IRecord
+	 */
+	public static IRecord proto_of(final IRecord... partitions) {
+		return proto_of(Stream.of(partitions));
+	}
+
+	/**
+	 * 获得原型
+	 * 
+	 * @param partitions 数据分组
+	 * @return IRecord
+	 */
+	public static IRecord proto_of(final Iterable<? extends IRecord> partitions) {
+		return proto_of(StreamSupport.stream(partitions.spliterator(), false));
 	}
 
 	/**

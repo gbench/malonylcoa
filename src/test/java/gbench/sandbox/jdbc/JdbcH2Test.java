@@ -31,6 +31,7 @@ import static java.time.LocalDateTime.now;
 import static java.util.stream.Collectors.summarizingDouble;
 import static java.util.stream.Stream.iterate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -207,6 +208,20 @@ public class JdbcH2Test {
 			// 试算平衡2
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 		});
+	}
+
+	/**
+	 * 生成数据原型示例:提取每一列种数据最长的数值
+	 */
+	@Test
+	public void bar() {
+		final var rb = rb("id,name,sex,attrs,borth,description");
+		final var proto = proto_of( // 原型数据
+				rb.get(1, "zhangsan", "male", REC("city", "zhongguo shanghai"), LocalDate.now(), "民族英雄"), //
+				rb.get(100, "lisi", "female", REC("city", "beijing"), LocalDateTime.now(), "盖世英豪,文化名人") //
+		);
+		println(proto);
+		println(sql("t_user", proto).ctsqls().get(2));
 	}
 
 }
