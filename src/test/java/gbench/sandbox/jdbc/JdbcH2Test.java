@@ -26,7 +26,6 @@ import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.sql.SQL.sql;
-
 import static java.time.LocalDateTime.now;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summarizingDouble;
@@ -162,17 +161,18 @@ public class JdbcH2Test {
 	}
 
 	/**
+	 * 批量处理
 	 * 
-	 * @param <K>
-	 * @param <V>
-	 * @param partitions
-	 * @param cs
+	 * @param <K>        分组名
+	 * @param <V>        分组
+	 * @param partitions 分组数据
+	 * @param handler    分组处理器
 	 * @throws Exception
 	 */
-	public static <K, V> void batch_execute(final Map<K, V> partitions, final ExceptionalConsumer<V> cs)
+	public static <K, V> void batch_handlers(final Map<K, V> partitions, final ExceptionalConsumer<V> handler)
 			throws Exception {
 		for (final var partition : partitions.entrySet()) { // 重新设置公司产品
-			cs.accept(partition.getValue());
+			handler.accept(partition.getValue());
 		}
 	}
 
@@ -212,7 +212,7 @@ public class JdbcH2Test {
 			// 公司产品数据
 			sess.sqlexecute("drop table t_company_product"); // 移除公司产品数据
 			sess.sql2execute(println(ctsql(cp_name, cp_proto))); // 创建数据表
-			batch_execute(cp_partitions, partition -> { // 公司产品
+			batch_handlers(cp_partitions, partition -> { // 公司产品
 				println("cp ids", sess.sql2execute(println(insql(cp_name, partition))));// 插入数据
 			}); // 重新设置公司产品
 
@@ -223,7 +223,7 @@ public class JdbcH2Test {
 			final var o_proto = os.get(); // 数据原型
 			final var o_partitions = partitions(iterate(os.get(), i -> os.get()).limit(size), batch_size); // 公司产能品数据
 			sess.sql2execute(println(ctsql(or_name, o_proto))); // 创建数据表
-			batch_execute(o_partitions, partition -> { // 订单数据
+			batch_handlers(o_partitions, partition -> { // 订单数据
 				println("order ids", sess.sql2execute(println(insql(or_name, partition))));// 插入数据
 			}); // 重新设置公司产品
 
