@@ -2514,7 +2514,7 @@ public class Jdbcs {
 		return dataS.map(e -> Tuple2.of(Math.random(), e)).sorted((a, b) -> a._1().compareTo(b._1())).map(e -> e._2())
 				.limit(size).toList(); // 随机生成
 	}
-	
+
 	/**
 	 * 批量处理
 	 * 
