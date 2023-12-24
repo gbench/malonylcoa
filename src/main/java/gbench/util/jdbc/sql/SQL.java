@@ -968,7 +968,7 @@ public class SQL {
 	public static IRecord proto_of(final Iterable<? extends IRecord> partitions) {
 		return proto_of(StreamSupport.stream(partitions.spliterator(), false));
 	}
-	
+
 	/**
 	 * create table sql
 	 * 
