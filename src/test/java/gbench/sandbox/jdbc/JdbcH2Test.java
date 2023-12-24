@@ -47,37 +47,40 @@ public class JdbcH2Test {
 	 * @return 处理函数
 	 */
 	final static Consumer<? super IRecord> processor(final String key) {
+
 		return e -> e.compute(key, H2db::asMap); // 属性处理
 	}
 
 	/**
-	 * 抽样
+	 * 抽取指定尺寸大小的抽象
 	 * 
-	 * @param dfm 元数据
-	 * @param n   抽样
-	 * @return 抽样
+	 * @param dataS 数据源
+	 * @param size  抽样大小
+	 * @return 抽取指定尺寸大小的抽象
 	 */
-	final static List<IRecord> sample(final Stream<IRecord> ss, final Integer n) {
-		return ss.map(IRecord::REC).map(e -> Tuple2.of(Math.random(), e)).sorted((a, b) -> a._1().compareTo(b._1()))
-				.map(e -> e._2()).limit(n).toList(); // 随机生成
+	final static List<IRecord> sample(final Stream<IRecord> dataS, final Integer size) {
+
+		return dataS.map(IRecord::REC).map(e -> Tuple2.of(Math.random(), e)).sorted((a, b) -> a._1().compareTo(b._1()))
+				.map(e -> e._2()).limit(size).toList(); // 随机生成
 	}
 
 	/**
 	 * 创建订单
 	 * 
-	 * @param companydfm 公司
-	 * @param productdfm 产品
+	 * @param cs         公司
+	 * @param cps        产品
 	 * @param stores     收获地址（仓库）
-	 * @return IRecord
+	 * @param createTime 创建时间
+	 * @return 订单 IRecord
 	 */
-	final static IRecord buildOrder(final DFrame companydfm, final DFrame cpdfm, final String[] stores,
-			final LocalDateTime ldt) {
+	final static IRecord buildOrder(final DFrame cs, final DFrame cps, final String[] stores,
+			final LocalDateTime createTime) {
 
 		final var rnd = new Random(); // 随机值
-		final var parts = sample(companydfm.rowS(), 2); // 订单各方
+		final var parts = sample(cs.rowS(), 2); // 订单各方
 		final var part_a = parts.getFirst();
 		final var parta_id = part_a.get("id");
-		final var products = sample(cpdfm.rowS().filter(e -> Objects.equals(e.get("company_id"), parta_id)), 5); // 选择产品
+		final var products = sample(cps.rowS().filter(e -> Objects.equals(e.get("company_id"), parta_id)), 5); // 选择产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_a.str("name"), parta_id, products));
 		final var shipper = parts.get(0); // 发货放
 		final var receiver = parts.get(1); // 收货方
@@ -89,7 +92,7 @@ public class JdbcH2Test {
 		final var rb = rb("name,shipper,receiver,receive_address,amount,details,create_time"); // 订单结构
 		final var details = REC("flag", false, "amount", amount, "items", items); // 订单详情
 		final var t_order = rb.get(products.get(0).get("name"), shipper.get("id"), receiver.get("id"), receive_address,
-				amount, details, ldt); // 订单记录
+				amount, details, createTime); // 订单记录
 
 		return t_order;
 	}
@@ -120,12 +123,13 @@ public class JdbcH2Test {
 	/**
 	 * 数据分组
 	 * 
-	 * @param data 数据列表
-	 * @param size 分组长度
+	 * @param datas 数据列表
+	 * @param size  分组长度
 	 * @return 数据分组
 	 */
-	public static Map<Integer, List<IRecord>> partitions(final List<IRecord> data, final int size) {
-		return partitions(data.stream(), size);
+	public static Map<Integer, List<IRecord>> partitions(final List<IRecord> datas, final int size) {
+
+		return partitions(datas.stream(), size);
 	}
 
 	/**
@@ -136,6 +140,7 @@ public class JdbcH2Test {
 	 * @return 数据分组
 	 */
 	public static Map<Integer, List<IRecord>> partitions(final Stream<IRecord> dataS, final int size) {
+
 		final var ar = new AtomicInteger();
 		final var parts = dataS.collect(groupingBy(e -> ar.getAndIncrement() / size));
 		return parts;
@@ -149,17 +154,19 @@ public class JdbcH2Test {
 	 * @return create table sql
 	 */
 	public static String ctsql(final String name, final IRecord proto) {
+
 		return sql(name, REC("#id", 1).add(proto)).ctsqls(true).get(2);
 	}
 
 	/**
 	 * 数据插入
 	 * 
-	 * @param name  数据表
-	 * @param proto 数据原型
-	 * @return 数据插入
+	 * @param name 数据表
+	 * @param data 数据原型
+	 * @return 数据插入 insert sql
 	 */
 	public static String insql(final String name, final List<IRecord> data) {
+
 		return sql(name, data).insql();
 	}
 
@@ -167,20 +174,25 @@ public class JdbcH2Test {
 	 * 批量处理
 	 * 
 	 * @param <K>        分组名
-	 * @param <V>        分组
-	 * @param partitions 分组数据
-	 * @param handler    分组处理器
+	 * @param <V>        分组数据
+	 * @param partitions 分组数据源
+	 * @param handler    分组处理器 partition-&gt;{}
 	 * @throws Exception
 	 */
 	public static <K, V> void batch_handlers(final Map<K, V> partitions, final ExceptionalConsumer<V> handler)
 			throws Exception {
+
 		for (final var partition : partitions.entrySet()) { // 重新设置公司产品
 			handler.accept(partition.getValue());
 		}
 	}
 
+	/**
+	 * H2 数据库操作演示, 商城数据示例：
+	 */
 	@Test
-	public void qux() {
+	public void foo() {
+
 		// 创造一个IJdbcApp接口应用
 		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
 		final var dbname = "mymall"; // 更换一个数据库
