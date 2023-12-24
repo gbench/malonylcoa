@@ -61,14 +61,16 @@ public class JdbcH2Test {
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
 		final var items = products.stream() // 产品记录
 				.map(e -> { // 订单行项目
-					final var id = e.get("id");
+					final var id = e.get("id"); // 公司产品id
+					final var name = e.get("name"); // 公司产品名称
 					final var company_id = e.get("company_id"); // 公司id
 					final var product_id = e.get("product_id"); // 产品id
 					final var price = e.dbl("price"); // 价格
 					final var quantity = 1 + rnd.nextInt(100); // 数量
 					final var amount = price * quantity; // 金额总计
-					final var item_rb = rb("id,company_id,product_id,price,quantity,amount");
-					return item_rb.get(id, company_id, product_id, price, quantity, amount);
+					final var item_rb = rb("id,name,company_id,product_id,price,quantity,amount");
+
+					return item_rb.get(id, name, company_id, product_id, price, quantity, amount); // 订单行项目
 				}).toList(); // 订单行项目
 		final var name = products.get(0).get("name");
 		final var amount = items.stream().collect(summarizingDouble(e -> e.dbl("price") * e.dbl("quantity"))).getSum(); // 订单金额
