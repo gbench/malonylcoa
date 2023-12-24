@@ -2,11 +2,12 @@ package gbench.sandbox.jdbc;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -16,7 +17,7 @@ import gbench.sandbox.data.h2.H2db;
 import gbench.util.data.MyDataApp;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
-import gbench.util.jdbc.Jdbcs;
+
 import static gbench.sandbox.data.h2.H2db.imports;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
@@ -30,9 +31,6 @@ import static gbench.util.jdbc.Jdbcs.batch_handlers;
 import static java.time.LocalDateTime.now;
 import static java.util.stream.Collectors.summarizingDouble;
 import static java.util.stream.Stream.iterate;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * H2数据库示例
@@ -52,12 +50,12 @@ public class JdbcH2Test {
 			final LocalDateTime createTime) {
 
 		final var rnd = new Random(); // 随机值
-		final var parts = Jdbcs.sample(cs.rowS(), 2); // 订单各方
+		final var parts = sample(cs, 2); // 订单各方
 		final var part_a = parts.get(0); // 甲方 收货方 receiver
 		final var part_b = parts.get(1); // 乙方 发货方 shipper
 		final var parta_id = part_a.get("id"); // 甲方id
 		final var partb_id = part_b.get("id"); // 乙方id, 产品是由partb转移到parta的
-		final var products = sample(cps.rowS().filter(e -> Objects.equals(e.get("company_id"), partb_id)), 5); // 选择产品
+		final var products = sample(cps.many2one("company_id", partb_id), 5); // 选择产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_b.str("name"), partb_id, products));
 
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址

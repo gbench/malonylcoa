@@ -1,11 +1,13 @@
 package gbench.util.jdbc.kvp;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 
@@ -33,7 +35,67 @@ public class DFrame extends LinkedRecord {
 	 * @param data 数据列表
 	 */
 	public DFrame(final Map<?, ?> data) {
+
 		data.forEach(this::add);
+	}
+
+	/**
+	 * 按照行进行查找: many to one 关系的多方数据提取 <br>
+	 * 根据一方数据的id从当前对象(多方)种提取指定对于一方的数据集合。
+	 * 
+	 * @param key   外键字段名
+	 * @param oneId 一方Id
+	 * @return 指定键值的数据行(多方数据集合)
+	 */
+	public DFrame many2one(final String key, final Object oneId) {
+
+		return this.filterRows(key, oneId);
+	}
+
+	/**
+	 * 按照行进行查找
+	 * 
+	 * @param predicate 筛选条件
+	 * @return 指定条件
+	 */
+	public DFrame filterRows(final Predicate<IRecord> predicate) {
+
+		return this.rowS().filter(predicate).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 按照行进行查找
+	 * 
+	 * @param key 键名
+	 * @param obj 键值
+	 * @return 指定键值的数据行
+	 */
+	public DFrame filterRows(final String key, final Object obj) {
+
+		return this.filterRows(e -> Objects.equals(e.get(key), obj));
+	}
+
+	/**
+	 * 按照行进行查找
+	 * 
+	 * @param predicate 筛选条件
+	 * @return 指定条件
+	 */
+	public DFrame filterRowsNot(final Predicate<IRecord> predicate) {
+
+		return this.rowS().filter(predicate).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 按照行进行查找
+	 * 
+	 * @param key 键名
+	 * @param obj 键值
+	 * @return 指定键值的数据行
+	 */
+	public DFrame filterRowsNot(final String key, final Object obj) {
+
+		return this.filterRows(e -> !Objects.equals(e.get(key), obj));
 	}
 
 	/**
@@ -43,6 +105,7 @@ public class DFrame extends LinkedRecord {
 	 * @return DFrame 新创建的DFrame
 	 */
 	public DFrame fmapByRow(final Function<? super IRecord, IRecord> mapper) {
+
 		return this.rows().stream().map(mapper).collect(DFrame.dfmclc);
 	}
 
@@ -53,6 +116,7 @@ public class DFrame extends LinkedRecord {
 	 * @return DFrame 新创建的DFrame
 	 */
 	public DFrame forEachByRow(final Consumer<? super IRecord> action) {
+
 		return this.rows().stream().map(e -> {
 			action.accept(e);
 			return e;
@@ -64,6 +128,7 @@ public class DFrame extends LinkedRecord {
 	 */
 	@Override
 	public String toString() {
+
 		return this.toString2(Jdbcs.frt(2));
 	}
 
@@ -74,6 +139,7 @@ public class DFrame extends LinkedRecord {
 	 * @return DataFrame 对象
 	 */
 	public static DFrame DFM(final Object... kvps) {
+
 		final var n = kvps.length;
 		final var rec = new DFrame();
 		for (int i = 0; i < n - 1; i += 2)

@@ -31,6 +31,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.function.ThrowableBiConsumer;
 import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.function.ExceptionalFunction;
@@ -2513,6 +2514,19 @@ public class Jdbcs {
 
 		return dataS.map(e -> Tuple2.of(Math.random(), e)).sorted((a, b) -> a._1().compareTo(b._1())).map(e -> e._2())
 				.limit(size).toList(); // 随机生成
+	}
+
+	/**
+	 * 抽取指定尺寸大小的抽象
+	 * 
+	 * @param<T> 元素类型
+	 * @param dfm  数据源
+	 * @param size 抽样大小
+	 * @return 抽取指定尺寸大小的抽象
+	 */
+	public static List<IRecord> sample(final DFrame dfm, final Integer size) {
+
+		return sample(dfm.rowS(), size);
 	}
 
 	/**
