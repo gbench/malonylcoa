@@ -973,6 +973,18 @@ public class SQL {
 	}
 
 	/**
+	 * 数据插入
+	 * 
+	 * @param name 数据表
+	 * @param data 数据原型
+	 * @return 数据插入 insert sql
+	 */
+	public static String insql(final String name, final IRecord... data) {
+
+		return sql(name, data).insql();
+	}
+
+	/**
 	 * 获得原型
 	 * 
 	 * @param partitions 数据分组

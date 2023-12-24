@@ -1,5 +1,8 @@
 package gbench.util.jdbc;
 
+import static gbench.util.jdbc.sql.SQL.ctsql;
+import static gbench.util.jdbc.sql.SQL.insql;
+import static gbench.util.jdbc.sql.SQL.proto_of;
 import static java.util.stream.Collectors.groupingBy;
 
 import java.lang.annotation.Annotation;
@@ -2543,6 +2546,28 @@ public class Jdbcs {
 		for (final var partition : partitions.entrySet()) { // 重新设置公司产品
 			handler.accept(partition.getValue());
 		}
+	}
+
+	/**
+	 * 导入数据表格
+	 * 
+	 * @param tblnames 表名列表
+	 * @return 数据表
+	 */
+	public static ExceptionalConsumer<IJdbcSession<Object, DFrame>> imports(final Function<String, DFrame> shtmx,
+			final String... tblnames) {
+		return (sess) -> {
+			for (final String tblname : tblnames) { // 遍历数据表
+				final var data = shtmx.apply(tblname);
+				final var line = proto_of(data.rows());
+				final var ctsql = ctsql(tblname, line);
+
+				sess.sql2execute(ctsql);
+				for (final var ln : data.rows()) {
+					sess.sql2execute(insql(tblname, ln));
+				}
+			} // for
+		};
 	}
 
 	public static final boolean debug = false;// 调试信息开启标记

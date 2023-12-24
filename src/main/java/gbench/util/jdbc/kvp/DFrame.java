@@ -253,22 +253,38 @@ public class DFrame extends LinkedRecord {
 
 	/**
 	 * 数据框归集器
+	 * 
+	 * @param <T>    归集元素类型
+	 * @param mapper 数据变换
+	 * @return 数据框归集器
 	 */
-	public static Collector<IRecord, ?, DFrame> dfmclc = Collector.of( //
-			(Supplier<List<IRecord>>) () -> new LinkedList<IRecord>(), //
-			List::add, (a, b) -> { //
-				a.addAll(b);
-				return a;
-			}, (aa) -> { //
-				final var data = new LinkedHashMap<String, List<Object>>();
-				for (final var a : aa) {
-					for (final var key : a.keys()) {
-						final var col = data.computeIfAbsent(key, k -> new LinkedList<>());
-						col.add(a.get(key));
+	public static <T> Collector<T, ?, DFrame> dfmclc(final Function<T, IRecord> mapper) {
+		return Collector.of( //
+				(Supplier<List<IRecord>>) () -> new LinkedList<IRecord>(), //
+				(a, b) -> a.add(mapper.apply(b)), (a, b) -> { //
+					a.addAll(b);
+					return a;
+				}, (aa) -> { //
+					final var data = new LinkedHashMap<String, List<Object>>();
+					for (final var a : aa) {
+						for (final var key : a.keys()) {
+							final var col = data.computeIfAbsent(key, k -> new LinkedList<>());
+							col.add(a.get(key));
+						} // for
 					} // for
-				} // for
-				return new DFrame(data);
-			});
+					return new DFrame(data);
+				});
+	}
+
+	/**
+	 * 数据框归集器
+	 */
+	public static Collector<IRecord, ?, DFrame> dfmclc = dfmclc(IRecord::REC);
+
+	/**
+	 * 数据框归集器
+	 */
+	public static Collector<? super Map<?, ?>, ?, DFrame> dfmclc2 = dfmclc(IRecord::REC);
 
 	/**
 	 * serialVersionUID
