@@ -6,30 +6,27 @@ import java.util.Random;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.util.jdbc.kvp.Tuple2;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.sandbox.data.h2.H2db;
 import gbench.util.data.MyDataApp;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
-import gbench.util.jdbc.function.ExceptionalConsumer;
-
+import gbench.util.jdbc.Jdbcs;
 import static gbench.sandbox.data.h2.H2db.imports;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.kvp.Tuple2.P;
 import static gbench.util.jdbc.sql.SQL.sql;
+import static gbench.util.jdbc.Jdbcs.sample;
+import static gbench.util.jdbc.Jdbcs.partitions;
+import static gbench.util.jdbc.Jdbcs.batch_handlers;
 import static java.time.LocalDateTime.now;
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.summarizingDouble;
 import static java.util.stream.Stream.iterate;
 
@@ -39,30 +36,6 @@ import java.time.LocalDateTime;
  * H2数据库示例
  */
 public class JdbcH2Test {
-
-	/**
-	 * 数据处理器
-	 * 
-	 * @param key 鍵名
-	 * @return 处理函数
-	 */
-	final static Consumer<? super IRecord> processor(final String key) {
-
-		return e -> e.compute(key, H2db::asMap); // 属性处理
-	}
-
-	/**
-	 * 抽取指定尺寸大小的抽象
-	 * 
-	 * @param dataS 数据源
-	 * @param size  抽样大小
-	 * @return 抽取指定尺寸大小的抽象
-	 */
-	final static List<IRecord> sample(final Stream<IRecord> dataS, final Integer size) {
-
-		return dataS.map(IRecord::REC).map(e -> Tuple2.of(Math.random(), e)).sorted((a, b) -> a._1().compareTo(b._1()))
-				.map(e -> e._2()).limit(size).toList(); // 随机生成
-	}
 
 	/**
 	 * 创建订单
@@ -77,22 +50,31 @@ public class JdbcH2Test {
 			final LocalDateTime createTime) {
 
 		final var rnd = new Random(); // 随机值
-		final var parts = sample(cs.rowS(), 2); // 订单各方
-		final var part_a = parts.getFirst();
-		final var parta_id = part_a.get("id");
+		final var parts = Jdbcs.sample(cs.rowS(), 2); // 订单各方
+		final var part_a = parts.get(0); // 甲方 收货方 receiver
+		final var part_b = parts.get(1); // 乙方 发货方 shipper
+		final var parta_id = part_a.get("id"); // 甲方id
+		final var partb_id = part_b.get("id"); // 乙方id
 		final var products = sample(cps.rowS().filter(e -> Objects.equals(e.get("company_id"), parta_id)), 5); // 选择产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_a.str("name"), parta_id, products));
-		final var shipper = parts.get(0); // 发货放
-		final var receiver = parts.get(1); // 收货方
+
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
 		final var items = products.stream() // 产品记录
-				.map(e -> e.add("price", e.dbl("price") * rnd.nextDouble(1d), "quantity", 1 + rnd.nextInt(100))) // 价格调整
-				.map(e -> e.add("amount", e.dbl("price") * e.dbl("quantity"))).toList(); // 订单行项目
+				.map(e -> { // 订单行项目
+					final var id = e.get("id");
+					final var company_id = e.get("company_id"); // 公司id
+					final var product_id = e.get("product_id"); // 产品id
+					final var price = e.dbl("price"); // 价格
+					final var quantity = 1 + rnd.nextInt(100); // 数量
+					final var amount = price * quantity; // 金额总计
+					final var item_rb = rb("id,company_id,product_id,price,quantity,amount");
+					return item_rb.get(id, company_id, product_id, price, quantity, amount);
+				}).toList(); // 订单行项目
+		final var name = products.get(0).get("name");
 		final var amount = items.stream().collect(summarizingDouble(e -> e.dbl("price") * e.dbl("quantity"))).getSum(); // 订单金额
-		final var rb = rb("name,shipper,receiver,receive_address,amount,details,create_time"); // 订单结构
-		final var details = REC("flag", false, "amount", amount, "items", items); // 订单详情
-		final var t_order = rb.get(products.get(0).get("name"), shipper.get("id"), receiver.get("id"), receive_address,
-				amount, details, createTime); // 订单记录
+		final var order_rb = rb("name,shipper,receiver,receive_address,amount,details,create_time"); // 订单结构
+		final var details = rb("flag,amount,items").get(false, amount, items);// 订单详情
+		final var t_order = order_rb.get(name, partb_id, parta_id, receive_address, amount, details, createTime); // 订单记录
 
 		return t_order;
 	}
@@ -104,7 +86,7 @@ public class JdbcH2Test {
 	 * @param ps 产品数据
 	 * @return 公司产品
 	 */
-	public List<IRecord> buildCPs(final DFrame cs, final DFrame ps) {
+	public static List<IRecord> buildCPs(final DFrame cs, final DFrame ps) {
 
 		final var cps = new LinkedList<IRecord>();
 		for (final var c : cs.rows()) {
@@ -122,29 +104,14 @@ public class JdbcH2Test {
 	}
 
 	/**
-	 * 数据分组
+	 * 数据处理器
 	 * 
-	 * @param datas 数据列表
-	 * @param size  分组长度
-	 * @return 数据分组
+	 * @param key 鍵名
+	 * @return 处理函数
 	 */
-	public static Map<Integer, List<IRecord>> partitions(final List<IRecord> datas, final int size) {
+	final static Consumer<? super IRecord> processor(final String key) {
 
-		return partitions(datas.stream(), size);
-	}
-
-	/**
-	 * 数据分组
-	 * 
-	 * @param dataS 数据列表
-	 * @param size  分组长度
-	 * @return 数据分组
-	 */
-	public static Map<Integer, List<IRecord>> partitions(final Stream<IRecord> dataS, final int size) {
-
-		final var ar = new AtomicInteger();
-		final var parts = dataS.collect(groupingBy(e -> ar.getAndIncrement() / size));
-		return parts;
+		return e -> e.compute(key, H2db::asMap); // 属性处理
 	}
 
 	/**
@@ -169,23 +136,6 @@ public class JdbcH2Test {
 	public static String insql(final String name, final List<IRecord> data) {
 
 		return sql(name, data).insql();
-	}
-
-	/**
-	 * 批量处理
-	 * 
-	 * @param <K>        分组名
-	 * @param <V>        分组数据
-	 * @param partitions 分组数据源
-	 * @param handler    分组处理器 partition-&gt;{}
-	 * @throws Exception
-	 */
-	public static <K, V> void batch_handlers(final Map<K, V> partitions, final ExceptionalConsumer<V> handler)
-			throws Exception {
-
-		for (final var partition : partitions.entrySet()) { // 重新设置公司产品
-			handler.accept(partition.getValue());
-		}
 	}
 
 	/**
@@ -222,7 +172,7 @@ public class JdbcH2Test {
 			final var ps = sess.sql2dframe("select id,name,price,price_striked from t_product cp"); // 产品信息
 			final var cp_name = "t_company_product"; // 公司产品表名
 			final var or_name = "t_order"; // 订单名称
-			final var cp_partitions = partitions(this.buildCPs(cs, ps), batch_size); // 公司产品数据
+			final var cp_partitions = partitions(buildCPs(cs, ps), batch_size); // 公司产品数据
 			final var cp_proto = cp_partitions.entrySet().iterator().next().getValue().getFirst();
 
 			// 公司产品数据

@@ -1,5 +1,7 @@
 package gbench.util.jdbc;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -2422,7 +2424,7 @@ public class Jdbcs {
 		final var keywordsTrie = new TrieNode<>('/');// 前缀树
 		keywords.stream().map(lc).forEach(keywordsTrie::addParts);// 构建前赘树
 		return tokenize(line, keywordsTrie);
-	}// tokenize
+	} // tokenize
 
 	/**
 	 * 对 一个 源数据字符串line 进行分词,分词列表 是 IRecord 列表[{name:分词符号,flag:分词标记是
@@ -2470,6 +2472,65 @@ public class Jdbcs {
 
 		return tokens; // 返回结果
 	}// tokenize
+
+	/**
+	 * 数据分组
+	 * 
+	 * @param<T> 元素类型
+	 * @param datas 数据列表
+	 * @param size  分组长度
+	 * @return 数据分组
+	 */
+	public static <T> Map<Integer, List<T>> partitions(final List<T> datas, final int size) {
+
+		return partitions(datas.stream(), size);
+	}
+
+	/**
+	 * 数据分组
+	 * 
+	 * @param<T> 元素类型
+	 * @param dataS 数据列表
+	 * @param size  分组长度
+	 * @return 数据分组
+	 */
+	public static <T> Map<Integer, List<T>> partitions(final Stream<T> dataS, final int size) {
+
+		final var ar = new AtomicInteger();
+		final var parts = dataS.collect(groupingBy(e -> ar.getAndIncrement() / size));
+		return parts;
+	}
+
+	/**
+	 * 抽取指定尺寸大小的抽象
+	 * 
+	 * @param<T> 元素类型
+	 * @param dataS 数据源
+	 * @param size  抽样大小
+	 * @return 抽取指定尺寸大小的抽象
+	 */
+	public static <T> List<T> sample(final Stream<T> dataS, final Integer size) {
+
+		return dataS.map(e -> Tuple2.of(Math.random(), e)).sorted((a, b) -> a._1().compareTo(b._1())).map(e -> e._2())
+				.limit(size).toList(); // 随机生成
+	}
+	
+	/**
+	 * 批量处理
+	 * 
+	 * @param <K>        分组名
+	 * @param <V>        分组数据
+	 * @param partitions 分组数据源
+	 * @param handler    分组处理器 partition-&gt;{}
+	 * @throws Exception
+	 */
+	public static <K, V> void batch_handlers(final Map<K, V> partitions, final ExceptionalConsumer<V> handler)
+			throws Exception {
+
+		for (final var partition : partitions.entrySet()) { // 重新设置公司产品
+			handler.accept(partition.getValue());
+		}
+	}
 
 	public static final boolean debug = false;// 调试信息开启标记
 
