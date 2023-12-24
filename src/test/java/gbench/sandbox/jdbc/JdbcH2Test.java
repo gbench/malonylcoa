@@ -209,7 +209,7 @@ public class JdbcH2Test {
 			final var ps = sess.sql2dframe("select id,name,price,price_striked from t_product cp"); // 产品信息
 			final var cp_name = "t_company_product"; // 公司产品表名
 			final var or_name = "t_order"; // 订单名称
-			final var cp_partitions = partitions(this.buildCPs(cs, ps), batch_size); // 公司产能品数据
+			final var cp_partitions = partitions(this.buildCPs(cs, ps), batch_size); // 公司产品数据
 			final var cp_proto = cp_partitions.entrySet().iterator().next().getValue().getFirst();
 
 			// 公司产品数据
