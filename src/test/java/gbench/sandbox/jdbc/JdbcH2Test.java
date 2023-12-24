@@ -56,9 +56,9 @@ public class JdbcH2Test {
 		final var part_a = parts.get(0); // 甲方 收货方 receiver
 		final var part_b = parts.get(1); // 乙方 发货方 shipper
 		final var parta_id = part_a.get("id"); // 甲方id
-		final var partb_id = part_b.get("id"); // 乙方id
-		final var products = sample(cps.rowS().filter(e -> Objects.equals(e.get("company_id"), parta_id)), 5); // 选择产品
-		println(String.format("company product ---- %s[%s] ----- %s", part_a.str("name"), parta_id, products));
+		final var partb_id = part_b.get("id"); // 乙方id, 产品是由partb转移到parta的
+		final var products = sample(cps.rowS().filter(e -> Objects.equals(e.get("company_id"), partb_id)), 5); // 选择产品
+		println(String.format("company product ---- %s[%s] ----- %s", part_b.str("name"), partb_id, products));
 
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
 		final var items = products.stream() // 产品记录
