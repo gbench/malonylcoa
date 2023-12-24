@@ -104,12 +104,22 @@ public class DFrame extends LinkedRecord {
 	 */
 	public DFrame tail(final int n) {
 
-		final var rows = this.rows();
+		final var rows = this.rows(); // 提取数据行
 		final var len = rows.size();
 		final var startIndex = len - n; // 起始索引
 		final var sublist = rows.subList(startIndex < 0 ? 0 : startIndex, len);
 
 		return sublist.stream().collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 拆分头前n个元素和所有后续元素
+	 * 
+	 * @return (head,tail)
+	 */
+	public Tuple2<IRecord, DFrame> carcdr() {
+
+		return Tuple2.of(this.rowS().limit(1).findAny().orElse(null), this.rowS().skip(1).collect(DFrame.dfmclc));
 	}
 
 	/**
@@ -124,16 +134,6 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
-	 * 拆分头前n个元素和所有后续元素
-	 * 
-	 * @return (head,tail)
-	 */
-	public Tuple2<IRecord, DFrame> carcdr() {
-
-		return Tuple2.of(this.rowS().limit(1).findAny().orElse(null), this.rowS().skip(1).collect(DFrame.dfmclc));
-	}
-
-	/**
 	 * 按照行进行排序
 	 * 
 	 * @param comparator 行元比较器
@@ -142,6 +142,18 @@ public class DFrame extends LinkedRecord {
 	public DFrame sortBy(final Comparator<? super IRecord> comparator) {
 
 		return this.rowS().sorted(comparator).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 按照行进行排序
+	 * 
+	 * @param keys 键名比较器
+	 * @return DFrame
+	 */
+	public DFrame sortBy(final String... keys) {
+
+		return this.rowS().sorted((a, b) -> a.filter(keys).compareTo(b.filter(keys))) //
+				.collect(DFrame.dfmclc);
 	}
 
 	/**
@@ -198,7 +210,7 @@ public class DFrame extends LinkedRecord {
 	 */
 	public DFrame fmapBy(final Function<? super IRecord, IRecord> mapper) {
 
-		return this.rows().stream().map(mapper).collect(DFrame.dfmclc);
+		return this.rowS().map(mapper).collect(DFrame.dfmclc);
 	}
 
 	/**
@@ -209,7 +221,7 @@ public class DFrame extends LinkedRecord {
 	 */
 	public DFrame forEachBy(final Consumer<? super IRecord> action) {
 
-		return this.rows().stream().map(e -> {
+		return this.rowS().map(e -> {
 			action.accept(e);
 			return e;
 		}).collect(DFrame.dfmclc);

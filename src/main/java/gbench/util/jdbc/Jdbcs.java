@@ -439,7 +439,7 @@ public class Jdbcs {
 	/**
 	 * 重n个对象放在列表
 	 * 
-	 * @param<T> 元素类型
+	 * @param <T> 元素类型
 	 * @param obj 对象
 	 * @param n   必须大于0
 	 * @return T 重复n 次后的序列
@@ -2477,7 +2477,7 @@ public class Jdbcs {
 	/**
 	 * 数据分组
 	 * 
-	 * @param<T> 元素类型
+	 * @param <T>   元素类型
 	 * @param datas 数据列表
 	 * @param size  分组长度
 	 * @return 数据分组
@@ -2505,7 +2505,7 @@ public class Jdbcs {
 	/**
 	 * 抽取指定尺寸大小的抽象
 	 * 
-	 * @param<T> 元素类型
+	 * @param <T>   元素类型
 	 * @param dataS 数据源
 	 * @param size  抽样大小
 	 * @return 抽取指定尺寸大小的抽象
@@ -2519,7 +2519,6 @@ public class Jdbcs {
 	/**
 	 * 抽取指定尺寸大小的抽象
 	 * 
-	 * @param<T> 元素类型
 	 * @param dfm  数据源
 	 * @param size 抽样大小
 	 * @return 抽取指定尺寸大小的抽象
