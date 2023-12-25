@@ -112,20 +112,18 @@ public class JdbcH2Test {
 	public void foo() {
 
 		// 创造一个IJdbcApp接口应用
-		final var datafile = xls("f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx");
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
-		final var dbname = "mymall"; // 更换一个数据库
-		final var url = String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
-		final var driver = "org.h2.Driver";
-		final var h2_rec = REC("url", url, "driver", driver, "user", "root", "password", "123456");
-		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec);
-		final var tables = "t_company,t_product,t_company_product,t_customer,t_coa,t_accts,t_journal,t_bksys"
-				.split("[,]+"); // 基础数据表
+		final var datafile = xls("f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx"); // 数据-源文件
+		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
+		final var db = "mymall"; // 数据库名
+		final var url = String.format("jdbc:h2:mem:%s;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", db); // h2连接字符串
+		final var h2_rec = REC("url", url, "driver", "org.h2.Driver", "user", "root", "password", "123456"); // h2数据库
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
+		final var tables = "t_company,t_product,t_company_product,t_coa,t_accts,t_journal,t_bksys".split("[,]+"); // 基础数据表
 		final var cp_sql = "select * from t_company_product where company_id=##cid"; // 公司产品
 		final var stores = "北京,天津,重庆,上海,广州,深圳".split("[,]+"); // 仓库地址
-		final var top10 = "select * from ##tbl limit 10";
-		final var size = 1000; // 数据量
-		final var batch_size = 10; // 批次大小
+		final var top10 = "select * from ##tbl limit 10"; // 头前10行数据
+		final var size = 1000; // 模拟生成的数据量,t_order的数据规模
+		final var batch_size = 10; // 插入数据时候的批次大小
 
 		// 数据导入
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));

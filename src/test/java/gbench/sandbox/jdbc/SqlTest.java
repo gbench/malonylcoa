@@ -43,21 +43,22 @@ public class SqlTest {
 	 */
 	@Test
 	public void bar() {
-		final var address = REC("city", "shanghai", "district", "changning", "street", "fahuazhen road");
-		final var line = REC("name", "zhangsan", "mobile", 18601690611l, //
+		final var address = REC("city", "shanghai", "district", "changning", "street", "fahuazhen road", "nong", 101,
+				"building", REC("unit", 11, "room", 201, "host", "gbench'home"));
+		final var t_user = REC("name", "zhangsan", "mobile", 18601690611l, //
 				"password", "123456", "weight", 30, "address", address, "borth", now(), "description", "无法无天的张三");
-		final var kvs2 = line.kvs2(); // 键值列表2
-		final var kvs3 = line.kvs3(); // 键值列表3
+		final var kvs2 = t_user.kvs2(); // 键值列表2
+		final var kvs3 = t_user.kvs3(); // 键值列表3
 
-		println("line", line);
+		println("t_user", t_user);
 		println("kvs2", kvs2);
 		println("kvs3", kvs3);
 
 		// 创建语句
-		final var ctsql1 = sql("t_user", REC("#id", 1).derive(line)).ctsql(true, 2);
-		final var ctsql2 = sql("t_test", REC("#id", 1).derive(rb("a,b,c,d").get(1))).ctsql(true, 2);
+		final var ctsql1 = sql("t_user", REC("#id", 1).derive(t_user)).ctsql(true, 2); // t_user
+		final var ctsql2 = sql("t_test", REC("#id", 1).derive(rb("a,b,c,d").get(1))).ctsql(true, 2); // t_test
 		final var insql1 = nsql("insert into ##tbl({foreach k$ in keys k$}) values ({foreach v in values v})",
-				REC("tbl", "t_user").derive(kvs3)).format();
+				REC("tbl", "t_user").derive(kvs3)).format(); // t_user的插入语句
 		// 插入语句,k$ 标识无需添加引号,{ 可用 用${代替
 		final var insql2 = sql("t_test", //
 				rb("a,b,c").get(1, 2, 3), //
@@ -66,8 +67,9 @@ public class SqlTest {
 		).insql();
 		// 更新语句
 		final var upsql1 = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
-				rb("tbl,id,kvs").get("t_user", 1, kvs2)).format();
+				rb("tbl,id,kvs").get("t_user", 1, kvs2)).format(); // t_user的字段更改
 
+		// sql 生成的新建、增加、与修改
 		println("ctsql 1", ctsql1);
 		println("ctsql 2", ctsql2);
 		println("insql 1", insql1);
@@ -78,22 +80,21 @@ public class SqlTest {
 		jdbcApp.withTransaction(sess -> {
 			for (var sql : Arrays.asList(ctsql1, ctsql2, insql1, insql2, upsql1)) {
 				sess.sqlexecute(sql);
-			}
+			} // for
 			for (var tbl : Arrays.asList("t_user,t_test".split(","))) {
 				final var hjp = switch (tbl) { // json 字段处理器
 				case "t_user" -> h2_json_processor("address");
 				default -> null;
-				};
+				}; // hjp
 				println(tbl, sess.sql2dframe("select * from ##tbl", "tbl", tbl).forEachBy(hjp));
-			}
-		});
+			} // for
+		}); // withTransaction
 
 	}
 
-	final String dbname = "mymall"; // 更换一个数据库
-	final String driver = "org.h2.Driver";
-	final String url = String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
-	final IRecord h2_rec = REC("url", url, "driver", driver, "user", "root", "password", "123456");
-	final IMySQL jdbcApp = IJdbcApp.newNsppDBInstance(null, IMySQL.class, h2_rec);
+	final String dbname = "sqltest"; // 更换一个数据库
+	final String url = String.format("jdbc:h2:mem:%s;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
+	final IRecord h2_rec = REC("url", url, "driver", "org.h2.Driver", "user", "root", "password", "123456");
+	final IMySQL jdbcApp = IJdbcApp.newNsppDBInstance(null, IMySQL.class, h2_rec); // 数据应用
 
 }
