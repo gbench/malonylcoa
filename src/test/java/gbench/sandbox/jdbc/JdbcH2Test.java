@@ -203,8 +203,8 @@ public class JdbcH2Test {
 
 	@Test
 	public void quz() {
-		final var line = REC("name", "zhangsan", "address", REC("city", "shanghai", "district", "changning"), "weight",
-				30);
+		final var line = REC("name", "zhangsan", "address", //
+				REC("city", "shanghai", "district", "changning"), "weight", 30);
 		println(nsql("insert into ##tbl({foreach k$ in kk k$}) values ({foreach v in vv v })",
 				REC("tbl", "t_user", "kk", line.keys(), "vv", line.values())).string2());
 		final var kvs = line.kvs2();
