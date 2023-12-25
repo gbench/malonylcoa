@@ -11,8 +11,10 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -256,53 +258,54 @@ public class SQL {
 	/**
 	 * 插入数据
 	 * 
-	 * @param recs    插入的数据的字段列表，用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
+	 * @param datas   插入的数据的字段列表，用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
 	 * @param pfilter 插入的字段过滤器
 	 * @return insert SQL 语句
 	 */
-	public String insql(final Iterable<IRecord> recs, final Predicate<KVPair<String, Object>> pfilter) {
-		final StringBuilder buffer = new StringBuilder();
-		final var initialCapacity = 30; // 默认30个字段
-		final var ar = new AtomicReference<List<String>>();
-		final var values = new ArrayList<List<String>>(initialCapacity);// 指端值列表 与flds 一一对应
-		final Predicate<KVPair<String, Object>> pft = pfilter == null ? (kv) -> true : pfilter;
-		for (final var rec : recs) {
-			final var vals = new ArrayList<String>(initialCapacity);// 指端值列表 与flds 一一对应
-			final var flds = ar.get() == null ? new ArrayList<String>(initialCapacity) : null;// 字段列表
-			if (ar.get() == null) {
-				ar.set(flds);
-			}
-			rec.stream().filter(pft) // 删除空值字符串
-					.forEach(e -> {
-						final var fldvalue = quoteString(e.value());
-						final var fldname = parseFieldName(e.key()).str("name");// 获取字段名
-						final var i = ar.get().indexOf(fldname);
-						// fldname的索引位置,如果>0 表示业已存在一个同名的字段，需要给予覆盖。
-						final var flag = flds != null && i < 1;
-						if (flag) {// 字段名不存在
-							flds.add(fldname);
-							vals.add(fldvalue);
-						} else { // 覆盖原先的字段与字段值
-							if (vals.size() <= i) {
-								vals.add(fldvalue);
-							} else {
-								vals.set(i, fldvalue); // 覆盖对应位置的字段值。
-							}
-						} // if
-					});// forEach
+	public String insql(final Iterable<IRecord> datas, final Predicate<KVPair<String, Object>> pfilter) {
+		final var buffer = new StringBuilder();
+		final var initialCapacity = datas instanceof Collection c ? c.size() : 30; // 默认30个字段
+		final var fldsAr = new AtomicReference<List<String>>(new ArrayList<String>(initialCapacity)); // 字段列表
+		final var allValues = new ArrayList<List<String>>(initialCapacity);// 指端值列表 与flds 一一对应
+		final Predicate<KVPair<String, Object>> pft = pfilter == null ? kv -> true : pfilter;
+		final var indices = new HashMap<String, Integer>(); // 位置索引缓存
 
-			if (flds != null) {
-				ar.set(flds);
-			}
+		for (final var rec : datas) {
+			final var vv = new ArrayList<String>(initialCapacity);// 字段值列表与flds 一一对应
+			rec.stream().filter(pft).forEach(e -> { // 删除空值字符串 并进行数据处理
+				final var value = quoteString(e.value()); // 键值
+				final var name = parseFieldName(e.key()).str("name");// 获取字段名
+				final var i = indices.computeIfAbsent(name, k -> { // 获得字段名的位置索引
+					final var flds = fldsAr.get();
+					final var j = flds.indexOf(k);
+					if (j < 0) { // 新字段
+						flds.add(name);
+						return flds.size() - 1; // 返回索引位置
+					} else { // 返回索引位置
+						return j;
+					} // if
+				}); // 需要插入的位置
 
-			values.add(vals);
-		}
+				if (i >= vv.size()) { // 所谓i位于值数组之后
+					final var n = i - vv.size() - 1; // 区间长度不包含最有i所在的位置
+					if (n > 0) { // 填充空隙值
+						vv.addAll(Arrays.asList(new String[n]));
+					} // if
+					vv.add(value);
+				} else { // 覆盖对应位置的字段值
+					vv.set(i, value);
+				} // if
+			});// forEach
 
-		final var flds = ar.get(); // 提取字段列表
+			allValues.add(vv);
+		} // for
+
+		final var flds = fldsAr.get(); // 提取字段列表
 		buffer.append("insert into ").append(this.name).append(" (");
 		buffer.append(String.join(",", flds));
 		buffer.append(") values ");
-		final var line = values.stream().map(vals -> String.format("(%s)", String.join(",", vals))) //
+
+		final var line = allValues.stream().map(vals -> String.format("(%s)", String.join(",", vals))) //
 				.collect(Collectors.joining(",\n  "));
 		buffer.append(line);
 		buffer.append("");
