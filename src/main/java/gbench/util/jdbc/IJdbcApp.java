@@ -1,11 +1,9 @@
 package gbench.util.jdbc;
 
 import static gbench.util.jdbc.Jdbc.namedsql_processor;
-import static gbench.util.jdbc.Jdbc.namedsql_processor_escape_brace;
 import static gbench.util.jdbc.Jdbc.parse2namedsqls;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,54 +55,6 @@ public interface IJdbcApp {
 	}
 
 	/**
-	 * Named Sql Preprocessor Escaped Brace (NSPEB) SqlPatternPreprocessor 的处理类 对
-	 * ‘{’进行转义，以以提供Neo4j类型的数据库处理。
-	 * 
-	 * @param sqlfile sql文件的名称，可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
-	 * @return SqlPatternPreprocessor
-	 */
-	static ISqlPatternPreprocessor nspeb(final String sqlfile) {
-		return nspeb(sqlfile, null);
-	}
-
-	/**
-	 * Named Sql Preprocessor Escaped Brace (NSPEB) SqlPatternPreprocessor 的处理类 对
-	 * ‘{’进行转义，以以提供Neo4j类型的数据库处理。
-	 * 
-	 * @param sqlfile sql文件的名称，可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
-	 * @param clazz   sqlfile 相对基路径
-	 * @return SqlPatternPreprocessor
-	 */
-	static ISqlPatternPreprocessor nspeb(final String sqlfile, final Class<?> clazz) {
-		final var spp = namedsql_processor_escape_brace(namedsqls(sqlfile, clazz)); //
-		final var status = IRecord.REC("times", 0);// 状态数据
-		return new ISqlPatternPreprocessor() { // 构造匿名类并 指定 SqlPatternPreprocessor 的名称
-
-			@Override
-			public String handle(Method method, IRecord params, String sqlpattern, Jdbc jdbc) { // 默认的处理
-				status.compute("times", (Integer v) -> v == null ? 0 : v + 1); // 统计状态数据
-				return spp.handle(method, params, sqlpattern, jdbc);
-			}
-
-			@Override
-			public String name() { // 指定名称
-				return "namedsql_processor_escape_brace";
-			}
-
-			@Override
-			public synchronized IRecord status() {
-				return status;
-			}
-
-			@Override
-			public String toString() {
-				return name();
-			}
-
-		};
-	}
-
-	/**
 	 * 创建数据库接口实例 注意：当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
 	 * HashMap&lt;String,String&gt;() 的 spp.
 	 * 
@@ -144,44 +94,6 @@ public interface IJdbcApp {
 	 */
 	static <T> T newNsppDBInstance(final String sqlfile, final Class<T> dbClazz, final Class<?> sqlFileRelativeClass) {
 		return newDBInstance(() -> nspp(sqlfile, sqlFileRelativeClass), dbClazz);
-	}
-
-	/**
-	 * NamedSqlpreProcessor Escaped Brace 创建数据库接口实例
-	 * 
-	 * @param <T>     数据库类型
-	 * @param sqlfile sql语句脚本,可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
-	 * @param dbClazz 数据库类型
-	 * @return 数据库接口实例
-	 */
-	static <T> T newNspebDBInstance(final String sqlfile, final Class<T> dbClazz) {
-		return newDBInstance(() -> nspeb(sqlfile, dbClazz), dbClazz);
-	}
-
-	/**
-	 * NamedSqlpreProcessor Escaped Brace 创建数据库接口实例
-	 * 
-	 * @param <T>      数据库类型
-	 * @param sqlfile  sql语句脚本,可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
-	 * @param dbClazz  数据库类型
-	 * @param dbConfig 数据库配置
-	 * @return 数据库接口实例
-	 */
-	static <T> T newNspebDBInstance(final String sqlfile, final Class<T> dbClazz, final IRecord dbConfig) {
-		return Jdbc.newInstance(dbClazz, dbConfig, nspeb(sqlfile, null));
-	}
-
-	/**
-	 * NamedSqlpreProcessor Escaped Brace 创建数据库接口实例
-	 * 
-	 * @param <T>                  数据库类型
-	 * @param sqlfile              sql语句脚本,可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
-	 * @param dbClazz              数据库类型
-	 * @param sqlFileRelativeClass sqlfile 相对基路径
-	 * @return 数据库接口实例
-	 */
-	static <T> T newNspebDBInstance(final String sqlfile, final Class<T> dbClazz, final Class<?> sqlFileRelativeClass) {
-		return newDBInstance(() -> nspeb(sqlfile, sqlFileRelativeClass), dbClazz);
 	}
 
 	/**

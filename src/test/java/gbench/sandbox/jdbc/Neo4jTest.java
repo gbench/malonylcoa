@@ -48,7 +48,7 @@ public class Neo4jTest {
 
 		// 数据库主要构件的创建。
 		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/neo4j_test.sql";
-		final var database = IJdbcApp.newNspebDBInstance(sqlfile, MyNeo4j.class);
+		final var database = IJdbcApp.newNsppDBInstance(sqlfile, MyNeo4j.class);
 		// 根据SQL语句模板文件neo4j.sql 生成代理数据库
 		final var proxy = database.getProxy();// 提取代理对象
 		final var spp = proxy.findOne(ISqlPatternPreprocessor.class);// 提取SQLPattern 处理器

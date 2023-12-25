@@ -173,6 +173,7 @@ public class Jdbc implements IManagedStreams {
 	 */
 	public static List<IRecord> queryWithConnection(final Connection conn, final String query,
 			final Consumer<PreparedStatement> prepare) throws SQLException {
+
 		final var pstmt = conn.prepareStatement(query);// 生成SQL语句
 		return preparedQuery(() -> pstmt, prepare);
 	}
@@ -1109,7 +1110,8 @@ public class Jdbc implements IManagedStreams {
 	 * where name = #name <br>
 	 *
 	 * -- --------------------------<br>
-	 * -- # count2 -- --------------------------<br>
+	 * -- # count2 <br>
+	 * -- --------------------------<br>
 	 * select count(*) from t_user;<br>
 	 *
 	 * -- --------------------------<br>
@@ -1141,7 +1143,8 @@ public class Jdbc implements IManagedStreams {
 	 *
 	 * -- -------------------------- <br>
 	 * -- # count2 <br>
-	 * -- -------------------------- br> select count(*) from t_user; <br>
+	 * -- -------------------------- <br>
+	 * select count(*) from t_user; <br>
 	 *
 	 * -- -------------------------- <br>
 	 * -- # insertUser <br>
@@ -1231,25 +1234,6 @@ public class Jdbc implements IManagedStreams {
 		}
 
 		return params;
-	}
-
-	/**
-	 * namedsql_processor 对namedsqls中的‘{’,‘'’进行转义：防止Jdbcs.formater把他误认为参数。 <br>
-	 * 注意:<br>
-	 * namedsql_processor_escape_brace的 preprocessor 只会对 namedsqls 中的所包含的语句进行处理,<br>
-	 * 并不会对 没有在namedsqls中存贮的sql语句调用preprocessor做预处理。<br>
-	 * 对于其他的传入的(比如直接传递,而不是采用方法反射,比如IJdbcSession.sql2records(sql)系列函数) <br>
-	 * 参见方法:IJdbcSession.sql2records(final String sqlpattern, final IRecord params)
-	 * <br>
-	 * preprocessor 是不会对sql进行处理的,所以 如果需要调用 namedsql_processor 做参数
-	 * 填充,需要先手动的把sql进行进行预处理 <br>
-	 * 
-	 * @param namedsqls sql语句。 name-&gt;sql
-	 * @return SqlPatternPreprocessor
-	 */
-	public static ISqlPatternPreprocessor namedsql_processor_escape_brace(final Map<String, String> namedsqls) {
-
-		return namedsql_processor(namedsqls, Jdbcs::format_escape);
 	}
 
 	/**
@@ -2044,16 +2028,16 @@ public class Jdbc implements IManagedStreams {
 	 * @return 字符串
 	 */
 	public static String asString(final Object obj) {
-		
+
 		String line = null;
 		final var _obj = obj instanceof Stream s ? s.toList() : obj;
-		
+
 		if (_obj instanceof Map || _obj instanceof Iterable || _obj instanceof IRecord) {
 			line = Json.obj2json(_obj);
 		} else {
 			line = String.valueOf(_obj);
 		} // if
-		
+
 		return line;
 	}
 
