@@ -24,6 +24,7 @@ import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.kvp.Tuple2.P;
 import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
+import static gbench.util.jdbc.sql.SQL.nsql;
 import static gbench.util.jdbc.sql.SQL.proto_of;
 import static gbench.util.jdbc.sql.SQL.sql;
 import static gbench.util.jdbc.Jdbcs.sample;
@@ -199,6 +200,15 @@ public class JdbcH2Test {
 		);
 		println(proto);
 		println(sql("t_user", proto).ctsqls(true).get(2));
+	}
+
+	@Test
+	public void quz() {
+		final var kvs = REC("name", "zhangsan","address",REC("city","shanghai","district","changning"), "weight", 30).kvs2();
+		println(kvs);
+		final var sql = nsql("update ##tbl set ${foreach p in kvs %p.key=p.value} where id=##id",
+				rb("tbl,id,kvs").get("t_user", 1, kvs)).string2();
+		println(sql);
 	}
 
 }

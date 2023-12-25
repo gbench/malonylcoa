@@ -203,6 +203,26 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 分割成键值对的序列
+	 * 
+	 * @param key   键名
+	 * @param value 值名
+	 * @return [[key:key0,value:value0],[key:key1,value:value1],...]
+	 */
+	default List<IRecord> kvs2(final String key, final String value) {
+		return this.stream().map(e -> rb("key,value").get(e._1(), e._2())).toList();
+	}
+
+	/**
+	 * 分割成键值对的序列
+	 * 
+	 * @return [[key:key0,value:value0],[key:key1,value:value1],...]
+	 */
+	default List<IRecord> kvs2() {
+		return this.kvs2("key", "value");
+	}
+
+	/**
 	 * 键值对儿的个数
 	 * 
 	 * @return 键值对儿的个数
@@ -3442,8 +3462,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
 	 */
-	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> tuple2Stream() {
-		return this.tuple2Stream(true);
+	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> tupleS() {
+		return this.tupleS(true);
 	}
 
 	/**
@@ -3462,7 +3482,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *                           false: 将返回[ [1,2], [2,3], [3,4],[4,null]] <br>
 	 * @return 滑动窗口的滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
 	 */
-	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> tuple2Stream(boolean discardSinglePoint) {
+	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> tupleS(boolean discardSinglePoint) {
 		return sliding(this.kvs(), 2, 1).stream().filter(e -> !discardSinglePoint || e.size() == 2)
 				.map(e -> Tuple2.TUP2(e.get(0), e.size() > 1 ? e.get(1) : null));
 	}

@@ -126,7 +126,8 @@ public class SQL {
 
 	/**
 	 * 查询语句<br>
-	 * 使用getSqlCtxAsOneRecord 格式化输出
+	 * 使用getSqlCtxAsOneRecord 格式化输出 <br>
+	 * 对模式参数如:foreach 进行结构解析
 	 * 
 	 * @return 文本串
 	 */
@@ -202,9 +203,11 @@ public class SQL {
 	 */
 	public String string(final Map<String, Object> map) {
 		String s = this.string();
-		final Function<Object, String> escape = (obj) -> (obj + "").replace("(", "\\(").replace(")", "\\)").replace("$",
-				"\\$");
-		for (Term term : this.terms()) {
+		final Function<Object, String> escape = obj -> asString(obj) //
+				.replace("(", "\\(") //
+				.replace(")", "\\)") //
+				.replace("$", "\\$");
+		for (final Term term : this.terms()) {
 			// try {// 确保出现错误依旧可以运行
 			if (term.getType() == Term.TermType.SYMBOL) {// 记录符号
 				Object obj = map.get(term.getSymbol());
@@ -221,8 +224,12 @@ public class SQL {
 				Object t = term.toForeachString(map);// 获得term 的替换后的数据
 				if (t == null)
 					continue;
-				String foreach_term = "\\$?\\s*\\{\\s*" + escape.apply(term.data) + "\\s*}";// foreach的字符描述
-				s = s.replaceAll(foreach_term, escape.apply(t));
+				String foreach_term = "\\$+(\\s*)\\{\\s*" + escape.apply(term.data) + "\\s*}";// foreach的字符描述
+				final var matcher = Pattern.compile(foreach_term).matcher(s);
+				if (matcher.find()) {
+					final var ws = matcher.group(1); // 空白
+					s = matcher.replaceAll(ws + escape.apply(t));
+				}
 			} else if (term.getType() == Term.TermType.WHERE) {
 				final Object t = term.toWhereString(map);// 获得term 的替换后的数据
 				if (t == null)
@@ -267,7 +274,7 @@ public class SQL {
 			}
 			rec.stream().filter(pft) // 删除空值字符串
 					.forEach(e -> {
-						final var fldvalue = asString(e.value());
+						final var fldvalue = asString2(e.value());
 						final var fldname = parseFieldName(e.key()).str("name");// 获取字段名
 						final var i = ar.get().indexOf(fldname);
 						// fldname的索引位置,如果>0 表示业已存在一个同名的字段，需要给予覆盖。
@@ -555,7 +562,7 @@ public class SQL {
 							? "VARCHAR(512)" // 默认类型为 字符串
 							: javaType2SqlType((value instanceof Class<?> ? (Class<?>) value : value.getClass()), //
 									Optional.ofNullable(fldrec.i4("size")).orElseGet(() -> { // 根据示例数据值提取长度
-										final int size = Optional.ofNullable(asString(value)) //
+										final int size = Optional.ofNullable(asString2(value)) //
 												.map(String::length).map(length -> {
 													final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
 													if (debug) {
@@ -1066,7 +1073,7 @@ public class SQL {
 
 		final var dfm = partitions.collect(DFrame.dfmclc);
 		final var proto = dfm.aov2rec((List<Object> v) -> { // 提取
-			return v.stream().map(e -> new Tuple2<>(SQL.asString(e), e))
+			return v.stream().map(e -> new Tuple2<>(SQL.asString2(e), e))
 					.sorted((a, b) -> -(a._1().length() - b._1().length())) // 获取最长长度作为原型
 					.findFirst().map(e -> e._2()).get();
 		});
@@ -1074,13 +1081,14 @@ public class SQL {
 	}
 
 	/**
+	 * 转成带有引号的字符串
 	 * 
 	 * @param obj
 	 * @return
 	 */
 	public static String asString(final Object obj) {
 
-		var value = obj;
+		Object value = obj;
 
 		// value 数据类型格式化
 		if (value instanceof LocalDateTime) {
@@ -1094,9 +1102,19 @@ public class SQL {
 		} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord) {
 			value = Json.obj2json(value);
 		} else {
-			// do nothing
+			// do Nothing
 		} // if
-		final var fldvalue = Jdbcs.format("''{0}''", String.valueOf(value).replace("'", "''")); // 格式化字段值
+		return String.valueOf(value);
+	}
+
+	/**
+	 * 转成带有引号的字符串
+	 * 
+	 * @param obj
+	 * @return
+	 */
+	public static String asString2(final Object obj) {
+		final var fldvalue = Jdbcs.format("''{0}''", asString(obj).replace("'", "''")); // 格式化字段值
 		return fldvalue;
 	}
 

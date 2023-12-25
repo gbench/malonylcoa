@@ -570,7 +570,7 @@ public class Neo4jApp {
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addEdgeAttributeSet(IRecord edge, IRecord rec) {
-			edge.tuple2Stream().map(e -> new EdgeInfo(e, rec)).forEach(tup -> this.addEdgeAttributeSet(tup, rec));
+			edge.tupleS().map(e -> new EdgeInfo(e, rec)).forEach(tup -> this.addEdgeAttributeSet(tup, rec));
 			return this;
 		}
 
@@ -1434,7 +1434,7 @@ public class Neo4jApp {
 		edgeLineInfos.forEach((edgeInfoline, edge_attributes) -> {
 
 			// 图边结构的解析:拆分成基本单元 双顶点边EdgeInfo而后 逐一处理。
-			edgeInfoline.tuple2Stream()// 把边结构edgeInfoline 分解成双顶点边
+			edgeInfoline.tupleS()// 把边结构edgeInfoline 分解成双顶点边
 					.map(tup -> g.new EdgeInfo(tup, edge_attributes))// 转换双定顶点边:EdgeInfo
 					.map(g.getEdge_name_renderer())// 提取双顶点边EdgeInfo的边名
 					.forEach(edgeName -> {
@@ -1442,11 +1442,11 @@ public class Neo4jApp {
 						g.addAttributeSet(edgeName, edge_attributes
 								// 过滤掉顶点属性,通过 VERTEX_ATTRIBUTE_NAME_PATTERN 来识别是否是边属性。
 								.filter(kvp -> !g.is_vertex_attribute_name.test(kvp._1())));// g.addAttribute 设置边属性
-					});// tuple2Stream 边流
+					});// tupleS 边流
 
 			// 拆分成双顶点边，进而实现对边内的 顶点属性的提取。
 			if (edge_attributes != null && edge_attributes.size() > 0)
-				edgeInfoline.tuple2Stream(false) // 把边结构拆分成双顶点边的。并以此依次处理。
+				edgeInfoline.tupleS(false) // 把边结构拆分成双顶点边的。并以此依次处理。
 						.forEach(edge -> {// edge 是一个包含有两个顶点的元组，第二个顶点可能为null
 							// 边处理回调
 							if (this.on_edge_event != null)
@@ -1513,7 +1513,7 @@ public class Neo4jApp {
 									} // 顶点的属性添加
 								} // if matcher.matches() // 顶点属性解析
 							});// edge_attributes.foreach
-						});// tuple2Stream(false).forEach
+						});// tupleS(false).forEach
 		}); // edgeLineInfos.forEach
 
 		return g;// 返回图结构
@@ -1772,7 +1772,7 @@ public class Neo4jApp {
 																										// record。
 			final var edge_attributes = e.rec(Graph.EDGE_ATTR_KEY);// 提取边/顶点属性,每个 kvp 表示一个属性:key,value。
 
-			edge_rec.tuple2Stream(false) // 边路径记录 分解成 首尾相连的 首尾端点对儿span。
+			edge_rec.tupleS(false) // 边路径记录 分解成 首尾相连的 首尾端点对儿span。
 					.map(span -> g.new EdgeInfo(span, // 构造成一个边信息结构
 							edge_attributes != null // 首尾端点对儿span 是否包含有属性
 									? edge_attributes.filter(kvp -> !g.is_vertex_attribute_name.test(kvp.key())) // 过滤掉非边的属性（顶点属性),即提取边属性。
@@ -1793,7 +1793,7 @@ public class Neo4jApp {
 							g.edges_workingcache.add(edge);// 搜集边信息,仅仅接收双顶点的边，单顶点为 顶点定义，不予放置于edges
 						if (this.on_edge_event != null)
 							this.on_edge_event.accept(edge, GraphEvent.PHASE1);// 搜集边信息，可能包含单顶点边信息。通知回调
-					});// tuple2Stream
+					});// tupleS
 		});// forEach
 		this.on_complete_handler.accept(g);
 

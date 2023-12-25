@@ -497,12 +497,12 @@ public class Term {
 					return foreachExpr;
 				final Class<?> entriesCls = entriesObject.getClass();
 				if (entriesObject instanceof Collection || entriesCls.isArray()) {
-					final Collection<Object> entries = entriesCls.isArray() ? Arrays.asList((Object[]) entriesObject)
+					final Collection<Object> entries = entriesCls.isArray() //
+							? Arrays.asList((Object[]) entriesObject)
 							: (Collection<Object>) entriesObject;
 					if (entries.size() > 0) {// 集合类非空
-						final var opt = entries.stream().filter(entry -> !(entry instanceof IRecord)).findAny(); // 是否存在非
-																													// IRecord元素
-
+						// 是否存在非IRecord元素
+						final var opt = entries.stream().filter(entry -> !(entry instanceof IRecord)).findAny();
 						if (opt.isPresent()) {// 尝试给予人工修复
 							// System.out.println("List中含有非IRecord对象"+oo);
 							map.put(this.getEntriesName(), entries.stream().map(entry -> {// 在kvs增加占位符placeholder->键名keyname之间的对应关系
@@ -542,7 +542,8 @@ public class Term {
 						? Term.fill_template(loopbody, placeholder2values) // 较快的算法。
 						: Jdbcs.tokenize(loopbody, placeholder2values.keys()).stream() // 分词
 								.map(token -> token.bool("flag") // 是否为关键字(占位符)
-										? placeholder2values.get(token.str("name"), v -> // 关键字(占位符)的值替换
+										? placeholder2values.get(token.str("name"), //
+												v -> // 关键字(占位符)的值替换
 				token.str("name").endsWith("$") || v instanceof Number // 数字类型的 值
 						? v // 数字类型的值
 						: (v == null ? null : "'" + v + "'") // 提取数字类型的值

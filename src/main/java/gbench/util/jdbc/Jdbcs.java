@@ -54,10 +54,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 /**
- * 小树苗基础类库 <br>
+ * Jdbcs基础工具类库 <br>
  * 这是一个用于数据分析的工具箱<br>
- * 小树苗的意思 是说 它 沐浴阳光经历风雨 , 慢慢的一点一点的长大 <br>
- * 长着长着就标成了参天大树，就是顶天立地了<br>
  * <p>
  * IRecord 是 对数据记录的抽象 SQL 是对 数据操作语言的抽象 Node 是对树结构的节点的抽象
  *
