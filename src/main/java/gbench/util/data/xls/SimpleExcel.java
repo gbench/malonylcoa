@@ -1726,10 +1726,30 @@ public class SimpleExcel implements AutoCloseable {
 	/**
 	 * SimpleExcel 生成器
 	 * 
+	 * @param file excel 文件对象
+	 * @return SimpleExcel
+	 */
+	public static SimpleExcel xls(final File file) {
+		return new SimpleExcel(file);
+	}
+
+	/**
+	 * SimpleExcel 生成器
+	 * 
 	 * @param path excel 文件路径的绝对路径
 	 * @return SimpleExcel
 	 */
 	public static SimpleExcel of(final String path) {
+		return SimpleExcel.of(new File(path));
+	}
+
+	/**
+	 * SimpleExcel 生成器
+	 * 
+	 * @param path excel 文件路径的绝对路径
+	 * @return SimpleExcel
+	 */
+	public static SimpleExcel xls(final String path) {
 		return SimpleExcel.of(new File(path));
 	}
 
