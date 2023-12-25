@@ -2,8 +2,10 @@ package gbench.util.jdbc;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -463,11 +465,19 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @return U 类型的结果
 	 * @throws SQLException SQLException
 	 */
+	@SuppressWarnings("unchecked")
 	default <U> U sql2u(final String sqlpattern, final IRecord params, final Collector<IRecord, ?, U> collector)
 			throws SQLException {
-		final var result = this.sql2recordS(sqlpattern, params).collect(collector);
-		this.setAttribute("result", result); // 设置结果状态值
-		return result;
+
+		try {
+			final var result = this.sql2recordS(sqlpattern, params).collect(collector);
+			this.setAttribute("result", result); // 设置结果状态值
+		} catch (Exception e) {
+			this.setAttribute("result", error("sql2u", sqlpattern, params)); // 设置结果状态值
+			throw e;
+		}
+
+		return (U) this.getAttribute("result");
 	}
 
 	/**
@@ -1495,6 +1505,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 			return b;
 		} catch (Exception e) {
 			System.err.println("error sql:" + sql);
+			this.setAttribute("error_sql", sql);
 			throw e;
 		}
 	}
@@ -1642,23 +1653,24 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	static public Stream<IRecord> psql2recordS(final Connection connection, final String sql,
 			final Map<Integer, ?> params, final boolean update_flag, final boolean close_conn) throws SQLException {
 
-		final var pstmt = Jdbc.pstmt(connection, update_flag ? SQL_MODE.UPDATE : SQL_MODE.QUERY, sql, params); // 创建查询语句
-
+		PreparedStatement _pstmt = null;
 		ResultSet _rs = null;
 		try {
+			_pstmt = Jdbc.pstmt(connection, update_flag ? SQL_MODE.UPDATE : SQL_MODE.QUERY, sql, params); // 创建查询语句
 			if (update_flag) {
-				pstmt.execute();
-				_rs = pstmt.getGeneratedKeys();
+				_pstmt.execute();
+				_rs = _pstmt.getGeneratedKeys();
 				if (_rs == null)
-					_rs = pstmt.getResultSet();
+					_rs = _pstmt.getResultSet();
 			} else {
-				_rs = pstmt.executeQuery();
+				_rs = _pstmt.executeQuery();
 			}
 		} catch (SQLException e) {
-			System.out.println(String.format("error sql:%s", sql));
+			System.out.println(String.format("error sql:" + sql));
 			throw e;
 		}
 
+		final var pstmt = _pstmt;
 		final var rs = _rs;
 		final Runnable closeHandler = () -> { // 关闭操作的回调函数
 			try {
@@ -1754,6 +1766,19 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 				Jdbcs.format(x == null ? "select * from {0} where isnull({1})" : "select * from {0} where {1}=''{2}''",
 						table, idfld, x.toString().replace("\\", "\\\\") // 转义"\n"
 				))); // trycatch
+	}
+
+	/**
+	 * 生成错误记录
+	 * 
+	 * @param method 方法名称
+	 * @param sql    sql语句
+	 * @param params 语句参数
+	 * @return 错误记录
+	 */
+	static IRecord error(final String method, final String sql, final Object params) {
+		final IRecord line = IRecord.REC("method", method, "sql", sql, "params", params, "time", LocalDateTime.now());
+		return line;
 	}
 
 }// IJdbcSession

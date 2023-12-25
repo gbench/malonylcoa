@@ -299,6 +299,11 @@ public class SQL {
 				.collect(Collectors.joining(",\n  "));
 		buffer.append(line);
 		buffer.append("");
+
+		if (debug) {
+			System.out.println(String.format("insql:%s", buffer));
+		}
+
 		return buffer.toString();
 	}
 
@@ -543,23 +548,25 @@ public class SQL {
 			final var key = e.key().strip();// 提取主键描述字符串
 			final var fldrec = parseFieldName(key);// 接卸字段描述
 			final var value = e.value(); // 键值
-			final var type = (e.value() == null) //
-					? "varchar(512)" // 默认类型为 字符串
-					: javaType2SqlType(value instanceof Class<?> //
-							? (Class<?>) value
-							: value.getClass(), Optional.ofNullable(fldrec.i4("size")).orElseGet(() -> { // 根据示例数据值提取长度
-								final int size = Optional.ofNullable(asString(value)) //
-										.map(String::length).map(length -> {
-											final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
-											if (debug) {
-												final var format = "\n%s[%s] ----> %d[原长度] , %d[1.5倍长度]";
-												System.out.println(
-														String.format(format, value, value.getClass(), length, len_15));
-											}
-											return len_15; // 1.5 倍长度
-										}).orElse(null);
-								return size; // 字段长度
-							}));
+
+			final var type = value instanceof String && Json.isJson(value) //
+					? "JSON" // json 类型
+					: (e.value() == null) //
+							? "VARCHAR(512)" // 默认类型为 字符串
+							: javaType2SqlType((value instanceof Class<?> ? (Class<?>) value : value.getClass()), //
+									Optional.ofNullable(fldrec.i4("size")).orElseGet(() -> { // 根据示例数据值提取长度
+										final int size = Optional.ofNullable(asString(value)) //
+												.map(String::length).map(length -> {
+													final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
+													if (debug) {
+														final var format = "\n%s[%s] ----> %d[原长度] , %d[1.5倍长度]";
+														System.out.println(String.format(format, value,
+																value.getClass(), length, len_15));
+													}
+													return len_15; // 1.5 倍长度
+												}).orElse(null);
+										return size; // 字段长度
+									}));
 			final var name = fldrec.str("name");
 			if (fldrec.bool("primarykey")) {
 				primaryKeys.add(P(name, type));// 加入主键
@@ -609,6 +616,10 @@ public class SQL {
 		sqls.add(buffer.toString());
 		sqls.add(buffer.substring(sqls.get(0).length()));
 		sqls.addAll(constraints);
+
+		if (debug) {
+			System.out.println(String.format("create sql: \n%s", sqls));
+		}
 
 		return sqls;
 	}
@@ -977,7 +988,29 @@ public class SQL {
 		if (id != null) {
 			proto.remove("id");
 		}
-		return sql(name, REC("#id", Optional.ofNullable(id).orElse(1)).add(proto)).ctsqls(true).get(2);
+		System.out.println(proto);
+		final var _proto = proto.aov2rec(e -> {
+			final var line = e.toString();
+			final var matcher = Pattern.compile("^(\\+\\-)?[0-9.]+$") //
+					.matcher(line);
+			final var b = matcher.matches();
+			if (b && line.contains(".")) { // 浮点数
+				try {
+					return Double.parseDouble(line);
+				} catch (Exception ex) {
+					return e;
+				}
+			} else if (b) { // 整数
+				try {
+					return Double.parseDouble(line);
+				} catch (Exception ex) {
+					return e;
+				}
+			} else {
+				return e;
+			}
+		});
+		return sql(name, REC("#id", Optional.ofNullable(id).orElse(1)).add(_proto)).ctsqls(true).get(2);
 	}
 
 	/**
@@ -1044,7 +1077,7 @@ public class SQL {
 		} else {
 			// do nothing
 		} // if
-		final var fldvalue = Jdbcs.format("''{0}''", String.valueOf(value).replace("'", "")); // 格式化字段值
+		final var fldvalue = Jdbcs.format("''{0}''", String.valueOf(value).replace("'", "''")); // 格式化字段值
 		return fldvalue;
 	}
 

@@ -31,7 +31,7 @@ public abstract class AbstractJdbcSession<T, D> implements IJdbcSession<T, D> {
 	 * @param line 字符串
 	 * @return 转义字符
 	 */
-	private String unescape(final String line) {
+	public String unescape(final String line) {
 		final var _sql = line != null //
 				&& (line.indexOf("'{'") >= 0 || line.indexOf("''") >= 0) // 对于含有 brace 转义的语句 给予转回
 						? MessageFormat.format(line, (Object[]) null)
@@ -54,7 +54,7 @@ public abstract class AbstractJdbcSession<T, D> implements IJdbcSession<T, D> {
 	 */
 	public Stream<IRecord> psql2recordS(final String sql, final Map<Integer, ?> params) throws SQLException {
 
-		final var stream = IJdbcSession.psql2recordS(this.getConnection(), unescape(sql), params, false, false); // 采用流式实现方法
+		final var stream = IJdbcSession.psql2recordS(this.getConnection(), sql, params, false, false); // 采用流式实现方法
 		this.add(stream);
 
 		return stream;
@@ -69,8 +69,7 @@ public abstract class AbstractJdbcSession<T, D> implements IJdbcSession<T, D> {
 	 * @throws SQLException
 	 */
 	public List<IRecord> psql2update(final String sql, final Map<Integer, Object> params) throws SQLException {
-		return IJdbcSession.psql2recordS(this.getConnection(), unescape(sql), params, true, false)
-				.collect(Collectors.toList());
+		return IJdbcSession.psql2recordS(this.getConnection(), sql, params, true, false).collect(Collectors.toList());
 	}//
 
 } // AbstractJdbcSession
