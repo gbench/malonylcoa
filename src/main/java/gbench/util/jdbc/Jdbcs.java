@@ -2551,10 +2551,11 @@ public class Jdbcs {
 	/**
 	 * 导入数据表格
 	 * 
+	 * @param shtmx    表单读取器
 	 * @param tblnames 表名列表
 	 * @return 数据表
 	 */
-	public static ExceptionalConsumer<IJdbcSession<Object, DFrame>> imports(final Function<String, DFrame> shtmx,
+	public static ExceptionalConsumer<IJdbcSession<?, ?>> imports(final Function<String, DFrame> shtmx,
 			final String... tblnames) {
 		return (sess) -> {
 			for (final String tblname : tblnames) { // 遍历数据表

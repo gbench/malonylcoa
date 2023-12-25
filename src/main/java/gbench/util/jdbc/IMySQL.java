@@ -2,10 +2,10 @@ package gbench.util.jdbc;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
+import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.annotation.JdbcExecute;
 import gbench.util.jdbc.annotation.JdbcQuery;
 import gbench.util.jdbc.kvp.DFrame;
@@ -240,13 +240,13 @@ public interface IMySQL {
 	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
-	default IRecord withTransaction(final IDataManipulation<IJdbcSession<UUID, Object>> dm) {
+	default IRecord withTransaction(final ExceptionalConsumer<IJdbcSession<?, ?>> cs) {
 		final var attrs = new HashMap<Object, Object>();
 		final var spp = this.getProxy().findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = this.jdbc();
 		attrs.put(ISqlPatternPreprocessor.class, spp); // 增加值类型
 		attrs.put(Collector.class, DFrame.dfmclc); // 增加值类型
-		return jdbc.withTransaction(dm, attrs);
+		return jdbc.withTransaction(sess -> cs.accept(sess), attrs);
 	}
 
 	/**

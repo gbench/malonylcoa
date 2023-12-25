@@ -12,13 +12,14 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.jdbc.sql.SQL;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.sandbox.data.h2.H2db;
-import gbench.util.data.MyDataApp;
+import gbench.util.data.xls.SimpleExcel;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.Jdbcs;
 
-import static gbench.sandbox.data.h2.H2db.imports;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
@@ -126,6 +127,7 @@ public class JdbcH2Test {
 	public void foo() {
 
 		// 创造一个IJdbcApp接口应用
+		final var datafile = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
 		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
 		final var dbname = "mymall"; // 更换一个数据库
 		final var url = String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
@@ -139,11 +141,14 @@ public class JdbcH2Test {
 		final var top10 = "select * from ##tbl limit 10";
 		final var size = 1000; // 数据量
 		final var batch_size = 10; // 批次大小
+		final var excel = SimpleExcel.of(datafile);
 
-		// 数据初始导入
-		new MyDataApp(h2_rec.toMap()).withTransaction(imports(tables)); // 导入订单数据
+		// 数据导入
+		SQL.debug = true;
+		jdbcApp.withTransaction(Jdbcs.imports(e -> excel.autoDetect(e).collect(DFrame.dfmclc2), tables));
 		// 数据操作
 		jdbcApp.withTransaction(sess -> {
+
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_product", sess.sql2dframe("select * from t_product limit ##cnt", "cnt", 2));
 			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachBy(processor("attrs")));

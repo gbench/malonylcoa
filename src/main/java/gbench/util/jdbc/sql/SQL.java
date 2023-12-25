@@ -1,6 +1,7 @@
 package gbench.util.jdbc.sql;
 
 import static gbench.util.jdbc.kvp.IRecord.REC;
+import static gbench.util.jdbc.kvp.Tuple2.P;
 
 import java.sql.Timestamp;
 import java.text.MessageFormat;
@@ -532,7 +533,11 @@ public class SQL {
 		final var uniqueKeys = new LinkedList<String>(); // 主键列表
 		final var fldDefs = new LinkedHashMap<String, String>();
 		final var tableDefs = IRecord.REC(); // 表的定义
+
 		this.sqlctx.forEach(tableDefs::add);
+		if (debug) {
+			System.out.println(String.format("%s", tableDefs));
+		}
 
 		tableDefs.stream().forEach(e -> {
 			final var key = e.key().strip();// 提取主键描述字符串
@@ -546,20 +551,27 @@ public class SQL {
 								final int size = Optional.ofNullable(asString(value)) //
 										.map(String::length).map(length -> {
 											final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
-											// final var format = "%s ----> %d[原长度] , %d[1.5倍长度]";
-											// System.out.println(String.format(format, value, length, len_15));
+											if (debug) {
+												final var format = "\n%s[%s] ----> %d[原长度] , %d[1.5倍长度]";
+												System.out.println(
+														String.format(format, value, value.getClass(), length, len_15));
+											}
 											return len_15; // 1.5 倍长度
 										}).orElse(null);
 								return size; // 字段长度
 							}));
-			if (fldrec.bool("primarykey"))
-				primaryKeys.add(Tuple2.TUP2(fldrec.str("name"), type));// 加入主键
-			if (fldrec.bool("uniquekey"))
+			final var name = fldrec.str("name");
+			if (fldrec.bool("primarykey")) {
+				primaryKeys.add(P(name, type));// 加入主键
+			}
+			if (fldrec.bool("uniquekey")) {
 				uniqueKeys.add(fldrec.str("name"));// 加入唯一性约束
-
-			// System.out.println("name"+tup);
-			final var line = fldrec.str("name") + " " + type;
-			fldDefs.put(fldrec.str("name"), line);
+			}
+			final var line = String.format("%s %s", name, type);
+			if (debug) {
+				System.out.println(String.format("fld def line %s : %s", name, line));
+			}
+			fldDefs.put(name, line);
 		});// map
 
 		final var constraints = new LinkedList<String>(); // 约束的定义
@@ -574,14 +586,19 @@ public class SQL {
 							intkey_autocrement ? "auto_increment" : "", "primary key"));
 				} // if
 			} // if
-			if (!flag)
+			if (!flag) {
 				constraints.add(Jdbcs.format("alter table {0} add constraint primary key pk_{0} ({1});", name,
 						primaryKeys.stream().map(e -> e._1().toLowerCase()).collect(Collectors.joining(","))));
+			}
 		} // primaryKeys.size
 
 		if (uniqueKeys.size() > 0) {// 唯一约束
 			constraints.add(Jdbcs.format("alter table {0} add constraint unique uq_{0} ({1});", name.toLowerCase(),
 					String.join(",", uniqueKeys)));
+		}
+
+		if (debug) {
+			System.out.println(String.format("%s", fldDefs));
 		}
 		final var flds = String.join(",\n\t", fldDefs.values());
 
@@ -956,8 +973,11 @@ public class SQL {
 	 * @return create table sql
 	 */
 	public static String ctsql(final String name, final IRecord proto) {
-
-		return sql(name, REC("#id", 1).add(proto)).ctsqls(true).get(2);
+		Object id = proto.get("id");
+		if (id != null) {
+			proto.remove("id");
+		}
+		return sql(name, REC("#id", Optional.ofNullable(id).orElse(1)).add(proto)).ctsqls(true).get(2);
 	}
 
 	/**
@@ -1024,7 +1044,7 @@ public class SQL {
 		} else {
 			// do nothing
 		} // if
-		final var fldvalue = Jdbcs.format("''{0}''", (value + "").replace("'", "\\'")); // 格式化字段值
+		final var fldvalue = Jdbcs.format("''{0}''", String.valueOf(value).replace("'", "")); // 格式化字段值
 		return fldvalue;
 	}
 
@@ -1114,6 +1134,8 @@ public class SQL {
 	final static DateTimeFormatter dtf1 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 	final static DateTimeFormatter dtf2 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	// debug 调试标记
+	public static boolean debug = false;
 
 	private String name = null;// sql 名称
 	private String sqltpl = null;// sql 语句模板， 占位符即模板参数式样：#xxx 字符串类型, ##xxx 数值类型,或是 ${xxx}
