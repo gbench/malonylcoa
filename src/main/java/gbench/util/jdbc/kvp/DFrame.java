@@ -85,7 +85,7 @@ public class DFrame extends LinkedRecord {
 	public DFrame shuffle() {
 
 		return this.rowS().map(e -> Tuple2.of(Math.random(), e)) // 加入排序字段
-				.sorted((a, b) -> Objects.compare(a._1(), b._1(), null)).map(e -> e._2) //
+				.sorted((a, b) -> Objects.compare(a._1(), b._1(), Double::compareTo)).map(e -> e._2) //
 				.collect(DFrame.dfmclc);
 	}
 

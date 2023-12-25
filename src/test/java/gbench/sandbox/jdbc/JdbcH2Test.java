@@ -55,11 +55,11 @@ public class JdbcH2Test {
 		final var part_b = parts.get(1); // 乙方 发货方 shipper
 		final var parta_id = part_a.get("id"); // 甲方id
 		final var partb_id = part_b.get("id"); // 乙方id, 产品是由partb转移到parta的
-		final var products = sample(cps.many2one("company_id", partb_id), 5); // 选择5个产品
+		final var products = cps.many2one("company_id", partb_id).shuffle().head(5); // 选择5个产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_b.str("name"), partb_id, products));
 
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
-		final var items = products.stream() // 产品记录
+		final var items = products.rowS() // 产品记录
 				.map(e -> { // 订单行项目
 					final var id = e.get("id"); // 公司产品id
 					final var name = e.get("name"); // 公司产品名称
@@ -72,7 +72,7 @@ public class JdbcH2Test {
 
 					return item_rb.get(id, name, company_id, product_id, price, quantity, amount); // 订单行项目
 				}).toList(); // 订单行项目
-		final var name = products.get(0).get("name");
+		final var name = String.format("%s ...", products.head().get("name")); // 用产品的第一个名称代表订单名称
 		final var amount = items.stream().collect(summarizingDouble(e -> e.dbl("price") * e.dbl("quantity"))).getSum(); // 订单金额
 		final var order_rb = rb("name,shipper,receiver,receive_address,amount,details,create_time"); // 订单结构
 		final var details = rb("flag,amount,items").get(false, amount, items);// 订单详情
