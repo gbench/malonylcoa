@@ -224,7 +224,7 @@ public class SQL {
 				Object t = term.toForeachString(map);// 获得term 的替换后的数据
 				if (t == null)
 					continue;
-				String foreach_term = "\\$+(\\s*)\\{\\s*" + escape.apply(term.data) + "\\s*}";// foreach的字符描述
+				String foreach_term = "\\$?(\\s*)\\{\\s*" + escape.apply(term.data) + "\\s*}";// foreach的字符描述
 				final var matcher = Pattern.compile(foreach_term).matcher(s);
 				if (matcher.find()) {
 					final var ws = matcher.group(1); // 空白

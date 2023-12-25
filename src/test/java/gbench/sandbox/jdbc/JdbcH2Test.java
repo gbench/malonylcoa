@@ -205,7 +205,7 @@ public class JdbcH2Test {
 	public void quz() {
 		final var kvs = REC("name", "zhangsan","address",REC("city","shanghai","district","changning"), "weight", 30).kvs2();
 		println(kvs);
-		final var sql = nsql("update ##tbl set ${foreach p in kvs %p.key=p.value} where id=##id",
+		final var sql = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
 				rb("tbl,id,kvs").get("t_user", 1, kvs)).string2();
 		println(sql);
 	}
