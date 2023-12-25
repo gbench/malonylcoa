@@ -143,7 +143,6 @@ public class JdbcH2Test {
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
 		// 数据操作
 		jdbcApp.withTransaction(sess -> {
-
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_product", sess.sql2dframe("select * from t_product limit ##cnt", "cnt", 2));
 			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachBy(processor("attrs")));
