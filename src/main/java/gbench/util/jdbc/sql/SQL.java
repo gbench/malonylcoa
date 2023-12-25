@@ -131,7 +131,7 @@ public class SQL {
 	 * 
 	 * @return 文本串
 	 */
-	public String string2() {
+	public String format() {
 		return this.string(this.getSqlCtxAsOneRecord());
 	}
 
@@ -774,7 +774,7 @@ public class SQL {
 	 * 
 	 * final var sql = nsql("insert into ##tbl(id,name) values
 	 * (##id,#name)",REC("tbl","t_user","id",1,"name","zhangsan"));<br>
-	 * println(sql.string2()); 的结果是 <br>
+	 * println(sql.format()); 的结果是 <br>
 	 * insert into t_user(id,name) values (1,'zhangsan')
 	 * 
 	 * @param pattern sql模版,占位符 用#标记,如: #name表示字符串类项目 即 值 会被 引号括起来, <br>
@@ -793,7 +793,7 @@ public class SQL {
 	 * 
 	 * final var sql = nsql("insert into ##_0(id,name,rank) values
 	 * (##_1,#_2,0)","t_user",1,"zhangsan");<br>
-	 * println(sql.string2()); 的结果是 <br>
+	 * println(sql.format()); 的结果是 <br>
 	 * insert into t_user(id,name,rank) values (1,'zhangsan',0)
 	 * 
 	 * @param pattern sql模版,占位符 用#标记,如: #_0表示字符串类项目 即 值 会被 引号括起来, <br>

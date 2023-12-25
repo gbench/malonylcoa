@@ -434,13 +434,13 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * u 结果 会被 保存到 session 的 result 的 属性 之中。
 	 *
 	 * @param <U>       归集器结果类型
-	 * @param sql       sql 语句, 调用 sql.string2() 生成 查询文本
+	 * @param sql       sql 语句, 调用 sql.format() 生成 查询文本
 	 * @param collector 归集器 [rec]-&gt;u
 	 * @return U 类型的结果
 	 * @throws SQLException
 	 */
 	default <U> U sql2u(final SQL sql, final Collector<IRecord, ?, U> collector) throws SQLException {
-		return this.sql2u(sql.string2(), collector);
+		return this.sql2u(sql.format(), collector);
 	}
 
 	/**
@@ -614,24 +614,24 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * <br>
 	 * 对于短路的流，注意调用 stream.close() 来释放数据库连接, 或者 是 调用 jdbc.clear 来给与清空。<br>
 	 *
-	 * @param sql    sql 语句,调用 sql.string2() 生成 查询文本
+	 * @param sql    sql 语句,调用 sql.format() 生成 查询文本
 	 * @param params prepared sql 语句中占位符参数的值集合，位置从1开始
 	 * @return IRecord 集合
 	 * @throws SQLException
 	 */
 	default Stream<IRecord> psql2recordS(final SQL sql, final IRecord params) throws SQLException {
-		return this.psql2recordS(sql.string2(), params);
+		return this.psql2recordS(sql.format(), params);
 	}
 
 	/**
 	 * 查询结果集合
 	 *
-	 * @param sql 命名SQL语句,调用 sql.string2() 生成 查询文本
+	 * @param sql 命名SQL语句,调用 sql.format() 生成 查询文本
 	 * @return 查询结果集合
 	 * @throws SQLException
 	 */
 	default List<IRecord> sql2records(final SQL sql) throws SQLException {
-		return this.sql2records(sql.string2());
+		return this.sql2records(sql.format());
 	}
 
 	/**
@@ -761,14 +761,14 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * 从结果集中提取一行数据。
 	 *
 	 * @param <U>         返回值类型
-	 * @param sql         sql 语句,调用sql.string2()提取语句文本
+	 * @param sql         sql 语句,调用sql.format()提取语句文本
 	 * @param targetClass 目标结果类型,当targetClass 为Boolean.class,boolean.class 的时候 返回结果
 	 *                    为null的时候回被 视为 false
 	 * @return 一条结果的数据集合，单行数据或者没有数据。
 	 * @throws SQLException
 	 */
 	default <U> U sql2get(final SQL sql, final Class<U> targetClass) throws SQLException {
-		return sql2get(sql.string2(), targetClass);
+		return sql2get(sql.format(), targetClass);
 	}
 
 	/**
@@ -796,12 +796,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 从结果集中提取一行数据。
 	 *
-	 * @param sql sql语句, 调用 sql.string2() 来提取文本内容
+	 * @param sql sql语句, 调用 sql.format() 来提取文本内容
 	 * @return 一条结果的数据集合，单行数据或者没有数据。
 	 * @throws SQLException
 	 */
 	default Optional<IRecord> sql2maybe(final SQL sql) throws SQLException {
-		return this.sql2maybe(sql.string2());
+		return this.sql2maybe(sql.format());
 	}
 
 	/**
@@ -854,13 +854,13 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * 从结果集中提取一行数据。<br>
 	 *
 	 * @param <U> 返回值类型
-	 * @param sql sql 语句，会调用sql.string2()生成语句内容
+	 * @param sql sql 语句，会调用sql.format()生成语句内容
 	 * @return 一条结果的数据集合，单行数据或者没有数据。
 	 * @throws SQLException
 	 */
 	default <U> Optional<U> sql2maybe(final SQL sql, final Class<U> targetClass) throws SQLException {
 
-		final var stream = this.sql2recordS(sql.string2());
+		final var stream = this.sql2recordS(sql.format());
 		final var ret = stream.findFirst().map(e -> e.mutate(targetClass));
 		this.clear(stream);
 
@@ -891,7 +891,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @throws SQLException
 	 */
 	default boolean sqlexecute(final SQL sql) throws SQLException {
-		final var sqline = sql.string2();
+		final var sqline = sql.format();
 		return sqlexecute(sqline == null ? sql.toString() : sqline);
 	}
 
@@ -1034,7 +1034,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * sql语句执行
 	 *
-	 * @param sql sql 语句模板,会调用 sql.string2()来提取文本语句内容
+	 * @param sql sql 语句模板,会调用 sql.format()来提取文本语句内容
 	 * @return 生成的主键 GENERATED_KEY
 	 * @throws SQLException
 	 */
@@ -1057,12 +1057,12 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * sql语句执行
 	 *
-	 * @param sql sql语句对象,会调用 sql.string2()来提取文本语句内容
+	 * @param sql sql语句对象,会调用 sql.format()来提取文本语句内容
 	 * @return 生成的主键 GENERATED_KEY
 	 * @throws SQLException
 	 */
 	default Number sql2execute2num(final SQL sql) throws SQLException {
-		return sql2execute2num(sql.string2());
+		return sql2execute2num(sql.format());
 	}
 
 	/**
@@ -1102,7 +1102,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 执行sql语句更新
 	 *
-	 * @param sql sql 语句,会调用 sql.string2()来提取文本语句内容
+	 * @param sql sql 语句,会调用 sql.format()来提取文本语句内容
 	 * @return 返回结果列表
 	 * @throws SQLException
 	 */
@@ -1196,7 +1196,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * 对于短路的流，注意调用 stream.close() 来释放数据库连接, 或者 是 调用 jdbc.clear 来给与清空。<br>
 	 * 
 	 * @param <U>       归集器结果类型
-	 * @param sql       sql 语句,调用 sql.string2() 生成 查询文本
+	 * @param sql       sql 语句,调用 sql.format() 生成 查询文本
 	 * @param params    prepared sql 语句中占位符参数的值集合，位置从1开始
 	 * @param collector 归集器 [rec]-&gt;u
 	 * @return U 类型的结果
@@ -1430,14 +1430,14 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 从结果集中提取一行数据。
 	 *
-	 * @param sql    sql语句模版，调用 sql.string2() 生成 查询文本
+	 * @param sql    sql语句模版，调用 sql.format() 生成 查询文本
 	 * @param params prepared sql 语句中占位符参数的值集合，位置从1开始
 	 * @return 单行数据或者没有数据。
 	 * @throws SQLException
 	 */
 	default Optional<IRecord> psql2maybe(final SQL sql, final IRecord params) throws SQLException {
 
-		return this.psql2maybe(sql.string2(), params);
+		return this.psql2maybe(sql.format(), params);
 	}
 
 	/**

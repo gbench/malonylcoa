@@ -211,13 +211,13 @@ public class JdbcH2Test {
 
 		// k$ 标识无需添加引号
 		println(nsql("insert into ##tbl({foreach k$ in keys k$}) values ({foreach v in values v})",
-				REC("tbl", "t_user").derive(line.kvs3("keys,values"))).string2());
+				REC("tbl", "t_user").derive(line.kvs3("keys,values"))).format());
 
 		// 更新语句
 		final var kvs = line.kvs2();
 		println(kvs);
 		final var upsql = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
-				rb("tbl,id,kvs").get("t_user", 1, kvs)).string2();
+				rb("tbl,id,kvs").get("t_user", 1, kvs)).format();
 
 		println(upsql);
 	}
