@@ -4,7 +4,6 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.Tuple2.P;
 
 import java.sql.Timestamp;
-import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -555,26 +555,26 @@ public class SQL {
 			final var key = e.key().strip();// 提取主键描述字符串
 			final var fldrec = parseFieldName(key);// 接卸字段描述
 			final var value = e.value(); // 键值
-
+			final Supplier<Integer> default_size = () -> { // 根据示例数据值提取长度
+				final int size = Optional.ofNullable(quoteString(value)) //
+						.map(String::length).map(length -> {
+							final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
+							if (debug) {
+								final var format = "\n%s[%s] ----> %d[原长度] , %d[1.5倍长度]";
+								System.out.println(String.format(format, value, value.getClass(), length, len_15));
+							}
+							return len_15; // 1.5 倍长度
+						}).orElse(null);
+				return size; // 字段长度
+			}; // 根据值内容确定空间大小
 			final var type = value instanceof String && Json.isJson(value) //
 					? "JSON" // json 类型
 					: (e.value() == null) //
 							? "VARCHAR(512)" // 默认类型为 字符串
 							: javaType2SqlType((value instanceof Class<?> ? (Class<?>) value : value.getClass()), //
-									Optional.ofNullable(fldrec.i4("size")).orElseGet(() -> { // 根据示例数据值提取长度
-										final int size = Optional.ofNullable(quoteString(value)) //
-												.map(String::length).map(length -> {
-													final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
-													if (debug) {
-														final var format = "\n%s[%s] ----> %d[原长度] , %d[1.5倍长度]";
-														System.out.println(String.format(format, value,
-																value.getClass(), length, len_15));
-													}
-													return len_15; // 1.5 倍长度
-												}).orElse(null);
-										return size; // 字段长度
-									}));
+									Optional.ofNullable(fldrec.i4("size")).orElseGet(default_size));
 			final var name = fldrec.str("name");
+
 			if (fldrec.bool("primarykey")) {
 				primaryKeys.add(P(name, type));// 加入主键
 			}
@@ -596,7 +596,7 @@ public class SQL {
 				final var typename = tup._2().toUpperCase();
 				if ("INT".equals(typename) || "BIGINT".equals(typename)) {// 对于 int key 是否 auto_increment
 					flag = true;
-					fldDefs.computeIfPresent(tup._1(), (fldname, def) -> MessageFormat.format("{0} {1} {2}", def,
+					fldDefs.computeIfPresent(tup._1(), (fldname, def) -> Jdbcs.format("{0} {1} {2}", def,
 							intkey_autocrement ? "auto_increment" : "", "primary key"));
 				} // if
 			} // if
