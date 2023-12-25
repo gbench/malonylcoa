@@ -547,7 +547,7 @@ public class Term {
 							if (token.str("name").endsWith("$") || v instanceof Number) { // 数字类型的 值
 								return v; // 数字类型的值
 							} else { // 提取数字类型的值
-								return Optional.ofNullable(v).map(SQL::asString2).orElse(null);
+								return Optional.ofNullable(v).map(SQL::quoteString).orElse(null);
 							} // if
 						}; // 值类型格式化
 						return token.bool("flag") // 是否为关键字(占位符)

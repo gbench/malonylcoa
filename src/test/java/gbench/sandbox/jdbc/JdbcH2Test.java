@@ -125,7 +125,6 @@ public class JdbcH2Test {
 	 */
 	@Test
 	public void foo() {
-
 		// 创造一个IJdbcApp接口应用
 		final var datafile = xls("f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx");
 		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";

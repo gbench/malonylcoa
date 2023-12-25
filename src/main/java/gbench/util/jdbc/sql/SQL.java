@@ -274,7 +274,7 @@ public class SQL {
 			}
 			rec.stream().filter(pft) // 删除空值字符串
 					.forEach(e -> {
-						final var fldvalue = asString2(e.value());
+						final var fldvalue = quoteString(e.value());
 						final var fldname = parseFieldName(e.key()).str("name");// 获取字段名
 						final var i = ar.get().indexOf(fldname);
 						// fldname的索引位置,如果>0 表示业已存在一个同名的字段，需要给予覆盖。
@@ -562,7 +562,7 @@ public class SQL {
 							? "VARCHAR(512)" // 默认类型为 字符串
 							: javaType2SqlType((value instanceof Class<?> ? (Class<?>) value : value.getClass()), //
 									Optional.ofNullable(fldrec.i4("size")).orElseGet(() -> { // 根据示例数据值提取长度
-										final int size = Optional.ofNullable(asString2(value)) //
+										final int size = Optional.ofNullable(quoteString(value)) //
 												.map(String::length).map(length -> {
 													final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
 													if (debug) {
@@ -1073,7 +1073,7 @@ public class SQL {
 
 		final var dfm = partitions.collect(DFrame.dfmclc);
 		final var proto = dfm.aov2rec((List<Object> v) -> { // 提取
-			return v.stream().map(e -> new Tuple2<>(SQL.asString2(e), e))
+			return v.stream().map(e -> new Tuple2<>(SQL.quoteString(e), e))
 					.sorted((a, b) -> -(a._1().length() - b._1().length())) // 获取最长长度作为原型
 					.findFirst().map(e -> e._2()).get();
 		});
@@ -1110,10 +1110,10 @@ public class SQL {
 	/**
 	 * 转成带有引号的字符串
 	 * 
-	 * @param obj
+	 * @param obj 目标对象
 	 * @return
 	 */
-	public static String asString2(final Object obj) {
+	public static String quoteString(final Object obj) {
 		final var fldvalue = Jdbcs.format("''{0}''", asString(obj).replace("'", "''")); // 格式化字段值
 		return fldvalue;
 	}
