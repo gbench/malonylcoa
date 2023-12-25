@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -535,22 +536,25 @@ public class Term {
 
 			// 返回结果
 			final var line = recordEntries.stream().map(rec -> { // 利用循环填充 loopbody 使之形成 实例化 sql语句。
-
 				final var placeholder2values = kvsrec.aov2rec((Function<String, Object>) rec::get);// 占位符与其值的对应关系。
-				final var b = true; // 模版填充的方法模式选择
-				return b // 模版填充
-						? Term.fill_template(loopbody, placeholder2values) // 较快的算法。
-						: Jdbcs.tokenize(loopbody, placeholder2values.keys()).stream() // 分词
-								.map(token -> token.bool("flag") // 是否为关键字(占位符)
-										? placeholder2values.get(token.str("name"), //
-												v -> // 关键字(占位符)的值替换
-				token.str("name").endsWith("$") || v instanceof Number // 数字类型的 值
-						? v // 数字类型的值
-						: (v == null ? null : "'" + v + "'") // 提取数字类型的值
-				) + "" // 替换关键词(占位符)为具体的值
-										: token.str("name") // 模版字符
-				).collect(Collectors.joining());// 模版的填充
-
+				final var b = false; // 模版填充的方法模式选择
+				if (b) { // fill_template 模式
+					return Term.fill_template(loopbody, placeholder2values); // 较快的算法。
+				} else { // 自定义模式,会根据值类型进行数据格式化选择
+					final var tokens = Jdbcs.tokenize(loopbody, placeholder2values.keys()).stream(); // 分词
+					return tokens.map(token -> { // 关键字(占位符)的值替换
+						final Function<Object, Object> formatter = v -> { // 值类型格式化
+							if (token.str("name").endsWith("$") || v instanceof Number) { // 数字类型的 值
+								return v; // 数字类型的值
+							} else { // 提取数字类型的值
+								return Optional.ofNullable(v).map(SQL::asString2).orElse(null);
+							} // if
+						}; // 值类型格式化
+						return token.bool("flag") // 是否为关键字(占位符)
+								? placeholder2values.get(token.str("name"), formatter) + "" // 替换关键词(占位符)为具体的值
+								: token.str("name"); // 模版字符
+					}).collect(Collectors.joining()); // 模版的填充
+				} // if
 			}).collect(Collectors.joining(", ")); // recordEntries 返回结果
 
 			return percent_tidyline(line);// 对百分号进行转义
