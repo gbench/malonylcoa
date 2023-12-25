@@ -201,16 +201,24 @@ public class JdbcH2Test {
 		println(sql("t_user", proto).ctsqls(true).get(2));
 	}
 
+	/**
+	 * SQL 模板使用示例,Foreach 结构
+	 */
 	@Test
 	public void quz() {
-		final var line = REC("name", "zhangsan", "address", //
-				REC("city", "shanghai", "district", "changning"), "weight", 30);
-		println(nsql("insert into ##tbl({foreach k$ in kk k$}) values ({foreach v in vv v })",
-				REC("tbl", "t_user", "kk", line.keys(), "vv", line.values())).string2());
+		final var address = REC("city", "shanghai", "district", "changning", "street", "fahuazhen road");
+		final var line = REC("name", "zhangsan", "weight", 30, "address", address);
+
+		// k$ 标识无需添加引号
+		println(nsql("insert into ##tbl({foreach k$ in keys k$}) values ({foreach v in values v})",
+				REC("tbl", "t_user").derive(line.kvs3("keys,values"))).string2());
+
+		// 更新语句
 		final var kvs = line.kvs2();
 		println(kvs);
 		final var upsql = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
 				rb("tbl,id,kvs").get("t_user", 1, kvs)).string2();
+
 		println(upsql);
 	}
 

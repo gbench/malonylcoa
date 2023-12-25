@@ -216,10 +216,50 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 分割成键值对的序列
 	 * 
-	 * @return [[key:key0,value:value0],[key:key1,value:value1],...]
+	 * @param names 键与值名序列,笔记间用英文逗号','或';'分割,如:key,value
+	 * @return [{key:key0,value:value0},{key:key1,value:value1},...]
+	 */
+	default List<IRecord> kvs2(final String names) {
+		final var ss = names.split(",");
+		return ss.length < 2 ? kvs2() : kvs2(ss[0], ss[1]);
+	}
+
+	/**
+	 * 分割成键值对的序列
+	 * 
+	 * @return [{key:key0,value:value0},{key:key1,value:value1},...]
 	 */
 	default List<IRecord> kvs2() {
 		return this.kvs2("key", "value");
+	}
+
+	/**
+	 * 分割成键值对的序列,键与值分别用列表进行组织
+	 * 
+	 * @return {keys:[key0,key1,...],values:[value0,value1,...]}
+	 */
+	default IRecord kvs3() {
+		return kvs3("keys", "values");
+	}
+
+	/**
+	 * 分割成键值对的序列,键与值分别用列表进行组织
+	 * 
+	 * @return [[key:key0,value:value0],[key:key1,value:value1],...]
+	 */
+	default IRecord kvs3(final String keys, final String values) {
+		return REC(keys, this.keys(), values, this.values());
+	}
+
+	/**
+	 * 分割成键值对的序列
+	 * 
+	 * @param names 键与值名序列,笔记间用英文逗号','或';'分割,如:keys,values
+	 * @return [{key:key0,value:value0},{key:key1,value:value1},...]
+	 */
+	default IRecord kvs3(final String names) {
+		final var ss = names.split("[,;]");
+		return ss.length < 2 ? kvs3() : kvs3(ss[0], ss[1]);
 	}
 
 	/**
