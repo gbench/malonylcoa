@@ -23,7 +23,6 @@ public class SqlTest {
 	 */
 	@Test
 	public void foo() {
-
 		final var rb = rb("#id,name,sex,attrs,borth,description"); // #用于标识主键
 		final var proto = proto_of( // 原型数据
 				rb.get(1, "zhangsan", "male", REC("city", "zhongguo shanghai"), LocalDate.now(), "民族英雄"), //
