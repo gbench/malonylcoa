@@ -1104,6 +1104,7 @@ public class SQL {
 		} else {
 			// do Nothing
 		} // if
+
 		return String.valueOf(value);
 	}
 
@@ -1114,8 +1115,11 @@ public class SQL {
 	 * @return
 	 */
 	public static String quoteString(final Object obj) {
-		final var fldvalue = Jdbcs.format("''{0}''", asString(obj).replace("'", "''")); // 格式化字段值
-		return fldvalue;
+
+		final var qs = String.format("'%s'", asString(obj) // 用单引号括起来
+				.replace("'", "''")); // 格式化字段值
+
+		return qs;
 	}
 
 	/**
