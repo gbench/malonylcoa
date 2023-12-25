@@ -246,7 +246,9 @@ public class DFrame extends LinkedRecord {
 	public DFrame forEachBy(final Consumer<? super IRecord> action) {
 
 		return this.rowS().map(e -> {
-			action.accept(e);
+			if (null != action) {
+				action.accept(e);
+			}
 			return e;
 		}).collect(DFrame.dfmclc);
 	}

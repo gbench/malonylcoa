@@ -7,14 +7,12 @@ import java.util.Random;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
-import gbench.util.jdbc.Jdbcs;
 
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.io.Output.println;
@@ -27,6 +25,7 @@ import static gbench.util.jdbc.sql.SQL.proto_of;
 import static gbench.util.jdbc.Jdbcs.sample;
 import static gbench.util.jdbc.Jdbcs.partitions;
 import static gbench.util.jdbc.Jdbcs.batch_handlers;
+import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.Jdbcs.imports;
 import static java.time.LocalDateTime.now;
 import static java.util.stream.Collectors.summarizingDouble;
@@ -107,17 +106,6 @@ public class JdbcH2Test {
 	}
 
 	/**
-	 * 数据处理器
-	 * 
-	 * @param key 鍵名
-	 * @return 处理函数
-	 */
-	final static Consumer<? super IRecord> processor(final String key) {
-
-		return e -> e.compute(key, Jdbcs::asMap); // 属性处理
-	}
-
-	/**
 	 * H2 数据库操作演示, 商城数据示例：
 	 */
 	@Test
@@ -145,7 +133,7 @@ public class JdbcH2Test {
 		jdbcApp.withTransaction(sess -> {
 			println("all tables", sess.sql2dframe("#getAllTables"));
 			println("t_product", sess.sql2dframe("select * from t_product limit ##cnt", "cnt", 2));
-			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachBy(processor("attrs")));
+			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachBy(h2_json_processor("attrs")));
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 
 			final var cs = sess.sql2dframe("select * from t_company"); // 公司信息
@@ -162,7 +150,7 @@ public class JdbcH2Test {
 			}); // 重新设置公司产品
 
 			// 订单数据处理
-			final var cps = sess.sql2dframe("select * from ##tbl", "tbl", cp_name).forEachBy(processor("attrs"))
+			final var cps = sess.sql2dframe("select * from ##tbl", "tbl", cp_name).forEachBy(h2_json_processor("attrs"))
 					.fmapBy(e -> e.rec("attrs").add(e.filter("id,company_id,product_id"))); // 公司产品
 			final Supplier<IRecord> os = () -> buildOrder(cs, cps, stores, now()); // 订单生成函数,order supplier
 			final var o_partitions = partitions(iterate(os.get(), i -> os.get()).limit(size), batch_size); // 公司产能品数据
@@ -175,7 +163,7 @@ public class JdbcH2Test {
 			// 数据查看
 			println("------------------------------------ 数据查看 ------------------------------------");
 			for (final var p : Arrays.asList(P(or_name, "details"), P(cp_name, "attrs"))) { // 订单数据与公司产品数据
-				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachBy(processor(p._2())));
+				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachBy(h2_json_processor(p._2())));
 			}
 
 			// 试算平衡2

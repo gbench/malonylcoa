@@ -2714,6 +2714,17 @@ public class Jdbcs {
 		return rec.map(IRecord::toMap).orElse(null);
 	}
 
+	/**
+	 * h2数据库的json字段的数据处理器
+	 * 
+	 * @param key 鍵名
+	 * @return 处理函数
+	 */
+	public static Consumer<? super IRecord> h2_json_processor(final String key) {
+
+		return e -> e.compute(key, Jdbcs::asMap); // 属性处理
+	}
+
 	public static final boolean debug = false;// 调试信息开启标记
 
 }

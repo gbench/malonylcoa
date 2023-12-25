@@ -508,7 +508,7 @@ public class SQL {
 	 * 对于以#开头的字段名视为主键约束 比如:"#id" <br>
 	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
-	 * intkey_autocrement 默认为 false , 即 对于int 类型的key 不予添加自增长
+	 * int_pk_autocrement 默认为 false , 即 对于int 类型的key 不予添加自增长
 	 * 
 	 * @return [ <br>
 	 *         0:drop table, <br>
@@ -531,7 +531,7 @@ public class SQL {
 	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
 	 * 
-	 * @param intkey_autocrement 对于int 类型的key 是否增加自增长
+	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
 	 * @return [ <br>
 	 *         0:drop table, <br>
 	 *         1:drop table if exists &amp; create, <br>
@@ -541,7 +541,7 @@ public class SQL {
 	 *         4:unique constraints <br>
 	 *         ],3和4 根据record设置 可能包含。 <br>
 	 */
-	public List<String> ctsqls(final boolean intkey_autocrement) {
+	public List<String> ctsqls(final boolean int_pk_autocrement) {
 		final List<String> sqls = new LinkedList<>();// sql 语句集合
 		final StringBuilder buffer = new StringBuilder();
 
@@ -609,7 +609,7 @@ public class SQL {
 				if ("INT".equals(typename) || "BIGINT".equals(typename)) {// 对于 int key 是否 auto_increment
 					flag = true;
 					fldDefs.computeIfPresent(tup._1(), (fldname, def) -> Jdbcs.format("{0} {1} {2}", def,
-							intkey_autocrement ? "auto_increment" : "", "primary key"));
+							int_pk_autocrement ? "auto_increment" : "", "primary key"));
 				} // if
 			} // if
 			if (!flag) {
@@ -651,7 +651,7 @@ public class SQL {
 	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
 	 * 
-	 * @param intkey_autocrement 对于int 类型的key 是否增加自增长
+	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
 	 * @param i                  sql语句的索引序号: [ <br>
 	 *                           0:drop table, <br>
 	 *                           1:drop table if exists &amp; create, <br>
@@ -664,8 +664,8 @@ public class SQL {
 	 * 
 	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
 	 */
-	public String ctsql(final boolean intkey_autocrement, int i) {
-		return this.ctsqls().get(i);
+	public String ctsql(final boolean int_pk_autocrement, int i) {
+		return this.ctsqls(int_pk_autocrement).get(i);
 	}
 
 	/**
