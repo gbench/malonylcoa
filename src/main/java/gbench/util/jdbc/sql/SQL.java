@@ -266,14 +266,14 @@ public class SQL {
 		final var buffer = new StringBuilder();
 		final var initialCapacity = datas instanceof Collection c ? c.size() : 30; // 默认30个字段
 		final var fldsAr = new AtomicReference<List<String>>(new ArrayList<String>(initialCapacity)); // 字段列表
-		final var allValues = new ArrayList<List<String>>(initialCapacity);// 指端值列表 与flds 一一对应
+		final var values = new ArrayList<List<String>>(initialCapacity);// 字段值列表的列表其元素value与flds一一对应
 		final Predicate<KVPair<String, Object>> pft = pfilter == null ? kv -> true : pfilter;
 		final var indices = new HashMap<String, Integer>(); // 位置索引缓存
 
 		for (final var rec : datas) {
 			final var vv = new ArrayList<String>(initialCapacity);// 字段值列表与flds 一一对应
 			rec.stream().filter(pft).forEach(e -> { // 删除空值字符串 并进行数据处理
-				final var value = quoteString(e.value()); // 键值
+				final var value = quoteString(e.value()); // 键值用引号括起来
 				final var name = parseFieldName(e.key()).str("name");// 获取字段名
 				final var i = indices.computeIfAbsent(name, k -> { // 获得字段名的位置索引
 					final var flds = fldsAr.get();
@@ -287,7 +287,7 @@ public class SQL {
 				}); // 需要插入的位置
 
 				if (i >= vv.size()) { // 所谓i位于值数组之后
-					final var n = i - vv.size() - 1; // 区间长度不包含最有i所在的位置
+					final var n = i - vv.size(); // 区间长度不包含最有i所在的位置
 					if (n > 0) { // 填充空隙值
 						vv.addAll(Arrays.asList(new String[n]));
 					} // if
@@ -297,15 +297,24 @@ public class SQL {
 				} // if
 			});// forEach
 
-			allValues.add(vv);
+			values.add(vv);
 		} // for
 
+		// 字段值复核
 		final var flds = fldsAr.get(); // 提取字段列表
+		final var len = flds.size(); // 最大的行记录的长度
+		for (final var value : values) { // 补充空缺字段值
+			final var n = len - value.size();
+			if (n > 0) { // 补充空缺值
+				value.addAll(Arrays.asList(new String[n]));
+			} // if
+		} // for
+
 		buffer.append("insert into ").append(this.name).append(" (");
 		buffer.append(String.join(",", flds));
 		buffer.append(") values ");
 
-		final var line = allValues.stream().map(vals -> String.format("(%s)", String.join(",", vals))) //
+		final var line = values.stream().map(vals -> String.format("(%s)", String.join(",", vals))) //
 				.collect(Collectors.joining(",\n  "));
 		buffer.append(line);
 		buffer.append("");

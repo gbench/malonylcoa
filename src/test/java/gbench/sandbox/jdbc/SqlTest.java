@@ -51,8 +51,13 @@ public class SqlTest {
 		println("ctsql", sql("t_user", REC("#id", 1).derive(line)).ctsql(true, 2));
 
 		// 插入语句,k$ 标识无需添加引号,{ 可用 用${代替
-		println("insql", nsql("insert into ##tbl({foreach k$ in keys k$}) values ({foreach v in values v})",
+		println("insql 1", nsql("insert into ##tbl({foreach k$ in keys k$}) values ({foreach v in values v})",
 				REC("tbl", "t_user").derive(kvs3)).format());
+		println("insql 2", sql("t_user", //
+				rb("a,b,c").get(1, 2, 3), //
+				rb("a,c").get(1, 3), //
+				rb("d").get(3) //
+		).insql());
 
 		// 更新语句
 		final var upsql = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
