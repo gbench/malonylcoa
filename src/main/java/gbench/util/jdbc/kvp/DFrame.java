@@ -2,6 +2,7 @@ package gbench.util.jdbc.kvp;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -277,6 +278,27 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 重写基础版本的数据行
+	 */
+	@Override
+	public List<IRecord> rows() {
+		return this.rows(true);
+	}
+
+	/**
+	 * 带有缓存版本的 数据流
+	 * 
+	 * @param flag 是否清空缓存
+	 * @return 数据项目
+	 */
+	public List<IRecord> rows(final boolean flag) {
+		if (flag) {
+			this.rowsCache = null;
+		}
+		return Optional.ofNullable(this.rowsCache).orElseGet(() -> this.rowsCache = super.rows());
+	}
+
+	/**
 	 * 数据框归集器
 	 */
 	public static Collector<IRecord, ?, DFrame> dfmclc = dfmclc(IRecord::REC);
@@ -290,5 +312,10 @@ public class DFrame extends LinkedRecord {
 	 * serialVersionUID
 	 */
 	private static final long serialVersionUID = 7525552043906704226L;
+
+	/**
+	 * 数据缓存
+	 */
+	private List<IRecord> rowsCache = null;
 
 } // class DataFrame
