@@ -12,9 +12,9 @@ import java.util.function.Supplier;
 
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.DFrame;
-import gbench.sandbox.data.h2.H2db;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.Jdbcs;
 
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.io.Output.println;
@@ -114,7 +114,7 @@ public class JdbcH2Test {
 	 */
 	final static Consumer<? super IRecord> processor(final String key) {
 
-		return e -> e.compute(key, H2db::asMap); // 属性处理
+		return e -> e.compute(key, Jdbcs::asMap); // 属性处理
 	}
 
 	/**

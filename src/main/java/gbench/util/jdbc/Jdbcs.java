@@ -362,6 +362,7 @@ public class Jdbcs {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T, U extends Node<T>> void traverse(final U root, final BiConsumer<U, Integer> cs) {
+
 		traverse((Node<T>) root, (BiConsumer<Node<T>, Integer>) (Object) cs, 0);
 	}
 
@@ -394,6 +395,7 @@ public class Jdbcs {
 	 */
 	public static <T> void traverse_throws(final Node<T> root, final ThrowableBiConsumer<Node<T>, Integer> cs)
 			throws Exception {
+
 		traverse_throws(root, cs, 0);
 	}
 
@@ -404,6 +406,7 @@ public class Jdbcs {
 	 * @return 缩进字符串
 	 */
 	public static <T> String ident(final int n) {
+
 		return String.join("", rep("\t", n));
 	}
 
@@ -414,6 +417,7 @@ public class Jdbcs {
 	 * @return 小数位置的精度
 	 */
 	public static Function<Object, String> frt(final int n) {
+
 		return fraction(n);
 	}
 
@@ -424,6 +428,7 @@ public class Jdbcs {
 	 * @return 小数位置的精度
 	 */
 	public static Function<Object, String> fraction(final int n) {
+
 		return v -> {
 			if (v == null)
 				return "(null)";
@@ -446,6 +451,7 @@ public class Jdbcs {
 	 * @return T 重复n 次后的序列
 	 */
 	public static <T> List<T> rep(final T obj, final int n) {
+
 		return Stream.iterate(0, i -> i + 1).limit(Math.max(n, 0)).map(e -> obj).collect(Collectors.toList());
 	}
 
@@ -457,6 +463,7 @@ public class Jdbcs {
 	 * @return 缩进字符串
 	 */
 	public static String ident(final String ws, final int n) {
+
 		return String.join("", rep(ws, n));
 	}
 
@@ -467,7 +474,8 @@ public class Jdbcs {
 	 * @return json
 	 */
 	public static String json(final Node<IRecord> node) {
-		StringBuffer buffer = new StringBuffer();
+
+		final StringBuffer buffer = new StringBuffer();
 		traverse4json(node, 0, buffer);
 		return buffer.toString();
 	}
@@ -478,7 +486,8 @@ public class Jdbcs {
 	 * @param node 节点
 	 */
 	public static String traverse4json(final Node<IRecord> node) {
-		StringBuffer buffer = new StringBuffer();// 构建一个局部变量用户递归遍历
+
+		final StringBuffer buffer = new StringBuffer();// 构建一个局部变量用户递归遍历
 		traverse4json(node, 0, buffer);
 		return buffer.toString();
 	}
@@ -539,6 +548,7 @@ public class Jdbcs {
 	 * @return 数组序列。
 	 */
 	public static Integer[] NN(final String line) {
+
 		return NATS(line).toArray(new Integer[0]);
 	}
 
@@ -555,6 +565,7 @@ public class Jdbcs {
 	 * @return 数组序列。
 	 */
 	public static List<Integer> NATS(final String line) {
+
 		final var ll = new LinkedList<Integer>();
 		final var matcher = Pattern.compile("\\s*([0-9-]+)\\s*:\\s*([0-9-]+)\\s*(:\\s*([0-9-]+))?\\s*").matcher(line);
 
@@ -585,6 +596,7 @@ public class Jdbcs {
 	 * @return 序列长度
 	 */
 	public static Stream<Long> NATS(final Integer size) {
+
 		if (size == null || size <= 0)
 			NATS();
 		return Stream.iterate(0L, (Long i) -> i + 1L).limit(size);
@@ -596,6 +608,7 @@ public class Jdbcs {
 	 * @return 数字序列
 	 */
 	public static Stream<Long> NATS() {
+
 		return Stream.iterate(0L, (Long i) -> i + 1L);
 	}
 
@@ -606,6 +619,7 @@ public class Jdbcs {
 	 * @return 浮点数的数字
 	 */
 	public static Double[] DBLS(final int n) {
+
 		return NATS(n).map(e -> new Random().nextDouble()).toArray(Double[]::new);
 	}
 
@@ -616,6 +630,7 @@ public class Jdbcs {
 	 * @return 浮点数的数字
 	 */
 	public static double[] dbls(final int n) {
+
 		return NATS(n).map(e -> new Random().nextDouble()).mapToDouble(e -> e).toArray();
 	}
 
@@ -626,6 +641,7 @@ public class Jdbcs {
 	 * @return 浮点数的数字的流
 	 */
 	public static Stream<Double> DBLSTREAM(final int n) {
+
 		return NATS(n).map(e -> new Random().nextDouble());
 	}
 
@@ -655,6 +671,7 @@ public class Jdbcs {
 	 * @return 随机整数
 	 */
 	public static int RNDINT(final int n) {
+
 		return new Random().nextInt(n);
 	}
 
@@ -684,6 +701,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> LIST(final Collection<T> coll) {
+
 		if (coll == null)
 			return null;
 		return LIST(coll.stream());
@@ -697,6 +715,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> LIST(final T[] tt) {
+
 		if (tt == null)
 			return null;
 		return LIST(Arrays.stream(tt));
@@ -710,6 +729,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> LIST(final Stream<T> stream) {
+
 		if (stream == null)
 			return null;
 		return stream.collect(Collectors.toList());
@@ -725,6 +745,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T, U> List<U> MAP(final Stream<T> stream, final Function<T, U> mapper) {
+
 		if (stream == null)
 			return null;
 		return stream.map(mapper).collect(Collectors.toList());
@@ -741,6 +762,7 @@ public class Jdbcs {
 	 * @return U类型的列表
 	 */
 	public static <T, U> List<U> MAP(final Collection<T> coll, final Function<T, U> mapper) {
+
 		if (coll == null)
 			return null;
 		return MAP(coll.stream(), mapper);
@@ -757,6 +779,7 @@ public class Jdbcs {
 	 * @return R的规约值类型
 	 */
 	public static <T, A, R> R COLLECT(final Collection<T> coll, final Collector<? super T, A, R> collector) {
+
 		if (coll == null)
 			return null;
 		return coll.stream().collect(collector);
@@ -773,6 +796,7 @@ public class Jdbcs {
 	 * @return R的规约值类型
 	 */
 	public static <T, A, R> R COLLECT(final Stream<T> stream, final Collector<? super T, A, R> collector) {
+
 		if (stream == null)
 			return null;
 		return stream.collect(collector);
@@ -785,6 +809,7 @@ public class Jdbcs {
 	 * @return 分类征集
 	 */
 	public static String COMMASTR(final Collection<?> coll) {
+
 		if (coll == null)
 			return null;
 		return SEQSTR(coll.stream(), ",");
@@ -797,6 +822,7 @@ public class Jdbcs {
 	 * @return 采用逗号“,”进行分割后的字符串对象
 	 */
 	public static String COMMASTR(final Stream<?> stream) {
+
 		if (stream == null)
 			return null;
 		return SEQSTR(stream, ",");
@@ -810,6 +836,7 @@ public class Jdbcs {
 	 * @return 采用separator进行分割后的字符串对象
 	 */
 	public static String SEQSTR(final Collection<?> coll, final String separator) {
+
 		if (coll == null)
 			return null;
 		return SEQSTR(coll.stream(), separator);
@@ -823,6 +850,7 @@ public class Jdbcs {
 	 * @return 采用separator进行分割后的字符串对象
 	 */
 	public static String SEQSTR(final Stream<?> stream, final String separator) {
+
 		if (stream == null)
 			return null;
 		return stream.map(Object::toString).collect(Collectors.joining(separator));
@@ -837,6 +865,7 @@ public class Jdbcs {
 	 * @return T 类型的列表
 	 */
 	public static <T> List<T> FILTER(final Stream<T> stream, final Predicate<T> pfilter) {
+
 		if (stream == null)
 			return null;
 		if (pfilter == null)
@@ -855,6 +884,7 @@ public class Jdbcs {
 	 */
 	public static <T, U> List<U> FILTER(final Stream<T> stream, final Predicate<T> pfilter,
 			final Function<T, U> mapper) {
+
 		if (stream == null)
 			return null;
 		if (pfilter == null)
@@ -871,6 +901,7 @@ public class Jdbcs {
 	 * @return T 类型的列表
 	 */
 	public static <T> List<T> FILTER(final Collection<T> coll, final Predicate<T> pfilter) {
+
 		if (coll == null)
 			return null;
 		if (pfilter == null)
@@ -889,6 +920,7 @@ public class Jdbcs {
 	 */
 	public static <T, U> List<U> FILTER(final Collection<T> coll, final Predicate<T> pfilter,
 			final Function<T, U> mapper) {
+
 		if (coll == null)
 			return null;
 		if (pfilter == null)
@@ -906,6 +938,7 @@ public class Jdbcs {
 	 * @return 以K为键类型 T的列表为值得 Map结构
 	 */
 	public static <T, K> Map<K, List<T>> GROUPBY(final Collection<T> coll, final Function<T, K> classifier) {
+
 		if (coll == null)
 			return new HashMap<>();
 		return GROUPBY(coll.stream(), classifier);
@@ -921,6 +954,7 @@ public class Jdbcs {
 	 * @return 以K为键类型 T的列表为值得 Map结构
 	 */
 	public static <T, K> Map<K, List<T>> GROUPBY(final Stream<T> stream, final Function<T, K> classifier) {
+
 		if (stream == null)
 			return new HashMap<>();
 		return stream.collect(Collectors.groupingBy(classifier));
@@ -936,6 +970,7 @@ public class Jdbcs {
 	 * @return 以K为键类型 T的列表为值得 Map结构
 	 */
 	public static <T, K> Map<K, T> GROUP2MAP(final Collection<T> coll, final Function<T, K> classifier) {
+
 		return GROUP2MAP(coll.stream(), classifier);
 	}
 
@@ -949,6 +984,7 @@ public class Jdbcs {
 	 * @return 以K为键类型 T的列表为值得 Map结构
 	 */
 	public static <T, K> Map<K, T> GROUP2MAP(final Stream<T> stream, final Function<T, K> classifier) {
+
 		if (stream == null)
 			return new HashMap<>();
 		return (Map<K, T>) stream.collect(Collectors.groupingBy(classifier,
@@ -968,6 +1004,7 @@ public class Jdbcs {
 	 * @return 以K为键类型 T的列表为值得 Map结构
 	 */
 	public static <T, K> Map<K, Collection<T>> GROUP(final Collection<T> coll, final Function<T, K> classifier) {
+
 		return GROUP(coll.stream(), classifier, e -> e);
 	}
 
@@ -981,6 +1018,7 @@ public class Jdbcs {
 	 * @return 以K为键类型 T的列表为值得 Map结构
 	 */
 	public static <T, K> Map<K, Collection<T>> GROUP(final Stream<T> stream, final Function<T, K> classifier) {
+
 		return GROUP(stream, classifier, e -> e);
 	}
 
@@ -997,6 +1035,7 @@ public class Jdbcs {
 	 */
 	public static <T, K, U> Map<K, U> GROUP(final Collection<T> coll, final Function<T, K> classifier,
 			final Function<Collection<T>, U> finalizer) {
+
 		return GROUP(coll.stream(), classifier, finalizer);
 	}
 
@@ -1012,6 +1051,7 @@ public class Jdbcs {
 	 */
 	public static <T, K, U> Map<K, U> GROUP(final Stream<T> stream, final Function<T, K> classifier,
 			final Function<Collection<T>, U> finalizer) {
+
 		if (stream == null)
 			return new HashMap<>();
 		return (Map<K, U>) stream
@@ -1028,6 +1068,7 @@ public class Jdbcs {
 	 * @return 是否存在的满足predicator 条件的元素
 	 */
 	public static <T> Boolean EXISTS(final Stream<T> stream, final Predicate<T> predicator) {
+
 		if (stream == null)
 			return false;
 		return stream.anyMatch(predicator);
@@ -1040,6 +1081,7 @@ public class Jdbcs {
 	 * @return
 	 */
 	public static <T, K> Boolean EXISTS(final Collection<T> coll, final Predicate<T> predicator) {
+
 		if (coll == null)
 			return false;
 		return coll.stream().anyMatch(predicator);
@@ -1052,6 +1094,7 @@ public class Jdbcs {
 	 * @return
 	 */
 	public static <T> Boolean EXISTS2(final Collection<T> coll, T e) {
+
 		if (coll == null)
 			return false;
 		return coll.stream().anyMatch(g -> g.equals(e));
@@ -1066,6 +1109,7 @@ public class Jdbcs {
 	 * @return 字符串
 	 */
 	public static <T> String JOIN(final Collection<T> coll, final Function<T, String> mapper, final String delimiter) {
+
 		return JOIN(coll.stream(), mapper, delimiter);
 	}
 
@@ -1077,6 +1121,7 @@ public class Jdbcs {
 	 * @return 字符串
 	 */
 	public static <T> String JOIN(final T[] tt, final String delimiter) {
+
 		return JOIN(Arrays.stream(tt), e -> e + "", delimiter);
 	}
 
@@ -1088,6 +1133,7 @@ public class Jdbcs {
 	 * @return 字符串
 	 */
 	public static <T> String JOIN(final T[] tt, final Function<T, String> mapper, final String delimiter) {
+
 		return JOIN(Arrays.stream(tt), mapper, delimiter);
 	}
 
@@ -1099,6 +1145,7 @@ public class Jdbcs {
 	 * @return 字符串
 	 */
 	public static <T> String JOIN(final Collection<T> coll) {
+
 		return JOIN(coll.stream(), e -> e + "", "/");
 	}
 
@@ -1110,6 +1157,7 @@ public class Jdbcs {
 	 * @return 字符串
 	 */
 	public static <T> String JOIN(final Collection<T> coll, final String delimiter) {
+
 		return JOIN(coll.stream(), e -> e + "", delimiter);
 	}
 
@@ -1121,6 +1169,7 @@ public class Jdbcs {
 	 * @return 字符串
 	 */
 	public static <T> String JOIN(final Stream<T> stream, final String delimiter) {
+
 		return JOIN(stream, e -> e + "", delimiter);
 	}
 
@@ -1133,6 +1182,7 @@ public class Jdbcs {
 	 * @return 字符串
 	 */
 	public static <T> String JOIN(final Stream<T> stream, final Function<T, String> mapper, final String delimiter) {
+
 		if (stream == null)
 			return "";
 		return stream.map(mapper).collect(Collectors.joining(delimiter));
@@ -1149,6 +1199,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> DIFF(final Collection<T> coll1, final Collection<T> coll2) {
+
 		return FILTER(coll1, e -> !coll2.contains(e));
 	}
 
@@ -1161,6 +1212,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> INTERSECT(final Collection<T> coll1, final Collection<T> coll2) {
+
 		return FILTER(coll1, coll2::contains);
 	}
 
@@ -1173,6 +1225,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> UNION(final Collection<T> coll1, final Collection<T> coll2) {
+
 		List<T> list = LIST(coll1);
 		list.addAll(coll2.stream().filter(e -> !coll1.contains(e)).collect(Collectors.toList()));
 		return list;
@@ -1186,6 +1239,7 @@ public class Jdbcs {
 	 * @return 判断coll 是否为空,如果 coll 为null 返回null
 	 */
 	public static <T> Boolean EMPTY(final Collection<T> coll) {
+
 		if (coll == null)
 			return null;
 		return coll.isEmpty();
@@ -1199,6 +1253,7 @@ public class Jdbcs {
 	 * @return 左部填充了 指定字符的列表
 	 */
 	public static <T> List<T> LFILL(final Collection<T> coll, final int n) {
+
 		return LFILL(coll, n, null);
 	}
 
@@ -1211,6 +1266,7 @@ public class Jdbcs {
 	 * @return 左部填充了 指定字符的列表
 	 */
 	public static <T> List<T> LFILL(final Collection<T> coll, final int n, final T t) {
+
 		if (coll == null)
 			return null;
 		int size = coll.size();
@@ -1229,6 +1285,7 @@ public class Jdbcs {
 	 * @return 右部填充了 指定字符的列表
 	 */
 	public static <T> List<T> RFILL(final Collection<T> coll, final int n) {
+
 		return RFILL(coll, n, null);
 	}
 
@@ -1241,10 +1298,11 @@ public class Jdbcs {
 	 * @return 右部填充了 指定字符的列表
 	 */
 	public static <T> List<T> RFILL(final Collection<T> coll, final int n, final T t) {
+
 		if (coll == null)
 			return null;
-		int size = coll.size();
-		List<T> list = new LinkedList<>(coll);
+		final int size = coll.size();
+		final List<T> list = new LinkedList<>(coll);
 		for (int i = 0; i < n - size; i++)
 			list.add(t);
 
@@ -1259,7 +1317,8 @@ public class Jdbcs {
 	 * @return 一个合并成功的Record列表
 	 */
 	public static List<IRecord> ZIP(final String names, final Object[]... objs) {
-		Collection<?>[] oo = (Collection<?>[]) Array.newInstance(Collection.class, objs.length);
+
+		final Collection<?>[] oo = (Collection<?>[]) Array.newInstance(Collection.class, objs.length);
 		for (int i = 0; i < objs.length; i++)
 			oo[i] = Arrays.asList(objs[i]);
 		return ZIP(names, oo);
@@ -1273,6 +1332,7 @@ public class Jdbcs {
 	 * @return 一个合并成功的Record列表
 	 */
 	public static List<IRecord> ZIP(final String names, final Collection<?>... objs) {
+
 		if (names == null)
 			return ZIP((String[]) null, objs);
 		return ZIP(names.split("[,-]+"), objs);
@@ -1286,7 +1346,8 @@ public class Jdbcs {
 	 * @return 一个合并成功的Record列表
 	 */
 	public static List<IRecord> ZIP(final String[] names, final Collection<?>... objs) {
-		Function<Collection<?>, Function<Integer, ?>> getter = (coll) -> {
+
+		final Function<Collection<?>, Function<Integer, ?>> getter = (coll) -> {
 			if (coll == null || coll.size() <= 0)
 				return x -> null;// 空值返回一个空值函数
 			Object[] oo = coll.toArray();
@@ -1296,8 +1357,8 @@ public class Jdbcs {
 		final var final_names = (names == null)
 				? Stream.iterate(0, e -> e + 1).limit(objs.length).map(e -> e + "").toArray(String[]::new)
 				: names;
-		List<Function<Integer, ?>> gg = Stream.of(objs).map(getter).collect(Collectors.toList());
-		Function<Integer, ?> hh = getter.apply(Arrays.asList(final_names));
+		final List<Function<Integer, ?>> gg = Stream.of(objs).map(getter).collect(Collectors.toList());
+		final Function<Integer, ?> hh = getter.apply(Arrays.asList(final_names));
 
 		List<IRecord> ll = new LinkedList<>();
 		int n = Arrays.stream(objs).collect(Collectors.summarizingInt(Collection::size)).getMax();
@@ -1318,6 +1379,7 @@ public class Jdbcs {
 	 * @return obj为null 返回null
 	 */
 	public static String ESCAPE2STR(final Object obj) {
+
 		if (obj == null)
 			return null;
 		return (obj + "").replaceAll("'", "").replaceAll("\"", "");
@@ -1330,6 +1392,7 @@ public class Jdbcs {
 	 * @return IRecord 列表
 	 */
 	public static List<IRecord> REC2KVS(final IRecord rec) {
+
 		return MAP(rec.kvs(), kvp -> SimpleRecord.REC2("key", kvp.key(), "value", kvp.value()));
 	}
 
@@ -1340,6 +1403,7 @@ public class Jdbcs {
 	 * @return IRecord 结构的 List
 	 */
 	public static List<IRecord> MAP2KVS(final Map<String, ?> map) {
+
 		return MAP(map.entrySet(), entry -> SimpleRecord.REC2("key", entry.getKey(), "value", entry.getValue()));
 	}
 
@@ -1353,6 +1417,7 @@ public class Jdbcs {
 	 * @return {K,V} 结构的Map
 	 */
 	public static <K, V> Map<K, V> FILTER(final Map<K, V> map, final BiPredicate<K, V> filter) {
+
 		return FILTER(map, filter, e -> e);
 	}
 
@@ -1369,6 +1434,7 @@ public class Jdbcs {
 	 */
 	public static <K, V, U> Map<K, U> FILTER(final Map<K, V> map, final BiPredicate<K, V> filter,
 			Function<V, U> mapper) {
+
 		final Map<K, U> newMap = new HashMap<>();
 		map.forEach((k, v) -> {
 			if (filter.test(k, v))
@@ -1388,6 +1454,7 @@ public class Jdbcs {
 	 * @return T类型谓词判断函数
 	 */
 	public static <T> Predicate<T> DISTINCT_BY_KEY(final Function<? super T, Object> keyExtractor) {
+
 		final Map<Object, Boolean> map = new ConcurrentHashMap<>();
 		return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
 	}
@@ -1399,6 +1466,7 @@ public class Jdbcs {
 	 * @return 毫秒数
 	 */
 	public static double timeit(final Supplier<?> supplier) {
+
 		final long begTime = System.nanoTime();
 		supplier.get();
 		final long endTime = System.nanoTime();
@@ -1414,6 +1482,7 @@ public class Jdbcs {
 	 * @return command 执行的运行时间
 	 */
 	public static double timeit(final Runnable command) {
+
 		final long begTime = System.nanoTime();
 		command.run();
 		final long endTime = System.nanoTime();
@@ -1437,6 +1506,7 @@ public class Jdbcs {
 	 * @return 执行结果
 	 */
 	public static <T> long timeit(final Consumer<T> cs, final T args, final boolean isnano) {
+
 		final var ai = new AtomicInteger(0);
 		final var th = new Thread(() -> {
 			while (ai.get() >= 0) {
@@ -1466,6 +1536,7 @@ public class Jdbcs {
 	 * @return 历时时长 毫秒
 	 */
 	public static <T> long ms_timeit(final Consumer<T> cs, final T args) {
+
 		return timeit(cs, args, false);
 	}
 
@@ -1480,6 +1551,7 @@ public class Jdbcs {
 	 * @return 生成exel式样的名称
 	 */
 	public static String nomenclature(final Integer n, final String[] alphas) {
+
 		final int model = alphas.length;// 字母表尺寸
 		final List<Integer> dd = new LinkedList<>();
 		Integer num = n;
@@ -1503,6 +1575,7 @@ public class Jdbcs {
 	 * @return 类似于EXCEL的列名称
 	 */
 	public static String excelname(final int n) {
+
 		// 字母表
 		String alphabetics[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 		return nomenclature(n, alphabetics);
@@ -1517,6 +1590,7 @@ public class Jdbcs {
 	 * @return 历时时长 纳秒
 	 */
 	public static <T> long ns_timeit(final Consumer<T> cs, T args) {
+
 		return timeit(cs, args, true);
 	}
 
@@ -1534,6 +1608,7 @@ public class Jdbcs {
 	 * @return ana注解的内容
 	 */
 	public static <T extends Annotation> T ANNO(final Object target, final Class<T> annotationClass) {
+
 		Class<?> cls = target instanceof Class<?> ? (Class<?>) target : target.getClass();
 		return cls.getAnnotation(annotationClass);
 	}
@@ -1550,6 +1625,7 @@ public class Jdbcs {
 	 */
 	public static <T extends Annotation> void SET_FIELD_OF_ANNOTATION(final T annotation, final String annofld,
 			final Object annoValue) {
+
 		// 注解修改工具,只有value非空才给予修改
 		BiConsumer<String, Object> modifer = (fldName, value) -> {// 修改计划函数
 			try {
@@ -1585,6 +1661,7 @@ public class Jdbcs {
 	 * @return 从 tt随机选择一个元素
 	 */
 	public static <T> T rnd(final T[] tt) {
+
 		return tt[RNDINT(tt.length)];
 	}
 
@@ -1596,6 +1673,7 @@ public class Jdbcs {
 	 * @return 从 tt随机选择一个元素
 	 */
 	public static <T> T rnd(final List<T> tt) {
+
 		return tt.get(RNDINT(tt.size()));
 	}
 
@@ -1608,6 +1686,7 @@ public class Jdbcs {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T extends Number> Function<T, T> mod(final T mode) {
+
 		return n -> (T) (Object) (n.longValue() % mode.longValue());
 	}
 
@@ -1619,6 +1698,7 @@ public class Jdbcs {
 	 * @return 生成一个对 T类型数字 按照 mode 大小 给予取模 的函数，模值为 Integer类型
 	 */
 	public static <T extends Number> Function<T, Integer> intmod(final T mode) {
+
 		return n -> ((Number) (n.longValue() % mode.longValue())).intValue();
 	}
 
@@ -1630,6 +1710,7 @@ public class Jdbcs {
 	 * @return 生成一个对 T类型数字 按照 mode 大小 给予取模 的函数，模值为 Long类型
 	 */
 	public static <T extends Number> Function<T, Long> lngmod(final T mode) {
+
 		return n -> ((Number) (n.longValue() % mode.longValue())).longValue();
 	}
 
@@ -1641,6 +1722,7 @@ public class Jdbcs {
 	 * @return 数据格式化
 	 */
 	public static String format(final String pattern, final Object... arguments) {
+
 		return MessageFormat.format(pattern, arguments);
 	}
 
@@ -1651,6 +1733,7 @@ public class Jdbcs {
 	 * @return 转义后的字符串
 	 */
 	public static String format_escape(final String line) {
+
 		final var l1 = line.replace("'", "''"); // 转义单引号
 		final var l2 = l1.replace("{", "'{'"); // 转义左括号
 		return l2;
@@ -1665,6 +1748,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> REPEAT(int n, T t) {
+
 		return Stream.iterate(0, i -> i + 1).limit(n).map(i -> t).collect(Collectors.toList());
 	}
 
@@ -1677,6 +1761,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> RPT(int n, T t) {
+
 		return REPEAT(n, t);
 	}
 
@@ -1689,6 +1774,7 @@ public class Jdbcs {
 	 * @return T类型的列表
 	 */
 	public static <T> List<T> RPTL(int n, T t) {
+
 		return REPEAT(n, t);
 	}
 
@@ -1701,6 +1787,7 @@ public class Jdbcs {
 	 * @return T类型的数据流
 	 */
 	public static <T> Stream<T> RPTS(int n, T t) {
+
 		return REPEAT(n, t).stream();
 	}
 
@@ -1718,6 +1805,7 @@ public class Jdbcs {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] RPTA(final int n, final T t) {
+
 		final Class<T> tclass = t == null ? (Class<T>) Object.class : (Class<T>) t.getClass();
 		return REPEAT(n, t).toArray(a -> (T[]) Array.newInstance(tclass, a));
 	}
@@ -1730,6 +1818,7 @@ public class Jdbcs {
 	 * @return 编号元组流
 	 */
 	public static <T> Stream<Tuple2<Long, T>> TUPLES(final List<T> tt) {
+
 		return TUPLES(tt.stream());
 	}
 
@@ -1742,6 +1831,7 @@ public class Jdbcs {
 	 */
 	@SafeVarargs
 	public static <T> Stream<Tuple2<Long, T>> TUPLES(final T... tt) {
+
 		return TUPLES(Arrays.stream(tt));
 	}
 
@@ -1753,6 +1843,7 @@ public class Jdbcs {
 	 * @return 编号元组流
 	 */
 	public static <T> Stream<Tuple2<Long, T>> TUPLES(final Stream<T> tt) {
+
 		return TUPLES(tt, null);
 	}
 
@@ -1765,6 +1856,7 @@ public class Jdbcs {
 	 * @return 编号元组流
 	 */
 	public static <T> Stream<Tuple2<Long, T>> TUPLES(final Stream<T> tt, final Number start) {
+
 		final var al = new AtomicLong(start == null ? 0L : start.longValue());
 		return tt.map(t -> new Tuple2<>(al.getAndIncrement(), t));
 	}
@@ -1778,6 +1870,7 @@ public class Jdbcs {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] reverse(final T[] tt) {
+
 		final var ll = Arrays.asList(tt);
 		var tclazz = ll.stream().filter(Objects::nonNull).map(e -> (Class<T>) e.getClass()).findAny().orElse(null);
 		if (tclazz == null)
@@ -1796,6 +1889,7 @@ public class Jdbcs {
 	 * @return
 	 */
 	public static <T> Predicate<T> i_for(long start, long step, final BiPredicate<Long, T> tester) {
+
 		final AtomicLong atom = new AtomicLong(start);
 		return t -> tester.test(atom.getAndAdd(step), t);
 	}
@@ -1811,6 +1905,7 @@ public class Jdbcs {
 	 * @return Predicate 的谓词判断
 	 */
 	public static <T> Predicate<T> i_for(final long n) {
+
 		return i_for(0L, 1L, (i, t) -> i < n);
 	}
 
@@ -1846,6 +1941,7 @@ public class Jdbcs {
 	 * @return 键值对儿 (long,t) 的生成函数，自动为值匹配一个长整形的编号
 	 */
 	public static <T> Function<T, KVPair<Long, T>> kvp() {
+
 		return kvp(0L);
 	}
 
@@ -1860,6 +1956,7 @@ public class Jdbcs {
 	 * @return 键值对儿 (long,t) 的生成函数，自动为值匹配一个长整形的编号
 	 */
 	public static <T> Function<T, KVPair<Long, T>> kvp(final Number start) {
+
 		final var atom = new AtomicLong(start.longValue());// 状态缓存：用于生成序号
 		return t -> new KVPair<>(atom.getAndIncrement(), t);
 	}
@@ -1875,6 +1972,7 @@ public class Jdbcs {
 	 * @return 键值对儿 (int,t) 的生成函数，自动为值匹配一个数型的编号
 	 */
 	public static <T> Function<T, KVPair<Integer, T>> kvp_int() {
+
 		return kvp_int(0);
 	}
 
@@ -1888,6 +1986,7 @@ public class Jdbcs {
 	 * @return 键值对儿 (int,t) 的生成函数，自动为值匹配一个整形的编号
 	 */
 	public static <T> Function<T, KVPair<Integer, T>> kvp_int(final Number start) {
+
 		return kvp_int(start, e -> e);
 	}
 
@@ -1907,6 +2006,7 @@ public class Jdbcs {
 	 * @return 键值对儿 (int,t) 的生成函数，为值 按照 key_generator 编制一个 K类型 编号
 	 */
 	public static <T, K> Function<T, KVPair<K, T>> kvp_int(final Function<Integer, K> key_generator) {
+
 		return kvp_int(0, key_generator);
 	}
 
@@ -1929,6 +2029,7 @@ public class Jdbcs {
 	 */
 	public static <T, K> Function<T, KVPair<K, T>> kvp_int(final Number start,
 			final Function<Integer, K> key_generator) {
+
 		final var atom = new AtomicInteger(start.intValue());// 状态缓存：用于生成序号
 		return t -> new KVPair<>(key_generator.apply(atom.getAndIncrement()), t);
 	}
@@ -1943,6 +2044,7 @@ public class Jdbcs {
 	 * @return 键值对儿 (k,t)
 	 */
 	public static <T, K> Function<T, KVPair<K, T>> kvp(final Function<T, K> key_generator) {
+
 		return t -> new KVPair<>(key_generator.apply(t), t);
 	}
 
@@ -1960,6 +2062,7 @@ public class Jdbcs {
 	 * @param rr       返回结果集合。需要递归累加, r 表示result,rr 象征着 r 的集合。 r 表示record记录的意思。
 	 */
 	public static void _comprehensive(final List<List<?>> ccc, final int position, final List<IRecord> rr) {
+
 		if (ccc == null || ccc.size() < 0 || position >= ccc.size())
 			return;// 保证 参数合法有效。
 
@@ -2004,6 +2107,7 @@ public class Jdbcs {
 	 * @return 返回结果集合。需要递归累加
 	 */
 	public static List<IRecord> comprehensive(final List<List<?>> ccc) {
+
 		if (ccc == null || ccc.size() < 0)
 			return new LinkedList<>();
 		final List<IRecord> rr = new LinkedList<>(); // 构造返回结果集合
@@ -2018,6 +2122,7 @@ public class Jdbcs {
 	 * @return 返回结果集合。需要递归累加
 	 */
 	public static List<IRecord> cph(final List<List<?>> ccc) {
+
 		return comprehensive(ccc);
 	}
 
@@ -2028,6 +2133,7 @@ public class Jdbcs {
 	 * @return 返回结果集合。需要递归累加
 	 */
 	public static Stream<IRecord> cph2(final List<List<?>> ccc) {
+
 		return comprehensive(ccc).stream();
 	}
 
@@ -2038,6 +2144,7 @@ public class Jdbcs {
 	 * @return 返回结果集合。需要递归累加
 	 */
 	public static List<IRecord> cph(final Stream<List<?>> ccc) {
+
 		return comprehensive(LIST(ccc));
 	}
 
@@ -2048,6 +2155,7 @@ public class Jdbcs {
 	 * @return 返回结果集合。需要递归累加
 	 */
 	public static List<IRecord> comprehensive(final List<?>... ccc) {
+
 		if (ccc == null || ccc.length < 0)
 			return new LinkedList<>();
 		final List<IRecord> rr = new LinkedList<>(); // 构造返回结果集合
@@ -2062,6 +2170,7 @@ public class Jdbcs {
 	 * @return 返回结果集合。需要递归累加
 	 */
 	public static List<IRecord> cph(final List<?>... ccc) {
+
 		return comprehensive((List<?>[]) ccc);
 	}
 
@@ -2077,6 +2186,7 @@ public class Jdbcs {
 	 */
 	@SafeVarargs
 	public static <S, T> List<IRecord> comprehensive(final Function<S, T[]> parser, final S... ss) {
+
 		final List<List<?>> ccc = LIST(Arrays.stream(ss).map(parser).map(Arrays::asList));
 		return comprehensive(ccc);
 	}
@@ -2094,6 +2204,7 @@ public class Jdbcs {
 	 */
 	@SafeVarargs
 	public static <S, T> List<IRecord> cph(final Function<S, T[]> parser, final S... ss) {
+
 		return comprehensive(parser, (S[]) ss);
 	}
 
@@ -2113,6 +2224,7 @@ public class Jdbcs {
 	 */
 	@SafeVarargs
 	public static <S, T> Stream<IRecord> cph2(final Function<S, T[]> parser, final S... ss) {
+
 		return comprehensive(parser, (S[]) ss).stream().map(IRecord::reverse);
 	}
 
@@ -2123,6 +2235,7 @@ public class Jdbcs {
 	 * @return 返回全排列的结果 IRecord集合的流。
 	 */
 	public static List<IRecord> comprehensive(final Object[]... ccc) {
+
 		if (ccc == null || ccc.length < 0)
 			return new LinkedList<>();
 		final List<IRecord> rr = new LinkedList<>();
@@ -2140,6 +2253,7 @@ public class Jdbcs {
 	 * @return 返回全排列的结果 IRecord集合的流。
 	 */
 	public static List<IRecord> cph(final Object[]... ccc) {
+
 		return comprehensive((Object[][]) ccc);
 	}
 
@@ -2153,6 +2267,7 @@ public class Jdbcs {
 	 */
 	@SafeVarargs
 	public static <T> Stream<IRecord> cph2(final T[]... ccc) {
+
 		return comprehensive((Object[][]) ccc).stream().map(IRecord::reverse);
 	}
 
@@ -2167,6 +2282,7 @@ public class Jdbcs {
 	@SuppressWarnings("unchecked")
 	@SafeVarargs
 	public static <T> Stream<IRecord> cph2(final List<T>... ccc) {
+
 		return comprehensive((List<List<?>>) (Object) Arrays.asList(ccc)).stream();// 注意一定需要用List<List<?>>来完成类型转换，否则会接入到错误类型。
 	}
 
@@ -2224,6 +2340,7 @@ public class Jdbcs {
 	 * @return 剥夺掉异常的函数 ： 消费函数 t-&gt;{}
 	 */
 	public static <T> Consumer<T> trycatch2(final ExceptionalFunction<T, ?> exceptionFunction) {
+
 		return fun2cs(trycatch(exceptionFunction));
 	}
 
@@ -2246,6 +2363,7 @@ public class Jdbcs {
 	 * @return 剥夺掉异常的函数 ： 消费函数 t-&gt;{}
 	 */
 	public static <T> Consumer<T> trycatch3(final ExceptionalConsumer<T> exceptioncs) {
+
 		return t -> {
 			try {
 				exceptioncs.accept(t);
@@ -2298,6 +2416,7 @@ public class Jdbcs {
 	 * @return 消费函数 cosnumer&lt;T&gt;
 	 */
 	public static <T> Consumer<T> fun2cs(Function<T, ?> func) {
+
 		return func::apply;
 	}
 
@@ -2312,6 +2431,7 @@ public class Jdbcs {
 	 * @return t-&gt;v
 	 */
 	public static <T, U, V> Function<T, V> compose_f(final Function<U, V> fuv, final Function<T, U> ftu) {
+
 		return fuv.compose(ftu);
 	}
 
@@ -2329,6 +2449,7 @@ public class Jdbcs {
 	 */
 	public static <T, U, V, X> Function<T, X> compose_f(final Function<V, X> fvx, final Function<U, V> fuv,
 			final Function<T, U> ftu) {
+
 		return fvx.compose(fuv.compose(ftu));
 	}
 
@@ -2348,6 +2469,7 @@ public class Jdbcs {
 	 */
 	public static <T, U, V, X, Y> Function<T, Y> compose_f(final Function<X, Y> fxy, final Function<V, X> fvx,
 			final Function<U, V> fuv, final Function<T, U> ftu) {
+
 		return fxy.compose(fvx.compose(fuv.compose(ftu)));
 	}
 
@@ -2370,6 +2492,7 @@ public class Jdbcs {
 	 */
 	public static <T, U, V, X, Y, Z> Function<T, Z> compose_f(final Function<Y, Z> fyz, final Function<X, Y> fxy,
 			final Function<V, X> fvx, final Function<U, V> fuv, final Function<T, U> ftu) {
+
 		return fyz.compose(fxy.compose(fvx.compose(fuv.compose(ftu))));
 	}
 
@@ -2383,6 +2506,7 @@ public class Jdbcs {
 	 * @return t-&gt;{}
 	 */
 	public static <T, U> Consumer<T> compose_cs(final Consumer<U> cs, final Function<T, U> ftu) {
+
 		return t -> cs.accept(ftu.apply(t));
 	}
 
@@ -2410,6 +2534,7 @@ public class Jdbcs {
 	 */
 	public static <T, U, V> ExceptionalFunction<T, V> compose_ef(final ExceptionalFunction<U, V> fuv,
 			final ExceptionalFunction<T, U> ftu) {
+
 		return t -> fuv.apply(ftu.apply(t));
 	}
 
@@ -2421,6 +2546,7 @@ public class Jdbcs {
 	 * @return 分词结果 {name:分词符号,flag:分词标记是 keyword为true否自false,offset:偏移量}
 	 */
 	public static List<IRecord> tokenize(final String line, final List<String> keywords) {
+
 		final Function<String, List<Character>> lc = strline -> strline.chars().mapToObj(c -> (char) c)
 				.collect(Collectors.toList());// 把一个字符串转换成一个字符列表
 		final var keywordsTrie = new TrieNode<>('/');// 前缀树
@@ -2437,6 +2563,7 @@ public class Jdbcs {
 	 * @return 分词结果 {name:分词符号,flag:分词标记是 keyword为true否自false,offset:偏移量}
 	 */
 	public static List<IRecord> tokenize(final String line, final TrieNode<Character> keywordsTrie) {
+
 		final Function<String, List<Character>> lc = strline -> strline.chars().mapToObj(c -> (char) c)
 				.collect(Collectors.toList());// 把一个字符串转换成一个字符列表
 		final var len = line.length();// 模版字符串的长度。
@@ -2555,6 +2682,7 @@ public class Jdbcs {
 	 */
 	public static ExceptionalConsumer<IJdbcSession<?, ?>> imports(final Function<String, DFrame> shtmx,
 			final String... tblnames) {
+
 		return (sess) -> {
 			for (final String tblname : tblnames) { // 遍历数据表
 				final var data = shtmx.apply(tblname);
@@ -2567,6 +2695,23 @@ public class Jdbcs {
 				}
 			} // for
 		};
+	}
+
+	/**
+	 * 解析json成IRecord
+	 * 
+	 * @param bb 字符串字节
+	 * @return Map&lt;String,Object&gt;
+	 */
+	public static Map<String, Object> asMap(final byte[] bb) {
+
+		final var rec = Optional.ofNullable(bb == null ? null : new String(bb))
+				.map(s -> s = s.startsWith("\"") && s.endsWith("\"")
+						? s.substring(1, s.length() - 1).replace("\\\"", "\"")
+						: s)
+				.map(IRecord::REC);
+
+		return rec.map(IRecord::toMap).orElse(null);
 	}
 
 	public static final boolean debug = false;// 调试信息开启标记

@@ -245,12 +245,11 @@ public class H2db {
 	 * @return IRecord
 	 */
 	public static IRecord json(final byte[] bb) {
-		if (bb == null) {
-			return null;
-		}
-
-		final var d = (new String(bb)).replace("\\\"", "\"");
-		return REC(d.substring(1, d.length() - 1));
+		return Optional.ofNullable(bb == null ? null : new String(bb))
+				.map(s -> s = s.startsWith("\"") && s.endsWith("\"")
+						? s.substring(1, s.length() - 1).replace("\\\"", "\"")
+						: s)
+				.map(IRecord::REC).orElse(null);
 	}
 
 	/**
