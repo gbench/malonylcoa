@@ -203,11 +203,15 @@ public class JdbcH2Test {
 
 	@Test
 	public void quz() {
-		final var kvs = REC("name", "zhangsan","address",REC("city","shanghai","district","changning"), "weight", 30).kvs2();
+		final var line = REC("name", "zhangsan", "address", REC("city", "shanghai", "district", "changning"), "weight",
+				30);
+		println(nsql("insert into ##tbl({foreach k$ in kk k$}) values ({foreach v in vv v })",
+				REC("tbl", "t_user", "kk", line.keys(), "vv", line.values())).string2());
+		final var kvs = line.kvs2();
 		println(kvs);
-		final var sql = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
+		final var upsql = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
 				rb("tbl,id,kvs").get("t_user", 1, kvs)).string2();
-		println(sql);
+		println(upsql);
 	}
 
 }

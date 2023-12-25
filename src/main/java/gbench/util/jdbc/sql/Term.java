@@ -1,5 +1,7 @@
 package gbench.util.jdbc.sql;
 
+import static gbench.util.jdbc.kvp.IRecord.REC;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -62,7 +64,7 @@ public class Term {
 	 * data 数据字符串
 	 */
 	public final Predicate<String> foreach_handler = (final String data) -> {
-		final var FOREACH_PATTERN = "foreach\\s+([a-z_]+)\\s+in\\s+([a-z%-_]+)\\s+(.+)";// foreach 模式
+		final var FOREACH_PATTERN = "foreach\\s+([a-z_\\$]+)\\s+in\\s+([a-z%-_\\$]+)\\s+(.+)";// foreach 模式
 		final var p = Pattern.compile(FOREACH_PATTERN, Pattern.CASE_INSENSITIVE);// %表示字段替换不需要甲引号
 		final var m = p.matcher(data.trim());
 
@@ -482,49 +484,51 @@ public class Term {
 		 * 注意 map 值中的字符需要需要先转移化后传入,如果 值的字符串标记 仅仅会 在收尾 增加一个 单引号"'"+v+"'".<br>
 		 * 对于 以$字符结尾的key比如 amount$,,值被视为 数值类型，不予添加引号。<br>
 		 * 
-		 * @param map 映射对象:变量名与变量值的映射集合,其中包含一个 entriesName的缩影定义的一个KVP,用于代表循环变量。
+		 * @param context 映射对象:变量名与变量值的映射集合,其中包含一个 entriesName的缩影定义的一个KVP,用于代表循环变量。
 		 * @return 使用map对模版字符串进行替换
 		 */
 		@SuppressWarnings("unchecked")
-		public String toString(final Map<String, Object> map) {
+		public String toString(final Map<String, Object> context) {
 
 			List<IRecord> recordEntries = null;
 			final String foreachExpr = "foreach " + this.loopvar + " in " + " " + this.entriesName + " "
 					+ this.loopbody;// foreach 的源代码表达式
-
+			final var entriesName = this.getEntriesName();
 			try {
-				final Object entriesObject = map.get(this.getEntriesName());// 提取数据集合
-				if (entriesObject == null)
+				final Object entriesValue = context.get(entriesName);// 提取数据集合
+				if (entriesValue == null) {
 					return foreachExpr;
-				final Class<?> entriesCls = entriesObject.getClass();
-				if (entriesObject instanceof Collection || entriesCls.isArray()) {
+				}
+				final Class<?> entriesCls = entriesValue.getClass();
+				if (entriesValue instanceof Collection || entriesCls.isArray()) {
 					final Collection<Object> entries = entriesCls.isArray() //
-							? Arrays.asList((Object[]) entriesObject)
-							: (Collection<Object>) entriesObject;
+							? Arrays.asList((Object[]) entriesValue)
+							: (Collection<Object>) entriesValue;
 					if (entries.size() > 0) {// 集合类非空
 						// 是否存在非IRecord元素
 						final var opt = entries.stream().filter(entry -> !(entry instanceof IRecord)).findAny();
 						if (opt.isPresent()) {// 尝试给予人工修复
 							// System.out.println("List中含有非IRecord对象"+oo);
-							map.put(this.getEntriesName(), entries.stream().map(entry -> {// 在kvs增加占位符placeholder->键名keyname之间的对应关系
+							final var x = entries.stream().map(entry -> {// 在kvs增加占位符placeholder->键名keyname之间的对应关系
+								// 特别注意对于非IRecord数据placeholder与keyname一样都等于循环变量
+								final var placeholder = loopvar; // 占位符
+								final var key = loopvar; // 值key
+								kvs.add(new KVPair<>(placeholder, key));//
 								if (entry instanceof IRecord) {
-									return entry;
+									return REC(key, entry);
 								} else {
-									// 特别注意对于非IRecord数据placeholder与keyname一样都等于循环变量
-									final var placeholder = loopvar; // 占位符
-									final var key = loopvar; // 值key
-									kvs.add(new KVPair<>(placeholder, key));//
-									// 转为IRecord对象，仅有一个以 循环变量名 loopvar 作为键名 key 的IRecord元素
-									return IRecord.REC(key, entry);// 这里的loopvar代表 值key
+									// 转为IRecord对象，仅有一个以循环变量名loopvar 作为键名 key 的IRecord元素
+									return REC(key, entry);// 这里的loopvar代表 值key
 								} // if
-							}).collect(Collectors.toList()));// put
+							}).collect(Collectors.toList());
+							context.put(entriesName, x);// put
 						} // 尝试给予人工修复
 					} else {
-						System.out.println(this.getEntriesName() + " 为 空list");
+						System.out.println(entriesName + " 为 空list");
 						return foreachExpr;
 					} // if
 				} // if
-				recordEntries = IRecord.REC(map).lla(this.getEntriesName(), IRecord.class);// 使用IRecord提取列表数据,可以有智能转换功能
+				recordEntries = REC(context).lla(entriesName, IRecord.class);// 使用IRecord提取列表数据,可以有智能转换功能
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -541,8 +545,8 @@ public class Term {
 				if (b) { // fill_template 模式
 					return Term.fill_template(loopbody, placeholder2values); // 较快的算法。
 				} else { // 自定义模式,会根据值类型进行数据格式化选择
-					final var tokens = Jdbcs.tokenize(loopbody, placeholder2values.keys()).stream(); // 分词
-					return tokens.map(token -> { // 关键字(占位符)的值替换
+					final var tokens = Jdbcs.tokenize(loopbody, placeholder2values.keys()); // 分词
+					return tokens.stream().map(token -> { // 关键字(占位符)的值替换
 						final Function<Object, Object> formatter = v -> { // 值类型格式化
 							if (token.str("name").endsWith("$") || v instanceof Number) { // 数字类型的 值
 								return v; // 数字类型的值
@@ -579,7 +583,7 @@ public class Term {
 		private final String loopbody;// 循环体
 		private List<KVPair<String, String>> kvs = new LinkedList<>(); // e.name->name : placeholder 与
 																		// 值(IRecord)中的key的对应。
-	}// ForeachTerm
+	} // ForeachTerm
 
 	/**
 	 * 返回模式

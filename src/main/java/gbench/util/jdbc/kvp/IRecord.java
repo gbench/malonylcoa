@@ -1815,7 +1815,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	@SuppressWarnings("unchecked")
-	default <T, U> List<U> lla(final String key, final Class<U> uclass) {
+	default <U> List<U> lla(final String key, final Class<U> uclass) {
 		final var value = this.get(key);
 		final var _uclass = uclass == null ? (Class<U>) Object.class : uclass;
 
