@@ -984,33 +984,52 @@ public class SQL {
 	 * @return create table sql
 	 */
 	public static String ctsql(final String name, final IRecord proto) {
-		Object id = proto.get("id");
-		if (id != null) {
-			proto.remove("id");
-		}
-		System.out.println(proto);
-		final var _proto = proto.aov2rec(e -> {
-			final var line = e.toString();
-			final var matcher = Pattern.compile("^(\\+\\-)?[0-9.]+$") //
-					.matcher(line);
-			final var b = matcher.matches();
-			if (b && line.contains(".")) { // 浮点数
-				try {
-					return Double.parseDouble(line);
-				} catch (Exception ex) {
-					return e;
-				}
-			} else if (b) { // 整数
-				try {
-					return Double.parseDouble(line);
-				} catch (Exception ex) {
-					return e;
-				}
-			} else {
-				return e;
+		return ctsql(name, proto, true);
+	}
+
+	/**
+	 * create table sql
+	 * 
+	 * @param name   表名
+	 * @param proto  数据原型,各个字段的数据定义
+	 * @param adjust 是否对proto进行智能调整,如：增加id主键,将数字字符串转换成整数或是浮点数等
+	 * @return create table sql
+	 */
+	public static String ctsql(final String name, final IRecord proto, final boolean adjust) {
+		var __proto = proto;
+		if (adjust) { // proto
+			Object id = proto.get("id");
+			if (id != null) { // 含有主键id
+				proto.remove("id");
 			}
-		});
-		return sql(name, REC("#id", Optional.ofNullable(id).orElse(1)).add(_proto)).ctsqls(true).get(2);
+			if (debug) {
+				System.out.println(proto);
+			}
+			final var _proto = proto.aov2rec(e -> { // 数据类型调整
+				final var line = e.toString();
+				final var matcher = Pattern.compile("^(\\+\\-)?[0-9.]+$") // 数字类型检测器
+						.matcher(line);
+				final var b = matcher.matches();
+				if (b && line.contains(".")) { // 浮点数
+					try {
+						return Double.parseDouble(line);
+					} catch (Exception ex) {
+						return e;
+					}
+				} else if (b) { // 整数
+					try {
+						return Double.parseDouble(line);
+					} catch (Exception ex) {
+						return e;
+					}
+				} else {
+					return e;
+				}
+			});
+			__proto = REC("#id", Optional.ofNullable(id).orElse(1)).add(_proto);
+		} // _proto
+
+		return sql(name, __proto).ctsqls(true).get(2);
 	}
 
 	/**

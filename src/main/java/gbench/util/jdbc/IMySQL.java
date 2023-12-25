@@ -233,20 +233,20 @@ public interface IMySQL {
 	 * 一般采用如下方式调用此函数：<br>
 	 * jdbc.withTransaction(sess->{session.sql2records("show databases");});<br>
 	 *
-	 * @param dm DataManipulation 代表，数据操作的具体过程 dm 的数据如果需要会馆请使用dm所提供的session
-	 *           来操作数据,通常采用lamba表达式来给予 创建操作过程：sess->{写入你的操作代码}.
-	 *           需要注意对于withTransaction创建的会话IJdbcSession 是以monad 容器。其初始数据为Object类型
-	 *           值为null.
+	 * @param action 接收DataManipulation对象的处理函数，<br>
+	 *               数据操作的具体过程 dm 的数据如果需要会馆请使用dm所提供的session 来操作数据,通常采用lamba表达式来给予
+	 *               创建操作过程：sess->{写入你的操作代码}. 需要注意对于withTransaction创建的会话IJdbcSession
+	 *               是以monad 容器。其初始数据为Object类型 值为null.
 	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
-	default IRecord withTransaction(final ExceptionalConsumer<IJdbcSession<?, ?>> cs) {
+	default IRecord withTransaction(final ExceptionalConsumer<IJdbcSession<?, ?>> action) {
 		final var attrs = new HashMap<Object, Object>();
 		final var spp = this.getProxy().findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = this.jdbc();
 		attrs.put(ISqlPatternPreprocessor.class, spp); // 增加值类型
 		attrs.put(Collector.class, DFrame.dfmclc); // 增加值类型
-		return jdbc.withTransaction(sess -> cs.accept(sess), attrs);
+		return jdbc.withTransaction(sess -> action.accept(sess), attrs);
 	}
 
 	/**
