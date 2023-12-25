@@ -282,17 +282,17 @@ public class DFrame extends LinkedRecord {
 	 */
 	@Override
 	public List<IRecord> rows() {
-		return this.rows(true);
+		return this.rows(false);
 	}
 
 	/**
 	 * 带有缓存版本的 数据流
 	 * 
-	 * @param flag 是否清空缓存
+	 * @param clearflag 是否清空缓存,true:清空,false:使用缓存,没有缓则则会自动创建缓存
 	 * @return 数据项目
 	 */
-	public List<IRecord> rows(final boolean flag) {
-		if (flag) {
+	public List<IRecord> rows(final boolean clearflag) {
+		if (clearflag) {
 			this.rowsCache = null;
 		}
 		return Optional.ofNullable(this.rowsCache).orElseGet(() -> this.rowsCache = super.rows());
