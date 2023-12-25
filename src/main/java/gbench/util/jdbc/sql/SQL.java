@@ -632,6 +632,31 @@ public class SQL {
 	}
 
 	/**
+	 * 根据字段的数据类型进行表定义，这个函数不建议在生产环境中使用。<br>
+	 * 仅用于原型开发时快速测试使用 <br>
+	 * 对于以数字开始的字段名例如: "123abc" 会被视为 abc的字段名 ,该字段的类型长度为 123<br>
+	 * 对于以#开头的字段名视为主键约束 比如:"#id" <br>
+	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
+	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
+	 * 
+	 * @param intkey_autocrement 对于int 类型的key 是否增加自增长
+	 * @param i                  sql语句的索引序号: [ <br>
+	 *                           0:drop table, <br>
+	 *                           1:drop table if exists &amp; create, <br>
+	 *                           2:create, <br>
+	 *                           3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中,
+	 *                           索引3就变成了唯一约束了,后续的项目也会提前), <br>
+	 *                           4:unique constraints <br>
+	 *                           ],3和4 根据record设置 可能包含。 <br>
+	 * 
+	 * 
+	 * @reutrn 返回对应索引号所指定的sql,若 i<0 或 i>4 返回null
+	 */
+	public String ctsql(final boolean intkey_autocrement, int i) {
+		return this.ctsqls().get(i);
+	}
+
+	/**
 	 * 获得模板变量
 	 * 
 	 * @return 去重了之后的模板变量

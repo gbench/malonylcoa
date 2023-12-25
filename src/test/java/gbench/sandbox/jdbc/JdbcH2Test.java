@@ -2,7 +2,6 @@ package gbench.sandbox.jdbc;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.Arrays;
@@ -24,9 +23,7 @@ import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.kvp.Tuple2.P;
 import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
-import static gbench.util.jdbc.sql.SQL.nsql;
 import static gbench.util.jdbc.sql.SQL.proto_of;
-import static gbench.util.jdbc.sql.SQL.sql;
 import static gbench.util.jdbc.Jdbcs.sample;
 import static gbench.util.jdbc.Jdbcs.partitions;
 import static gbench.util.jdbc.Jdbcs.batch_handlers;
@@ -184,42 +181,6 @@ public class JdbcH2Test {
 			// 试算平衡2
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 		});
-	}
-
-	/**
-	 * 生成数据原型示例:提取每一列种数据最长的数值
-	 */
-	@Test
-	public void bar() {
-
-		final var rb = rb("#id,name,sex,attrs,borth,description"); // #用于标识主键
-		final var proto = proto_of( // 原型数据
-				rb.get(1, "zhangsan", "male", REC("city", "zhongguo shanghai"), LocalDate.now(), "民族英雄"), //
-				rb.get(100, "lisi", "female", REC("city", "beijing"), LocalDateTime.now(), "盖世英豪,文化名人") //
-		);
-		println(proto);
-		println(sql("t_user", proto).ctsqls(true).get(2));
-	}
-
-	/**
-	 * SQL 模板使用示例,Foreach 结构
-	 */
-	@Test
-	public void quz() {
-		final var address = REC("city", "shanghai", "district", "changning", "street", "fahuazhen road");
-		final var line = REC("name", "zhangsan", "weight", 30, "address", address);
-
-		// k$ 标识无需添加引号
-		println(nsql("insert into ##tbl({foreach k$ in keys k$}) values ({foreach v in values v})",
-				REC("tbl", "t_user").derive(line.kvs3("keys,values"))).format());
-
-		// 更新语句
-		final var kvs = line.kvs2();
-		println(kvs);
-		final var upsql = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
-				rb("tbl,id,kvs").get("t_user", 1, kvs)).format();
-
-		println(upsql);
 	}
 
 }
