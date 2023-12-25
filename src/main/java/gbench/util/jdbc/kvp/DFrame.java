@@ -42,6 +42,29 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 重写基础版本的数据行
+	 */
+	@Override
+	public List<IRecord> rows() {
+
+		return this.rows(false);
+	}
+
+	/**
+	 * 带有缓存版本的 数据流
+	 * 
+	 * @param clearflag 是否清空缓存,true:清空,false:使用缓存,没有缓则则会自动创建缓存
+	 * @return 数据项目
+	 */
+	public List<IRecord> rows(final boolean clearflag) {
+
+		if (clearflag) {
+			this.rowsCache = null;
+		}
+		return Optional.ofNullable(this.rowsCache).orElseGet(() -> this.rowsCache = super.rows());
+	}
+
+	/**
 	 * 按照行进行查找: many to one 关系的多方数据提取 <br>
 	 * 根据一方数据的id从当前对象(多方)种提取指定对于一方的数据集合。
 	 * 
@@ -240,15 +263,16 @@ public class DFrame extends LinkedRecord {
 	/**
 	 * DataFrame 构造一个数据框对象
 	 * 
-	 * @param kvps 键值序列 key0,value0,key1,value1
+	 * @param kvps 键值序列,每个value都代表一个值列表 key0,value0,key1,value1
 	 * @return DataFrame 对象
 	 */
 	public static DFrame DFM(final Object... kvps) {
 
 		final var n = kvps.length;
 		final var rec = new DFrame();
-		for (int i = 0; i < n - 1; i += 2)
+		for (int i = 0; i < n - 1; i += 2) {
 			rec.add(kvps[i].toString(), kvps[i + 1]);
+		}
 		return rec;
 	}
 
@@ -275,27 +299,6 @@ public class DFrame extends LinkedRecord {
 					} // for
 					return new DFrame(data);
 				});
-	}
-
-	/**
-	 * 重写基础版本的数据行
-	 */
-	@Override
-	public List<IRecord> rows() {
-		return this.rows(false);
-	}
-
-	/**
-	 * 带有缓存版本的 数据流
-	 * 
-	 * @param clearflag 是否清空缓存,true:清空,false:使用缓存,没有缓则则会自动创建缓存
-	 * @return 数据项目
-	 */
-	public List<IRecord> rows(final boolean clearflag) {
-		if (clearflag) {
-			this.rowsCache = null;
-		}
-		return Optional.ofNullable(this.rowsCache).orElseGet(() -> this.rowsCache = super.rows());
 	}
 
 	/**
