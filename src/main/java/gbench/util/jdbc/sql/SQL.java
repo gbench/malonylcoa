@@ -650,7 +650,7 @@ public class SQL {
 	 *                           ],3和4 根据record设置 可能包含。 <br>
 	 * 
 	 * 
-	 * @reutrn 返回对应索引号所指定的sql,若 i<0 或 i>4 返回null
+	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
 	 */
 	public String ctsql(final boolean intkey_autocrement, int i) {
 		return this.ctsqls().get(i);
