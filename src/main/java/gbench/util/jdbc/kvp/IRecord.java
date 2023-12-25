@@ -8107,6 +8107,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 						} // if
 					} // for
 					return rec;
+				} else if (o instanceof String s && Json.json2map(s) instanceof Map m) {
+					return REC(m);
 				} else { // 空项目
 					return REC();
 				} // if
