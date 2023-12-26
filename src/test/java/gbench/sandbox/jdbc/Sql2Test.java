@@ -41,10 +41,11 @@ public class Sql2Test {
 			for (final String sql : Arrays.asList( // 创建用户数据
 					sql("t_user").ctsql(users, true, true, 2) // 用户表
 					, sql("t_user").insql(users) //
-					, sql("t_user").upsql(rb("*id,address,*sex").get("between 1 and 5", "beijing", "man")) //
-					, sql("t_user").upsql(rb("id,name,sex").get("in (2,3,4)", "zhangsan_1", 1)) //
-					, sql("t_user").upsql(rb("id,name,sex").get("not in (2,3,4)", "zhangsan_not", 1)) //
-					, sql("t_user").upsql(rb("id,name,sex").get(10, "zhangsan_10", 1)) //
+					, sql("t_user").upsql(rb("id,name,sex").get(10, "zhangsan_10", 1)) // 默认是等于
+					, sql("t_user").upsql(rb("*id,address,*sex").get("between 1 and 5", "beijing", "man")) // between 测试
+					, sql("t_user").upsql(rb("id,name,sex").get("in (2,3,4)", "zhangsan_1", 1)) // in 测试
+					, sql("t_user").upsql(rb("id,name,sex").get("not in (2,3,4)", "zhangsan_not", 1)) // not in 测试
+					, sql("t_user").upsql(rb("id,name,sex").get("is not null", "zs_notnull", 1)) // is 测试
 			)) { // 用户数据
 				println(sql, sess.sql2execute(sql));
 			} // for
