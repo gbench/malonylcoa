@@ -7,6 +7,7 @@ import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.sql.SQL.nsql;
 import static gbench.util.jdbc.sql.SQL.proto_of;
 import static gbench.util.jdbc.sql.SQL.sql;
+import static gbench.util.jdbc.sql.SQL.OpMode.*;
 import static java.time.LocalDateTime.now;
 
 import java.time.LocalDate;
@@ -70,6 +71,9 @@ public class SqlTest {
 		// 更新语句, %p.key表示不用添加单引号
 		final var upsql1 = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
 				rb("tbl,id,kvs").get("t_user", 1, kvs2)).format(); // t_user的字段更改
+		final var upsql2 = sql("t_user").upsql(rb("*id,*weight,mobile").get(1, 30, "18601690612", 1), OR);
+		final var upsql3 = sql("t_user").upsql(rb("*id,*weight,mobile").get(1, 30, "18601690613", 1), AND);
+		final var upsql4 = sql("t_user").upsql(rb("*id,*weight,mobile").get(1, 30, "18601690614", 1));
 
 		// sql 生成的新建、增加、与修改
 		println("ctsql 1", ctsql1);
@@ -77,10 +81,13 @@ public class SqlTest {
 		println("insql 1", insql1);
 		println("insql 2", insql2);
 		println("upsql 1", upsql1);
+		println("upsql 2", upsql2);
+		println("upsql 3", upsql3);
+		println("upsql 4", upsql4);
 
 		// 数据联系
 		jdbcApp.withTransaction(sess -> {
-			for (var sql : Arrays.asList(ctsql1, ctsql2, insql1, insql2, upsql1)) {
+			for (var sql : Arrays.asList(ctsql1, ctsql2, insql1, insql2, upsql1, upsql2, upsql3, upsql4)) {
 				sess.sqlexecute(sql);
 			} // for
 			for (var tbl : Arrays.asList("t_user,t_test".split(","))) {

@@ -362,7 +362,7 @@ public class SQL {
 	}
 
 	/**
-	 * 更新语句
+	 * 更新语句(and 操作模式)
 	 * 
 	 * @param data 数据源,where的更新条件数据的键名用前缀:'*'或'#'进行标记,<br>
 	 *             比如:REC("*a",1,"b",2,"*c",3) 表示 set b=2 where a=1 mode c=3
@@ -386,23 +386,36 @@ public class SQL {
 			return null;
 		} else {
 			final var keys = data.keys();
-			final var pattern = Pattern.compile("^[#*]+(.+$)");
-			var lhs = keys.stream() //
-					.filter(e -> pattern.matcher(e).matches()) //
+			final var k_patt = Pattern.compile("^[#*]+(.+$)"); // 键名结构
+			final var v_patt = Pattern.compile("^(\\s*(not\\s+)?([><=]+|between|in|is))(.+)$",
+					Pattern.CASE_INSENSITIVE); // 键值结构
+			final var lhs = keys.stream() //
+					.filter(e -> k_patt.matcher(e).matches()) //
 					.toArray(String[]::new); // 条件数据
-			if (lhs.length <= 0) {
-				lhs = new String[] { keys.get(0) };
-			} // 默认使用第一个键名作为条件数据
-			final var whereclause = data.filter(lhs).stream().map(e -> {
-				final var matcher = pattern.matcher(e._1());
+			final var _lhs = lhs.length > 0 ? lhs : new String[] { keys.get(0) }; // 默认使用第一个键名作为条件数据
+			final var whereclause = data.filter(_lhs).stream().map(e -> {
+				final var matcher = k_patt.matcher(e._1());
+				final Object value;
+				Matcher vmatcher = null;
+				final String op; // 操作符
+				if (e._2() instanceof String s && (vmatcher = v_patt.matcher(s)).matches()) {
+					op = vmatcher.group(1).strip();
+					value = vmatcher.group(4).strip();
+				} else {
+					value = SQL.quoteString(e._2());
+					op = "=";
+				}
+				String line = null;
 				if (!matcher.find()) { // 是否寻找得到
-					return String.format("%s=%s", e._1(), SQL.quoteString(e._2()));
+					line = String.format("%s %s %s", e._1(), op, value);
 				} else {
 					final var key = matcher.group(1); // 提取键名
-					return String.format("%s=%s", key, SQL.quoteString(e._2()));
+					line = String.format("%s %s %s", key, op, value);
 				} // if
+				final var n = _lhs.length;
+				return n > 1 ? String.format("(%s)", line) : line;
 			}).filter(Objects::nonNull).collect(Collectors.joining(String.format(" %s ", _mode).toLowerCase()));
-			final var _data = data.filterNot(lhs); // 更新数据
+			final var _data = data.filterNot(_lhs); // 更新数据
 			final var sqlpattern = "update ##tbl set {foreach p in kvs %p.key=p.value} ##wherecluase";
 			final var __data = rb("tbl,kvs,wherecluase").get(this.getName(), _data.kvs2(),
 					whereclause.matches("^\\s+$") ? "" : String.format("where %s", whereclause));
