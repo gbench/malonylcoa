@@ -84,7 +84,7 @@ public class SQL {
 	 * @param name SQL语句的名，可以是文本字符串，由于标识SQL，便于检索
 	 * @param rec  SQL 语句的上下文数据：比如插入的操作的 插入记录
 	 */
-	public SQL(final String name, IRecord rec) {
+	public SQL(final String name, final IRecord rec) {
 		this.name = name;
 		this.sqlctx = Collections.singletonList(rec);// 保证sqlctx为一个记录集合
 	}
@@ -380,7 +380,7 @@ public class SQL {
 	 * @param mode AND:条件间使用与关系, 条件间使用 OR 关系
 	 * @return 更新语句
 	 */
-	public String upsql(final IRecord data, OpMode mode) {
+	public String upsql(final IRecord data, final OpMode mode) {
 		OpMode _mode = null == mode ? OpMode.AND : mode;
 		final var opmode = switch (_mode) {
 		case AND -> "and";
@@ -445,34 +445,32 @@ public class SQL {
 	 * @param which 更新范围,IRecord 解构个字段采用and 进行过滤,String 类型直接拼接到 update 语句结尾
 	 * @return 更新的sql语句
 	 */
-	public String upsql(IRecord recA, IRecord recB, Object which) {
-		StringBuilder buffer = new StringBuilder();
+	public String upsql(IRecord recA, IRecord recB, final Object which) {
+		final StringBuilder buffer = new StringBuilder();
 		buffer.append("update ").append(this.name());
 
-		if (recA == null)
-			recA = new SimpleRecord();
-		if (recB == null)
-			recB = new SimpleRecord();
+		var __recA = (recA == null) ? new SimpleRecord() : recA;
+		var __recB = (recB == null) ? new SimpleRecord() : recB;
 
-		recA = IRecord.REC(recA.applyOnkeys(k -> parseFieldName(k).str("name")));
+		__recA = IRecord.REC(__recA.applyOnkeys(k -> parseFieldName(k).str("name")));
 		final var rec = SimpleRecord.REC2(); // 使用SimpleRecord 以保证可以存放null 值
-		recB.foreach((k, v) -> {
+		__recB.foreach((k, v) -> {
 			final var key = parseFieldName(k).get("name");
 			rec.add(key, v);
 		});
-		recB = rec;
+		__recB = rec;
 
-		List<String> keys = recA.kvs().stream().map(KVPair::key).collect(Collectors.toList());
-		keys.addAll(recB.kvs().stream().map(KVPair::key).collect(Collectors.toList()));
+		List<String> keys = __recA.kvs().stream().map(KVPair::key).collect(Collectors.toList());
+		keys.addAll(__recB.kvs().stream().map(KVPair::key).collect(Collectors.toList()));
 		keys = keys.stream().distinct().collect(Collectors.toList());
 		final var kvs = new LinkedList<KVPair<String, Object>>();// 键值对
 		// System.out.println("全量的更新键值表："+keys);
 		for (String key : keys) {
-			Object oA = recA.get(key);
-			Object oB = recB.get(key);
+			Object oA = __recA.get(key);
+			Object oB = __recB.get(key);
 			if (oA != null && oB != null && oA.equals(oB))
 				continue; // 值相同不予更新
-			if (recB.has(key) && recA.has(key)) {
+			if (__recB.has(key) && __recA.has(key)) {
 				kvs.add(new KVPair<>(key, oB));
 			} // if
 		} // for
@@ -494,8 +492,8 @@ public class SQL {
 			buffer.append(" where ").append(filter);
 		} else if (which != null && which instanceof String) {
 			buffer.append(" where ").append(which);
-		} else if (which == null && recA.get("id") != null) {// 默认更新id
-			buffer.append(" where id='").append(recA.get("id")).append("'");
+		} else if (which == null && __recA.get("id") != null) {// 默认更新id
+			buffer.append(" where id='").append(__recA.get("id")).append("'");
 		} // if which!=null
 
 		return buffer.toString();
@@ -509,7 +507,7 @@ public class SQL {
 	 *                 类型直接拼接到 update 语句结尾
 	 * @return 更新后的sql 语句
 	 */
-	public String upsql(IRecord newData, Object whichone) {
+	public String upsql(final IRecord newData, final Object whichone) {
 		return this.upsql(this.getSqlCtxAsOneRecord(), newData, whichone);
 	}
 
@@ -532,7 +530,7 @@ public class SQL {
 	 * @param ids 用作过滤条件的 字段名称 ,比如 <br>
 	 * @return update 语句
 	 */
-	public String upsql2(String... ids) {
+	public String upsql2(final String... ids) {
 		final var newData = this.getSqlCtxAsOneRecord();
 		final var ss = Arrays.asList(ids);
 		final var empty = IRecord.builder(newData.filter(kvp -> !ss.contains(kvp._1()))).get(UUID.randomUUID());
@@ -750,7 +748,7 @@ public class SQL {
 	 * 
 	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
 	 */
-	public String ctsql(final boolean int_pk_autocrement, int i) {
+	public String ctsql(final boolean int_pk_autocrement, final int i) {
 		return i < 0 || i > 4 ? null : this.ctsqls(int_pk_autocrement).get(i);
 	}
 
@@ -819,7 +817,8 @@ public class SQL {
 	 * 
 	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
 	 */
-	public String ctsql(final Iterable<IRecord> datas, final boolean id_flag, final boolean int_pk_autocrement, int i) {
+	public String ctsql(final Iterable<IRecord> datas, final boolean id_flag, final boolean int_pk_autocrement,
+			final int i) {
 		return i < 0 || i > 4 ? null : sql(this.name).ctsqls(datas, id_flag, int_pk_autocrement).get(i);
 	}
 
@@ -904,7 +903,7 @@ public class SQL {
 		 * @param recs sql 上下文集合
 		 * @return SQL对象
 		 */
-		public SQL get(IRecord... recs) {
+		public SQL get(final IRecord... recs) {
 			return new SQL(name, Arrays.asList(recs));
 		}
 
@@ -1081,7 +1080,7 @@ public class SQL {
 	 * @param rec   字段定义
 	 * @return 创建表解构
 	 */
-	public static List<String> createTable(String table, IRecord rec) {
+	public static List<String> createTable(final String table, final IRecord rec) {
 		return createTable(table, rec, table);
 	}
 
@@ -1332,7 +1331,7 @@ public class SQL {
 	 * @param name 数据表明
 	 * @return 生成SQL语句
 	 */
-	public static String DDL_CREATE_TABLE(Object obj, final String name) {
+	public static String DDL_CREATE_TABLE(final Object obj, final String name) {
 		final Class<?> cls = obj instanceof Class<?> ? (Class<?>) obj : obj.getClass();
 		final var tab = name == null ? cls.getSimpleName() : name;
 		final var ll = new LinkedList<Tuple2<String, String>>();
