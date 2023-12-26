@@ -5429,10 +5429,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param flds 否定提取的字段集合用逗号分割,flds为null 表示不进行过滤。
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
-	default IRecord filter2(final String flds) {
+	default IRecord filterNot(final String flds) {
 		if (flds == null)
 			return this.duplicate();
-		return this.filter2(flds, true);
+		return this.filterNot(flds, true);
 	}
 
 	/**
@@ -5444,12 +5444,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param discard_null_field 空值字段是否过滤。
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
-	default IRecord filter2(final String flds, final boolean discard_null_field) {
+	default IRecord filterNot(final String flds, final boolean discard_null_field) {
 		if (flds == null) {
 			return this.duplicate();
 		}
 		final String kk[] = flds == null ? null : flds.split("[,、，]+");
-		return this.filter2(kk, discard_null_field);
+		return this.filterNot(kk, discard_null_field);
 	}
 
 	/**
@@ -5461,12 +5461,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param discard_null_field 空值字段是否过滤。
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
-	default IRecord filter2(final String flds[], final boolean discard_null_field) {
+	default IRecord filterNot(final String flds[], final boolean discard_null_field) {
 		if (flds == null) {
 			return this.duplicate();
 		}
 		final var aa = Arrays.asList(flds);
-		return this.filter2(e -> aa.contains(e._1())).filter(kvp -> !discard_null_field || kvp._2() != null);
+		return this.filterNot(e -> aa.contains(e._1())).filter(kvp -> !discard_null_field || kvp._2() != null);
 	}
 
 	/**
@@ -5477,8 +5477,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *             空值字段是否过滤。默认为true
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
-	default IRecord filter2(final String flds[]) {
-		return filter2(flds, true);
+	default IRecord filterNot(final String flds[]) {
+		return filterNot(flds, true);
 	}
 
 	/**
@@ -5489,10 +5489,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *                空值字段是否过滤。默认为true
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
-	default IRecord filter2(final Integer... indices) {
+	default IRecord filterNot(final Integer... indices) {
 		final var n = this.size();
 		final var flds = Arrays.stream(indices).map(i -> this.idx2key(i % n)).toArray(String[]::new);
-		return filter2(flds, true);
+		return filterNot(flds, true);
 	}
 
 	/**
@@ -5501,7 +5501,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param pfilter 字段否定过滤检测器,null 不进行过滤。true:去除掉,false:给保留
 	 * @return 一个LinkedRecord 以保证空值字段也可以保持顺序。
 	 */
-	default IRecord filter2(final Predicate<KVPair<String, Object>> pfilter) {
+	default IRecord filterNot(final Predicate<KVPair<String, Object>> pfilter) {
 		return this.filter(t -> !pfilter.test(t));
 	}
 
@@ -11175,7 +11175,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 提取idxes所在的数据
 	 */
 	static Function<IRecord, IRecord> select2(final Integer[] idxes) {
-		return r -> r.filter2(idxes);
+		return r -> r.filterNot(idxes);
 	}
 
 	/**

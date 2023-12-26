@@ -1,6 +1,7 @@
 package gbench.util.jdbc.sql;
 
 import static gbench.util.jdbc.kvp.IRecord.REC;
+import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.kvp.Tuple2.P;
 
 import java.sql.Timestamp;
@@ -19,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -248,16 +250,6 @@ public class SQL {
 	/**
 	 * 插入数据
 	 * 
-	 * @param pfilter 插入的字段过滤器
-	 * @return insert SQL 语句
-	 */
-	public String insql(final Predicate<KVPair<String, Object>> pfilter) {
-		return this.insql(this.sqlctx, pfilter);
-	}
-
-	/**
-	 * 插入数据
-	 * 
 	 * @param datas   插入的数据的字段列表，用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
 	 * @param pfilter 插入的字段过滤器
 	 * @return insert SQL 语句
@@ -327,6 +319,26 @@ public class SQL {
 	}
 
 	/**
+	 * 插入数据
+	 * 
+	 * @param pfilter 插入的字段过滤器
+	 * @return insert SQL 语句
+	 */
+	public String insql(final Predicate<KVPair<String, Object>> pfilter) {
+		return this.insql(this.sqlctx, pfilter);
+	}
+
+	/**
+	 * 插入数据
+	 * 
+	 * @param datas 插入的数据的字段列表，用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
+	 * @return insert SQL 语句
+	 */
+	public String insql(final Iterable<IRecord> datas) {
+		return this.insql(datas, null);
+	}
+
+	/**
 	 * 生成insert 插入语句
 	 * 
 	 * @return insert 插入语句
@@ -347,6 +359,55 @@ public class SQL {
 			return recB.duplicate();
 		IRecord recA = this.getSqlCtxAsOneRecord();
 		return SimpleRecord.extend(recA, recB);
+	}
+
+	/**
+	 * 更新语句
+	 * 
+	 * @param data 数据源,where的更新条件数据的键名用前缀:'*'或'#'进行标记,<br>
+	 *             比如:REC("*a",1,"b",2,"*c",3) 表示 set b=2 where a=1 mode c=3
+	 * @return 更新语句
+	 */
+	public String upsql(final IRecord data) {
+		return upsql(data, null);
+	}
+
+	/**
+	 * 更新语句
+	 * 
+	 * @param data 数据源,where的更新条件数据的键名用前缀:'*'或'#'进行标记,<br>
+	 *             比如:REC("*a",1,"b",2,"*c",3) 表示 set b=2 where a=1 mode c=3
+	 * @param mode AND:条件间使用与关系, 条件间使用 OR 关系
+	 * @return 更新语句
+	 */
+	public String upsql(final IRecord data, OpMode mode) {
+		OpMode _mode = null == mode ? OpMode.AND : mode;
+		if (data.size() < 2) {
+			return null;
+		} else {
+			final var keys = data.keys();
+			final var pattern = Pattern.compile("^[#*]+(.+$)");
+			var lhs = keys.stream() //
+					.filter(e -> pattern.matcher(e).matches()) //
+					.toArray(String[]::new); // 条件数据
+			if (lhs.length <= 0) {
+				lhs = new String[] { keys.get(0) };
+			} // 默认使用第一个键名作为条件数据
+			final var whereclause = data.filter(lhs).stream().map(e -> {
+				final var matcher = pattern.matcher(e._1());
+				if (!matcher.find()) { // 是否寻找得到
+					return String.format("%s=%s", e._1(), SQL.quoteString(e._2()));
+				} else {
+					final var key = matcher.group(1); // 提取键名
+					return String.format("%s=%s", key, SQL.quoteString(e._2()));
+				} // if
+			}).filter(Objects::nonNull).collect(Collectors.joining(String.format(" %s ", _mode).toLowerCase()));
+			final var _data = data.filterNot(lhs); // 更新数据
+			final var sqlpattern = "update ##tbl set {foreach p in kvs %p.key=p.value} ##wherecluase";
+			final var __data = rb("tbl,kvs,wherecluase").get(this.getName(), _data.kvs2(),
+					whereclause.matches("^\\s+$") ? "" : String.format("where %s", whereclause));
+			return nsql(sqlpattern, __data).format();
+		}
 	}
 
 	/**
@@ -497,7 +558,7 @@ public class SQL {
 	 * @param newData 新数据 用 newData的中的变量来实例化SQL模板，生成一个update语句
 	 * @return 更新数据的sql
 	 */
-	public String update(IRecord newData) {
+	public String update(final IRecord newData) {
 		return this.upsql(this.getSqlCtxAsOneRecord(), newData, null);
 	}
 
@@ -651,6 +712,48 @@ public class SQL {
 	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
 	 * 
+	 * @param datas 源数据，通过分析源数据却确定表结构
+	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
+	 */
+	public List<String> ctsqls(final Iterable<IRecord> datas) {
+		return sql(this.name, SQL.proto_of(datas)).ctsqls();
+	}
+
+	/**
+	 * 根据字段的数据类型进行表定义，这个函数不建议在生产环境中使用。<br>
+	 * 仅用于原型开发时快速测试使用 <br>
+	 * 对于以数字开始的字段名例如: "123abc" 会被视为 abc的字段名 ,该字段的类型长度为 123<br>
+	 * 对于以#开头的字段名视为主键约束 比如:"#id" <br>
+	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
+	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
+	 * 
+	 * @param datas              源数据，通过分析源数据却确定表结构
+	 * @param id_flag            是否添加一个int 类型的id主键,true:添加,false 不添加
+	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
+	 * @return sql语句的索引序号: [ <br>
+	 *         0:drop table, <br>
+	 *         1:drop table if exists &amp; create, <br>
+	 *         2:create, <br>
+	 *         3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中, 索引3就变成了唯一约束了,后续的项目也会提前),
+	 *         <br>
+	 *         4:unique constraints <br>
+	 *         ],3和4 根据record设置 可能包含。 <br>
+	 * 
+	 */
+	public List<String> ctsqls(final Iterable<IRecord> datas, final boolean id_flag, final boolean int_pk_autocrement) {
+		final var proto = proto_of(datas);
+		final var _proto = id_flag ? REC("#id", 1).derive(proto) : proto;
+		return sql(this.name, _proto).ctsqls(int_pk_autocrement);
+	}
+
+	/**
+	 * 根据字段的数据类型进行表定义，这个函数不建议在生产环境中使用。<br>
+	 * 仅用于原型开发时快速测试使用 <br>
+	 * 对于以数字开始的字段名例如: "123abc" 会被视为 abc的字段名 ,该字段的类型长度为 123<br>
+	 * 对于以#开头的字段名视为主键约束 比如:"#id" <br>
+	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
+	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
+	 * 
 	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
 	 * @param i                  sql语句的索引序号: [ <br>
 	 *                           0:drop table, <br>
@@ -665,7 +768,34 @@ public class SQL {
 	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
 	 */
 	public String ctsql(final boolean int_pk_autocrement, int i) {
-		return this.ctsqls(int_pk_autocrement).get(i);
+		return i < 1 || i > 4 ? null : this.ctsqls(int_pk_autocrement).get(i);
+	}
+
+	/**
+	 * 根据字段的数据类型进行表定义，这个函数不建议在生产环境中使用。<br>
+	 * 仅用于原型开发时快速测试使用 <br>
+	 * 对于以数字开始的字段名例如: "123abc" 会被视为 abc的字段名 ,该字段的类型长度为 123<br>
+	 * 对于以#开头的字段名视为主键约束 比如:"#id" <br>
+	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
+	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
+	 * 
+	 * @param datas              源数据，通过分析源数据却确定表结构
+	 * @param id_flag            是否添加一个int 类型的id主键,true:添加,false 不添加
+	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
+	 * @param i                  sql语句的索引序号: [ <br>
+	 *                           0:drop table, <br>
+	 *                           1:drop table if exists &amp; create, <br>
+	 *                           2:create, <br>
+	 *                           3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中,
+	 *                           索引3就变成了唯一约束了,后续的项目也会提前), <br>
+	 *                           4:unique constraints <br>
+	 *                           ],3和4 根据record设置 可能包含。 <br>
+	 * 
+	 * 
+	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
+	 */
+	public String ctsql(final Iterable<IRecord> datas, final boolean id_flag, final boolean int_pk_autocrement, int i) {
+		return i < 1 || i > 4 ? null : sql(this.name).ctsqls(datas, id_flag, int_pk_autocrement).get(i);
 	}
 
 	/**
@@ -1247,6 +1377,13 @@ public class SQL {
 	final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	// debug 调试标记
 	public static boolean debug = false;
+
+	/**
+	 * 更新的条件模式
+	 */
+	public enum OpMode {
+		AND, OR,
+	}
 
 	private String name = null;// sql 名称
 	private String sqltpl = null;// sql 语句模板， 占位符即模板参数式样：#xxx 字符串类型, ##xxx 数值类型,或是 ${xxx}
