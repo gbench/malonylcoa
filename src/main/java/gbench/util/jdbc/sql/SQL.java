@@ -21,7 +21,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -389,7 +388,7 @@ public class SQL {
 		case BLANK -> ""; // 空白算符
 		default -> "and";
 		};
-
+		final var is_blankmode = mode == BLANK; // 是否是空白拼装模式
 		if (data.size() < 2) {
 			return null;
 		} else {
@@ -397,32 +396,37 @@ public class SQL {
 			final var k_pattern = Pattern.compile("^[#*]+(.+$)"); // 键名结构
 			final var v_pattern = Pattern.compile("^(\\s*(not\\s+)?([><=]+|between|in|is))(.+)$",
 					Pattern.CASE_INSENSITIVE); // 键值结构
-			final var lhs = keys.stream() // 键名序列
+			final var lhs = keys.stream() // 条件字段的键名序列
 					.filter(e -> k_pattern.matcher(e).matches()) // 键名模式皮欸
 					.toArray(String[]::new); // 条件数据
 			final var _lhs = lhs.length > 0 ? lhs : new String[] { keys.get(0) }; // 默认使用第一个键名作为条件数据
-			final var whereclause = data.filter(_lhs).stream().map(e -> {
+			final var whereclause = data.filter(_lhs).stream().map(e -> { // 条件语句的拼装
 				final var k_matcher = k_pattern.matcher(e._1());
 				Matcher v_matcher = null; // 值模式匹配
 				final Object value; // 值对象
 				final String op; // 操作符
-				if (e._2() instanceof String s && (v_matcher = v_pattern.matcher(s)).matches()) {
+				if (!is_blankmode && e._2() instanceof String s && (v_matcher = v_pattern.matcher(s)).matches()) {
 					op = v_matcher.group(1).strip();
 					value = v_matcher.group(4).strip();
 				} else { // 其他形式按照等于号进行处理
-					value = mode == BLANK ? asString(e._2()) : quoteString(e._2());
-					op = "=";
-				}
+					value = is_blankmode ? asString(e._2()) : quoteString(e._2());
+					op = is_blankmode ? "" : "=";
+				} // if
 				final String condition; // 条件表达式
+				final var _op = !op.isBlank() ? String.format(" %s ", op) : ""; // 对于非空表的op添加两边添加一个空格
 				if (!k_matcher.find()) { // 是否寻找得到
-					condition = String.format("%s %s %s", e._1(), op, value);
+					condition = String.format("%s%s%s", e._1(), _op, value);
 				} else {
 					final var key = k_matcher.group(1); // 提取键名
-					condition = String.format("%s %s %s", key, op, value);
+					condition = String.format("%s%s%s", key, _op, value);
 				} // if
 				final var n = _lhs.length; // 过滤条件数
-				return (n > 1 && mode != BLANK) ? String.format("(%s)", condition) : condition; // 过滤条件数大于1,每个条件加括号否则不加
-			}).filter(Objects::nonNull).collect(Collectors.joining(String.format(" %s ", opmode)));
+				return (n > 1 && !is_blankmode) ? String.format("(%s)", condition) : condition; // 过滤条件数大于1,每个条件加括号否则不加
+			}).collect(Collectors.joining( // 条件数拼接
+					String.format("%s", !opmode.isBlank() //
+							? String.format(" %s ", opmode) // 非空白模式两边添加一个空格
+							: " ") // 空白模式使用一个空格替代
+			)); // collect
 			final var _data = data.filterNot(_lhs); // 更新数据
 			final var sqlpattern = "update ##tbl set {foreach p in kvs %p.key=p.value} ##wherecluase";
 			final var __data = rb("tbl,kvs,wherecluase").get(this.getName(), _data.kvs2(),
