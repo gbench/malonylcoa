@@ -57,14 +57,16 @@ public class SqlTest {
 		// 创建语句
 		final var ctsql1 = sql("t_user", REC("#id", 1).derive(t_user)).ctsql(true, 2); // t_user
 		final var ctsql2 = sql("t_test", REC("#id", 1).derive(rb("a,b,c,d").get(1))).ctsql(true, 2); // t_test
+
+		// 插入语句,k$ 标识无需添加引号,{ 可用 用${代替
 		final var insql1 = nsql("insert into ##tbl({foreach k$ in keys k$}) values ({foreach v in values v})",
 				REC("tbl", "t_user").derive(kvs3)).format(); // t_user的插入语句
-		// 插入语句,k$ 标识无需添加引号,{ 可用 用${代替
 		final var insql2 = sql("t_test", //
 				rb("a,b,c").get(1, 2, 3), //
 				rb("a,c").get(1, 3), //
 				rb("d").get(3) //
 		).insql();
+
 		// 更新语句, %p.key表示不用添加单引号
 		final var upsql1 = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
 				rb("tbl,id,kvs").get("t_user", 1, kvs2)).format(); // t_user的字段更改
