@@ -44,7 +44,7 @@ public class SqlTest {
 	@Test
 	public void bar() {
 		final var address = REC("city", "shanghai", "district", "changning", "street", "fahuazhen road", "nong", 101,
-				"building", REC("unit", 11, "room", 201, "host", "gbench'home"));
+				"place", REC("building", 1, "unit", 11, "room", 201, "name", "zhangshan'home"));
 		final var t_user = REC("name", "zhangsan", "mobile", 18601690611l, //
 				"password", "123456", "weight", 30, "address", address, "borth", now(), "description", "无法无天的张三");
 		final var kvs2 = t_user.kvs2(); // 键值列表2
@@ -89,7 +89,6 @@ public class SqlTest {
 				println(tbl, sess.sql2dframe("select * from ##tbl", "tbl", tbl).forEachBy(hjp));
 			} // for
 		}); // withTransaction
-
 	}
 
 	final String dbname = "sqltest"; // 更换一个数据库
