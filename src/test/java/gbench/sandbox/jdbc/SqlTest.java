@@ -29,7 +29,7 @@ public class SqlTest {
 	 */
 	@Test
 	public void foo() {
-		final var rb = rb("#id,name,sex,attrs,borth,description"); // #用于标识主键
+		final var rb = rb("#id,name,sex,attrs,birth,description"); // #用于标识主键
 		final var proto = proto_of( // 原型数据
 				rb.get(1, "zhangsan", "male", REC("city", "zhongguo shanghai"), LocalDate.now(), "民族英雄"), //
 				rb.get(100, "lisi", "female", REC("city", "beijing"), LocalDateTime.now(), "盖世英豪,文化名人") //
@@ -46,7 +46,7 @@ public class SqlTest {
 		final var address = REC("city", "shanghai", "district", "changning", "street", "fahuazhen road", "nong", 101,
 				"place", REC("building", 1, "unit", 11, "room", 201, "name", "zhangshan'home"));
 		final var t_user = REC("name", "zhangsan", "mobile", 18601690611l, //
-				"password", "123456", "weight", 30, "address", address, "borth", now(), "description", "无法无天的张三");
+				"password", "123456", "weight", 30, "address", address, "birth", now(), "description", "无法无天的张三");
 		final var kvs2 = t_user.kvs2(); // 键值列表2
 		final var kvs3 = t_user.kvs3(); // 键值列表3
 
