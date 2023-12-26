@@ -65,7 +65,7 @@ public class SqlTest {
 				rb("a,c").get(1, 3), //
 				rb("d").get(3) //
 		).insql();
-		// 更新语句
+		// 更新语句, %p.key表示不用添加单引号
 		final var upsql1 = nsql("update ##tbl set {foreach p in kvs %p.key=p.value} where id=##id",
 				rb("tbl,id,kvs").get("t_user", 1, kvs2)).format(); // t_user的字段更改
 
