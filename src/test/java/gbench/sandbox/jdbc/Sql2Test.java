@@ -16,6 +16,7 @@ import static gbench.util.jdbc.Jdbcs.imports;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.sql.SQL.sql;
+import static gbench.util.jdbc.sql.SQL.OpMode.BLANK;
 
 /**
  * MallTest
@@ -46,6 +47,7 @@ public class Sql2Test {
 					, sql("t_user").upsql(rb("id,name,sex").get("in (2,3,4)", "zhangsan_1", 1)) // in 测试
 					, sql("t_user").upsql(rb("id,name,sex").get("not in (2,3,4)", "zhangsan_not", 1)) // not in 测试
 					, sql("t_user").upsql(rb("id,name,sex").get("is not null", "zs_notnull", 1)) // is 测试
+					, sql("t_user").upsql(rb("*id,*name,sex").get("1 and", "'lisi' or sex='3'", 1), BLANK) // is 测试
 			)) { // 用户数据
 				println(sql, sess.sql2execute(sql));
 			} // for

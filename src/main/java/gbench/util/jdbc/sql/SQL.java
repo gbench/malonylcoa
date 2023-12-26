@@ -3,6 +3,7 @@ package gbench.util.jdbc.sql;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.kvp.Tuple2.P;
+import static gbench.util.jdbc.sql.SQL.OpMode.BLANK;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -382,39 +383,46 @@ public class SQL {
 	 */
 	public String upsql(final IRecord data, OpMode mode) {
 		OpMode _mode = null == mode ? OpMode.AND : mode;
+		final var opmode = switch (_mode) {
+		case AND -> "and";
+		case OR -> "or";
+		case BLANK -> ""; // 空白算符
+		default -> "and";
+		};
+
 		if (data.size() < 2) {
 			return null;
 		} else {
 			final var keys = data.keys();
-			final var k_patt = Pattern.compile("^[#*]+(.+$)"); // 键名结构
-			final var v_patt = Pattern.compile("^(\\s*(not\\s+)?([><=]+|between|in|is))(.+)$",
+			final var k_pattern = Pattern.compile("^[#*]+(.+$)"); // 键名结构
+			final var v_pattern = Pattern.compile("^(\\s*(not\\s+)?([><=]+|between|in|is))(.+)$",
 					Pattern.CASE_INSENSITIVE); // 键值结构
-			final var lhs = keys.stream() //
-					.filter(e -> k_patt.matcher(e).matches()) //
+			final var lhs = keys.stream() // 键名序列
+					.filter(e -> k_pattern.matcher(e).matches()) // 键名模式皮欸
 					.toArray(String[]::new); // 条件数据
 			final var _lhs = lhs.length > 0 ? lhs : new String[] { keys.get(0) }; // 默认使用第一个键名作为条件数据
 			final var whereclause = data.filter(_lhs).stream().map(e -> {
-				final var matcher = k_patt.matcher(e._1());
-				final Object value;
-				Matcher vmatcher = null;
+				final var k_matcher = k_pattern.matcher(e._1());
+				Matcher v_matcher = null; // 值模式匹配
+				final Object value; // 值对象
 				final String op; // 操作符
-				if (e._2() instanceof String s && (vmatcher = v_patt.matcher(s)).matches()) {
-					op = vmatcher.group(1).strip();
-					value = vmatcher.group(4).strip();
-				} else {
-					value = SQL.quoteString(e._2());
+				if (e._2() instanceof String s && (v_matcher = v_pattern.matcher(s)).matches()) {
+					op = v_matcher.group(1).strip();
+					value = v_matcher.group(4).strip();
+				} else { // 其他形式按照等于号进行处理
+					value = mode == BLANK ? asString(e._2()) : quoteString(e._2());
 					op = "=";
 				}
-				String line = null;
-				if (!matcher.find()) { // 是否寻找得到
-					line = String.format("%s %s %s", e._1(), op, value);
+				final String condition; // 条件表达式
+				if (!k_matcher.find()) { // 是否寻找得到
+					condition = String.format("%s %s %s", e._1(), op, value);
 				} else {
-					final var key = matcher.group(1); // 提取键名
-					line = String.format("%s %s %s", key, op, value);
+					final var key = k_matcher.group(1); // 提取键名
+					condition = String.format("%s %s %s", key, op, value);
 				} // if
-				final var n = _lhs.length;
-				return n > 1 ? String.format("(%s)", line) : line;
-			}).filter(Objects::nonNull).collect(Collectors.joining(String.format(" %s ", _mode).toLowerCase()));
+				final var n = _lhs.length; // 过滤条件数
+				return (n > 1 && mode != BLANK) ? String.format("(%s)", condition) : condition; // 过滤条件数大于1,每个条件加括号否则不加
+			}).filter(Objects::nonNull).collect(Collectors.joining(String.format(" %s ", opmode)));
 			final var _data = data.filterNot(_lhs); // 更新数据
 			final var sqlpattern = "update ##tbl set {foreach p in kvs %p.key=p.value} ##wherecluase";
 			final var __data = rb("tbl,kvs,wherecluase").get(this.getName(), _data.kvs2(),
@@ -1395,7 +1403,18 @@ public class SQL {
 	 * 更新的条件模式
 	 */
 	public enum OpMode {
-		AND, OR,
+		/**
+		 * AND 拼装
+		 */
+		AND,
+		/**
+		 * OR 拼装
+		 */
+		OR,
+		/**
+		 * 自由拼装
+		 */
+		BLANK
 	}
 
 	private String name = null;// sql 名称
