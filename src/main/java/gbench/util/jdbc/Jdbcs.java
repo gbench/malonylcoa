@@ -2686,7 +2686,13 @@ public class Jdbcs {
 		return (sess) -> {
 			for (final String tblname : tblnames) { // 遍历数据表
 				final var data = shtmx.apply(tblname);
-				final var line = proto_of(data.rows());
+				final var line = proto_of(data.rows()).aoks2rec(String::toLowerCase);
+				if (line.opt("id").isPresent()) {
+					final var id = line.i4("id");
+					if (id != null) {
+						line.add(line.remove("id")).add("id",id);;
+					} // if
+				} // if
 				final var ctsql = ctsql(tblname, line);
 
 				sess.sql2execute(ctsql);
