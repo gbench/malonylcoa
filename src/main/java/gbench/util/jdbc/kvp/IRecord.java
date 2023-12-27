@@ -783,6 +783,26 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<Object> opt(final String key) {
+		return this.get(key, Optional::ofNullable);
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<Object> opt(final int idx) {
+		return this.get(idx, Optional::ofNullable);
+	}
+
+	/**
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>

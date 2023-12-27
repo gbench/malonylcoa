@@ -768,6 +768,31 @@ public class SQL {
 	}
 
 	/**
+	 * 带有自自增长主键功能SQL创建语句函数<br>
+	 * this.ctsql(datas, true, true, i) 的 简写 <br>
+	 * 根据字段的数据类型进行表定义，这个函数不建议在生产环境中使用。<br>
+	 * 仅用于原型开发时快速测试使用 <br>
+	 * 对于以数字开始的字段名例如: "123abc" 会被视为 abc的字段名 ,该字段的类型长度为 123<br>
+	 * 对于以#开头的字段名视为主键约束 比如:"#id" <br>
+	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
+	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
+	 * 
+	 * @param datas 源数据，通过分析源数据却确定表结构
+	 * @param i     sql语句的索引序号: [ <br>
+	 *              0:drop table, <br>
+	 *              1:drop table if exists &amp; create, <br>
+	 *              2:create, <br>
+	 *              3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中,
+	 *              索引3就变成了唯一约束了,后续的项目也会提前), <br>
+	 *              4:unique constraints <br>
+	 *              ],3和4 根据record设置 可能包含。 <br>
+	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
+	 */
+	public String ctsql(final Iterable<IRecord> datas, final int i) {
+		return this.ctsql(datas, true, true, i);
+	}
+
+	/**
 	 * 根据字段的数据类型进行表定义，这个函数不建议在生产环境中使用。<br>
 	 * 仅用于原型开发时快速测试使用 <br>
 	 * 对于以数字开始的字段名例如: "123abc" 会被视为 abc的字段名 ,该字段的类型长度为 123<br>
@@ -776,8 +801,9 @@ public class SQL {
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
 	 * 
 	 * @param datas              源数据，通过分析源数据却确定表结构
-	 * @param id_flag            是否添加一个int 类型的id主键,true:添加,false 不添加
-	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
+	 * @param id_flag            是否需要补充id主键，即 是否添加一个int 类型的id主键,true:添加,false
+	 *                           不添加,注意仅当id不存在或是id类型为int类型的时候才会创建自增长
+	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长，与 id_flag 相关
 	 * @return sql语句的索引序号: [ <br>
 	 *         0:drop table, <br>
 	 *         1:drop table if exists &amp; create, <br>
@@ -789,8 +815,11 @@ public class SQL {
 	 * 
 	 */
 	public List<String> ctsqls(final Iterable<IRecord> datas, final boolean id_flag, final boolean int_pk_autocrement) {
-		final var proto = proto_of(datas);
-		final var _proto = id_flag ? REC("#id", 1).derive(proto) : proto;
+		final var proto = proto_of(datas).aoks2rec(e -> e.toLowerCase());
+		final var _proto = id_flag // 是否需要补充id主键
+				? REC("#id", proto.opt("id").orElse(1)) // 重用原来的id值,没有id值的化默认为1
+						.derive(proto.remove("id")) // 移除id键，如果有的话，即 用 #id 替换了 id
+				: proto;
 		return sql(this.name, _proto).ctsqls(int_pk_autocrement);
 	}
 
@@ -803,8 +832,9 @@ public class SQL {
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
 	 * 
 	 * @param datas              源数据，通过分析源数据却确定表结构
-	 * @param id_flag            是否添加一个int 类型的id主键,true:添加,false 不添加
-	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
+	 * @param id_flag            是否需要补充id主键，即 是否添加一个int 类型的id主键,true:添加,false
+	 *                           不添加,注意仅当id不存在或是id类型为int类型的时候才会创建自增长
+	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长，与 id_flag 相关
 	 * @param i                  sql语句的索引序号: [ <br>
 	 *                           0:drop table, <br>
 	 *                           1:drop table if exists &amp; create, <br>
