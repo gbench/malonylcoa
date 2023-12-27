@@ -1013,9 +1013,19 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	default Number sql2execute2num(final String sql) throws SQLException {
 		final Optional<IRecord> maybe = this.sql2execute2maybe(sql);
 		final Number num = maybe.isPresent() ? maybe.map(e -> {
-			var gk = e.num("GENERATED_KEY");// 尝试提取
+			Number gk = null;
+			// GENERATED_KEY:MySQL, id : H2
+			for (final var k : "GENERATED_KEY,id".split(",")) { // 获取主键名称
+				if ((gk = e.num(k)) != null) { // 尝试提取键名内容
+					break;
+				} // if
+			} // for
+			if (gk == null) { // 尝试获取第一个
+				gk = e.num(0); // 读取第一个字段内容
+			} // if
 			return gk == null ? -1 : gk;
 		}).get() : null;
+
 		return num;
 	}
 
