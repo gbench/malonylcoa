@@ -445,7 +445,7 @@ public class SQL {
 	 * @param which 更新范围,IRecord 解构个字段采用and 进行过滤,String 类型直接拼接到 update 语句结尾
 	 * @return 更新的sql语句
 	 */
-	public String upsql(IRecord recA, IRecord recB, final Object which) {
+	public String upsql(final IRecord recA, final IRecord recB, final Object which) {
 		final StringBuilder buffer = new StringBuilder();
 		buffer.append("update ").append(this.name());
 
@@ -1150,7 +1150,6 @@ public class SQL {
 	 * @return IRecord
 	 */
 	public static <U extends List<IRecord>> IRecord proto_of(final Map<? extends Integer, U> partitions) {
-
 		return proto_of(partitions.entrySet().stream().flatMap(e -> e.getValue().stream()));
 	}
 
@@ -1238,7 +1237,6 @@ public class SQL {
 	 * @return 数据插入 insert sql
 	 */
 	public static String insql(final String name, final List<IRecord> data) {
-
 		return sql(name, data).insql();
 	}
 
@@ -1250,7 +1248,6 @@ public class SQL {
 	 * @return 数据插入 insert sql
 	 */
 	public static String insql(final String name, final IRecord... data) {
-
 		return sql(name, data).insql();
 	}
 
@@ -1261,7 +1258,6 @@ public class SQL {
 	 * @return IRecord
 	 */
 	public static IRecord proto_of(final Stream<? extends IRecord> partitions) {
-
 		final var dfm = partitions.collect(DFrame.dfmclc);
 		final var proto = dfm.aov2rec((List<Object> v) -> { // 提取
 			return v.stream().map(e -> new Tuple2<>(SQL.quoteString(e), e))
@@ -1278,7 +1274,6 @@ public class SQL {
 	 * @return
 	 */
 	public static String asString(final Object obj) {
-
 		Object value = obj;
 
 		// value 数据类型格式化
@@ -1306,7 +1301,6 @@ public class SQL {
 	 * @return
 	 */
 	public static String quoteString(final Object obj) {
-
 		final var qs = String.format("'%s'", asString(obj) // 用单引号括起来
 				.replace("'", "''")); // 格式化字段值
 

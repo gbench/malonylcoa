@@ -158,6 +158,19 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 按照行进行排序 <br>
+	 * 例如:dfm.sortBy(Collections::reverse)
+	 * 
+	 * @param cs 排序函数
+	 * @return DFrame
+	 */
+	public DFrame sortBy(final Consumer<List<IRecord>> cs) {
+		final var rows = this.rows();
+		cs.accept(rows);
+		return rows.stream().collect(DFrame.dfmclc);
+	}
+
+	/**
 	 * 按照行进行排序
 	 * 
 	 * @param comparator 行元比较器
