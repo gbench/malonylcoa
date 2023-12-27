@@ -286,20 +286,21 @@ public class DFrame extends LinkedRecord {
 	 * @return 数据框归集器
 	 */
 	public static <T> Collector<T, ?, DFrame> dfmclc(final Function<T, IRecord> mapper) {
-		return Collector.of( //
-				(Supplier<List<IRecord>>) () -> new LinkedList<IRecord>(), //
-				(a, b) -> a.add(mapper.apply(b)), (a, b) -> { //
+		return Collector.of((Supplier<List<IRecord>>) LinkedList::new, //
+				(rows, t) -> rows.add(mapper.apply(t)), (a, b) -> { //
 					a.addAll(b);
 					return a;
-				}, (aa) -> { //
-					final var data = new LinkedHashMap<String, List<Object>>();
-					for (final var a : aa) {
-						for (final var key : a.keys()) {
+				}, (rows) -> { //
+					final var data = new LinkedHashMap<String, List<Object>>(); // 列式结构的数据框数据。
+					for (final var row : rows) { // 依据行进行遍历
+						for (final var key : row.keys()) { // 按照列进行逐个元素增长
 							final var col = data.computeIfAbsent(key, k -> new LinkedList<>());
-							col.add(a.get(key));
-						} // for
-					} // for
-					return new DFrame(data);
+							col.add(row.get(key));
+						} // for key 列名
+					} // for rows
+					final var dfm = new DFrame(data);
+					dfm.rowsCache = rows; // 更新行缓存
+					return dfm;
 				});
 	}
 
