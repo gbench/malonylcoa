@@ -122,6 +122,7 @@ public class JdbcH2Test {
 	 * @return 账簿名称
 	 */
 	public static IRecord buildBks(final IRecord company, final int code) {
+
 		final var title = String.format("%s-%03d", company.get("name"), code);
 		return REC("name", String.format("BKS-%03d", code), "title",
 				String.format("%s-%03d", company.get("name"), code), "company_id", company.get("id"), //
