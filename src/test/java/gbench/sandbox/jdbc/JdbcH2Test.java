@@ -171,8 +171,8 @@ public class JdbcH2Test {
 			final int entity_id = entity.i4("id");
 			final var orders_sql = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
 			final var accounting_policies = REC( // 会计记账策略
-					LONG, REC("dr", 1402, "cr", 1002), // dr:在途物资,cr:银行存款
-					SHORT, REC("dr", 1407, "cr", 1406) // dr:发出商品,cr:库存商品
+					LONG, REC(DR, 1402, CR, 1002), // dr:在途物资,cr:银行存款
+					SHORT, REC(DR, 1407, CR, 1406) // dr:发出商品,cr:库存商品
 			); // 记账策略
 			final BiFunction<Position, Drcr, String> acct_get = (position, drcr) -> { // 订单的记账头寸(long:长头,short:短头)，借贷方向
 				final var acct = accounting_policies.path2int(String.format("%s/%s", position, drcr)); // 提取账户模式
