@@ -17,9 +17,13 @@ import java.util.function.Supplier;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.IJdbcApp;
+import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.Jdbcs;
+import gbench.util.jdbc.function.ExceptionalFunction;
 
+import static gbench.sandbox.jdbc.JdbcH2Test.Drcr.CR;
+import static gbench.sandbox.jdbc.JdbcH2Test.Drcr.DR;
 import static gbench.sandbox.jdbc.JdbcH2Test.Position.LONG;
 import static gbench.sandbox.jdbc.JdbcH2Test.Position.SHORT;
 import static gbench.util.data.xls.SimpleExcel.xls;
@@ -51,6 +55,14 @@ public class JdbcH2Test {
 	enum Position {
 		LONG, // 长头买方
 		SHORT // 空头卖方
+	}; // 订单头寸
+
+	/**
+	 * 交易/订单头寸
+	 */
+	enum Drcr {
+		DR, // 长头买方
+		CR // 空头卖方
 	}; // 订单头寸
 
 	/**
@@ -148,6 +160,63 @@ public class JdbcH2Test {
 	}
 
 	/**
+	 * 誊写日记账
+	 * 
+	 * @param entity jdbc 会话
+	 * @return sess -&gt;{}
+	 */
+	public static ExceptionalFunction<IJdbcSession<?, ?>, Integer> postJournal(final IRecord entity) {
+		return sess -> { // ExceptionalConsumer
+			final int bksys_id; // 账簿id
+			final int entity_id = entity.i4("id");
+			final var orders_sql = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
+			final var accounting_policies = REC( // 会计记账策略
+					LONG, REC("dr", 1402, "cr", 1002), // dr:在途物资,cr:银行存款
+					SHORT, REC("dr", 1407, "cr", 1406) // dr:发出商品,cr:库存商品
+			); // 记账策略
+			final BiFunction<Position, Drcr, String> acct_get = (position, drcr) -> { // 订单的记账头寸(long:长头,short:短头)，借贷方向
+				final var acct = accounting_policies.path2int(String.format("%s/%s", position, drcr)); // 提取账户模式
+				return String.format("%s", acct); // 会计记账账户编码
+			}; // 记账编码
+
+			final var coas = sess.sql2dframe("select * from t_coa") // t_coa 科目表
+					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue())); // 科目表
+			final Function<Integer, String> coa_account = acctnum -> coas.one2one("acctnum", acctnum, coa_cache)
+					.str("account"); // 解析编码为名称
+			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(entity, 2)).insql())); // 账册id
+
+			// 分类账写入
+			for (final var torder : sess.sql2dframe(orders_sql).forEachBy(h2_json_processor("details")).rows()) { // 提取会计主体的订单
+				final var parta = torder.i4("receiver"); // 日记账摘要-甲方
+				final var partb = torder.i4("shipper"); // 日记账摘要-乙方
+				final var title = String.format("%s-%s", parta, partb); // 日记账摘要标题
+				final var tjournal = REC("bksys_id", bksys_id, "title", title, "objects", Arrays.asList(entity_id), // 会计主体
+						"create_time", now(), "description", "-"); // 订单的日记账摘要
+				final var journal_id = sess.sql2execute2int(sql("t_journal", tjournal).insql()); // 日记账摘要id
+
+				// 依次处理t_order的各个行项目
+				for (final var item : torder.path2lls("details/items", IRecord::REC)) { // 订单记账
+					final var due_date = now(); // 到期日
+					final var name = item.get("name"); // 公司产品名称
+					final var amount = item.dbl("amount"); // amount
+					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
+					final var position = Objects.equals(entity_id, parta) ? LONG : SHORT; // 会计主体的订单头寸，甲方为长头,乙方为空头
+					final var dr_acct = accounting_policies.path2int(String.format("%s/DR", position)); // 借方账户
+					final var cr_acct = accounting_policies.path2int(String.format("%s/CR", position)); // 贷方账户
+					final var dr_title = String.format("%s-%s", coa_account.apply(dr_acct), name); // 借方标题
+					final var cr_title = String.format("%s-%s", coa_account.apply(cr_acct), name); // 贷方标题
+
+					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录的数据库誊写
+							proto.derive("drcr", 1, "acctnum", acct_get.apply(position, DR), "title", dr_title), // 借方
+							proto.derive("drcr", -1, "acctnum", acct_get.apply(position, CR), "title", cr_title)))); // 贷方
+					println("借贷分录", parta, partb, ids);
+				} // 订单记账
+			} // 提取会计主体的订单
+			return bksys_id;
+		}; // ExceptionalConsumer
+	}
+
+	/**
 	 * H2 数据库操作演示, 商城数据示例：
 	 */
 	@Test
@@ -166,14 +235,6 @@ public class JdbcH2Test {
 		final var top10 = "select * from ##tbl limit 10"; // 头前10行数据
 		final var size = 1000; // 模拟生成的数据量,t_order的数据规模
 		final var batch_size = 10; // 插入数据时候的批次大小
-		final var accounting_policies = REC( // 会计记账策略
-				LONG, REC("dr", 1402, "cr", 1002), // dr:在途物资,cr:银行存款
-				SHORT, REC("dr", 1407, "cr", 1406) // dr:发出商品,cr:库存商品
-		); // 记账策略
-		final BiFunction<Position, String, String> acct_get = (position, drcr) -> { // 订单的记账头寸(long:长头,short:短头)，借贷方向
-			final var acct = accounting_policies.path2int(String.format("%s/%s", position, drcr)); // 提取账户模式
-			return String.format("%s", acct); // 会计记账账户编码
-		}; // 记账编码
 
 		// 数据导入
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
@@ -214,43 +275,8 @@ public class JdbcH2Test {
 				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachBy(h2_json_processor(p._2())));
 			}
 
-			// bksys
-			final int bksys_id; // 账簿id
-			final var entity_id = 1; // 主体id
-			final var order_sql_1 = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
-			final var coas = sess.sql2dframe("select * from t_coa") // t_coa 科目表
-					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue())); // 科目表
-			final Function<Integer, String> coa_account = acctnum -> coas.one2one("acctnum", acctnum, coa_cache)
-					.str("account"); // 解析编码为名称
-			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(cs.row(0), 2)).insql())); // 账册id
-
-			// 分类账写入
-			for (final var torder : sess.sql2dframe(order_sql_1).forEachBy(h2_json_processor("details")).rows()) { // 提取会计主体的订单
-				final var parta = torder.i4("receiver"); // 日记账摘要-甲方
-				final var partb = torder.i4("shipper"); // 日记账摘要-乙方
-				final var title = String.format("%s-%s", parta, partb); // 日记账摘要标题
-				final var tjournal = REC("bksys_id", bksys_id, "title", title, "objects", Arrays.asList(entity_id), // 会计主体
-						"create_time", now(), "description", "-"); // 订单的日记账摘要
-				final var journal_id = sess.sql2execute2int(sql("t_journal", tjournal).insql()); // 日记账摘要id
-
-				// 依次处理t_order的各个行项目
-				for (final var item : torder.path2lls("details/items", IRecord::REC)) { // 订单记账
-					final var due_date = now(); // 到期日
-					final var name = item.get("name"); // 公司产品名称
-					final var amount = item.dbl("amount"); // amount
-					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
-					final var position = Objects.equals(entity_id, parta) ? LONG : SHORT; // 会计主体的订单头寸，甲方为长头,乙方为空头
-					final var dr_acct = accounting_policies.path2int(String.format("%s/dr", position)); // 借方账户
-					final var cr_acct = accounting_policies.path2int(String.format("%s/cr", position)); // 贷方账户
-					final var dr_title = String.format("%s-%s", coa_account.apply(dr_acct), name); // 借方标题
-					final var cr_title = String.format("%s-%s", coa_account.apply(cr_acct), name); // 贷方标题
-
-					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录的数据库誊写
-							proto.derive("drcr", 1, "acctnum", acct_get.apply(position, "dr"), "title", dr_title), // 借方
-							proto.derive("drcr", -1, "acctnum", acct_get.apply(position, "cr"), "title", cr_title)))); // 贷方
-					println("借贷分录", parta, partb, ids);
-				} // 订单记账
-			} // 提取会计主体的订单
+			// 誊写日记账
+			final var bksys_id = postJournal(cs.row(0)).apply(sess);
 
 			// 记账信息查看
 			println(sess.sql2dframe(top10, "tbl", "t_bksys")); // 账册数据
