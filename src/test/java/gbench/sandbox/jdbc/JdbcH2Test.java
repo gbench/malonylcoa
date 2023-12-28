@@ -166,7 +166,7 @@ public class JdbcH2Test {
 	 * @return sess -&gt; bksys_id,返回账簿id
 	 */
 	public static ExceptionalFunction<IJdbcSession<?, ?>, Integer> postJournal(final IRecord entity) {
-		return sess -> { // ExceptionalConsumer
+		return sess -> { // ExceptionalFunction
 			final int bksys_id; // 账簿id
 			final int entity_id = entity.i4("id");
 			final var orders_sql = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
@@ -213,7 +213,7 @@ public class JdbcH2Test {
 				} // 订单记账
 			} // 提取会计主体的订单
 			return bksys_id;
-		}; // ExceptionalConsumer
+		}; // ExceptionalFunction
 	}
 
 	/**
