@@ -163,7 +163,7 @@ public class JdbcH2Test {
 	 * 誊写日记账
 	 * 
 	 * @param entity jdbc 会话
-	 * @return sess -&gt;{}
+	 * @return sess -&gt; bksys_id,返回账簿id
 	 */
 	public static ExceptionalFunction<IJdbcSession<?, ?>, Integer> postJournal(final IRecord entity) {
 		return sess -> { // ExceptionalConsumer
@@ -276,7 +276,7 @@ public class JdbcH2Test {
 			}
 
 			// 誊写日记账
-			final var bksys_id = postJournal(cs.row(0)).apply(sess);
+			final var bksys_id = postJournal(cs.row(0)).apply(sess); // 获取誊写账簿的账簿id
 
 			// 记账信息查看
 			println(sess.sql2dframe(top10, "tbl", "t_bksys")); // 账册数据
