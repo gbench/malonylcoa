@@ -304,7 +304,7 @@ public class SQL {
 
 		buffer.append("insert into ").append(this.name).append(" (");
 		buffer.append(String.join(",", flds));
-		buffer.append(") values ");
+		buffer.append(") values\n  ");
 
 		final var line = values.stream().map(vals -> String.format("(%s)", String.join(",", vals))) //
 				.collect(Collectors.joining(",\n  "));

@@ -218,9 +218,9 @@ public class JdbcH2Test {
 							: "银行存款-%s" // 主体是否在乙方,借:库存商品
 							, name);
 					// 分录誊写
-					final var ids = sess.sql2execute(sql("t_accts").insql(// 借贷分录
+					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
 							proto.derive("drcr", 1, "acctnum", dr_acctnum, "title", dr_title), // 借方
-							proto.derive("drcr", -1, "acctnum", cr_acctnum, "title", cr_title))); // 贷方
+							proto.derive("drcr", -1, "acctnum", cr_acctnum, "title", cr_title)))); // 贷方
 					println("借贷分录", parta, parta, ids);
 				} //
 			} //
