@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -19,6 +20,8 @@ import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.Jdbcs;
 
+import static gbench.sandbox.jdbc.JdbcH2Test.Position.LONG;
+import static gbench.sandbox.jdbc.JdbcH2Test.Position.SHORT;
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
@@ -42,7 +45,22 @@ import static java.util.stream.Stream.iterate;
  */
 public class JdbcH2Test {
 
-	final static Map<Object, DFrame> company_cache = new HashMap<>();
+	/**
+	 * 交易/订单头寸
+	 */
+	enum Position {
+		LONG, // 长头买方
+		SHORT // 空头卖方
+	}; // 订单头寸
+
+	/**
+	 * 产品缓存:(公司id,产品列表)
+	 */
+	final static Map<Object, DFrame> product_cache = new HashMap<>();
+
+	/**
+	 * 科目表缓存:(账户编码,账户明细)
+	 */
 	final static Map<Object, IRecord> coa_cache = new HashMap<>();
 
 	/**
@@ -63,7 +81,7 @@ public class JdbcH2Test {
 		final var part_b = parts.get(1); // 乙方 发货方 shipper
 		final var parta_id = part_a.get("id"); // 甲方id
 		final var partb_id = part_b.get("id"); // 乙方id, 产品是由partb转移到parta的
-		final var products = cps.many2one("company_id", partb_id, company_cache).shuffle().head(5); // 选择5个产品
+		final var products = cps.many2one("company_id", partb_id, product_cache).shuffle().head(5); // 选择5个产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_b.str("name"), partb_id, products));
 
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
@@ -148,10 +166,14 @@ public class JdbcH2Test {
 		final var top10 = "select * from ##tbl limit 10"; // 头前10行数据
 		final var size = 1000; // 模拟生成的数据量,t_order的数据规模
 		final var batch_size = 10; // 插入数据时候的批次大小
-		final var acct_policies = REC( // 会计记账策略
-				"a", REC("dr", 1402, "cr", 1002), // dr:在途物资,cr:银行存款
-				"b", REC("dr", 1407, "cr", 1406) // dr:发出商品,cr:库存商品
-		);
+		final var accounting_policies = REC( // 会计记账策略
+				LONG, REC("dr", 1402, "cr", 1002), // dr:在途物资,cr:银行存款
+				SHORT, REC("dr", 1407, "cr", 1406) // dr:发出商品,cr:库存商品
+		); // 记账策略
+		final BiFunction<Position, String, String> acct_get = (position, drcr) -> { // 订单的记账头寸(long:长头,short:短头)，借贷方向
+			final var acct = accounting_policies.path2int(String.format("%s/%s", position, drcr)); // 提取账户模式
+			return String.format("%s", acct); // 会计记账账户编码
+		}; // 记账编码
 
 		// 数据导入
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
@@ -163,7 +185,7 @@ public class JdbcH2Test {
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 
 			final var cs = sess.sql2dframe("select * from t_company"); // 公司信息
-			final var ps = sess.sql2dframe("select id,name,price,price_striked from t_product cp"); // 产品信息
+			final var ps = sess.sql2dframe("select id,name,price,price_striked from t_product"); // 产品信息
 			final var cp_name = "t_company_product"; // 公司产品表名
 			final var or_name = "t_order"; // 订单名称
 			final var cp_partitions = partitions(buildCPs(cs, ps), batch_size); // 公司产品数据
@@ -211,24 +233,22 @@ public class JdbcH2Test {
 						"create_time", now(), "description", "-"); // 订单的日记账摘要
 				final var journal_id = sess.sql2execute2int(sql("t_journal", tjournal).insql()); // 日记账摘要id
 
-				// 一次处理相关的每个订单行项目
+				// 依次处理t_order的各个行项目
 				for (final var item : torder.path2lls("details/items", IRecord::REC)) { // 订单记账
 					final var due_date = now(); // 到期日
-					final var id = item.get("id"); // 公司产品id
 					final var name = item.get("name"); // 公司产品名称
 					final var amount = item.dbl("amount"); // amount
 					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
-					final var postion = Objects.equals(entity_id, parta) ? "a" : "b"; // 会计主体是否在甲方
-					final var dr_acct = acct_policies.path2int(String.format("%s/dr", postion)); // 借方账户
-					final var cr_acct = acct_policies.path2int(String.format("%s/cr", postion)); // 贷方账户
+					final var position = Objects.equals(entity_id, parta) ? LONG : SHORT; // 会计主体的订单头寸，甲方为长头,乙方为空头
+					final var dr_acct = accounting_policies.path2int(String.format("%s/dr", position)); // 借方账户
+					final var cr_acct = accounting_policies.path2int(String.format("%s/cr", position)); // 贷方账户
 					final var dr_title = String.format("%s-%s", coa_account.apply(dr_acct), name); // 借方标题
 					final var cr_title = String.format("%s-%s", coa_account.apply(cr_acct), name); // 贷方标题
-					final var fmt = "%s"; // 账户编码
-					// 分录誊写
-					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
-							proto.derive("drcr", 1, "acctnum", String.format(fmt, dr_acct, id), "title", dr_title), // 借方
-							proto.derive("drcr", -1, "acctnum", String.format(fmt, cr_acct, id), "title", cr_title)))); // 贷方
-					println("借贷分录", parta, parta, ids);
+
+					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录的数据库誊写
+							proto.derive("drcr", 1, "acctnum", acct_get.apply(position, "dr"), "title", dr_title), // 借方
+							proto.derive("drcr", -1, "acctnum", acct_get.apply(position, "cr"), "title", cr_title)))); // 贷方
+					println("借贷分录", parta, partb, ids);
 				} // 订单记账
 			} // 提取会计主体的订单
 
