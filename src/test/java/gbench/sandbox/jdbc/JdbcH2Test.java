@@ -193,7 +193,7 @@ public class JdbcH2Test {
 			final var order_sql_1 = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
 			final var coas = sess.sql2dframe("select * from t_coa") // t_coa 科目表
 					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue())); // 科目表
-			final Function<Integer, String> coa_name = acctnum -> coas.one2one("acctnum", acctnum, coa_cache)
+			final Function<Integer, String> coa_account = acctnum -> coas.one2one("acctnum", acctnum, coa_cache)
 					.str("account"); // 解析编码为名称
 			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(cs.row(0), 2)).insql())); // 账册id
 
@@ -220,8 +220,8 @@ public class JdbcH2Test {
 					final var cr_acct = flag // 主体是否在甲方
 							? 1002 // 会计主体在甲方,借:银行存款
 							: 1406; // 会计主体在乙方,借:库存商品
-					final var dr_title = String.format("%s-%s", coa_name.apply(dr_acct), name);
-					final var cr_title = String.format("%s-%s", coa_name.apply(cr_acct), name);
+					final var dr_title = String.format("%s-%s", coa_account.apply(dr_acct), name);
+					final var cr_title = String.format("%s-%s", coa_account.apply(cr_acct), name);
 					// 分录誊写
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
 							proto.derive("drcr", 1, "acctnum", dr_acct, "title", dr_title), // 借方
