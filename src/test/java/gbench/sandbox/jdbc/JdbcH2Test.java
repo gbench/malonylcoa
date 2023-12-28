@@ -148,6 +148,10 @@ public class JdbcH2Test {
 		final var top10 = "select * from ##tbl limit 10"; // 头前10行数据
 		final var size = 1000; // 模拟生成的数据量,t_order的数据规模
 		final var batch_size = 10; // 插入数据时候的批次大小
+		final var acct_policies = REC( // 会计记账策略
+				"a", REC("dr", 1402, "cr", 1002), // dr:在途物资,cr:银行存款
+				"b", REC("dr", 1407, "cr", 1406) // dr:发出商品,cr:库存商品
+		);
 
 		// 数据导入
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
@@ -210,23 +214,20 @@ public class JdbcH2Test {
 				// 一次处理相关的每个订单行项目
 				for (final var item : torder.path2lls("details/items", IRecord::REC)) { // 订单记账
 					final var due_date = now(); // 到期日
-					final var name = item.get("name"); // 产品名称
+					final var id = item.get("id"); // 公司产品id
+					final var name = item.get("name"); // 公司产品名称
 					final var amount = item.dbl("amount"); // amount
 					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
-					final var flag = Objects.equals(entity_id, parta); // 会计主体是否在甲方
-					// 记账法
-					final var dr_acct = flag // 会计主体是否在甲方
-							? 1402 // 会计主体在甲方,借:在途物资
-							: 1407; // 会计主体在乙方,借:发出商品
-					final var cr_acct = flag // 主体是否在甲方
-							? 1002 // 会计主体在甲方,借:银行存款
-							: 1406; // 会计主体在乙方,借:库存商品
-					final var dr_title = String.format("%s-%s", coa_account.apply(dr_acct), name);
-					final var cr_title = String.format("%s-%s", coa_account.apply(cr_acct), name);
+					final var postion = Objects.equals(entity_id, parta) ? "a" : "b"; // 会计主体是否在甲方
+					final var dr_acct = acct_policies.path2int(String.format("%s/dr", postion)); // 借方账户
+					final var cr_acct = acct_policies.path2int(String.format("%s/cr", postion)); // 贷方账户
+					final var dr_title = String.format("%s-%s", coa_account.apply(dr_acct), name); // 借方标题
+					final var cr_title = String.format("%s-%s", coa_account.apply(cr_acct), name); // 贷方标题
+					final var fmt = "%s"; // 账户编码
 					// 分录誊写
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
-							proto.derive("drcr", 1, "acctnum", dr_acct, "title", dr_title), // 借方
-							proto.derive("drcr", -1, "acctnum", cr_acct, "title", cr_title)))); // 贷方
+							proto.derive("drcr", 1, "acctnum", String.format(fmt, dr_acct, id), "title", dr_title), // 借方
+							proto.derive("drcr", -1, "acctnum", String.format(fmt, cr_acct, id), "title", cr_title)))); // 贷方
 					println("借贷分录", parta, parta, ids);
 				} // 订单记账
 			} // 提取会计主体的订单
@@ -238,6 +239,19 @@ public class JdbcH2Test {
 
 			// 试算平衡2
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
+		});
+	}
+
+	@Test
+	public void bar() {
+		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
+		final var db = "mymall"; // 数据库名
+		final var url = String.format("jdbc:h2:mem:%s;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", db); // h2连接字符串
+		final var h2_rec = REC("url", url, "driver", "org.h2.Driver", "user", "root", "password", "123456"); // h2数据库
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
+		jdbcApp.withTransaction(sess -> {
+			// println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1));
+			println(sess.sql2dframe("select substr(14060007,1,4) =1406 limit 1"));
 		});
 	}
 
