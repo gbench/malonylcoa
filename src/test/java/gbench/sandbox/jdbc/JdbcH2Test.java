@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import gbench.util.jdbc.kvp.IRecord;
@@ -182,29 +183,49 @@ public class JdbcH2Test {
 
 			// bksys
 			final int bksys_id; // 账簿id
-			final var order_sql_1 = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", 1);
+			final var entity_id = 1; // 主体id
+			final var order_sql_1 = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
 			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(cs.row(0), 2)).insql())); // 账册id
-			println(sess.sql2dframe("select * from t_bksys"));
+			println(sess.sql2dframe("select * from t_bksys")); // 账册数据
+
+			// 分类账写入
 			for (final var torder : sess.sql2dframe(order_sql_1).forEachBy(h2_json_processor("details")).rows()) { // 提取订单信息
-				final var parta = torder.get("shipper"); // 乙方
-				final var partb = torder.get("receiver"); // 甲方
+				final var parta = torder.get("receiver"); // 甲方
+				final var partb = torder.get("shipper"); // 乙方
 				final var title = String.format("%s-%s", parta, partb); // 日记账标题
-				final var tjournal = REC("bksys_id", bksys_id, "title", title, "objects", Arrays.asList(parta), // 会计主体
+				final var tjournal = REC("bksys_id", bksys_id, "title", title, "objects", Arrays.asList(entity_id), // 会计主体
 						"create_time", now(), "description", "-");
 				final var journal_id = sess.sql2execute2int(sql("t_journal", tjournal).insql()); // 日记账id
+
 				for (final var item : torder.path2lls("details/items", IRecord::REC)) {
 					final var due_date = now(); // 到期日
 					final var name = item.get("name"); // 产品名称
 					final var amount = item.dbl("amount"); // amount
 					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
-					final var ids = sess.sql2execute(sql("t_accts").insql(
-							proto.derive("drcr", 1, "acctnum", 1002, "title", String.format("银行存款-%s", name)), // 借方
-							proto.derive("drcr", -1, "acctnum", 1402, "title", String.format("在途物资-%s", name)))); // 贷方
-					println(ids);
+					// 记账法
+					final var dr_acctnum = Objects.equals(entity_id, parta) // 主体是否在甲方
+							? 1402 // 主体是否在甲方,借:在途物资
+							: 1407; // 主体是否在乙方,借:发出商品
+					final var cr_acctnum = Objects.equals(entity_id, parta) // 主体是否在甲方
+							? 1002 // 主体是否在甲方,借:应付账款
+							: 1406; // 主体是否在乙方,借:库存商品
+					final var dr_title = String.format(Objects.equals(entity_id, parta) // 主体是否在甲方
+							? "银行存款-%s" // 主体是否在甲方,借:在途物资
+							: "发出商品-%s" // 主体是否在乙方,借:发出商品
+							, name);
+					final var cr_title = String.format(Objects.equals(entity_id, parta) // 主体是否在甲方
+							? "应付存款-%s" // 主体是否在甲方,借:应付账款
+							: "银行存款-%s" // 主体是否在乙方,借:库存商品
+							, name);
+					// 分录誊写
+					final var ids = sess.sql2execute(sql("t_accts").insql(// 借贷分录
+							proto.derive("drcr", 1, "acctnum", dr_acctnum, "title", dr_title), // 借方
+							proto.derive("drcr", -1, "acctnum", cr_acctnum, "title", cr_title))); // 贷方
+					println("借贷分录", parta, parta, ids);
 				} //
 			} //
 			println(sess.sql2dframe("select * from t_journal limit 5"));
-			println(sess.sql2dframe("select * from t_accts limit 5"));
+			println(sess.sql2dframe("select * from t_accts"));
 
 			// 试算平衡2
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
