@@ -42,7 +42,7 @@ import static java.util.stream.Stream.iterate;
  */
 public class JdbcH2Test {
 
-	final static Map<Object, DFrame> comp_cache = new HashMap<>();
+	final static Map<Object, DFrame> company_cache = new HashMap<>();
 	final static Map<Object, IRecord> coa_cache = new HashMap<>();
 
 	/**
@@ -63,7 +63,7 @@ public class JdbcH2Test {
 		final var part_b = parts.get(1); // 乙方 发货方 shipper
 		final var parta_id = part_a.get("id"); // 甲方id
 		final var partb_id = part_b.get("id"); // 乙方id, 产品是由partb转移到parta的
-		final var products = cps.many2one("company_id", partb_id, comp_cache).shuffle().head(5); // 选择5个产品
+		final var products = cps.many2one("company_id", partb_id, company_cache).shuffle().head(5); // 选择5个产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_b.str("name"), partb_id, products));
 
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
