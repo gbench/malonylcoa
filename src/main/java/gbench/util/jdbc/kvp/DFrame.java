@@ -79,6 +79,22 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * lhs.many2one(rhsId) <br>
+	 * 按照行进行查找: many(lhs) to one(rhs) 关系的多方数据提取 <br>
+	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
+	 * 
+	 * @param <K>   缓存的键名类型
+	 * @param key   外键字段名
+	 * @param rhsId 右侧方(一方)的Id
+	 * @param cache 检索缓存
+	 * @return 指定键值的数据行(多方数据集合)
+	 */
+	public <K> DFrame many2one(final String key, final K rhsId, final Map<K, DFrame> cache) {
+
+		return cache.computeIfAbsent(rhsId, k -> this.filterBy(key, rhsId));
+	}
+
+	/**
 	 * lhs.many2one(oneId) <br>
 	 * 按照行进行查找: one(lhs) to one(rhs) 关系的lhs一方数据提取 <br>
 	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
@@ -90,6 +106,22 @@ public class DFrame extends LinkedRecord {
 	public IRecord one2one(final String key, final Object rhsId) {
 
 		return this.filterBy(key, rhsId).rowS().findFirst().orElse(null);
+	}
+
+	/**
+	 * lhs.many2one(oneId) <br>
+	 * 按照行进行查找: one(lhs) to one(rhs) 关系的lhs一方数据提取 <br>
+	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
+	 * 
+	 * @param <K>   缓存的键名类型
+	 * @param key   外键字段名
+	 * @param rhsId 右侧方(一方)的Id
+	 * @param cache 检索缓存
+	 * @return 指定键值的数据行(多方数据集合)
+	 */
+	public <T> IRecord one2one(final String key, final T rhsId, final Map<T, IRecord> cache) {
+
+		return cache.computeIfAbsent(rhsId, k -> this.filterBy(key, rhsId).rowS().findFirst().orElse(null));
 	}
 
 	/**

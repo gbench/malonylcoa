@@ -5,9 +5,11 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import gbench.util.jdbc.kvp.IRecord;
@@ -187,6 +189,8 @@ public class JdbcH2Test {
 			final var order_sql_1 = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
 			final var coas = sess.sql2dframe("select * from t_coa") // t_coa 科目表
 					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue()));
+			final var cache = new HashMap<Integer, IRecord>();
+			final Function<Integer, String> name_of = acctnum -> coas.one2one("acctnum", acctnum, cache).str("account"); // 提取科目名称
 			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(cs.row(0), 2)).insql())); // 账册id
 
 			// 分类账写入
@@ -212,8 +216,8 @@ public class JdbcH2Test {
 					final var cr_acct = flag // 主体是否在甲方
 							? 1002 // 会计主体在甲方,借:银行存款
 							: 1406; // 会计主体在乙方,借:库存商品
-					final var dr_title = String.format("%s-%s", coas.one2one("acctnum", dr_acct).str("account"), name);
-					final var cr_title = String.format("%s-%s", coas.one2one("acctnum", cr_acct).str("account"), name);
+					final var dr_title = String.format("%s-%s", name_of.apply(dr_acct), name);
+					final var cr_title = String.format("%s-%s", name_of.apply(cr_acct), name);
 					// 分录誊写
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
 							proto.derive("drcr", 1, "acctnum", dr_acct, "title", dr_title), // 借方
