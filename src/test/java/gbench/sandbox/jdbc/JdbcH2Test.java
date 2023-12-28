@@ -189,44 +189,45 @@ public class JdbcH2Test {
 			println(sess.sql2dframe("select * from t_bksys")); // 账册数据
 
 			// 分类账写入
-			for (final var torder : sess.sql2dframe(order_sql_1).forEachBy(h2_json_processor("details")).rows()) { // 提取订单信息
-				final var parta = torder.i4("receiver"); // 甲方
-				final var partb = torder.i4("shipper"); // 乙方
-				final var title = String.format("%s-%s", parta, partb); // 日记账标题
+			for (final var torder : sess.sql2dframe(order_sql_1).forEachBy(h2_json_processor("details")).rows()) { // 提取会计主体的订单
+				final var parta = torder.i4("receiver"); // 日记账摘要-甲方
+				final var partb = torder.i4("shipper"); // 日记账摘要-乙方
+				final var title = String.format("%s-%s", parta, partb); // 日记账摘要标题
 				final var tjournal = REC("bksys_id", bksys_id, "title", title, "objects", Arrays.asList(entity_id), // 会计主体
-						"create_time", now(), "description", "-");
-				final var journal_id = sess.sql2execute2int(sql("t_journal", tjournal).insql()); // 日记账id
+						"create_time", now(), "description", "-"); // 订单的日记账摘要
+				final var journal_id = sess.sql2execute2int(sql("t_journal", tjournal).insql()); // 日记账摘要id
 
-				for (final var item : torder.path2lls("details/items", IRecord::REC)) {
+				// 一次处理相关的每个订单行项目
+				for (final var item : torder.path2lls("details/items", IRecord::REC)) { // 订单记账
 					final var due_date = now(); // 到期日
 					final var name = item.get("name"); // 产品名称
 					final var amount = item.dbl("amount"); // amount
 					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
-					final var flag = Objects.equals(entity_id, parta); // 主体是否在甲方
+					final var flag = Objects.equals(entity_id, parta); // 会计主体是否在甲方
 					// 记账法
-					final var dr_acctnum = flag // 主体是否在甲方
-							? 1402 // 主体是否在甲方,借:在途物资
-							: 1407; // 主体是否在乙方,借:发出商品
+					final var dr_acctnum = flag // 会计主体是否在甲方
+							? 1402 // 会计主体在甲方,借:在途物资
+							: 1407; // 会计主体在乙方,借:发出商品
 					final var cr_acctnum = flag // 主体是否在甲方
-							? 1002 // 主体是否在甲方,借:应付账款
-							: 1406; // 主体是否在乙方,借:库存商品
+							? 1002 // 会计主体在甲方,借:应付账款
+							: 1406; // 会计主体在乙方,借:库存商品
 					final var dr_title = String.format(flag// 主体是否在甲方
-							? "在途物资-%s" // 主体是否在甲方,借:在途物资
-							: "发出商品-%s" // 主体是否在乙方,借:发出商品
+							? "在途物资-%s" // 会计主体在甲方,借:在途物资
+							: "发出商品-%s" // 会计主体在乙方,借:发出商品
 							, name);
 					final var cr_title = String.format(flag // 主体是否在甲方
-							? "应付存款-%s" // 主体是否在甲方,借:应付账款
-							: "库存商品-%s" // 主体是否在乙方,借:库存商品
+							? "应付存款-%s" // 会计主体在甲方,借:应付账款
+							: "库存商品-%s" // 会计主体在乙方,借:库存商品
 							, name);
 					// 分录誊写
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
 							proto.derive("drcr", 1, "acctnum", dr_acctnum, "title", dr_title), // 借方
 							proto.derive("drcr", -1, "acctnum", cr_acctnum, "title", cr_title)))); // 贷方
 					println("借贷分录", parta, parta, ids);
-				} //
-			} //
-			println(sess.sql2dframe("select * from t_journal limit 5"));
-			println(sess.sql2dframe("select * from t_accts"));
+				} // 订单记账
+			} // 提取会计主体的订单
+			println(sess.sql2dframe("select * from t_journal limit 10"));
+			println(sess.sql2dframe("select * from t_accts limit 10"));
 
 			// 试算平衡2
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
