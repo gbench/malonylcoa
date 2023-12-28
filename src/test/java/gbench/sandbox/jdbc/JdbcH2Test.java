@@ -183,7 +183,7 @@ public class JdbcH2Test {
 					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue())); // 科目表
 			final Function<Integer, String> coa_account = acctnum -> coas.one2one("acctnum", acctnum, coa_cache)
 					.str("account"); // 解析编码为名称
-			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(entity, 2)).insql())); // 账册id
+			println("bksys_id", bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(entity, 2)).insql())); // 账册id
 
 			// 分类账写入
 			for (final var torder : sess.sql2dframe(orders_sql).forEachBy(h2_json_processor("details")).rows()) { // 提取会计主体的订单
