@@ -1347,7 +1347,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的流
 	 */
-	default Stream<Object> path2stream(final String path) {
+	default Stream<Object> path2llS(final String path) {
 		return Stream.of(getByPath(path, Object[].class));
 	}
 
@@ -1365,10 +1365,31 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <U>    目标数据元素类型
 	 * @param path   键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。<br>
 	 *               当path不存在的时候,返回一个 长度为0的流。
-	 * @param mapper 元素变换函数 t->u
+	 * @param mapper 元素变换函数 t-&gt;u
+	 * @return U类型的列表
+	 */
+	default <T, U> List<U> path2lls(final String path, final Function<T, U> mapper) {
+		return this.path2llS(path, mapper).toList();
+	}
+
+	/**
+	 * 根据路径获取Record 数据值。<br>
+	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
+	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
+	 * 类似于如下的形式 <br>
+	 * [k0:[ <br>
+	 * &nbsp; &nbsp; k1:[ <br>
+	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
+	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 *
+	 * @param <T>    源数据元素类型
+	 * @param <U>    目标数据元素类型
+	 * @param path   键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。<br>
+	 *               当path不存在的时候,返回一个 长度为0的流。
+	 * @param mapper 元素变换函数 t-&gt;u
 	 * @return U类型 的流
 	 */
-	default <T, U> Stream<U> path2stream(final String path, final Function<T, U> mapper) {
+	default <T, U> Stream<U> path2llS(final String path, final Function<T, U> mapper) {
 		@SuppressWarnings("unchecked")
 		final Function<Object, U> final_mapper = mapper == null ? e -> (U) e : (Function<Object, U>) mapper;
 		final var vv = getByPath(path);// 提取路径值
@@ -1390,9 +1411,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U 类型 的流
 	 */
 	@SuppressWarnings("unchecked")
-	default <U> Stream<U> path2stream(final String path, final U defaultValue) {
+	default <U> Stream<U> path2llS(final String path, final U defaultValue) {
 		final var uclass = defaultValue == null ? Object.class : defaultValue.getClass();
-		return this.path2stream(path, (Object e) -> {
+		return this.path2llS(path, (Object e) -> {
 			if (e != null) { // 元素非空
 				if (uclass.isAssignableFrom(e.getClass())) { // 元素为U类型
 					var u = defaultValue;
@@ -1408,7 +1429,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			} else { // 元素为空
 				return defaultValue;
 			} // if
-		});// path2stream
+		});// path2llS
 	}
 
 	/**
@@ -1506,7 +1527,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * path2stream 的别名 <br>
+	 * path2llS 的别名 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1521,11 +1542,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U 类型的流
 	 */
 	default <U> Stream<U> pathS(final String path, final U defaultValue) {
-		return this.path2stream(path, defaultValue);
+		return this.path2llS(path, defaultValue);
 	}
 
 	/**
-	 * path2stream 的别名 <br>
+	 * path2llS 的别名 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1537,11 +1558,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>    源数据元素类型
 	 * @param <U>    目标数据元素类型
 	 * @param path   键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @param mapper 元素变换函数 t->u
+	 * @param mapper 元素变换函数 t-&gt;u
 	 * @return U类型 的流
 	 */
 	default <T, U> Stream<U> pathS(final String path, final Function<T, U> mapper) {
-		return this.path2stream(path, mapper);
+		return this.path2llS(path, mapper);
 	}
 
 	/**
@@ -1562,7 +1583,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * path2stream 的列表形式衍生函数 <br>
+	 * path2llS 的列表形式衍生函数 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1577,7 +1598,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U 类型的 列表
 	 */
 	default <U> List<U> pathL(final String path, final U defaultValue) {
-		return this.path2stream(path, defaultValue).collect(Collectors.toList());
+		return this.path2llS(path, defaultValue).collect(Collectors.toList());
 	}
 
 	/**
@@ -1598,7 +1619,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * path2stream 的数组形式衍生函数 <br>
+	 * path2llS 的数组形式衍生函数 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1613,7 +1634,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U 类型的 数组
 	 */
 	default <U> U[] pathA(final String path, final U defaultValue) {
-		return this.path2stream(path, defaultValue).collect(IRecord.aaclc(e -> e));
+		return this.path2llS(path, defaultValue).collect(IRecord.aaclc(e -> e));
 	}
 
 	/**
@@ -2519,7 +2540,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>    源元素的类型
 	 * @param <U>    目标元素的类型
-	 * @param mapper 元素变换函数 t->u
+	 * @param mapper 元素变换函数 t-&gt;u
 	 * @param uclass 目标结果类型：如果uclass 为null则懂mapper的取值结果中提取uclass 类型
 	 * @return U类型的一维数组
 	 */
@@ -2554,7 +2575,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>    源元素的类型
 	 * @param <U>    目标元素的类型
-	 * @param mapper 元素变换函数 t->u
+	 * @param mapper 元素变换函数 t-&gt;u
 	 * @return U类型的一维数组
 	 */
 	default <T, U> U[] toArray(final Function<T, U> mapper) {

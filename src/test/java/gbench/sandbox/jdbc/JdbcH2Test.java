@@ -13,6 +13,7 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.Jdbcs;
 
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.io.Output.println;
@@ -22,6 +23,7 @@ import static gbench.util.jdbc.kvp.Tuple2.P;
 import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
 import static gbench.util.jdbc.sql.SQL.proto_of;
+import static gbench.util.jdbc.sql.SQL.sql;
 import static gbench.util.jdbc.Jdbcs.sample;
 import static gbench.util.jdbc.Jdbcs.partitions;
 import static gbench.util.jdbc.Jdbcs.batch_handlers;
@@ -106,6 +108,20 @@ public class JdbcH2Test {
 	}
 
 	/**
+	 * 创建账套
+	 * 
+	 * @param company 公司信息
+	 * @param code    账套名称
+	 * @return 账簿名称
+	 */
+	public static IRecord buildBks(final IRecord company, final int code) {
+		final var title = String.format("%s-%03d", company.get("name"), code);
+		return REC("name", String.format("BKS-%03d", code), "title",
+				String.format("%s-%03d", company.get("name"), code), "company_id", company.get("id"), //
+				"create_time", now(), "description", title);
+	}
+
+	/**
 	 * H2 数据库操作演示, 商城数据示例：
 	 */
 	@Test
@@ -150,7 +166,7 @@ public class JdbcH2Test {
 			// 订单数据处理
 			final var cps = sess.sql2dframe("select * from ##tbl", "tbl", cp_name).forEachBy(h2_json_processor("attrs"))
 					.fmapBy(e -> e.filter("id,company_id,product_id").add(e.rec("attrs"))); // 公司产品
-			final Supplier<IRecord> os = () -> buildOrder(cs, cps, stores, now()); // 订单生成函数,order supplier
+			final Supplier<IRecord> os = () -> buildOrder(cs, cps, stores, now()); // 订单生成函数,order shipper
 			final var o_partitions = partitions(iterate(os.get(), i -> os.get()).limit(size), batch_size); // 公司产能品数据
 
 			sess.sql2execute(println(ctsql(or_name, proto_of(o_partitions)))); // 创建数据表
@@ -164,8 +180,34 @@ public class JdbcH2Test {
 				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachBy(h2_json_processor(p._2())));
 			}
 
+			// bksys
+			final int bksys_id; // 账簿id
+			final var order_sql_1 = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", 1);
+			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(cs.row(0), 2)).insql())); // 账册id
+			println(sess.sql2dframe("select * from t_bksys"));
+			for (final var torder : sess.sql2dframe(order_sql_1).forEachBy(h2_json_processor("details")).rows()) { // 提取订单信息
+				final var parta = torder.get("shipper"); // 乙方
+				final var partb = torder.get("receiver"); // 甲方
+				final var title = String.format("%s-%s", parta, partb); // 日记账标题
+				final var tjournal = REC("bksys_id", bksys_id, "title", title, "objects", Arrays.asList(parta), // 会计主体
+						"create_time", now(), "description", "-");
+				final var journal_id = sess.sql2execute2int(sql("t_journal", tjournal).insql()); // 日记账id
+				for (final var item : torder.path2lls("details/items", IRecord::REC)) {
+					final var due_date = now(); // 到期日
+					final var name = item.get("name"); // 产品名称
+					final var amount = item.dbl("amount"); // amount
+					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
+					final var ids = sess.sql2execute(sql("t_accts").insql(
+							proto.derive("drcr", 1, "acctnum", 1002, "title", String.format("银行存款-%s", name)), // 借方
+							proto.derive("drcr", -1, "acctnum", 1402, "title", String.format("在途物资-%s", name)))); // 贷方
+					println(ids);
+				} //
+			} //
+			println(sess.sql2dframe("select * from t_journal limit 5"));
+			println(sess.sql2dframe("select * from t_accts limit 5"));
+
 			// 试算平衡2
-			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
+			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
 		});
 	}
 

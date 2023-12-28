@@ -334,6 +334,16 @@ public class SQL {
 	 * @param datas 插入的数据的字段列表，用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
 	 * @return insert SQL 语句
 	 */
+	public String insql(final IRecord... datas) {
+		return this.insql(Arrays.asList(datas), null);
+	}
+
+	/**
+	 * 插入数据
+	 * 
+	 * @param datas 插入的数据的字段列表，用recB-recA的中的变量来实例化SQL模板，生成一个insert 插入语句
+	 * @return insert SQL 语句
+	 */
 	public String insql(final Iterable<IRecord> datas) {
 		return this.insql(datas, null);
 	}
