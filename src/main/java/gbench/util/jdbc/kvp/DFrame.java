@@ -65,16 +65,31 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
-	 * 按照行进行查找: many to one 关系的多方数据提取 <br>
-	 * 根据一方数据的id从当前对象(多方)种提取指定对于一方的数据集合。
+	 * lhs.many2one(rhsId) <br>
+	 * 按照行进行查找: many(lhs) to one(rhs) 关系的多方数据提取 <br>
+	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
 	 * 
 	 * @param key   外键字段名
-	 * @param oneId 一方Id
+	 * @param rhsId 右侧方(一方)的Id
 	 * @return 指定键值的数据行(多方数据集合)
 	 */
-	public DFrame many2one(final String key, final Object oneId) {
+	public DFrame many2one(final String key, final Object rhsId) {
 
-		return this.filterBy(key, oneId);
+		return this.filterBy(key, rhsId);
+	}
+
+	/**
+	 * lhs.many2one(oneId) <br>
+	 * 按照行进行查找: one(lhs) to one(rhs) 关系的lhs一方数据提取 <br>
+	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
+	 * 
+	 * @param key   外键字段名
+	 * @param rhsId 右侧方(一方)的Id
+	 * @return 指定键值的数据行(多方数据集合)
+	 */
+	public IRecord one2one(final String key, final Object rhsId) {
+
+		return this.filterBy(key, rhsId).rowS().findFirst().orElse(null);
 	}
 
 	/**

@@ -185,8 +185,9 @@ public class JdbcH2Test {
 			final int bksys_id; // 账簿id
 			final var entity_id = 1; // 主体id
 			final var order_sql_1 = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
+			final var coas = sess.sql2dframe("select * from t_coa") // t_coa 科目表
+					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue()));
 			println(bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(cs.row(0), 2)).insql())); // 账册id
-			println(sess.sql2dframe("select * from t_bksys")); // 账册数据
 
 			// 分类账写入
 			for (final var torder : sess.sql2dframe(order_sql_1).forEachBy(h2_json_processor("details")).rows()) { // 提取会计主体的订单
@@ -205,29 +206,26 @@ public class JdbcH2Test {
 					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
 					final var flag = Objects.equals(entity_id, parta); // 会计主体是否在甲方
 					// 记账法
-					final var dr_acctnum = flag // 会计主体是否在甲方
+					final var dr_acct = flag // 会计主体是否在甲方
 							? 1402 // 会计主体在甲方,借:在途物资
 							: 1407; // 会计主体在乙方,借:发出商品
-					final var cr_acctnum = flag // 主体是否在甲方
-							? 1002 // 会计主体在甲方,借:应付账款
+					final var cr_acct = flag // 主体是否在甲方
+							? 1002 // 会计主体在甲方,借:银行存款
 							: 1406; // 会计主体在乙方,借:库存商品
-					final var dr_title = String.format(flag// 主体是否在甲方
-							? "在途物资-%s" // 会计主体在甲方,借:在途物资
-							: "发出商品-%s" // 会计主体在乙方,借:发出商品
-							, name);
-					final var cr_title = String.format(flag // 主体是否在甲方
-							? "应付存款-%s" // 会计主体在甲方,借:应付账款
-							: "库存商品-%s" // 会计主体在乙方,借:库存商品
-							, name);
+					final var dr_title = String.format("%s-%s", coas.one2one("acctnum", dr_acct).str("account"), name);
+					final var cr_title = String.format("%s-%s", coas.one2one("acctnum", cr_acct).str("account"), name);
 					// 分录誊写
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
-							proto.derive("drcr", 1, "acctnum", dr_acctnum, "title", dr_title), // 借方
-							proto.derive("drcr", -1, "acctnum", cr_acctnum, "title", cr_title)))); // 贷方
+							proto.derive("drcr", 1, "acctnum", dr_acct, "title", dr_title), // 借方
+							proto.derive("drcr", -1, "acctnum", cr_acct, "title", cr_title)))); // 贷方
 					println("借贷分录", parta, parta, ids);
 				} // 订单记账
 			} // 提取会计主体的订单
-			println(sess.sql2dframe("select * from t_journal limit 10"));
-			println(sess.sql2dframe("select * from t_accts limit 10"));
+
+			// 记账信息查看
+			println(sess.sql2dframe(top10, "tbl", "t_bksys")); // 账册数据
+			println(sess.sql2dframe(top10, "tbl", "t_journal")); // 日记账摘要
+			println(sess.sql2dframe(top10, "tbl", "t_accts")); // 会计分录
 
 			// 试算平衡2
 			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
