@@ -190,8 +190,8 @@ public class JdbcH2Test {
 
 			// 分类账写入
 			for (final var torder : sess.sql2dframe(order_sql_1).forEachBy(h2_json_processor("details")).rows()) { // 提取订单信息
-				final var parta = torder.get("receiver"); // 甲方
-				final var partb = torder.get("shipper"); // 乙方
+				final var parta = torder.i4("receiver"); // 甲方
+				final var partb = torder.i4("shipper"); // 乙方
 				final var title = String.format("%s-%s", parta, partb); // 日记账标题
 				final var tjournal = REC("bksys_id", bksys_id, "title", title, "objects", Arrays.asList(entity_id), // 会计主体
 						"create_time", now(), "description", "-");
@@ -202,20 +202,21 @@ public class JdbcH2Test {
 					final var name = item.get("name"); // 产品名称
 					final var amount = item.dbl("amount"); // amount
 					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
+					final var flag = Objects.equals(entity_id, parta); // 主体是否在甲方
 					// 记账法
-					final var dr_acctnum = Objects.equals(entity_id, parta) // 主体是否在甲方
+					final var dr_acctnum = flag // 主体是否在甲方
 							? 1402 // 主体是否在甲方,借:在途物资
 							: 1407; // 主体是否在乙方,借:发出商品
-					final var cr_acctnum = Objects.equals(entity_id, parta) // 主体是否在甲方
+					final var cr_acctnum = flag // 主体是否在甲方
 							? 1002 // 主体是否在甲方,借:应付账款
 							: 1406; // 主体是否在乙方,借:库存商品
-					final var dr_title = String.format(Objects.equals(entity_id, parta) // 主体是否在甲方
-							? "银行存款-%s" // 主体是否在甲方,借:在途物资
+					final var dr_title = String.format(flag// 主体是否在甲方
+							? "在途物资-%s" // 主体是否在甲方,借:在途物资
 							: "发出商品-%s" // 主体是否在乙方,借:发出商品
 							, name);
-					final var cr_title = String.format(Objects.equals(entity_id, parta) // 主体是否在甲方
+					final var cr_title = String.format(flag // 主体是否在甲方
 							? "应付存款-%s" // 主体是否在甲方,借:应付账款
-							: "银行存款-%s" // 主体是否在乙方,借:库存商品
+							: "库存商品-%s" // 主体是否在乙方,借:库存商品
 							, name);
 					// 分录誊写
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录
