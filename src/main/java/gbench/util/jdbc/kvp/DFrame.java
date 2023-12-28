@@ -119,7 +119,7 @@ public class DFrame extends LinkedRecord {
 	 * @param cache 检索缓存
 	 * @return 指定键值的数据行(多方数据集合)
 	 */
-	public <T> IRecord one2one(final String key, final T rhsId, final Map<T, IRecord> cache) {
+	public <K> IRecord one2one(final String key, final K rhsId, final Map<K, IRecord> cache) {
 
 		return cache.computeIfAbsent(rhsId, k -> this.filterBy(key, rhsId).rowS().findFirst().orElse(null));
 	}
