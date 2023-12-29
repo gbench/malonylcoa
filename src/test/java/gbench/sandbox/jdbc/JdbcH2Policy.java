@@ -35,10 +35,10 @@ public class JdbcH2Policy {
 							.map(e -> e.get("acctnum")).orElse(null)));
 			final var name = "PLIOCY0001"; // 策略名称
 			final var order_type = "ORDER0001"; // 订单类型
-			final var policy_name = String.format("%s/%s", name, order_type); // 策略名称
-			final var policy = policies.path2rec(policy_name);
+			final var policy_path = String.format("%s/%s", name, order_type); // 策略名称
+			final var policy = policies.path2rec(policy_path);
 
-			println(policy_name, policy);
+			println(policy_path, policy);
 		});
 	}
 }
