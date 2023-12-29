@@ -160,7 +160,8 @@ public class JdbcMallTest {
 		return sess -> { // ExceptionalFunction
 			final int bksys_id; // 账簿id
 			final int entity_id = entity.i4("id"); // 会计主体id
-			final var orders_sql = Jdbcs.format("select * from t_order where receiver={0} or shipper={0}", entity_id); // 提取公司1的订单信息
+			final var orders_sql = Jdbcs.format("select o.* from t_order o where receiver={0} or shipper={0}",
+					entity_id); // 提取订单
 			final BiFunction<Position, Drcr, Integer> acct_get = (position, drcr) -> { // 订单的记账头寸(long:长头,short:短头)，借贷方向
 				final var acct = accounting_policies.path2int(String.format("%s/%s", position, drcr)); // 提取账户模式
 				return acct; // 会计记账账户编码
@@ -262,7 +263,7 @@ public class JdbcMallTest {
 			final var accounting_policies = sess.sql2dframe("select * from t_acct_policy").rowS() // 会计策略数据
 					.collect(IRecord.pvtclc("name,order_type,position,drcr", // 规整成数据透视表结构的阶梯层的树形结构
 							datas -> datas.findFirst().map(e -> e.get("acctnum")).orElse(null))) // 提取叶子节点的科目代码
-					.path2rec("PLIOCY0001/ORDER0001"); // 提取1号策略/普通订单ORDER0001
+					.path2rec("POLICY0001/ORDER0001"); // 提取1号策略/普通订单ORDER0001
 			println("accounting_policies", accounting_policies);
 			// 随机选取10个公司对其订单信息进行会计记账
 			for (final var entity : cs.shuffle().head(10).rows()) {// entity 会计主体
