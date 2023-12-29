@@ -809,14 +809,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
-	default <T, U> U getByPath(final String path, final Function<T, U> t2u) {
-		return getByPath(Arrays.asList(path.split("[/]+")), t2u);
+	default <T, U> U pathget(final String path, final Function<T, U> t2u) {
+		return pathget(Arrays.asList(path.split("[/]+")), t2u);
 	}
 
 	/**
@@ -827,15 +827,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path        键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @param targetClass 类型参照类的对象
 	 * @return U类型数据值。
 	 */
 	@SuppressWarnings("unchecked")
-	default <T, U> U getByPath(final String path, final Class<U> targetClass) {
-		return getByPath(path, e -> (U) e);
+	default <T, U> U pathget(final String path, final Class<U> targetClass) {
+		return pathget(path, e -> (U) e);
 	}
 
 	/**
@@ -845,15 +845,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2","/",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2","/",identity) 返回 value 数值 <br>
 	 * 
 	 * @param path 键名序列
 	 * @param sep  键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
-	default <T, U> U getByPath(final String path, String sep, final Function<T, U> t2u) {
-		return getByPath(Arrays.asList(path.split(sep)), t2u);
+	default <T, U> U pathget(final String path, String sep, final Function<T, U> t2u) {
+		return pathget(Arrays.asList(path.split(sep)), t2u);
 	}
 
 	/**
@@ -864,13 +864,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2") 返回 value 数值 <br>
+	 * pathget("k0/k1/k2") 返回 value 数值 <br>
 	 * 
 	 * @param path 键名序列, 分隔符：sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return U类型数据值。
 	 */
-	default Object getByPath(final String path) {
-		return getByPath(Arrays.asList(path.split("[/]+")), identity);
+	default Object pathget(final String path) {
+		return pathget(Arrays.asList(path.split("[/]+")), identity);
 	}
 
 	/**
@@ -881,14 +881,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2","/") 返回 value 数值 <br>
+	 * pathget("k0/k1/k2","/") 返回 value 数值 <br>
 	 * 
 	 * @param path 键名序列
 	 * @param sep  键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return U类型数据值。
 	 */
-	default Object getByPath(final String path, String sep) {
-		return getByPath(Arrays.asList(path.split(sep)), identity);
+	default Object pathget(final String path, String sep) {
+		return pathget(Arrays.asList(path.split(sep)), identity);
 	}
 
 	/**
@@ -898,15 +898,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2]) 返回 value 数值
+	 * pathget([k0,k1,k2]) 返回 value 数值
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
 	 * 
 	 * @param keys 键名序列
 	 */
-	default Object getByPath(List<String> keys) {
-		return this.getByPath(keys, identity);
+	default Object pathget(List<String> keys) {
+		return this.pathget(keys, identity);
 	}
 
 	/**
@@ -916,7 +916,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -927,8 +927,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
-	default <T, U> U getByPath(final List<String> keys, final Function<T, U> t2u) {
-		return this.getByPathOptional(keys, t2u).orElse(null);
+	default <T, U> U pathget(final List<String> keys, final Function<T, U> t2u) {
+		return this.pathgetOptional(keys, t2u).orElse(null);
 	}
 
 	/**
@@ -938,7 +938,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -950,7 +950,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	@SuppressWarnings("unchecked")
-	default <T, U> Optional<U> getByPathOptional(final List<String> keys, final Function<T, U> t2u) {
+	default <T, U> Optional<U> pathgetOptional(final List<String> keys, final Function<T, U> t2u) {
 		final var kk = keys.stream().filter(e -> !e.matches("[\\s/\\\\]*")).collect(Collectors.toList());//
 		final var size = kk.size();
 		if (size < 1) {
@@ -977,18 +977,18 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		}
 
 		// 步进一级继续按路径检索数据。
-		return node.getByPathOptional(kk.subList(1, size), t2u);
+		return node.pathgetOptional(kk.subList(1, size), t2u);
 	}
 
 	/**
-	 * getByPathOptional 的别名 <br>
+	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -1000,18 +1000,18 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default <T, U> Optional<U> path2opt(final List<String> keys, final Function<T, U> t2u) {
-		return this.getByPathOptional(keys, t2u);
+		return this.pathgetOptional(keys, t2u);
 	}
 
 	/**
-	 * getByPathOptional 的别名 <br>
+	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -1023,18 +1023,18 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default <T, U> Optional<U> path2opt(final String[] keys, final Function<T, U> t2u) {
-		return this.getByPathOptional(Arrays.asList(keys), t2u);
+		return this.pathgetOptional(Arrays.asList(keys), t2u);
 	}
 
 	/**
-	 * getByPathOptional 的别名 <br>
+	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -1047,18 +1047,18 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <T, U> Optional<U> path2opt(final String path, final Function<T, U> t2u) {
 		final var regex = "[/]+"; //
-		return this.getByPathOptional(Arrays.asList(path.split(regex)), t2u);
+		return this.pathgetOptional(Arrays.asList(path.split(regex)), t2u);
 	}
 
 	/**
-	 * getByPathOptional 的别名 <br>
+	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -1071,14 +1071,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * getByPathOptional 的别名 <br>
+	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -1091,14 +1091,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * getByPathOptional 的别名 <br>
+	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -1111,14 +1111,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * getByPathOptional 的别名 <br>
+	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
 	 * 
 	 * 根据路径获取Record 数据值。<br>
 	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
@@ -1137,7 +1137,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @param b    对于单值类型的数据v是否给予封装成 REC(0,v),<br>
@@ -1173,14 +1173,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U 类型数据值。
 	 */
 	default <T, U> U path2target(final String path, final Function<T, U> t2u) {
-		return this.getByPath(path, t2u);
+		return this.pathget(path, t2u);
 	}
 
 	/**
@@ -1190,7 +1190,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 * 
 	 * @param <U>         类型参照类的类型
 	 * @param path        键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
@@ -1199,7 +1199,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <U> U path2target(final String path, Class<U> targetClass) {
-		return this.getByPath(path, e -> ((U) e));
+		return this.pathget(path, e -> ((U) e));
 	}
 
 	/**
@@ -1210,13 +1210,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return 整型数组
 	 */
 	default Integer[] path2ints(final String path) {
-		return getByPath(path, Integer[].class);
+		return pathget(path, Integer[].class);
 	}
 
 	/**
@@ -1226,13 +1226,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return 长整型数组
 	 */
 	default Long[] path2lngs(final String path) {
-		return getByPath(path, Long[].class);
+		return pathget(path, Long[].class);
 	}
 
 	/**
@@ -1242,13 +1242,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return 浮点数类型的数组。
 	 */
 	default Double[] path2dbls(final String path) {
-		return getByPath(path, Double[].class);
+		return pathget(path, Double[].class);
 	}
 
 	/**
@@ -1258,13 +1258,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return 字符串类型的数组。
 	 */
 	default String[] path2strs(final String path) {
-		return getByPath(path, String[].class);
+		return pathget(path, String[].class);
 	}
 
 	/**
@@ -1275,13 +1275,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的结果
 	 */
 	default Object path2obj(final String path) {
-		return getByPath(path, Object.class);
+		return pathget(path, Object.class);
 	}
 
 	/**
@@ -1292,7 +1292,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Integer 类型的结果,非法值 返回 null
@@ -1309,7 +1309,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Integer 类型的结果,非法值 返回 null
@@ -1326,7 +1326,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Double 类型的结果,非法值 返回 null
@@ -1342,14 +1342,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的流
 	 */
 	@SuppressWarnings("unchecked")
 	default Stream<Object> path2llS(final String path) {
-		return (Stream<Object>) getByPath(path, o -> {
+		return (Stream<Object>) pathget(path, o -> {
 			if (o instanceof final Collection<?> coll) {
 				return coll.stream();
 			} else if (o instanceof final Stream<?> stream) {
@@ -1369,7 +1369,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的列表
@@ -1386,7 +1386,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>    源数据元素类型
 	 * @param <U>    目标数据元素类型
@@ -1407,7 +1407,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>    源数据元素类型
 	 * @param <U>    目标数据元素类型
@@ -1419,7 +1419,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default <T, U> Stream<U> path2llS(final String path, final Function<T, U> mapper) {
 		@SuppressWarnings("unchecked")
 		final Function<Object, U> final_mapper = mapper == null ? e -> (U) e : (Function<Object, U>) mapper;
-		final var vv = getByPath(path);// 提取路径值
+		final var vv = pathget(path);// 提取路径值
 		return REC("0", vv == null ? new ArrayList<>() : vv).lla("0", Object.class).stream().map(final_mapper); // 构造一个IRecord然后用IRecord的lla计算流
 	}
 
@@ -1430,7 +1430,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <U>          目标数据元素类型
 	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
@@ -1466,7 +1466,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return IRecord 类型的结果
@@ -1482,7 +1482,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @param b    对于单值类型的数据v是否给予封装成 REC(0,v),<br>
@@ -1503,7 +1503,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>       归集器元素类型
 	 * @param <U>       归集器结果类型
@@ -1523,7 +1523,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>          归集器元素类型
 	 * @param <U>          归集器结果类型
@@ -1544,7 +1544,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的流
@@ -1561,7 +1561,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <U>          目标数据元素类型
 	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
@@ -1580,7 +1580,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>    源数据元素类型
 	 * @param <U>    目标数据元素类型
@@ -1600,7 +1600,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的列表
@@ -1617,7 +1617,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <U>          目标数据元素类型
 	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
@@ -1636,7 +1636,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的 数组
@@ -1653,7 +1653,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <U>          目标数据元素类型
 	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
@@ -1672,7 +1672,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的结果
@@ -1689,7 +1689,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return IRecord 类型的结果
@@ -1706,7 +1706,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 类似于如下的形式 [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @param b    对于单值类型的数据v是否给予封装成 REC(0,v),<br>
@@ -1729,7 +1729,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>          结果类型
 	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
@@ -1750,7 +1750,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>    结果类型
 	 * @param path   键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
@@ -1771,7 +1771,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * [k0:[ <br>
 	 * &nbsp; &nbsp; k1:[ <br>
 	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param <T>          结果类型
 	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
