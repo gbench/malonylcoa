@@ -219,7 +219,6 @@ public class JdbcMallTest {
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
 		final var tables = "t_company,t_product,t_company_product,t_coa,t_accts,t_journal,t_bksys,t_acct_policy"
 				.split("[,]+"); // 基础数据表
-		final var cp_sql = "select * from t_company_product where company_id=##cid"; // 公司产品
 		final var stores = "北京,天津,重庆,上海,广州,深圳".split("[,]+"); // 仓库地址
 		final var top10 = "select * from ##tbl limit 10"; // 头前10行数据
 		final var size = 1000; // 模拟生成的数据量,t_order的数据规模
@@ -229,10 +228,6 @@ public class JdbcMallTest {
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
 		// 数据操作
 		jdbcApp.withTransaction(sess -> {
-			println("all tables", sess.sql2dframe("#getAllTables"));
-			println("t_product", sess.sql2dframe("select * from t_product limit ##cnt", "cnt", 2));
-			println("t_company_product", sess.sql2dframe(cp_sql, "cid", 1).forEachBy(h2_json_processor("attrs")));
-			println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", 1)); // 试算平衡表
 
 			final var cs = sess.sql2dframe("select * from t_company"); // 公司信息
 			final var ps = sess.sql2dframe("select id,name,price,price_striked from t_product"); // 产品信息
