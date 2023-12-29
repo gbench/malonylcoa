@@ -2690,7 +2690,8 @@ public class Jdbcs {
 				if (line.opt("id").isPresent()) {
 					final var id = line.i4("id");
 					if (id != null) {
-						line.add(line.remove("id")).add("id",id);;
+						line.add(line.remove("id")).add("id", id);
+						;
 					} // if
 				} // if
 				final var ctsql = ctsql(tblname, line);
@@ -2711,11 +2712,7 @@ public class Jdbcs {
 	 */
 	public static Map<String, Object> asMap(final byte[] bb) {
 
-		final var rec = Optional.ofNullable(bb == null ? null : new String(bb))
-				.map(s -> s = s.startsWith("\"") && s.endsWith("\"")
-						? s.substring(1, s.length() - 1).replace("\\\"", "\"")
-						: s)
-				.map(IRecord::REC);
+		final var rec = h2_opt_processor(bb).map(IRecord::REC);
 
 		return rec.map(IRecord::toMap).orElse(null);
 	}
@@ -2729,6 +2726,31 @@ public class Jdbcs {
 	public static Consumer<? super IRecord> h2_json_processor(final String key) {
 
 		return e -> e.compute(key, Jdbcs::asMap); // 属性处理
+	}
+
+	/**
+	 * 解析 字节码 成为 Optional
+	 * 
+	 * @param bb 字节码
+	 * @return Optional
+	 */
+	public static Optional<String> h2_opt_processor(final byte[] bb) {
+
+		return Optional.ofNullable(bb == null ? null : new String(bb))
+				.map(s -> s = s.startsWith("\"") && s.endsWith("\"")
+						? s.substring(1, s.length() - 1).replace("\\\"", "\"")
+						: s);
+	}
+
+	/**
+	 * 解析 字节码 成为 String
+	 * 
+	 * @param bb 字节码
+	 * @return String
+	 */
+	public static String h2_str_processor(final byte[] bb) {
+
+		return h2_opt_processor(bb).orElse(null);
 	}
 
 	public static final boolean debug = false;// 调试信息开启标记
