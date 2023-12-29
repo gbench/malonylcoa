@@ -1345,33 +1345,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
 	 *
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @return Object 类型的流
-	 */
-	@SuppressWarnings("unchecked")
-	default Stream<Object> path2llS(final String path) {
-		return (Stream<Object>) pathget(path, o -> {
-			if (o instanceof final Collection<?> coll) {
-				return coll.stream();
-			} else if (o instanceof final Stream<?> stream) {
-				return stream;
-			} else if (Objects.nonNull(o) && o.getClass().isArray()) {
-				return Arrays.stream((Object[]) o);
-			} else {
-				return null;
-			}
-		});
-	}
-
-	/**
-	 * 根据路径获取Record 数据值。<br>
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
-	 *
-	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的列表
 	 */
 	default List<Object> path2lls(final String path) {
@@ -1397,6 +1370,33 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <T, U> List<U> path2lls(final String path, final Function<T, U> mapper) {
 		return this.path2llS(path, mapper).toList();
+	}
+
+	/**
+	 * 根据路径获取Record 数据值。<br>
+	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
+	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
+	 * 类似于如下的形式 [k0:[ <br>
+	 * &nbsp; &nbsp; k1:[ <br>
+	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
+	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
+	 *
+	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
+	 * @return Object 类型的流
+	 */
+	@SuppressWarnings("unchecked")
+	default Stream<Object> path2llS(final String path) {
+		return (Stream<Object>) pathget(path, o -> {
+			if (o instanceof final Collection<?> coll) {
+				return coll.stream();
+			} else if (o instanceof final Stream<?> stream) {
+				return stream;
+			} else if (Objects.nonNull(o) && o.getClass().isArray()) {
+				return Arrays.stream((Object[]) o);
+			} else {
+				return null;
+			}
+		});
 	}
 
 	/**
@@ -3249,7 +3249,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Record 搜集器:这个方法是为了放置编译器抱怨ambiguous错误
+	 * Record 归集器:这个方法是为了放置编译器抱怨ambiguous错误
 	 * 
 	 * @param <R>         规约结果的类型
 	 * @param supplier    容器:()->r0
@@ -3265,7 +3265,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	};
 
 	/**
-	 * Record 搜集器:这个方法是为了放置编译器抱怨ambiguous错误<br>
+	 * Record 归集器:这个方法是为了放置编译器抱怨ambiguous错误<br>
 	 * 默认 combiner 为:(a,b)->a
 	 * 
 	 * @param <R>         规约结果的类型
@@ -3278,7 +3278,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	};
 
 	/**
-	 * Record 搜集器
+	 * Record 归集器
 	 * 
 	 * @param <R>         规约结果的类型
 	 * @param supplier    容器:()->r0
@@ -3292,7 +3292,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	};
 
 	/**
-	 * Record 搜集器
+	 * Record 归集器
 	 * 
 	 * @param <R>         结果的类型
 	 * @param initial     初始值:r0
@@ -3309,11 +3309,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	};
 
 	/**
-	 * Record 搜集器
+	 * Record 归集器
 	 * 
 	 * @param <A>       累加器的元素 类型 中间结果类型,用于暂时存放 累加元素的中间结果的集合。
 	 * @param <R>       返回结果类型
-	 * @param collector 搜集 KVPair&lt;String,Object&gt;类型的 搜集器
+	 * @param collector 搜集 KVPair&lt;String,Object&gt;类型的 归集器
 	 * @return 规约的结果 R
 	 */
 	default <A, R> R collect(final Collector<KVPair<String, Object>, A, R> collector) {
@@ -9787,11 +9787,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Pivot Table 的搜集器：使用示例
+	 * Pivot Table 的归集器：使用示例
 	 * cph(RPTS(3,L("A","B"))).stream().collect(pvtclc("0,1"));
 	 * 
 	 * @param keys 键名序列,用逗号分隔
-	 * @return pivotTable 的 搜集器
+	 * @return pivotTable 的 归集器
 	 */
 	static Collector<IRecord, List<IRecord>, IRecord> pvtclc(final String keys) {
 		return Collector.of(LinkedList::new, List::add, (a, b) -> {
@@ -9801,14 +9801,31 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Pivot Table 的搜集器：搜集并变换 <br>
+	 * Pivot Table 的归集器：使用示例
+	 * cph(RPTS(3,L("A","B"))).stream().collect(pvtclc("0,1"));
+	 * 
+	 * @param <U>       结果类型
+	 * @param keys      键名序列,用逗号分隔
+	 * @param evaluator 列指标：分类结果的计算器
+	 * @return pivotTable 的 归集器
+	 */
+	static <U> Collector<IRecord, List<IRecord>, IRecord> pvtclc(final String keys,
+			final Function<Stream<IRecord>, U> evaluator) {
+		return Collector.of(LinkedList::new, List::add, (a, b) -> {
+			a.addAll(b);
+			return a;
+		}, aa -> IRecord.pivotTable(aa, keys, evaluator));
+	}
+
+	/**
+	 * Pivot Table 的归集器：搜集并变换 <br>
 	 * 根据 keys 做数据 透视，并把中间结果List&lt;IRecord&gt;类型, <br>
 	 * 存入IRecord(以keys为路径维度标记)，最后 使用 mapper 对IRecord进行变换 <br>
 	 * 
 	 * @param <T>    表换结果类型
 	 * @param keys   键名序列,用逗号分隔
 	 * @param mapper 结果变换函数 rec->t
-	 * @return pivotTable 的 搜集器
+	 * @return pivotTable 的 归集器
 	 */
 	static <T> Collector<IRecord, List<IRecord>, T> pvtclcL(final String keys, final Function<IRecord, T> mapper) {
 		return Collector.of(LinkedList::new, List::add, (a, b) -> {
@@ -9818,14 +9835,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Pivot Table 的搜集器：搜集并变换 <br>
+	 * Pivot Table 的归集器：搜集并变换 <br>
 	 * 根据 keys 做数据 透视，并把中间结果Stream&lt;IRecord&gt;类型, <br>
 	 * 存入IRecord(以keys为路径维度标记)，最后 使用 mapper 对IRecord进行变换 <br>
 	 * 
 	 * @param <T>    表换结果类型
 	 * @param keys   键名序列,用逗号分隔
 	 * @param mapper 结果变换函数 rec->t
-	 * @return pivotTable 的 搜集器
+	 * @return pivotTable 的 归集器
 	 */
 	static <T> Collector<IRecord, List<IRecord>, T> pvtclcS(final String keys, final Function<IRecord, T> mapper) {
 		return Collector.of(LinkedList::new, List::add, (a, b) -> {
@@ -9835,14 +9852,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Pivot Table 的搜集器：搜集并变换 <br>
+	 * Pivot Table 的归集器：搜集并变换 <br>
 	 * 根据 keys 做数据 透视，并把中间结果IRecord[]类型, <br>
 	 * 存入IRecord(以keys为路径维度标记)，最后 使用 mapper 对IRecord进行变换 <br>
 	 * 
 	 * @param <T>    表换结果类型
 	 * @param keys   键名序列,用逗号分隔
 	 * @param mapper 结果变换函数 rec->t
-	 * @return pivotTable 的 搜集器
+	 * @return pivotTable 的 归集器
 	 */
 	static <T> Collector<IRecord, List<IRecord>, T> pvtclcA(final String keys, final Function<IRecord, T> mapper) {
 		return Collector.of(LinkedList::new, List::add, (a, b) -> {
@@ -9852,12 +9869,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Pivot Table 的搜集器：使用示例 cph(RPTS(3,L("A","B"))).stream().collect(pvtclc(0,1));
+	 * Pivot Table 的归集器：使用示例 cph(RPTS(3,L("A","B"))).stream().collect(pvtclc(0,1));
 	 * 
 	 * @param keys 键名序列,分类层级序列 ， ,键名非String类型的对象，会调用toString给予完成转换。
-	 * @return pivotTable 的 搜集器
+	 * @return pivotTable 的 归集器
 	 */
-	static Collector<IRecord, List<IRecord>, IRecord> pvtclc(Object... keys) {
+	static Collector<IRecord, List<IRecord>, IRecord> pvtclc(final Object... keys) {
 
 		final var kk = keys == null ? new String[] {} // 空的分类层级序列
 				: Arrays.stream(keys).map(Object::toString).toArray(String[]::new);// 透视表的层级分类依据
