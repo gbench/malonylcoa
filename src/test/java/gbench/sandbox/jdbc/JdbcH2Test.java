@@ -169,10 +169,10 @@ public class JdbcH2Test {
 					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue())); // 科目表
 			final Function<Integer, String> coa_account = acctnum -> {// 账号编码
 				return coas.one2one("acctnum", acctnum, "coa_cache").str("account"); // 解析编码为名称
-			};
-			final BiFunction<Integer, String, String> title_get = (acct, name) -> {
+			}; // 科目表编码检索
+			final BiFunction<Integer, String, String> title_get = (acct, name) -> { // 科目编码,子科目名称
 				return String.format("%s-%s", coa_account.apply(acct), name);
-			};
+			}; // 科目标题生成
 			println("bksys_id", bksys_id = sess.sql2execute2int(sql("t_bksys", buildBks(entity, entity_id)).insql())); // 账册id
 
 			// 分类账写入
