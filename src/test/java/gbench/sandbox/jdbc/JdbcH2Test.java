@@ -275,24 +275,25 @@ public class JdbcH2Test {
 				println(p._1(), sess.sql2dframe(top10, "tbl", p._1()).forEachBy(h2_json_processor(p._2())));
 			}
 
-			for (var entity : cs.shuffle().head(10).rows()) {// entity 会计主体
-				// 誊写日记账
+			// 随机选取10个公司对其订单信息进行会计记账
+			for (final var entity : cs.shuffle().head(10).rows()) {// entity 会计主体
+				println("================== [", entity, "] =================="); // 分割线，分区标记
 				final var bksys_id = postJournal(entity, REC( // 会计记账策略
 						LONG, REC(DR, 1402, CR, 1002), // dr:在途物资,cr:银行存款
 						SHORT, REC(DR, 1407, CR, 1406) // dr:发出商品,cr:库存商品
-				)).apply(sess); // 获取誊写账簿的账簿id
-
-				// 记账信息查看
-				println(sess.sql2dframe(top10, "tbl", "t_bksys")); // 账册数据
-				println(sess.sql2dframe(top10, "tbl", "t_journal").forEachBy(rec -> {
+				)).apply(sess); // 誊写日记账 & 获取誊写账簿的账簿id
+				final var bksys = "select * from t_bksys where id=##id"; // 账册信息
+				println("账册数据 t_bksys", sess.sql2dframe(bksys, "id", bksys_id)); // 账册数据
+				final var journal = "select * from t_journal where bksys_id=##bksys_id"; // 日记账信息
+				println("日记账摘要 t_journal", sess.sql2dframe(journal, "bksys_id", bksys_id).forEachBy(rec -> {
 					rec.compute("objects", Jdbcs::h2_str_processor);
 				})); // 日记账摘要
-				println(sess.sql2dframe(top10, "tbl", "t_accts")); // 会计分录
-
-				// 试算平衡2
-				println(sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
-			}
-		});
+				final var accts = String.format("select a.* from t_accts a right join (%s) j on a.journal_id=j.id",
+						journal);
+				println("会计分录 t_accts", sess.sql2dframe(accts, "bksys_id", bksys_id)); // 会计分录
+				println(String.format("试算平衡%s", bksys_id), sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
+			} // for
+		}); // withTransaction
 	}
 
 }
