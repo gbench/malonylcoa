@@ -5,10 +5,8 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.Random;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -66,16 +64,6 @@ public class JdbcH2Test {
 	}; // 会计借贷
 
 	/**
-	 * 产品缓存:(公司id,产品列表)
-	 */
-	final static Map<Object, DFrame> product_cache = new HashMap<>();
-
-	/**
-	 * 科目表缓存:(账户编码,账户明细)
-	 */
-	final static Map<Object, IRecord> coa_cache = new HashMap<>();
-
-	/**
 	 * 创建订单
 	 * 
 	 * @param cs         公司
@@ -93,7 +81,7 @@ public class JdbcH2Test {
 		final var part_b = parts.get(1); // 乙方 发货方 shipper
 		final var parta_id = part_a.get("id"); // 甲方id
 		final var partb_id = part_b.get("id"); // 乙方id, 产品是由partb转移到parta的
-		final var products = cps.many2one("company_id", partb_id, product_cache).shuffle().head(5); // 选择5个产品
+		final var products = cps.many2one("company_id", partb_id, "product_cache").shuffle().head(5); // 选择5个产品
 		println(String.format("company product ---- %s[%s] ----- %s", part_b.str("name"), partb_id, products));
 
 		final var receive_address = stores[rnd.nextInt(stores.length)]; // 接受地址
@@ -180,7 +168,7 @@ public class JdbcH2Test {
 			final var coas = sess.sql2dframe("select * from t_coa") // t_coa 科目表
 					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue())); // 科目表
 			final Function<Integer, String> coa_account = acctnum -> {// 账号编码
-				return coas.one2one("acctnum", acctnum, coa_cache).str("account"); // 解析编码为名称
+				return coas.one2one("acctnum", acctnum, "coa_cache").str("account"); // 解析编码为名称
 			};
 			final BiFunction<Integer, String, String> title_get = (acct, name) -> {
 				return String.format("%s-%s", coa_account.apply(acct), name);

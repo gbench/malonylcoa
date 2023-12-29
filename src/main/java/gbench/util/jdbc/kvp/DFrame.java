@@ -3,7 +3,9 @@ package gbench.util.jdbc.kvp;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -95,6 +97,22 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * lhs.many2one(rhsId) <br>
+	 * 按照行进行查找: many(lhs) to one(rhs) 关系的多方数据提取 <br>
+	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
+	 * 
+	 * @param <K>      缓存的键名类型
+	 * @param key      外键字段名
+	 * @param rhsId    右侧方(一方)的Id
+	 * @param cacheKey 缓存键，会根据需要自动创建对应名称的缓存
+	 * @return 指定键值的数据行(多方数据集合)
+	 */
+	public <K> DFrame many2one(final String key, final K rhsId, final String cacheKey) {
+
+		return this.many2one(key, rhsId, this.cache(cacheKey));
+	}
+
+	/**
 	 * lhs.many2one(oneId) <br>
 	 * 按照行进行查找: one(lhs) to one(rhs) 关系的lhs一方数据提取 <br>
 	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
@@ -122,6 +140,22 @@ public class DFrame extends LinkedRecord {
 	public <K> IRecord one2one(final String key, final K rhsId, final Map<K, IRecord> cache) {
 
 		return cache.computeIfAbsent(rhsId, k -> this.filterBy(key, rhsId).rowS().findFirst().orElse(null));
+	}
+
+	/**
+	 * lhs.many2one(oneId) <br>
+	 * 按照行进行查找: one(lhs) to one(rhs) 关系的lhs一方数据提取 <br>
+	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
+	 * 
+	 * @param <K>      缓存的键名类型
+	 * @param key      外键字段名
+	 * @param rhsId    右侧方(一方)的Id
+	 * @param cacheKey 缓存键，会根据需要自动创建对应名称的缓存
+	 * @return 指定键值的数据行(多方数据集合)
+	 */
+	public <K> IRecord one2one(final String key, final K rhsId, final String cacheKey) {
+
+		return this.one2one(key, rhsId, this.cache(cacheKey));
 	}
 
 	/**
@@ -314,6 +348,36 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 提取指定名称额缓存
+	 * 
+	 * @param <K> 键名类型
+	 * @param <V> 值类型
+	 * @param key 缓存
+	 * @return 用key标识的缓存
+	 */
+	@SuppressWarnings("unchecked")
+	public synchronized <K, V> Map<K, V> cache(final String key) {
+		if (caches == null) {
+			caches = new ConcurrentHashMap<>();
+		}
+		return (Map<K, V>) this.caches.computeIfAbsent(key, k -> new HashMap<>());
+	}
+
+	/**
+	 * 缓存清空
+	 */
+	public void clear() {
+		if (this.caches != null) {
+			this.caches.clear();
+		} // if
+		this.caches = null;
+		if (this.rowsCache != null) {
+			this.rowsCache.clear();
+		} // if
+		this.rowsCache = null;
+	}
+
+	/**
 	 * 数据格式化
 	 */
 	@Override
@@ -382,6 +446,7 @@ public class DFrame extends LinkedRecord {
 	/**
 	 * 数据缓存
 	 */
-	private List<IRecord> rowsCache = null;
+	private transient List<IRecord> rowsCache = null;
+	private transient Map<String, Map<?, ?>> caches = null;
 
 } // class DataFrame
