@@ -151,7 +151,7 @@ public class JdbcH2Test {
 	 * 誊写日记账
 	 * 
 	 * @param entity              jdbc 会话
-	 * @param accounting_policies 记账策略:POSION/DRCR/${ACCTNUM}的阶层结构
+	 * @param accounting_policies 记账策略:POSITION/DRCR/${ACCTNUM}的阶层结构
 	 * @return sess -&gt; bksys_id,返回账簿id
 	 */
 	public static ExceptionalFunction<IJdbcSession<?, ?>, Integer> postJournal(final IRecord entity,
