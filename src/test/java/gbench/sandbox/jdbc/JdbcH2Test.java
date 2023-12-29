@@ -289,7 +289,7 @@ public class JdbcH2Test {
 					rec.compute("objects", Jdbcs::h2_str_processor);
 				})); // 日记账摘要
 				final var accts = String.format("select a.* from t_accts a right join (%s) j on a.journal_id=j.id",
-						journal);
+						journal); // 会计分录信息
 				println("会计分录 t_accts", sess.sql2dframe(accts, "bksys_id", bksys_id)); // 会计分录
 				println(String.format("试算平衡%s", bksys_id), sess.sql2dframe("#trialBalanceForH2", "bksys_id", bksys_id)); // 试算平衡表
 			} // for
