@@ -999,7 +999,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
-	default <T, U> Optional<U> path2optional(final List<String> keys, final Function<T, U> t2u) {
+	default <T, U> Optional<U> path2opt(final List<String> keys, final Function<T, U> t2u) {
 		return this.getByPathOptional(keys, t2u);
 	}
 
@@ -1022,7 +1022,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
-	default <T, U> Optional<U> path2optional(final String[] keys, final Function<T, U> t2u) {
+	default <T, U> Optional<U> path2opt(final String[] keys, final Function<T, U> t2u) {
 		return this.getByPathOptional(Arrays.asList(keys), t2u);
 	}
 
@@ -1045,7 +1045,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
-	default <T, U> Optional<U> path2optional(final String path, final Function<T, U> t2u) {
+	default <T, U> Optional<U> path2opt(final String path, final Function<T, U> t2u) {
 		final var regex = "[/]+"; //
 		return this.getByPathOptional(Arrays.asList(path.split(regex)), t2u);
 	}
@@ -1067,7 +1067,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default Optional<String> path2optstr(final String path) {
-		return this.path2optional(path, o -> o + "");
+		return this.path2opt(path, o -> o + "");
 	}
 
 	/**
@@ -1087,7 +1087,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default Optional<Number> path2optnum(final String path) {
-		return this.path2optional(path, IRecord.obj2num);
+		return this.path2opt(path, IRecord.obj2num);
 	}
 
 	/**
@@ -1107,7 +1107,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default Optional<Integer> path2optint(final String path) {
-		return this.path2optional(path, IRecord.obj2num).map(e -> e.intValue());
+		return this.path2opt(path, IRecord.obj2num).map(e -> e.intValue());
 	}
 
 	/**
@@ -1127,7 +1127,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default Optional<Double> path2optdbl(final String path) {
-		return this.path2optional(path, IRecord.obj2num).map(e -> e.doubleValue());
+		return this.path2opt(path, IRecord.obj2num).map(e -> e.doubleValue());
 	}
 
 	/**
@@ -1147,7 +1147,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord 类型的结果
 	 */
 	default Optional<IRecord> path2optrec(final String path, final boolean b) {
-		return path2optional(path, o -> {
+		return path2opt(path, o -> {
 			if (o == null) {
 				return null;
 			} else if (o instanceof IRecord) {
@@ -1347,8 +1347,35 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的流
 	 */
+	@SuppressWarnings("unchecked")
 	default Stream<Object> path2llS(final String path) {
-		return Stream.of(getByPath(path, Object[].class));
+		return (Stream<Object>) getByPath(path, o -> {
+			if (o instanceof final Collection<?> coll) {
+				return coll.stream();
+			} else if (o instanceof final Stream<?> stream) {
+				return stream;
+			} else if (Objects.nonNull(o) && o.getClass().isArray()) {
+				return Arrays.stream((Object[]) o);
+			} else {
+				return null;
+			}
+		});
+	}
+
+	/**
+	 * 根据路径获取Record 数据值。<br>
+	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
+	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
+	 * 类似于如下的形式 [k0:[ <br>
+	 * &nbsp; &nbsp; k1:[ <br>
+	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
+	 * getByPath("k0/k1/k2",identity) 返回 value 数值 <br>
+	 *
+	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
+	 * @return Object 类型的列表
+	 */
+	default List<Object> path2lls(final String path) {
+		return this.path2llS(path).toList();
 	}
 
 	/**
