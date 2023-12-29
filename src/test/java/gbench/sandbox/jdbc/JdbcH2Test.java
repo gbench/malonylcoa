@@ -204,7 +204,7 @@ public class JdbcH2Test {
 					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
 					final var position = Objects.equals(entity_id, parta) ? LONG : SHORT; // 会计主体的订单头寸，甲方为长头,乙方为空头
 					final var dr_acct = acct_get.apply(position, DR); // 借方账户
-					final var cr_acct = acct_get.apply(position, DR); // 贷方账户
+					final var cr_acct = acct_get.apply(position, CR); // 贷方账户
 
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录的数据库誊写
 							proto.derive("drcr", 1, "acctnum", dr_acct, "title", title_get.apply(dr_acct, name)), // 借方
