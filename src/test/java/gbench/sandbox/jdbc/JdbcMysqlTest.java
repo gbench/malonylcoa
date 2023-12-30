@@ -169,8 +169,6 @@ public class JdbcMysqlTest {
 			orders.foreach((String name, List<String> col) -> {
 				println(name, col);
 			});
-			// 获取未入账的订单
-			println("未入账订单", sess.sql2dframe("#getOrdersForAccounting", "bksys_id", 1, "company_id", 1));
 		});
 	}
 
