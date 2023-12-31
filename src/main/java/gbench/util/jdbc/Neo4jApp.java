@@ -69,9 +69,10 @@ import static gbench.util.jdbc.Jdbcs.SET_FIELD_OF_ANNOTATION;
  * 是我们对数据进行的操作算法基础。 <br>
  * Value 一般被称为 值对象，Label 一般被称为 Key对象/符号对象。于是 又可以通过基本的(key物质,value:意识)的
  * (认,知)或称为阴阳辩证关系。<br>
- * 所谓阴阳辩证 就是这是many2many 是一种可以 通过 拆分成: key(符号形式, one)-&gt;value(内容意义 many),即通过 通过符号来
- * 启发意义 的 认知逻辑。<br>
- * 亦可以反过来通过:内容意义的value即心有所想one-&gt;key(表达手段与方式many）的 实践逻辑。而这二者的合并 就会构成 认知实践循环：<br>
+ * 所谓阴阳辩证 就是这是many2many 是一种可以 通过 拆分成: key(符号形式, one)-&gt;value(内容意义 many),即通过
+ * 通过符号来 启发意义 的 认知逻辑。<br>
+ * 亦可以反过来通过:内容意义的value即心有所想one-&gt;key(表达手段与方式many）的 实践逻辑。而这二者的合并 就会构成
+ * 认知实践循环：<br>
  * many2one-&gt;one2many 其阴阳互变的动态结构，说到阴阳就是强调这种动态过程。<br>
  * 这里采用 key-&gt;value作为一种记录的文法规则:（旨在表达一种正处于向其对立面即 辩证的二 元变化的动态过程：阳到阴 或是
  * 阴到阳)。表示我们对这个变换过程的观察角度：<br>
@@ -331,8 +332,8 @@ public class Neo4jApp {
 				Function<VertexInfo, String> vertex_label_renderer,
 				Function<VertexInfo, String> vertex_attrs_renderer) {
 
-			return v -> Jdbcs.format("({0} :{1} '{'{2}})", vertex_name_renderer.apply(v), vertex_label_renderer.apply(v),
-					vertex_attrs_renderer.apply(v));// 顶点描绘器。
+			return v -> Jdbcs.format("({0} :{1} '{'{2}})", vertex_name_renderer.apply(v),
+					vertex_label_renderer.apply(v), vertex_attrs_renderer.apply(v));// 顶点描绘器。
 		}
 
 		/**
@@ -1301,8 +1302,9 @@ public class Neo4jApp {
 		 * 
 		 * @param tup 边结构,(起始点(顶点层号:顶点名),终止点:(顶点层号:顶点名))
 		 */
-		private Function<EdgeInfo, String> edge_name_renderer = (tup) -> Jdbcs.format("e{0}", md5(Jdbcs.format("{0}-{1}",
-				vertex_name_renderer.apply(tup.startNode()), vertex_name_renderer.apply(tup.endNode()))));
+		private Function<EdgeInfo, String> edge_name_renderer = (tup) -> Jdbcs.format("e{0}",
+				md5(Jdbcs.format("{0}-{1}", vertex_name_renderer.apply(tup.startNode()),
+						vertex_name_renderer.apply(tup.endNode()))));
 
 		/**
 		 * 边标签渲染器
@@ -1317,13 +1319,13 @@ public class Neo4jApp {
 		 * 
 		 * @param tup 边结构,(起始点(顶点层号:顶点名),终止点:(顶点层号:顶点名))
 		 */
-		private Function<EdgeInfo, String> edge_attrs_renderer = (tup) -> Stream
-				.of(Jdbcs.format("from:{0}", quote(vertex_name_renderer.apply(tup.startNode()))),
-						Jdbcs.format("to:{0}", quote(vertex_name_renderer.apply(tup.endNode()))),
-						Jdbcs.format("{0}", this.getAttributeSet(edge_name_renderer.apply(tup)).kvs().stream()
-								.filter(e -> !this.is_vertex_attribute_name.test(e.key()))// 过滤掉顶点属性
-								.map(p -> Jdbcs.format("{0}:{1}", p.key(), quote(p.value()))).collect(Collectors.joining(",")))// Jdbcs.format顶点属性
-				).filter(e -> e.length() > 0).collect(Collectors.joining(","));// edge_attrs_renderer
+		private Function<EdgeInfo, String> edge_attrs_renderer = (tup) -> Stream.of(
+				Jdbcs.format("from:{0}", quote(vertex_name_renderer.apply(tup.startNode()))),
+				Jdbcs.format("to:{0}", quote(vertex_name_renderer.apply(tup.endNode()))),
+				Jdbcs.format("{0}", this.getAttributeSet(edge_name_renderer.apply(tup)).kvs().stream()
+						.filter(e -> !this.is_vertex_attribute_name.test(e.key()))// 过滤掉顶点属性
+						.map(p -> Jdbcs.format("{0}:{1}", p.key(), quote(p.value()))).collect(Collectors.joining(",")))// Jdbcs.format顶点属性
+		).filter(e -> e.length() > 0).collect(Collectors.joining(","));// edge_attrs_renderer
 
 		/**
 		 * 图的顶点集合: 顶点名为路径中的(层号名,顶点名), 会出现多个同名顶点。每条字段代表边的一部分数据。
@@ -1457,9 +1459,10 @@ public class Neo4jApp {
 
 								if (autoconvert_sve2vtx && edge._2() == null) {// 单顶点边，表示这是一个顶点数据，所有边属性均复制到顶点中区。
 									if (!g.is_vertex_attribute_name.test(atrribute_name_pattern) && // 直接不满足顶点属性
-											g.is_vertex_attribute_name.test(Jdbcs.format("${0}", atrribute_name_pattern))) {// 添加上$前缀满足顶点属性。
+											g.is_vertex_attribute_name
+													.test(Jdbcs.format("${0}", atrribute_name_pattern))) {// 添加上$前缀满足顶点属性。
 										atrribute_name_pattern = Jdbcs.format("${0}", atrribute_name_pattern);// 为atrribute_name_pattern
-																										// 添加上$前缀，自动生成为顶点属性。
+										// 添加上$前缀，自动生成为顶点属性。
 									} // 把边属性转换成顶点属性。
 								} // 单顶点的边
 
@@ -2250,7 +2253,8 @@ public class Neo4jApp {
 			});
 			g.setEdge_label_renderer(edge -> {
 				final var name = g.getEdge_name_renderer().apply(edge);// 边的名称
-				final var elbls = g.getAttributeSet(name).pathL(final_elblk, "Edge"); // 提取边的label属性
+				final List<String> elbls = g.getAttributeSet(name) //
+						.path2lls(final_elblk, e -> Optional.ofNullable(e).map(String::valueOf).orElse("Edge")); // 提取边的label属性
 				final var elbl = elbls != null && elbls.size() > 0 ? elbls.get(0) : null;// 把边标签映射到 属性
 																							// elblk，注意边的label只取第一个属性值.
 				return (elbl == null || elbl.matches("\\s*")) ? "Edge" : elbl;

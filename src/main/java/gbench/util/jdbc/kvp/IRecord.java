@@ -928,7 +928,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default <T, U> U pathget(final List<String> keys, final Function<T, U> t2u) {
-		return this.pathgetOptional(keys, t2u).orElse(null);
+		return this.pgetopt(keys, t2u).orElse(null);
 	}
 
 	/**
@@ -950,7 +950,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	@SuppressWarnings("unchecked")
-	default <T, U> Optional<U> pathgetOptional(final List<String> keys, final Function<T, U> t2u) {
+	default <T, U> Optional<U> pgetopt(final List<String> keys, final Function<T, U> t2u) {
 		final var kk = keys.stream().filter(e -> !e.matches("[\\s/\\\\]*")).collect(Collectors.toList());//
 		final var size = kk.size();
 		if (size < 1) {
@@ -977,7 +977,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		}
 
 		// 步进一级继续按路径检索数据。
-		return node.pathgetOptional(kk.subList(1, size), t2u);
+		return node.pgetopt(kk.subList(1, size), t2u);
 	}
 
 	/**
@@ -1000,7 +1000,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default <T, U> Optional<U> path2opt(final List<String> keys, final Function<T, U> t2u) {
-		return this.pathgetOptional(keys, t2u);
+		return this.pgetopt(keys, t2u);
 	}
 
 	/**
@@ -1023,7 +1023,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型数据值。
 	 */
 	default <T, U> Optional<U> path2opt(final String[] keys, final Function<T, U> t2u) {
-		return this.pathgetOptional(Arrays.asList(keys), t2u);
+		return this.pgetopt(Arrays.asList(keys), t2u);
 	}
 
 	/**
@@ -1047,7 +1047,30 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <T, U> Optional<U> path2opt(final String path, final Function<T, U> t2u) {
 		final var regex = "[/]+"; //
-		return this.pathgetOptional(Arrays.asList(path.split(regex)), t2u);
+		return this.pgetopt(Arrays.asList(path.split(regex)), t2u);
+	}
+	
+	/**
+	 * pathgetOptional 的别名 <br>
+	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
+	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
+	 * 类似于如下的形式 <br>
+	 * [k0:[ <br>
+	 * &nbsp; &nbsp; k1:[ <br>
+	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * 
+	 * 根据路径获取Record 数据值。<br>
+	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
+	 * 
+	 * @param <U>  转换结果的数据类型
+	 * @param path 键名序列：键名额层级结构 , 键名分隔符的 regex "[/]+"
+	 * @param t2u  对 record 结果进行转换的函数
+	 * @return U类型数据值。
+	 */
+	@SuppressWarnings("unchecked")
+	default <U> Optional<U> path2opt(final String path) {
+		return this.path2opt(path,e->(U)e);
 	}
 
 	/**
@@ -1516,7 +1539,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * pathS 的归集器版本 <br>
+	 * pathgetS 的归集器版本 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1533,11 +1556,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U 类型的结果
 	 */
 	default <T, U> U pathclc(final String path, final T defaultValue, final Collector<T, ?, U> collector) {
-		return this.pathS(path, defaultValue).collect(collector);
+		return this.pathgetS(path, defaultValue).collect(collector);
 	}
 
 	/**
-	 * pathS 的别名 <br>
+	 * pathgetS 的别名 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1549,8 +1572,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的流
 	 */
-	default Stream<Object> pathS(final String path) {
-		return this.pathS(path, null);
+	default Stream<Object> pathgetS(final String path) {
+		return this.pathgetS(path, null);
 	}
 
 	/**
@@ -1568,7 +1591,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param defaultValue 元素的默认值
 	 * @return U 类型的流
 	 */
-	default <U> Stream<U> pathS(final String path, final U defaultValue) {
+	default <U> Stream<U> pathgetS(final String path, final U defaultValue) {
 		return this.path2llS(path, defaultValue);
 	}
 
@@ -1588,12 +1611,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param mapper 元素变换函数 t-&gt;u
 	 * @return U类型 的流
 	 */
-	default <T, U> Stream<U> pathS(final String path, final Function<T, U> mapper) {
+	default <T, U> Stream<U> pathgetS(final String path, final Function<T, U> mapper) {
 		return this.path2llS(path, mapper);
 	}
 
 	/**
-	 * pathL 的别名 <br>
+	 * pathgets 的别名 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1605,8 +1628,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的列表
 	 */
-	default List<Object> pathL(final String path) {
-		return this.pathL(path, null);
+	default List<Object> pathgets(final String path) {
+		return this.pathgets(path, null);
 	}
 
 	/**
@@ -1624,12 +1647,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param defaultValue 元素的默认值
 	 * @return U 类型的 列表
 	 */
-	default <U> List<U> pathL(final String path, final U defaultValue) {
+	default <U> List<U> pathgets(final String path, final U defaultValue) {
 		return this.path2llS(path, defaultValue).collect(Collectors.toList());
 	}
 
 	/**
-	 * pathA 的别名 <br>
+	 * pathgeta 的别名 <br>
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -1641,8 +1664,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
 	 * @return Object 类型的 数组
 	 */
-	default Object[] pathA(final String path) {
-		return this.pathA(path, null);
+	default Object[] pathgeta(final String path) {
+		return this.pathgeta(path, null);
 	}
 
 	/**
@@ -1660,130 +1683,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param defaultValue 元素的默认值
 	 * @return U 类型的 数组
 	 */
-	default <U> U[] pathA(final String path, final U defaultValue) {
+	default <U> U[] pathgeta(final String path, final U defaultValue) {
 		return this.path2llS(path, defaultValue).collect(IRecord.aaclc(e -> e));
-	}
-
-	/**
-	 * path2obj 的别名 <br>
-	 * 根据路径获取Record 数据值。<br>
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
-	 *
-	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @return Object 类型的结果
-	 */
-	default Object pathO(final String path) {
-		return this.path2obj(path);
-	}
-
-	/**
-	 * path2rec 的别名 <br>
-	 * 根据路径获取Record 数据值。<br>
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
-	 *
-	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @return IRecord 类型的结果
-	 */
-	default IRecord pathR(final String path) {
-		return this.path2rec(path);
-	}
-
-	/**
-	 * path2rec 的别名 <br>
-	 * 根据路径获取Record 数据值。<br>
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
-	 *
-	 * @param path 键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @param b    对于单值类型的数据v是否给予封装成 REC(0,v),<br>
-	 *             例如: 当 v 为3的时候 <br>
-	 *             如果b为true,3会被封装成 REC(0,3) 给予返回,<br>
-	 *             否则b为false，则返回 null
-	 * @return IRecord 类型的结果
-	 */
-	default IRecord pathR(final String path, final boolean b) {
-		return this.path2rec(path, b);
-	}
-
-	/**
-	 * path2rec 与 toTarget的联合函数 <br>
-	 * 相当于 : this.path2rec(path,true).toTarget(defaultVaue); <br>
-	 * 根据路径获取Record 数据值。<br>
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 <br>
-	 * [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
-	 *
-	 * @param <T>          结果类型
-	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @param defaultValue 默认值,转换失败或是结果为null的时候返回默认值
-	 * @return T类型的结果
-	 */
-	default <T> T pathT(final String path, final T defaultValue) {
-		return pathT(path, null, defaultValue);
-	}
-
-	/**
-	 * path2rec 与 toTarget的联合函数 <br>
-	 * 相当于 : this.path2rec(path,true).toTarget(defaultVaue); <br>
-	 * 根据路径获取Record 数据值。<br>
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 <br>
-	 * [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
-	 *
-	 * @param <T>    结果类型
-	 * @param path   键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @param tclass 结果类型类
-	 * @return T类型的结果
-	 */
-	default <T> T pathT(final String path, final Class<T> tclass) {
-		return pathT(path, tclass, null);
-	}
-
-	/**
-	 * path2rec 与 toTarget的联合函数 <br>
-	 * 相当于 : this.path2rec(path,true).toTarget(defaultVaue); <br>
-	 * 根据路径获取Record 数据值。<br>
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 <br>
-	 * [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget("k0/k1/k2",identity) 返回 value 数值 <br>
-	 *
-	 * @param <T>          结果类型
-	 * @param path         键名序列,分隔符sep 默认为："[/]+" 键名序列 的分割符号，这样就可以从path中构造出层级关系。
-	 * @param tclass       结果类型类
-	 * @param defaultValue 默认值,转换失败或是结果为null的时候返回默认值
-	 * @return T类型的结果
-	 */
-	@SuppressWarnings("unchecked")
-	default <T> T pathT(final String path, final Class<T> tclass, final T defaultValue) {
-		final var rec = this.path2rec(path, true);// 提取结果对象
-		final var clazz = tclass == null ? (defaultValue == null ? null : (Class<T>) defaultValue.getClass()) : tclass;
-		return rec == null ? defaultValue : rec.toTarget(clazz, defaultValue);
 	}
 
 	/**
@@ -2451,7 +2352,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 所有字段名集合列表
 	 */
-	default List<String> kk() {
+	default List<String> ks() {
 		return this.keys();
 	}
 
@@ -2517,7 +2418,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param mapper 值映射目标对象方法
 	 * @return 所有值集合列表
 	 */
-	default <T> List<T> vv(final Function<Object, T> mapper) {
+	default <T> List<T> vs(final Function<Object, T> mapper) {
 		return this.values(mapper);
 	}
 
@@ -2526,7 +2427,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 所有值集合列表
 	 */
-	default List<Object> vv() {
+	default List<Object> vs() {
 		return this.values();
 	}
 
@@ -2545,7 +2446,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 转换成一个一维数组
 	 */
-	default String[] toStringArray() {
+	default String[] toStrArray() {
 		return this.stream().map(g -> g._2() == null ? "" : g._2().toString()).toArray(String[]::new);
 	}
 
@@ -6498,6 +6399,16 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 返回columnName位置的列元素集合
+	 * 
+	 * @param columnName 列名：这是对lla的别名
+	 * @return columnName 所标识的列(key)的元素集合
+	 */
+	default List<Object> column(final String key) {
+		return this.lla(key, e -> e);
+	}
+
+	/**
 	 * 返回colName的列元素集合：强制转换为targetClass 的类型 <br>
 	 * 
 	 * 类型采用强制转换，因此可能会出现不同列之间的类型不一致的风险，使用时候需要注意。这一部分需要在编程中给注意与防范。<br>
@@ -9954,7 +9865,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 二维数组
 	 */
 	static String[][] toStringArray(final List<IRecord> rr) {
-		return rr.stream().map(IRecord::toStringArray).toArray(String[][]::new);
+		return rr.stream().map(IRecord::toStrArray).toArray(String[][]::new);
 	}
 
 	/**
