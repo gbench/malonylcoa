@@ -6229,7 +6229,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
 	default <T, U> List<U> cols(final Function<List<T>, U> tt2u) {
-		return this.variables(tt2u).collect(Collectors.toList());
+		return this.colS(tt2u).collect(Collectors.toList());
 	}
 
 	/**
@@ -6250,7 +6250,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 列集合每个列族使一个IRecord类型的流
 	 */
 	@SuppressWarnings("unchecked")
-	default <T, U> Stream<U> variables(final Function<List<T>, U> tt2u) {
+	default <T, U> Stream<U> colS(final Function<List<T>, U> tt2u) {
 		return this.keys().stream().map(name -> (tt2u.apply((List<T>) this.lla(name, t -> (T) t))));
 	}
 
@@ -6259,8 +6259,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
-	default Stream<IRecord> variables() {
-		return this.variables(IRecord::L2REC);
+	default Stream<IRecord> colS() {
+		return this.colS(IRecord::L2REC);
 	}
 
 	/**
