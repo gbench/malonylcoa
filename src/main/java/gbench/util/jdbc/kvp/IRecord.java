@@ -802,6 +802,55 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
+	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
+	 * 类似于如下的形式 <br>
+	 * [k0:[ <br>
+	 * &nbsp; &nbsp; k1:[ <br>
+	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
+	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
+	 * 
+	 * 根据路径获取Record 数据值。<br>
+	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
+	 * 
+	 * @param <T>  节点的数据类型
+	 * @param <U>  转换结果的数据类型
+	 * @param keys 键名序列：键名额层级结构
+	 * @param t2u  对 record 结果进行转换的函数
+	 * @return U类型数据值。
+	 */
+	@SuppressWarnings("unchecked")
+	default <T, U> Optional<U> pgetopt(final List<String> keys, final Function<T, U> t2u) {
+		final var kk = keys.stream().filter(e -> !e.matches("[\\s/\\\\]*")).collect(Collectors.toList());//
+		final var size = kk.size();
+		if (size < 1) {
+			return Optional.ofNullable(t2u.apply((T) this));//
+		}
+		final var obj = this.get(kk.get(0));
+		if (kk.size() == 1) {
+			return Optional.ofNullable(t2u.apply((T) obj));
+		}
+
+		IRecord node = null;// 中间节点数据
+		try {
+			if (obj instanceof IRecord) {// IRecord 直接转换
+				node = (IRecord) obj;
+			} else if (obj instanceof Map) {// 对Map类型 需要通过IRecord 给予简介转换。
+				final var mm = (Map<String, Object>) obj;
+				node = REC(mm);
+			} else {
+				return Optional.empty();
+			}
+		} catch (Exception e) {// 类型转换出现了异常
+			e.printStackTrace();
+			return Optional.empty();
+		}
+
+		// 步进一级继续按路径检索数据。
+		return node.pgetopt(kk.subList(1, size), t2u);
+	}
+
+	/**
 	 * 根据路径获取Record 数据值。<br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
@@ -928,55 +977,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <T, U> U pathget(final List<String> keys, final Function<T, U> t2u) {
 		return this.pgetopt(keys, t2u).orElse(null);
-	}
-
-	/**
-	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
-	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
-	 * 类似于如下的形式 <br>
-	 * [k0:[ <br>
-	 * &nbsp; &nbsp; k1:[ <br>
-	 * &nbsp;&nbsp; &nbsp;&nbsp; k2:value]]] <br>
-	 * pathget([k0,k1,k2],identity) 返回 value 数值 <br>
-	 * 
-	 * 根据路径获取Record 数据值。<br>
-	 * 依据keys:k0/k1/k2/... 按层次访问元素数据。<br>
-	 * 
-	 * @param <T>  节点的数据类型
-	 * @param <U>  转换结果的数据类型
-	 * @param keys 键名序列：键名额层级结构
-	 * @param t2u  对 record 结果进行转换的函数
-	 * @return U类型数据值。
-	 */
-	@SuppressWarnings("unchecked")
-	default <T, U> Optional<U> pgetopt(final List<String> keys, final Function<T, U> t2u) {
-		final var kk = keys.stream().filter(e -> !e.matches("[\\s/\\\\]*")).collect(Collectors.toList());//
-		final var size = kk.size();
-		if (size < 1) {
-			return Optional.ofNullable(t2u.apply((T) this));//
-		}
-		final var obj = this.get(kk.get(0));
-		if (kk.size() == 1) {
-			return Optional.ofNullable(t2u.apply((T) obj));
-		}
-
-		IRecord node = null;// 中间节点数据
-		try {
-			if (obj instanceof IRecord) {// IRecord 直接转换
-				node = (IRecord) obj;
-			} else if (obj instanceof Map) {// 对Map类型 需要通过IRecord 给予简介转换。
-				final var mm = (Map<String, Object>) obj;
-				node = REC(mm);
-			} else {
-				return Optional.empty();
-			}
-		} catch (Exception e) {// 类型转换出现了异常
-			e.printStackTrace();
-			return Optional.empty();
-		}
-
-		// 步进一级继续按路径检索数据。
-		return node.pgetopt(kk.subList(1, size), t2u);
 	}
 
 	/**
@@ -6058,6 +6058,19 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 第rowid 所在的行记录
+	 * 
+	 * @param rowid 行号索引：从0开始
+	 * @return rowid所标记行记录
+	 */
+	default IRecord row(final int rowid) {
+		final var rows = this.rows((name, e) -> e, this.keys());
+		if (rows == null || rows.size() < 1 || rows.size() <= rowid)
+			return null;
+		return rows.get(rowid);
+	}
+
+	/**
 	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数<br>
 	 * 
@@ -6095,19 +6108,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 第rowid 所在的行记录
-	 * 
-	 * @param rowid 行号索引：从0开始
-	 * @return rowid所标记行记录
-	 */
-	default IRecord row(final int rowid) {
-		final var rows = this.rows((name, e) -> e, this.keys());
-		if (rows == null || rows.size() < 1 || rows.size() <= rowid)
-			return null;
-		return rows.get(rowid);
-	}
-
-	/**
 	 * 返回idx 位置的列元素集合
 	 * 
 	 * @param idx 列名索引，从0开始
@@ -6123,7 +6123,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T> 列的元数据类型
 	 * @param <U> 返回值变换后的列的类型
 	 * @param idx 列名索引，从0开始
-	 * @param t2u 列值转换函数:t->u
+	 * @param t2u 列值转换函数:t-&gt;u
 	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
 	 */
 	default <T, U> List<U> column(final Integer idx, final Function<T, U> t2u) {
@@ -6141,32 +6141,32 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 返回colName的列元素集合：强制转换为targetClass 的类型 <br>
+	 * 返回key的列元素集合：强制转换为targetClass 的类型 <br>
 	 * 
 	 * 类型采用强制转换，因此可能会出现不同列之间的类型不一致的风险，使用时候需要注意。这一部分需要在编程中给注意与防范。<br>
 	 * 类库设置不予考虑。<br>
 	 * 
 	 * @param <T>         列的元数据类型
-	 * @param colName     列名
+	 * @param key         列名
 	 * @param targetClass 列的值类型类
 	 * @return idx 所标识的列(key)的元素集合(强制姐转换为T类型)
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> List<T> column(final String colName, final Class<T> targetClass) {
-		return this.lla(colName, e -> (T) e);
+	default <T> List<T> column(final String key, final Class<T> targetClass) {
+		return this.lla(key, e -> (T) e);
 	}
 
 	/**
 	 * 提取columnName 所在的列数据列表
 	 * 
-	 * @param <T>        列的元数据类型
-	 * @param <U>        返回值变换后的列的类型
-	 * @param columnName 列名：这是对lla的别名
-	 * @param t2u        列值转换函数 :t->u
-	 * @return columnName 所标识的列(key)的经过t2u变换后的元素集合
+	 * @param <T> 列的元数据类型
+	 * @param <U> 返回值变换后的列的类型
+	 * @param key 列名：这是对lla的别名
+	 * @param t2u 列值转换函数 t-&gt;u
+	 * @return key 所标识的列(key)的经过t2u变换后的元素集合
 	 */
-	default <T, U> List<U> column(final String columnName, final Function<T, U> t2u) {
-		return this.lla(columnName, t2u);
+	default <T, U> List<U> column(final String key, final Function<T, U> t2u) {
+		return this.lla(key, t2u);
 	}
 
 	/**
@@ -6190,7 +6190,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T> 列的元数据类型
 	 * @param <U> 返回值变换后的列的类型
-	 * @param t2u 列值转换函数:t->u
+	 * @param t2u 列值转换函数:t-&gt;u
 	 * @return 列集合每个列族使一个U类型的列表
 	 */
 	default <T, U> List<List<U>> columns(final Function<T, U> t2u) {
@@ -6218,6 +6218,33 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default List<List<Object>> columns() {
 		return this.keys().stream().map(name -> this.lla(name, e -> e)).collect(Collectors.toList());
+	}
+
+	/**
+	 * 返回key列名的列数据:列表
+	 * 
+	 * @param <T>  列的元数据类型
+	 * @param <U>  返回值变换后的列的类型
+	 * @param key  列名索引，从0开始
+	 * @param tt2u 列值转换函数:t-&gt;u
+	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
+	 */
+	default <T, U> U col(final String key, final Function<? super List<T>, U> tt2u) {
+		final List<T> tt = this.lla(key, (T e) -> e);
+		return tt2u.apply(tt);
+	}
+
+	/**
+	 * 返回idx列索引位置的列数据:列表
+	 * 
+	 * @param <T>  列的元数据类型
+	 * @param <U>  返回值变换后的列的类型
+	 * @param idx  列名索引，从0开始
+	 * @param tt2u 列值转换函数:t-&gt;u
+	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
+	 */
+	default <T, U> U col(final Integer idx, final Function<? super List<T>, U> tt2u) {
+		return this.col(this.idx2key(idx), tt2u);
 	}
 
 	/**
