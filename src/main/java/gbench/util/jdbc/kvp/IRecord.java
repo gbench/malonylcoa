@@ -1908,12 +1908,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *
 	 * @param <T> 字段key所以对应的列表数据的元素的类型
 	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
-	 * @param key 列表类型的字段的名称
+	 * @param idx 列表类型的字段的索引号从0开始
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
 	 */
-	default <T, U> Stream<U> llS(final String key, final Function<T, U> t2u) {
-		return this.lls(key, t2u).stream();
+	default <T, U> List<U> lls(final int idx, final Function<T, U> t2u) {
+		return llapply(idx2key(idx), t2u);
 	}
 
 	/**
@@ -1922,12 +1922,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *
 	 * @param <T> 字段key所以对应的列表数据的元素的类型
 	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
-	 * @param idx 列表类型的字段的索引号从0开始
+	 * @param key 列表类型的字段的名称
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
 	 */
-	default <T, U> List<U> lls(final int idx, final Function<T, U> t2u) {
-		return llapply(idx2key(idx), t2u);
+	default <T, U> Stream<U> llS(final String key, final Function<T, U> t2u) {
+		return this.lls(key, t2u).stream();
 	}
 
 	/**
