@@ -2691,14 +2691,13 @@ public class Jdbcs {
 					final var id = line.i4("id");
 					if (id != null) {
 						line.add(line.remove("id")).add("id", id);
-						;
 					} // if
 				} // if
 				final var ctsql = ctsql(tblname, line);
-
-				sess.sql2execute(ctsql);
-				for (final var ln : data.rows()) {
-					sess.sql2execute(insql(tblname, ln));
+				sess.sql2execute(String.format("drop table if exists %s", tblname)); // 删除数据表
+				sess.sql2execute(ctsql); // 创建数据表
+				for (final var row : data.rows()) {
+					sess.sql2execute(insql(tblname, row));
 				}
 			} // for
 		};
