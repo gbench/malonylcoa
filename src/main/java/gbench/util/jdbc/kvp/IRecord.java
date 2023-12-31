@@ -1692,8 +1692,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 给予扩展乘一个只有一个元素的List<br>
 	 * 不存在的key,不予处理返回null<br>
 	 * 
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
 	 * @param key 列表类型的字段名
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构,List 的复制品，注意不是元列表引用
@@ -1815,7 +1815,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <U>    字段key所以对应的列表数据的元素的类型
+	 * @param <U>    字段key所对应的列表数据的元素的类型
 	 * @param key    列表类型的字段名
 	 * @param uclass 列表元素类型, 当 uclass 为 IRecord.class 且 值为 Sttring 的时候 会采用
 	 *               Json.json2list(value, IRecord.class); 进行处理
@@ -1850,7 +1850,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <U>    字段key所以对应的列表数据的元素的类型
+	 * @param <U>    字段key所对应的列表数据的元素的类型
 	 * @param idx    列表类型的字段的索引号,从0开始
 	 * @param uclass 列表元素类型
 	 * @return 以U数元素类型的列表结构
@@ -1864,8 +1864,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
 	 * @param key 列表类型的字段名
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
@@ -1878,8 +1878,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
 	 * @param idx 列表类型的字段的索引号从0开始
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
@@ -1892,8 +1892,33 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param <U> 字段key所对应的列表数据的元素的类型
+	 * @param key 列表类型的字段的名称
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	@SuppressWarnings("unchecked")
+	default <U> List<U> lls(final String key) {
+		return llapply(key, e -> (U) e);
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
+	 * @param idx 列表类型的字段的索引号从0开始
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <U> List<U> lls(final int idx) {
+		return lls(idx2key(idx));
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
 	 * @param key 列表类型的字段的名称
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
@@ -1906,8 +1931,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
 	 * @param idx 列表类型的字段的索引号从0开始
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
@@ -1920,8 +1945,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
 	 * @param key 列表类型的字段的名称
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
@@ -1934,14 +1959,39 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
 	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
 	 *
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
 	 * @param idx 列表类型的字段的索引号从0开始
 	 * @param t2u 对key字段的元素数据进行变换的结构
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	default <T, U> Stream<U> llS(final int idx, final Function<T, U> t2u) {
 		return this.lls(idx, t2u).stream();
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <U> 字段key所对应的列表数据的元素的类型
+	 * @param key 列表类型的字段的名称
+	 * @return 以U类型为元素类型的流结构
+	 */
+	@SuppressWarnings("unchecked")
+	default <U> Stream<U> llS(final String key) {
+		return llapply(key, e -> (U) e).stream();
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <U> 字段key所对应的列表数据的元素的类型T进行变换的结果
+	 * @param idx 列表类型的字段的索引号从0开始
+	 * @return 以U类型为元素类型的流结构
+	 */
+	default <U> Stream<U> llS(final int idx) {
+		return llS(idx2key(idx));
 	}
 
 	/**
