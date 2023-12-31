@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.LongNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import gbench.util.jdbc.Jdbcs;
@@ -1049,7 +1048,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		final var regex = "[/]+"; //
 		return this.pgetopt(Arrays.asList(path.split(regex)), t2u);
 	}
-	
+
 	/**
 	 * pathgetOptional 的别名 <br>
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
@@ -1070,7 +1069,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <U> Optional<U> path2opt(final String path) {
-		return this.path2opt(path,e->(U)e);
+		return this.path2opt(path, e -> (U) e);
 	}
 
 	/**
@@ -1947,107 +1946,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
-	 * 
-	 * @param <U>    列表元素类型
-	 * @param key    键名
-	 * @param uclass 流的元素类型
-	 */
-	default <U> Stream<U> ssa(final String key, final Class<U> uclass) {
-		return lla(key, uclass).stream();
-	}
-
-	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
-	 * 
-	 * @param <U>    列表元素类型
-	 * @param idx    键名索引 从0开始
-	 * @param uclass 流的元素类型
-	 */
-	default <U> Stream<U> ssa(final int idx, final Class<U> uclass) {
-		return lla(idx, uclass).stream();
-	}
-
-	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
-	 * 
-	 * @param key 键名
-	 */
-	default Stream<IRecord> ssrec(final String key) {
-		return lla(key, IRecord.class).stream();
-	}
-
-	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
-	 * 
-	 * @param idx 键名索引 从0开始
-	 */
-	default Stream<IRecord> ssrec(final int idx) {
-		return lla(idx, IRecord.class).stream();
-	}
-
-	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理： <br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
-	 * T 为 objectNode 的特例 <br>
-	 * 
-	 * @param <T> 字段key所以对应的列表数据的元素的类型
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
-	 * @param key 列表类型的字段名称
-	 * @param n2u 对key字段的元素数据进行变换的结构
-	 * @return 以U类型为元素类型的列表结构
-	 */
-	default <T, U> List<U> nnapply(final String key, final Function<ObjectNode, U> n2u) {
-		return this.llapply(key, (ObjectNode o) -> o).stream().map(n2u).collect(Collectors.toList());
-	}
-
-	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶<br>
-	 * T 为 objectNode 的特例<br>
-	 * 
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
-	 * @param idx 列表类型的字段的索引号从0开始
-	 * @param n2u 对key字段的元素数据进行变换的结构
-	 * @return 以U类型为元素类型的列表结构
-	 */
-	default <T, U> List<U> nnapply(final int idx, final Function<ObjectNode, U> n2u) {
-		return this.llapply(idx2key(idx), (ObjectNode o) -> o).stream().map(n2u).collect(Collectors.toList());
-	}
-
-	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶<br>
-	 * T 为 objectNode 的特例<br>
-	 * 
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
-	 * @param key 列表类型的字段名称
-	 * @param n2u 对key字段的元素数据进行变换的结构
-	 * @return 以U数元素类型的列表结构
-	 */
-	default <T, U> List<U> nna(final String key, final Function<ObjectNode, U> n2u) {
-		return nnapply(key, n2u);
-	}
-
-	/**
-	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
-	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶<br>
-	 * T 为 objectNode 的特例<br>
-	 * 
-	 * @param <U> 字段key所以对应的列表数据的元素的类型T进行变换的结果
-	 * @param idx 列表类型的字段的索引号从0开始
-	 * @param n2u 对key字段的元素数据进行变换的结构
-	 * @return 以U类型为元素类型的列表结构
-	 */
-	default <T, U> List<U> nna(final int idx, final Function<ObjectNode, U> n2u) {
-		return nnapply(idx2key(idx), n2u);
-	}
-
-	/**
 	 * 是否含有指定索引的字段名．
 	 * 
 	 * @param idx 索引
@@ -2613,21 +2511,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把IRecord 视为一个 key-value的序列 <br>
 	 * 提取指定键值序列 拼装成一个键值列表
 	 * 
-	 * @return 返回的 IRecord 结构为 key:kkk,value:vvv
-	 */
-	default List<IRecord> kvlist() {
-		return kvlist((String[]) null);
-	}
-
-	/**
-	 * 把IRecord 视为一个 key-value的序列 <br>
-	 * 提取指定键值序列 拼装成一个键值列表
-	 * 
 	 * @param keys 用逗号分割的键名序列
 	 * @return 返回的 IRecord 结构为 key:kkk,value:vvv
 	 */
-	default List<IRecord> kvlist(final String keys) {
-		return LIST(kvstream(keys));
+	default List<IRecord> kvs(final String keys) {
+		return LIST(kvS(keys));
 	}
 
 	/**
@@ -2637,15 +2525,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keys 用逗号分割的键名序列
 	 * @return 返回的IRecord 结构为 key:kkk,value:vvv
 	 */
-	default List<IRecord> kvlist(final String[] keys) {
-		return LIST(kvstream(keys));
+	default List<IRecord> kvs(final String[] keys) {
+		return LIST(kvS(keys));
 	}
 
 	/**
 	 * 把IRecord 视为一个(key,value) 键值对kvp而的序列, <br>
 	 * 为 每个kvp构造一个IRecord(key:kkk,value:vvv)<br>
 	 * 然后再把这这种IRecord化的kvp给予流序列化。之所以采用IRecord来 转换KVP是为了利用IRecord缩影提供的方法。<br>
-	 * 着对于key,value是复杂数据类型的时候非常有用，例如：当key是一个路径的层级信息,value是一个操作语义的数据对象。kvstream 后<br>
+	 * 着对于key,value是复杂数据类型的时候非常有用，例如：当key是一个路径的层级信息,value是一个操作语义的数据对象。kvS 后<br>
 	 * 就会得到一个 (key:路径,value:对于集合) 的record. ("张三 /苹果",REC("name","卖","quality","5"))
 	 * 就得到了<br>
 	 * 一个 张三够吗5个苹果的 数据指令。进而可以通过IRecord来提取这些数据内容。比如:<br>
@@ -2656,8 +2544,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 返回的 IRecord 结构为 key:kkk,value:vvv，即一个 IRecord 格式的kv键值对儿记录流
 	 */
-	default Stream<IRecord> kvstream() {
-		return kvstream((String) null);
+	default Stream<IRecord> kvS() {
+		return kvS((String) null);
 	}
 
 	/**
@@ -2667,7 +2555,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keys 用逗号分割的键名序列:用于过滤返回的key,keys 为null不进行任何过滤，返回全部
 	 * @return 返回的 IRecord 结构为 key:kkk,value:vvv
 	 */
-	default Stream<IRecord> kvstream(final String keys) {
+	default Stream<IRecord> kvS(final String keys) {
 		final String kk[] = keys == null ? null : keys.split("[\\s,]+");
 		return this.filter(kk).stream().map(g -> SimpleRecord.REC2("key", g._1(), "value", g._2()));
 	}
@@ -2679,7 +2567,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keys 用逗号分割的键名序列:用于过滤返回的key,keys 为null不进行任何过滤，返回全部
 	 * @return 返回的 IRecord 结构为 key:kkk,value:vvv
 	 */
-	default Stream<IRecord> kvstream(final String keys[]) {
+	default Stream<IRecord> kvS(final String keys[]) {
 		return this.filter(keys).stream().map(g -> SimpleRecord.REC2("key", g._1(), "value", g._2()));
 	}
 
@@ -4387,118 +4275,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 把当前record(key-value)的值拼装成一个对象列表{obj0,obj1,obj2,...} <br>
-	 * 相当于 Arrays.asList(this.toObjArray()) <br>
-	 * 
-	 * @return {obj0,obj1,obj2,...}
-	 */
-	default List<Object> oo() {
-		return Arrays.asList(this.toObjArray());
-	}
-
-	/**
-	 * 把当前record的index的值转装成一个对象列表{obj0,obj1,obj2,...} <br>
-	 * 
-	 * @param index 字段索引从0开始
-	 * @return {obj0,obj1,obj2,...}
-	 */
-	default List<Object> oo(final int index) {
-		return lls(index, identity);
-	}
-
-	/**
-	 * 把当前record的index的值转装成一个对象列表{obj0,obj1,obj2,...} <br>
-	 * 
-	 * @param index         字段索引从0开始
-	 * @param default_value 默认值：当index不存在的时候
-	 * @return {obj0,obj1,obj2,...}
-	 */
-	default List<Object> oo(final int index, final List<Object> default_value) {
-		final var oo = lls(index, identity);
-		return oo == null ? default_value : oo;
-	}
-
-	/**
-	 * 把当前record的key的值转装成一个对象列表{obj0,obj1,obj2,...} <br>
-	 * 
-	 * @param key 字段名
-	 * @return {obj0,obj1,obj2,...}
-	 */
-	default List<Object> oo(final String key) {
-		return llapply(key, identity);
-	}
-
-	/**
-	 * 把当前record的key的值转装成一个对象列表{obj0,obj1,obj2,...} <br>
-	 * 
-	 * @param key           字段名
-	 * @param default_value 默认值：当key不存在的时候
-	 * @return {obj0,obj1,obj2,...}
-	 */
-	default List<Object> oo(final String key, final List<Object> default_value) {
-		final var oo = llapply(key, identity);
-		return oo == null ? default_value : oo;
-	}
-
-	/**
-	 * 把当前record{(k0,v0),(k1,v1),(k2,v2)}的 值集合 拼装成一个字符串列表{v0,v1,v2,...} <br>
-	 * 空值 null 被视作 "" <br>
-	 * 
-	 * @return {v0,v1,v2,...}
-	 */
-	default List<String> ss() {
-		return Arrays.stream(this.toObjArray()).map(e -> e + "").collect(Collectors.toList());
-	}
-
-	/**
-	 * 把当前record{(k0,v0),(k1,v1),(k2,v2)}的 值集合 拼装成一个字符串列表{v0,v1,v2,...} <br>
-	 * 空值 null 被视作 "" <br>
-	 * 
-	 * @param key 字段名 <br>
-	 * @return {str0,str1,str2,...}
-	 */
-	default List<String> ss(final String key) {
-		return llapply(key, identity(String.class));
-	}
-
-	/**
-	 * 把当前record{(k0,v0),(k1,v1),(k2,v2)}的 值集合 拼装成一个字符串列表{v0,v1,v2,...} <br>
-	 * 空值 null 被视作 "" <br>
-	 * 
-	 * @param key           字段名
-	 * @param default_value 默认值：当key不存在的时候
-	 * @return {str0,str1,str2,...}
-	 */
-	default List<String> ss(final String key, final List<String> default_value) {
-		final var ss = llapply(key, identity(String.class));
-		return ss == null ? default_value : ss;
-	}
-
-	/**
-	 * 强制类型转换方法 不保证安全 <br>
-	 * 把当前record的key的值转装成一个字符串啊列表{rec0,rec1,rec2,...} <br>
-	 * 
-	 * @param key 字段名
-	 * @return {rec0,rec1,rec2,...}
-	 */
-	default List<IRecord> rr(final String key) {
-		return llapply(key, identity(IRecord.class));
-	}
-
-	/**
-	 * 强制类型转换方法 不保证安全 <br>
-	 * 把当前record的key的值转装成一个字符串啊列表{rec0,rec1,rec2,...}<br>
-	 * 
-	 * @param key           字段名
-	 * @param default_value 默认值：当key不存在的时候
-	 * @return {rec0,rec1,rec2,...}
-	 */
-	default List<IRecord> rr(final String key, final List<IRecord> default_value) {
-		final var rr = llapply(key, identity(IRecord.class));
-		return rr == null ? default_value : rr;
-	}
-
-	/**
 	 * 把key列转换成Map结构 <br>
 	 * 当且仅当 key 所代表的数据是一个Map&lt;String,Object&gt; 的实例返回一个 key 的value对象。<br>
 	 * 否则 生成一个 Map的复制品(clone) <br>
@@ -4581,7 +4357,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 修改列名：根据具体实现类的不同 同名的key 可能会被覆盖。如果需要用重名的key请tagkvs序列
+	 * 修改列名：根据具体实现类的不同 同名的key 可能会被覆盖。如果需要用重名的key请tags序列
 	 * 
 	 * @param keymapper 改名
 	 * @return IRecord
@@ -4596,7 +4372,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key2tag 改名函数：把键名改成指定的标号
 	 * @return SimpleRecord 的Record 可以存在多个同名的键名。即tag
 	 */
-	default IRecord tagkvs(final Function<String, String> key2tag) {
+	default IRecord tags(final Function<String, String> key2tag) {
 		final var rec = new SimpleRecord();
 
 		this.kvs().forEach(kv -> {
@@ -4614,7 +4390,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param idx2tag 改名函数
 	 * @return SimpleRecord
 	 */
-	default IRecord tagkvs_i(final Function<Integer, String> idx2tag) {
+	default IRecord tagsi(final Function<Integer, String> idx2tag) {
 		final var rec = new SimpleRecord();
 		final var ai = new AtomicInteger(0);
 
@@ -4914,7 +4690,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keymapper 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
 	 * @return 键名变换后键值对儿({T ,Object)}
 	 */
-	default <T> IRecord rename(final Function<String, T> keymapper) {
+	default <T> IRecord alias(final Function<String, T> keymapper) {
 		return REC(this.applyOnkeys(keymapper));
 	}
 
@@ -4926,7 +4702,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keymapper 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
 	 * @return IRecord
 	 */
-	default <T> Map<T, Object> renamei(final Function<Integer, T> keymapper) {
+	default <T> Map<T, Object> aliasi(final Function<Integer, T> keymapper) {
 		return this.applyOnkeys(k -> keymapper.apply(this.key2idx(k)));
 	}
 
@@ -4937,7 +4713,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param kk 用kk替换键名数组,对于 i>=kk.length的时候,键名的时候 的返回键名 为null, 当kk 为null 的时候返回本身。
 	 * @return 变换键名后的IRecord
 	 */
-	default IRecord rename(final String kk[]) {
+	default IRecord alias(final String kk[]) {
 		return REC(this.aoks2(kk));
 	}
 
@@ -4948,7 +4724,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param kk 用kk替换键名数组,对于 i>=kk.length的时候,键名的时候 的返回键名 为null, 当kk 为null 的时候返回本身。
 	 * @return 变换键名后的IRecord
 	 */
-	default IRecord rename(final List<String> kk) {
+	default IRecord alias(final List<String> kk) {
 		return keys(kk);
 	}
 
@@ -4960,7 +4736,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *             i>=kk.length的时候,键名的时候 的返回键名 为null, 当kk 为null 的时候返回本身。
 	 * @return 变换键名后的IRecord
 	 */
-	default IRecord rename(final String keys) {
+	default IRecord alias(final String keys) {
 		return keys(keys);
 	}
 
@@ -5083,7 +4859,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 需要进行分解的字段名：一般为json结构的列
 	 * @return key 所对应对应的值得IRecord数据。
 	 */
-	default IRecord map2rec(final String key) {
+	default IRecord rec(final String key) {
 		final Object value = this.get(key);// 提取值数据
 		if (value == null) {
 			return null;
@@ -5100,27 +4876,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param idx 键名索引从0开始
 	 * @return idx 所对应对应的值得IRecord数据。
 	 */
-	default IRecord map2rec(final int idx) {
-		final String key = this.idx2key(idx);
-		return key == null ? null : map2rec(key);
-	}
-
-	/**
-	 * 把value 视作一个IRecord或是可以转换成record的数据，并给予转换成IRecord
-	 * 
-	 * @param key 需要进行分解的字段名：一般为键值是一个json结构的key。
-	 * @return key被展开后的 kv集合(IRecord),IRecord 的本意就是一组 键值集合，
-	 */
-	default IRecord rec(final String key) {
-		return map2rec(key);
-	}
-
-	/**
-	 * 把key列转换成逻是时间值
-	 * 
-	 * @param idx 键名索引从0开始
-	 * @return idx 所对应对应的值得IRecord数据。
-	 */
 	default IRecord rec(final int idx) {
 		final String key = this.idx2key(idx);
 		return key == null ? null : rec(key);
@@ -5132,7 +4887,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 需要进行分解的字段名：一般为json结构的列
 	 * @return IRecord 的列表
 	 */
-	default List<IRecord> map2recs(final String key) {
+	default List<IRecord> recs(final String key) {
 		return this.lla(key, IRecord.class);
 	}
 
@@ -5142,54 +4897,32 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param idx 索引列表 从0开始
 	 * @return IRecord 的列表
 	 */
-	default List<IRecord> map2recs(final int idx) {
-		final String key = this.idx2key(idx);
-		return key == null ? null : map2recs(key);
-	}
-
-	/**
-	 * 把index列转换成逻是recs的列表 ：[rec] <br>
-	 * map2recs(别名);
-	 * 
-	 * @param idx 列索引 从0开始
-	 * @return IRecord 的列表 [rec]
-	 */
 	default List<IRecord> recs(final int idx) {
-		return map2recs(idx);
+		final String key = this.idx2key(idx);
+		return key == null ? null : recs(key);
 	}
 
 	/**
 	 * 把key列转换成IRecord的列表 ：[rec] <br>
-	 * map2recs(别名) <br>
+	 * recs(别名) <br>
 	 * 
 	 * @param key 列名
-	 * @return IRecord 的列表 [rec]
+	 * @return IRecord 的流 [rec]
 	 */
-	default List<IRecord> recs(final String key) {
-		return map2recs(key);
+	default Stream<IRecord> recS(final String key) {
+		final var ll = recs(key);
+		return ll == null ? null : ll.stream();
 	}
 
 	/**
 	 * 把index列转换成逻是recs的列表 ：[rec] <br>
-	 * map2recs(别名);
+	 * recs(别名);
 	 * 
 	 * @param idx 列索引 从0开始
 	 * @return IRecord 的流 [rec]
 	 */
 	default Stream<IRecord> recS(final int idx) {
 		return this.recS(this.idx2key(idx));
-	}
-
-	/**
-	 * 把key列转换成IRecord的列表 ：[rec] <br>
-	 * map2recs(别名) <br>
-	 * 
-	 * @param key 列名
-	 * @return IRecord 的流 [rec]
-	 */
-	default Stream<IRecord> recS(final String key) {
-		final var ll = map2recs(key);
-		return ll == null ? null : ll.stream();
 	}
 
 	/**
@@ -6341,7 +6074,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 生成一个hashmap 的集合
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> List<Map<String, T>> rows2(final Class<T> clazz) {
+	default <T> List<Map<String, T>> lines(final Class<T> clazz) {
 		return (List<Map<String, T>>) (Object) Collections.singletonList(this.toMap());
 	}
 
@@ -6358,7 +6091,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 生成一个hashmap 的集合<br>
 	 */
-	default List<Map<String, Object>> rows2() {
+	default List<Map<String, Object>> lines() {
 		return Collections.singletonList(this.toMap());
 	}
 
@@ -6496,8 +6229,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param tt2u 列值转换函数:tt-&gt;u
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
-	default <T, U> List<U> columnL(final Function<List<T>, U> tt2u) {
-		return this.columns2(tt2u).collect(Collectors.toList());
+	default <T, U> List<U> cols(final Function<List<T>, U> tt2u) {
+		return this.variables(tt2u).collect(Collectors.toList());
 	}
 
 	/**
@@ -6505,8 +6238,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
-	default List<IRecord> columnL() {
-		return this.columnL(IRecord::L2REC);
+	default List<IRecord> cols() {
+		return this.cols(IRecord::L2REC);
 	}
 
 	/**
@@ -6518,7 +6251,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 列集合每个列族使一个IRecord类型的流
 	 */
 	@SuppressWarnings("unchecked")
-	default <T, U> Stream<U> columns2(final Function<List<T>, U> tt2u) {
+	default <T, U> Stream<U> variables(final Function<List<T>, U> tt2u) {
 		return this.keys().stream().map(name -> (tt2u.apply((List<T>) this.lla(name, t -> (T) t))));
 	}
 
@@ -6527,8 +6260,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
-	default Stream<IRecord> columns2() {
-		return this.columns2(IRecord::L2REC);
+	default Stream<IRecord> variables() {
+		return this.variables(IRecord::L2REC);
 	}
 
 	/**
@@ -8871,7 +8604,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keys 字段键名 如果为null, 采用recs 的一个元素的键名集合。
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord ROWS2COLS(final List<IRecord> recs, final List<String> keys) {
+	static IRecord recordsCOLS(final List<IRecord> recs, final List<String> keys) {
 		if (recs == null || recs.size() < 1)
 			return REC();
 		final var first = recs.stream().filter(Objects::nonNull).findFirst().orElse(null);
@@ -8900,8 +8633,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param recs 行形式的Record流
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord ROWS2COLS(List<IRecord> recs) {
-		return ROWS2COLS(recs, null);
+	static IRecord recordsCOLS(List<IRecord> recs) {
+		return recordsCOLS(recs, null);
 	}
 
 	/**
@@ -8911,8 +8644,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keys 字段键名 如果为null, 采用recs 的一个元素的键名集合。
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord ROWS2COLS(final Stream<IRecord> recs, final List<String> keys) {
-		return ROWS2COLS(recs.collect(Collectors.toList()), null);
+	static IRecord recordsCOLS(final Stream<IRecord> recs, final List<String> keys) {
+		return recordsCOLS(recs.collect(Collectors.toList()), null);
 	}
 
 	/**
@@ -8921,8 +8654,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param recs 行形式的Record流
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord ROWS2COLS(Stream<IRecord> recs) {
-		return ROWS2COLS(recs, null);
+	static IRecord recordsCOLS(Stream<IRecord> recs) {
+		return recordsCOLS(recs, null);
 	}
 
 	/**
@@ -8938,13 +8671,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * ROWS2COLS 的别名 行形式转换成列形式。即每一元素为列向量的IRecord
+	 * recordsCOLS 的别名 行形式转换成列形式。即每一元素为列向量的IRecord
 	 * 
 	 * @param recs 行形式的Record集合
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
 	static IRecord R2C(List<IRecord> recs) {
-		return ROWS2COLS(recs, null);
+		return recordsCOLS(recs, null);
 	}
 
 	/**
@@ -10752,7 +10485,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		@SuppressWarnings("unchecked")
 		final Function<IRecord, U> mapper = r2u == null ? e -> (U) e : r2u;
 		final Collector<IRecord, List<IRecord>, List<IRecord>> clc = llclc(); // 获取链表归集器
-		return Collector.of(clc.supplier(), clc.accumulator(), clc.combiner(), compose_f(mapper, IRecord::ROWS2COLS));
+		return Collector.of(clc.supplier(), clc.accumulator(), clc.combiner(), compose_f(mapper, IRecord::recordsCOLS));
 	}
 
 	/**

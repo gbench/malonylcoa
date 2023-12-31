@@ -188,16 +188,16 @@ public class JdbcMallTest {
 				// 依次处理t_order的各个行项目
 				for (final var item : torder.path2lls("details/items", IRecord::REC)) { // 订单记账
 					final var due_date = now(); // 到期日
-					final var id = item.i4("id"); // 产品id
+					final var id = item.i4("id"); // 公司产品id
 					final var name = String.format("%s[%04d]", item.get("name"), id); // 公司产品
 					final var amount = item.dbl("amount"); // 单品金额
-					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
 					final var position = Objects.equals(entity_id, parta) ? LONG : SHORT; // 会计主体的订单头寸，甲方为长头,乙方为空头
 					final var dr_acct = acct_get.apply(position, DR); // 借方账户
 					final var cr_acct = acct_get.apply(position, CR); // 贷方账户
-					final var acctnum_format = "%s%05d"; // 会计科目的format字符串
+					final var acctnum_format = "%s%04d"; // 会计科目的format字符串
 					final var dr_acctnum = String.format(acctnum_format, dr_acct, id); // 借方账户编码
 					final var cr_acctnum = String.format(acctnum_format, cr_acct, id); // 贷方账户编码
+					final var proto = REC("journal_id", journal_id, "due_date", due_date, "amount", amount); // 数据原型
 
 					final var ids = sess.sql2execute(println(sql("t_accts").insql(// 借贷分录的数据库誊写
 							proto.derive("drcr", 1, "acctnum", dr_acctnum, "title", title_get.apply(dr_acct, name)), // 借方

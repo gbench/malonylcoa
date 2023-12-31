@@ -547,7 +547,7 @@ public class Neo4jApp {
 		 * @return 图对象本身，用以实现链式编程
 		 */
 		public Graph addVertexAttributeSet(IRecord vertices, IRecord rec) {
-			vertices.kvstream().forEach(vertex -> this.addVertexAttributeSet(vertex, rec));
+			vertices.kvS().forEach(vertex -> this.addVertexAttributeSet(vertex, rec));
 			return this;
 		}
 
