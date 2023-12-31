@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 import gbench.util.jdbc.Jdbcs;
 
 /**
- * DataFrame 数据框，(key,[v0,v1,...]) 结构的键值对集合 kvs 即值元素为集合类型的KVPs.<br>
+ * DFrame 数据框，(key,[v0,v1,...]) 结构的键值对集合 kvs 即值元素为集合类型的KVPs.<br>
  * 术语来源于R，<br>
  * 
  * @author gbench
@@ -358,6 +358,7 @@ public class DFrame extends LinkedRecord {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized <K, V> Map<K, V> cache(final String key) {
+
 		if (caches == null) {
 			caches = new ConcurrentHashMap<>();
 		}
@@ -368,6 +369,7 @@ public class DFrame extends LinkedRecord {
 	 * 缓存清空
 	 */
 	public void clear() {
+
 		if (this.caches != null) {
 			this.caches.clear();
 		} // if
@@ -388,10 +390,10 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
-	 * DataFrame 构造一个数据框对象
+	 * DFrame 构造一个数据框对象
 	 * 
 	 * @param kvps 键值序列,每个value都代表一个值列表 key0,value0,key1,value1
-	 * @return DataFrame 对象
+	 * @return DFrame 对象
 	 */
 	public static DFrame dfm(final Object... kvps) {
 
@@ -405,6 +407,7 @@ public class DFrame extends LinkedRecord {
 	 * @return DFrame
 	 */
 	public static DFrame of(final IRecord... rows) {
+
 		final var dfm = Stream.of(rows).collect(dfmclc);
 		return dfm;
 	}
@@ -417,6 +420,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 数据框归集器
 	 */
 	public static <T> Collector<T, ?, DFrame> dfmclc(final Function<T, IRecord> mapper) {
+
 		return Collector.of((Supplier<List<IRecord>>) LinkedList::new, //
 				(rows, t) -> rows.add(mapper.apply(t)), (a, b) -> { //
 					a.addAll(b);
@@ -456,4 +460,4 @@ public class DFrame extends LinkedRecord {
 	private transient List<IRecord> rowsCache = null;
 	private transient Map<String, Map<?, ?>> caches = null;
 
-} // class DataFrame
+} // class DFrame

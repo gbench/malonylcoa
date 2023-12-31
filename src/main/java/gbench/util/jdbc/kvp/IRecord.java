@@ -3111,7 +3111,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * DFrame 函数 <br>
 	 * Row collect <br>
-	 * 把IRecord视为一个DataFrame dfm,而后 把dfm转换成个一个行流，最后使用 collector进行归集。<br>
+	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流，最后使用 collector进行归集。<br>
 	 * 
 	 * @param <R>       结果类型
 	 * @param collector 行归集器
@@ -3124,7 +3124,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本） <br>
 	 * Row KVPair 的 collect <br>
-	 * 把IRecord视为一个DataFrame dfm,而后 把dfm转换成个一个行流KVPair用key_idx,value_idx标定键名与键值，最后使用
+	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用key_idx,value_idx标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * 
 	 * @param key_idx   key 索引 从0开始
@@ -3140,8 +3140,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本） <br>
 	 * Row KVPair 的 collect <br>
-	 * 把IRecord视为一个DataFrame dfm,而后
-	 * 把dfm转换成个一个行流KVPair用key_name,value_name标定键名与键值，最后使用 collector进行归集。<br>
+	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用key_name,value_name标定键名与键值，最后使用
+	 * collector进行归集。<br>
 	 * 
 	 * @param key_name   key 键名
 	 * @param value_name value 键名
@@ -3156,7 +3156,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本）<br>
 	 * Row KVPair 的 collect <br>
-	 * 把把IRecord视为一个DataFrame dfm,而后 把dfm转换成个一个行流KVPair用0,1标定键名与键值，最后使用
+	 * 把把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用0,1标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * rcollect（0,1,collector)的别名函数
 	 * 
@@ -5805,7 +5805,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/////////////////////////////////////////////////////////////////////
-	// 以下是IRecord DataFrame 类型的方法区域:所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)
+	// 以下是IRecord DFrame 类型的方法区域:所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)
 	/////////////////////////////////////////////////////////////////////
 
 	/**
@@ -5878,7 +5878,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 术语来源 pandas<br>
 	 * 返回矩阵形状<br>
 	 * 
@@ -5898,7 +5898,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -5923,7 +5923,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -5949,7 +5949,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -6004,7 +6004,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -6033,7 +6033,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -6071,7 +6071,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数<br>
 	 * 
 	 * row:Map 行记录 <br>
@@ -6091,7 +6091,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 行化操作：数据分析类 需要与DataMatrix 相结合生成 data.frame类型的 转换函数<br>
 	 * 
 	 * row:Map 行记录<br>
@@ -6397,7 +6397,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -6416,7 +6416,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * c 3 6 9 91 <br>
 	 * a 1 10 3 31 <br>
 	 * 
-	 * 按照列进行展示 对DataFrame进行初始化
+	 * 按照列进行展示 对DFrame进行初始化
 	 * 
 	 * @param key_formatter  键名内容初始化
 	 * @param cell_formatter 键值元素内容初始化
@@ -6437,7 +6437,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -6456,7 +6456,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * c 3 6 9 91 <br>
 	 * a 1 10 3 31 <br>
 	 * 
-	 * 按照列进行展示 对DataFrame进行初始化
+	 * 按照列进行展示 对DFrame进行初始化
 	 * 
 	 * @param cell_formatter 元素内容初始化
 	 * @return 格式化字符串
@@ -6466,7 +6466,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
 	 * "A",L("a","b","c"), // 第一列 <br>
@@ -6485,7 +6485,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * c 3 6 9 91 <br>
 	 * a 1 10 3 31 <br>
 	 * 
-	 * 按照列进行展示 对DataFrame进行初始化
+	 * 按照列进行展示 对DFrame进行初始化
 	 * 
 	 * @return 格式化字符串
 	 */
@@ -6494,8 +6494,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Unpivot a DataFrame from wide to long format, optionally leaving identifiers
-	 * set <br>
+	 * Unpivot a DFrame from wide to long format, optionally leaving identifiers set
+	 * <br>
 	 * 
 	 * - mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value <br>
 	 * - hh
@@ -6508,7 +6508,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param var_name   scalarName to use for the ‘variable’ column. If null use
 	 *                   ‘variable’.
 	 * @param value_name Name to use for the ‘value’ column.
-	 * @return Unpivoted DataFrame.
+	 * @return Unpivoted DFrame.
 	 */
 	default IRecord melt(final List<String> id_vars, final List<String> value_vars, final String var_name,
 			final String value_name) {
@@ -6516,9 +6516,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 术语来源于：R reshape, 接口 原型来源于 pandas Unpivot a DataFrame from wide to long
-	 * format, optionally leaving identifiers set <br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * 术语来源于：R reshape, 接口 原型来源于 pandas Unpivot a DFrame from wide to long format,
+	 * optionally leaving identifiers set <br>
 	 * 
 	 * - mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value <br>
 	 * - hh
@@ -6531,7 +6531,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *                   - var_names scalarName to use for the ‘variable’ column. If
 	 *                   null use ‘variable’. <br>
 	 *                   - value_name Name to use for the ‘value’ column. <br>
-	 * @return Unpivoted DataFrame.
+	 * @return Unpivoted DFrame.
 	 */
 	default IRecord melt(final List<String> id_vars, final List<String> value_vars) {
 
@@ -6539,9 +6539,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 术语来源于：R reshape, 接口 原型来源于 pandas Unpivot a DataFrame from wide to long
-	 * format, optionally leaving identifiers set <br>
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * 术语来源于：R reshape, 接口 原型来源于 pandas Unpivot a DFrame from wide to long format,
+	 * optionally leaving identifiers set <br>
 	 * 
 	 * @param <T>        中间结果类型: 由 mapper: (k:String,o:Object)->t:T 生成。
 	 * @param mapper     元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value:T
@@ -6553,7 +6553,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param var_name   窄长scalarName to use for the ‘variable’ column. If null use
 	 *                   ‘variable’.
 	 * @param value_name Name to use for the ‘value’ column.
-	 * @return Unpivoted DataFrame. 窄长型数据
+	 * @return Unpivoted DFrame. 窄长型数据
 	 */
 	default <T> List<IRecord> melt2recs(final BiFunction<String, Object, T> mapper, final List<String> hh,
 			final List<String> id_vars, final List<String> value_vars, final String var_name, final String value_name) {
@@ -6581,7 +6581,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * 这是把短宽型1x5的数据 给 转换成 窄长型3x4的数据的 变换方式。
 		 */
 
-		final var items = this.rows(mapper, hh).stream().flatMap( // DataFrame 的行记录名称
+		final var items = this.rows(mapper, hh).stream().flatMap( // DFrame 的行记录名称
 				wide_rec -> {// 待进行分解的短宽型数据记录
 					// 采用原型法来构架窄记录，
 					final var proto = wide_rec.filter(idvars);// 制作原型数据, 即长窄型数据的前导部分的 idvars部分的数据：前导记录
@@ -6601,11 +6601,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 一般用于内部调用 DataFrame 类型的数据方法,所谓DataFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * 一般用于内部调用 DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 术语来源于：R reshape, 接口 原型来源于 pandas
 	 * 
-	 * Unpivot a DataFrame from wide to long format, optionally leaving identifiers
-	 * set <br>
+	 * Unpivot a DFrame from wide to long format, optionally leaving identifiers set
+	 * <br>
 	 * 
 	 * @param <T>        中间结果类型: 由 mapper: (k:String,o:Object)->t:T 生成。
 	 * @param mapper     元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value:T
@@ -6617,11 +6617,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param var_name   scalarName to use for the ‘variable’ column. If null use
 	 *                   ‘variable’.
 	 * @param value_name Name to use for the ‘value’ column.
-	 * @return Unpivoted DataFrame.
+	 * @return Unpivoted DFrame.
 	 */
 	default <T> IRecord _melt(final BiFunction<String, Object, T> mapper, final List<String> hh,
 			final List<String> id_vars, final List<String> value_vars, final String var_name, final String value_name) {
-		final var dfm = REC();// 生成一个DataFrame
+		final var dfm = REC();// 生成一个DFrame
 		this.melt2recs(mapper, hh, id_vars, value_vars, var_name, value_name).forEach(item -> {
 			item.kvs().forEach(p -> dfm.computeIfAbsent(p.key(), _k -> new LinkedList<>()).add(p.value()));// item.kvs()
 		});// forEach
@@ -8686,7 +8686,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 	/**
 	 * ROWS CoLleCt 行归集器 函数<br>
-	 * 把IRecord视为一个DataFrame dfm,而后 把dfm转换成个一个行流，最后使用 collector进行归集。
+	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流，最后使用 collector进行归集。
 	 * 
 	 * @param <R>       结果类型
 	 * @param collector 行归集器
