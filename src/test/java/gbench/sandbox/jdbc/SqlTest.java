@@ -87,10 +87,15 @@ public class SqlTest {
 
 		// 数据联系
 		jdbcApp.withTransaction(sess -> {
+			final var tables = Arrays.asList("t_user,t_test".split(","));
+			for (var table : tables) { // 清除数据表
+				sess.sql2execute(String.format("drop table if exists %s", table));
+			}
 			for (var sql : Arrays.asList(ctsql1, ctsql2, insql1, insql2, upsql1, upsql2, upsql3, upsql4)) {
 				sess.sqlexecute(sql);
 			} // for
-			for (var tbl : Arrays.asList("t_user,t_test".split(","))) {
+
+			for (var tbl : tables) {
 				final var hjp = switch (tbl) { // json 字段处理器
 				case "t_user" -> h2_json_processor("address");
 				default -> null;
