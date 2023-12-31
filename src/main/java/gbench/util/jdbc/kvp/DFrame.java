@@ -395,12 +395,7 @@ public class DFrame extends LinkedRecord {
 	 */
 	public static DFrame dfm(final Object... kvps) {
 
-		final var n = kvps.length;
-		final var rec = new DFrame();
-		for (int i = 0; i < n - 1; i += 2) {
-			rec.add(kvps[i].toString(), kvps[i + 1]);
-		}
-		return rec;
+		return DFrame.of(IRecord.REC(kvps));
 	}
 
 	/**
