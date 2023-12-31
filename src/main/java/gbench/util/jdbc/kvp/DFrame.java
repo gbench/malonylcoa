@@ -14,6 +14,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import java.util.stream.Stream;
 
 import gbench.util.jdbc.Jdbcs;
 
@@ -392,7 +393,7 @@ public class DFrame extends LinkedRecord {
 	 * @param kvps 键值序列,每个value都代表一个值列表 key0,value0,key1,value1
 	 * @return DataFrame 对象
 	 */
-	public static DFrame DFM(final Object... kvps) {
+	public static DFrame dfm(final Object... kvps) {
 
 		final var n = kvps.length;
 		final var rec = new DFrame();
@@ -400,6 +401,17 @@ public class DFrame extends LinkedRecord {
 			rec.add(kvps[i].toString(), kvps[i + 1]);
 		}
 		return rec;
+	}
+
+	/**
+	 * 构建DFrame
+	 * 
+	 * @param rows 行数据
+	 * @return DFrame
+	 */
+	public static DFrame of(final IRecord... rows) {
+		final var dfm = Stream.of(rows).collect(dfmclc);
+		return dfm;
 	}
 
 	/**
