@@ -8604,7 +8604,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keys 字段键名 如果为null, 采用recs 的一个元素的键名集合。
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord recordsCOLS(final List<IRecord> recs, final List<String> keys) {
+	static IRecord ROWS2COLS(final List<IRecord> recs, final List<String> keys) {
 		if (recs == null || recs.size() < 1)
 			return REC();
 		final var first = recs.stream().filter(Objects::nonNull).findFirst().orElse(null);
@@ -8633,8 +8633,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param recs 行形式的Record流
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord recordsCOLS(List<IRecord> recs) {
-		return recordsCOLS(recs, null);
+	static IRecord ROWS2COLS(List<IRecord> recs) {
+		return ROWS2COLS(recs, null);
 	}
 
 	/**
@@ -8644,8 +8644,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param keys 字段键名 如果为null, 采用recs 的一个元素的键名集合。
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord recordsCOLS(final Stream<IRecord> recs, final List<String> keys) {
-		return recordsCOLS(recs.collect(Collectors.toList()), null);
+	static IRecord ROWS2COLS(final Stream<IRecord> recs, final List<String> keys) {
+		return ROWS2COLS(recs.collect(Collectors.toList()), null);
 	}
 
 	/**
@@ -8654,8 +8654,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param recs 行形式的Record流
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord recordsCOLS(Stream<IRecord> recs) {
-		return recordsCOLS(recs, null);
+	static IRecord ROWS2COLS(Stream<IRecord> recs) {
+		return ROWS2COLS(recs, null);
 	}
 
 	/**
@@ -8671,13 +8671,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * recordsCOLS 的别名 行形式转换成列形式。即每一元素为列向量的IRecord
+	 * ROWS2COLS 的别名 行形式转换成列形式。即每一元素为列向量的IRecord
 	 * 
 	 * @param recs 行形式的Record集合
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
 	static IRecord R2C(List<IRecord> recs) {
-		return recordsCOLS(recs, null);
+		return ROWS2COLS(recs, null);
 	}
 
 	/**
@@ -10485,7 +10485,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		@SuppressWarnings("unchecked")
 		final Function<IRecord, U> mapper = r2u == null ? e -> (U) e : r2u;
 		final Collector<IRecord, List<IRecord>, List<IRecord>> clc = llclc(); // 获取链表归集器
-		return Collector.of(clc.supplier(), clc.accumulator(), clc.combiner(), compose_f(mapper, IRecord::recordsCOLS));
+		return Collector.of(clc.supplier(), clc.accumulator(), clc.combiner(), compose_f(mapper, IRecord::ROWS2COLS));
 	}
 
 	/**
