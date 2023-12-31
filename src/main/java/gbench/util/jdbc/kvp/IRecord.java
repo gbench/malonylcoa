@@ -1064,7 +1064,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <U>  转换结果的数据类型
 	 * @param path 键名序列：键名额层级结构 , 键名分隔符的 regex "[/]+"
-	 * @param t2u  对 record 结果进行转换的函数
 	 * @return U类型数据值。
 	 */
 	@SuppressWarnings("unchecked")
@@ -6132,10 +6131,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 返回columnName位置的列元素集合
+	 * 返回key位置的列元素集合
 	 * 
-	 * @param columnName 列名：这是对lla的别名
-	 * @return columnName 所标识的列(key)的元素集合
+	 * @param key 列名：这是对lla的别名
+	 * @return key 所标识的列(key)的元素集合
 	 */
 	default List<Object> column(final String key) {
 		return this.lla(key, e -> e);
