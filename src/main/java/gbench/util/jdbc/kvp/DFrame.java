@@ -397,7 +397,7 @@ public class DFrame extends LinkedRecord {
 	 */
 	public static DFrame dfm(final Object... kvps) {
 
-		return DFrame.of(IRecord.REC(kvps));
+		return new DFrame(IRecord.REC(kvps).toMap());
 	}
 
 	/**
