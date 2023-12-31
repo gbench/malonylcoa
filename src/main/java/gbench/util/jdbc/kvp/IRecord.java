@@ -5562,6 +5562,19 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 第rowid 所在的行记录
+	 * 
+	 * @param rowid 行号索引：从0开始
+	 * @return rowid所标记行记录
+	 */
+	default IRecord row(final int rowid) {
+		final var rows = this.rows((name, e) -> e, this.keys());
+		if (rows == null || rows.size() < 1 || rows.size() <= rowid)
+			return null;
+		return rows.get(rowid);
+	}
+
+	/**
 	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
 	 * 返回行列表:<br>
 	 * final var dfm = REC( <br>
@@ -5631,40 +5644,37 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * A:c B:3 C:6 D:9 E:91 <br>
 	 * A:a B:1 C:10 D:3 E:31 <br>
 	 * 
-	 * @param <T>    结果类型 Target
-	 * @param <V>    源数据的值类型 Value
-	 * @param mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value
-	 * @param hh     列名序列,若为空则采用EXCEL格式的列名称(0:A,1:B,...),如果列表不够也采用excelname给予填充区别只不过添加了一个前缀"_"
-	 * @return 返回以hh值为列名的行列表
+	 * @param <U>    结果类型
+	 * @param mapper 变换函数 rec-&gt;u
+	 * @return 行变换的的结果u类型的流
 	 */
-	@SuppressWarnings("unchecked")
-	default <T, V> List<IRecord> rows(final BiFunction<String, V, T> mapper, final List<String> hh) {
-		final var shape = this.shape();// 提取图形结构
-		final var rows = new ArrayList<IRecord>(shape._1());// 提取行数记录行数
-		final List<String> final_hh = hh == null
-				? LIST(Stream.iterate(0, i -> i + 1).limit(shape._2()).map(Jdbcs::excelname))// 生成excel列名
-				: hh;
-		if (hh != null) {
-			Stream.iterate(hh.size(), i -> i < shape._2(), i -> i + 1).forEach(i -> final_hh.add(excelname(i)));
-		}
-		final var keys = this.keys().toArray(String[]::new);
-		for (int j = 0; j < shape._2(); j++) {// 列号
-			final var col = this.lla(keys[j], e -> e);// 提取name列
-			if (col == null) {
-				continue;
-			}
-			final var size = col.size();// 列大小
-			for (int i = 0; i < shape._1(); i++) { // 列名索引
-				if (rows.size() <= i) {
-					rows.add(REC());
-				}
-				final var row = rows.get(i);// 提取i 行的数据记录。
-				final var key = final_hh.get(j);
-				row.add(key, mapper.apply(keys[j], (V) col.get(i % size)));
-			} // for i
-		} // keys
+	default <U> Stream<U> rowS(final Function<IRecord, U> mapper) {
+		return this.rowS().map(mapper);
+	}
 
-		return rows;
+	/**
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * 返回行列表:<br>
+	 * final var dfm = REC( <br>
+	 * "A",L("a","b","c"), // 第一列 <br>
+	 * "B",L(1,2,3), // 第二列 <br>
+	 * "C",A(2,4,6,10), // 第三列 <br>
+	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
+	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
+	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * );// dfm <br>
+	 * 
+	 * 返回:<br>
+	 * A:a B:1 C:2 D:3 E:31 <br>
+	 * A:b B:2 C:4 D:6 E:61 <br>
+	 * A:c B:3 C:6 D:9 E:91 <br>
+	 * A:a B:1 C:10 D:3 E:31 <br>
+	 * 
+	 * @return 返回以key值为列名的行列表
+	 */
+	default List<IRecord> rows() {
+		return this.rows((key, value) -> value, this.keys());
 	}
 
 	/**
@@ -5715,23 +5725,40 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * A:c B:3 C:6 D:9 E:91 <br>
 	 * A:a B:1 C:10 D:3 E:31 <br>
 	 * 
-	 * @return 返回以key值为列名的行列表
+	 * @param <T>    结果类型 Target
+	 * @param <V>    源数据的值类型 Value
+	 * @param mapper 元素类型格式化函数,类型为， (key:String,value:Object)-&gt;new_value
+	 * @param hh     列名序列,若为空则采用EXCEL格式的列名称(0:A,1:B,...),如果列表不够也采用excelname给予填充区别只不过添加了一个前缀"_"
+	 * @return 返回以hh值为列名的行列表
 	 */
-	default List<IRecord> rows() {
-		return this.rows((key, value) -> value, this.keys());
-	}
+	@SuppressWarnings("unchecked")
+	default <T, V> List<IRecord> rows(final BiFunction<String, V, T> mapper, final List<String> hh) {
+		final var shape = this.shape();// 提取图形结构
+		final var rows = new ArrayList<IRecord>(shape._1());// 提取行数记录行数
+		final List<String> final_hh = hh == null
+				? LIST(Stream.iterate(0, i -> i + 1).limit(shape._2()).map(Jdbcs::excelname))// 生成excel列名
+				: hh;
+		if (hh != null) {
+			Stream.iterate(hh.size(), i -> i < shape._2(), i -> i + 1).forEach(i -> final_hh.add(excelname(i)));
+		}
+		final var keys = this.keys().toArray(String[]::new);
+		for (int j = 0; j < shape._2(); j++) {// 列号
+			final var col = this.lla(keys[j], e -> e);// 提取name列
+			if (col == null) {
+				continue;
+			}
+			final var size = col.size();// 列大小
+			for (int i = 0; i < shape._1(); i++) { // 列名索引
+				if (rows.size() <= i) {
+					rows.add(REC());
+				}
+				final var row = rows.get(i);// 提取i 行的数据记录。
+				final var key = final_hh.get(j);
+				row.add(key, mapper.apply(keys[j], (V) col.get(i % size)));
+			} // for i
+		} // keys
 
-	/**
-	 * 第rowid 所在的行记录
-	 * 
-	 * @param rowid 行号索引：从0开始
-	 * @return rowid所标记行记录
-	 */
-	default IRecord row(final int rowid) {
-		final var rows = this.rows((name, e) -> e, this.keys());
-		if (rows == null || rows.size() < 1 || rows.size() <= rowid)
-			return null;
-		return rows.get(rowid);
+		return rows;
 	}
 
 	/**
@@ -5765,20 +5792,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * var dm = new DataMatrix&lt;&gt; (rec.rowL(),Integer.class); 就构造了一个 DataMatrix
 	 * 对象。<br>
 	 * 
-	 * @return 生成一个hashmap 的集合<br>
+	 * @return 生成一个hashmap的集合<br>
 	 */
 	default List<Map<String, Object>> lines() {
 		return Collections.singletonList(this.toMap());
-	}
-
-	/**
-	 * 返回idx 位置的列元素集合
-	 * 
-	 * @param idx 列名索引，从0开始
-	 * @return idx 所标识的列(key)的元素集合
-	 */
-	default List<Object> column(final Integer idx) {
-		return this.lla(idx, e -> e);
 	}
 
 	/**
@@ -5795,13 +5812,42 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 返回key位置的列元素集合
 	 * 
-	 * @param key 列名：这是对lla的别名
-	 * @return key 所标识的列(key)的元素集合
+	 * 返回idx 位置的列元素集合：：强制转换为targetClass 的类型
+	 * 
+	 * 类型采用强制转换，因此可能会出现不同列之间的类型不一致的风险，使用时候需要注意。这一部分需要在编程中给注意与防范。<br>
+	 * 类库设置不予考虑。<br>
+	 * 
+	 * @param <T>         列的元数据类型
+	 * @param idx         列名索引，从0开始
+	 * @param targetClass 列的值类型类
 	 */
-	default List<Object> column(final String key) {
-		return this.lla(key, e -> e);
+	@SuppressWarnings("unchecked")
+	default <T> List<T> column(final Integer idx, final Class<T> targetClass) {
+		return this.lla(idx, e -> (T) e);
+	}
+
+	/**
+	 * 返回idx 位置的列元素集合
+	 * 
+	 * @param idx 列名索引，从0开始
+	 * @return idx 所标识的列(key)的元素集合
+	 */
+	default List<Object> column(final Integer idx) {
+		return this.lla(idx, e -> e);
+	}
+
+	/**
+	 * 提取columnName 所在的列数据列表
+	 * 
+	 * @param <T> 列的元数据类型
+	 * @param <U> 返回值变换后的列的类型
+	 * @param key 列名：这是对lla的别名
+	 * @param t2u 列值转换函数 t-&gt;u
+	 * @return key 所标识的列(key)的经过t2u变换后的元素集合
+	 */
+	default <T, U> List<U> column(final String key, final Function<T, U> t2u) {
+		return this.lla(key, t2u);
 	}
 
 	/**
@@ -5821,32 +5867,13 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 提取columnName 所在的列数据列表
+	 * 返回key位置的列元素集合
 	 * 
-	 * @param <T> 列的元数据类型
-	 * @param <U> 返回值变换后的列的类型
 	 * @param key 列名：这是对lla的别名
-	 * @param t2u 列值转换函数 t-&gt;u
-	 * @return key 所标识的列(key)的经过t2u变换后的元素集合
+	 * @return key 所标识的列(key)的元素集合
 	 */
-	default <T, U> List<U> column(final String key, final Function<T, U> t2u) {
-		return this.lla(key, t2u);
-	}
-
-	/**
-	 * 
-	 * 返回idx 位置的列元素集合：：强制转换为targetClass 的类型
-	 * 
-	 * 类型采用强制转换，因此可能会出现不同列之间的类型不一致的风险，使用时候需要注意。这一部分需要在编程中给注意与防范。<br>
-	 * 类库设置不予考虑。<br>
-	 * 
-	 * @param <T>         列的元数据类型
-	 * @param idx         列名索引，从0开始
-	 * @param targetClass 列的值类型类
-	 */
-	@SuppressWarnings("unchecked")
-	default <T> List<T> column(final Integer idx, final Class<T> targetClass) {
-		return this.lla(idx, e -> (T) e);
+	default List<Object> column(final String key) {
+		return this.lla(key, e -> e);
 	}
 
 	/**
@@ -5882,33 +5909,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default List<List<Object>> columns() {
 		return this.keys().stream().map(name -> this.lla(name, e -> e)).collect(Collectors.toList());
-	}
-
-	/**
-	 * 返回key列名的列数据:列表
-	 * 
-	 * @param <T>  列的元数据类型
-	 * @param <U>  返回值变换后的列的类型
-	 * @param key  列名索引，从0开始
-	 * @param tt2u 列值转换函数:t-&gt;u
-	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
-	 */
-	default <T, U> U col(final String key, final Function<? super List<T>, U> tt2u) {
-		final List<T> tt = this.lla(key, (T e) -> e);
-		return tt2u.apply(tt);
-	}
-
-	/**
-	 * 返回idx列索引位置的列数据:列表
-	 * 
-	 * @param <T>  列的元数据类型
-	 * @param <U>  返回值变换后的列的类型
-	 * @param idx  列名索引，从0开始
-	 * @param tt2u 列值转换函数:t-&gt;u
-	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
-	 */
-	default <T, U> U col(final Integer idx, final Function<? super List<T>, U> tt2u) {
-		return this.col(this.idx2key(idx), tt2u);
 	}
 
 	/**
@@ -5952,6 +5952,33 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default Stream<IRecord> colS() {
 		return this.colS(IRecord::L2REC);
+	}
+
+	/**
+	 * 返回key列名的列数据:列表
+	 * 
+	 * @param <T>  列的元数据类型
+	 * @param <U>  返回值变换后的列的类型
+	 * @param key  列名索引，从0开始
+	 * @param tt2u 列值转换函数:t-&gt;u
+	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
+	 */
+	default <T, U> U col(final String key, final Function<? super List<T>, U> tt2u) {
+		final List<T> tt = this.lla(key, (T e) -> e);
+		return tt2u.apply(tt);
+	}
+
+	/**
+	 * 返回idx列索引位置的列数据:列表
+	 * 
+	 * @param <T>  列的元数据类型
+	 * @param <U>  返回值变换后的列的类型
+	 * @param idx  列名索引，从0开始
+	 * @param tt2u 列值转换函数:t-&gt;u
+	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
+	 */
+	default <T, U> U col(final Integer idx, final Function<? super List<T>, U> tt2u) {
+		return this.col(this.idx2key(idx), tt2u);
 	}
 
 	/**
