@@ -104,7 +104,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param value 字段值 任意对象 可以为null
 	 * @return 当前的IRecord 以保证可以链式编程。
 	 */
-	IRecord add(Object key, Object value);
+	IRecord add(final Object key, final Object value);
 
 	/**
 	 * 设置键名key的值为vlaue,如果key不存在则添加，否则修改键名key的值为value
@@ -113,7 +113,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param value 键值 可以为null
 	 * @return 当前的IRecord 以保证可以链式编程。
 	 */
-	IRecord set(String key, Object value);
+	IRecord set(final String key, final Object value);
 
 	/**
 	 * 提取字段key 所对应的值
@@ -121,7 +121,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 键名
 	 * @return 键名字段key 所对应的值
 	 */
-	Object get(String key);
+	Object get(final String key);
 
 	/**
 	 * 字段key 所对应的值列表，如果存在多个同名的key 则把这些key的值合并成一个列表。
@@ -129,7 +129,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 字段名
 	 * @return 字段key 所对应的值列表，如果存在多个同名的key 则把这些key的值合并成一个列表。
 	 */
-	List<Object> gets(String key);
+	List<Object> gets(final String key);
 
 	/**
 	 * 键值序{(k0,v0),(k1,v1),...}

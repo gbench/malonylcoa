@@ -22,13 +22,14 @@ public class IRecordSerializer extends StdSerializer<IRecord> {
 	}
 
 	@Override
-	public void serializeWithType(IRecord value, JsonGenerator generator, SerializerProvider provider,
+	public void serializeWithType(final IRecord value, final JsonGenerator generator, final SerializerProvider provider,
 			TypeSerializer typeSer) throws IOException {
 		this.serialize(value, generator, provider);
 	}
 
 	@Override
-	public void serialize(IRecord value, JsonGenerator generator, SerializerProvider provider) throws IOException {
+	public void serialize(final IRecord value, final JsonGenerator generator, final SerializerProvider provider)
+			throws IOException {
 		generator.writeStartObject();
 		for (KVPair<String, Object> kvp : value.kvs())
 			generator.writeObjectField(kvp.key(), kvp.value());
