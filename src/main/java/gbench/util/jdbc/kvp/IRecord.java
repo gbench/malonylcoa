@@ -2391,99 +2391,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 转换成一个一维数组
-	 */
-	default String[] toStrArray() {
-		return this.stream().map(g -> g._2() == null ? "" : g._2().toString()).toArray(String[]::new);
-	}
-
-	/**
-	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
-	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组 <br>
-	 * 转换成一个一维数组
-	 * 
-	 * @return Object 类型的一维数组
-	 */
-	default Object[] toObjArray() {
-		return this.stream().map(g -> g._2() == null ? "" : g._2()).toArray(Object[]::new);
-	}
-
-	/**
-	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
-	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组<br>
-	 * 转换成一维数组
-	 * 
-	 * @param <T>    源元素的类型
-	 * @param <U>    目标元素的类型
-	 * @param mapper 元素变换函数 t-&gt;u
-	 * @param uclass 目标结果类型：如果uclass 为null则懂mapper的取值结果中提取uclass 类型
-	 * @return U类型的一维数组
-	 */
-	@SuppressWarnings("unchecked")
-	default <T, U> U[] toArray(final Function<T, U> mapper, final Class<U> uclass) {
-		final Object[] oo = this.stream().map(e -> (T) e._2()).map(mapper).toArray();
-		Class<U> _uclass = uclass;
-		if (uclass == null)
-			for (Object o : oo) {
-				if (o != null) {
-					_uclass = (Class<U>) o.getClass();
-					break;
-				}
-			} // if
-		if (_uclass == null)
-			_uclass = (Class<U>) Object.class;
-		final U[] uu = (U[]) Array.newInstance(_uclass, oo.length);
-		for (int i = 0; i < oo.length; i++) {
-			try {
-				uu[i] = (U) oo[i];
-			} catch (Exception ignored) {
-				// do nothing
-			} // try
-		} // for
-		return uu;
-	}
-
-	/**
-	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
-	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组 <br>
-	 * 转换成一维数组
-	 * 
-	 * @param <T>    源元素的类型
-	 * @param <U>    目标元素的类型
-	 * @param mapper 元素变换函数 t-&gt;u
-	 * @return U类型的一维数组
-	 */
-	default <T, U> U[] toArray(final Function<T, U> mapper) {
-		return toArray(mapper, (Class<U>) null);
-	}
-
-	/**
-	 * 为了保证执行效率 uclass 没有没有使用 智能转换 <br>
-	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
-	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组<br>
-	 * 
-	 * @param <U>    目标元素的类型
-	 * @param uclass 结果的类型类，这是一个占位符类型，用于提示辅助编译。
-	 * @return U类型的一维数组
-	 */
-	@SuppressWarnings("unchecked")
-	default <U> U[] toArray(final Class<U> uclass) {
-		final Object[] oo = this.toObjArray();
-		final Class<U> final_uclass = uclass == null ? (Class<U>) Object.class : uclass;
-		final U[] uu = (U[]) Array.newInstance(final_uclass, oo.length);
-
-		for (int i = 0; i < oo.length; i++) {
-			try {
-				uu[i] = (U) oo[i];
-			} catch (Exception ignored) {
-				// do nothing
-			} // try
-		} // for
-
-		return uu;
-	}
-
-	/**
 	 * 智能版的数组转换 <br>
 	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]),比如 <br>
 	 * Integer,Long,Double等，把当前集合中的值集合转换成 一维数组<br>
@@ -4288,33 +4195,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	};
 
 	/**
-	 * 转换成一个 转义映射 '\' 被转译成 \\ "'" 被转译成 \'
-	 * 
-	 * @return 转移后的Map
-	 */
-	default Map<String, Object> toEscapedMap() {
-		final var m = this.toMap();
-		m.forEach((k, v) -> {// 依次对每个MAP元素进行转义
-			Object obj = v;
-			if (v != null) {
-				if (v instanceof String) {
-					obj = v.toString().replace("\"", "\\\\\"").replace("'", "\\'"); // 字符串转义
-				} else if (v instanceof IRecord) { // 递归进行 转换
-					final var mm = this.toMap(); // 转换成数组形式避免 进入 自我包含 即 v == this 形成 的死循环
-					obj = REC((Map<?, ?>) mm).toEscapedMap();
-				} else if (v instanceof Map) {
-					obj = REC((Map<?, ?>) obj).toEscapedMap();
-				} else {
-					obj = v;
-				} // if
-			} // if
-			m.put(k, obj);// 重新放入map结构
-		});// forEach
-
-		return m;
-	};
-
-	/**
 	 * 转换成一个json对象
 	 * 
 	 * @return 字符串形式的json对象
@@ -4322,46 +4202,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default String json() {
 		return Json.obj2json(this);
 	}
-
-	/**
-	 * 把key列转换成Map结构 <br>
-	 * 当且仅当 key 所代表的数据是一个Map&lt;String,Object&gt; 的实例返回一个 key 的value对象。<br>
-	 * 否则 生成一个 Map的复制品(clone) <br>
-	 *
-	 * @param key 需要进行分解的字段名：一般为json结构的列
-	 * @return Map&lt;String, Object&gt;
-	 */
-	@SuppressWarnings("unchecked")
-	default Map<String, Object> asMap(final String key) {
-		final Object obj = this.get(key);
-		if (obj == null) {
-			return null;
-		} else if (obj instanceof Map) { // Map类型
-			final var mm = (Map<Object, Object>) obj;
-			if (mm.keySet().iterator().next() instanceof String) { // key 为String类型
-				return (Map<String, Object>) obj;// Map 的key是不含null值的
-			} else { // key 为非String类型
-				final var mss = new LinkedHashMap<String, Object>();// 复制品
-				mm.forEach((k, v) -> mss.put(k.toString(), v));// 进行数据复制。
-				return mss;
-			} // if
-		} else if (obj instanceof IRecord) { // IRecord 结构
-			return ((IRecord) obj).toMap();
-		} else { // 其他类型视为json 字符串给予转换映射
-			return map(key, e -> Json.json2obj(e, Map.class));
-		} // if
-	}
-
-	/**
-	 * 把idx列转换成Map结构
-	 *
-	 * @param idx 列索引从0开始
-	 * @return Map&lt;String, Object&gt;
-	 */
-	default Map<String, Object> asMap(final int idx) {
-		final String key = this.idx2key(idx);
-		return key == null ? null : asMap(key);
-	};
 
 	/**
 	 * 整体转换<br>
@@ -4460,99 +4300,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default IRecord proj(final Function<String, String> keyname_mapper) {
 		return keymap(keyname_mapper);
 	};
-
-	/**
-	 * 对值集合进行Map,不对key 进行变换 <br>
-	 * 把函数mapper 应用到 values 对象:Object->U 对象。<br>
-	 * 转换成一个 String -> U 的Map <br>
-	 * 
-	 * @param <U>         valuemapper 对值的变换结果
-	 * @param valuemapper 值变换函数
-	 * @return {(String,U)} 结构的Map
-	 */
-	default <U> LinkedHashMap<String, U> toMap(final Function<Object, U> valuemapper) {
-		final LinkedHashMap<String, U> mm = new LinkedHashMap<>();
-		this.toMap().forEach((k, v) -> mm.put(k, valuemapper.apply(v)));
-		return mm;
-	}
-
-	/**
-	 * 对键名集合进行Map,不对value 进行变换
-	 * 
-	 * @param <T>       key 的类型
-	 * @param keymapper 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
-	 * @return 键名变换后键值对儿({T ,Object)}
-	 */
-	default <T> LinkedHashMap<T, Object> toMap2(final Function<String, T> keymapper) {
-		return toMap2(keymapper, identity);
-	};
-
-	/**
-	 * 分别对keys 和 values 进行变换。
-	 * 
-	 * @param <T>         key 的类型
-	 * @param <U>         value 的类型
-	 * @param keymapper   key 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
-	 * @param valuemapper value 的变换函数:把原来的Object类型的Value,转换成U类型的值。
-	 * @return {(t, u)} 的Map
-	 */
-	default <T, U> LinkedHashMap<T, U> toMap2(final Function<String, T> keymapper, Function<Object, U> valuemapper) {
-		final LinkedHashMap<T, U> mm = new LinkedHashMap<>();
-		this.foreach((k, v) -> mm.put(keymapper.apply(k), valuemapper.apply(v)));
-		return mm;
-	}
-
-	/**
-	 * 字符串格式化
-	 * 
-	 * @param cell_formatter 键值得格式化算法
-	 * @return IRecord 的字符串形式
-	 */
-	default String toString(final Function<Object, String> cell_formatter) {
-		final var builder = new StringBuilder();
-		final Function<Object, String> final_cell_formatter = cell_formatter != null ? cell_formatter : v -> {
-			if (v == null)
-				return "(null)";
-			var line = "{0}";// 数据格式化
-			if (v instanceof Date) {
-				line = "{0,Date,yyyy-MM-dd HH:mm:ss}"; // 时间格式化
-			} else if (v instanceof Number) {
-				line = "{0,Number,#}"; // 数字格式化
-			} // if
-
-			return MessageFormat.format(line, v);
-		};// cell_formatter
-
-		this.kvs().forEach(
-				p -> builder.append(p._1()).append(":").append(final_cell_formatter.apply(p._2())).append("\t"));
-
-		return builder.toString().trim();
-	}
-
-	/**
-	 * 返回一个 LinkedHashMap&lt;String,T&gt;
-	 * 
-	 * @param <T>    LinkedHashMap 中的值得类型
-	 * @param tclass 值类型 :null 表示Object.class
-	 * @return LinkedHashMap&lt;String,T&gt;
-	 */
-	@SuppressWarnings("unchecked")
-	default <T> LinkedHashMap<String, T> toLhm(final Class<T> tclass) {
-		if (this instanceof LinkedHashMap)
-			return (LinkedHashMap<String, T>) this;
-		final LinkedHashMap<String, T> mm = new LinkedHashMap<>();
-		this.foreach(mm::put);
-		return mm;
-	}
-
-	/**
-	 * 返回一个 LinkedHashMap&lt;String,T&gt;
-	 * 
-	 * @return LinkedHashMap&lt;String,T&gt;
-	 */
-	default LinkedHashMap<String, Object> toLhm() {
-		return toLhm(null);
-	}
 
 	/**
 	 * 分别对keys 和 values 进行变换。 toMap2 函数的别名。
@@ -4880,26 +4627,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		final List<KVPair<String, U>> kvs = LIST(
 				this.kvs().stream().map(p -> KVPair.KVP(p._1(), mapper.apply((KVPair<String, T>) p))));
 		return KVS2REC(kvs);
-	}
-
-	/**
-	 * 转换成一个 String -> String 的Map
-	 * 
-	 * @return String -> String 的Map
-	 */
-	default Map<String, String> toStrMap() {
-		return this.toMap(e -> e + "");
-	}
-
-	/**
-	 * 转换成一个 Properties
-	 * 
-	 * @return Properties
-	 */
-	default Properties toProps() {
-		final Properties props = new Properties();
-		this.toStrMap().forEach(props::put);
-		return props;
 	}
 
 	/**
@@ -5778,50 +5505,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 部分转换<br>
-	 * 把Record（一般为单元素记录：即只有一个键的Record） 转换成 目标类型对象,采用 rec2obj 转换对象,<br>
-	 * toTarget 一般用于提取元素的第一个键值元素。只有当第一个元素不满足要求，才尝试采用cast的方式进行整体转换。
-	 * 
-	 * @param <T>          目标类型
-	 * @param defaultValue 默认值,转换失败或是结果为null的时候返回默认值
-	 * @return T 结构的对象
-	 */
-	@SuppressWarnings("unchecked")
-	default <T> T toTarget(final T defaultValue) {
-		return this.toTarget(defaultValue != null ? (Class<T>) defaultValue.getClass() : null, defaultValue);
-	}
-
-	/**
-	 * 部分转换<br>
-	 * 把Record（一般为单元素记录：即只有一个键的Record） 转换成 目标类型对象,采用 rec2obj 转换对象,<br>
-	 * toTarget 一般用于提取元素的第一个键值元素。只有当第一个元素不满足要求，才尝试采用cast的方式进行整体转换。
-	 * 
-	 * @param <T>         目标类型
-	 * @param targetClass 目标类型类：null 则返回IRecord本身
-	 * @return T 结构的对象
-	 */
-	default <T> T toTarget(final Class<T> targetClass) {
-		return this.toTarget(targetClass, null);
-	}
-
-	/**
-	 * 部分转换<br>
-	 * 把Record（一般为单元素记录：即只有一个键的Record） 转换成 目标类型对象,采用 rec2obj 转换对象,<br>
-	 * toTarget 一般用于提取元素的第一个键值元素。只有当第一个元素不满足要求，才尝试采用cast的方式进行整体转换。
-	 * 
-	 * @param <T>          目标类型
-	 * @param targetClass  目标类型类：null 则返回IRecord本身
-	 * @param defaultValue 默认值,转换失败或是结果为null的时候返回默认值
-	 * @return T 结构的对象
-	 */
-	default <T> T toTarget(final Class<T> targetClass, final T defaultValue) {
-		if (targetClass == null)
-			return ((T) defaultValue);
-		final var t = IRecord.rec2obj(this, targetClass);
-		return t == null ? defaultValue : t;
-	}
-
-	/**
 	 * 二维矩阵<br>
 	 * 这个方法一般用于生成一个 列向量矩阵：比如REC("variable",new String[]{"a","b","c"}).toArray2();
 	 * 生成二维数组：视每个元素为单独二维数组的单独的列。
@@ -5857,75 +5540,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/////////////////////////////////////////////////////////////////////
 	// 以下是IRecord DFrame 类型的方法区域:所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)
 	/////////////////////////////////////////////////////////////////////
-
-	/**
-	 * 生成一个二维数组矩阵：数组元素采用 Object 类型.
-	 * 
-	 * @return Object[][] U类型的二维数组
-	 */
-	default Object[][] toArray2() {
-		return toArray2(e -> e, Object.class);
-	}
-
-	/**
-	 * 这个方法一般用于生成一个 列向量矩阵：比如REC("variable",new Double[]{1d,2d,3d}).toArray2();
-	 * 生成二维数组：视每个元素为单独二维数组的单独的列。
-	 * 
-	 * @param <U>    目标类型的数据结果
-	 * @param uclass 目标类型的class
-	 * @return U[][] U类型的二维数组
-	 */
-	@SuppressWarnings("unchecked")
-	default <U> U[][] toArray2(final Class<U> uclass) {
-		final var final_uclass = uclass != null ? uclass : (Class<U>) Object.class;
-		if (uclass == Object.class)
-			return (U[][]) (Object) this.toArray2();
-		else
-			return this.toArray2(t -> IRecord.rec2obj(REC(0, t), final_uclass));
-	}
-
-	/**
-	 * 生成一个二维数组矩阵,生成数组的类型,采用t2u对于第一列元素进行 Apply,提取第一个非空元素的类型作为U类型，对于 <br>
-	 * 全为null的情况采用Object.class作为默认值。<br>
-	 * 第一列的值不存在则返回null<br>
-	 * 
-	 * @param <T> t2u的源类型，即Record 中List的中的元素类型 一般为Object,除非明确知道IRecord中的具体的数据结构
-	 * @param <U> t2u的目标结果的类型
-	 * @param t2u 值变换函数 t->u
-	 * @return U[][] U类型的二维数组
-	 */
-	@SuppressWarnings("unchecked")
-	default <T, U> U[][] toArray2(Function<T, U> t2u) {
-		final var ll = this.lla(0, t2u);// 尝试应用到第一列t2u，提取Class<U>的类型信息。
-		if (ll == null)
-			return null;// 列值不村子直接返回
-		final var cellClass = ll.stream().filter(Objects::nonNull).map(e -> (Class<U>) e.getClass()).findFirst()
-				.orElse((Class<U>) Object.class);
-		return this.toArray2(t2u, cellClass);
-	}
-
-	/**
-	 * 生成一个二维数组矩阵,生成数组的类型,采用t2u对于第一列元素进行 Apply,提取第一个非空元素的类型作为U类型，对于 <br>
-	 * 全为null的情况采用Object.class作为默认值。<br>
-	 * 
-	 * @param <T>       t2u的源类型，即Record 中List的中的元素类型
-	 *                  一般为Object,除非明确知道IRecord中的具体的数据结构
-	 * @param <U>       t2u的目标结果的类型
-	 * @param t2u       值变换函数 t->u
-	 * @param cellClass 结果容器的数据类型,cellClass 为null 视作 Object.class
-	 * @return U[][] U类型的二维数组
-	 */
-	@SuppressWarnings("unchecked")
-	default <T, U> U[][] toArray2(final Function<T, U> t2u, final Class<U> cellClass) {
-		final var shape = this.shape();
-		final var final_cellClass = cellClass == null ? (Class<U>) Object.class : cellClass;
-		final var ooo = this.rows().stream().map(row -> row.toArray(t2u, cellClass)).toArray(n -> {
-			U[][] uu = null;
-			uu = (U[][]) Array.newInstance(final_cellClass, shape._1(), shape._2());
-			return uu;
-		});// ooo
-		return ooo;
-	}
 
 	/**
 	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
@@ -6447,103 +6061,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 返回行列表:<br>
-	 * final var dfm = REC( <br>
-	 * "A",L("a","b","c"), // 第一列 <br>
-	 * "B",L(1,2,3), // 第二列 <br>
-	 * "C",A(2,4,6,10), // 第三列 <br>
-	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
-	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
-	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * );// dfm
-	 * 
-	 * 返回:<br>
-	 * A B C D E <br>
-	 * a 1 2 3 31 <br>
-	 * b 2 4 6 61 <br>
-	 * c 3 6 9 91 <br>
-	 * a 1 10 3 31 <br>
-	 * 
-	 * 按照列进行展示 对DFrame进行初始化
-	 * 
-	 * @param key_formatter  键名内容初始化
-	 * @param cell_formatter 键值元素内容初始化
-	 * @return 格式化字符串
-	 */
-	default String toString2(final Function<Object, String> key_formatter,
-			final Function<Object, String> cell_formatter) {
-
-		final var builder = new StringBuilder();
-		final var final_cell_formatter = cell_formatter != null ? cell_formatter : frt(2);
-		final var final_key_formatter = key_formatter != null ? key_formatter : frt(2);
-		builder.append(this.keys().stream().map(final_key_formatter).collect(Collectors.joining("\t"))).append("\n");
-		this.rows().forEach(rec -> {
-			builder.append(rec.values().stream().map(final_cell_formatter).collect(Collectors.joining("\t")));
-			builder.append("\n");
-		});// forEach
-		return builder.toString();
-	}
-
-	/**
-	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 返回行列表:<br>
-	 * final var dfm = REC( <br>
-	 * "A",L("a","b","c"), // 第一列 <br>
-	 * "B",L(1,2,3), // 第二列 <br>
-	 * "C",A(2,4,6,10), // 第三列 <br>
-	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
-	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
-	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * );// dfm
-	 * 
-	 * 返回:<br>
-	 * A B C D E <br>
-	 * a 1 2 3 31 <br>
-	 * b 2 4 6 61 <br>
-	 * c 3 6 9 91 <br>
-	 * a 1 10 3 31 <br>
-	 * 
-	 * 按照列进行展示 对DFrame进行初始化
-	 * 
-	 * @param cell_formatter 元素内容初始化
-	 * @return 格式化字符串
-	 */
-	default String toString2(final Function<Object, String> cell_formatter) {
-		return this.toString2(null, cell_formatter);
-	}
-
-	/**
-	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 返回行列表:<br>
-	 * final var dfm = REC( <br>
-	 * "A",L("a","b","c"), // 第一列 <br>
-	 * "B",L(1,2,3), // 第二列 <br>
-	 * "C",A(2,4,6,10), // 第三列 <br>
-	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
-	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
-	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * );// dfm
-	 * 
-	 * 返回:<br>
-	 * A B C D E <br>
-	 * a 1 2 3 31 <br>
-	 * b 2 4 6 61 <br>
-	 * c 3 6 9 91 <br>
-	 * a 1 10 3 31 <br>
-	 * 
-	 * 按照列进行展示 对DFrame进行初始化
-	 * 
-	 * @return 格式化字符串
-	 */
-	default String toString2() {
-		return toString2(null);
-	}
-
-	/**
 	 * Unpivot a DFrame from wide to long format, optionally leaving identifiers set
 	 * <br>
 	 * 
@@ -6941,6 +6458,501 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/////////////////////////////////////////////////////////////////////
 	// 以下是IRecord 的静态方法区域
 	/////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////
+	// 以下是IRecord DFrame 类型的方法区域:所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)
+	/////////////////////////////////////////////////////////////////////
+
+	/**
+	 * 把key列转换成Map结构 <br>
+	 * 当且仅当 key 所代表的数据是一个Map&lt;String,Object&gt; 的实例返回一个 key 的value对象。<br>
+	 * 否则 生成一个 Map的复制品(clone) <br>
+	 *
+	 * @param key 需要进行分解的字段名：一般为json结构的列
+	 * @return Map&lt;String, Object&gt;
+	 */
+	@SuppressWarnings("unchecked")
+	default Map<String, Object> asMap(final String key) {
+		final Object obj = this.get(key);
+		if (obj == null) {
+			return null;
+		} else if (obj instanceof Map) { // Map类型
+			final var mm = (Map<Object, Object>) obj;
+			if (mm.keySet().iterator().next() instanceof String) { // key 为String类型
+				return (Map<String, Object>) obj;// Map 的key是不含null值的
+			} else { // key 为非String类型
+				final var mss = new LinkedHashMap<String, Object>();// 复制品
+				mm.forEach((k, v) -> mss.put(k.toString(), v));// 进行数据复制。
+				return mss;
+			} // if
+		} else if (obj instanceof IRecord) { // IRecord 结构
+			return ((IRecord) obj).toMap();
+		} else { // 其他类型视为json 字符串给予转换映射
+			return map(key, e -> Json.json2obj(e, Map.class));
+		} // if
+	}
+
+	/**
+	 * 把idx列转换成Map结构
+	 *
+	 * @param idx 列索引从0开始
+	 * @return Map&lt;String, Object&gt;
+	 */
+	default Map<String, Object> asMap(final int idx) {
+		final String key = this.idx2key(idx);
+		return key == null ? null : asMap(key);
+	}
+
+	/**
+	 * 对值集合进行Map,不对key 进行变换 <br>
+	 * 把函数mapper 应用到 values 对象:Object->U 对象。<br>
+	 * 转换成一个 String -> U 的Map <br>
+	 * 
+	 * @param <U>         valuemapper 对值的变换结果
+	 * @param valuemapper 值变换函数
+	 * @return {(String,U)} 结构的Map
+	 */
+	default <U> LinkedHashMap<String, U> toMap(final Function<Object, U> valuemapper) {
+		final LinkedHashMap<String, U> mm = new LinkedHashMap<>();
+		this.toMap().forEach((k, v) -> mm.put(k, valuemapper.apply(v)));
+		return mm;
+	}
+
+	/**
+	 * 对键名集合进行Map,不对value 进行变换
+	 * 
+	 * @param <T>       key 的类型
+	 * @param keymapper 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
+	 * @return 键名变换后键值对儿({T ,Object)}
+	 */
+	default <T> LinkedHashMap<T, Object> toMap2(final Function<String, T> keymapper) {
+		return toMap2(keymapper, identity);
+	}
+
+	/**
+	 * 分别对keys 和 values 进行变换。
+	 * 
+	 * @param <T>         key 的类型
+	 * @param <U>         value 的类型
+	 * @param keymapper   key 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
+	 * @param valuemapper value 的变换函数:把原来的Object类型的Value,转换成U类型的值。
+	 * @return {(t, u)} 的Map
+	 */
+	default <T, U> LinkedHashMap<T, U> toMap2(final Function<String, T> keymapper, Function<Object, U> valuemapper) {
+		final LinkedHashMap<T, U> mm = new LinkedHashMap<>();
+		this.foreach((k, v) -> mm.put(keymapper.apply(k), valuemapper.apply(v)));
+		return mm;
+	}
+
+	/**
+	 * 返回一个 LinkedHashMap&lt;String,T&gt;
+	 * 
+	 * @param <T>    LinkedHashMap 中的值得类型
+	 * @param tclass 值类型 :null 表示Object.class
+	 * @return LinkedHashMap&lt;String,T&gt;
+	 */
+	@SuppressWarnings("unchecked")
+	default <T> LinkedHashMap<String, T> toLhm(final Class<T> tclass) {
+		if (this instanceof LinkedHashMap)
+			return (LinkedHashMap<String, T>) this;
+		final LinkedHashMap<String, T> mm = new LinkedHashMap<>();
+		this.foreach(mm::put);
+		return mm;
+	}
+
+	/**
+	 * 返回一个 LinkedHashMap&lt;String,T&gt;
+	 * 
+	 * @return LinkedHashMap&lt;String,T&gt;
+	 */
+	default LinkedHashMap<String, Object> toLhm() {
+		return toLhm(null);
+	}
+
+	/**
+	 * 转换成一个 转义映射 '\' 被转译成 \\ "'" 被转译成 \'
+	 * 
+	 * @return 转移后的Map
+	 */
+	default Map<String, Object> toEscapedMap() {
+		final var m = this.toMap();
+		m.forEach((k, v) -> {// 依次对每个MAP元素进行转义
+			Object obj = v;
+			if (v != null) {
+				if (v instanceof String) {
+					obj = v.toString().replace("\"", "\\\\\"").replace("'", "\\'"); // 字符串转义
+				} else if (v instanceof IRecord) { // 递归进行 转换
+					final var mm = this.toMap(); // 转换成数组形式避免 进入 自我包含 即 v == this 形成 的死循环
+					obj = REC((Map<?, ?>) mm).toEscapedMap();
+				} else if (v instanceof Map) {
+					obj = REC((Map<?, ?>) obj).toEscapedMap();
+				} else {
+					obj = v;
+				} // if
+			} // if
+			m.put(k, obj);// 重新放入map结构
+		});// forEach
+
+		return m;
+	}
+
+	/**
+	 * 转换成一个 String -> String 的Map
+	 * 
+	 * @return String -> String 的Map
+	 */
+	default Map<String, String> toStrMap() {
+		return this.toMap(e -> e + "");
+	}
+
+	/**
+	 * 转换成一个 Properties
+	 * 
+	 * @return Properties
+	 */
+	default Properties toProps() {
+		final Properties props = new Properties();
+		this.toStrMap().forEach(props::put);
+		return props;
+	}
+
+	/**
+	 * 转换成一个一维数组
+	 */
+	default String[] toStrArray() {
+		return this.stream().map(g -> g._2() == null ? "" : g._2().toString()).toArray(String[]::new);
+	}
+
+	/**
+	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
+	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组 <br>
+	 * 转换成一个一维数组
+	 * 
+	 * @return Object 类型的一维数组
+	 */
+	default Object[] toObjArray() {
+		return this.stream().map(g -> g._2() == null ? "" : g._2()).toArray(Object[]::new);
+	}
+
+	/**
+	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
+	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组<br>
+	 * 转换成一维数组
+	 * 
+	 * @param <T>    源元素的类型
+	 * @param <U>    目标元素的类型
+	 * @param mapper 元素变换函数 t-&gt;u
+	 * @param uclass 目标结果类型：如果uclass 为null则懂mapper的取值结果中提取uclass 类型
+	 * @return U类型的一维数组
+	 */
+	@SuppressWarnings("unchecked")
+	default <T, U> U[] toArray(final Function<T, U> mapper, final Class<U> uclass) {
+		final Object[] oo = this.stream().map(e -> (T) e._2()).map(mapper).toArray();
+		Class<U> _uclass = uclass;
+		if (uclass == null)
+			for (Object o : oo) {
+				if (o != null) {
+					_uclass = (Class<U>) o.getClass();
+					break;
+				}
+			} // if
+		if (_uclass == null)
+			_uclass = (Class<U>) Object.class;
+		final U[] uu = (U[]) Array.newInstance(_uclass, oo.length);
+		for (int i = 0; i < oo.length; i++) {
+			try {
+				uu[i] = (U) oo[i];
+			} catch (Exception ignored) {
+				// do nothing
+			} // try
+		} // for
+		return uu;
+	}
+
+	/**
+	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
+	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组 <br>
+	 * 转换成一维数组
+	 * 
+	 * @param <T>    源元素的类型
+	 * @param <U>    目标元素的类型
+	 * @param mapper 元素变换函数 t-&gt;u
+	 * @return U类型的一维数组
+	 */
+	default <T, U> U[] toArray(final Function<T, U> mapper) {
+		return toArray(mapper, (Class<U>) null);
+	}
+
+	/**
+	 * 为了保证执行效率 uclass 没有没有使用 智能转换 <br>
+	 * 视键值对儿kvp的值为单值类型(非集合类型[比如List,Set,HashMap等]), <br>
+	 * 比如 Integer,Long,Double 等，把当前集合中的值集合转换成 一维数组<br>
+	 * 
+	 * @param <U>    目标元素的类型
+	 * @param uclass 结果的类型类，这是一个占位符类型，用于提示辅助编译。
+	 * @return U类型的一维数组
+	 */
+	@SuppressWarnings("unchecked")
+	default <U> U[] toArray(final Class<U> uclass) {
+		final Object[] oo = this.toObjArray();
+		final Class<U> final_uclass = uclass == null ? (Class<U>) Object.class : uclass;
+		final U[] uu = (U[]) Array.newInstance(final_uclass, oo.length);
+
+		for (int i = 0; i < oo.length; i++) {
+			try {
+				uu[i] = (U) oo[i];
+			} catch (Exception ignored) {
+				// do nothing
+			} // try
+		} // for
+
+		return uu;
+	}
+
+	/**
+	 * 生成一个二维数组矩阵：数组元素采用 Object 类型.
+	 * 
+	 * @return Object[][] U类型的二维数组
+	 */
+	default Object[][] toArray2() {
+		return toArray2(e -> e, Object.class);
+	}
+
+	/**
+	 * 这个方法一般用于生成一个 列向量矩阵：比如REC("variable",new Double[]{1d,2d,3d}).toArray2();
+	 * 生成二维数组：视每个元素为单独二维数组的单独的列。
+	 * 
+	 * @param <U>    目标类型的数据结果
+	 * @param uclass 目标类型的class
+	 * @return U[][] U类型的二维数组
+	 */
+	@SuppressWarnings("unchecked")
+	default <U> U[][] toArray2(final Class<U> uclass) {
+		final var final_uclass = uclass != null ? uclass : (Class<U>) Object.class;
+		if (uclass == Object.class)
+			return (U[][]) (Object) this.toArray2();
+		else
+			return this.toArray2(t -> IRecord.rec2obj(REC(0, t), final_uclass));
+	}
+
+	/**
+	 * 生成一个二维数组矩阵,生成数组的类型,采用t2u对于第一列元素进行 Apply,提取第一个非空元素的类型作为U类型，对于 <br>
+	 * 全为null的情况采用Object.class作为默认值。<br>
+	 * 第一列的值不存在则返回null<br>
+	 * 
+	 * @param <T> t2u的源类型，即Record 中List的中的元素类型 一般为Object,除非明确知道IRecord中的具体的数据结构
+	 * @param <U> t2u的目标结果的类型
+	 * @param t2u 值变换函数 t->u
+	 * @return U[][] U类型的二维数组
+	 */
+	@SuppressWarnings("unchecked")
+	default <T, U> U[][] toArray2(Function<T, U> t2u) {
+		final var ll = this.lla(0, t2u);// 尝试应用到第一列t2u，提取Class<U>的类型信息。
+		if (ll == null)
+			return null;// 列值不村子直接返回
+		final var cellClass = ll.stream().filter(Objects::nonNull).map(e -> (Class<U>) e.getClass()).findFirst()
+				.orElse((Class<U>) Object.class);
+		return this.toArray2(t2u, cellClass);
+	}
+
+	/**
+	 * 生成一个二维数组矩阵,生成数组的类型,采用t2u对于第一列元素进行 Apply,提取第一个非空元素的类型作为U类型，对于 <br>
+	 * 全为null的情况采用Object.class作为默认值。<br>
+	 * 
+	 * @param <T>       t2u的源类型，即Record 中List的中的元素类型
+	 *                  一般为Object,除非明确知道IRecord中的具体的数据结构
+	 * @param <U>       t2u的目标结果的类型
+	 * @param t2u       值变换函数 t->u
+	 * @param cellClass 结果容器的数据类型,cellClass 为null 视作 Object.class
+	 * @return U[][] U类型的二维数组
+	 */
+	@SuppressWarnings("unchecked")
+	default <T, U> U[][] toArray2(final Function<T, U> t2u, final Class<U> cellClass) {
+		final var shape = this.shape();
+		final var final_cellClass = cellClass == null ? (Class<U>) Object.class : cellClass;
+		final var ooo = this.rows().stream().map(row -> row.toArray(t2u, cellClass)).toArray(n -> {
+			U[][] uu = null;
+			uu = (U[][]) Array.newInstance(final_cellClass, shape._1(), shape._2());
+			return uu;
+		});// ooo
+		return ooo;
+	}
+
+	/////////////////////////////////////////////////////////////////////
+	// 以下是IRecord 的静态方法区域
+	/////////////////////////////////////////////////////////////////////
+
+	/////////////////////////////////////////////////////////////////////
+	// 以下是IRecord DFrame 类型的方法区域:所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)
+	/////////////////////////////////////////////////////////////////////
+
+	/**
+	 * 部分转换<br>
+	 * 把Record（一般为单元素记录：即只有一个键的Record） 转换成 目标类型对象,采用 rec2obj 转换对象,<br>
+	 * toTarget 一般用于提取元素的第一个键值元素。只有当第一个元素不满足要求，才尝试采用cast的方式进行整体转换。
+	 * 
+	 * @param <T>          目标类型
+	 * @param defaultValue 默认值,转换失败或是结果为null的时候返回默认值
+	 * @return T 结构的对象
+	 */
+	@SuppressWarnings("unchecked")
+	default <T> T toTarget(final T defaultValue) {
+		return this.toTarget(defaultValue != null ? (Class<T>) defaultValue.getClass() : null, defaultValue);
+	}
+
+	/**
+	 * 部分转换<br>
+	 * 把Record（一般为单元素记录：即只有一个键的Record） 转换成 目标类型对象,采用 rec2obj 转换对象,<br>
+	 * toTarget 一般用于提取元素的第一个键值元素。只有当第一个元素不满足要求，才尝试采用cast的方式进行整体转换。
+	 * 
+	 * @param <T>         目标类型
+	 * @param targetClass 目标类型类：null 则返回IRecord本身
+	 * @return T 结构的对象
+	 */
+	default <T> T toTarget(final Class<T> targetClass) {
+		return this.toTarget(targetClass, null);
+	}
+
+	/**
+	 * 部分转换<br>
+	 * 把Record（一般为单元素记录：即只有一个键的Record） 转换成 目标类型对象,采用 rec2obj 转换对象,<br>
+	 * toTarget 一般用于提取元素的第一个键值元素。只有当第一个元素不满足要求，才尝试采用cast的方式进行整体转换。
+	 * 
+	 * @param <T>          目标类型
+	 * @param targetClass  目标类型类：null 则返回IRecord本身
+	 * @param defaultValue 默认值,转换失败或是结果为null的时候返回默认值
+	 * @return T 结构的对象
+	 */
+	default <T> T toTarget(final Class<T> targetClass, final T defaultValue) {
+		if (targetClass == null)
+			return ((T) defaultValue);
+		final var t = IRecord.rec2obj(this, targetClass);
+		return t == null ? defaultValue : t;
+	}
+
+	/**
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * 返回行列表:<br>
+	 * final var dfm = REC( <br>
+	 * "A",L("a","b","c"), // 第一列 <br>
+	 * "B",L(1,2,3), // 第二列 <br>
+	 * "C",A(2,4,6,10), // 第三列 <br>
+	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
+	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
+	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * );// dfm
+	 * 
+	 * 返回:<br>
+	 * A B C D E <br>
+	 * a 1 2 3 31 <br>
+	 * b 2 4 6 61 <br>
+	 * c 3 6 9 91 <br>
+	 * a 1 10 3 31 <br>
+	 * 
+	 * 按照列进行展示 对DFrame进行初始化
+	 * 
+	 * @param key_formatter  键名内容初始化
+	 * @param cell_formatter 键值元素内容初始化
+	 * @return 格式化字符串
+	 */
+	default String toString2(final Function<Object, String> key_formatter,
+			final Function<Object, String> cell_formatter) {
+
+		final var builder = new StringBuilder();
+		final var final_cell_formatter = cell_formatter != null ? cell_formatter : frt(2);
+		final var final_key_formatter = key_formatter != null ? key_formatter : frt(2);
+		builder.append(this.keys().stream().map(final_key_formatter).collect(Collectors.joining("\t"))).append("\n");
+		this.rows().forEach(rec -> {
+			builder.append(rec.values().stream().map(final_cell_formatter).collect(Collectors.joining("\t")));
+			builder.append("\n");
+		});// forEach
+		return builder.toString();
+	}
+
+	/**
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * 返回行列表:<br>
+	 * final var dfm = REC( <br>
+	 * "A",L("a","b","c"), // 第一列 <br>
+	 * "B",L(1,2,3), // 第二列 <br>
+	 * "C",A(2,4,6,10), // 第三列 <br>
+	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
+	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
+	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * );// dfm
+	 * 
+	 * 返回:<br>
+	 * A B C D E <br>
+	 * a 1 2 3 31 <br>
+	 * b 2 4 6 61 <br>
+	 * c 3 6 9 91 <br>
+	 * a 1 10 3 31 <br>
+	 * 
+	 * 按照列进行展示 对DFrame进行初始化
+	 * 
+	 * @param cell_formatter 元素内容初始化
+	 * @return 格式化字符串
+	 */
+	default String toString2(final Function<Object, String> cell_formatter) {
+		return this.toString2(null, cell_formatter);
+	}
+
+	/**
+	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
+	 * 返回行列表:<br>
+	 * final var dfm = REC( <br>
+	 * "A",L("a","b","c"), // 第一列 <br>
+	 * "B",L(1,2,3), // 第二列 <br>
+	 * "C",A(2,4,6,10), // 第三列 <br>
+	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
+	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
+	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
+	 * );// dfm
+	 * 
+	 * 返回:<br>
+	 * A B C D E <br>
+	 * a 1 2 3 31 <br>
+	 * b 2 4 6 61 <br>
+	 * c 3 6 9 91 <br>
+	 * a 1 10 3 31 <br>
+	 * 
+	 * 按照列进行展示 对DFrame进行初始化
+	 * 
+	 * @return 格式化字符串
+	 */
+	default String toString2() {
+		return toString2(null);
+	}
+
+	/**
+	 * 字符串格式化
+	 * 
+	 * @param cell_formatter 键值得格式化算法
+	 * @return IRecord 的字符串形式
+	 */
+	default String toString(final Function<Object, String> cell_formatter) {
+		final var builder = new StringBuilder();
+		final Function<Object, String> final_cell_formatter = cell_formatter != null ? cell_formatter : v -> {
+			if (v == null)
+				return "(null)";
+			var line = "{0}";// 数据格式化
+			if (v instanceof Date) {
+				line = "{0,Date,yyyy-MM-dd HH:mm:ss}"; // 时间格式化
+			} else if (v instanceof Number) {
+				line = "{0,Number,#}"; // 数字格式化
+			} // if
+
+			return MessageFormat.format(line, v);
+		};// cell_formatter
+
+		this.kvs().forEach(
+				p -> builder.append(p._1()).append(":").append(final_cell_formatter.apply(p._2())).append("\t"));
+
+		return builder.toString().trim();
+	}
 
 	/**
 	 * 全连接连个rec1,rec2:返回一个 类型为{(key,(v1,v2)}的LinkedHashMap mm <br>
@@ -7430,6 +7442,49 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * java反射bean的get方法
+	 * 
+	 * @param clazz     类名
+	 * @param fieldName 属性名
+	 * @return getter 方法
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static Method getter(final Class clazz, final String fieldName) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("get").append(fieldName.substring(0, 1).toUpperCase()).append(fieldName.substring(1));
+		try {
+			Class[] types = new Class[] {};
+			return clazz.getMethod(sb.toString(), types);
+		} catch (Exception e) {
+			// e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * java反射bean的set方法
+	 * 
+	 * @param clazz     类名
+	 * @param fieldName 字段名
+	 * @return setter 方法
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static Method setter(final Class clazz, final String fieldName) {
+		try {
+			Class[] parameterTypes = new Class[1];
+			Field field = clazz.getDeclaredField(fieldName);
+			parameterTypes[0] = field.getType();// 返回参数类型
+			StringBuilder sb = new StringBuilder();
+			sb.append("set").append(fieldName.substring(0, 1).toUpperCase()).append(fieldName.substring(1));
+			Method method = clazz.getMethod(sb.toString(), parameterTypes);
+			return method;
+		} catch (Exception e) {
+			// e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
 	 * 格式化数据对象
 	 * 
 	 * @param recs IRecord 列表
@@ -7534,49 +7589,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * java反射bean的get方法
-	 * 
-	 * @param clazz     类名
-	 * @param fieldName 属性名
-	 * @return getter 方法
-	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Method getGetter(final Class clazz, final String fieldName) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("get").append(fieldName.substring(0, 1).toUpperCase()).append(fieldName.substring(1));
-		try {
-			Class[] types = new Class[] {};
-			return clazz.getMethod(sb.toString(), types);
-		} catch (Exception e) {
-			// e.printStackTrace();
-		}
-		return null;
-	}
-
-	/**
-	 * java反射bean的set方法
-	 * 
-	 * @param clazz     类名
-	 * @param fieldName 字段名
-	 * @return setter 方法
-	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Method getSetter(final Class clazz, final String fieldName) {
-		try {
-			Class[] parameterTypes = new Class[1];
-			Field field = clazz.getDeclaredField(fieldName);
-			parameterTypes[0] = field.getType();// 返回参数类型
-			StringBuilder sb = new StringBuilder();
-			sb.append("set").append(fieldName.substring(0, 1).toUpperCase()).append(fieldName.substring(1));
-			Method method = clazz.getMethod(sb.toString(), parameterTypes);
-			return method;
-		} catch (Exception e) {
-			// e.printStackTrace();
-		}
-		return null;
-	}
-
-	/**
 	 * 把对象转换成key->value对儿<br>
 	 * 分解一个对象obj成为键值对儿集合即IRecord 记录。
 	 * 
@@ -7591,7 +7603,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 		if (obj != null) {
 			Arrays.stream(clazz.getDeclaredFields()).filter(_pfilter).forEach(fld -> {
-				final var getter = getGetter(clazz, fld.getName()); // 提取getter方法
+				final var getter = getter(clazz, fld.getName()); // 提取getter方法
 				Object v = null;
 				if (getter != null) {// 优先尝试使用getter方法进行数据读取
 					try {
