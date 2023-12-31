@@ -40,6 +40,7 @@ import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.function.ExceptionalPredicate;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.jdbc.kvp.Json;
 import gbench.util.jdbc.kvp.KVPair;
 import gbench.util.jdbc.kvp.SimpleRecord;
 import gbench.util.jdbc.kvp.Tuple2;
@@ -2709,11 +2710,24 @@ public class Jdbcs {
 	 * @param bb 字符串字节
 	 * @return Map&lt;String,Object&gt;
 	 */
-	public static Map<String, Object> asMap(final byte[] bb) {
+	public static Map<String, Object> bytes2map(final byte[] bb) {
 
 		final var rec = h2_opt_processor(bb).map(IRecord::REC);
 
 		return rec.map(IRecord::toMap).orElse(null);
+	}
+
+	/**
+	 * 解析json成IRecord
+	 * 
+	 * @param bb 字符串字节
+	 * @return Object 对象
+	 */
+	public static Object bytes2obj(final byte[] bb) {
+
+		final var opt = h2_opt_processor(bb).map(e -> Json.json2obj(e, Object.class));
+
+		return opt.orElse(null);
 	}
 
 	/**
@@ -2724,7 +2738,7 @@ public class Jdbcs {
 	 */
 	public static Consumer<? super IRecord> h2_json_processor(final String key) {
 
-		return e -> e.compute(key, Jdbcs::asMap); // 属性处理
+		return e -> e.compute(key, Jdbcs::bytes2obj); // 属性处理
 	}
 
 	/**

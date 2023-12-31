@@ -1325,7 +1325,8 @@ public class SQL {
 			value = Jdbcs.format("{0}", dtf1.format((LocalTime) value));
 		} else if (value instanceof LocalDate) {
 			value = Jdbcs.format("{0}", dtf2.format((LocalDate) value));
-		} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord) {
+		} else if (value instanceof Iterable || value instanceof Map || value instanceof IRecord
+				|| (value != null && value.getClass().isArray())) {
 			value = Json.obj2json(value);
 		} else {
 			// do Nothing
@@ -1338,7 +1339,7 @@ public class SQL {
 	 * 转成带有引号的字符串
 	 * 
 	 * @param obj 目标对象
-	 * @return
+	 * @return 对象的字符串的形式
 	 */
 	public static String quoteString(final Object obj) {
 		final var qs = String.format("'%s'", asString(obj) // 用单引号括起来
