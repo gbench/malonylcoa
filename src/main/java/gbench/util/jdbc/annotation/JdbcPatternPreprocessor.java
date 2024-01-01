@@ -86,7 +86,7 @@ public abstract class JdbcPatternPreprocessor {
 		final String key = parg.getName();
 		if (!callbacks.has(key))
 			return sqlpattern;
-		return callbacks.evaluate(key, parg, String.class);
+		return callbacks.evaluate(key, parg, (String) null);
 	}
 
 	/**
