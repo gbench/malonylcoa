@@ -5653,32 +5653,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * A:c B:3 C:6 D:9 E:91 <br>
 	 * A:a B:1 C:10 D:3 E:31 <br>
 	 * 
-	 * @param predicate 检索过滤谓词
-	 * @return 返回以key值为列名的行 的流
-	 */
-	default Stream<IRecord> rowS(final Predicate<IRecord> predicate) {
-		return this.rowS().filter(predicate);
-	}
-
-	/**
-	 * DFrame 类型的数据方法,所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)<br>
-	 * 返回行列表:<br>
-	 * final var dfm = REC( <br>
-	 * "A",L("a","b","c"), // 第一列 <br>
-	 * "B",L(1,2,3), // 第二列 <br>
-	 * "C",A(2,4,6,10), // 第三列 <br>
-	 * "D",REC(0,3,1,6,2,9), // 第四列,需要注意这是一个
-	 * (0,3),(1,6),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * "E",REC(0,31,1,61,2,91).toMap() // 第五列，需要注意这是一个
-	 * (0,31),(1,61),...,这样的(key,value)序列，而不是单纯的值 序列 <br>
-	 * );// dfm <br>
-	 * 
-	 * 返回:<br>
-	 * A:a B:1 C:2 D:3 E:31 <br>
-	 * A:b B:2 C:4 D:6 E:61 <br>
-	 * A:c B:3 C:6 D:9 E:91 <br>
-	 * A:a B:1 C:10 D:3 E:31 <br>
-	 * 
 	 * @param <U>    结果类型
 	 * @param mapper 变换函数 rec-&gt;u
 	 * @return 行变换的的结果u类型的流
@@ -10980,7 +10954,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return rec->[rec]
 	 */
 	static Function<IRecord, Stream<IRecord>> subset(final Predicate<IRecord> predicate) {
-		return rec -> rec.rowS(predicate);
+		return rec -> rec.rowS().filter(predicate);
 	}
 
 	/**
