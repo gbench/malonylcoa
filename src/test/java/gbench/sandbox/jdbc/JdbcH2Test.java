@@ -252,6 +252,7 @@ public class JdbcH2Test {
 			final Supplier<IRecord> os = () -> buildOrder(cs, cps, stores, now()); // 订单生成函数,order shipper
 			final var o_partitions = partitions(iterate(os.get(), i -> os.get()).limit(size), batch_size); // 公司产能品数据
 
+			sess.sql2execute(String.format("drop table if exists %s", or_name));// 清除数据表
 			sess.sql2execute(println(ctsql(or_name, proto_of(o_partitions)))); // 创建数据表
 			batch_handlers(o_partitions, partition -> { // 订单数据
 				println("order ids", sess.sql2execute(println(insql(or_name, partition))));// 插入数据
