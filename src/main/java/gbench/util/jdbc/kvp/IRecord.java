@@ -2473,7 +2473,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U类型结果
 	 */
 	default <U> U arrayOf(final Function<Object[], U> mapper) {
-		final var oo = this.toObjArray();
+		final var oo = this.toArray();
 		return mapper.apply(oo);
 	}
 
@@ -6679,10 +6679,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 转换成一个一维数组
+	 * 转换成一维数组
 	 */
 	default String[] toStrArray() {
-		return this.stream().map(g -> g._2() == null ? "" : g._2().toString()).toArray(String[]::new);
+		return this.stream().map(String::valueOf).toArray(String[]::new);
 	}
 
 	/**
@@ -6692,7 +6692,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return Object 类型的一维数组
 	 */
-	default Object[] toObjArray() {
+	default Object[] toArray() {
 		return this.stream().map(g -> g._2() == null ? "" : g._2()).toArray(Object[]::new);
 	}
 
@@ -6756,7 +6756,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <U> U[] toArray(final Class<U> uclass) {
-		final Object[] oo = this.toObjArray();
+		final Object[] oo = this.toArray();
 		final Class<U> final_uclass = uclass == null ? (Class<U>) Object.class : uclass;
 		final U[] uu = (U[]) Array.newInstance(final_uclass, oo.length);
 
@@ -6808,7 +6808,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return U[][] U类型的二维数组
 	 */
 	@SuppressWarnings("unchecked")
-	default <T, U> U[][] toArray2(Function<T, U> t2u) {
+	default <T, U> U[][] toArray2(final Function<T, U> t2u) {
 		final var ll = this.lla(0, t2u);// 尝试应用到第一列t2u，提取Class<U>的类型信息。
 		if (ll == null)
 			return null;// 列值不村子直接返回
@@ -9751,7 +9751,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 转换成一个二维数组
 	 */
 	static Object[][] toObjArray(final List<IRecord> rr) {
-		return rr.stream().map(IRecord::toObjArray).toArray(Object[][]::new);
+		return rr.stream().map(IRecord::toArray).toArray(Object[][]::new);
 	}
 
 	/**
