@@ -2319,23 +2319,25 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 值元素集合的流
 	 * 
-	 * @param <T>    值类型
+	 * @param <V>    值类型
+	 * @param <T>    目标类型
 	 * @param mapper 值映射对象方法
 	 * @return 值元素集合的流
 	 */
-	default <T> Stream<T> valueS(final Function<Object, T> mapper) {
-		return this.stream().map(e -> mapper.apply(e._2()));
+	@SuppressWarnings("unchecked")
+	default <V, T> Stream<T> valueS(final Function<V, T> mapper) {
+		return this.stream().map(e -> mapper.apply((V) e._2()));
 	}
 
 	/**
 	 * 值的流
 	 * 
-	 * @param <T>    值元素类型
-	 * @param tclazz 类型占位符用于 指定 T的具体类型
+	 * @param <T>        值元素类型
+	 * @param typeholder 类型占位符用于 指定 T的具体类型
 	 * @return 值集合列表
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> Stream<T> valueS(final Class<T> tclazz) {
+	default <T> Stream<T> valueS(final T typeholder) {
 		return this.valueS(e -> (T) e);
 	}
 
@@ -2343,11 +2345,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 值集合
 	 * 
 	 * @param <T>    值类型
+	 * @param <U>    值类型
 	 * @param mapper 值映射对象方法
 	 * @return 所有值集合列表
 	 */
-	default <T> List<T> values(final Function<Object, T> mapper) {
-		return this.valueS(mapper).collect(Collectors.toList());
+	default <T, U> List<U> values(final Function<T, U> mapper) {
+		return this.valueS(mapper).toList();
 	}
 
 	/**
@@ -2375,31 +2378,67 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 值集合 (values 的别名)
 	 * 
 	 * @param <T>    值类型
+	 * @param <U>    值类型
 	 * @param mapper 值映射目标对象方法
 	 * @return 所有值集合列表
 	 */
-	default <T> List<T> vs(final Function<Object, T> mapper) {
+	default <T, U> List<U> vs(final Function<T, U> mapper) {
 		return this.values(mapper);
-	}
-
-	/**
-	 * 值集合
-	 * 
-	 * @return 所有值集合列表
-	 */
-	default List<Object> vs() {
-		return this.values();
 	}
 
 	/**
 	 * 值元素集合的流
 	 * 
-	 * @param <T>    值元素类型
-	 * @param tclazz 类型占位符用于 指定 T的具体类型
+	 * @param <T>        值元素类型
+	 * @param typeholder 类型占位符用于 指定 T的具体类型
+	 * @return 值元素集合的列表
+	 */
+	default <T> List<T> vs(final T typeholder) {
+		return this.vS(typeholder).toList();
+	}
+
+	/**
+	 * 值元素集合的流
+	 * 
+	 * @param <T> 值元素类型
 	 * @return 值元素集合的流
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> Stream<T> vS(final Class<T> tclazz) {
+	default <T> List<T> vs() {
+		return this.values(e -> (T) e);
+	}
+
+	/**
+	 * 值集合 (values 的别名)
+	 * 
+	 * @param <T>    值类型
+	 * @param mapper 值映射目标对象方法
+	 * @return 所有值集合列表
+	 */
+	default <T> Stream<T> vS(final Function<Object, T> mapper) {
+		return this.valueS(mapper);
+	}
+
+	/**
+	 * 值元素集合的流
+	 * 
+	 * @param <T>        值元素类型
+	 * @param typeholder 类型占位符用于 指定 T的具体类型
+	 * @return 值元素集合的流
+	 */
+	@SuppressWarnings("unchecked")
+	default <T> Stream<T> vS(final T typeholder) {
+		return this.valueS(e -> (T) e);
+	}
+
+	/**
+	 * 值元素集合的流
+	 * 
+	 * @param <T> 值元素类型
+	 * @return 值元素集合的流
+	 */
+	@SuppressWarnings("unchecked")
+	default <T> Stream<T> vS() {
 		return this.valueS(e -> (T) e);
 	}
 
@@ -2790,8 +2829,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default Function<List<IRecord>, IRecord> compose(final Function<List<IRecord>, IRecord> gx, final String... keys) {
 
-		return (xx) -> gx.apply(Stream.of(keys).map(this::fxx).filter(Objects::nonNull).map(f -> f.apply(xx))
-				.collect(Collectors.toList()));
+		return (xx) -> gx.apply(Stream.of(keys).map(this::fxx).filter(Objects::nonNull).map(f -> f.apply(xx)).toList());
 	}
 
 	/**
@@ -5230,7 +5268,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <T> void dfs_forall(final BiConsumer<String, List<T>> cs) {
-		dfs(this, (path, stream) -> cs.accept(path, (List<T>) (stream.collect(Collectors.toList()))), null, null);
+		dfs(this, (path, stream) -> cs.accept(path, (List<T>) stream.toList()), null, null);
 	}
 
 	/**
@@ -10094,8 +10132,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		final var rec = REC();
 		if (recs != null)
 			Arrays.stream(recs).forEach(rec::add);
-		return new Builder(
-				rec.keys().stream().map(SQL::parseFieldName).map(e -> e.str("name")).collect(Collectors.toList()));
+		return new Builder(rec.keys().stream().map(SQL::parseFieldName).map(e -> e.str("name")).toList());
 	}
 
 	/**
