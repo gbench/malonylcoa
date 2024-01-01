@@ -2964,11 +2964,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 返回一个 应用了 arg:T的结果u:U类型 ,t2u.apply(arg)<br>
 	 * <br>
 	 * 
-	 * @param <T>        t2u即key值 的参数的类型
-	 * @param <U>        t2u即key值 的结果类型
-	 * @param key        字段名 即 t2u的函数的键名
-	 * @param arg        t2u的具体参数
-	 * @param typeholder 返回的结果类型类,这是一个类型占位符,用于向编译器提供类型信息，并无实际运算意义。
+	 * @param <T>        参数类型
+	 * @param <U>        结果类型
+	 * @param arg        函数（value)的参数
+	 * @param typeholder 类型占位符,这是一个类型占位符,用于向编译器提供类型信息，并无实际运算意义。
 	 * @return U类型数据
 	 */
 	default <T, U> U evaluate(final int idx, final T arg, final U typeholder) {
@@ -2982,17 +2981,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 返回一个 应用了 arg:T的结果u:U类型 ,t2u.apply(arg)<br>
 	 * <br>
 	 * 
-	 * @param <T> t2u即key值 的参数的类型
-	 * @param <U> t2u即key值 的结果类型
-	 * @param key 字段名 即 t2u的函数的键名
-	 * @param arg t2u的具体参数
-	 * @param obj 结果类型U的对象载体,其实就一为了方便提供 Class&lt;U&gt;的类型提取,null表示Object类型
+	 * @param <T>        t2u即key值 的参数的类型
+	 * @param <U>        t2u即key值 的结果类型
+	 * @param key        字段名 即 t2u的函数的键名
+	 * @param arg        t2u的具体参数
+	 * @param typeholder 类型占位符
 	 * @return U类型数据
 	 */
-	default <T, U> U evaluate(final String key, final T arg, final U obj) {
-		if (obj == null)
-			return eval(key, arg);
-		return this.evaluate(key, arg, (U) null);
+	default <T, U> U evaluate(final String key, final T arg, final U typeholder) {
+		return this.as(key, (Function<T, U>) null).apply(arg);
 	}
 
 	/**
