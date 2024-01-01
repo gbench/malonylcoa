@@ -1188,14 +1188,12 @@ public class DataApp {
 		 * 批量添加键值列表 <br>
 		 * 元组信息添加到对象本身
 		 *
-		 * @param <T>  参数列表元素类型
 		 * @param objs Map结构（IRecord也是Map结构） 或是 键名,键值 序列。即 build(map) 或是
 		 *             build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
 		 *             kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
 		 * @return 新生成的IRecord 或 对象本身
 		 */
-		@SuppressWarnings("unchecked")
-		default <T> IRecord prepend(final T... objs) {
+		default IRecord prepend(final Object... objs) {
 			return REC(objs).add(this);
 		}
 
@@ -1217,14 +1215,12 @@ public class DataApp {
 		 * 批量添加键值列表 <br>
 		 * 元组信息添加到对象本身
 		 *
-		 * @param <T>  参数列表元素类型
 		 * @param objs Map结构(IRecord也是Map结构) 或是 键名,键值 序列。即 build(map) 或是
 		 *             build(key0,value0,key1,vlaue1,...) 的 形式， 特别注意 build(map) 时候，当且仅当
 		 *             kvs 的只有一个元素，即 build(map0,map1) 会被视为 键值序列
 		 * @return 复制的新的对象
 		 */
-		@SuppressWarnings("unchecked")
-		default <T> IRecord derive(final T... objs) {
+		default IRecord derive(final Object... objs) {
 			return this.duplicate().add(REC(objs));
 		}
 
@@ -1290,14 +1286,14 @@ public class DataApp {
 		 * @return IRecord 对象本省
 		 */
 		default <X, Y, T, U> IRecord pset(final String path, final Object value) {
-			final var pp = path.split("[/,]+");
-			final var n = pp.length;
+			final String[] pp = path.split("[/,]+");
+			final int n = pp.length;
 
 			if (n < 2) {
 				this.set(path, value);
 			} else {
-				final var parent = Arrays.copyOfRange(pp, 0, n - 1);
-				final var r = this.pathget(parent, (k, e) -> e, e -> (IRecord) e);
+				final String[] parent = Arrays.copyOfRange(pp, 0, n - 1);
+				final IRecord r = this.pathget(parent, (k, e) -> e, e -> (IRecord) e);
 				if (null != r) {
 					r.set(pp[n - 1], value);
 				} // if
@@ -2540,7 +2536,6 @@ public class DataApp {
 		 */
 		@SafeVarargs
 		public static <T> Builder rb(final T... keys) {
-
 			final List<String> _keys = Arrays.asList(keys).stream().map(e -> e + "").collect(Collectors.toList());
 			return new Builder(_keys);
 		}
@@ -2592,7 +2587,6 @@ public class DataApp {
 		 */
 		@SafeVarargs
 		public static <T> String FT2(final String template, final T... tt) {
-
 			final IRecord rec = IRecord.rb(tt.length, i -> "${" + i + "}").get(tt);
 			return fill_template(template, rec);
 		}
@@ -2608,7 +2602,6 @@ public class DataApp {
 		 */
 		@SafeVarargs
 		public static <T> String FT(final String template, final T... tt) {
-
 			final IRecord rec = IRecord.rb(tt.length, i -> "$" + i).get(tt);
 			return fill_template(template, rec);
 		}
@@ -2627,7 +2620,6 @@ public class DataApp {
 		 * @return 把template中的占位符/key用placeholder2values中的值value给予替换
 		 */
 		public static String FT(final String template, final IRecord placeholder2values) {
-
 			return fill_template(template, placeholder2values);
 		}
 
@@ -2646,7 +2638,6 @@ public class DataApp {
 		 * @return 把template中的占位符/key用placeholder2values中的值value给予替换
 		 */
 		public static String FT(final String template, final IRecord placeholder2values, final boolean flag) {
-
 			return fill_template(template, placeholder2values, flag);
 		}
 
@@ -2673,7 +2664,6 @@ public class DataApp {
 		 * @return 填充后的字符串
 		 */
 		static String FT(final String line, final Pattern pattern, final Function<MatchResult, String> replacer) {
-
 			final StringBuilder sb = new StringBuilder();
 			try {
 				final Matcher matcher = pattern.matcher(line);
@@ -2797,7 +2787,6 @@ public class DataApp {
 		 */
 		@SafeVarargs
 		public static <T> IRecord REC(final T... kvs) {
-
 			return MyRecord.REC(kvs); // 采用 MyRecord 来作为IRecord的默认实现函数
 		}
 
@@ -2814,7 +2803,6 @@ public class DataApp {
 		 * @return t->dbl
 		 */
 		static <T> Function<T, Double> obj2dbl(final Number defaultValue) {
-
 			return (T obj) -> {
 				if (obj instanceof Number) {
 					return ((Number) obj).doubleValue();
@@ -4923,7 +4911,6 @@ public class DataApp {
 		 */
 		@SafeVarargs
 		public static <T> IRecord REC(final T... kvs) {
-
 			final int n = kvs.length;
 			final LinkedHashMap<String, Object> data = new LinkedHashMap<String, Object>();
 			final Consumer<Tuple2<String, ?>> put_tuple = tup -> { // 元组处理
