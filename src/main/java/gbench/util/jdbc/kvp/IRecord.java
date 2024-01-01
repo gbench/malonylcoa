@@ -377,7 +377,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <T> T get(int idx, T default_value) {
-		final var obj = (T) this.get(this.indexOfKey(idx));
+		final var obj = (T) this.get(this.keyOfIndex(idx));
 		return obj == null ? default_value : obj;
 	}
 
@@ -388,7 +388,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return idx 所标识的字段的值,非法索引(超出范围) 返回null
 	 */
 	default Object get(final Integer idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : get(key);
 	}
 
@@ -428,7 +428,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
 	default IRecord gets(final Number... indexes) {
-		final var kk = Arrays.stream(indexes).map(i -> this.indexOfKey(i.intValue())).filter(Objects::nonNull)
+		final var kk = Arrays.stream(indexes).map(i -> this.keyOfIndex(i.intValue())).filter(Objects::nonNull)
 				.toArray(String[]::new);
 		final var rec = new SimpleRecord();
 		for (String k : kk) {
@@ -513,7 +513,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return idx 所对应的值
 	 */
 	default <T> T[] aa(final int idx, final Class<T> targetClass) {
-		return this.aa(indexOfKey(idx), targetClass);
+		return this.aa(keyOfIndex(idx), targetClass);
 	}
 
 	/**
@@ -661,7 +661,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 当前的IRecord对象 以保证可以链式编程。
 	 */
 	default IRecord set(final int idx, final Object value) {
-		final var key = this.indexOfKey(idx);
+		final var key = this.keyOfIndex(idx);
 		return this.set(key, value);
 	}
 
@@ -1923,7 +1923,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	default <U> List<U> lls(final int idx) {
-		return lls(indexOfKey(idx));
+		return lls(keyOfIndex(idx));
 	}
 
 	/**
@@ -1951,7 +1951,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	default <T, U> List<U> lls(final int idx, final Function<T, U> t2u) {
-		return llapply(indexOfKey(idx), t2u);
+		return llapply(keyOfIndex(idx), t2u);
 	}
 
 	/**
@@ -2004,7 +2004,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的流结构
 	 */
 	default <U> Stream<U> llS(final int idx) {
-		return llS(indexOfKey(idx));
+		return llS(keyOfIndex(idx));
 	}
 
 	/**
@@ -2014,7 +2014,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 是否含有idx标号的索引
 	 */
 	default boolean has(final int idx) {
-		return this.get(indexOfKey(idx)) == null;
+		return this.get(keyOfIndex(idx)) == null;
 	}
 
 	/**
@@ -2023,7 +2023,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param idx 索引序号从0开始
 	 * @return 索引对应的键名，非法索引(不存在的列号) 返回 null
 	 */
-	default String indexOfKey(final Integer idx) {
+	default String keyOfIndex(final Integer idx) {
 
 		if (idx >= this.keys().size() || idx < 0) {
 			return null;
@@ -2039,7 +2039,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 键名
 	 * @return 键名索引, 从 0 开始 , 非法的 键名字段 （比如不存在的 键名字段) 返回 null
 	 */
-	default Integer keyOfIndex(final String key) {
+	default Integer indexOfKey(final String key) {
 
 		final var kk = this.keys().toArray(String[]::new);
 		for (int i = 0; i < kk.length; i++) {
@@ -2110,7 +2110,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <T, U> U computeIfAbsent(final Integer idx, final BiFunction<Integer, T, U> mapper) {
 		@SuppressWarnings("unchecked")
-		final var o = (U) this.get(this.indexOfKey(idx));
+		final var o = (U) this.get(this.keyOfIndex(idx));
 		if (o != null)
 			return o;
 		@SuppressWarnings("unchecked")
@@ -2155,7 +2155,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <T, U> U compute(final Integer idx, final Function<T, U> t2u) {
 		final U u = this.get(idx, t2u);
-		final var key = this.indexOfKey(idx);
+		final var key = this.keyOfIndex(idx);
 		this.set(key, u);
 		return u;
 	}
@@ -2190,7 +2190,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <T, U> U compute(final Integer idx, final BiFunction<Integer, T, U> mapper) {
 		@SuppressWarnings("unchecked")
-		final T t = (T) this.get(this.indexOfKey(idx));
+		final T t = (T) this.get(this.keyOfIndex(idx));
 		final U u = mapper.apply(idx, t);
 		this.set(idx, u);
 		return u;
@@ -2225,7 +2225,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 值变换后的数据。
 	 */
 	default <T, U> U computeIfPresent(final Integer idx, final Function<T, U> t2u) {
-		final var key = this.indexOfKey(idx);
+		final var key = this.keyOfIndex(idx);
 		return computeIfPresent(key, t2u);
 	}
 
@@ -2455,7 +2455,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param <T>         tt2u_mapper 的原数据类型
 	 * @param <U>         tt2u_mapper 目标元素的类型
 	 * @param x2t_mapper  x->t 元素类型变换函数
-	 * @param tt2u_mapper [t]->u 的数组变换函数
+	 * @param tt2u_mapper [t]-&gt;u 的数组变换函数
 	 * @return U类型结果
 	 */
 	default <X, T, U> U arrayOf(final Function<X, T> x2t_mapper, final Function<T[], U> tt2u_mapper) {
@@ -2484,7 +2484,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>    mapper 的原数据类型
 	 * @param <U>    mapper 目标元素的类型
-	 * @param mapper [t]->u 的数组变换函数
+	 * @param mapper [t]-&gt;u 的数组变换函数
 	 * @return U类型结果
 	 */
 	default <T, U> U arrayOf(final Class<T> tclass, final Function<T[], U> mapper) {
@@ -2596,7 +2596,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 移除了指定idx的字段序列
 	 */
 	default IRecord remove(final int idx) {
-		return this.remove(this.indexOfKey(idx));
+		return this.remove(this.keyOfIndex(idx));
 	}
 
 	/**
@@ -2643,28 +2643,32 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以key 所在数值在作为参数调用mapper所指定的函数.
 	 */
 	default <T, U> U map2(final int idx, final Function<T, U> t2u) {
-		return this.map2(this.indexOfKey(idx), t2u);
+		return this.map2(this.keyOfIndex(idx), t2u);
 	}
 
 	/**
 	 * 强制类型转换，把key 作为T 类型数据
 	 * 
-	 * @param id 字段序号，从0开始
+	 * @param <T>元素类型
+	 * @param id         字段序号，从0开始
+	 * @param typeholder 类型占位符
 	 * @return T 类型数据
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> T as(final int id, final Class<T> tcls) {
+	default <T> T as(final int id, final T typeholder) {
 		return (T) (this.get(id));
 	}
 
 	/**
 	 * 强制类型转换，把key 作为iT 类型数据
 	 * 
-	 * @param key 字段名
+	 * @param <T>元素类型
+	 * @param key        字段名
+	 * @param typeholder 类型占位符
 	 * @return T类型数据
 	 */
 	@SuppressWarnings("unchecked")
-	default <T> T as(final String key, final Class<T> tcls) {
+	default <T> T as(final String key, final T typeholder) {
 		return (T) (this.get(key));
 	}
 
@@ -2892,7 +2896,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("rawtypes")
 	default Function func(final String key) {
-		return as(key, Function.class);
+		return as(key, (Function) null);
 	}
 
 	/**
@@ -2905,9 +2909,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param arg 字段名, 提交各key:t2u 函数的 参数对象
 	 * @return 调用与key绑定的t2u.apply(arg)
 	 */
-	@SuppressWarnings("unchecked")
 	default <T, U> U eval(final String key, final T arg) {
-		Function<T, U> foo = ((Function<T, U>) as(key, Function.class));
+		final var foo = as(key, (Function<T, U>) null);
 		if (foo == null)
 			return null;
 		U u = foo.apply(arg);
@@ -2926,7 +2929,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <FUNC, U> U eval2(final String key, final Class<FUNC> functorClass, final Object... args) {
-		FUNC func = as(key, functorClass);
+		FUNC func = as(key, (FUNC) null);
 		if (ANNO(functorClass, FunctionalInterface.class) == null) {
 			System.out.println(functorClass + " 需要时一个函数接口，必须强制用@FunctionalInterface标记！");
 			return null;
@@ -2947,9 +2950,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key  字段名
 	 * @param args 回调函数的参数
 	 */
-	@SuppressWarnings("unchecked")
 	default <T> void callback(final String key, final T args) {
-		Consumer<T> foo = as(key, Consumer.class);
+		final var foo = as(key, (Consumer<T>) null);
 		if (foo == null)
 			return;
 		foo.accept(args);
@@ -2962,20 +2964,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 返回一个 应用了 arg:T的结果u:U类型 ,t2u.apply(arg)<br>
 	 * <br>
 	 * 
-	 * @param <T>  t2u即key值 的参数的类型
-	 * @param <U>  t2u即key值 的结果类型
-	 * @param key  字段名 即 t2u的函数的键名
-	 * @param arg  t2u的具体参数
-	 * @param ucls 返回的结果类型类,这是一个类型占位符,用于向编译器提供类型信息，并无实际运算意义。
+	 * @param <T>        t2u即key值 的参数的类型
+	 * @param <U>        t2u即key值 的结果类型
+	 * @param key        字段名 即 t2u的函数的键名
+	 * @param arg        t2u的具体参数
+	 * @param typeholder 返回的结果类型类,这是一个类型占位符,用于向编译器提供类型信息，并无实际运算意义。
 	 * @return U类型数据
 	 */
-	@SuppressWarnings("unchecked")
-	default <T, U> U evaluate(final String key, final T arg, final Class<U> ucls) {
-		final Function<T, U> foo = ((Function<T, U>) as(key, Function.class));
-		if (foo == null)
-			return null;
-		final U u = foo.apply(arg);
-		return u;
+	default <T, U> U evaluate(final int idx, final T arg, final U typeholder) {
+		return this.evaluate(this.keyOfIndex(idx), arg, typeholder);
 	}
 
 	/**
@@ -2992,11 +2989,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param obj 结果类型U的对象载体,其实就一为了方便提供 Class&lt;U&gt;的类型提取,null表示Object类型
 	 * @return U类型数据
 	 */
-	@SuppressWarnings("unchecked")
 	default <T, U> U evaluate(final String key, final T arg, final U obj) {
 		if (obj == null)
 			return eval(key, arg);
-		return this.evaluate(key, arg, (Class<U>) (obj == null ? Object.class : obj.getClass()));
+		return this.evaluate(key, arg, (U) null);
 	}
 
 	/**
@@ -3494,7 +3490,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return map 函数变换指定列的数据
 	 */
 	default <T> T map(final int idx, final Function<Object, T> mapper) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : map(key, mapper);
 	}
 
@@ -3526,7 +3522,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 字符串
 	 */
 	default String str(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : str(key);
 	}
 
@@ -3614,7 +3610,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 双精度浮点数
 	 */
 	default Double dbl(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : dbl(key);
 	}
 
@@ -3668,7 +3664,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return Integer 整数值
 	 */
 	default Integer i4(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : i4(key);
 	};
 
@@ -3726,7 +3722,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 长整型
 	 */
 	default Long lng(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : lng(key);
 	};
 
@@ -3794,7 +3790,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 可能返回空值
 	 */
 	default Number num(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : num(key);
 	};
 
@@ -3832,7 +3828,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 例外异常
 	 */
 	default Exception except(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : except(key);
 	};
 
@@ -3873,7 +3869,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return Timestamp
 	 */
 	default Timestamp timestamp(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : timestamp(key);
 	};
 
@@ -3885,7 +3881,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return Timestamp
 	 */
 	default Timestamp timestamp(final int idx, Timestamp default_value) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? default_value : timestamp(key);
 	};
 
@@ -3923,7 +3919,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return LocalDateTime
 	 */
 	default LocalDateTime ldt(final int idx) {
-		return Times.dt2ldt(this.date(indexOfKey(idx)));
+		return Times.dt2ldt(this.date(keyOfIndex(idx)));
 	}
 
 	/**
@@ -4150,7 +4146,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 日期类型
 	 */
 	default Date date(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : date(key);
 	};
 
@@ -4196,7 +4192,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return Boolean 类型
 	 */
 	default Boolean bool(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : bool(key);
 	};
 
@@ -4233,7 +4229,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return T类型
 	 */
 	default <T> T val(final int idx, final Class<T> cls) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : val(key, cls);
 	};
 
@@ -4391,7 +4387,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 键名变换后键值对儿({T ,Object)}
 	 */
 	default <T> Map<T, Object> applyOnkeys2(final Function<Integer, T> keymapper) {
-		return toMap2(key -> keymapper.apply(this.keyOfIndex(key)), identity);
+		return toMap2(key -> keymapper.apply(this.indexOfKey(key)), identity);
 	}
 
 	/**
@@ -4424,7 +4420,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord
 	 */
 	default <T> Map<T, Object> aoks2(final Function<Integer, T> keymapper) {
-		return this.applyOnkeys(k -> keymapper.apply(this.keyOfIndex(k)));
+		return this.applyOnkeys(k -> keymapper.apply(this.indexOfKey(k)));
 	}
 
 	/**
@@ -4435,7 +4431,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord
 	 */
 	default <T> IRecord aoks2rec2(final Function<Integer, T> keymapper) {
-		return REC(this.applyOnkeys(k -> keymapper.apply(this.keyOfIndex(k))));
+		return REC(this.applyOnkeys(k -> keymapper.apply(this.indexOfKey(k))));
 	}
 
 	/**
@@ -4448,7 +4444,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default <T> IRecord aoks2rec2(final String kk[]) {
 		if (kk == null || kk.length < this.keys().size())
 			return this.duplicate();
-		return REC(this.applyOnkeys(k -> kk[this.keyOfIndex(k) % kk.length]));
+		return REC(this.applyOnkeys(k -> kk[this.indexOfKey(k) % kk.length]));
 	}
 
 	/**
@@ -4542,7 +4538,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord
 	 */
 	default <T> Map<T, Object> aliasi(final Function<Integer, T> keymapper) {
-		return this.applyOnkeys(k -> keymapper.apply(this.keyOfIndex(k)));
+		return this.applyOnkeys(k -> keymapper.apply(this.indexOfKey(k)));
 	}
 
 	/**
@@ -4613,7 +4609,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * applyOnValues:的简写 对值集合进行Map,不对key 进行变换 把函数mapper 应用到 values 对象:Object->U
 	 * 对象。<br>
-	 * 转换成一个 String -> U 的Map
+	 * 转换成一个 String -&gt; U 的Map
 	 * 
 	 * @param <T>         Value 的值类型
 	 * @param <U>         valuemapper 对值的变换结果
@@ -4630,7 +4626,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * applyOnValues:的简写 <br>
 	 * 对值集合进行Map,不对key 进行变换<br>
 	 * 把函数mapper 应用到 values 对象:Object-&gt;U 对象。<br>
-	 * 转换成一个 String -> U 的Map<br>
+	 * 转换成一个 String -&gt; U 的Map<br>
 	 * 
 	 * @param <T>         Value 的值类型
 	 * @param <U>         valuemapper 对值的变换结果
@@ -4646,7 +4642,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 对值集合进行Map,不对key 进行变换<br>
 	 * 把函数mapper 应用到 values 对象:Object->U 对象。然后使用目标结果呈递器finisher给呈递给最终结果。<br>
 	 * 先转换成一个 String -> U 的Map lhm 然后把这个lhm 给转换成目标对象 O <br>
-	 * 转换成一个 String -> U 的Map<br>
+	 * 转换成一个 String -&gt; U 的Map<br>
 	 * 
 	 * @param <T>         Value 的值类型
 	 * @param <U>         valuemapper 对值的变换结果
@@ -4696,7 +4692,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return idx 所对应对应的值得IRecord数据。
 	 */
 	default IRecord rec(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : rec(key);
 	}
 
@@ -4717,7 +4713,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord 的列表
 	 */
 	default List<IRecord> recs(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : recs(key);
 	}
 
@@ -4741,7 +4737,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord 的流 [rec]
 	 */
 	default Stream<IRecord> recS(final int idx) {
-		return this.recS(this.indexOfKey(idx));
+		return this.recS(this.keyOfIndex(idx));
 	}
 
 	/**
@@ -4872,7 +4868,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			return REC();
 		}
 
-		return this.filter(Arrays.stream(indexes).filter(Objects::nonNull).map(Math::abs).map(this::indexOfKey)
+		return this.filter(Arrays.stream(indexes).filter(Objects::nonNull).map(Math::abs).map(this::keyOfIndex)
 				.toArray(String[]::new));
 	}
 
@@ -5012,7 +5008,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default IRecord filterNot(final Integer... indices) {
 		final var n = this.size();
-		final var flds = Arrays.stream(indices).map(i -> this.indexOfKey(i % n)).toArray(String[]::new);
+		final var flds = Arrays.stream(indices).map(i -> this.keyOfIndex(i % n)).toArray(String[]::new);
 		return filterNot(flds, true);
 	}
 
@@ -6021,7 +6017,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return idx 所标识的列(key)的经过t2u变换后的元素集合
 	 */
 	default <T, U> U col(final Integer idx, final Function<? super List<T>, U> tt2u) {
-		return this.col(this.indexOfKey(idx), tt2u);
+		return this.col(this.keyOfIndex(idx), tt2u);
 	}
 
 	/**
@@ -6526,10 +6522,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/////////////////////////////////////////////////////////////////////
-	// 以下是IRecord 的静态方法区域
-	/////////////////////////////////////////////////////////////////////
-
-	/////////////////////////////////////////////////////////////////////
 	// 以下是IRecord DFrame 类型的方法区域:所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)
 	/////////////////////////////////////////////////////////////////////
 
@@ -6569,14 +6561,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return Map&lt;String, Object&gt;
 	 */
 	default Map<String, Object> asMap(final int idx) {
-		final String key = this.indexOfKey(idx);
+		final String key = this.keyOfIndex(idx);
 		return key == null ? null : asMap(key);
 	}
 
 	/**
 	 * 对值集合进行Map,不对key 进行变换 <br>
 	 * 把函数mapper 应用到 values 对象:Object-&gt;U 对象。<br>
-	 * 转换成一个 String -> U 的Map <br>
+	 * 转换成一个 String -&gt; U 的Map <br>
 	 * 
 	 * @param <U>         valuemapper 对值的变换结果
 	 * @param valuemapper 值变换函数
@@ -6848,14 +6840,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		return ooo;
 	}
 
-	/////////////////////////////////////////////////////////////////////
-	// 以下是IRecord 的静态方法区域
-	/////////////////////////////////////////////////////////////////////
-
-	/////////////////////////////////////////////////////////////////////
-	// 以下是IRecord DFrame 类型的方法区域:所谓DFrame 是指键值对儿中的值为List的IRecord(kvs)
-	/////////////////////////////////////////////////////////////////////
-
 	/**
 	 * 部分转换<br>
 	 * 把Record（一般为单元素记录：即只有一个键的Record） 转换成 目标类型对象,采用 rec2obj 转换对象,<br>
@@ -7023,6 +7007,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 		return builder.toString().trim();
 	}
+
+	/////////////////////////////////////////////////////////////////////
+	// 以下是IRecord 的静态方法区域
+	/////////////////////////////////////////////////////////////////////
 
 	/**
 	 * 全连接连个rec1,rec2:返回一个 类型为{(key,(v1,v2)}的LinkedHashMap mm <br>
