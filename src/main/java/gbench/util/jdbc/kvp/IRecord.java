@@ -349,7 +349,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param targetType 目標類型
 	 * @return 键名字段key 所对应的值
 	 */
-	default <T> T getT(String key, final Class<T> targetType) {
+	default <T> T getT(final String key, final Class<T> targetType) {
 		final var targetValue = REC(0, this.get(key)).toTarget(targetType);
 		return targetValue;
 	}
@@ -2983,7 +2983,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @param <T>        t2u即key值 的参数的类型
 	 * @param <U>        t2u即key值 的结果类型
-	 * @param key        字段名 即 t2u的函数的键名
+	 * @param key        字段名即t2u的函数的键名
 	 * @param arg        t2u的具体参数
 	 * @param typeholder 类型占位符
 	 * @return U类型数据
@@ -2999,7 +2999,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord 结果的数据
 	 */
 	default <T, U> IRecord bind(final String key, final Function<T, U> transform, final String newKey) {
-		U obj = this.eval(key, transform);
+		final U obj = this.eval(key, transform);
 		return REC(newKey == null ? key : newKey, obj);
 	}
 
@@ -3012,7 +3012,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	@SuppressWarnings("unchecked")
 	default <T, U> IRecord bind(final Function<T, U> transform) {
 		final IRecord rec = REC();
-		Function<T, U> foo = t -> {
+		final Function<T, U> foo = t -> {
 			U u = null;
 			try {
 				u = transform.apply(t);
@@ -3040,7 +3040,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <R> R collect0(final Supplier<R> supplier, final BiConsumer<R, KVPair<String, Object>> accumulator,
 			final BinaryOperator<R> combiner) {
-
 		final var collector = Collector.of(supplier, accumulator, combiner);
 		return this.stream().collect(collector);
 	};
