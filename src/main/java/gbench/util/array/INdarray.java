@@ -1530,7 +1530,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * functor 来源于 haskell 的思想
 	 *
 	 * @param <U>    结果元素类型
-	 * @param mapper t->u
+	 * @param mapper t-&gt;u
 	 * @return ndarray
 	 */
 	default <U> INdarray<U> fmap(final Function<V, U> mapper) {
@@ -1541,11 +1541,11 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * functor 来源于 haskell 的思想 <br>
 	 * eg: <br>
 	 * 提取最近3天数据 <br>
-	 * data.fmap((i, p) -> data.build(Math.max(i - 3, 0), i)) <br>
+	 * data.fmap((i, p) -&gt; data.build(Math.max(i - 3, 0), i)) <br>
 	 * [[],[1],[1,2],[1,2,3],[2,3,4],[3,4,5],...]
 	 *
 	 * @param <U>    结果元素类型
-	 * @param mapper (i:索引从0开始,t:元素内容)->u
+	 * @param mapper (i:索引从0开始,t:元素内容)-&gt;u
 	 * @return ndarray
 	 */
 	default <U> INdarray<U> fmap(final BiFunction<Integer, V, U> mapper) {
@@ -1557,7 +1557,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *
 	 * @param <U>      结果元素类型
 	 * @param <X>      U的元素类型
-	 * @param streamer t->[x]
+	 * @param streamer t-&gt;[x]
 	 * @return ndarray,返回对rawdata复制
 	 */
 	default <X, U extends Iterable<X>> INdarray<X> fflat(final Function<V, U> streamer) {
@@ -1582,7 +1582,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *
 	 * @param <U>      结果元素类型
 	 * @param <X>      U的元素类型
-	 * @param streamer t->[x]
+	 * @param streamer t-&gt;[x]
 	 * @return ndarray
 	 */
 	default <X, U extends Stream<X>> INdarray<X> fflatMap(final Function<V, U> streamer) {
