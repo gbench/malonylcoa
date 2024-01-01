@@ -8342,9 +8342,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param kvpll 路径键-值 对儿 集合 的 列表 的 列表 [[([t],u)]]
 	 * @return KVPair集合进行层次合并
 	 */
-	static <T, U> Map<T, Object> KVPSMERGE(final List<List<KVPair<List<T>, U>>> kvpll) {
+	static <T, U> Map<T, Object> KVPSMERGE(final Iterable<List<KVPair<List<T>, U>>> kvpll) {
 		@SuppressWarnings("unchecked")
-		Stream<List<KVPair<List<T>, Object>>> stream = ((List<List<KVPair<List<T>, Object>>>) (Object) kvpll).stream();
+		final var stream = ((Stream<List<KVPair<List<T>, Object>>>) (Object) StreamSupport.stream(kvpll.spliterator(),
+				false));
 		return KVPSMERGE(stream, (T) null);
 	}
 
@@ -8356,9 +8357,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param kvpl 路径键-值 对儿 集合 的 列表 [([t],u)]
 	 * @return KVPair集合进行层次合并
 	 */
-	static <T, U> Map<T, Object> KVPSMERGE2(final List<KVPair<List<T>, U>> kvpl) {
+	static <T, U> Map<T, Object> KVPSMERGE2(final Iterable<KVPair<List<T>, U>> kvpl) {
 		@SuppressWarnings("unchecked")
-		Stream<List<KVPair<List<T>, Object>>> stream = Stream.of(((List<KVPair<List<T>, Object>>) (Object) kvpl));
+		final var stream = (Stream<List<KVPair<List<T>, Object>>>) (Object) StreamSupport.stream(kvpl.spliterator(),
+				false);
 		return KVPSMERGE(stream, (T) null);
 	}
 
@@ -8488,8 +8490,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param records 键值对儿 集合 流
 	 * @return KVPair集合进行层次合并
 	 */
-	static IRecord RECMERGE2(final List<IRecord> records) {
-		return MAP2REC(RECMERGE(records.stream()));
+	static IRecord RECMERGE2(final Iterable<IRecord> records) {
+		return MAP2REC(RECMERGE(StreamSupport.stream(records.spliterator(), false)));
 	}
 
 	/**
@@ -8515,8 +8517,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param pattern 路径分隔符号，默认(空值)为 "/"
 	 * @return KVPair集合进行层次合并
 	 */
-	static IRecord RECMERGE2(final List<IRecord> records, String pattern) {
-		return MAP2REC(RECMERGE(records.stream(), pattern));
+	static IRecord RECMERGE2(final Iterable<IRecord> records, String pattern) {
+		return MAP2REC(RECMERGE(StreamSupport.stream(records.spliterator(), false), pattern));
 	}
 
 	/**
@@ -8696,8 +8698,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param kvs 键值列表
 	 * @return IRecord对象
 	 */
-	static <T> IRecord KVS2REC(final List<? extends KVPair<String, T>> kvs) {
-		return KVS2REC(kvs.stream());
+	static <T> IRecord KVS2REC(final Iterable<? extends KVPair<String, T>> kvs) {
+		return KVS2REC(StreamSupport.stream(kvs.spliterator(), false));
 	}
 
 	/**
@@ -8792,7 +8794,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param recs 行形式的Record集合
 	 * @return IRecord 即每一元素为列向量的IRecord
 	 */
-	static IRecord R2C(List<IRecord> recs) {
+	static IRecord R2C(final List<IRecord> recs) {
 		return ROWS2COLS(recs, null);
 	}
 
@@ -9097,8 +9099,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 生成一个hashmap 的集合
 	 */
 
-	static <T> Stream<LinkedHashMap<String, T>> rr2rowS(final Collection<IRecord> recs) {
-		return rr2rowS(recs.stream());
+	static <T> Stream<LinkedHashMap<String, T>> rr2rowS(final Iterable<IRecord> recs) {
+		return rr2rowS(StreamSupport.stream(recs.spliterator(), false));
 	}
 
 	/**
@@ -9206,8 +9208,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 列名：分类依据
 	 * @return 对rr进行分类的映射:Map&lt;String,List&lt;IRecord&gt;&gt;
 	 */
-	static Map<String, List<IRecord>> classify(final List<IRecord> rr, final String key) {
-		var mm = rr.parallelStream().filter(Objects::nonNull).collect(groupby(e -> {
+	static Map<String, List<IRecord>> classify(final Iterable<IRecord> rr, final String key) {
+		var mm = StreamSupport.stream(rr.spliterator(), true).filter(Objects::nonNull).collect(groupby(e -> {
 			var k = e.str(key);
 			return k == null ? "unknown " : k;
 		}));
@@ -11087,8 +11089,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * @param keys 字段键名 列表,当 keys 为 null 值的时候, 采取 excelname 方式进行 字段命名，即依次命名为 :
 		 *             A,B,C,...
 		 */
-		public Builder(final List<String> keys) {
-			this(keys == null ? null : keys.toArray(String[]::new));
+		public Builder(final Iterable<String> keys) {
+			this(keys == null ? null : StreamSupport.stream(keys.spliterator(), false).toArray(String[]::new));
 		}
 
 		/**
@@ -11149,8 +11151,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * @param objects 值序列，与键名按次序一一对应,对于 不足keys长度的值采用类似于R语言的循环遍历objects的方式进行重复利用
 		 * @return IRecord 记录对象
 		 */
-		public final <T> IRecord get(final Collection<T> objects) {
-			return this.internal_get((Object[]) objects.toArray());
+		public final <T> IRecord get(final Iterable<T> objects) {
+			final var oo = StreamSupport.stream(objects.spliterator(), false).toArray();
+			return this.internal_get(oo);
 		}
 
 		/**
@@ -11186,8 +11189,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * @param objects 值序列，与键名按次序一一对应,对于 不足keys长度的值采用类似于R语言的循环遍历objects的方式进行重复利用
 		 * @return IRecord 记录对象
 		 */
-		public final <T> IRecord get2(final Collection<T> objects) {
-			return this.internal_get2((Object[]) objects.toArray());
+		public final <T> IRecord get2(final Iterable<T> objects) {
+			final var oo = StreamSupport.stream(objects.spliterator(), false).toArray();
+			return this.internal_get2(oo);
 		}
 
 		/**
