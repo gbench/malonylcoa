@@ -6327,7 +6327,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param rec IRecord对象
 	 * @return 衍生于 proto(this)的IRecord对象
 	 */
-	default IRecord derive(IRecord rec) {
+	default IRecord derive(final IRecord rec) {
 		return this.duplicate().add(rec);
 	}
 
@@ -6343,7 +6343,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *                sep 层级间的 分隔符号 默认为 "." <br>
 	 * @return 扁平化的 数据记录
 	 */
-	default IRecord flat2(String aliases) {
+	default IRecord flat2(final String aliases) {
 		return this.flat2(aliases.split("[,\\\\/\\s]+"), null);
 	}
 
@@ -6360,7 +6360,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param sep     层级间的 分隔符号 默认为 "." <br>
 	 * @return 扁平化的 数据记录
 	 */
-	default IRecord flat2(String aliases, final String sep) {
+	default IRecord flat2(final String aliases, final String sep) {
 		return this.flat2(aliases.split("[,\\\\/\\s]+"), sep);
 	}
 
@@ -6376,7 +6376,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *                sep 层级间的 分隔符号 默认为 "." <br>
 	 * @return 扁平化的 数据记录
 	 */
-	default IRecord flat2(String aliases[]) {
+	default IRecord flat2(final String aliases[]) {
 		return this.flat2(aliases, null);
 	}
 
@@ -6392,7 +6392,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param sep     层级间的 分隔符号 默认为 "." <br>
 	 * @return 扁平化的 数据记录
 	 */
-	default IRecord flat2(String aliases[], final String sep) {
+	default IRecord flat2(final String aliases[], final String sep) {
 		return this.aoks2rec2(aliases).flat(sep);
 	}
 
@@ -7881,14 +7881,19 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	static IRecord _REC(final Object[] kvs) {
 		final LinkedRecord rec = new LinkedRecord();
-		if (kvs == null)
+
+		if (kvs == null) { // 空值
 			return rec;
-		if (kvs.length == 1) {// 单个元素
+		} else if (kvs.length == 1) {// 单个元素
 			final Object o = kvs[0];
-			return (o != null && o instanceof Map)// (key,value) 序列
-					? LinkedRecord.of((Map<?, ?>) o)
-					: rec;
-		}
+			if (o instanceof Map m) { // (key,value) 序列
+				return LinkedRecord.of(m);
+			} else if (o instanceof IRecord r) { // (key,value) 序列
+				return r;
+			} else {
+				return rec;
+			}
+		} // if
 
 		for (int i = 0; i < kvs.length; i += 2) {
 			String key = kvs[i] == null ? "null" : kvs[i].toString();// 键值名
@@ -7902,18 +7907,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 标准版的记录生成器, map 生成的是LinkedRecord
 	 * 
-	 * @param map 键值映射,键名会调用掉map键的toString 来给予生成。
-	 * @return IRecord对象
-	 */
-	static IRecord REC(final Map<?, ?> map) {
-		final LinkedRecord rec = new LinkedRecord();
-		map.forEach((k, v) -> rec.data.put(k == null ? "null" : k.toString(), v));
-		return rec;
-	}
-
-	/**
-	 * 标准版的记录生成器, map 生成的是LinkedRecord
-	 * 
 	 * @param kvs 键,值序列:key0,value0,key1,value1,....
 	 * @return IRecord对象
 	 */
@@ -7921,12 +7914,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		if (kvs.length < 2) { // 单项目元素
 			if (kvs.length > 0) {
 				final var o = kvs[0];
-				if (o instanceof IRecord) {
-					final var rec = (IRecord) o;
-					return rec.duplicate();
-				} else if (o instanceof Map) {
-					final var map = (Map<?, ?>) o;
-					return REC(map);
+				if (o instanceof IRecord rec) {
+					return rec;
+				} else if (o instanceof Map m) {
+					return REC(m);
 				} else if (o instanceof Iterable aa) {
 					final var rec = REC();
 					for (var a : aa) {
@@ -7946,6 +7937,18 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		} else { // 多项目元素
 			return _REC(kvs);
 		} // if
+	}
+
+	/**
+	 * 标准版的记录生成器, map 生成的是LinkedRecord
+	 * 
+	 * @param map 键值映射,键名会调用掉map键的toString 来给予生成。
+	 * @return IRecord对象
+	 */
+	static IRecord REC(final Map<?, ?> map) {
+		final LinkedRecord rec = new LinkedRecord();
+		map.forEach((k, v) -> rec.data.put(k == null ? "null" : k.toString(), v));
+		return rec;
 	}
 
 	/**
@@ -9580,6 +9583,23 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * Pivot Table 的归集器：使用示例
+	 * cph(RPTS(3,L("A","B"))).stream().collect(pvtclc("0,1"));
+	 * 
+	 * @param <U>    结果类型
+	 * @param keys   键名序列,用逗号分隔
+	 * @param mapper 列指标（列表）元素变换器：分类结果的计算器
+	 * @return pivotTable 的 归集器
+	 */
+	static <U> Collector<IRecord, List<IRecord>, IRecord> pvtclc1(final String keys,
+			final Function<IRecord, U> mapper) {
+		return Collector.of(LinkedList::new, List::add, (a, b) -> {
+			a.addAll(b);
+			return a;
+		}, aa -> IRecord.pivotTable(aa, keys, lines -> lines.map(mapper).toList()));
+	}
+
+	/**
 	 * Pivot Table 的归集器：搜集并变换 <br>
 	 * 根据 keys 做数据 透视，并把中间结果List&lt;IRecord&gt;类型, <br>
 	 * 存入IRecord(以keys为路径维度标记)，最后 使用 mapper 对IRecord进行变换 <br>
@@ -11052,6 +11072,29 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	static List<Function<IRecord, IRecord>> selects(final String... keys) {
 		return Arrays.stream(keys).map(k -> select(k)).collect(Collectors.toList());
+	}
+
+	/**
+	 * 元素提取器
+	 * 
+	 * @param <U>          结果类型
+	 * @param name         元素名
+	 * @param defaultValue 默认值
+	 * @return 元素提取器
+	 */
+	static <U> Function<IRecord, U> getter(final String name, final U defaultValue) {
+		return rec -> (U) rec.get(name, defaultValue);
+	}
+
+	/**
+	 * 元素提取器
+	 * 
+	 * @param <U>  结果类型
+	 * @param name 元素名
+	 * @return 元素提取器
+	 */
+	static <U> Function<IRecord, U> getter(final String name) {
+		return getter(name, null);
 	}
 
 	/**
