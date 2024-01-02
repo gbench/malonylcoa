@@ -11,10 +11,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.ToDoubleFunction;
 import java.util.stream.Collector;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import gbench.util.jdbc.Jdbcs;
 
@@ -397,6 +401,228 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 边际统计
+	 * 
+	 * @return 返回行统计
+	 */
+	public DFrame summary() {
+		return this.summary(2);
+	}
+
+	/**
+	 * 边际统计
+	 * 
+	 * @param margin 统计边际 1:按照行统计,2或其他,按照列进行统计
+	 * @return 返回行统计
+	 */
+	public DFrame summary(final int margin) {
+		final var numS = margin == 1 // 数值流
+				? this.rowS().map(e -> DFrame.dblS(e.values())) // 行数据流
+				: this.colS(DFrame::dblS); // 列数据流
+
+		return numS.map(ds -> ds.summaryStatistics()).map(e -> {
+			return IRecord.REC("min", e.getMin(), "max", e.getMax(), //
+					"avg", e.getAverage(), "sum", e.getSum(), //
+					"n", e.getCount());
+		}).collect(DFrame.dfmclc);
+
+	}
+
+	/**
+	 * 将key所指定的数据数值化
+	 * 
+	 * @param key 键名
+	 * @return key 所指定的列的数值的数值序列
+	 */
+	public DoubleStream dblS(final String key) {
+		return DFrame.dblS(this.lls(key));
+	}
+
+	/**
+	 * 将key所指定的数据数值化
+	 * 
+	 * @param idx 键名索引从0开始
+	 * @return key 所指定的列的数值的数值序列
+	 */
+	public DoubleStream dblS(final Integer idx) {
+		return this.dblS(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 列的平均值
+	 * 
+	 * @return 列的平均值
+	 */
+	public long count() {
+		return this.dblS(0).summaryStatistics().getCount();
+	}
+
+	/**
+	 * 列的平均值
+	 * 
+	 * @param key 键名
+	 * @return 列的平均值
+	 */
+	public long count(final String key) {
+		return this.dblS(key).summaryStatistics().getCount();
+	}
+
+	/**
+	 * 列的平均值
+	 * 
+	 * @param idx 键名索引从0开始
+	 * @return 列的平均值
+	 */
+	public long count(final Integer idx) {
+		return this.count(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 列的平均值
+	 * 
+	 * @param key 键名
+	 * @return 列的平均值
+	 */
+	public double sum(final String key) {
+		return this.dblS(key).summaryStatistics().getSum();
+	}
+
+	/**
+	 * 列的平均值
+	 * 
+	 * @param idx 键名索引从0开始
+	 * @return 列的平均值
+	 */
+	public double sum(final Integer idx) {
+		return this.sum(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 列的平均值
+	 * 
+	 * @param key 键名
+	 * @return 列的平均值
+	 */
+	public double avg(final String key) {
+		return this.dblS(key).summaryStatistics().getAverage();
+	}
+
+	/**
+	 * 列的平均值
+	 * 
+	 * @param idx 键名索引从0开始
+	 * @return 列的平均值
+	 */
+	public double avg(final Integer idx) {
+		return this.avg(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 列的最大值
+	 * 
+	 * @param key 键名
+	 * @return 列的最大值
+	 */
+	public double min(final String key) {
+		return this.dblS(key).summaryStatistics().getMin();
+	}
+
+	/**
+	 * 列的最大值
+	 * 
+	 * @param idx 键名索引从0开始
+	 * @return 列的最大值
+	 */
+	public double min(final Integer idx) {
+		return this.min(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 列的最大值
+	 * 
+	 * @param key 键名
+	 * @return 列的最大值
+	 */
+	public double max(final String key) {
+		return this.dblS(key).summaryStatistics().getMax();
+	}
+
+	/**
+	 * 列的最大值
+	 * 
+	 * @param idx 键名索引从0开始
+	 * @return 列的最大值
+	 */
+	public double max(final Integer idx) {
+		return this.max(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 生成统一的序列化对象序列,列顺序
+	 * 
+	 * @return 数据流
+	 */
+	public Object data() {
+		return this.dataS().toArray();
+	}
+
+	/**
+	 * 生成统一的序列化对象序列,列顺序
+	 * 
+	 * @return 数据流
+	 */
+	public Stream<Object> dataS() {
+		return this.dataS(2);
+	}
+
+	/**
+	 * 生成统一的序列化对象序列,列顺序
+	 * 
+	 * @return 数据流
+	 */
+	public List<Object> datas() {
+		return this.dataS().toList();
+	}
+
+	/**
+	 * 生成统一的序列化对象序列,列顺序
+	 * 
+	 * @param <A>       元素类型
+	 * @param generator a function which produces a new array of the desiredtype and
+	 *                  the provided length
+	 * @return 数据数组
+	 */
+	public <A> A[] data(final IntFunction<A[]> generator) {
+		return this.dataS().toArray(generator);
+	}
+
+	/**
+	 * 生成统一的序列化对象序列
+	 * 
+	 * @param margin 统计边际 1:按照行统计,2或其他,按照列进行统计
+	 * @return 数据流
+	 */
+	public Stream<Object> dataS(final int margin) {
+		final Stream<Stream<Object>> dataS = margin == 1 //
+				? this.rowS(e -> e.values().stream()) //
+				: this.colS(e -> e.stream());
+		return dataS.flatMap(e -> e);
+	}
+
+	/**
+	 * 生成统一的序列化对象序列
+	 * 
+	 * @param <T>    元素类型
+	 * @param <U>    值类型
+	 * @param margin 统计边际 1:按照行统计,2或其他,按照列进行统计
+	 * @return 数据流
+	 */
+	@SuppressWarnings("unchecked")
+	public <T, U> Stream<U> dataS(final int margin, final Function<T, U> mapper) {
+		return this.dataS(margin).map(e -> mapper.apply((T) e));
+	}
+
+	/**
 	 * 提取指定名称额缓存
 	 * 
 	 * @param <K> 键名类型
@@ -458,6 +684,46 @@ public class DFrame extends LinkedRecord {
 
 		final var dfm = Stream.of(rows).collect(dfmclc);
 		return dfm;
+	}
+
+	/**
+	 * 浮点数的流
+	 * 
+	 * @param objs 浮点数对象
+	 * @return DoubleStream
+	 */
+	public static DoubleStream dblS(final Iterable<?> objs) {
+
+		return DFrame.dblS(objs, -0d);
+	}
+
+	/**
+	 * 浮点数的流
+	 * 
+	 * @param objs         浮点数对象
+	 * @param defaultValue 默认值
+	 * @return DoubleStream
+	 */
+	public static DoubleStream dblS(final Iterable<?> objs, final double defaultValue) {
+
+		final ToDoubleFunction<? super Object> mapper = e -> {
+			if (e instanceof Double d) { //
+				return d;
+			} else if (e instanceof Number num) { //
+				return num.doubleValue();
+			} else if (e instanceof String s) { // 字符串类型
+				var _d = 0d;
+				try {
+					_d = Double.parseDouble(s);
+				} catch (Exception ex) {
+					// do nothing
+				}
+				return _d;
+			} else { // 非法值
+				return defaultValue;
+			}
+		};
+		return StreamSupport.stream(objs.spliterator(), false).mapToDouble(mapper);
 	}
 
 	/**

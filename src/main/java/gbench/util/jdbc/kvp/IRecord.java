@@ -1979,7 +1979,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	default <T, U> Stream<U> llS(final int idx, final Function<T, U> t2u) {
-		return this.lls(idx, t2u).stream();
+		return this.llS(this.keyOfIndex(idx), t2u);
 	}
 
 	/**
@@ -2005,6 +2005,56 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <U> Stream<U> llS(final int idx) {
 		return llS(keyOfIndex(idx));
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T>    字段key所对应的列表数据的元素的类型
+	 * @param key    列表类型的字段的名称
+	 * @param mapper 对key字段的元素数据进行变换的结构
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <T> DFrame dfm(final String key, final Function<T, IRecord> mapper) {
+		return this.llS(key, mapper).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T>    字段key所对应的列表数据的元素的类型
+	 * @param idx    列表类型的字段的索引号从0开始
+	 * @param mapper 对key字段的元素数据进行变换的结构
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <T> DFrame dfm(final int idx, final Function<T, IRecord> mapper) {
+		return this.dfm(this.keyOfIndex(idx), mapper);
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param key 列表类型的字段的名称
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <T> DFrame dfm(final String key) {
+		return this.llS(key, IRecord::REC).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 这里key 是一个集合对象List，用t2u的对集合List中的元素进行处理：<br>
+	 * 把一个列表改变成另一个列表，也就是在不改变聚合方式的情况下改变元素内容，这就是所谓的换药不换瓶 <br>
+	 *
+	 * @param <T> 字段key所对应的列表数据的元素的类型
+	 * @param idx 列表类型的字段的索引号从0开始
+	 * @return 以U类型为元素类型的列表结构
+	 */
+	default <T> DFrame dfm(final int idx) {
+		return this.dfm(this.keyOfIndex(idx));
 	}
 
 	/**
