@@ -324,17 +324,6 @@ public class DFrame extends LinkedRecord {
 	/**
 	 * 按照行进行遍历变换函数(带有返回值)
 	 * 
-	 * @param mapper 变换函数
-	 * @return DFrame 新创建的DFrame
-	 */
-	public DFrame fmapBy(final Function<? super IRecord, IRecord> mapper) {
-
-		return this.rowS().map(mapper).collect(DFrame.dfmclc);
-	}
-
-	/**
-	 * 按照行进行遍历变换函数(带有返回值)
-	 * 
 	 * @param action 变换函数
 	 * @return DFrame 新创建的DFrame
 	 */
@@ -346,6 +335,17 @@ public class DFrame extends LinkedRecord {
 			}
 			return e;
 		}).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 按照行进行遍历变换函数(带有返回值)
+	 * 
+	 * @param mapper 变换函数
+	 * @return DFrame 新创建的DFrame
+	 */
+	public DFrame fmap(final Function<? super IRecord, IRecord> mapper) {
+
+		return this.rowS().map(mapper).collect(DFrame.dfmclc);
 	}
 
 	/**
