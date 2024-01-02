@@ -493,7 +493,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	@SuppressWarnings("unchecked")
 	default <T> T[] aa(final String key, final Class<T> targetClass) {
 		final var tc = Optional.ofNullable(targetClass).orElse((Class<T>) Object.class); // 目标类型
-		final Function<Number, Object> cast = num -> { // 数值类型转换
+		final var isnum_t = Number.class.isAssignableFrom(tc); // 目标类型是否是数值类型
+		final Function<Number, Object> cast_number = num -> { // 数值类型转换
 			final var tcname = tc.getSimpleName(); // 目标类型名
 			final var _num = switch (tcname) { // 目的类型选择
 			case "int", "Integer" -> num.intValue();
@@ -505,7 +506,28 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			default -> num;
 			};
 			return _num;
-		}; // 数值类型转换
+		}; // cast_number 数值类型转换
+		final Function<Object, Object> cast_any = o -> { // 通用类型转换
+			if (o != null) { // 非空元素
+				final var oc = o.getClass(); // 源类型
+				if (!Objects.equals(oc, tc)) { // 目的类型
+					if (isnum_t && o instanceof Number num) { // 源类型和目的类型都是数值
+						return cast_number.apply(num);
+					} else if (isnum_t && o instanceof String s) { // 源类是字符串 目的类型是 数值
+						final var num = IRecord.obj2dbl().apply(s);
+						return cast_number.apply(num);
+					} else if (Objects.equals(tc, String.class)) { // 目标类型市字符串类型
+						return String.valueOf(o);
+					} else { // 其他类型
+						return o;
+					} // if
+				} else { // 原类型与目标类型相同
+					return o;
+				} // if
+			} else { // 空元素 o is null
+				return o;
+			} // if
+		}; // cast_any 通用类型转换
 
 		return map(key, e -> {
 			T[] tt = null;
@@ -523,35 +545,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 						} else { // 其他类型
 							dataS = Stream.of(e);
 						}
-						final var isnum_t = Number.class.isAssignableFrom(tc); // 目标类型是否是数值类型
-						tt = dataS.map(o -> { // 逐个元素进行处理
-							if (o != null) { // 非空元素
-								final var oc = o.getClass(); // 源类型
-								if (!Objects.equals(oc, tc)) { // 目的类型
-									if (isnum_t && o instanceof Number num) { // 源类型和目的类型都是数值
-										return cast.apply(num);
-									} else if (isnum_t && o instanceof String s) { // 源类是字符串 目的类型是 数值
-										final var num = IRecord.obj2dbl().apply(s);
-										return cast.apply(num);
-									} else if (Objects.equals(tc, String.class)) { // 目标类型市字符串类型
-										return String.valueOf(o);
-									} else { // 其他类型
-										return o;
-									} // if
-								} else { // 原类型与目标类型相同
-									return o;
-								} // if
-							} else { // 空元素 o is null
-								return o;
-							} // if
-						}).toArray(n -> (T[]) Array.newInstance(tc, n));
+						tt = dataS.map(cast_any).toArray(n -> (T[]) Array.newInstance(tc, n));
 					} // if
 				} catch (Exception ignored) {
 					// do nothing
 				} // try
 			} // if
 			return tt;
-		});
+		}); // map
 	}
 
 	/**
