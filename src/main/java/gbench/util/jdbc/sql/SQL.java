@@ -843,15 +843,15 @@ public class SQL {
 	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
 	 * 
-	 * @param datas 源数据，通过分析源数据却确定表结构
-	 * @param i     sql语句的索引序号: [ <br>
-	 *              0:drop table, <br>
-	 *              1:drop table if exists &amp; create, <br>
-	 *              2:create, <br>
-	 *              3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中,
-	 *              索引3就变成了唯一约束了,后续的项目也会提前), <br>
-	 *              4:unique constraints <br>
-	 *              ],3和4 根据record设置 可能包含。 <br>
+	 * @param data 源数据，通过分析源数据却确定表结构
+	 * @param i    sql语句的索引序号: [ <br>
+	 *             0:drop table, <br>
+	 *             1:drop table if exists &amp; create, <br>
+	 *             2:create, <br>
+	 *             3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中,
+	 *             索引3就变成了唯一约束了,后续的项目也会提前), <br>
+	 *             4:unique constraints <br>
+	 *             ],3和4 根据record设置 可能包含。 <br>
 	 * @return 返回对应索引号所指定的sql,若 i&lt;0 或 i&gt;4 返回null
 	 */
 	public String ctsql(final IRecord data, final int i) {
@@ -866,7 +866,7 @@ public class SQL {
 	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
 	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
 	 * 
-	 * @param datas              源数据，通过分析源数据却确定表结构
+	 * @param data               源数据，通过分析源数据却确定表结构
 	 * @param id_flag            是否需要补充id主键，即 是否添加一个int 类型的id主键,true:添加,false
 	 *                           不添加,注意仅当id不存在或是id类型为int类型的时候才会创建自增长
 	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长，与 id_flag 相关
