@@ -9566,7 +9566,8 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Pivot Table 的归集器：使用示例
+	 * Pivot Table 的归集器：（指标变换批量evaluator） <br>
+	 * 使用示例 <br>
 	 * cph(RPTS(3,L("A","B"))).stream().collect(pvtclc("0,1"));
 	 * 
 	 * @param <U>       结果类型
@@ -9583,8 +9584,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * Pivot Table 的归集器：使用示例
-	 * cph(RPTS(3,L("A","B"))).stream().collect(pvtclc("0,1"));
+	 * Pivot Table 的归集器：(（指标变换逐行mapper）) <br>
+	 * 使用示例 <br>
+	 * dfm.rowS().collect(IRecord.pvtclc1("name,order_type,position,drcr",
+	 * getter("acctnum",0)))
 	 * 
 	 * @param <U>    结果类型
 	 * @param keys   键名序列,用逗号分隔
@@ -9597,6 +9600,24 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			a.addAll(b);
 			return a;
 		}, aa -> IRecord.pivotTable(aa, keys, lines -> lines.map(mapper).toList()));
+	}
+
+	/**
+	 * Pivot Table 的归集器：(（指标变换逐行mapper）) <br>
+	 * dfm.rowS().collect(IRecord.pvtclc1("name,order_type,position,drcr",
+	 * getter("acctnum",0)))
+	 * 
+	 * @param <U>    结果类型
+	 * @param keys   键名序列
+	 * @param mapper 列指标（列表）元素变换器：分类结果的计算器
+	 * @return pivotTable 的 归集器
+	 */
+	static <U> Collector<IRecord, List<IRecord>, IRecord> pvtclc1(final String keys[],
+			final Function<IRecord, U> mapper) {
+		return Collector.of(LinkedList::new, List::add, (a, b) -> {
+			a.addAll(b);
+			return a;
+		}, aa -> IRecord.pivotTable(aa, keys, lines -> lines.stream().map(mapper).toList()));
 	}
 
 	/**

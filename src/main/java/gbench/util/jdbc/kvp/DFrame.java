@@ -349,6 +349,54 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 数据透视表（指标变换批量mapper）
+	 * 
+	 * @param <U>    结果类型
+	 * @param keys   键名序列,用逗号分隔
+	 * @param mapper 列指标：分类结果的计算器
+	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
+	 */
+	public <U> IRecord pivotTable(final String keys, final Function<Stream<IRecord>, U> mapper) {
+		return this.rowS().collect(IRecord.pvtclc(keys, mapper));
+	}
+
+	/**
+	 * 数据透视表（指标变换批量mapper）
+	 * 
+	 * @param <U>    结果类型
+	 * @param keys   键名序列,用逗号分隔
+	 * @param mapper 列指标：分类结果的计算器
+	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
+	 */
+	public <U> IRecord pivotTable(final String keys[], final Function<Stream<IRecord>, U> mapper) {
+		return this.rowS().collect(IRecord.pvtclc(keys, mapper));
+	}
+
+	/**
+	 * 数据透视表（指标变换逐行mapper）
+	 * 
+	 * @param <U>    结果类型
+	 * @param keys   键名序列,用逗号分隔
+	 * @param mapper 列指标：分类结果的计算器
+	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
+	 */
+	public <U> IRecord pivotTable1(final String keys, final Function<IRecord, U> mapper) {
+		return this.rowS().collect(IRecord.pvtclc1(keys, mapper));
+	}
+
+	/**
+	 * 数据透视表（指标变换逐行mapper）
+	 * 
+	 * @param <U>    结果类型
+	 * @param keys   键名序列,用逗号分隔
+	 * @param mapper 列指标：分类结果的计算器
+	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
+	 */
+	public <U> IRecord pivotTable1(final String keys[], final Function<IRecord, U> mapper) {
+		return this.rowS().collect(IRecord.pvtclc1(keys, mapper));
+	}
+
+	/**
 	 * 提取指定名称额缓存
 	 * 
 	 * @param <K> 键名类型
