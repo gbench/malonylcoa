@@ -636,6 +636,29 @@ public class SQL {
 	 *         ],3和4 根据record设置 可能包含。 <br>
 	 */
 	public List<String> ctsqls(final boolean int_pk_autocrement) {
+		return ctsqls(int_pk_autocrement, 0.5);
+	}
+
+	/**
+	 * 根据字段的数据类型进行表定义，这个函数不建议在生产环境中使用。<br>
+	 * 仅用于原型开发时快速测试使用 <br>
+	 * 对于以数字开始的字段名例如: "123abc" 会被视为 abc的字段名 ,该字段的类型长度为 123<br>
+	 * 对于以#开头的字段名视为主键约束 比如:"#id" <br>
+	 * 对于以~开头的字段名视为唯一约束 比如:"~name" 表示 添加唯一性约束<br>
+	 * 比如:"~32name" 表示 添加唯一性约束,字符长度为32<br>
+	 * 
+	 * @param int_pk_autocrement 对于int类型的主键是否增加自增长
+	 * @param ratio              空间预留倍率
+	 * @return [ <br>
+	 *         0:drop table, <br>
+	 *         1:drop table if exists &amp; create, <br>
+	 *         2:create, <br>
+	 *         3:primarykey (当为单值主键的时候 主键约束会直接写入 字段定义之中, 索引3就变成了唯一约束了,后续的项目也会提前),
+	 *         <br>
+	 *         4:unique constraints <br>
+	 *         ],3和4 根据record设置 可能包含。 <br>
+	 */
+	public List<String> ctsqls(final boolean int_pk_autocrement, final double ratio) {
 		final List<String> sqls = new LinkedList<>();// sql 语句集合
 		final StringBuilder buffer = new StringBuilder();
 
@@ -664,12 +687,14 @@ public class SQL {
 			final Supplier<Integer> default_size = () -> { // 根据示例数据值提取长度
 				final int size = Optional.ofNullable(quoteString(value)) //
 						.map(String::length).map(length -> {
-							final var len_15 = (int) Math.ceil(length * 1.5); // 1.5 倍长度
+							final var len_preseved = (int) Math.ceil(length * (1 + ratio)); // 空间预
 							if (debug) {
-								final var format = "\n%s[%s] ----> %d[原长度] , %d[1.5倍长度]";
-								System.out.println(String.format(format, value, value.getClass(), length, len_15));
-							}
-							return len_15; // 1.5 倍长度
+								final var format = "\n%s[%s] ----> %d[原长度] , %d[预留倍率%.2f长度]";
+								final var line = String.format(format, value, value.getClass(), length, len_preseved,
+										1 + ratio);
+								System.out.println(line);
+							} // if
+							return len_preseved; // 空间预留长度
 						}).orElse(null);
 				return size; // 字段长度
 			}; // 根据值内容确定空间大小

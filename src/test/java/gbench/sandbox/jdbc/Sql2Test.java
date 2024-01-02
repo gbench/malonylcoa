@@ -9,6 +9,7 @@ import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.jdbc.sql.SQL;
 
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.io.Output.println;
@@ -33,6 +34,7 @@ public class Sql2Test {
 		final var proto = rb("name,sex,address") //
 				.get("zhangsan,man,shanghai".split(","));
 		final var datafile = xls("f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx"); // 数据-源文件
+		SQL.debug = true; // 开启调试标记
 
 		jdbcApp.withTransaction(sess -> {
 			imports(name -> datafile.autoDetect(name).collect(DFrame.dfmclc2), "t_product").accept(sess);
