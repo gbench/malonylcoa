@@ -8,6 +8,7 @@ import java.util.Objects;
 
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.tree.Node;
 
 /**
  * Financial Accounting
@@ -82,11 +83,22 @@ public class FinAcct {
 	}
 
 	/**
+	 * 存储分类账行记录
 	 * 
-	 * @param items
+	 * @param items 行记录
 	 */
 	public void store(final List<IRecord> items) {
 		this.entries.addAll(items);
+	}
+
+	/**
+	 * 查看指定分类账试算平衡
+	 * 
+	 * @param ledgerId 分类账id
+	 * @return 分类账的根节点
+	 */
+	public Node<String> trialBalance(final String ledgerId) {
+		return ILedgerSession.trialBalance(this.getEntries(ledgerId));
 	}
 
 	/**

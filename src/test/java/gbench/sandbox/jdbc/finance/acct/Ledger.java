@@ -95,18 +95,20 @@ public class Ledger {
 	 * @param amount   金额
 	 * @param restings 其余参数
 	 * @throws Exception
+	 * @return 分类账的试算平衡表
 	 */
-	public void handle(final String path, final double amount, Object... restings) throws Exception {
-		this.handle(REC("path", path, "amount", amount).derive(restings));
+	public Node<String> handle(final String path, final double amount, Object... restings) throws Exception {
+		return this.handle(REC("path", path, "amount", amount).derive(restings));
 	}
 
 	/**
 	 * 会计记账
 	 * 
-	 * @param variables
+	 * @param variables 变量列表
 	 * @throws Exception
+	 * @return 分类账的试算平衡表
 	 */
-	public void handle(final IRecord variables) throws Exception {
+	public Node<String> handle(final IRecord variables) throws Exception {
 		this.withTransaction(variables, sess -> {
 			final var policy = sess.getPolicy(); // 记账策略
 			final var drcrs = policy.keys().stream() // key即为分录指令,根据DRCR_RANKS的优先级给予排序
@@ -124,15 +126,20 @@ public class Ledger {
 			// 执行科目指令
 			handlers.forEach(h -> h.apply(sess));
 
-			final var node = sess.trialBalance(sess.getLedgerId());
-			this.dump(node);
 		}); // acct
 
+		// 计算试算平衡
+		final var node = fa.trialBalance(id);
+		// 查看试算平衡表
+		this.dump(node);
+
+		return node;
 	}
 
 	/**
+	 * 查看数据内容
 	 * 
-	 * @param root
+	 * @param root 根节点
 	 */
 	public void dump(final Node<String> root) {
 		System.out.println(String.format("\n-------------[NODE:%s]-----------------", root));

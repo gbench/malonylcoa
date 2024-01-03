@@ -101,8 +101,9 @@ public interface ILedgerSession {
 	}
 
 	/**
-	 * 获取指定分类账的试算平衡表
+	 * 获取指定分类账的试算平衡表(不包裹当前会话的日记账分录)
 	 * 
+	 * @param ledgerId 客户id
 	 * @return 指定分类账的试算平衡表
 	 */
 	default Node<String> trialBalance(final String ledgerId) {
