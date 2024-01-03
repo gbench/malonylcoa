@@ -10,8 +10,14 @@ import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 
+/**
+ * 会计对象
+ */
 public class AbstractAcct {
 
+	/**
+	 * 会计对象
+	 */
 	public AbstractAcct() {
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
 	}

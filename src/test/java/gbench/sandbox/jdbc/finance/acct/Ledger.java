@@ -16,7 +16,7 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.tree.Node;
 
 /**
- * 
+ * 分类账
  */
 public class Ledger {
 
@@ -33,15 +33,16 @@ public class Ledger {
 	}
 
 	/**
-	 * 
+	 * 初始化
 	 */
 	public void initialize() {
+		// do nothing
 	}
 
 	/**
-	 * 生成一个drcr分录指令的账户处理处理器
+	 * 生成一个drcr分录科目指令的账户处理处理器
 	 * 
-	 * @param drcr 分录指令
+	 * @param drcr 分录科目指令
 	 * @param acct 分录指定的操作账户
 	 * @return sess-&gt;rec
 	 */
@@ -49,39 +50,21 @@ public class Ledger {
 		return sess -> {
 			final var acctnum = acct.lng("acctnum"); // 提取账号编码
 			final var amount = sess.evaluate(acctnum); // 计算账户金额
-			final IRecord rec; // 日记账分录
+			final Function<Double, IRecord> balance_adjust = balance -> { // 余额调整分录
+				return balance > 0 // 余额方向,大于0借方余额,小于0贷方余额
+						? sess.credit(acctnum, balance) // 借方余额贷方配平
+						: sess.debit(acctnum, -balance);// 贷方余额借方配平
+			};
+			final IRecord rec = switch (drcr.toUpperCase()) { // 分录科目指令的处理
+			case "DR" -> sess.debit(acctnum, amount); // 借方科目
+			case "CR" -> sess.credit(acctnum, amount); // 贷方科目
+			case "CL" -> balance_adjust.apply(sess.getBalance(acctnum)); // 余额调整:清零科目
+			case "BL" -> balance_adjust.apply(sess.getJournalBalance()); // 余额调整:倒轧日记账的分类科目
+			default -> null; // 非法分录科目指令
+			}; // 日记账分录
 
-			switch (drcr) { // 科目指令的处理
-			case "DR": { // 借方科目
-				rec = sess.debit(acctnum, amount);
-				break;
-			}
-			case "CR": { // 贷方科目
-				rec = sess.credit(acctnum, amount);
-				break;
-			}
-			case "CL": { // 清零科目
-				final var balance = sess.getBalance(acctnum);
-				if (balance > 0) {
-					rec = sess.credit(acctnum, balance);
-				} else {
-					rec = sess.debit(acctnum, -balance);
-				} // if
-				break;
-			}
-			case "BL": { // 倒轧日记账的分类科目
-				final var balance = sess.getJournalBalance();
-				if (balance > 0) { // 科目借方余额
-					rec = sess.credit(acctnum, balance);
-				} else { // 科目贷方余额
-					rec = sess.debit(acctnum, -balance);
-				} // if
-				break;
-			}
-			default: { // 其他科目
-				System.err.println(String.format("非法科目指令:%s", drcr));
-				rec = null;
-			}
+			if (rec == null) {
+				System.err.println(String.format("非法分录科目指令:%s", drcr)); // 其他科目
 			}
 
 			return rec; // 返回会计分录
@@ -111,13 +94,13 @@ public class Ledger {
 	public Node<String> handle(final IRecord variables) throws Exception {
 		this.withTransaction(variables, sess -> {
 			final var policy = sess.getPolicy(); // 记账策略
-			final var drcrs = policy.keys().stream() // key即为分录指令,根据DRCR_RANKS的优先级给予排序
+			final var drcrs = policy.keys().stream() // key即为分录科目指令,根据DRCR_RANKS的优先级给予排序
 					.sorted((a, b) -> DRCR_RANKS.i4(a) - DRCR_RANKS.i4(b)) // 根据规定次序进行比较
 					.toList(); // 倒轧指令BL的计算位置最为靠后，且在一组日记账中只能有一个倒轧指令
 			final var handlers = new ArrayList<Function<ILedgerSession, IRecord>>(drcrs.size());
 
 			for (final var drcr : drcrs) { // 窥基策略的处理
-				final var acctdfm = policy.dfm(drcr, sess::getAccount); // 获取记账在分录指令drcr下的会计账户
+				final var acctdfm = policy.dfm(drcr, sess::getAccount); // 获取记账在分录科目指令drcr下的会计账户
 				for (final var acct : acctdfm.rows()) { // 依次处理各个记账
 					handlers.add(drcr_handler(drcr, acct)); // 科目指令&账户处理器
 				} //

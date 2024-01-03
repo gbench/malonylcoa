@@ -13,27 +13,35 @@ import gbench.util.tree.Node;
 public interface ILedgerSession {
 
 	/**
-	 * 会计分录
+	 * 会话ID
 	 * 
 	 * @return
 	 */
 	String getId();
 
 	/**
-	 * 会计对象
+	 * 分类账ID
 	 * 
 	 * @return
 	 */
 	String getLedgerId();
 
 	/**
-	 * 会计分录
+	 * 分类账的科目集合
 	 * 
 	 * @return
 	 */
 	List<IRecord> getEntries();
 
 	/**
+	 * 日记账的分录集合
+	 * 
+	 * @return
+	 */
+	List<IRecord> getJournalItems();
+
+	/**
+	 * 会计策略(各种不同order_type的单据记账方法)
 	 * 
 	 * @return
 	 */
@@ -47,26 +55,22 @@ public interface ILedgerSession {
 	IRecord getAccount(final Object acct);
 
 	/**
-	 * 日记账项目
+	 * 获取账户余额
 	 * 
-	 * @return
-	 */
-	List<IRecord> getJournalItems();
-
-	/**
-	 * 
-	 * @param acctnum
+	 * @param acctnum 账户编码
 	 * @return
 	 */
 	double getBalance(final long acctnum);
 
 	/**
-	 * 提取指定参数
+	 * 计算会话语境下的变量名称
 	 * 
-	 * @param name 名称检索
-	 * @return
+	 * @param variable 变量名称<br>
+	 *                 1)若name是数值类型,则从coa中检索对应科目名称后再从会话上下文的变量注册表variables中检索
+	 *                 2)name是字符串名称,直接从会话上下文的变量注册表variables中检索变量的值
+	 * @return name 所标记的值
 	 */
-	double evaluate(final Object name);
+	double evaluate(final Object variable);
 
 	/**
 	 * 书写一个借贷分录
@@ -79,7 +83,7 @@ public interface ILedgerSession {
 	IRecord write(final int drcr, final Object name, final double amount);
 
 	/**
-	 * 借方
+	 * 借方分录
 	 * 
 	 * @param name   账户
 	 * @param amount 金额
@@ -90,7 +94,7 @@ public interface ILedgerSession {
 	}
 
 	/**
-	 * 贷方
+	 * 贷方分录
 	 * 
 	 * @param name   账户
 	 * @param amount 金额
@@ -140,18 +144,19 @@ public interface ILedgerSession {
 	 */
 	static double evaluateBalance(final Node<String> node) {
 		final var opt = node.attrvalOpt();
-		if (opt.isPresent()) {
-			final var d = opt.map(IRecord.obj2dbl()).get();
+		if (opt.isPresent()) { // 存在数值属性,叶子节点
+			final var value = opt.map(IRecord.obj2dbl()).get();
 			final var sgn = Objects.equals(node.getName(), "-1") ? -1 : 1;
-			return sgn * d;
-		} else {
-			double total = 0d;
-			for (var c : node.childrenL()) {
-				final var d = evaluateBalance(c);
-				total += d;
-				c.attrSet("value", d);
+			return sgn * value;
+		} else { // 不存在数值属性,非叶子节点
+			double total = 0d; // 总和
+			for (final var c : node.childrenL()) {
+				final var value = evaluateBalance(c);
+				total += value;
+				c.attrSet("value", value); // 设置属性值
 			} // for
 			return total;
 		} // if
 	}
+
 }
