@@ -7,11 +7,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
@@ -140,27 +140,27 @@ public class Ledger {
 	 * @return 会话结果
 	 */
 	public List<IRecord> withTransaction(final IRecord variables, final Consumer<IJournalSession> action) {
-
 		final var path = variables.str("path"); // 策略路径
 		final var policy = fa.getPolicies().path2rec(path);
 		final var txid = UUID.randomUUID().toString(); // 日记账会话的交易id
 		final var journalEntries = new LinkedList<IRecord>(); // 日记账分录
-		final Function<Tuple2<String, ?>, Tuple2<String, ?>> translator = p -> { // key,value
+		final Function<Tuple2<String, ?>, Stream<Tuple2<?, ?>>> translator = p -> { // key:键名,value:键值
+			@SuppressWarnings("unchecked")
+			final var empty = (Stream<Tuple2<?, ?>>) (Object) Stream.empty();
 			if (p._1() instanceof String line && line.matches("^\\d+$")) { // 仅处理数字类型的字段名
 				return Optional.ofNullable(line).map(IRecord.obj2dbl()).map(Number::longValue) //
-						.flatMap(fa::getAcctOpt).map(account -> {
-							final var acct = account.str("account");
-							return null == variables.get(acct)//
-									? Tuple2.of(account.str("account"), p._2()) // 仅当variables没有重名的键名时才给予追加
-									: null;
-						}).orElse(null);
+						.flatMap(fa::getAcctOpt).map(account -> { // 账户内容
+							final Tuple2<?, ?> p1 = Tuple2.of(account.str("account"), p._2());
+							final Tuple2<?, ?> p2 = Tuple2.of(account.lng("acctnum"), p._2());
+							return Stream.of(p1, p2);
+						}).orElse(empty);
 			} // if
-			return null;
+			return empty;
 		};
 
 		final var _variables = new HashMap<Object, Object>();
 		_variables.putAll(variables.toMap()); // 调整后的变量列表
-		variables.stream().map(translator).filter(Objects::nonNull).forEach(e -> {
+		variables.stream().flatMap(translator).forEach(e -> {
 			_variables.put(e._1(), e._2());
 		});
 
