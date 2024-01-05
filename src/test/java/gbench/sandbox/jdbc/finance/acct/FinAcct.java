@@ -52,7 +52,7 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 						e.set("acctnum", e.lng("acctnum"));
 					});
 			final var policies = sess.sql2dframe("select * from t_acct_policy")
-					.pivotTable1("name,order_type,position,drcr", getter("acctnum"));
+					.pivotTable1("name,bill_type,position,drcr", getter("acctnum"));
 			sess.setAttribute("result", Tuple2.of(coa, policies)); // 设置返回值
 		}).get("result");
 		this.coa = params._1();

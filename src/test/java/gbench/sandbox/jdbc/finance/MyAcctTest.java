@@ -22,9 +22,9 @@ public class MyAcctTest {
 
 	@Test
 	public void foo() {
-		final var fa = new FinAcct("POLICY1000").intialize();
+		final var fa = new FinAcct("POLICY1000").intialize(); // 初始化财务会计
 
-		for (final var ledgerId : "交易性金融资产001,交易性金融资产002".split(",")) {
+		for (final var ledgerId : "交易性金融资产001,交易性金融资产002".split(",")) { // 会计记账
 			final var ledger = fa.getLedger(ledgerId); // 创建一个分类账
 			// 期初：初始确认/计量
 			ledger.handle("交易性金融资产-初始确认/LONG", 1000_000, // amount 是默认金额
@@ -32,7 +32,6 @@ public class MyAcctTest {
 					"应收股利", 60_000, // 应收股利
 					"投资收益", 1_000, // 交易费用
 					"银行存款", 1_061_000); // 购入股票
-
 			// 期中: 后续计量&资产负债表日的变动跟踪&处理
 			ledger.handle("交易性金融资产-应收股利/LONG", 60_000); // 收到现金股利
 			ledger.handle("交易性金融资产-公允价值变动/LONG", 300_000); // 确认股票价格变动
