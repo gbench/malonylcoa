@@ -108,19 +108,23 @@ public interface IJournalSession {
 	 * @return name 所标记的值
 	 */
 	default double evaluate(final Map<Object, Object> variables, final Object variable) {
-		final Function<String, Double> evaluator = name -> {
-			final var d = Optional.ofNullable(variables.get(name)) // 尝试按照名检索
-					.orElseGet(() -> variables.get("amount")); // 若是名字不存在则使用默认值amount
-			return Optional.ofNullable(d).map(IRecord.obj2dbl()).orElse(0d); // 若是默认值也不存在则返回0
-		};
+		if (variables.get(variable) instanceof Double value) { // 尝试直接读取
+			return value;
+		} else { // 直接读取失败
+			final Function<String, Double> evaluator = name -> {
+				final var d = Optional.ofNullable(variables.get(name)) // 尝试按照名检索
+						.orElseGet(() -> variables.get("amount")); // 若是名字不存在则使用默认值amount
+				return Optional.ofNullable(d).map(IRecord.obj2dbl()).orElse(0d); // 若是默认值也不存在则返回0
+			}; // 变量计算器
 
-		if (variable instanceof String key) { // 根据键名获取键值
-			return evaluator.apply(key);
-		} else if (variable instanceof Number acctnum) { // 对于账号类型尝试翻译
-			final var acct = this.getAccount(acctnum.longValue()); // 提取账号
-			return Optional.of(acct).map(e -> e.str("account")).map(evaluator).orElse(0d);
-		} else {
-			return 0d;
+			if (variable instanceof String key) { // 根据键名获取键值
+				return evaluator.apply(key);
+			} else if (variable instanceof Number acctnum) { // 对于账号类型尝试翻译
+				final var acct = this.getAccount(acctnum.longValue()); // 提取账号
+				return Optional.of(acct).map(e -> e.str("account")).map(evaluator).orElse(0d);
+			} else {
+				return 0d;
+			}
 		}
 	}
 
