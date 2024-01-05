@@ -1,16 +1,21 @@
 package gbench.sandbox.jdbc.finance.acct;
 
+import static gbench.util.jdbc.kvp.IRecord.REC;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.tree.Node;
 
 /**
- * 记账会话
+ * 日记账会话
  */
-public interface ILedgerSession {
+public interface IJournalSession {
 
 	/**
 	 * 会话ID
@@ -27,20 +32,6 @@ public interface ILedgerSession {
 	String getLedgerId();
 
 	/**
-	 * 分类账的科目集合
-	 * 
-	 * @return
-	 */
-	List<IRecord> getEntries();
-
-	/**
-	 * 日记账的分录集合
-	 * 
-	 * @return
-	 */
-	List<IRecord> getJournalItems();
-
-	/**
 	 * 会计策略(各种不同order_type的单据记账方法)
 	 * 
 	 * @return
@@ -55,12 +46,42 @@ public interface ILedgerSession {
 	IRecord getAccount(final Object acct);
 
 	/**
+	 * 日记账的分录集合
+	 * 
+	 * @return
+	 */
+	List<IRecord> getJournalItems();
+
+	/**
 	 * 获取账户余额
 	 * 
 	 * @param acctnum 账户编码
 	 * @return
 	 */
 	double getBalance(final long acctnum);
+
+	/**
+	 * 获取会话变量集合
+	 * 
+	 * @return 会话变量集合
+	 */
+	IRecord getVariables();
+
+	/**
+	 * 分类账的科目集合
+	 * 
+	 * @return
+	 */
+	List<IRecord> getEntries();
+
+	/**
+	 * 当前会话的分录的科目余额
+	 * 
+	 * @return 会话的分录的科目余额
+	 */
+	default double getJournalBalance() {
+		return evaluateBalance(trialBalance(this.getJournalItems()));
+	}
 
 	/**
 	 * 计算会话语境下的变量名称
@@ -70,7 +91,38 @@ public interface ILedgerSession {
 	 *                 2)name是字符串名称,直接从会话上下文的变量注册表variables中检索变量的值
 	 * @return name 所标记的值
 	 */
-	double evaluate(final Object variable);
+	default double evaluate(final Object variable) {
+		return this.evaluate(this.getVariables(), variable);
+	}
+
+	/**
+	 * 计算会话语境下的变量名称
+	 * 
+	 * @param variables 上下文<br>
+	 * @param variable  变量名称<br>
+	 *                  1)若name是数值类型,则从coa中检索对应科目名称后再从会话上下文的变量注册表variables中检索
+	 *                  2)name是字符串名称,直接从会话上下文的变量注册表variables中检索变量的值
+	 * @return name 所标记的值
+	 */
+	default double evaluate(final IRecord variables, final Object variable) {
+		final Function<String, Double> evaluator = name -> { // 尝试在variables进行按名提取
+			final var varopt = variables //
+					.aoks2rec(s -> s.replaceAll("[-]+", "-")) // 变换多连结符为单连接符
+					.opt(name);
+			return varopt.map(IRecord.obj2dbl()).orElseGet(() -> {
+				return variables.dbl("amount");
+			});
+		};
+
+		if (variable instanceof String key) { // 根据键名获取键值
+			return evaluator.apply(key);
+		} else if (variable instanceof Number acctnum) { // 对于账号类型尝试翻译
+			final var acct = this.getAccount(acctnum.longValue()); // 提取账号
+			return Optional.of(acct).map(e -> e.str("account")).map(evaluator).orElse(0d);
+		} else {
+			return 0d;
+		}
+	}
 
 	/**
 	 * 书写一个借贷分录
@@ -80,7 +132,19 @@ public interface ILedgerSession {
 	 * @param amount 金额
 	 * @return 借贷分录
 	 */
-	IRecord write(final int drcr, final Object name, final double amount);
+	default IRecord write(final int drcr, final Object name, final double amount) {
+		final var _drcr = amount > 0 ? drcr : -drcr;
+		final var ledger = this.getLedgerId(); // 记账对象
+		final var now = LocalDateTime.now(); // 当前时间
+		final var rec = REC("id", this.getId(), "drcr", _drcr, //
+				"name", name, "amount", Math.abs(amount), "ledger", ledger);
+		final var acct = Optional.ofNullable(this.getAccount(name)) //
+				.orElse(REC("account", name, "acctnum", name)); // 账户名称
+		final var line = rec.derive("name", acct.str("account"), "acctnum", acct.lng("acctnum"));
+		this.getJournalItems().add(line.derive("now", now)); // 写入journalItem
+
+		return line;
+	};
 
 	/**
 	 * 借方分录
@@ -112,15 +176,6 @@ public interface ILedgerSession {
 	 */
 	default Node<String> trialBalance(final String ledgerId) {
 		return trialBalance(this.getEntries());
-	}
-
-	/**
-	 * 当前会话的分录的科目余额
-	 * 
-	 * @return 会话的分录的科目余额
-	 */
-	default double getJournalBalance() {
-		return evaluateBalance(trialBalance(this.getJournalItems()));
 	}
 
 	/**

@@ -1,6 +1,6 @@
 package gbench.sandbox.jdbc.finance.acct;
 
-import static gbench.sandbox.jdbc.finance.acct.ILedgerSession.evaluateBalance;
+import static gbench.sandbox.jdbc.finance.acct.IJournalSession.evaluateBalance;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class Ledger {
 	 * @param coa 记账策略
 	 */
 	public Ledger(final String id, final FinAcct accounting) {
-		this.fa = accounting;
+		fa = accounting;
 		this.id = id;
 	}
 
@@ -46,7 +46,7 @@ public class Ledger {
 	 * @param acct 分录指定的操作账户
 	 * @return sess-&gt;rec
 	 */
-	final Function<ILedgerSession, IRecord> drcr_handler(final String drcr, final IRecord acct) {
+	final Function<IJournalSession, IRecord> drcr_handler(final String drcr, final IRecord acct) {
 		return sess -> {
 			final var acctnum = acct.lng("acctnum"); // 提取账号编码
 			final var amount = sess.evaluate(acctnum); // 计算账户金额
@@ -97,7 +97,7 @@ public class Ledger {
 			final var drcrs = policy.keys().stream() // key即为分录科目指令,根据DRCR_RANKS的优先级给予排序
 					.sorted((a, b) -> DRCR_RANKS.i4(a) - DRCR_RANKS.i4(b)) // 根据规定次序进行比较
 					.toList(); // 倒轧指令BL的计算位置最为靠后，且在一组日记账中只能有一个倒轧指令
-			final var handlers = new ArrayList<Function<ILedgerSession, IRecord>>(drcrs.size());
+			final var handlers = new ArrayList<Function<IJournalSession, IRecord>>(drcrs.size());
 
 			for (final var drcr : drcrs) { // 窥基策略的处理
 				final var acctdfm = policy.dfm(drcr, sess::getAccount); // 获取记账在分录科目指令drcr下的会计账户
@@ -156,23 +156,31 @@ public class Ledger {
 	}
 
 	/**
-	 * 记账会话
+	 * 开启一个日记账会话
 	 * 
 	 * @param variables 变量集合
 	 * @param action    会话处理过程
 	 * @return 会话结果
 	 * @throws Exception
 	 */
-	public List<IRecord> withTransaction(final IRecord variables, final Consumer<ILedgerSession> action)
+	public List<IRecord> withTransaction(final IRecord variables, final Consumer<IJournalSession> action)
 			throws Exception {
 
 		final var path = variables.str("path"); // 策略路径
-		final var policy = this.fa.getPolicies().path2rec(path);
-		final var txid = UUID.randomUUID().toString(); // 交易id
+		final var policy = fa.getPolicies().path2rec(path);
+		final var txid = UUID.randomUUID().toString(); // 日记账会话的交易id
 		final var journalItems = new LinkedList<IRecord>();
 
 		// 交易会话
-		action.accept(new ILedgerSession() {
+		action.accept(new IJournalSession() {
+			public String getId() {
+				return txid;
+			}
+
+			public String getLedgerId() {
+				return Ledger.this.id;
+			}
+
 			public IRecord getPolicy() {
 				return policy;
 			}
@@ -188,33 +196,13 @@ public class Ledger {
 			public double getBalance(final long acctnum) {
 				return fa.getBalance(id, acctnum);
 			}
+			
+			public IRecord getVariables() {
+				return variables;
+			}
 
 			public List<IRecord> getEntries() {
 				return fa.getEntries(id);
-			}
-
-			/**
-			 * 书写一个借贷分录
-			 * 
-			 * @param drcr   借贷方向
-			 * @param name   账户编码
-			 * @param amount 金额
-			 * @return 借贷分录
-			 */
-			public IRecord write(final int drcr, final Object name, final double amount) {
-				final var _drcr = amount > 0 ? drcr : -drcr;
-				final var ledger = this.getLedgerId(); // 记账对象
-				final var rec = REC("id", this.getId(), "drcr", _drcr, //
-						"name", name, "amount", Math.abs(amount), "ledger", ledger);
-				final var acct = Optional.ofNullable(this.getAccount(name)) //
-						.orElse(REC("account", name, "acctnum", name)); // 账户名称
-				final var line = rec.derive("name", acct.str("account"), "acctnum", acct.lng("acctnum"));
-				this.getJournalItems().add(line); // 写入journalItem
-				return line;
-			};
-
-			public String getId() {
-				return txid;
 			}
 
 			/**
@@ -241,15 +229,13 @@ public class Ledger {
 					return 0d;
 				}
 			}
-
-			public String getLedgerId() {
-				return Ledger.this.id;
-			}
+			
 		});
 		final var items = journalItems.stream() //
 				.sorted((a, b) -> b.i4("drcr") - a.i4("drcr")) //
 				.toList();
 		fa.store(items);
+		
 		return items;
 	}
 

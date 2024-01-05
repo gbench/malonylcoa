@@ -98,7 +98,7 @@ public class FinAcct {
 	 * @return 分类账的根节点
 	 */
 	public Node<String> trialBalance(final String ledgerId) {
-		return ILedgerSession.trialBalance(this.getEntries(ledgerId));
+		return IJournalSession.trialBalance(this.getEntries(ledgerId));
 	}
 
 	/**
