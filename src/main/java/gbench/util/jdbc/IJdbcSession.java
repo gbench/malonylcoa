@@ -132,8 +132,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	/**
 	 * 获取result属性的值
 	 * 
-	 * @param <R>   值类型
-	 * @param value 属性的值
+	 * @param <R> 值类型
 	 * @return 自身的 IJdbcSession&lt;T,D&gt; 的实例，用以实现链式编程
 	 */
 	@SuppressWarnings("unchecked")
