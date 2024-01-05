@@ -105,7 +105,7 @@ public class SimpleRecord implements IRecord {
 	 * @return Stream&lt;KVPair&lt;String,Object&gt;&gt; 的流
 	 */
 	@Override
-	public Stream<KVPair<String, Object>> stream() {
+	public Stream<KVPair<String, Object>> tupleS() {
 		return kvs.stream();
 	}
 

@@ -2304,7 +2304,7 @@ public class Neo4jApp {
 
 		final var DELIM_REGEX = delim == null ? "," : delim; // 分隔符的模式
 		final var PATH_SEP = "/"; // 二元关系的分隔符,开始点与终止点之间的分隔符号
-		return rec.stream().filter(e -> !(e.key() == null || e.key().matches("\\s*"))) // 过滤掉无效的key,即 空白key
+		return rec.tupleS().filter(e -> !(e.key() == null || e.key().matches("\\s*"))) // 过滤掉无效的key,即 空白key
 				.flatMap(kvp -> {
 					final var path = kvp.key().trim(); // 提取路径key
 					final var value = kvp.value(); // 提取

@@ -3508,7 +3508,7 @@ public class Jdbc implements IManagedStreams {
 
 		final Map<String, String[]> jsn2keys = new HashMap<>();
 
-		jsn2keysrec.stream().forEach(kvp -> {
+		jsn2keysrec.tupleS().forEach(kvp -> {
 			Object obj = kvp._2();
 			String[] oo = null;
 			if (obj instanceof String) {

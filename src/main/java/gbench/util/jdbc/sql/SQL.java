@@ -264,7 +264,7 @@ public class SQL {
 
 		for (final var rec : datas) {
 			final var vv = new ArrayList<String>(initialCapacity);// 字段值列表与flds 一一对应
-			rec.stream().filter(pft).forEach(e -> { // 删除空值字符串 并进行数据处理
+			rec.tupleS().filter(pft).forEach(e -> { // 删除空值字符串 并进行数据处理
 				final var value = quoteString(e.value()); // 键值用引号括起来
 				final var name = parseFieldName(e.key()).str("name");// 获取字段名
 				final var i = indices.computeIfAbsent(name, k -> { // 获得字段名的位置索引
@@ -410,7 +410,7 @@ public class SQL {
 					.filter(e -> k_pattern.matcher(e).matches()) // 键名模式皮欸
 					.toArray(String[]::new); // 条件数据
 			final var _lhs = lhs.length > 0 ? lhs : new String[] { keys.get(0) }; // 默认使用第一个键名作为条件数据
-			final var whereclause = data.filter(_lhs).stream().map(e -> { // 条件语句的拼装
+			final var whereclause = data.filter(_lhs).tupleS().map(e -> { // 条件语句的拼装
 				final var k_matcher = k_pattern.matcher(e._1());
 				Matcher v_matcher = null; // 值模式匹配
 				final Object value; // 值对象
@@ -569,7 +569,7 @@ public class SQL {
 		final var _join2 = join2 == null ? "and" : join2;
 		final Function<Object, String> escape = line -> (line + "").replace("'", "\\'").replace("\"", "\\\""); // 字符转义
 		final var where = this.getSqlCtx().stream()
-				.map(e -> e.stream().map(p -> Term.FT("$0='$1'", p._1(), escape.apply(p._2())))
+				.map(e -> e.tupleS().map(p -> Term.FT("$0='$1'", p._1(), escape.apply(p._2())))
 						.collect(Collectors.joining(Term.FT(" $0 ", _join1))))
 				.map(e -> Term.FT("($0)", e)).collect(Collectors.joining(Term.FT(" $0 ", _join2))).strip();
 		final var whereline = where.length() < 1 ? "" : Term.FT("where $0", where);
@@ -680,7 +680,7 @@ public class SQL {
 			System.out.println(String.format("%s", tableDefs));
 		}
 
-		tableDefs.stream().forEach(e -> {
+		tableDefs.tupleS().forEach(e -> {
 			final var key = e.key().strip();// 提取主键描述字符串
 			final var fldrec = parseFieldName(key);// 接卸字段描述
 			final var value = e.value(); // 键值

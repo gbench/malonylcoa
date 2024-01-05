@@ -503,7 +503,7 @@ public class Jdbcs {
 	 */
 	private static StringBuffer traverse4json(final Node<IRecord> node, final int level, final StringBuffer buffer) {
 
-		Function<IRecord, String> rec2jsn = (rec) -> rec.stream().map(e -> "\"" + e.key() + "\":\"" + e.value() + "\"")
+		Function<IRecord, String> rec2jsn = (rec) -> rec.tupleS().map(e -> "\"" + e.key() + "\":\"" + e.value() + "\"")
 				.collect(Collectors.joining(","));
 
 		// 打印jsn

@@ -136,7 +136,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 键值序{(k0,v0),(k1,v1),...}
 	 */
-	Stream<KVPair<String, Object>> stream();
+	Stream<KVPair<String, Object>> tupleS();
 
 	/**
 	 * 键值序{(k0,v0),(k1,v1),...}
@@ -198,7 +198,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default <T> Stream<T> stream(final Function<KVPair<String, Object>, T> mapper) {
 		@SuppressWarnings("unchecked")
 		final Function<KVPair<String, Object>, T> fmapper = mapper == null ? e -> (T) e : mapper;// 变换函数
-		return this.stream().map(fmapper);
+		return this.tupleS().map(fmapper);
 	}
 
 	/**
@@ -209,7 +209,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return [[key:key0,value:value0],[key:key1,value:value1],...]
 	 */
 	default List<IRecord> kvs2(final String key, final String value) {
-		return this.stream().map(e -> rb("key,value").get(e._1(), e._2())).toList();
+		return this.tupleS().map(e -> rb("key,value").get(e._1(), e._2())).toList();
 	}
 
 	/**
@@ -323,7 +323,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return IRecord
 	 */
 	default IRecord cdr() {
-		return IRecord.KVS2REC(this.stream().skip(1));
+		return IRecord.KVS2REC(this.tupleS().skip(1));
 	}
 
 	/**
@@ -2407,7 +2407,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 所有字段名集合列表
 	 */
 	default List<String> keys() {
-		return this.stream().map(Tuple2::_1).collect(Collectors.toList());
+		return this.tupleS().map(Tuple2::_1).collect(Collectors.toList());
 	}
 
 	/**
@@ -2429,7 +2429,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <V, T> Stream<T> valueS(final Function<V, T> mapper) {
-		return this.stream().map(e -> mapper.apply((V) e._2()));
+		return this.tupleS().map(e -> mapper.apply((V) e._2()));
 	}
 
 	/**
@@ -2668,7 +2668,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default Stream<IRecord> kvS(final String keys) {
 		final String kk[] = keys == null ? null : keys.split("[\\s,]+");
-		return this.filter(kk).stream().map(g -> SimpleRecord.REC2("key", g._1(), "value", g._2()));
+		return this.filter(kk).tupleS().map(g -> SimpleRecord.REC2("key", g._1(), "value", g._2()));
 	}
 
 	/**
@@ -2679,7 +2679,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 返回的 IRecord 结构为 key:kkk,value:vvv
 	 */
 	default Stream<IRecord> kvS(final String keys[]) {
-		return this.filter(keys).stream().map(g -> SimpleRecord.REC2("key", g._1(), "value", g._2()));
+		return this.filter(keys).tupleS().map(g -> SimpleRecord.REC2("key", g._1(), "value", g._2()));
 	}
 
 	/**
@@ -3144,7 +3144,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default <R> R collect0(final Supplier<R> supplier, final BiConsumer<R, KVPair<String, Object>> accumulator,
 			final BinaryOperator<R> combiner) {
 		final var collector = Collector.of(supplier, accumulator, combiner);
-		return this.stream().collect(collector);
+		return this.tupleS().collect(collector);
 	};
 
 	/**
@@ -3188,7 +3188,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 		final var collector = Collector.of(() -> new AtomicReference<>(initial), accumulator,
 				(aa, bb) -> new AtomicReference<>(combiner.apply(aa.get(), bb.get())));
-		return this.stream().collect(collector).get();
+		return this.tupleS().collect(collector).get();
 	};
 
 	/**
@@ -3200,7 +3200,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 规约的结果 R
 	 */
 	default <A, R> R collect(final Collector<KVPair<String, Object>, A, R> collector) {
-		return this.stream().collect(collector);
+		return this.tupleS().collect(collector);
 	};
 
 	/**
@@ -3275,7 +3275,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		final Collector<KVPair<String, Object>, AtomicReference<R>, AtomicReference<R>> collector = Collector.of(
 				() -> new AtomicReference<>(initial), (aa, b) -> aa.set(reducer.apply(aa.get(), kv2r.apply(b))),
 				(aa, bb) -> new AtomicReference<>(reducer.apply(aa.get(), bb.get())));
-		return this.stream().collect(collector).get();
+		return this.tupleS().collect(collector).get();
 	};
 
 	/**
@@ -3288,7 +3288,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default <R> R foldLeft(final R initial, final BiFunction<R, KVPair<String, ?>, R> op) {
 		var ar = new AtomicReference<>(initial);
-		this.stream().forEach(kv -> ar.set(op.apply(ar.get(), kv)));
+		this.tupleS().forEach(kv -> ar.set(op.apply(ar.get(), kv)));
 		return ar.get();
 	};
 
@@ -5001,7 +5001,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default IRecord filter(final String kk[], final boolean discard_null_field) {
 		final var rec = REC();
-		final String[] ss = kk == null ? this.stream().map(Tuple2::_1).toArray(String[]::new) : kk;
+		final String[] ss = kk == null ? this.tupleS().map(Tuple2::_1).toArray(String[]::new) : kk;
 		for (final String s : ss) {
 			final var v = this.get(s);
 			if (discard_null_field && v == null)
@@ -5021,7 +5021,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default IRecord filter(final Predicate<KVPair<String, Object>> pfilter) {
 		final var rec = REC();
 		Predicate<KVPair<String, Object>> _pfilter = pfilter == null ? e -> true : pfilter;
-		this.stream().filter(_pfilter).forEach(s -> rec.add(s.key(), s.value()));
+		this.tupleS().filter(_pfilter).forEach(s -> rec.add(s.key(), s.value()));
 		return rec;
 	}
 
@@ -5131,7 +5131,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <T, U> Stream<U> flatMap(BiFunction<String, T, Stream<U>> mapper) {
-		return this.stream().flatMap(kvp -> mapper.apply(kvp._1(), (T) kvp._2()));
+		return this.tupleS().flatMap(kvp -> mapper.apply(kvp._1(), (T) kvp._2()));
 	}
 
 	/**
@@ -5144,7 +5144,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <T, U> Stream<U> flatMap(Function<T, Stream<U>> mapper) {
-		return this.stream().flatMap(kvp -> mapper.apply((T) kvp._2()));
+		return this.tupleS().flatMap(kvp -> mapper.apply((T) kvp._2()));
 	}
 
 	/**
@@ -5334,7 +5334,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <V> void foreach(final BiConsumer<String, V> cs) {
-		this.stream().forEach(kv -> cs.accept(kv.key(), (V) kv.value()));
+		this.tupleS().forEach(kv -> cs.accept(kv.key(), (V) kv.value()));
 	}
 
 	/**
@@ -5343,7 +5343,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return [kvp] iterator
 	 */
 	default Iterator<KVPair<String, Object>> iterator() {
-		return this.stream().iterator();
+		return this.tupleS().iterator();
 	}
 
 	/**
@@ -5629,7 +5629,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default IRecord sorted(final Comparator<? super KVPair<String, Object>> comparator) {
 		final var rec = REC();
-		this.stream().sorted(comparator).forEach(kv -> rec.add(kv._1(), kv._2()));
+		this.tupleS().sorted(comparator).forEach(kv -> rec.add(kv._1(), kv._2()));
 		return rec;
 	}
 
@@ -5688,7 +5688,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default Tuple2<Integer, Integer> shape() {
 		final var width = this.keys().size();
-		final var height = this.stream().map(kvp -> {
+		final var height = this.tupleS().map(kvp -> {
 			final var vv = this.lla(kvp._1(), e -> e);
 			if (vv == null)
 				return 0;
@@ -6526,7 +6526,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	default IRecord flat(final String sep) {
 		final var separator = (sep == null) ? "." : sep; // 默认分隔符为 "."
 		final var rec = this
-				.stream().reduce(
+				.tupleS().reduce(
 						REC(), (r,
 								kvp) -> kvp.value() instanceof IRecord || kvp.value() instanceof Map
 										? r.derive(kvp.value() instanceof Map
@@ -6588,7 +6588,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default int hashint() {
 		if (Thread.currentThread().getStackTrace().length > MAX_STACK_TRACE_SIZE) {
-			return Objects.hash(this.stream().flatMap(p -> Stream.of(p._1(), p._2())).toArray());
+			return Objects.hash(this.tupleS().flatMap(p -> Stream.of(p._1(), p._2())).toArray());
 		} else {
 			return Objects.hash(this.keys().toArray());
 		}
@@ -6755,7 +6755,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 转换成一维数组
 	 */
 	default String[] toStrArray() {
-		return this.stream().map(String::valueOf).toArray(String[]::new);
+		return this.tupleS().map(String::valueOf).toArray(String[]::new);
 	}
 
 	/**
@@ -6766,7 +6766,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return Object 类型的一维数组
 	 */
 	default Object[] toArray() {
-		return this.stream().map(g -> g._2() == null ? "" : g._2()).toArray(Object[]::new);
+		return this.tupleS().map(g -> g._2() == null ? "" : g._2()).toArray(Object[]::new);
 	}
 
 	/**
@@ -6782,7 +6782,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	@SuppressWarnings("unchecked")
 	default <T, U> U[] toArray(final Function<T, U> mapper, final Class<U> uclass) {
-		final Object[] oo = this.stream().map(e -> (T) e._2()).map(mapper).toArray();
+		final Object[] oo = this.tupleS().map(e -> (T) e._2()).map(mapper).toArray();
 		Class<U> _uclass = uclass;
 		if (uclass == null)
 			for (Object o : oo) {
@@ -7553,7 +7553,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		for (int i = 0; i < n; i++) {
 			if (i == 0) {
 				IRecord r = recs.get(0);
-				buffer.append(recs.get(i).stream().map(kv -> kv.key() + "").collect(Collectors.joining(sep)))
+				buffer.append(recs.get(i).tupleS().map(kv -> kv.key() + "").collect(Collectors.joining(sep)))
 						.append("\n");
 				hh = MAP(r.kvs(), KVPair::key);// 只提取第一个记录的结构字段
 			} // if
@@ -8374,7 +8374,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			}; // (k,v)->{}
 		};// kvp_remapper
 
-		recsStream.flatMap(IRecord::stream)// 把recsStream分解成 KVPair 序列流。
+		recsStream.flatMap(IRecord::tupleS)// 把recsStream分解成 KVPair 序列流。
 				// 把键key字段分解成2部分键名序列
 				.map(e -> KVPair.split(e.key(KVPair
 						// 第一部分只有一个元素的集合,第二部分为剩余的元素的集合
@@ -8524,7 +8524,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return KVPair集合进行层次合并
 	 */
 	static Map<String, Object> RECMERGE(final Stream<IRecord> kvplStream, final String pattern) {
-		final Function<IRecord, List<KVPair<List<String>, Object>>> mapper = rec -> rec.stream()
+		final Function<IRecord, List<KVPair<List<String>, Object>>> mapper = rec -> rec.tupleS()
 				.map(p -> KVPair.KVP(p.key(line -> {
 					final var regex = pattern == null ? "/" : pattern; // 路径元素分隔方式。
 					return Arrays.asList(line.split(regex));
@@ -10057,7 +10057,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 
 		if (rec != null) {// 首先从record 内进行类型检索
 			// 元素类型提取
-			final var opt = rec.stream().map(KVPair::value).filter(Objects::nonNull)
+			final var opt = rec.tupleS().map(KVPair::value).filter(Objects::nonNull)
 					.filter((e -> targetClass.isAssignableFrom(e.getClass()))).findFirst(); // 寻找一个满足要求类型的字段
 			if (opt.isPresent())
 				return (T) opt.get();

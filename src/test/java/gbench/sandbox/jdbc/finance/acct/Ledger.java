@@ -167,7 +167,7 @@ public class Ledger {
 
 		final var _variables = new HashMap<Object, Object>();
 		_variables.putAll(variables.toMap()); // 调整后的变量列表
-		variables.stream().flatMap(translator).forEach(e -> {
+		variables.tupleS().flatMap(translator).forEach(e -> {
 			_variables.computeIfAbsent(e._1(), k -> e._2()); // 仅当值不存在的时候才给予添加
 		});
 
