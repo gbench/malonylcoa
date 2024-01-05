@@ -20,9 +20,9 @@ public class FinAcct extends AbstractAcct {
 	/**
 	 * 账册就是就是一个特定的核算对象
 	 * 
-	 * @param name 账册名称
-	 * @param coa  科目表
-	 * @param coa  记账策略
+	 * @param name     账册名称
+	 * @param coa      科目表
+	 * @param policies 记账策略
 	 */
 	public FinAcct(final DFrame coa, final IRecord policies) {
 		this.coa = coa.forEachBy(e -> { // 将账号改为long格式
@@ -40,9 +40,10 @@ public class FinAcct extends AbstractAcct {
 		this.intialize(); // 数据初始化
 		@SuppressWarnings("unchecked")
 		final var params = (Tuple2<DFrame, IRecord>) jdbcApp.withTransaction(sess -> {
-			final var coa = sess.sql2dframe("select * from t_coa").forEachBy(e -> { // 将账号改为long格式
-				e.set("acctnum", e.lng("acctnum"));
-			});
+			final var coa = sess.sql2dframe("select * from t_coa") //
+					.forEachBy(e -> { // 将账号改为long格式
+						e.set("acctnum", e.lng("acctnum"));
+					});
 			final var policies = sess.sql2dframe("select * from t_acct_policy")
 					.pivotTable1("name,order_type,position,drcr", getter("acctnum"));
 			sess.setAttribute("result", Tuple2.of(coa, policies)); // 设置返回值
