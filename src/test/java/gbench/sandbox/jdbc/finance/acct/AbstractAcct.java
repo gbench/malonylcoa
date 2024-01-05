@@ -12,14 +12,18 @@ import gbench.util.jdbc.kvp.IRecord;
 
 /**
  * 会计对象
+ * 
+ * @param <SELF> 自身对象
  */
-public class AbstractAcct {
+public class AbstractAcct<SELF> {
 
 	/**
 	 * 初始化
 	 */
-	public void intialize() {
+	@SuppressWarnings("unchecked")
+	public SELF intialize() {
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
+		return (SELF) this;
 	}
 
 	/**

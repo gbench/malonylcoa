@@ -5,6 +5,7 @@ import static gbench.util.io.Output.println;
 import org.junit.jupiter.api.Test;
 
 import gbench.sandbox.jdbc.finance.acct.FinAcct;
+import gbench.util.jdbc.kvp.DFrame;
 
 /**
  * 简单的会计记账法,示例<br>
@@ -21,22 +22,27 @@ public class MyAcctTest {
 
 	@Test
 	public void foo() {
-		new FinAcct("POLICY1000").getLedger("交易性金融资产001");
-		final var ledger = new FinAcct("POLICY1000").getLedger("交易性金融资产001"); // 创建一个分类账
+		final var fa = new FinAcct("POLICY1000").intialize();
 
-		// 期初：初始确认/计量
-		ledger.handle("交易性金融资产-初始确认/LONG", 1000_000, // amount 是默认金额
-				// "交易性金融资产--成本", 1000_000, // 交易性金融资产--成本 采用默认的amount金额,故可以省略
-				"应收股利", 60_000, // 应收股利
-				"投资收益", 1_000, // 交易费用
-				"银行存款", 1_061_000); // 购入股票
-		// 期中: 后续计量&资产负债表日的变动跟踪&处理
-		ledger.handle("交易性金融资产-应收股利/LONG", 60_000); // 收到现金股利
-		ledger.handle("交易性金融资产-公允价值变动/LONG", 300_000); // 确认股票价格变动
-		// 期末: 终止确认&资产处置
-		ledger.handle("交易性金融资产-终止计量/LONG", 1_500_000); // 公司股票全部售出
-		println("-------------------------------------------");
-		println(ledger.getEntries());
+		for (final var ledgerId : "交易性金融资产001,交易性金融资产002".split(",")) {
+			final var ledger = fa.getLedger(ledgerId); // 创建一个分类账
+			// 期初：初始确认/计量
+			ledger.handle("交易性金融资产-初始确认/LONG", 1000_000, // amount 是默认金额
+					// "交易性金融资产--成本", 1000_000, // 交易性金融资产--成本 采用默认的amount金额,故可以省略
+					"应收股利", 60_000, // 应收股利
+					"投资收益", 1_000, // 交易费用
+					"银行存款", 1_061_000); // 购入股票
+			// 期中: 后续计量&资产负债表日的变动跟踪&处理
+			ledger.handle("交易性金融资产-应收股利/LONG", 60_000); // 收到现金股利
+			ledger.handle("交易性金融资产-公允价值变动/LONG", 300_000); // 确认股票价格变动
+			// 期末: 终止确认&资产处置
+			ledger.handle("交易性金融资产-终止计量/LONG", 1_500_000); // 公司股票全部售出
+			println("-------------------------------------------");
+			println(ledger.getEntries());
+		}
+
+		println(fa.getEntrieS().collect(DFrame.dfmclc));
+		fa.dump(fa.trialBalance());
 
 	}
 }

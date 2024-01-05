@@ -1,6 +1,5 @@
 package gbench.sandbox.jdbc.finance.acct;
 
-import static gbench.sandbox.jdbc.finance.acct.IJournalSession.evaluateBalance;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import java.util.ArrayList;
@@ -111,38 +110,11 @@ public class Ledger {
 
 		// 计算试算平衡
 		final var node = fa.trialBalance(id);
+
 		// 查看试算平衡表
-		this.dump(node);
+		fa.dump(id, node);
 
 		return node;
-	}
-
-	/**
-	 * 查看数据内容
-	 * 
-	 * @param root 根节点
-	 */
-	public void dump(final Node<String> root) {
-		System.out.println(String.format("\n-------------[NODE:%s]-----------------", root));
-
-		root.forEach(node -> {
-			final Integer level = node.getLevel();
-			final var name = switch (level) { // 根据缩进级别进行翻译
-			case 3 -> fa.getAccount(id, Long.parseLong(node.getName())).str("account");
-			case 4 -> switch (Integer.parseInt(node.getName())) { // 借贷名称的翻译
-			case 1 -> "DR"; // 借方
-			case -1 -> "CR"; // 贷方
-			default -> node.getName(); // 其他
-			};
-			default -> node.getName(); // 默认名称
-			}; // 账户名称
-			final var line = String.format("%s%s ---> %s", // 模板字符串
-					" | ".repeat(level - 1), // 阶层显示
-					name, // 科目名称
-					evaluateBalance(node));
-			// 数据行输出
-			System.out.println(line);
-		});
 	}
 
 	/**
@@ -220,7 +192,7 @@ public class Ledger {
 					return evaluator.apply(key);
 				} else if (variable instanceof Number acctnum) { // 对于账号类型尝试翻译
 					final var acct = this.getAccount(acctnum.longValue()); // 提取账号
-					return Optional.of(acct).map(e -> e.str("account")).map(evaluator).orElse(0d);
+					return Optional.ofNullable(acct).map(e -> e.str("account")).map(evaluator).orElse(0d);
 				} else {
 					return 0d;
 				}
