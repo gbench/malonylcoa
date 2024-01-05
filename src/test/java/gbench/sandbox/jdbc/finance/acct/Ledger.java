@@ -109,10 +109,7 @@ public class Ledger {
 		}); // acct
 
 		// 计算试算平衡
-		final var node = fa.trialBalance(id);
-
-		// 查看试算平衡表
-		fa.dump(id, node);
+		final var node = fa.trialBalance(id, null);
 
 		return node;
 	}

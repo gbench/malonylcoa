@@ -32,17 +32,21 @@ public class MyAcctTest {
 					"应收股利", 60_000, // 应收股利
 					"投资收益", 1_000, // 交易费用
 					"银行存款", 1_061_000); // 购入股票
+
 			// 期中: 后续计量&资产负债表日的变动跟踪&处理
 			ledger.handle("交易性金融资产-应收股利/LONG", 60_000); // 收到现金股利
 			ledger.handle("交易性金融资产-公允价值变动/LONG", 300_000); // 确认股票价格变动
 			// 期末: 终止确认&资产处置
 			ledger.handle("交易性金融资产-终止计量/LONG", 1_500_000); // 公司股票全部售出
-			println("-------------------------------------------");
 			println(ledger.getEntries());
+			println(fa.dump(fa.trialBalance(ledgerId)));
 		}
 
 		println(fa.getEntrieS().collect(DFrame.dfmclc));
-		fa.dump(fa.trialBalance());
+		println("-------------------------------------------");
+		println(fa.dump(fa.trialBalance()));
+		println("-------------------------------------------");
+		println(fa.dump(fa.trialBalance(null, "acctnum,drcr")));
 
 	}
 }

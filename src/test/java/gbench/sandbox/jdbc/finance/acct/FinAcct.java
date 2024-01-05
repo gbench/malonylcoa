@@ -134,22 +134,27 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	/**
 	 * 账户数据
 	 * 
-	 * @param ledger 分类账
+	 * @param ledgerId 分类账
 	 * @return 账户分录数据
 	 */
-	public Stream<IRecord> getEntrieS(final String ledger) {
-		return this.getEntries(ledger).stream();
+	public Stream<IRecord> getEntrieS(final String ledgerId) {
+		return this.getEntries(ledgerId).stream();
 	}
 
 	/**
 	 * 账户数据
 	 * 
-	 * @param ledger 分类账
+	 * @param ledgerId 分类账id
 	 * @return 账户分录数据
 	 */
-	public List<IRecord> getEntries(final String ledger) {
-		return this.getEntrieS().filter(e -> Objects.equals(ledger, e.str("ledger"))) //
-				.toList();
+	public List<IRecord> getEntries(final String ledgerId) {
+		if (ledgerId == null) {
+			return this.getEntries();
+		} else {
+			return this.getEntrieS() //
+					.filter(e -> Objects.equals(ledgerId, e.str("ledger_id"))) //
+					.toList();
+		}
 	}
 
 	/**
@@ -168,7 +173,18 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * @return 分类账的根节点
 	 */
 	public Node<String> trialBalance(final String ledgerId) {
-		return IJournalSession.trialBalance(this.getEntries(ledgerId));
+		return this.trialBalance(ledgerId, null);
+	}
+
+	/**
+	 * 查看指定分类账试算平衡
+	 * 
+	 * @param ledgerId 分类账id
+	 * @param keys     阶层key名序列
+	 * @return 分类账的根节点
+	 */
+	public Node<String> trialBalance(final String ledgerId, final String keys) {
+		return IJournalSession.trialBalance(this.getEntries(ledgerId), keys);
 	}
 
 	/**
@@ -194,21 +210,11 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * 
 	 * @param root 根节点
 	 */
-	public void dump(final String ledgerId, final Node<String> root) {
-		final Function<Node<String>, String> nameit = node -> this.getAccount(ledgerId, Long.parseLong(node.getName()))
-				.str("account");
-		this.dump(nameit, root);
-	}
-
-	/**
-	 * 查看数据内容
-	 * 
-	 * @param root 根节点
-	 */
-	public void dump(final Node<String> root) {
+	public String dump(final Node<String> root) {
 		final Function<Node<String>, String> nameit = node -> //
-		this.getAccountOpt(Long.parseLong(node.getName())).map(e -> e.str("account")).orElse(null);
-		this.dump(nameit, root);
+		this.getAccountOpt(Long.parseLong(node.getName()))//
+				.map(e -> e.str("account")).orElse(null);
+		return this.dump(nameit, root);
 	}
 
 	/**
@@ -216,27 +222,32 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * 
 	 * @param root 根节点
 	 */
-	public void dump(Function<Node<String>, String> nameit, final Node<String> root) {
-		System.out.println(String.format("\n-------------[NODE:%s]-----------------", root));
+	public String dump(Function<Node<String>, String> nameit, final Node<String> root) {
+		final var builder = new StringBuilder();
+		builder.append(String.format("\n-------------[NODE:%s]-----------------", root));
 
 		root.forEach(node -> {
 			final Integer level = node.getLevel();
-			final var name = switch (level) { // 根据缩进级别进行翻译
-			case 3 -> nameit.apply(node);
-			case 4 -> switch (Integer.parseInt(node.getName())) { // 借贷名称的翻译
+			final var key = node.attr("key", "-");
+			final var _name = node.getName();
+			final var name = switch (key) {
+			case "acctnum" ->
+				this.getAccountOpt(Integer.parseInt(node.getName())).map(e -> e.str("account")).orElse(_name);
+			case "drcr" -> switch (Integer.parseInt(node.getName())) { // 借贷名称的翻译
 			case 1 -> "DR"; // 借方
 			case -1 -> "CR"; // 贷方
-			default -> node.getName(); // 其他
+			default -> _name; // 其他
 			};
-			default -> node.getName(); // 默认名称
-			}; // 账户名称
-			final var line = String.format("%s%s ---> %s", // 模板字符串
+			default -> _name;
+			};
+			final var line = String.format("%s%s ---> %s\n", // 模板字符串
 					" | ".repeat(level - 1), // 阶层显示
 					name, // 科目名称
 					evaluateBalance(node));
 			// 数据行输出
-			System.out.println(line);
+			builder.append(line);
 		});
+		return builder.toString();
 	}
 
 	private final DFrame coa; // 账户科目表

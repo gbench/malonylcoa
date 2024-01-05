@@ -134,10 +134,10 @@ public interface IJournalSession {
 	 */
 	default IRecord write(final int drcr, final Object name, final double amount) {
 		final var _drcr = amount > 0 ? drcr : -drcr;
-		final var ledger = this.getLedgerId(); // 记账对象
+		final var ledger_id = this.getLedgerId(); // 记账对象
 		final var now = LocalDateTime.now(); // 当前时间
 		final var rec = REC("id", this.getId(), "drcr", _drcr, //
-				"name", name, "amount", Math.abs(amount), "ledger", ledger);
+				"name", name, "amount", Math.abs(amount), "ledger_id", ledger_id);
 		final var acct = Optional.ofNullable(this.getAccount(name)) //
 				.orElse(REC("account", name, "acctnum", name)); // 账户名称
 		final var line = rec.derive("name", acct.str("account"), "acctnum", acct.lng("acctnum"));
@@ -181,12 +181,29 @@ public interface IJournalSession {
 	/**
 	 * 试算平衡表
 	 * 
-	 * @return
+	 * @param entries 分录数据
+	 * @return trialBalance
 	 */
 	static Node<String> trialBalance(final List<IRecord> entries) {
-		final var balance = entries.stream().collect(DFrame.dfmclc).pivotTable("ledger,acctnum,drcr", //
+		return trialBalance(entries, null);
+	}
+
+	/**
+	 * 试算平衡表
+	 * 
+	 * @param entries 分录集合
+	 * @param keys    键名序列,默认为 "ledger_id,acctnum,drcr"
+	 * @return 试算平衡表
+	 */
+	static Node<String> trialBalance(final List<IRecord> entries, final String keys) {
+		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,drcr");// 键名序列
+		final var balance = entries.stream().collect(DFrame.dfmclc).pivotTable(_keys,
 				ss -> ss.collect(Collectors.summarizingDouble(e -> e.dbl("amount"))).getSum());
 		final var root = balance.treeNode();
+		final var kk = String.format("root,%s", _keys).split(","); // 补充根节点键名
+		root.forEach(node -> { // 设置分层key
+			node.attrSet("key", kk[node.getLevel() - 1]);
+		});
 		evaluateBalance(root); // 计算余额
 		return root;
 	}
