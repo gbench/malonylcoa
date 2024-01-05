@@ -16,9 +16,9 @@ import gbench.util.jdbc.kvp.IRecord;
 public class AbstractAcct {
 
 	/**
-	 * 会计对象
+	 * 初始化
 	 */
-	public AbstractAcct() {
+	public void intialize() {
 		jdbcApp.withTransaction(imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables));
 	}
 

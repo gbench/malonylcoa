@@ -2,6 +2,7 @@ package gbench.util.jdbc;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
@@ -240,7 +241,7 @@ public interface IMySQL {
 	 * @return {ret:返回值boolean值, exception:异常类型, throwable:异常类型,用于动态代理的默认函数,
 	 *         result:sess的结果属性},参见Jdbc.newInstance
 	 */
-	default IRecord withTransaction(final ExceptionalConsumer<IJdbcSession<?, ?>> action) {
+	default IRecord withTransaction(final ExceptionalConsumer<IJdbcSession<UUID, Object>> action) {
 		final var attrs = new HashMap<Object, Object>();
 		final var spp = this.getProxy().findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = this.jdbc();

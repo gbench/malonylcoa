@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.List;
 import java.util.Stack;
+import java.util.UUID;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
@@ -2681,7 +2682,7 @@ public class Jdbcs {
 	 * @param tblnames 表名列表
 	 * @return 数据表
 	 */
-	public static ExceptionalConsumer<IJdbcSession<?, ?>> imports(final Function<String, DFrame> shtmx,
+	public static ExceptionalConsumer<IJdbcSession<UUID, Object>> imports(final Function<String, DFrame> shtmx,
 			final String... tblnames) {
 
 		return (sess) -> {

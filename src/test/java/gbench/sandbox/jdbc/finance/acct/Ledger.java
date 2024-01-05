@@ -77,10 +77,9 @@ public class Ledger {
 	 * @param path     策略路径
 	 * @param amount   金额
 	 * @param restings 其余参数
-	 * @throws Exception
 	 * @return 分类账的试算平衡表
 	 */
-	public Node<String> handle(final String path, final double amount, Object... restings) throws Exception {
+	public Node<String> handle(final String path, final double amount, Object... restings) {
 		return this.handle(REC("path", path, "amount", amount).derive(restings));
 	}
 
@@ -88,10 +87,9 @@ public class Ledger {
 	 * 会计记账
 	 * 
 	 * @param variables 变量列表
-	 * @throws Exception
 	 * @return 分类账的试算平衡表
 	 */
-	public Node<String> handle(final IRecord variables) throws Exception {
+	public Node<String> handle(final IRecord variables) {
 		this.withTransaction(variables, sess -> {
 			final var policy = sess.getPolicy(); // 记账策略
 			final var drcrs = policy.keys().stream() // key即为分录科目指令,根据DRCR_RANKS的优先级给予排序
@@ -129,15 +127,15 @@ public class Ledger {
 
 		root.forEach(node -> {
 			final Integer level = node.getLevel();
-			final var name = switch (level) {
+			final var name = switch (level) { // 根据缩进级别进行翻译
 			case 3 -> fa.getAccount(id, Long.parseLong(node.getName())).str("account");
-			case 4 -> switch (Integer.parseInt(node.getName())) {
-			case 1 -> "DR";
-			case -1 -> "CR";
-			default -> node.getName();
+			case 4 -> switch (Integer.parseInt(node.getName())) { // 借贷名称的翻译
+			case 1 -> "DR"; // 借方
+			case -1 -> "CR"; // 贷方
+			default -> node.getName(); // 其他
 			};
-			default -> node.getName();
-			};
+			default -> node.getName(); // 默认名称
+			}; // 账户名称
 			final var line = String.format("%s%s ---> %s", // 模板字符串
 					" | ".repeat(level - 1), // 阶层显示
 					name, // 科目名称
@@ -161,10 +159,8 @@ public class Ledger {
 	 * @param variables 变量集合
 	 * @param action    会话处理过程
 	 * @return 会话结果
-	 * @throws Exception
 	 */
-	public List<IRecord> withTransaction(final IRecord variables, final Consumer<IJournalSession> action)
-			throws Exception {
+	public List<IRecord> withTransaction(final IRecord variables, final Consumer<IJournalSession> action) {
 
 		final var path = variables.str("path"); // 策略路径
 		final var policy = fa.getPolicies().path2rec(path);
@@ -196,7 +192,7 @@ public class Ledger {
 			public double getBalance(final long acctnum) {
 				return fa.getBalance(id, acctnum);
 			}
-			
+
 			public IRecord getVariables() {
 				return variables;
 			}
@@ -229,13 +225,13 @@ public class Ledger {
 					return 0d;
 				}
 			}
-			
+
 		});
 		final var items = journalItems.stream() //
 				.sorted((a, b) -> b.i4("drcr") - a.i4("drcr")) //
 				.toList();
 		fa.store(items);
-		
+
 		return items;
 	}
 
