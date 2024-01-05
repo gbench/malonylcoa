@@ -97,7 +97,9 @@ public interface IJournalSession {
 	}
 
 	/**
-	 * 计算会话语境下的变量名称
+	 * 计算会话语境下的变量名称 <br>
+	 * 若是名字不存在则使用默认值amount <br>
+	 * 若是默认值也不存在则返回0 <br>
 	 * 
 	 * @param variables 上下文<br>
 	 * @param variable  变量名称<br>
@@ -106,13 +108,10 @@ public interface IJournalSession {
 	 * @return name 所标记的值
 	 */
 	default double evaluate(final Map<Object, Object> variables, final Object variable) {
-		final Function<String, Double> evaluator = name -> { // 尝试在variables进行按名提取
-			final var varopt = REC(variables) //
-					.aoks2rec(s -> s.replaceAll("[-]+", "-")) // 变换多连结符为单连接符
-					.opt(name);
-			return varopt.map(IRecord.obj2dbl()).orElseGet(() -> {
-				return REC(variables).dbl("amount");
-			});
+		final Function<String, Double> evaluator = name -> {
+			final var d = Optional.ofNullable(variables.get(name)) // 尝试按照名检索
+					.orElseGet(() -> variables.get("amount")); // 若是名字不存在则使用默认值amount
+			return Optional.ofNullable(d).map(IRecord.obj2dbl()).orElse(0d); // 若是默认值也不存在则返回0
 		};
 
 		if (variable instanceof String key) { // 根据键名获取键值
