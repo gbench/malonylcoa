@@ -101,19 +101,19 @@ public interface IJournalSession {
 	 * 若是名字不存在则使用默认值amount <br>
 	 * 若是默认值也不存在则返回0 <br>
 	 * 
-	 * @param variables 上下文<br>
-	 * @param variable  变量名称<br>
-	 *                  1)若name是数值类型,则从coa中检索对应科目名称后再从会话上下文的变量注册表variables中检索
-	 *                  2)name是字符串名称,直接从会话上下文的变量注册表variables中检索变量的值
+	 * @param context  上下文<br>
+	 * @param variable 变量名称<br>
+	 *                 1)若name是数值类型,则从coa中检索对应科目名称后再从会话上下文的变量注册表context中检索
+	 *                 2)name是字符串名称,直接从会话上下文的变量注册表context中检索变量的值
 	 * @return name 所标记的值
 	 */
-	default double evaluate(final Map<Object, Object> variables, final Object variable) {
-		if (variables.get(variable) instanceof Double value) { // 尝试直接读取
+	default double evaluate(final Map<Object, Object> context, final Object variable) {
+		if (context.get(variable) instanceof Double value) { // 尝试直接读取
 			return value;
 		} else { // 直接读取失败
 			final Function<String, Double> evaluator = name -> {
-				final var d = Optional.ofNullable(variables.get(name)) // 尝试按照名检索
-						.orElseGet(() -> variables.get("amount")); // 若是名字不存在则使用默认值amount
+				final var d = Optional.ofNullable(context.get(name)) // 尝试按照名检索
+						.orElseGet(() -> context.get("amount")); // 若是名字不存在则使用默认值amount
 				return Optional.ofNullable(d).map(IRecord.obj2dbl()).orElse(0d); // 若是默认值也不存在则返回0
 			}; // 变量计算器
 
@@ -124,8 +124,8 @@ public interface IJournalSession {
 				return Optional.of(acct).map(e -> e.str("account")).map(evaluator).orElse(0d);
 			} else {
 				return 0d;
-			}
-		}
+			} // if 根据键名获取键值
+		} // if 尝试直接读取
 	}
 
 	/**
