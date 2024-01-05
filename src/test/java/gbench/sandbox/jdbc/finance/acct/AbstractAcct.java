@@ -15,7 +15,7 @@ import gbench.util.jdbc.kvp.IRecord;
  * 
  * @param <SELF> 自身对象
  */
-public class AbstractAcct<SELF> {
+public abstract class AbstractAcct<SELF> {
 
 	/**
 	 * 初始化
