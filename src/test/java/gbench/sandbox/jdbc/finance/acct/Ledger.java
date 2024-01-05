@@ -58,7 +58,7 @@ public class Ledger {
 			case "DR" -> sess.debit(acctnum, amount); // 借方科目
 			case "CR" -> sess.credit(acctnum, amount); // 贷方科目
 			case "CL" -> balance_adjust.apply(sess.getAcctBalance(acctnum)); // 余额调整:清零科目
-			case "BL" -> balance_adjust.apply(sess.getBalance()); // 余额调整:倒轧日记账的分类科目
+			case "BL" -> balance_adjust.apply(sess.getJournalBalance()); // 余额调整:倒轧科目余额依据日记账累计余额
 			default -> null; // 非法分录科目指令
 			}; // 日记账分录
 
@@ -154,7 +154,7 @@ public class Ledger {
 				return fa.getAccount(id, acctnum);
 			}
 
-			public List<IRecord> getJournalItems() {
+			public List<IRecord> getJournalEntries() {
 				return journalItems;
 			}
 

@@ -46,13 +46,6 @@ public interface IJournalSession {
 	IRecord getAccount(final Object acct);
 
 	/**
-	 * 日记账的分录集合
-	 * 
-	 * @return
-	 */
-	List<IRecord> getJournalItems();
-
-	/**
 	 * 获取账户余额
 	 * 
 	 * @param acctnum 账户编码
@@ -68,6 +61,13 @@ public interface IJournalSession {
 	IRecord getVariables();
 
 	/**
+	 * 日记账的分录集合
+	 * 
+	 * @return
+	 */
+	List<IRecord> getJournalEntries();
+
+	/**
 	 * 分类账的科目集合
 	 * 
 	 * @return
@@ -75,12 +75,12 @@ public interface IJournalSession {
 	List<IRecord> getEntries();
 
 	/**
-	 * 当前会话的分录的科目余额
+	 * 当前会话的分录的科目累计余额
 	 * 
 	 * @return 会话的分录的科目余额
 	 */
-	default double getBalance() {
-		return evaluateBalance(trialBalance(this.getJournalItems()));
+	default double getJournalBalance() {
+		return evaluateBalance(trialBalance(this.getJournalEntries()));
 	}
 
 	/**
@@ -141,7 +141,7 @@ public interface IJournalSession {
 		final var acct = Optional.ofNullable(this.getAccount(name)) //
 				.orElse(REC("account", name, "acctnum", name)); // 账户名称
 		final var line = rec.derive("name", acct.str("account"), "acctnum", acct.lng("acctnum"));
-		this.getJournalItems().add(line.derive("now", now)); // 写入journalItem
+		this.getJournalEntries().add(line.derive("now", now)); // 写入journalItem
 
 		return line;
 	};
