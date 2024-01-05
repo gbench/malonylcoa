@@ -4,6 +4,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -58,7 +59,7 @@ public interface IJournalSession {
 	 * 
 	 * @return 会话变量集合
 	 */
-	IRecord getVariables();
+	Map<Object, Object> getVariables();
 
 	/**
 	 * 日记账的分录集合
@@ -104,13 +105,13 @@ public interface IJournalSession {
 	 *                  2)name是字符串名称,直接从会话上下文的变量注册表variables中检索变量的值
 	 * @return name 所标记的值
 	 */
-	default double evaluate(final IRecord variables, final Object variable) {
+	default double evaluate(final Map<Object, Object> variables, final Object variable) {
 		final Function<String, Double> evaluator = name -> { // 尝试在variables进行按名提取
-			final var varopt = variables //
+			final var varopt = REC(variables) //
 					.aoks2rec(s -> s.replaceAll("[-]+", "-")) // 变换多连结符为单连接符
 					.opt(name);
 			return varopt.map(IRecord.obj2dbl()).orElseGet(() -> {
-				return variables.dbl("amount");
+				return REC(variables).dbl("amount");
 			});
 		};
 

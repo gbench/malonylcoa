@@ -3,8 +3,11 @@ package gbench.sandbox.jdbc.finance.acct;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -12,6 +15,7 @@ import java.util.function.Function;
 
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.jdbc.kvp.Tuple2;
 import gbench.util.tree.Node;
 
 /**
@@ -85,7 +89,13 @@ public class Ledger {
 	/**
 	 * 会计记账
 	 * 
-	 * @param variables 变量列表
+	 * @param variables 变量列表，variables 必须包含,path和amount字段,其余字段根据单据类型自行设置。<br>
+	 *                  path:是会计策略中的单据类型和会计主体的头寸位置,是由t_acct_policy的bill_type与position连个字段拼接成的字符串<br>
+	 *                  比如：交易性金融资产-初始确认/LONG <br>
+	 *                  amount:默认金额，也就是借贷记账时候写入账户的金额,如果variables没有没有明确给出但再会计策略中又又要求提供的时候，所使用的金额。<br>
+	 *                  variables的其余变量，则是 根据会计策略的记账要求，需要给与专门提供的金额。比如：<br>
+	 *                  交易性金融资产-初始确认/LONG 里面的 应收股利，投资收益(即交易费用),银行存款等。<br>
+	 *                  变量名需要使用中文名称进行标记，
 	 * @return 分类账的试算平衡表
 	 */
 	public Node<String> handle(final IRecord variables) {
@@ -134,7 +144,25 @@ public class Ledger {
 		final var path = variables.str("path"); // 策略路径
 		final var policy = fa.getPolicies().path2rec(path);
 		final var txid = UUID.randomUUID().toString(); // 日记账会话的交易id
-		final var journalItems = new LinkedList<IRecord>();
+		final var journalEntries = new LinkedList<IRecord>(); // 日记账分录
+		final Function<Tuple2<String, ?>, Tuple2<String, ?>> translator = p -> { // key,value
+			if (p._1() instanceof String line && line.matches("^\\d+$")) { // 仅处理数字类型的字段名
+				return Optional.ofNullable(line).map(IRecord.obj2dbl()).map(Number::longValue) //
+						.flatMap(fa::getAcctOpt).map(account -> {
+							final var acct = account.str("account");
+							return null == variables.get(acct)//
+									? Tuple2.of(account.str("account"), p._2()) // 仅当variables没有重名的键名时才给予追加
+									: null;
+						}).orElse(null);
+			} // if
+			return null;
+		};
+
+		final var _variables = new HashMap<Object, Object>();
+		_variables.putAll(variables.toMap()); // 调整后的变量列表
+		variables.stream().map(translator).filter(Objects::nonNull).forEach(e -> {
+			_variables.put(e._1(), e._2());
+		});
 
 		// 交易会话
 		action.accept(new IJournalSession() {
@@ -155,48 +183,23 @@ public class Ledger {
 			}
 
 			public List<IRecord> getJournalEntries() {
-				return journalItems;
+				return journalEntries;
 			}
 
 			public double getAcctBalance(final long acctnum) {
 				return fa.getBalance(id, acctnum);
 			}
 
-			public IRecord getVariables() {
-				return variables;
+			public Map<Object, Object> getVariables() {
+				return _variables;
 			}
 
 			public List<IRecord> getEntries() {
 				return fa.getEntries(id);
 			}
 
-			/**
-			 * 提取参数金额 获取数据参数
-			 * 
-			 * @param variable
-			 */
-			public double evaluate(final Object variable) {
-				final Function<String, Double> evaluator = name -> { // 尝试在variables进行按名提取
-					final var varopt = variables //
-							.aoks2rec(s -> s.replaceAll("[-]+", "-")) // 变换多连结符为单连接符
-							.opt(name);
-					return varopt.map(IRecord.obj2dbl()).orElseGet(() -> {
-						return variables.dbl("amount");
-					});
-				};
-
-				if (variable instanceof String key) { // 根据键名获取键值
-					return evaluator.apply(key);
-				} else if (variable instanceof Number acctnum) { // 对于账号类型尝试翻译
-					final var acct = this.getAccount(acctnum.longValue()); // 提取账号
-					return Optional.ofNullable(acct).map(e -> e.str("account")).map(evaluator).orElse(0d);
-				} else {
-					return 0d;
-				}
-			}
-
 		});
-		final var items = journalItems.stream() //
+		final var items = journalEntries.stream() //
 				.sorted((a, b) -> b.i4("drcr") - a.i4("drcr")) //
 				.toList();
 		fa.store(items);

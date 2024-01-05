@@ -165,11 +165,11 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 添加一个新的键值对儿(key,value).根据具体的IRecord的不同 对于已经存在的key：若允许同名字段，<br>
 	 * 则添加新的键值对儿，若不允许同名key则修改key的值位value <br>
 	 * 
-	 * @param kvp 键值对儿对象
+	 * @param p 键值对儿对象
 	 * @return 当前的IRecord 以保证可以链式编程。
 	 */
-	default IRecord add(final KVPair<String, ?> kvp) {
-		return this.add(kvp.key(), kvp.value());
+	default <P extends Tuple2<String, ?>> IRecord add(final P p) {
+		return this.add(p._1(), p._2());
 	}
 
 	/*
