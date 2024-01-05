@@ -228,12 +228,12 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 
 		root.forEach(node -> {
 			final Integer level = node.getLevel();
-			final var key = node.attr("key", "-");
-			final var _name = node.getName();
+			final var key = node.attr("key", "-"); // 提取层级key
+			final var _name = node.getName(); // 源内容
 			final var name = switch (key) {
-			case "acctnum" ->
-				this.getAccountOpt(Integer.parseInt(node.getName())).map(e -> e.str("account")).orElse(_name);
-			case "drcr" -> switch (Integer.parseInt(node.getName())) { // 借贷名称的翻译
+			case "acctnum" -> this.getAccountOpt(Integer.parseInt(_name)) //
+					.map(e -> e.str("account")).orElse(_name); // 翻译成账户名称
+			case "drcr" -> switch (Integer.parseInt(_name)) { // 借贷名称的翻译
 			case 1 -> "DR"; // 借方
 			case -1 -> "CR"; // 贷方
 			default -> _name; // 其他

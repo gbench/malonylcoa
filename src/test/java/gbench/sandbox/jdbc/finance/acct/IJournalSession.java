@@ -58,7 +58,7 @@ public interface IJournalSession {
 	 * @param acctnum 账户编码
 	 * @return
 	 */
-	double getBalance(final long acctnum);
+	double getAcctBalance(final long acctnum);
 
 	/**
 	 * 获取会话变量集合
@@ -79,7 +79,7 @@ public interface IJournalSession {
 	 * 
 	 * @return 会话的分录的科目余额
 	 */
-	default double getJournalBalance() {
+	default double getBalance() {
 		return evaluateBalance(trialBalance(this.getJournalItems()));
 	}
 
