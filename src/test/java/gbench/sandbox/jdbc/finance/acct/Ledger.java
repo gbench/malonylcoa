@@ -133,17 +133,18 @@ public class Ledger {
 	}
 
 	/**
-	 * 开启一个日记账会话
+	 * 开启一个日记账会话<br>
+	 * 每个日记账会话，创建并维护一个独立的日记账簿:JournalEntries
 	 * 
 	 * @param variables 变量集合
 	 * @param action    会话处理过程
-	 * @return 会话结果
+	 * @return 日记账分录
 	 */
 	public List<IRecord> withTransaction(final IRecord variables, final Consumer<IJournalSession> action) {
 		final var path = variables.str("path"); // 策略路径
 		final var policy = fa.getPolicies().path2rec(path);
-		final var txid = UUID.randomUUID().toString(); // 日记账会话的交易id
-		final var journalEntries = new LinkedList<IRecord>(); // 日记账分录
+		final var journalId = UUID.randomUUID().toString(); // 日记账会话的交易id，或者说是 独立日记账簿ID
+		final var journalEntries = new LinkedList<IRecord>(); // 独立日记账簿
 		final Function<Tuple2<String, ?>, Stream<Tuple2<?, ?>>> translator = p -> { // key:键名,value:键值
 			@SuppressWarnings("unchecked")
 			final var empty = (Stream<Tuple2<?, ?>>) (Object) Stream.empty();
@@ -173,7 +174,7 @@ public class Ledger {
 		// 交易会话
 		action.accept(new IJournalSession() {
 			public String getId() {
-				return txid;
+				return journalId;
 			}
 
 			public String getLedgerId() {
@@ -205,12 +206,15 @@ public class Ledger {
 			}
 
 		});
-		final var items = journalEntries.stream() //
-				.sorted((a, b) -> b.i4("drcr") - a.i4("drcr")) //
-				.toList();
-		fa.store(items);
 
-		return items;
+		final var sortedjes = journalEntries.stream() //
+				.sorted((a, b) -> {
+					return b.i4("drcr") - a.i4("drcr");
+				}) //
+				.toList(); // 给予借贷排序后的日记账分录
+		fa.store(sortedjes);
+
+		return sortedjes;
 	}
 
 	/**

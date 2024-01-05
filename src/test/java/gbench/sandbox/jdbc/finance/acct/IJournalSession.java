@@ -205,9 +205,14 @@ public interface IJournalSession {
 				ss -> ss.collect(Collectors.summarizingDouble(e -> e.dbl("amount"))).getSum());
 		final var root = balance.treeNode();
 		final var kk = String.format("root,%s", _keys).split(","); // 补充根节点键名
+		
 		root.forEach(node -> { // 设置分层key
-			node.attrSet("key", kk[node.getLevel() - 1]);
-		});
+			final var i = node.getLevel() - 1;
+			if (i < kk.length) {
+				node.attrSet("key", kk[node.getLevel() - 1]);
+			} // if
+		}); // forEach
+		
 		evaluateBalance(root); // 计算余额
 		return root;
 	}
