@@ -224,7 +224,7 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 */
 	public String dump(Function<Node<String>, String> nameit, final Node<String> root) {
 		final var builder = new StringBuilder();
-		builder.append(String.format("\n-------------[NODE:%s]-----------------", root));
+		builder.append(String.format("\n-------------[NODE:%s]-----------------\n", root));
 
 		root.forEach(node -> {
 			final Integer level = node.getLevel();
