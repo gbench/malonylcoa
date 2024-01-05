@@ -147,21 +147,27 @@ public class Ledger {
 		final Function<Tuple2<String, ?>, Stream<Tuple2<?, ?>>> translator = p -> { // key:键名,value:键值
 			@SuppressWarnings("unchecked")
 			final var empty = (Stream<Tuple2<?, ?>>) (Object) Stream.empty();
-			if (p._1() instanceof String line && line.matches("^\\d+$")) { // 仅处理数字类型的字段名
-				return Optional.ofNullable(line).map(IRecord.obj2dbl()).map(Number::longValue) //
-						.flatMap(fa::getAcctOpt).map(account -> { // 账户内容
-							final Tuple2<?, ?> p1 = Tuple2.of(account.str("account"), p._2());
-							final Tuple2<?, ?> p2 = Tuple2.of(account.lng("acctnum"), p._2());
-							return Stream.of(p1, p2);
-						}).orElse(empty);
-			} // if
+
+			if (p._1() instanceof String line) {
+				if (line.matches("^\\d+$")) {// 仅处理数字类型的字段名
+					return Optional.ofNullable(line).map(IRecord.obj2dbl()).map(Number::longValue) //
+							.flatMap(fa::getAcctOpt).map(account -> { // 账户内容
+								final Tuple2<?, ?> p1 = Tuple2.of(account.str("account"), p._2()); // 字符串键名
+								final Tuple2<?, ?> p2 = Tuple2.of(account.lng("acctnum"), p._2()); // 数值键名
+								return Stream.of(p1, p2);
+							}).orElse(empty);
+				} else { // 其他数值类型的
+					final var p1 = p.fmap1(s -> s.replaceAll("[-]+", "-"));
+					return Stream.of(p1, p);
+				}
+			}
 			return empty;
 		};
 
 		final var _variables = new HashMap<Object, Object>();
 		_variables.putAll(variables.toMap()); // 调整后的变量列表
 		variables.stream().flatMap(translator).forEach(e -> {
-			_variables.put(e._1(), e._2());
+			_variables.computeIfAbsent(e._1(), k -> e._2()); // 仅当值不存在的时候才给予添加
 		});
 
 		// 交易会话
