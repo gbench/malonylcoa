@@ -3401,6 +3401,67 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * sliding2 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
+	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
+	 * 
+	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
+	 * [1 2]<br>
+	 * step0:[2 3]<br>
+	 * - step1:[3 4]<br>
+	 * - - step2:[4]<br>
+	 * 返回:[ [1,2], [2,3], [3,4], [4] ]<br>
+	 * 
+	 * @param discardSinglePoint 是否把单点元素给剔除, 比如对于 [ [1,2], [2,3], [3,4], [4] ] <br>
+	 *                           true: 只返回 [ [1,2], [2,3], [3,4]] <br>
+	 *                           false: 将返回[ [1,2], [2,3], [3,4],[4,null]] <br>
+	 * @return 滑动窗口的滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
+	 */
+	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> sliding2(boolean discardSinglePoint) {
+		return sliding(this.kvs(), 2, 1).stream().filter(e -> !discardSinglePoint || e.size() == 2)
+				.map(e -> Tuple2.TUP2(e.get(0), e.size() > 1 ? e.get(1) : null));
+	}
+
+	/**
+	 * sliding2 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
+	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
+	 * 
+	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
+	 * [1 2]<br>
+	 * step0:[2 3]<br>
+	 * - step1:[3 4]<br>
+	 * - - step2:[4]<br>
+	 * 返回:[ [1,2], [2,3], [3,4] ] 对结果进行截取没有 [4,null]节点 <br>
+	 * 
+	 * @return 滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
+	 */
+	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> sliding2() {
+		return this.sliding2(true);
+	}
+
+	/**
+	 * 数据窗口滑动<br>
+	 * 对一个:1 2 3 4,5按照 size:为2,step为1的参数进行滑动的结果。<br>
+	 * 
+	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
+	 * [1 2]<br>
+	 * step0:[2 3]<br>
+	 * - step1:[3 4]<br>
+	 * - - step2:[4]<br>
+	 * 返回:[ U1, U2, U3, U4 ]<br>
+	 * mapper.apply([1,2])==U1 mapper.apply([2,3])==U2
+	 * 
+	 * @param <U>    元素类型
+	 * @param size   滑动的窗口大小
+	 * @param step   每次移动的步长
+	 * @param mapper 窗口变换函数
+	 * @return 滑动窗口的列表。
+	 */
+	default <U> Stream<U> sliding2(final int size, final int step,
+			final Function<List<KVPair<String, Object>>, U> mapper) {
+		return sliding(this.kvs(), size, step).stream().map(mapper);
+	}
+
+	/**
 	 * slidingStream 数据窗口滑动：step 每次移动的步长为1<br>
 	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
 	 * 
@@ -3441,44 +3502,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * sliding2 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
-	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
-	 * 
-	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
-	 * [1 2]<br>
-	 * step0:[2 3]<br>
-	 * - step1:[3 4]<br>
-	 * - - step2:[4]<br>
-	 * 返回:[ [1,2], [2,3], [3,4] ] 对结果进行截取没有 [4,null]节点 <br>
-	 * 
-	 * @return 滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
-	 */
-	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> sliding2() {
-		return this.sliding2(true);
-	}
-
-	/**
-	 * sliding2 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
-	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
-	 * 
-	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
-	 * [1 2]<br>
-	 * step0:[2 3]<br>
-	 * - step1:[3 4]<br>
-	 * - - step2:[4]<br>
-	 * 返回:[ [1,2], [2,3], [3,4], [4] ]<br>
-	 * 
-	 * @param discardSinglePoint 是否把单点元素给剔除, 比如对于 [ [1,2], [2,3], [3,4], [4] ] <br>
-	 *                           true: 只返回 [ [1,2], [2,3], [3,4]] <br>
-	 *                           false: 将返回[ [1,2], [2,3], [3,4],[4,null]] <br>
-	 * @return 滑动窗口的滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
-	 */
-	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> sliding2(boolean discardSinglePoint) {
-		return sliding(this.kvs(), 2, 1).stream().filter(e -> !discardSinglePoint || e.size() == 2)
-				.map(e -> Tuple2.TUP2(e.get(0), e.size() > 1 ? e.get(1) : null));
-	}
-
-	/**
 	 * 数据窗口滑动<br>
 	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
 	 * 
@@ -3495,29 +3518,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default List<List<KVPair<String, Object>>> sliding(final int size, final int step) {
 		return sliding(this.kvs(), size, step);
-	}
-
-	/**
-	 * 数据窗口滑动<br>
-	 * 对一个:1 2 3 4,5按照 size:为2,step为1的参数进行滑动的结果。<br>
-	 * 
-	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
-	 * [1 2]<br>
-	 * step0:[2 3]<br>
-	 * - step1:[3 4]<br>
-	 * - - step2:[4]<br>
-	 * 返回:[ U1, U2, U3, U4 ]<br>
-	 * mapper.apply([1,2])==U1 mapper.apply([2,3])==U2
-	 * 
-	 * @param <U>    元素类型
-	 * @param size   滑动的窗口大小
-	 * @param step   每次移动的步长
-	 * @param mapper 窗口变换函数
-	 * @return 滑动窗口的列表。
-	 */
-	default <U> Stream<U> sliding2(final int size, final int step,
-			final Function<List<KVPair<String, Object>>, U> mapper) {
-		return sliding(this.kvs(), size, step).stream().map(mapper);
 	}
 
 	/**
