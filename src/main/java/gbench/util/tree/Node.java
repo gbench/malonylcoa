@@ -1218,7 +1218,7 @@ public class Node<T> implements INodeWriter<Node<T>> {
 		if (node == null || cs == null)
 			return;
 		cs.accept(node);
-		for (final Node<U> u : node.getChildren())
+		for (final Node<U> u : reverse(node.getChildren()))
 			forEach(cs, u);
 	}
 
@@ -1392,7 +1392,7 @@ public class Node<T> implements INodeWriter<Node<T>> {
 			final Consumer<Node<T>> process, final Consumer<Node<T>> postprocess) {
 		preprocess.accept(node);
 		process.accept(node);
-		node.getChildren().forEach(e -> traverse(e, preprocess, process, postprocess));
+		reverse(node.getChildren()).forEach(e -> traverse(e, preprocess, process, postprocess));
 		postprocess.accept(node);
 	}
 
@@ -1425,6 +1425,19 @@ public class Node<T> implements INodeWriter<Node<T>> {
 			_rootNode.addChild(node);
 		}); // forEach
 		return _rootNode;
+	}
+
+	/**
+	 * Reverses the order of the elements in the specified list.
+	 * 
+	 * @param <T>  元素类型
+	 * @param list 列表数据
+	 * @return 首位调转后的列表
+	 */
+	public static <T> List<T> reverse(final List<T> list) {
+		final var _list = new ArrayList<>(list); // 构造一个复制品
+		Collections.reverse(list);
+		return _list;
 	}
 
 	/**
