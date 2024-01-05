@@ -266,9 +266,9 @@ public class JdbcMallTest {
 			}
 
 			final var accounting_policies = sess.sql2dframe("select * from t_acct_policy") // 会计策略数据
-					.pivotTable("name,order_type,position,drcr", // 规整成数据透视表结构的阶梯层的树形结构
+					.pivotTable("name,bill_type,position,drcr", // 规整成数据透视表结构的阶梯层的树形结构
 							datas -> datas.findFirst().map(e -> e.get("acctnum")).orElse(null)) // 提取叶子节点的科目代码
-					.path2rec("POLICY0001/ORDER0001"); // 提取1号策略/普通订单ORDER0001
+					.path2rec("POLICY0001/BILL0001"); // 提取1号策略/普通订单ORDER0001
 			println("accounting_policies", accounting_policies);
 			// 随机选取10个公司对其订单信息进行会计记账
 			for (final var entity : cs.shuffle().head(10).rows()) {// entity 会计主体
