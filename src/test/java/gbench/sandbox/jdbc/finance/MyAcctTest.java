@@ -21,6 +21,7 @@ public class MyAcctTest {
 
 	@Test
 	public void foo() {
+		new FinAcct("POLICY1000").getLedger("交易性金融资产001");
 		final var ledger = new FinAcct("POLICY1000").getLedger("交易性金融资产001"); // 创建一个分类账
 
 		// 期初：初始确认/计量

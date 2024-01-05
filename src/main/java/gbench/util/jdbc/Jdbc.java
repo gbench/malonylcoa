@@ -2452,7 +2452,7 @@ public class Jdbc implements IManagedStreams {
 					dm.invoke(session); // 方法属性调用
 				}
 
-				result = session.getAttribute("result"); // 提取会话属性中的结果内容
+				result = session.getResult(); // 提取会话属性中的结果内容
 				session.clear(); // sess 对象清空
 			} catch (Throwable e) { // 出现异常则进行回滚
 				success = false;

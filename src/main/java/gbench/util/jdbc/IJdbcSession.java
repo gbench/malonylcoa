@@ -113,9 +113,32 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 	 * @param value 属性的值
 	 * @return 自身的 IJdbcSession&lt;T,D&gt; 的实例，用以实现链式编程
 	 */
-	default IJdbcSession<T, D> setAttribute(Object key, Object value) {
+	default IJdbcSession<T, D> setAttribute(final Object key, final Object value) {
 		this.getAttributes().put(key, value);
 		return this;
+	}
+
+	/**
+	 * 设置返回值
+	 * 
+	 * @param value 属性的值
+	 * @return 自身的 IJdbcSession&lt;T,D&gt; 的实例，用以实现链式编程
+	 */
+	default IJdbcSession<T, D> setResult(final Object value) {
+		this.getAttributes().put("result", value);
+		return this;
+	}
+
+	/**
+	 * 获取result属性的值
+	 * 
+	 * @param <R>   值类型
+	 * @param value 属性的值
+	 * @return 自身的 IJdbcSession&lt;T,D&gt; 的实例，用以实现链式编程
+	 */
+	@SuppressWarnings("unchecked")
+	default <R> R getResult() {
+		return (R) this.getAttributes().get("result");
 	}
 
 	/**

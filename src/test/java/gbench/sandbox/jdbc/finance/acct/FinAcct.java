@@ -37,7 +37,10 @@ public class FinAcct extends AbstractAcct {
 	 * @param policyName 会计策略名称
 	 */
 	public FinAcct(final String policyName) {
-		this.intialize(); // 数据初始化
+		final var dfm = this.jdbcApp.sqldframe("show tables");
+		if (dfm.size() < 1) { // 没有数据表
+			this.intialize(); // 数据初始化
+		}
 		@SuppressWarnings("unchecked")
 		final var params = (Tuple2<DFrame, IRecord>) jdbcApp.withTransaction(sess -> {
 			final var coa = sess.sql2dframe("select * from t_coa") //
