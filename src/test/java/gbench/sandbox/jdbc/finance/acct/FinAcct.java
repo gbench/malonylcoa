@@ -65,7 +65,7 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * @param account 账户
 	 * @return 账户信息
 	 */
-	public Optional<IRecord> getAccountOpt(final Object account) {
+	public Optional<IRecord> getAcctOpt(final Object account) {
 		if (account instanceof Number acctnum) {
 			final var acct = coa.one2one("acctnum", acctnum.longValue(), "coa_num");
 			return Optional.ofNullable(acct);
@@ -85,8 +85,8 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * @return 账户信息
 	 */
 	public IRecord getAccount(final String ledgerId, final Object account) {
-		return getAccountOpt(account)
-				.map(acct -> acct.derive("balance", this.getBalance(ledgerId, acct.lng("acctnum")))).orElse(null);
+		return getAcctOpt(account).map(acct -> acct.derive("balance", this.getBalance(ledgerId, acct.lng("acctnum"))))
+				.orElse(null);
 
 	}
 
@@ -212,7 +212,7 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 */
 	public String dump(final Node<String> root) {
 		final Function<Node<String>, String> nameit = node -> //
-		this.getAccountOpt(Long.parseLong(node.getName()))//
+		this.getAcctOpt(Long.parseLong(node.getName()))//
 				.map(e -> e.str("account")).orElse(null);
 		return this.dump(nameit, root);
 	}
@@ -231,7 +231,7 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 			final var key = node.attr("key", "-"); // 提取层级key
 			final var _name = node.getName(); // 源内容
 			final var name = switch (key) {
-			case "acctnum" -> this.getAccountOpt(Integer.parseInt(_name)) //
+			case "acctnum" -> this.getAcctOpt(Integer.parseInt(_name)) //
 					.map(e -> e.str("account")).orElse(_name); // 翻译成账户名称
 			case "drcr" -> switch (Integer.parseInt(_name)) { // 借贷名称的翻译
 			case 1 -> "DR"; // 借方
