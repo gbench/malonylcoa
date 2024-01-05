@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Collections;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import java.util.stream.Collectors;
 
 /**
  * TreeRecord 区分对key的名称区分大小写
@@ -53,11 +52,6 @@ public abstract class AbstractMapRecord implements IRecord {
 	@Override
 	public Stream<KVPair<String, Object>> tupleS() {
 		return data.entrySet().stream().map(e -> new KVPair<>(e.getKey(), e.getValue()));
-	}
-
-	@Override
-	public List<KVPair<String, Object>> kvs() {
-		return this.tupleS().collect(Collectors.toList());
 	}
 
 	/**

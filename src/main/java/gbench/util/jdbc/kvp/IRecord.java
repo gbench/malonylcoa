@@ -143,13 +143,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 键值序{(k0,v0),(k1,v1),...}
 	 */
-	List<KVPair<String, Object>> kvs();
-
-	/**
-	 * 键值序{(k0,v0),(k1,v1),...}
-	 * 
-	 * @return 键值序{(k0,v0),(k1,v1),...}
-	 */
 	Map<String, Object> toMap();
 
 	/**
@@ -195,10 +188,19 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param mapper kvp 的变换函数
 	 * @return T 类型的数据流
 	 */
-	default <T> Stream<T> stream(final Function<KVPair<String, Object>, T> mapper) {
+	default <T> Stream<T> tupleS(final Function<KVPair<String, Object>, T> mapper) {
 		@SuppressWarnings("unchecked")
 		final Function<KVPair<String, Object>, T> fmapper = mapper == null ? e -> (T) e : mapper;// 变换函数
 		return this.tupleS().map(fmapper);
+	}
+
+	/**
+	 * 键值序{(k0,v0),(k1,v1),...}
+	 * 
+	 * @return 键值序{(k0,v0),(k1,v1),...}
+	 */
+	default List<KVPair<String, Object>> kvs() {
+		return this.tupleS().toList();
 	}
 
 	/**
