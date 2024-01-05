@@ -208,7 +208,7 @@ public class Ledger {
 		});
 
 		final var sortedjes = journalEntries.stream() //
-				.sorted((a, b) -> {
+				.sorted((a, b) -> { // 先借后贷的顺序,即: 1 -> -1
 					return b.i4("drcr") - a.i4("drcr");
 				}) //
 				.toList(); // 给予借贷排序后的日记账分录

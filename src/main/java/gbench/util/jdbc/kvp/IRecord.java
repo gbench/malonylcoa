@@ -3441,7 +3441,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * tup2Stream 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
+	 * sliding2 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
 	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
 	 * 
 	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
@@ -3453,12 +3453,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 
 	 * @return 滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
 	 */
-	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> tupleS() {
-		return this.tupleS(true);
+	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> sliding2() {
+		return this.sliding2(true);
 	}
 
 	/**
-	 * tup2Stream 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
+	 * sliding2 分解成一个窗口长度为2的收尾向量的线段:线段空间。 数据窗口滑动：step 每次移动的步长为1<br>
 	 * 对一个:1 2 3 4,按照 size:为2,step为1的参数进行滑动的结果。<br>
 	 * 
 	 * | size | 每个窗口大小为 size,每次移动的步长为step<br>
@@ -3473,7 +3473,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 *                           false: 将返回[ [1,2], [2,3], [3,4],[4,null]] <br>
 	 * @return 滑动窗口的滑动窗口的Stream&lt;Tuple2&lt;KVPair&lt;String,Object&gt;,KVPair&lt;String,Object&gt;&gt;&gt;
 	 */
-	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> tupleS(boolean discardSinglePoint) {
+	default Stream<Tuple2<KVPair<String, Object>, KVPair<String, Object>>> sliding2(boolean discardSinglePoint) {
 		return sliding(this.kvs(), 2, 1).stream().filter(e -> !discardSinglePoint || e.size() == 2)
 				.map(e -> Tuple2.TUP2(e.get(0), e.size() > 1 ? e.get(1) : null));
 	}
