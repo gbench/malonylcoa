@@ -1313,34 +1313,30 @@ public class SQL {
 	public static String ctsql(final String name, final IRecord proto, final boolean adjust) {
 		var __proto = proto;
 		if (adjust) { // proto
-			Object id = proto.get("id");
-			if (id != null) { // 含有主键id
-				proto.remove("id");
-			}
-			if (debug) {
-				System.out.println(proto);
-			}
-			final var _proto = proto.aov2rec(e -> { // 数据类型调整
-				final var line = e.toString();
-				final var matcher = Pattern.compile("^(\\+\\-)?[0-9.]+$") // 数字类型检测器
-						.matcher(line);
-				final var b = matcher.matches();
-				if (b && line.contains(".")) { // 浮点数
-					try {
-						return Double.parseDouble(line);
-					} catch (Exception ex) {
-						return e;
-					}
-				} else if (b) { // 整数
-					try {
-						return Double.parseDouble(line);
-					} catch (Exception ex) {
-						return e;
-					}
-				} else {
-					return e;
-				}
-			});
+			Object id = proto.get("id"); // 提取主键
+
+			final var _proto = (id == null ? proto : proto.remove("id")) // 如果存在id字段则给删除
+					.aov2rec(e -> { // 数据类型调整
+						final var line = e.toString();
+						final var matcher = Pattern.compile("^(\\+\\-)?[0-9.]+$") // 数字类型检测器
+								.matcher(line);
+						final var b = matcher.matches();
+						if (b && line.contains(".")) { // 浮点数
+							try {
+								return Double.parseDouble(line);
+							} catch (Exception ex) {
+								return e;
+							}
+						} else if (b) { // 整数
+							try {
+								return Double.parseDouble(line);
+							} catch (Exception ex) {
+								return e;
+							}
+						} else {
+							return e;
+						} // if
+					}); // aov2rec
 			__proto = REC("#id", Optional.ofNullable(id).orElse(1)).add(_proto);
 		} // _proto
 
