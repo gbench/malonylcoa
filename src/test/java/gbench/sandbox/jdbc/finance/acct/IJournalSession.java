@@ -145,7 +145,14 @@ public interface IJournalSession {
 		final var acct = Optional.ofNullable(this.getAccount(name)) //
 				.orElse(REC("account", name, "acctnum", name)); // 账户名称
 		final var line = rec.derive("name", acct.str("account"), "acctnum", acct.lng("acctnum"));
-		this.getJournalEntries().add(line.derive("now", now)); // 写入journalItem
+		// 自定义字段
+		final var vars = REC(this.getVariables()); // 提取变量数据
+		final var myrec = vars.stropt("mykeys").map(vars::filter).orElse(REC()); // 自定义信息
+		final var _line = line.derive(myrec); // 补充了自定义内容的分录行
+		if (!_line.opt("time").isPresent()) { // 补充时间属性
+			_line.add("time", now); // 当前系统时间
+		}
+		this.getJournalEntries().add(_line); // 写入journalItem
 
 		return line;
 	};
@@ -205,14 +212,14 @@ public interface IJournalSession {
 				ss -> ss.collect(Collectors.summarizingDouble(e -> e.dbl("amount"))).getSum());
 		final var root = balance.treeNode();
 		final var kk = String.format("root,%s", _keys).split(","); // 补充根节点键名
-		
+
 		root.forEach(node -> { // 设置分层key
 			final var i = node.getLevel() - 1;
 			if (i < kk.length) {
 				node.attrSet("key", kk[node.getLevel() - 1]);
 			} // if
 		}); // forEach
-		
+
 		evaluateBalance(root); // 计算余额
 		return root;
 	}

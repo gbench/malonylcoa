@@ -857,6 +857,146 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<String> stropt(final String key) {
+		return Optional.ofNullable(this.str(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<String> stropt(final int idx) {
+		return this.stropt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<Integer> i4opt(final String key) {
+		return Optional.ofNullable(this.i4(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<Integer> i4opt(final int idx) {
+		return this.i4opt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<Long> lngopt(final String key) {
+		return Optional.ofNullable(this.lng(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<Long> lngopt(final int idx) {
+		return this.lngopt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<LocalDateTime> ldtopt(final String key) {
+		return Optional.ofNullable(this.ldt(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<LocalDateTime> ldtopt(final int idx) {
+		return this.ldtopt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<LocalDate> ldopt(final String key) {
+		return Optional.ofNullable(this.ld(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<LocalDate> ldopt(final int idx) {
+		return this.ldopt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<LocalTime> ltopt(final String key) {
+		return Optional.ofNullable(this.lt(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<LocalTime> ltopt(final int idx) {
+		return this.ltopt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
+	default Optional<Double> dblopt(final String key) {
+		return Optional.ofNullable(this.dbl(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<Double> dblopt(final int idx) {
+		return this.dblopt(this.keyOfIndex(idx));
+	}
+
+	/**
 	 * 这是对 递归结构(层级式)的 IRecord 按照 路径键名序列path 进行访问的算法,<br>
 	 * 即 IRecord的字段元素仍然是 IRecord的形式 <br>
 	 * 类似于如下的形式 <br>
