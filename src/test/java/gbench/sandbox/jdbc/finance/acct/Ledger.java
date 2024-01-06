@@ -26,12 +26,11 @@ public class Ledger {
 	/**
 	 * 账册就是就是一个特定的核算对象
 	 * 
-	 * @param id  账册id
-	 * @param coa 科目表
-	 * @param coa 记账策略
+	 * @param id 账册id
+	 * @param fa 财务会计
 	 */
-	public Ledger(final String id, final FinAcct accounting) {
-		fa = accounting;
+	public Ledger(final String id, final FinAcct fa) {
+		this.fa = fa;
 		this.id = id;
 	}
 
