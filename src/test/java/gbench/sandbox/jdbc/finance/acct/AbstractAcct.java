@@ -59,11 +59,10 @@ public abstract class AbstractAcct<SELF> {
 			"f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct_data.xlsx"); // 数据-源文件
 	final String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
 	final String db = "myaccts"; // 数据库名
-	final String url = String.format("jdbc:h2:mem:%s;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", db); // h2连接字符串
+	final String url = String.format("jdbc:h2:mem:%s;mode=mysql;db_close_delay=-1;database_to_upper=false;", db); // h2连接字符串
 	final IRecord h2_rec = REC("url", url, "driver", "org.h2.Driver", "user", "root", "password", "123456"); // h2数据库
 	final protected IMySQL jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
-	final String[] tables = ("t_company,t_product,t_company_product," + "t_coa,t_accts,t_journal,t_bksys,t_acct_policy,"
-			+ "t_user,t_order,t_warehouse").split("[,]+"); // 基础数据表
+	final String[] tables = datafile.sheetS().map(e -> e.getSheetName()).toArray(String[]::new); // 基础数据表
 	final String[] stores = "北京,天津,重庆,上海,广州,深圳".split("[,]+"); // 仓库地址
 	final String top10 = "select * from ##tbl limit 10"; // 头前10行数据
 	final Integer size = 1000; // 模拟生成的数据量,t_order的数据规模
