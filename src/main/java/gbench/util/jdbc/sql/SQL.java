@@ -1312,9 +1312,12 @@ public class SQL {
 	 */
 	public static String ctsql(final String name, final IRecord proto, final boolean adjust) {
 		var __proto = proto;
+		if (debug) {
+			System.out.println(String.format("ctsql proto before:[ %s ], adjust:[ %s ]", proto, adjust));
+		}
+
 		if (adjust) { // proto
 			Object id = proto.get("id"); // 提取主键
-
 			final var _proto = (id == null ? proto : proto.remove("id")) // 如果存在id字段则给删除
 					.aov2rec(e -> { // 数据类型调整
 						final var line = e.toString();
@@ -1339,6 +1342,10 @@ public class SQL {
 					}); // aov2rec
 			__proto = REC("#id", Optional.ofNullable(id).orElse(1)).add(_proto);
 		} // _proto
+
+		if (debug) {
+			System.out.println(String.format("ctsql proto before:[ %s ], adjust:[ %s ]", proto, adjust));
+		}
 
 		return sql(name, __proto).ctsqls(true).get(2);
 	}
