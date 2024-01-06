@@ -166,8 +166,7 @@ public class JdbcMallTest {
 				final var acct = accounting_policies.path2int(String.format("%s/%s", position, drcr)); // 提取账户模式
 				return acct; // 会计记账账户编码
 			}; // 记账编码
-			final var coas = sess.sql2dframe("select * from t_coa") // t_coa 科目表
-					.forEachBy(e -> e.compute("acctnum", (String k, Double v) -> v.intValue())); // 科目表
+			final var coas = sess.sql2dframe("select * from t_coa"); // t_coa 科目表
 			final Function<Integer, String> coa_account = acctnum -> {// 账号编码
 				return coas.one2one("acctnum", acctnum, "coa_cache").str("account"); // 解析编码为名称
 			}; // 科目表编码检索
