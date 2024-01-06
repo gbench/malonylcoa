@@ -2072,7 +2072,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	default <T> DFrame dfm(final String key, final Function<T, IRecord> mapper) {
-		return this.llS(key, mapper).collect(DFrame.dfmclc);
+		return this.path2llS(key, mapper).collect(DFrame.dfmclc);
 	}
 
 	/**
@@ -2097,7 +2097,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 以U类型为元素类型的列表结构
 	 */
 	default <T> DFrame dfm(final String key) {
-		return this.llS(key, IRecord::REC).collect(DFrame.dfmclc);
+		return this.path2llS(key, IRecord::REC).collect(DFrame.dfmclc);
 	}
 
 	/**
