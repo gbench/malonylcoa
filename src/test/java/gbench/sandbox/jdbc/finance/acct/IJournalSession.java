@@ -129,7 +129,11 @@ public interface IJournalSession {
 	}
 
 	/**
-	 * 书写一个借贷分录
+	 * 书写一个借贷分录<br>
+	 * 会根据getVariables中的mykeys的键名列表指定将对应变量写入相应的分录信息之中 <br>
+	 * 如果mykeys没有设置，则不予写入 同时 会根据是否getVariables中时候函数有time属性<br>
+	 * 来决定是否将系统当前时间进行写入。若没有mykeys没有设置time则添加时间字段,否则使用mykeys中<br>
+	 * 指定的时间进行写入。
 	 * 
 	 * @param drcr   借贷方向
 	 * @param name   账户编码
@@ -145,13 +149,16 @@ public interface IJournalSession {
 		final var acct = Optional.ofNullable(this.getAccount(name)) //
 				.orElse(REC("account", name, "acctnum", name)); // 账户名称
 		final var line = rec.derive("name", acct.str("account"), "acctnum", acct.lng("acctnum"));
-		// 自定义字段
+
+		// 自定义字段的处理
 		final var vars = REC(this.getVariables()); // 提取变量数据
 		final var myrec = vars.stropt("mykeys").map(vars::filter).orElse(REC()); // 自定义信息
 		final var _line = line.derive(myrec); // 补充了自定义内容的分录行
 		if (!_line.opt("time").isPresent()) { // 补充时间属性
 			_line.add("time", now); // 当前系统时间
-		}
+		} // 补充时间属性
+
+		// 分录写入
 		this.getJournalEntries().add(_line); // 写入journalItem
 
 		return line;
