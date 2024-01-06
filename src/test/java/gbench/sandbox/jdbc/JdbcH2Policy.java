@@ -10,7 +10,6 @@ import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.Jdbcs;
 import gbench.util.jdbc.kvp.DFrame;
-import gbench.util.jdbc.kvp.IRecord;
 
 /**
  * 交易策略
@@ -30,9 +29,8 @@ public class JdbcH2Policy {
 
 		jdbcApp.withTransaction(sess -> {
 			Jdbcs.imports(e -> datafile.autoDetect(e).collect(DFrame.dfmclc2), tables).accept(sess);
-			final var policies = sess.sql2dframe("select * from t_acct_policy").rowS()
-					.collect(IRecord.pvtclc("name,bill_type,position,drcr", datas -> datas.findFirst() //
-							.map(e -> e.get("acctnum")).orElse(null)));
+			final var policies = sess.sql2dframe("select * from t_acct_policy").pivotTable(
+					"name,bill_type,position,drcr", datas -> datas.findFirst().map(e -> e.get("acctnum")).orElse(null));
 			final var name = "POLICY0001"; // 策略名称
 			final var order_type = "BILL0001"; // 订单类型
 			final var policy_path = String.format("%s/%s", name, order_type); // 策略名称
