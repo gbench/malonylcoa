@@ -54,10 +54,12 @@ public abstract class AbstractAcct<SELF> {
 		CR
 	}; // 会计借贷
 
-	// 创造一个IJdbcApp接口应用
-	final SimpleExcel datafile = xls(
-			"f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct_data.xlsx"); // 数据-源文件
-	final String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
+	// 共享静态变量便于测试应用进行本地化修改与测试:建立一个静态块给予重新赋值就可以了
+	public static String file = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct_data.xlsx"; // 数据文件
+	public static String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
+
+	// 成员变量
+	final SimpleExcel datafile = xls(file); // 数据-源文件
 	final String db = "myaccts"; // 数据库名
 	final String url = String.format("jdbc:h2:mem:%s;mode=mysql;db_close_delay=-1;database_to_upper=false;", db); // h2连接字符串
 	final IRecord h2_rec = REC("url", url, "driver", "org.h2.Driver", "user", "root", "password", "123456"); // h2数据库
