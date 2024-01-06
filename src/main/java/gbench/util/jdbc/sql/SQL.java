@@ -1332,7 +1332,7 @@ public class SQL {
 							}
 						} else if (b) { // 整数
 							try {
-								return Double.parseDouble(line);
+								return Integer.parseInt(line);
 							} catch (Exception ex) {
 								return e;
 							}
