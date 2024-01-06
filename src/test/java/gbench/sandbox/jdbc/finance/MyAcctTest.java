@@ -4,6 +4,7 @@ import static gbench.util.io.Output.println;
 
 import org.junit.jupiter.api.Test;
 
+import gbench.sandbox.jdbc.finance.acct.AbstractAcct;
 import gbench.sandbox.jdbc.finance.acct.FinAcct;
 import gbench.util.jdbc.kvp.DFrame;
 
@@ -19,6 +20,12 @@ import gbench.util.jdbc.kvp.DFrame;
  * CR: 贷方余额 <br>
  */
 public class MyAcctTest {
+
+	static { // 设置数据文件名
+		AbstractAcct.db = "myaccts"; // 数据库名
+		AbstractAcct.file = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct_data.xlsx"; // 数据文件
+		AbstractAcct.sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
+	}
 
 	@Test
 	public void foo() {
