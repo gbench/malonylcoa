@@ -36,29 +36,31 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		jdbcApp.withTransaction(sess -> {
 			println(sess.sql2dframe("show tables")); // 数据表
 			final var company_id = 2; // 公司id
-			final var cpdfm = sess.sql2dframe("select * from t_company_product") //
-					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) //
+			final var cpdfm = sess.sql2dframe("select * from t_company_product") // 公司产品表
+					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
-			final var orderdfm = sess.sql2dframe("#getOrders", "company_id", company_id)
+			final var bldfm = sess.sql2dframe("#getBills", "company_id", company_id) // 读取指定的记账平衡信息
 					.forEachBy(h2_json_processor("details"));
-			final var whdfm = sess.sql2dframe("select * from t_warehouse");
-			final var cydfm = sess.sql2dframe("select * from t_company");
+			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
+			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
 
 			println("公司cydfm", cydfm.head(5));
 			println("公司产品cpdfm", cpdfm.head(5));
 			println("仓库whdfm", whdfm.head(5));
 
-			final var linedfm = orderdfm.rowS().flatMap(e -> e.dfm("details/items") //
-					.rowS(e.alias(k -> switch (k) {
-					case "id" -> "product_id";
-					default -> k;
+			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 订单行项目:产品明细
+					.rowS(e.alias(k -> switch (k) { // 字段改名
+					case "id" -> "product_id"; // 公司产品id改为产品id
+					default -> k; // 其他保持默认不变
 					}).filter("id,bill_type,position,warehouse_id,product_id")::derive)).collect(DFrame.dfmclc); // 数据行
 			final var ledger = fa.getLedger(String.format("公司账【%s】", //
 					cydfm.one2one("id", company_id, "cy").str("name"))); // 会计账簿
 
-			println(linedfm);
+			println("订单行项目linedfm", linedfm);
+
+			// 订单行项目记账
 			linedfm.rowS().forEach(line -> {
-				final var bill_type = line.str("bill_type");
+				final var bill_type = line.str("bill_type"); // 订单类型
 				final var position = line.str("position");
 				final var product_id = line.i4("product_id");
 				final var warehouse_id = line.i4("warehouse_id");
@@ -77,6 +79,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 				final var warehouse = whdfm.one2oneOpt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库");
 				entry.add("product", product, "warehouse", warehouse);
 			}); // forEach
+
 			println(fa.dump(fa.trialBalance("ledger_id,acctnum,warehouse,product,drcr".split(","))));
 			println(fa.getEntrieS().collect(DFrame.dfmclc));
 		});

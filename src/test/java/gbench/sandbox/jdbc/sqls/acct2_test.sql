@@ -1,6 +1,7 @@
 -- --------------------------
--- # getOrders
--- #company_id
+-- 公司日常经济活动的各种记账凭证
+-- # getBills
+-- #company_id 公司id
 -- --------------------------
 select
 *
@@ -42,7 +43,3 @@ from (
 		from t_payment where payer_id=##company_id or payee_id=##company_id
 ) tbls where position in ('short', 'long')
 
--- --------------------------
--- # getOrders2
--- --------------------------
-select 't_freight_order' bill_type,id,details from t_freight_order
