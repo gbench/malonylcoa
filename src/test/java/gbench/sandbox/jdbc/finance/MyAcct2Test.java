@@ -86,8 +86,8 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			fa.getEntrieS().forEach(entry -> { // 增加id转名字
 				final var product_id = entry.i4("product_id");
 				final var warehouse_id = entry.i4("warehouse_id");
-				final var product = cpdfm.one2oneOpt("id", product_id, "cp").map(e -> e.str("name")).orElse("-");
-				final var warehouse = whdfm.one2oneOpt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库");
+				final var product = cpdfm.one2opt("id", product_id, "cp").map(e -> e.str("name")).orElse("-");
+				final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库");
 				entry.add("product", product, "warehouse", warehouse);
 			}); // forEach
 

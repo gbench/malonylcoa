@@ -164,6 +164,22 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * lhs.many2one(oneId) <br>
+	 * 按照行进行查找: one(lhs) to one(rhs) 关系的lhs一方数据提取 <br>
+	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
+	 * 
+	 * @param <K>   缓存的键名类型
+	 * @param key   外键字段名
+	 * @param rhsId 右侧方(一方)的Id
+	 * @param cache 检索缓存
+	 * @return 指定键值的数据行(多方数据集合)
+	 */
+	public <K> Optional<IRecord> one2opt(final String key, final K rhsId, final Map<K, Optional<IRecord>> cache) {
+
+		return cache.computeIfAbsent(rhsId, k -> this.filterBy(key, rhsId).rowS().findFirst());
+	}
+
+	/**
 	 * lhs.one2one(oneId) <br>
 	 * 按照行进行查找: one(lhs) to one(rhs) 关系的lhs一方数据提取 <br>
 	 * 根据提供的oneId从当前对象(多方)中提取隶属于/对应于一方的数据集合。
@@ -174,9 +190,9 @@ public class DFrame extends LinkedRecord {
 	 * @param cacheKey 缓存键，会根据需要自动创建对应名称的缓存
 	 * @return Optional 指定键值的数据行(多方数据集合)
 	 */
-	public <K> Optional<IRecord> one2oneOpt(final String key, final K rhsId, final String cacheKey) {
+	public <K> Optional<IRecord> one2opt(final String key, final K rhsId, final String cacheKey) {
 
-		return Optional.ofNullable(this.one2one(key, rhsId, this.cache(cacheKey)));
+		return this.one2opt(key, rhsId, this.cache(cacheKey));
 	}
 
 	/**
