@@ -77,7 +77,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 				final var warehouse = whdfm.one2oneOpt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库");
 				entry.add("product", product, "warehouse", warehouse);
 			}); // forEach
-			println(fa.dump(fa.trialBalance(null,"ledger_id,acctnum,warehouse,product,drcr")));
+			println(fa.dump(fa.trialBalance("ledger_id,acctnum,warehouse,product,drcr".split(","))));
 			println(fa.getEntrieS().collect(DFrame.dfmclc));
 		});
 	}

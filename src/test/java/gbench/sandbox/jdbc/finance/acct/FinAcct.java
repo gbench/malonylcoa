@@ -4,11 +4,13 @@ import static gbench.sandbox.jdbc.finance.acct.IJournalSession.evaluateBalance;
 import static gbench.util.jdbc.kvp.IRecord.getter;
 import static java.util.stream.Collectors.summarizingDouble;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import gbench.util.jdbc.kvp.DFrame;
@@ -172,8 +174,28 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * @param ledgerId 分类账id
 	 * @return 分类账的根节点
 	 */
+	public Node<String> trialBalance() {
+		return IJournalSession.trialBalance(this.getEntries());
+	}
+
+	/**
+	 * 查看指定分类账试算平衡
+	 * 
+	 * @param ledgerId 分类账id
+	 * @return 分类账的根节点
+	 */
 	public Node<String> trialBalance(final String ledgerId) {
-		return this.trialBalance(ledgerId, null);
+		return this.trialBalance(ledgerId, (String) null);
+	}
+
+	/**
+	 * 查看指定分类账试算平衡
+	 * 
+	 * @param keys 阶层key名序列
+	 * @return 分类账的根节点
+	 */
+	public Node<String> trialBalance(final String keys[]) {
+		return this.trialBalance(null, keys == null ? null : Arrays.stream(keys).collect(Collectors.joining(",")));
 	}
 
 	/**
@@ -185,16 +207,6 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 */
 	public Node<String> trialBalance(final String ledgerId, final String keys) {
 		return IJournalSession.trialBalance(this.getEntries(ledgerId), keys);
-	}
-
-	/**
-	 * 查看指定分类账试算平衡
-	 * 
-	 * @param ledgerId 分类账id
-	 * @return 分类账的根节点
-	 */
-	public Node<String> trialBalance() {
-		return IJournalSession.trialBalance(this.getEntries());
 	}
 
 	/**
