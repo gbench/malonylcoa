@@ -39,7 +39,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			final var cpdfm = sess.sql2dframe("select * from t_company_product") // 公司产品表
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
-			final var bldfm = sess.sql2dframe("#getBills", "company_id", company_id) // 读取指定的记账平衡信息
+			final var bldfm = sess.sql2dframe("#getBills", "company_id", company_id) // 读取指定的记账单据凭证信息
 					.forEachBy(h2_json_processor("details"));
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
@@ -48,7 +48,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			println("公司产品cpdfm", cpdfm.head(5));
 			println("仓库whdfm", whdfm.head(5));
 
-			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 订单行项目:产品明细
+			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 记账单据凭证行项目:产品/资产明细
 					.rowS(e.alias(k -> switch (k) { // 字段改名
 					case "id" -> "product_id"; // 公司产品id改为产品id
 					default -> k; // 其他保持默认不变
@@ -56,20 +56,21 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			final var ledger = fa.getLedger(String.format("公司账【%s】", //
 					cydfm.one2one("id", company_id, "cy").str("name"))); // 会计账簿
 
-			println("订单行项目linedfm", linedfm);
+			println("单据凭证行项目linedfm", linedfm);
 
-			// 订单行项目记账
-			linedfm.rowS().forEach(line -> {
+			// 单据凭证行项目日记账
+			linedfm.rowS().forEach(line -> { // 依次处理各个单据凭证行项目
 				final var bill_type = line.str("bill_type"); // 订单类型
-				final var position = line.str("position");
-				final var product_id = line.i4("product_id");
-				final var warehouse_id = line.i4("warehouse_id");
-				final var amount = line.dbl("price") * line.dbl("quantity");
-				final var path = String.format("%s/%s", bill_type, position);
-				final var mykeys = "bill_type,product_id,warehouse_id";
+				final var position = line.str("position"); // 交易的产品头寸
+				final var product_id = line.i4("product_id"); // 产品id
+				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
+				final var amount = line.dbl("price") * line.dbl("quantity"); // 交易金额
+				final var path = String.format("%s/%s", bill_type, position); // 会计测录路径
+				final var mykeys = "bill_type,product_id,warehouse_id"; // 自定义属性的键名序列
 				final var vars = REC("bill_type", bill_type, "product_id", product_id, //
 						"warehouse_id", warehouse_id, "mykeys", mykeys);
-				ledger.handle(path, amount, vars);
+				// 账目誊写
+				ledger.handle(path, amount, vars); // 写入分类账
 			}); // forEach
 
 			fa.getEntrieS().forEach(entry -> { // 增加id转名字
