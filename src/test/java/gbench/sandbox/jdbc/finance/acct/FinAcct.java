@@ -43,22 +43,22 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * @param policyName 会计策略名称
 	 */
 	public FinAcct(final String policyName) {
-		final var dfm = this.jdbcApp.sqldframe("show tables");
-		if (dfm.size() < 1) { // 没有数据表
+		if (jdbcApp.sqldframe("show tables").size() < 1) { // 没有数据表
 			this.intialize(); // 数据初始化
-		}
+		} // if
 		@SuppressWarnings("unchecked")
 		final var params = (Tuple2<DFrame, IRecord>) jdbcApp.withTransaction(sess -> {
 			final var coa = sess.sql2dframe("select * from t_coa") //
 					.forEachBy(e -> { // 将账号改为long格式
 						e.set("acctnum", e.lng("acctnum"));
-					});
+					}); // 会计科目表
 			final var policies = sess.sql2dframe("select * from t_acct_policy")
-					.pivotTable1("name,bill_type,position,drcr", getter("acctnum"));
-			sess.setAttribute("result", Tuple2.of(coa, policies)); // 设置返回值
-		}).get("result");
-		this.coa = params._1();
-		this.policies = params._2().rec(policyName);
+					.pivotTable1("name,bill_type,position,drcr", getter("acctnum")); // 会计策略
+			sess.setResult(Tuple2.of(coa, policies)); // 在会话的result属性中设置返回值以向外输出
+		}).get("result"); // 提取sess保存的结果值
+
+		this.coa = params._1(); // 科目表
+		this.policies = params._2().rec(policyName); // 会计策略
 	}
 
 	/**
@@ -69,11 +69,9 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 */
 	public Optional<IRecord> getAcctOpt(final Object account) {
 		if (account instanceof Number acctnum) {
-			final var acct = coa.one2one("acctnum", acctnum.longValue(), "coa_num");
-			return Optional.ofNullable(acct);
+			return coa.one2opt("acctnum", acctnum.longValue(), "coa_num");
 		} else if (account instanceof String name) { // 账户名称
-			final var acct = coa.one2one("account", name, "coa_name");
-			return Optional.ofNullable(acct);
+			return coa.one2opt("account", name, "coa_name");
 		} else {
 			return Optional.empty();
 		}
@@ -160,12 +158,19 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	}
 
 	/**
-	 * 存储分类账行记录
+	 * 存储分类账行记录:一般为
 	 * 
-	 * @param items 行记录
+	 * @param journalItems 日记账分录集合
+	 * @return FinAcct 对象本身
 	 */
-	public void store(final List<IRecord> items) {
-		this.entries.addAll(items);
+	public FinAcct store(final List<IRecord> journalItems) {
+		/**
+		 * 写入items数据， <br>
+		 * 可以在此加入持久化到数据库或是消息队列的算法，以便可以将日记账内容分发到相应的存贮或是分析部件
+		 */
+		this.entries.addAll(journalItems);
+
+		return this;
 	}
 
 	/**
@@ -210,8 +215,9 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	}
 
 	/**
+	 * 会计策略
 	 * 
-	 * @return
+	 * @return 会计策略
 	 */
 	public IRecord getPolicies() {
 		return policies;
@@ -264,5 +270,5 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 
 	private final DFrame coa; // 账户科目表
 	private final IRecord policies; // 科技策略
-	private List<IRecord> entries = new LinkedList<IRecord>(); // 账户分录
+	private final List<IRecord> entries = new LinkedList<IRecord>(); // 账户分录
 }
