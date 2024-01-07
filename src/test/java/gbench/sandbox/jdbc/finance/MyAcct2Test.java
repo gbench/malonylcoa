@@ -4,6 +4,9 @@ import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
 
 import gbench.sandbox.jdbc.finance.acct.AbstractAcct;
@@ -11,8 +14,8 @@ import gbench.sandbox.jdbc.finance.acct.FinAcct;
 import gbench.util.jdbc.kvp.DFrame;
 
 /**
- * 简单的会计记账法,示例<br>
- * MyAcctTest <br>
+ * 简单的会计记账法(模拟一个平台下的商户间的收发货交易),示例<br>
+ * MyAcct2Test <br>
  * 
  * 根据会计策略中的分录科目指令,建造分类账对象Ledger,并为Ledger分类账,自动生成会计分录，并制作相应分类账的试算平衡表 <br>
  * 分录科目指令， <br>
@@ -29,13 +32,17 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		AbstractAcct.sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/acct2_test.sql";
 	}
 
-	@Test
-	public void foo() {
-		final var fa = new FinAcct("policy0001").intialize(); // 初始化财务会计
+	/**
+	 * 模拟公司运行
+	 * 
+	 * @param company_id 公司id
+	 * @param fa         财务会计对象
+	 */
+	public Consumer<Integer> executor(final FinAcct fa) {
 
-		jdbcApp.withTransaction(sess -> {
-			println(sess.sql2dframe("show tables")); // 数据表
-			final var company_id = 2; // 公司id
+		return company_id -> jdbcApp.withTransaction(sess -> {
+
+			println("平台数据表", sess.sql2dframe("show tables")); // 数据表
 			final var cpdfm = sess.sql2dframe("select * from t_company_product") // 公司产品表
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
@@ -44,6 +51,9 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
 
+			println("--------------------------------------------------------------------------");
+			println("模拟公司", cydfm.one2one("id", company_id, "cy"));
+			println("--------------------------------------------------------------------------");
 			println("公司cydfm", cydfm.head(5));
 			println("公司产品cpdfm", cpdfm.head(5));
 			println("仓库whdfm", whdfm.head(5));
@@ -84,5 +94,16 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			println(fa.dump(fa.trialBalance("ledger_id,acctnum,warehouse,product,drcr".split(","))));
 			println(fa.getEntrieS().collect(DFrame.dfmclc));
 		});
+	}
+
+	/**
+	 * 模拟一个平台下的商户间的收发货交易
+	 */
+	@Test
+	public void foo() {
+		final var fa = new FinAcct("policy0001").intialize(); // 初始化财务会计
+
+		// 模拟各个公司的运行
+		Stream.of(1, 2).forEach(executor(fa));
 	}
 }
