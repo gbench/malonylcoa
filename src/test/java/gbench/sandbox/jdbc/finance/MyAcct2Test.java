@@ -101,6 +101,8 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 	 */
 	@Test
 	public void foo() {
+
+		// 财务会计
 		final var fa = new FinAcct("policy0001").intialize(); // 初始化财务会计
 
 		// 模拟各个公司的运行
