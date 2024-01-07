@@ -161,15 +161,16 @@ public class FinAcct extends AbstractAcct<FinAcct> {
 	 * 存储分类账行记录:一般为
 	 * 
 	 * @param journalItems 日记账分录集合
-	 * @return FinAcct 对象本身
+	 * @return FinAcct(this)对象本身,以便实现链式编程
 	 */
 	public FinAcct store(final List<IRecord> journalItems) {
 		/**
-		 * 写入items数据， <br>
+		 * 写入journalItems数据， <br>
 		 * 可以在此加入持久化到数据库或是消息队列的算法，以便可以将日记账内容分发到相应的存贮或是分析部件
 		 */
 		this.entries.addAll(journalItems);
 
+		// 返回 FinAcct 对象本身
 		return this;
 	}
 
