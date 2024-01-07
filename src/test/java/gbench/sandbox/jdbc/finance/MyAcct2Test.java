@@ -59,10 +59,10 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			println("仓库whdfm", whdfm.head(5));
 
 			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 记账单据凭证行项目:产品/资产明细
-					.rowS(e.alias(k -> switch (k) { // 字段改名
+					.rowS(item -> item.alias(k -> switch (k) { // 字段改名
 					case "id" -> "product_id"; // 公司产品id改为产品id
 					default -> k; // 其他保持默认不变
-					}).filter("id,bill_type,position,warehouse_id,product_id")::derive)).collect(DFrame.dfmclc); // 数据行
+					}).derive(e.filter("id,bill_type,position,warehouse_id")))).collect(DFrame.dfmclc); // 数据行
 			final var ledger = fa.getLedger(String.format("公司账【%s】", //
 					cydfm.one2one("id", company_id, "cy").str("name"))); // 会计账簿
 
