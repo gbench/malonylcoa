@@ -32,32 +32,36 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 	@Test
 	public void foo() {
 		final var fa = new FinAcct("policy0001").intialize(); // 初始化财务会计
+
 		jdbcApp.withTransaction(sess -> {
-			println(sess.sql2dframe("show tables"));
+			println(sess.sql2dframe("show tables")); // 数据表
 			final var company_id = 2; // 公司id
 			final var cpdfm = sess.sql2dframe("select * from t_company_product") //
-					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs")) //
+					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) //
 					.collect(DFrame.dfmclc);
 			final var orderdfm = sess.sql2dframe("#getOrders", "company_id", company_id)
 					.forEachBy(h2_json_processor("details"));
 			final var whdfm = sess.sql2dframe("select * from t_warehouse");
 			final var cydfm = sess.sql2dframe("select * from t_company");
-			println(cpdfm);
-			println(whdfm);
-			println(cydfm);
+
+			println("公司cydfm", cydfm.head(5));
+			println("公司产品cpdfm", cpdfm.head(5));
+			println("仓库whdfm", whdfm.head(5));
+
 			final var linedfm = orderdfm.rowS().flatMap(e -> e.dfm("details/items") //
 					.rowS(e.alias(k -> switch (k) {
 					case "id" -> "product_id";
 					default -> k;
-					}).filter("id,bill_type,position,warehouse_id")::derive)).collect(DFrame.dfmclc); // 数据行
+					}).filter("id,bill_type,position,warehouse_id,product_id")::derive)).collect(DFrame.dfmclc); // 数据行
 			final var ledger = fa.getLedger(String.format("公司账【%s】", //
 					cydfm.one2one("id", company_id, "cy").str("name"))); // 会计账簿
+
 			println(linedfm);
 			linedfm.rowS().forEach(line -> {
 				final var bill_type = line.str("bill_type");
 				final var position = line.str("position");
-				final var product_id = line.str("product_id");
-				final var warehouse_id = line.str("warehouse_id");
+				final var product_id = line.i4("product_id");
+				final var warehouse_id = line.i4("warehouse_id");
 				final var amount = line.dbl("price") * line.dbl("quantity");
 				final var path = String.format("%s/%s", bill_type, position);
 				final var mykeys = "bill_type,product_id,warehouse_id";
@@ -65,7 +69,15 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 						"warehouse_id", warehouse_id, "mykeys", mykeys);
 				ledger.handle(path, amount, vars);
 			}); // forEach
-			println(fa.dump(fa.trialBalance()));
+
+			fa.getEntrieS().forEach(entry -> { // 增加id转名字
+				final var product_id = entry.i4("product_id");
+				final var warehouse_id = entry.i4("warehouse_id");
+				final var product = cpdfm.one2oneOpt("id", product_id, "cp").map(e -> e.str("name")).orElse("-");
+				final var warehouse = whdfm.one2oneOpt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库");
+				entry.add("product", product, "warehouse", warehouse);
+			}); // forEach
+			println(fa.dump(fa.trialBalance(null,"ledger_id,acctnum,warehouse,product,drcr")));
 			println(fa.getEntrieS().collect(DFrame.dfmclc));
 		});
 	}

@@ -3,6 +3,7 @@ package gbench.sandbox.jdbc.finance.acct;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -203,7 +204,18 @@ public interface IJournalSession {
 	 * @return trialBalance
 	 */
 	static Node<String> trialBalance(final List<IRecord> entries) {
-		return trialBalance(entries, null);
+		return trialBalance(entries, (String) null);
+	}
+
+	/**
+	 * 试算平衡表
+	 * 
+	 * @param entries 分录集合
+	 * @param keys    键名序列,默认为 ledger_id,acctnum,drcr
+	 * @return 试算平衡表
+	 */
+	static Node<String> trialBalance(final List<IRecord> entries, final String[] keys) {
+		return trialBalance(entries, keys == null ? null : Arrays.stream(keys).collect(Collectors.joining("/")));
 	}
 
 	/**
