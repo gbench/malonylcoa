@@ -53,7 +53,6 @@ public abstract class AbstractJdbcSession<T, D> implements IJdbcSession<T, D> {
 	 * @throws SQLException
 	 */
 	public Stream<IRecord> psql2recordS(final String sql, final Map<Integer, ?> params) throws SQLException {
-
 		final var stream = IJdbcSession.psql2recordS(this.getConnection(), sql, params, false, false); // 采用流式实现方法
 		this.add(stream);
 

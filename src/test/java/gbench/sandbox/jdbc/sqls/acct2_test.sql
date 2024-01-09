@@ -7,7 +7,7 @@ select
 *
 from (
 	select 
-		't_sales_order' bill_type,
+		't_order' bill_type,
 		case ##company_id
 		when partb then 'short' -- 乙方是short
 		when parta then 'long' -- 甲方是long
@@ -16,7 +16,7 @@ from (
 		id, -- 订单id
 		details, -- 产品明细
 		-1 warehouse_id -- 仓库id
-		from t_sales_order where parta=##company_id or partb=##company_id
+		from t_order where parta=##company_id or partb=##company_id
 	union
 	select
 		't_billof_product' bill_type,
