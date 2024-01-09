@@ -1170,8 +1170,8 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	 * 
 	 */
 	@Override
-	public String json(BiFunction<StringBuilder, TrieNode<T>, String> pre_processor,
-			BiFunction<StringBuilder, TrieNode<T>, String> post_processor) {
+	public String json(final BiFunction<StringBuilder, TrieNode<T>, String> pre_processor,
+			final BiFunction<StringBuilder, TrieNode<T>, String> post_processor) {
 		return INodeWriter.writeJson(this, p -> p.childrenL(), pre_processor, post_processor);
 	}
 

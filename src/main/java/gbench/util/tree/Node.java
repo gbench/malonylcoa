@@ -1121,8 +1121,8 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 * 
 	 */
 	@Override
-	public String json(BiFunction<StringBuilder, Node<T>, String> pre_processor,
-			BiFunction<StringBuilder, Node<T>, String> post_processor) {
+	public String json(final BiFunction<StringBuilder, Node<T>, String> pre_processor,
+			final BiFunction<StringBuilder, Node<T>, String> post_processor) {
 		return INodeWriter.writeJson(this, p -> p.childrenL(), pre_processor, post_processor);
 	}
 
