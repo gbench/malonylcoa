@@ -159,7 +159,7 @@ public class Lisp {
 												} // if
 											} // for
 											return true;
-										}; // ancestor_contains
+										}; // ancestor_not_contains
 										final Stream<T> _oneS = Stream.of(tt).filter(ancestor_not_contains); // 尚未排序的其他元素加入新的ones投递到下一阶层。
 										// 投递到下一阶层执行。
 										return i == n - 1 // 已经写入完成。
