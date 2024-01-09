@@ -1454,6 +1454,14 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	/**
 	 * 节点对象生成器
 	 * 
+	 * 可以用于树形结构的对象的根节点生成:
+	 * 
+	 * <pre>
+	 * {@code
+	 * final var rootNode = REC(pivotLines).tupleS().parallel().reduce(TrieNode.of("root"), // 以REC形式分解成阶层元素(K,V)流,而后reduce成树形结构
+	 * 		ndaccum((leaf, p) -> leaf.attrSet("value", p._2), TrieNode::addPart), TrieNode::merge); // 数据透视分阶层统计
+	 * }</pre>
+	 * 
 	 * @param <T>    元素类型
 	 * @param parent 父节点
 	 * @param t      元素

@@ -1186,6 +1186,12 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	/**
 	 * 构造函数
 	 * 
+	 * <pre>
+	 * {@code
+	 * final var rootNode = REC(pivotLines).tupleS().parallel().reduce(Node.of("root"), // 以REC形式分解成阶层元素(K,V)流,而后reduce成树形结构
+	 * 		ndaccum((leaf, p) -> leaf.attrSet("value", p._2), Node::of), Node::merge); // 数据透视分阶层统计
+	 * }</pre>
+	 * 
 	 * @param <T> 元素值类型
 	 * @param t   元素的值
 	 * @return TrieNode&lt;T&gt; 类型的节点
