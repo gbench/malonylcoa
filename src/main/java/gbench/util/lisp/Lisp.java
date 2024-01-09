@@ -217,22 +217,10 @@ public class Lisp {
 	public static <T> T[] RPTA(final T t, final int n) {
 		final Class<T> clazz = (Class<T>) t.getClass();
 		final T[] tt = (T[]) Array.newInstance(clazz, n);
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < n; i++) {
 			tt[i] = t;
+		}
 		return tt;
-	}
-
-	/**
-	 * 链表 元素归集器具
-	 *
-	 * @param <T>      归集器元素类型
-	 * @param <U>      结果类型
-	 * @param tclazz   t类型类
-	 * @param finisher 完成归集器 ll->u
-	 * @return [t]->u 链表归集器
-	 */
-	public static <T, U> Collector<T, ?, U> aaclc(final Class<T> tclazz, final Function<T[], U> finisher) {
-		return Lisp.aaclc(10, tclazz, finisher);
 	}
 
 	/**
@@ -316,6 +304,19 @@ public class Lisp {
 				}, p -> Optional.ofNullable(p._2.get()).flatMap(ts -> Optional.of(p._1.get()) // 使用optional 改名
 						.map(n -> Objects.equals(n, ts.length) ? ts : Arrays.copyOf(ts, n))) // 去除多余空间
 						.map(finisher).orElseGet(() -> finisher.apply((T[]) new Object[p._1.get()])));
+	}
+
+	/**
+	 * 链表 元素归集器具
+	 *
+	 * @param <T>      归集器元素类型
+	 * @param <U>      结果类型
+	 * @param tclazz   t类型类
+	 * @param finisher 完成归集器 ll->u
+	 * @return [t]->u 链表归集器
+	 */
+	public static <T, U> Collector<T, ?, U> aaclc(final Class<T> tclazz, final Function<T[], U> finisher) {
+		return Lisp.aaclc(10, tclazz, finisher);
 	}
 
 	/**
