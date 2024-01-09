@@ -1,9 +1,7 @@
 package gbench.sandbox.data.h2;
 
-import static gbench.util.array.INdarray.nats;
 import static gbench.util.data.DataApp.IRecord.REC;
 import static gbench.util.io.Output.println;
-import static gbench.util.lisp.ArrayRecord.ra;
 
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -32,13 +30,14 @@ import gbench.util.data.DataApp.IRecord;
 import gbench.util.data.DataApp.JSON;
 import gbench.util.data.DataApp.SQLExceptionalBiConsumer;
 import gbench.util.data.DataApp.Tuple2;
-import gbench.util.data.xls.DataMatrix;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
-import gbench.util.lisp.ArrayRecord;
 import gbench.util.tree.Node;
 import gbench.util.tree.TrieNode;
 
+/**
+ * H2数据库基本操作
+ */
 public class H2db {
 
 	/**
@@ -160,7 +159,7 @@ public class H2db {
 	 * 表单数据
 	 * 
 	 * @param name
-	 * @return
+	 * @return StrMatrix
 	 */
 	public static StrMatrix shtmx(final String name) {
 		final var datafile = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
@@ -202,7 +201,7 @@ public class H2db {
 	 * jsncompute
 	 * 
 	 * @param keys 键名序列
-	 * @return
+	 * @return rec->&gt;rec
 	 */
 	public static Function<IRecord, IRecord> jcompute(final String... keys) {
 		return rec -> {
@@ -217,7 +216,7 @@ public class H2db {
 	 * jscompute
 	 * 
 	 * @param keys 键名序列
-	 * @return
+	 * @return rec-&gt;rec
 	 */
 	public static Function<IRecord, IRecord> jscompute(final String... keys) {
 		return rec -> {
@@ -264,9 +263,10 @@ public class H2db {
 	}
 
 	/**
+	 * 分组归集器
 	 * 
 	 * @param key 键名
-	 * @return
+	 * @return 键名序号归归集器
 	 */
 	public static Collector<? super IRecord, ?, Map<Integer, IRecord>> mapby(final String key) {
 		return IRecord.mapclc2(e -> DataApp.Tuple2.of(e.i4(key), e));
@@ -331,9 +331,12 @@ public class H2db {
 	 * @param <U>          核算器结果类型
 	 * @param <P>          键值对儿类型
 	 * @param <N>          节点类型
-	 * @param leaf_handler (node,p)->{} 叶子节点处理函数
+	 * @param leaf_handler (node,p)-&gt;{}
+	 *                     叶子节点处理函数,注意：这里的叶子指的是成长中的叶子而不是最终生成树的叶子。<br>
+	 *                     所以leaf_handler其实是在每此添加一个子节点即添加时候的叶子节点的时候都会被调用，<br>
+	 *                     然后这个叶子节点可以再次添加子节点直到没有可以添加的子节点为止，即成为了最终生成树的的叶子节点
 	 * @param nodegen      节点生成器 (parent,p)->node
-	 * @return 累加器 (acc,a)->acc
+	 * @return 累加器 (acc,a)-&gt;acc
 	 */
 	public static <K, V, U, P extends Tuple2<K, V>, N> BiFunction<N, P, N> ndaccum(final BiConsumer<N, P> leaf_handler,
 			final BiFunction<N, K, N> nodegen) {
@@ -366,8 +369,8 @@ public class H2db {
 	 * @param <U>          核算器结果类型
 	 * @param <P>          键值对儿类型
 	 * @param rootgen      根节点生成器
-	 * @param leaf_handler 分组核算器 (node,p) -> {}
-	 * @return 归集器 [p]->node
+	 * @param leaf_handler 分组核算器 (node,p) -&gt; {}
+	 * @return 归集器 [p]-&gt;node
 	 */
 	public static <V, U, P extends Tuple2<String, V>> Collector<P, ?, Node<String>> ndtreeclc(
 			final Supplier<Node<String>> rootgen, BiConsumer<Node<String>, P> leaf_handler) {
@@ -381,8 +384,8 @@ public class H2db {
 	 * @param <U>      核算器结果类型
 	 * @param <P>      键值对儿类型
 	 * @param rootgen  根节点生成器
-	 * @param finisher 分组核算器 [rec] -> u
-	 * @return 归集器 [p]->node
+	 * @param finisher 分组核算器 [rec] -&gt; u
+	 * @return 归集器 [p]-&gt;node
 	 */
 	public static <V, U, P extends Tuple2<String, V>> Collector<P, ?, Node<String>> ndtreeclc(
 			final Supplier<Node<String>> rootgen) {
@@ -393,9 +396,9 @@ public class H2db {
 	 * pvtreeclc 数据透视表规约: node 根节点
 	 * 
 	 * @param <U>       核算结果类型
-	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param evaluator 分组核算器 [rec] -&gt; u
 	 * @param keys      键名列表
-	 * @return 归集器 [rec]->node
+	 * @return 归集器 [rec]-&gt;node
 	 */
 	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Function<List<IRecord>, U> evaluator,
 			final String keys) {
@@ -407,9 +410,9 @@ public class H2db {
 	 * 
 	 * @param <U>       核算结果类型
 	 * @param rootNode  根节点
-	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param evaluator 分组核算器 [rec] -&gt; u
 	 * @param keys      键名列表
-	 * @return 归集器 [rec]->node
+	 * @return 归集器 [rec]-&gt;node
 	 */
 	public static <U> Collector<IRecord, ?, Node<String>> pvtreeclc(final Node<String> rootNode,
 			final Function<List<IRecord>, U> evaluator, final String keys) {
@@ -422,9 +425,9 @@ public class H2db {
 	 * pvtreeclc2 数据透视表规约: trienode 根节点
 	 * 
 	 * @param <U>       核算结果类型
-	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param evaluator 分组核算器 [rec] -&gt; u
 	 * @param keys      键名列表
-	 * @return 归集器 [rec]->trienode
+	 * @return 归集器 [rec]-&gt;trienode
 	 */
 	public static <U> Collector<IRecord, ?, TrieNode<String>> pvtreeclc2(final Function<List<IRecord>, U> evaluator,
 			final String keys) {
@@ -436,9 +439,9 @@ public class H2db {
 	 * 
 	 * @param <U>       核算结果类型
 	 * @param rootNode  根节点
-	 * @param evaluator 分组核算器 [rec] -> u
+	 * @param evaluator 分组核算器 [rec] -&gt; u
 	 * @param keys      键名列表
-	 * @return 归集器 [rec]->trienode
+	 * @return 归集器 [rec]-&gt;trienode
 	 */
 	public static <U> Collector<IRecord, ?, TrieNode<String>> pvtreeclc2(final TrieNode<String> rootNode,
 			final Function<List<IRecord>, U> evaluator, final String keys) {
@@ -452,9 +455,9 @@ public class H2db {
 	 * 
 	 * @param <U>            参数类型
 	 * @param <V>            结果类型
-	 * @param notnull_branch u->v
+	 * @param notnull_branch u-&gt;v
 	 * @param v              默认值
-	 * @return u->v
+	 * @return u-&gt;v
 	 */
 	public static <U, V> Function<U, V> ifnull(final Function<U, V> notnull_branch, final V v) {
 		return ifnull(notnull_branch, (Supplier<V>) () -> v);
@@ -465,22 +468,12 @@ public class H2db {
 	 * 
 	 * @param <U>            参数类型
 	 * @param <V>            结果类型
-	 * @param notnull_branch u->v
+	 * @param notnull_branch u-&gt;v
 	 * @param nullbranch     默认值
-	 * @return u->v
+	 * @return u-&gt;v
 	 */
 	public static <U, V> Function<U, V> ifnull(final Function<U, V> notnull_branch, final Supplier<V> nullbranch) {
 		return u -> u != null ? notnull_branch.apply(u) : nullbranch.get();
-	}
-
-	/**
-	 * excel 命名发的
-	 * 
-	 * @param n 命名长度 大于0正整数。1:[A],2:[A,B],2:[A,B,C],...
-	 * @return {A:null,B:null,...,X:null} 的 IRecord
-	 */
-	public static ArrayRecord xra(final int n) {
-		return ra(nats(n).fmap(DataMatrix::index_to_excel_name));
 	}
 
 	/**
@@ -500,7 +493,7 @@ public class H2db {
 	/**
 	 * 时间日期格式化器
 	 */
-	public static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+	public final static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 	/**
 	 * 值变换函数

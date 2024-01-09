@@ -152,13 +152,15 @@ public class Lisp {
 						(oneS, i) -> { // ones 当前需要写入的元素, 也就是道生一的那个一，这个一的功能就是用来flatMap去生成更多的新的 ones,也及时一生二，生万物的的意思，
 							return oneS.map(one -> buffer[i] = one) // 写入元素数据。
 									.flatMap(one -> { // 使用flatMap做生成树的展开，flatMap 的特长就是善于从1点出发开始发散，于是就极为方便的用来做生成树。
-										final Predicate<T> ancestor_contains = t -> { // 已经写入的祖先数据,是否写入过t
-											for (int j = 0; j <= i; j++)
-												if (Objects.equals(buffer[j], t))
+										final Predicate<T> ancestor_not_contains = t -> { // 已经写入的祖先数据,是否写入过t
+											for (int j = 0; j <= i; j++) {
+												if (Objects.equals(buffer[j], t)) {
 													return false;
+												} // if
+											} // for
 											return true;
 										}; // ancestor_contains
-										final Stream<T> _oneS = Stream.of(tt).filter(ancestor_contains); // 尚未排序的其他元素加入新的ones投递到下一阶层。
+										final Stream<T> _oneS = Stream.of(tt).filter(ancestor_not_contains); // 尚未排序的其他元素加入新的ones投递到下一阶层。
 										// 投递到下一阶层执行。
 										return i == n - 1 // 已经写入完成。
 												? Stream.of((T) null) // 执行结束
