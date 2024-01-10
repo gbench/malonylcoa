@@ -77,7 +77,7 @@ const sqlquery = function (sql) {
                 "component-label": "mymall"
             },
             method: "post",
-            url: "/h5/api/sqlquery",
+            url: "/h5/finance/data/sqlquery",
             data: { sql: sql },
         }).then(response => {
             handle_response(response, resolve, reject);
@@ -114,11 +114,11 @@ const sqlexecute = function (sql) {
                 "component-label": "mymall"
             },
             method: "post",
-            url: "/h5/api/sqlexecute",
+            url: "/h5/finance/data/sqlquery",
             data: { sql: sql },
         }).then(response => {
             handle_response(response, resolve, reject);
-        }).catch(reject);;
+        }).catch(reject);
     };
 
     return new Promise(executor);

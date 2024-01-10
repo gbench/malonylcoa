@@ -16,7 +16,7 @@ public class MyMallConfig {
 	 * @return FinAcctBuilder
 	 */
 	@Bean
-	FinAcctBuilder fabuilder(final IMySQL jdbcApp) {
+	public FinAcctBuilder fabuilder(final IMySQL jdbcApp) {
 		return new FinAcctBuilder(jdbcApp);
 	}
 }

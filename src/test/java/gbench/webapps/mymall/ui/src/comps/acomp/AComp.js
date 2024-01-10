@@ -27,7 +27,7 @@ const AComp = {
 		});
 
 		// sql data 
-		sqlquery("SELECT ID,TITLE,VOLUME,TIME FROM t_maozedong LIMIT 10").then(res => {
+		sqlquery("show tables").then(res => {
 			this.articles = res.data.data;
 		});
 	},

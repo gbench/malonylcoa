@@ -118,7 +118,7 @@ const sqlexecute = function (sql) {
             data: { sql: sql },
         }).then(response => {
             handle_response(response, resolve, reject);
-        }).catch(reject);;
+        }).catch(reject);
     };
 
     return new Promise(executor);
