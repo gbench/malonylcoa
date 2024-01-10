@@ -3,7 +3,6 @@ package gbench.webapps.mymall.api.controller.finance;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
-import static java.text.MessageFormat.format;
 import static java.time.LocalDateTime.now;
 
 import java.util.function.Consumer;
@@ -33,7 +32,7 @@ public class AcctController {
 	@RequestMapping("info")
 	public Mono<IRecord> info() {
 		return Mono.just(REC("code", "0", "data", //
-				REC("service", format("{0}:{1}", jdbcApp.getDbName(), "time", now()))));
+				REC("db", jdbcApp.getDbName(), "time", now())));
 	}
 
 	/**
@@ -105,9 +104,9 @@ public class AcctController {
 	}
 
 	@Autowired
-	IMySQL jdbcApp;
+	private IMySQL jdbcApp;
 
 	@Autowired
-	FinAcctBuilder fabuilder;
+	private FinAcctBuilder fabuilder;
 
 }

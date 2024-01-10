@@ -1,4 +1,4 @@
-﻿const MYMALL_SERVER_HOST= "http://localhost:8010";
+﻿const MYMALL_SERVER_HOST = "http://localhost:8010";
 const path = require("path");
 const webpack = require("webpack");
 const ESLintPlugin = require("eslint-webpack-plugin");
@@ -22,12 +22,12 @@ module.exports = {
 	devServer: {
 		hot: true,
 		proxy: {
-			'/h5/api/': { // 转换 h5:mymall的服务端口是8010
+			'/h5/': { // 转换 h5:mymall的服务端口是8010
 				target: MYMALL_SERVER_HOST,
 				secure: true,
 				logLevel: 'debug',
 				changeOrigin: true, // 必须加入否则会导致webpack奔溃
-				pathRewrite: { '^/h5/api': '/mymall/api' }, // 转换接口标记
+				pathRewrite: { '^/h5/': '/mymall/' }, // 转换接口标记
 			}, // mymall服务器
 		},// proxy
 	},// devServer

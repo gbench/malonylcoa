@@ -10,12 +10,13 @@ import gbench.webapps.mymall.api.model.finance.acct.FinAcctBuilder;
 public class MyMallConfig {
 
 	/**
+	 * 会计对象的创建者
 	 * 
-	 * @param jdbcApp
-	 * @return
+	 * @param jdbcApp 数据库应用
+	 * @return FinAcctBuilder
 	 */
 	@Bean
-	FinAcctBuilder faBuilder(final IMySQL jdbcApp) {
+	FinAcctBuilder fabuilder(final IMySQL jdbcApp) {
 		return new FinAcctBuilder(jdbcApp);
 	}
 }
