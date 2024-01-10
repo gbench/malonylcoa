@@ -1233,7 +1233,6 @@ public class SQL {
 	 * @return 对应于cls的SQL 数据类型
 	 */
 	public static String javaType2SqlType(final Class<?> cls, final Number size) {
-
 		if (cls.equals(Double.class) || cls.equals(double.class) || cls.equals(Float.class)
 				|| cls.equals(float.class)) {
 			return "DOUBLE";
@@ -1252,8 +1251,8 @@ public class SQL {
 				|| cls.equals(LocalTime.class)) {
 			// return "TIMESTAMP";
 			return "DATETIME";
-		} else if (cls == Map.class || cls == IRecord.class
-				|| ((cls instanceof Class<?>) && Iterable.class.isAssignableFrom(((Class<?>) cls)))) {
+		} else if (Map.class.isAssignableFrom(cls) || IRecord.class.isAssignableFrom(cls)
+				|| ((cls instanceof Class<?>) && Iterable.class.isAssignableFrom(cls))) {
 			return "JSON";
 		} else {
 			return Jdbcs.format("VARCHAR({0})", size == null ? 512 : size.intValue());

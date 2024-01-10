@@ -10,7 +10,7 @@ const AComp = {
 	 * @returns 
 	 */
 	data() {
-		return { component: "-", tables: [], tbldata: [] };
+		return { component: "-", tbl: "-", tables: [], tbldata: [], details: [] };
 	},
 
 	/**
@@ -47,13 +47,51 @@ const AComp = {
 
 		/**
 		 * 查看数据
+		 * @param {*} param0 
 		 */
-		on_tr_click({ line, i, event }) {
-			const tbl = (line["TABLE_NAME"]);
-			sqlquery2(`select * from ${tbl}`, e => e).then(data => {
+		on_tables_trclick({ line, i, event }) {
+			this.tbl = (line["TABLE_NAME"]);
+			sqlquery2(`select * from ${this.tbl}`, e => e).then(data => {
 				this.tbldata = data;
 			});
+		},
+
+		/**
+		 * 数据表的行点击 
+		 * @param {*} param0 
+		 */
+		on_tbldata_trclick({ line, i, event }) {
+			const tbl = this.tbl;
+			const row = this.tbldata[0];
+			if ("t_order" == tbl) {
+				this.details = row.details.items;
+			} else if ("t_company_product" == tbl) {
+				this.details = row.attrs;
+			}
+		},
+
+		/**
+		 * 
+		 * @param {*} event 
+		 */
+		on_order_btn_click(event) {
+			const order = {
+				key: "t_order", lines: [
+					{
+						parta: 1, partb: 2, details: {
+							items: [
+								{ id: 1, quantity: 1, price: 1 },
+								{ id: 1, quantity: 1, price: 1 }
+							]
+						}
+					}
+				]
+			};
+			http_post("/h5/finance/data/insert", { json: JSON.stringify(order) }).then(e => {
+				alert(JSON.stringify(e.data));
+			});
 		}
+
 	}
 
 };

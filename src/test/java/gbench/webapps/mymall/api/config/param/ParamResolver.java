@@ -64,7 +64,12 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 		return serverWebExchange.getFormData().map(data -> {
 			final var ll = Optional.ofNullable(data.get(name)).orElse(qps.get(name));
 			final Optional<Object> opt = Optional.ofNullable(ll != null && ll.size() > 0 ? ll.get(0) : null)
-					.map(value -> (Object) Types.corece(value, type));
+					.map(value -> switch (type.getName()) {
+					case "gbench.util.jdbc.kvp.IRecord" -> gbench.util.jdbc.kvp.IRecord.REC(value);
+					case "gbench.util.lisp.IRecord" -> gbench.util.lisp.IRecord.REC(value);
+					case "gbench.util.math.algebra.tuple.IRecord" -> gbench.util.math.algebra.tuple.IRecord.REC(value);
+					default -> (Object) Types.corece(value, type);
+					});
 			return opt.orElse(Types.defaultValue(type));
 		});
 	}
