@@ -1,5 +1,7 @@
 package gbench.webapps.mymall.api.controller.finance;
 
+import static gbench.util.jdbc.Jdbcs.bytes2obj;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,7 +24,8 @@ public class DataController {
 	 */
 	@RequestMapping("sqlquery")
 	public Mono<IRecord> sqlquery(final @Param String sql) {
-		return Mono.just(IRecord.REC("code", 1, "data", this.jdbcApp.sqldframe(sql).rows()));
+		final var dfm = jdbcApp.sqldframe(sql).fmap(e -> e.aov2rec(v -> v instanceof byte[] bb ? bytes2obj(bb) : v));
+		return Mono.just(IRecord.REC("code", 0, "data", dfm.rows()));
 	}
 
 	@Autowired

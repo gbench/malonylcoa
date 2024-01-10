@@ -1,8 +1,15 @@
 <div>
-    <div class="highlight">{{name}}</div>
-    <hr/>
+  <div class="highlight">{{name}}</div>
+  <hr />
+  <div>
+    {{component}}
     <div>
-		{{component}}
-		<data-table :data="articles" />
-	</div>
+      <div style="float:left;">
+        <data-table :data="tables" @trclick="on_tr_click" />
+      </div>
+      <div style="float:left;width:70%;overflow:auto;">
+        <data-table :data="tbldata" />
+      </div>
+    </div>
+  </div>
 </div>

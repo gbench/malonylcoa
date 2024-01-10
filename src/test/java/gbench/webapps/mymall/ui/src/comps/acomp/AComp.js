@@ -10,7 +10,7 @@ const AComp = {
 	 * @returns 
 	 */
 	data() {
-		return { component: "-", articles: [] };
+		return { component: "-", tables: [], tbldata: [] };
 	},
 
 	/**
@@ -28,7 +28,7 @@ const AComp = {
 
 		// sql data 
 		sqlquery("show tables").then(res => {
-			this.articles = res.data.data;
+			this.tables = res.data.data;
 		});
 	},
 
@@ -41,6 +41,19 @@ const AComp = {
 		 */
 		...mapGetters("ACompStore", ["name"]),
 		...mapState("ACompStore", { state: state => state }),
+	},
+
+	methods: {
+
+		/**
+		 * 查看数据
+		 */
+		on_tr_click({ line, i, event }) {
+			const tbl = (line["TABLE_NAME"]);
+			sqlquery2(`select * from ${tbl}`, e => e).then(data => {
+				this.tbldata = data;
+			});
+		}
 	}
 
 };
