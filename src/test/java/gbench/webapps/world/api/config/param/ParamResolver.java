@@ -40,7 +40,7 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 	 * @return
 	 */
 	@Override
-	public boolean supportsParameter(MethodParameter methodParameter) {
+	public boolean supportsParameter(final MethodParameter methodParameter) {
 		if (!methodParameter.hasParameterAnnotation(Param.class)) {
 			return false;
 		} else {
