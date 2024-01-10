@@ -33,16 +33,27 @@ public class DataController {
 	/**
 	 * 数据演示
 	 * <p>
-	 * http://localhost:6010/finance/data/insert?sql=show tables
-	 * json :
+	 * http://localhost:6010/finance/data/insert?sql=show tables json :
+	 * 
 	 * @return IRecord
 	 */
 	@RequestMapping("insert")
 	public Mono<IRecord> insert(final @Param IRecord json) {
-		final var sql = sql(json.str("key"), json.lls("lines", IRecord::REC));
-		final var ctsql = sql.ctsql(true, 2);
-		final var insql = sql.insql();
-		return Mono.just(REC("code", 0, "ctsql", ctsql, "insql", insql));
+		final var name = json.str("key");
+		final var lines = json.lls("lines", IRecord::REC);
+		final var sql = sql(name, lines);
+		final var data = REC();
+
+		jdbcApp.withTransaction(sess -> {
+			if (!sess.isTablePresent(name)) {
+				final var ctsql = sql.ctsql(true, 2);
+				sess.sql2execute(ctsql);
+			}
+			final var insql = sql.insql();
+			data.add("ids", sess.sql2execute(insql));
+		});
+
+		return Mono.just(REC("code", 0, "data", data));
 	}
 
 	@Autowired

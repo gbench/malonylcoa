@@ -19,7 +19,7 @@ npm install @babel/eslint-parser --save-dev
 npm install @babel/preset-env --save-dev
 
 # 安装依赖包
-npm install axios
+npm install moment lodash axios 
 
 #编译前端文件
 webpack-dev-server --config local-webpack.config.js

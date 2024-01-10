@@ -1,5 +1,6 @@
 import { mapGetters, mapState } from "vuex";
 import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
+import moment from "moment";
 
 const AComp = {
 
@@ -62,7 +63,7 @@ const AComp = {
 		 */
 		on_tbldata_trclick({ line, i, event }) {
 			const tbl = this.tbl;
-			const row = this.tbldata[0];
+			const row = this.tbldata[i];
 			if ("t_order" == tbl) {
 				this.details = row.details.items;
 			} else if ("t_company_product" == tbl) {
@@ -71,24 +72,31 @@ const AComp = {
 		},
 
 		/**
-		 * 
+		 * 随机创建订单 
 		 * @param {*} event 
 		 */
 		on_order_btn_click(event) {
+			const rnd = () => parseInt((Math.random() + 1) * 10);
+			const rnd2 = () => (Math.random() + 1) * 10;
+			const now = moment().format("YYYY-MM-DD HH:mm:ss");
 			const order = {
 				key: "t_order", lines: [
 					{
-						parta: 1, partb: 2, details: {
+						parta: 1, partb: 2,
+						details: {
 							items: [
-								{ id: 1, quantity: 1, price: 1 },
-								{ id: 1, quantity: 1, price: 1 }
-							]
+								{ id: 1, quantity: rnd(), price: rnd2() },
+								{ id: 2, quantity: rnd(), price: rnd2() }
+							],
 						}
+						, creator_id: 1, "time": now
 					}
 				]
 			};
 			http_post("/h5/finance/data/insert", { json: JSON.stringify(order) }).then(e => {
-				alert(JSON.stringify(e.data));
+				sqlquery2(`select * from t_order`, e => e).then(data => {
+					this.tbldata = data;
+				});
 			});
 		}
 
