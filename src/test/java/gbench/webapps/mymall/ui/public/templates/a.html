@@ -7,8 +7,10 @@
       <div style="float:left;">
         <data-table :data="tables" @trclick="on_tr_click" />
       </div>
-      <div style="float:left;width:70%;overflow:auto;">
-        <data-table :data="tbldata" />
+      <div style="float:left;width:699px;overflow:auto;margin-left:2px;">
+        <div style="height:335px;overflow:auto;border:solid 1px red;">
+          <data-table style="width:100%" :data="tbldata" />
+        </div>
       </div>
     </div>
   </div>
