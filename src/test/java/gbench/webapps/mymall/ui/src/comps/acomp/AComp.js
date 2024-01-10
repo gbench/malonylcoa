@@ -76,17 +76,18 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_order_btn_click(event) {
-			const rnd = () => parseInt((Math.random() + 1) * 10);
-			const rnd2 = () => (Math.random() + 1) * 10;
+			const rnd = n => parseInt((Math.random() * n) + 1);
+			const rnd2 = n => Math.random().toFixed(2) * n + 1;
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
+			const flag = Math.random() > 0.5;
 			const order = {
 				key: "t_order", lines: [
 					{
-						parta: 1, partb: 2,
+						parta: flag ? 1 : 2, partb: flag ? 2 : 1,
 						details: {
 							items: [
-								{ id: 1, quantity: rnd(), price: rnd2() },
-								{ id: 2, quantity: rnd(), price: rnd2() }
+								{ id: rnd(10), quantity: rnd(10), price: rnd2(5) },
+								{ id: rnd(10), quantity: rnd(10), price: rnd2(3) }
 							],
 						}
 						, creator_id: 1, "time": now
