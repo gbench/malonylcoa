@@ -1,6 +1,7 @@
 import { mapGetters, mapState } from "vuex";
 import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
 import moment from "moment";
+import _ from "lodash";
 
 const AComp = {
 
@@ -11,7 +12,13 @@ const AComp = {
 	 * @returns 
 	 */
 	data() {
-		return { component: "-", tbl: "-", tables: [], tbldata: [], details: [] };
+		return {
+			component: "-", current: {
+				data_index: -1, // 行数据索引
+				tbl: "-", // 表名
+				tbl_index: -1 // 数据表行行索引
+			}, tables: [], tbldata: [], details: []
+		};
 	},
 
 	/**
@@ -51,23 +58,42 @@ const AComp = {
 		 * @param {*} param0 
 		 */
 		on_tables_trclick({ line, i, event }) {
-			this.tbl = (line["TABLE_NAME"]);
-			sqlquery2(`select * from ${this.tbl}`, e => e).then(data => {
+			this.current.tbl_index = i; // 设置表偏移索引
+			this.current.data_index = -1; // 设置一个非法值
+			const tbl = this.current.tbl = (line["TABLE_NAME"]); // 更新当前表
+			sqlquery2(`select * from ${tbl}`, e => e).then(data => {
 				this.tbldata = data;
 			});
 		},
 
 		/**
 		 * 数据表的行点击 
-		 * @param {*} param0 
+		 * @param {*} param 
 		 */
 		on_tbldata_trclick({ line, i, event }) {
-			const tbl = this.tbl;
+			this.current.data_index = i;
+			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
 			if ("t_order" == tbl) {
 				this.details = row.details.items;
 			} else if ("t_company_product" == tbl) {
-				this.details = row.attrs;
+				const dd = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
+				this.details = dd;
+			}
+		},
+
+		/**
+		 * 数据元素渲染 
+		 * @param {*} td 
+		 * @param {*} h 
+		 * @param {*} line 
+		 * @param {*} i 
+		 */
+		tbldata_td_render(td, h, line, i) {
+			if (_.isObject(td)) { // json 对象格式化
+				return JSON.stringify(td);
+			} else {
+				return td;
 			}
 		},
 

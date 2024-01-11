@@ -5,11 +5,14 @@
     {{component}}
     <div>
       <div style="float:left;">
-        <data-table :data="tables" @trclick="on_tables_trclick" />
+        <data-table :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
+          @trclick="on_tables_trclick" />
       </div>
       <div style="float:left;width:699px;overflow:auto;margin-left:2px;">
         <div style="height:335px;overflow:auto;border:solid 1px red;">
-          <data-table style="width:100%" :data="tbldata" @trclick="on_tbldata_trclick"/>
+          <data-table style="width:100%" :data="tbldata"
+            :trclass="(line,i)=>current.data_index==i?'highlight':'tdclass'" :tdrender="tbldata_td_render"
+            @trclick="on_tbldata_trclick" />
         </div>
       </div>
       <div style="width:270px;float:left;margin-left:2px;">
@@ -18,7 +21,7 @@
       <div style="clear:both"></div>
       <div>
         <hr>
-        <button @click="on_order_btn_click($event)">create order</button>
+        <button v-if="current.tbl=='t_order'" @click="on_order_btn_click($event)">create order</button>
       </div>
     </div>
   </div>
