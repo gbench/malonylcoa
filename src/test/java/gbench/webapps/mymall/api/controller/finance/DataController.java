@@ -50,7 +50,7 @@ public class DataController {
 		jdbcApp.withTransaction(sess -> {
 			final var tbl = REC(json).str("name");
 			final var sql = String.format("truncate table %s", tbl);
-			System.out.println(String.format("sql:[%s],\tjson:%s", json));
+			System.out.println(String.format("sql:[%s],\tjson:%s", sql, json));
 			sess.sql2execute(sql);
 		});
 		return Mono.just(REC("code", 0, "message", "OK"));
