@@ -54,6 +54,13 @@ const AComp = {
 	 */
 	computed: {
 		/**
+		 * 
+		 */
+		company_id() {
+			return this.current.company == null ? -1 : this.current.company.id;
+		},
+
+		/**
 		 * Getters 数据
 		 */
 		...mapGetters("ACompStore", ["name"]),
@@ -103,7 +110,22 @@ const AComp = {
 			this.current.tbl_index = i; // 设置表偏移索引
 			this.current.data_index = -1; // 设置一个非法值
 			const tbl = this.current.tbl = (line["name"]); // 更新当前表
-			sqlquery2(`select * from ${tbl}`, e => e).then(data => {
+			let conditions = "";
+
+			switch (tbl) {
+				case "t_order": {
+					conditions = this.company_id < 0 ? "" : ` where parta=${this.company_id} or partb=${this.company_id}`;
+					break;
+				}
+				case "t_payment": {
+					conditions = this.company_id < 0 ? "" : ` where payer_id=${this.company_id} or payee_id=${this.company_id}`;
+					break;
+				}
+				default: {
+
+				}
+			};
+			sqlquery2(`select * from ${tbl} ${conditions}`, e => e).then(data => {
 				this.tbldata = data;
 			});
 		},
@@ -117,14 +139,22 @@ const AComp = {
 			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
 			if ("t_order" == tbl) { // 订单表的行项目的处理
-				this.lines = row.details.items;
-				const product_ids = this.lines.map(e => e.id);
-				if (product_ids.length > 0) {
-					const sql = `select * from t_payment where id in (${product_ids.join(",")})`;
-					sqlquery2(sql, e => e).then(e => {
-						this.lines = e;
-					});
-				}
+				const cps = row.details.items;
+				const cpids = cps.map(e => e.id); // 公司产品id
+				if (cpids.length > 0) {
+					const pmt_sql = `select * from t_payment where id in (${cpids.join(",")})`; // 支付集合
+					sqlquery2(pmt_sql, e => e).then(pmts => {
+						const keys = "id,order_id,payer_id,payee_id".split(","); // 支付键名
+						const cpid2pmts = _.flatMap(pmts, pmt => pmt.details.items.map(item => Object.assign({},
+							_.mapKeys(item, (v, k) => k == "id" ? "product_id" : k), _.pick(pmt, keys))))
+							.reduce((acc, e) => { acc[e.product_id] = e; return acc; }, {});
+						this.lines = cps.map(cp => {
+							const cpid = cp["id"];
+							const cppmt = cpid2pmts[cpid];
+							return Object.assign({}, cp, { payment_id: cppmt == null ? -1 : cppmt.id });
+						});
+					}); // 
+				} // if
 			} else if ("t_company_product" == tbl) {
 				const lines = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
 				this.lines = lines;
