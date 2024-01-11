@@ -13,11 +13,20 @@ const AComp = {
 	 */
 	data() {
 		return {
-			component: "-", current: {
+			component: "-", //  组件名
+			current: { // 当前对象
 				data_index: -1, // 行数据索引
 				tbl: "-", // 表名
-				tbl_index: -1 // 数据表行行索引
-			}, tables: [], tbldata: [], details: []
+				tbl_index: -1, // 数据表行行索引
+				user: { // 用户信息
+					name: "gbench",
+					password: "123456"
+				},
+				company: null // 当前公司对象
+			},  //  当前对象
+			tables: [], // 数据表
+			tbldata: [], // 表数据
+			lines: [] // 行项目
 		};
 	},
 
@@ -36,7 +45,7 @@ const AComp = {
 
 		// sql data 
 		sqlquery("show tables").then(res => {
-			this.tables = res.data.data;
+			this.tables = res.data.data.map(e => { return { name: e["TABLE_NAME"] }; });
 		});
 	},
 
@@ -54,13 +63,46 @@ const AComp = {
 	methods: {
 
 		/**
+		 * 
+		 * @param {*} event 
+		 */
+		on_login_click(event) {
+			const name = this.current.user.name;
+			const password = this.current.user.password;
+			const sql = `select * from t_user where name='${name}' and password='${password}'`;
+			sqlquery2(sql, e => e).then(e => {
+				if (e.length > 0) { // 登录成功
+					const user = e[0];
+					const sql2 = `select c.* from (
+						select * from t_user_company where id='${user.id}'
+					) uc left join t_company c on uc.company_id = c.id `;
+					sqlquery2(sql2, e => e).then(e1 => {
+						if (e1.length > 0) {
+							this.current.company = e1[0];
+						}// if
+					}); //
+				} else {
+					alert("登录失败!");
+				}
+			});
+		},
+
+		/**
+		 * 退出当前系统 
+		 * @param {*} event 
+		 */
+		on_logout_click(event) {
+			this.current.company = null;
+		},
+
+		/**
 		 * 查看数据
 		 * @param {*} param0 
 		 */
 		on_tables_trclick({ line, i, event }) {
 			this.current.tbl_index = i; // 设置表偏移索引
 			this.current.data_index = -1; // 设置一个非法值
-			const tbl = this.current.tbl = (line["TABLE_NAME"]); // 更新当前表
+			const tbl = this.current.tbl = (line["name"]); // 更新当前表
 			sqlquery2(`select * from ${tbl}`, e => e).then(data => {
 				this.tbldata = data;
 			});
@@ -74,11 +116,18 @@ const AComp = {
 			this.current.data_index = i;
 			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
-			if ("t_order" == tbl) {
-				this.details = row.details.items;
+			if ("t_order" == tbl) { // 订单表的行项目的处理
+				this.lines = row.details.items;
+				const product_ids = this.lines.map(e => e.id);
+				if (product_ids.length > 0) {
+					const sql = `select * from t_payment where id in (${product_ids.join(",")})`;
+					sqlquery2(sql, e => e).then(e => {
+						this.lines = e;
+					});
+				}
 			} else if ("t_company_product" == tbl) {
-				const dd = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
-				this.details = dd;
+				const lines = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
+				this.lines = lines;
 			}
 		},
 
