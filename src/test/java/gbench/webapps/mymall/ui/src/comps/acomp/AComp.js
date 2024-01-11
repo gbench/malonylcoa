@@ -217,23 +217,24 @@ const AComp = {
 				const order_id = line["id"];
 				const pcts = row.details.items; // 公司产品
 				const ids = pcts.map(e => e.id); // 公司产品id
+
+				// 逐渐展开处理层级
 				if (ids.length > 0) { //  产品数大于0
 					const pmt_sql = `select * from t_payment where id in (${ids.join(",")})`; // 支付集合
-					sqlquery2(pmt_sql).then(pmts => { // 支付对象
-						const pid2pmts = assoc_by("product_id", _.flatMap(pmts,
+					sqlquery2(pmt_sql).then(_lines => { // 一级 
+						const pid2pmts = assoc_by("product_id", _.flatMap(_lines,
 							pmt => pathget(pmt, "details/items").map( // 支付行项目
 								item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
 									gets(pmt, "id,order_id,payer_id,payee_id") // 提取指定字段
 								)))); // assocs 
-
-						const _lines = pcts.flatMap(p => { // 为此产品数据添加支付信息
-							const _pmts = pid2pmts[p["id"]];
-							return _.flatMap(aslist(_pmts), pmt => {
+						const __lines = pcts.flatMap(p => { // 为此产品数据添加支付信息
+							const pmts = pid2pmts[p["id"]];
+							return _.flatMap(aslist(pmts), pmt => {
 								return Object.assign({}, p, alias(pmt, -1)({ id: "payment_id" }));
 							});
 						});
-						return PS(_lines); // Promise对象
-					}).then(_lines => { // 一级数据行
+						return PS(__lines); // Promise对象
+					}).then(__lines => { // 二级数据行
 						const bill_sql = `select * from t_billof_product where order_id = ${order_id}`;
 						return sqlquery2(bill_sql).then(bills => {
 							const pid2bills = assoc_by("product_id", _.flatMap(bills,
@@ -241,18 +242,18 @@ const AComp = {
 									item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
 										gets(bill, "id,bill_type,order_id,warehouse_id,freight_order_id") // 提取指定字段
 									)))); // assocs
-							const __lines = _lines.flatMap(p => { // 为此产品数据添加支付信息
+							const ___lines = __lines.flatMap(p => { // 为此产品数据添加支付信息
 								const bills = pid2bills[p["id"]]; // 提取产品相关单据
 								return _.flatMap(aslist(bills), bill => {
 									return Object.assign({}, p, alias(bill, -1)({ id: "bill_id" }));
 								});
 							});
-							return PS(__lines);
-						});
-					}).then(__lines => { // 二级数据行
-						this.lines = __lines;
+							return PS(___lines);
+						}); // sqlquery2
+					}).then(___lines => { // 三级数据行
+						this.lines = ___lines;
 					});
-				} // if
+				} // if 产品数>0
 			} else if ("t_company_product" == tbl) {
 				const lines = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
 				this.lines = lines;
