@@ -99,7 +99,7 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 						if (type.isArray() || Iterable.class.isAssignableFrom(type)
 								|| Map.class.isAssignableFrom(type)) { // 数组,集合,Map类型
 							yield read_json.apply(value, type);
-						} else {
+						} else {// 默认类型
 							yield (Object) Types.corece(value, type);
 						} // if
 					} // default
