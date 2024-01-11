@@ -64,24 +64,24 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 		final var type = type0 == Object.class ? type1 : type0;
 		final var qps = serverWebExchange.getRequest().getQueryParams();
 		final BiFunction<String, Class<?>, Object> read_json = (value, cls) -> { // json 类型读取函数
-			Object obj = null;
+			Object retval = null; // 返回值
 			try {
-				obj = MyJson.recM().readValue(value, cls);
+				retval = MyJson.recM().readValue(value, cls); // 尝试解析json
 			} catch (Exception e) {
-				try {
+				try { // 尝试进行类型修复
 					if (type.isArray()
-							|| Iterable.class.isAssignableFrom(type) && !value.matches("\\s*\\[\\.+\\]\\s*")) {
-						obj = MyJson.recM().readValue(String.format("[%s]", value), cls);
-					} else if (Map.class.isAssignableFrom(type) && !value.matches("\\s*\\{\\.+\\}\\s*")) {
-						obj = MyJson.recM().readValue(String.format("[%s]", value), cls);
-					} else {
+							|| Iterable.class.isAssignableFrom(type) && !value.matches("\\s*\\[\\.*\\]\\s*")) { // 补充中括号
+						retval = MyJson.recM().readValue(String.format("[%s]", value), cls);
+					} else if (Map.class.isAssignableFrom(type) && !value.matches("\\s*\\{\\.*\\}\\s*")) { // 补充大括号
+						retval = MyJson.recM().readValue(String.format("{%s}", value), cls);
+					} else { // 打印一场
 						e.printStackTrace();
 					} // if
-				} catch (Exception e1) {
+				} catch (Exception e1) { // 打印一场
 					e1.printStackTrace();
 				} // try
 			} // try
-			return obj;
+			return retval;
 		}; // read_json
 
 		return serverWebExchange.getFormData().map(data -> {
