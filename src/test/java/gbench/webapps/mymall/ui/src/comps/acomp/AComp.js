@@ -72,6 +72,16 @@ const AComp = {
 		},
 
 		/**
+		 * 刷新表数据
+		 * @param {*} tbl 表名 
+		 */
+		refresh_tbldata(tbl) {
+			sqlquery2(`select * from ${tbl}`, e => e).then(data => {
+				this.tbldata = data;
+			});
+		},
+
+		/**
 		 * 随机创建订单 
 		 * @param {*} event 
 		 */
@@ -80,24 +90,23 @@ const AComp = {
 			const rnd2 = n => Math.random().toFixed(2) * n + 1;
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
 			const flag = Math.random() > 0.5;
-			const order = {
-				key: "t_order", lines: [
+			const order = { // 订单数据
+				name: "t_order",
+				lines: [
 					{
 						parta: flag ? 1 : 2, partb: flag ? 2 : 1,
 						details: {
-							items: [
+							items: [ // 订单项目
 								{ id: rnd(10), quantity: rnd(10), price: rnd2(5) },
 								{ id: rnd(10), quantity: rnd(10), price: rnd2(3) }
 							],
-						}
-						, creator_id: 1, "time": now
+						},
+						creator_id: 1, "time": now
 					}
-				]
-			};
+				] // lines
+			}; // order
 			http_post("/h5/finance/data/insert", { json: JSON.stringify(order) }).then(e => {
-				sqlquery2(`select * from t_order`, e => e).then(data => {
-					this.tbldata = data;
-				});
+				this.refresh_tbldata("t_order");
 			});
 		}
 

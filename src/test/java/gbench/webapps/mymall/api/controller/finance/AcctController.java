@@ -5,6 +5,7 @@ import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static java.time.LocalDateTime.now;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gbench.webapps.mymall.api.config.param.Param;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.webapps.mymall.api.model.finance.acct.FinAcctBuilder;
@@ -38,12 +40,12 @@ public class AcctController {
 	/**
 	 * 数据演示
 	 * <p>
-	 * http://localhost:6010/finance/acct/demo
+	 * http://localhost:6010/finance/acct/demo?company_ids=[1]
 	 * 
 	 * @return IRecord
 	 */
 	@RequestMapping("demo")
-	public Mono<IRecord> demo() {
+	public Mono<IRecord> demo(final @Param Integer[] company_ids) {
 		final var fa = fabuilder.build("policy0001"); // 创建会计类型
 		final Consumer<Integer> executor = company_id -> jdbcApp.withTransaction(sess -> {
 			println("平台数据表", sess.sql2dframe("show tables")); // 数据表
@@ -98,7 +100,7 @@ public class AcctController {
 			println(fa.dump(fa.trialBalance("ledger_id,acctnum,warehouse,product,drcr".split(","))));
 		});
 
-		Stream.of(1, 2).forEach(executor); // 模拟各个公司的运行
+		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 })).forEach(executor); // 模拟各个公司的运行
 
 		return Mono.just(REC("code", "0", "data", fa.getEntrieS().collect(DFrame.dfmclc)));
 	}

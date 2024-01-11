@@ -34,22 +34,22 @@ public class DataController {
 	 * 数据演示
 	 * <p>
 	 * http://localhost:6010/finance/data/insert?sql=show tables json :
-	 * 
+	 * @param json JSON 数据{name,lines}
 	 * @return IRecord
 	 */
 	@RequestMapping("insert")
 	public Mono<IRecord> insert(final @Param IRecord json) {
-		final var name = json.str("key");
-		final var lines = json.lls("lines", IRecord::REC);
-		final var sql = sql(name, lines);
-		final var data = REC();
+		final var name = json.str("name"); // 表名
+		final var lines = json.lls("lines", IRecord::REC); // 行数据
+		final var sql = sql(name, lines); // SQL对象
+		final var data = REC(); // 返回结果数据
 
 		jdbcApp.withTransaction(sess -> {
-			if (!sess.isTablePresent(name)) {
+			if (!sess.isTablePresent(name)) { // 数据表不存在
 				final var ctsql = sql.ctsql(true, 2);
 				sess.sql2execute(ctsql);
 			}
-			final var insql = sql.insql();
+			final var insql = sql.insql(); // 插入数据
 			data.add("ids", sess.sql2execute(insql));
 		});
 
