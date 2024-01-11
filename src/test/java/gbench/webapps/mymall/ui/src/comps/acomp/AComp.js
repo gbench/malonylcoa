@@ -3,6 +3,44 @@ import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gben
 import moment from "moment";
 import _ from "lodash";
 
+/**
+ * 别名 
+ * @param {*} obj=>names=>o 
+ * @returns 
+ */
+function alias(obj) {
+	return function (names) {
+		return _.mapKeys(obj, (v, k) => names[k] ? names[k] : k);
+	};
+}
+
+/**
+ * 提取数据 
+ * @param {*} obj 
+ * @param {*} keys 
+ * @returns 
+ */
+function gets(obj, keys) {
+	return _.pick(obj, keys.split(","));
+}
+
+/**
+ * 依据键名进行分组
+ *  
+ * @param {*} lines 
+ * @param {*} key 
+ */
+function group_by(lines, key) {
+	return lines.reduce((acc, a) => {
+		const value = a[key];
+		acc[value] = a;
+		return acc;
+	}, {});
+}
+
+/**
+ * 
+ */
 const AComp = {
 
 	template: `<div class="highlight">{{name}}</div>`,
@@ -144,10 +182,8 @@ const AComp = {
 				if (cpids.length > 0) {
 					const pmt_sql = `select * from t_payment where id in (${cpids.join(",")})`; // 支付集合
 					sqlquery2(pmt_sql, e => e).then(pmts => {
-						const keys = "id,order_id,payer_id,payee_id".split(","); // 支付键名
-						const cpid2pmts = _.flatMap(pmts, pmt => pmt.details.items.map(item => Object.assign({},
-							_.mapKeys(item, (v, k) => k == "id" ? "product_id" : k), _.pick(pmt, keys))))
-							.reduce((acc, e) => { acc[e.product_id] = e; return acc; }, {});
+						const cpid2pmts = group_by(_.flatMap(pmts, pmt => pmt.details.items.map(item => Object.assign({},
+							alias(item)({ id: "product_id" }), gets(pmt, "id,order_id,payer_id,payee_id")))), "product_id");
 						this.lines = cps.map(cp => {
 							const cpid = cp["id"];
 							const cppmt = cpid2pmts[cpid];
