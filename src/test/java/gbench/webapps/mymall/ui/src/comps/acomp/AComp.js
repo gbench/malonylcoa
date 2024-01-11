@@ -5,12 +5,15 @@ import _ from "lodash";
 
 /**
  * 别名 
- * @param {*} obj=>names=>o 
+ * @param {*} obj 数据对象 
+ * @param {*} dft 默认值
  * @returns 
  */
-function alias(obj) {
+function alias(obj, dft) {
 	return function (names) {
-		return _.mapKeys(obj, (v, k) => names[k] ? names[k] : k);
+		return obj == null
+			? _.values(names).reduce((acc, a) => { acc[a] = dft; return acc; }, {})
+			: _.mapKeys(obj, (v, k) => names[k] ? names[k] : k);
 	};
 }
 
@@ -177,17 +180,17 @@ const AComp = {
 			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
 			if ("t_order" == tbl) { // 订单表的行项目的处理
-				const cps = row.details.items;
+				const cps = row.details.items; // 公司产品
 				const cpids = cps.map(e => e.id); // 公司产品id
 				if (cpids.length > 0) {
 					const pmt_sql = `select * from t_payment where id in (${cpids.join(",")})`; // 支付集合
 					sqlquery2(pmt_sql, e => e).then(pmts => {
-						const cpid2pmts = group_by(_.flatMap(pmts, pmt => pmt.details.items.map(item => Object.assign({},
+						const groups = group_by(_.flatMap(pmts, pmt => pmt.details.items.map(item => Object.assign({},
 							alias(item)({ id: "product_id" }), gets(pmt, "id,order_id,payer_id,payee_id")))), "product_id");
 						this.lines = cps.map(cp => {
 							const cpid = cp["id"];
-							const cppmt = cpid2pmts[cpid];
-							return Object.assign({}, cp, { payment_id: cppmt == null ? -1 : cppmt.id });
+							const e = groups[cpid];
+							return Object.assign({}, cp, alias(e, -1)({ id: "payment_id" }));
 						});
 					}); // 
 				} // if
