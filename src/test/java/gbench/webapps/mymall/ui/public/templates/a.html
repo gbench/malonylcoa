@@ -15,7 +15,7 @@
     {{component}}
     <div>
       <!--数据表-->
-      <div style="float:left;">
+      <div style="float:left;height:335px;overflow:auto;border:solid 1px red;">
         <data-table :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
           @trclick="on_tables_trclick" />
       </div>

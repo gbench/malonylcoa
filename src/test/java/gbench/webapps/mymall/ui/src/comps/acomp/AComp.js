@@ -1,5 +1,5 @@
 import { mapGetters, mapState } from "vuex";
-import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
+import { PS, http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
 import moment from "moment";
 import _ from "lodash";
 
@@ -18,6 +18,23 @@ function alias(obj, dft) {
 }
 
 /**
+ * 
+ * @param {*} obj 
+ * @param {*} path 
+ * @returns 
+ */
+function pathget(obj, path) {
+	const i = path.indexOf("/");
+	if (i < 0) {
+		return obj[path];
+	} else {
+		const key = path.substring(0, i);
+		const _path = path.substring(i + 1);
+		return pathget(obj[key], _path);
+	}
+}
+
+/**
  * 提取数据 
  * @param {*} obj 
  * @param {*} keys 
@@ -30,13 +47,20 @@ function gets(obj, keys) {
 /**
  * 依据键名进行分组
  *  
- * @param {*} lines 
  * @param {*} key 
+ * @param {*} lines 
  */
-function group_by(lines, key) {
+function assoc_by(key, lines) {
 	return lines.reduce((acc, a) => {
 		const value = a[key];
-		acc[value] = a;
+		const vv = acc[value];
+		if (!vv) { // 第一次添加
+			acc[value] = a;
+		} else if (Array.isArray(vv)) { // 至少是第三次添加
+			vv.push(value);
+		} else { // 第二次添加
+			acc[value] = [vv, a];
+		} // if
 		return acc;
 	}, {});
 }
@@ -85,8 +109,8 @@ const AComp = {
 		});
 
 		// sql data 
-		sqlquery("show tables").then(res => {
-			this.tables = res.data.data.map(e => { return { name: e["TABLE_NAME"] }; });
+		sqlquery2("show tables").then(data => {
+			this.tables = data.map(e => { return { name: e["TABLE_NAME"] }; });
 		});
 	},
 
@@ -95,7 +119,7 @@ const AComp = {
 	 */
 	computed: {
 		/**
-		 * 
+		 * 公司id 
 		 */
 		company_id() {
 			return this.current.company == null ? -1 : this.current.company.id;
@@ -118,13 +142,13 @@ const AComp = {
 			const name = this.current.user.name;
 			const password = this.current.user.password;
 			const sql = `select * from t_user where name='${name}' and password='${password}'`;
-			sqlquery2(sql, e => e).then(e => {
+			sqlquery2(sql).then(e => {
 				if (e.length > 0) { // 登录成功
-					const user = e[0];
+					const user = e[0]; // 用户记录
 					const sql2 = `select c.* from (
 						select * from t_user_company where id='${user.id}'
 					) uc left join t_company c on uc.company_id = c.id `;
-					sqlquery2(sql2, e => e).then(e1 => {
+					sqlquery2(sql2).then(e1 => {
 						if (e1.length > 0) {
 							this.current.company = e1[0];
 						}// if
@@ -166,7 +190,7 @@ const AComp = {
 
 				}
 			};
-			sqlquery2(`select * from ${tbl} ${conditions}`, e => e).then(data => {
+			sqlquery2(`select * from ${tbl} ${conditions}`).then(data => {
 				this.tbldata = data;
 			});
 		},
@@ -179,20 +203,41 @@ const AComp = {
 			this.current.data_index = i;
 			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
+
 			if ("t_order" == tbl) { // 订单表的行项目的处理
-				const cps = row.details.items; // 公司产品
-				const cpids = cps.map(e => e.id); // 公司产品id
-				if (cpids.length > 0) {
-					const pmt_sql = `select * from t_payment where id in (${cpids.join(",")})`; // 支付集合
-					sqlquery2(pmt_sql, e => e).then(pmts => {
-						const groups = group_by(_.flatMap(pmts, pmt => pmt.details.items.map(item => Object.assign({},
-							alias(item)({ id: "product_id" }), gets(pmt, "id,order_id,payer_id,payee_id")))), "product_id");
-						this.lines = cps.map(cp => {
-							const cpid = cp["id"];
-							const e = groups[cpid];
-							return Object.assign({}, cp, alias(e, -1)({ id: "payment_id" }));
+				const order_id = line["id"];
+				const pcts = row.details.items; // 公司产品
+				const ids = pcts.map(e => e.id); // 公司产品id
+				if (ids.length > 0) { //  产品数大于0
+					const pmt_sql = `select * from t_payment where id in (${ids.join(",")})`; // 支付集合
+					sqlquery2(pmt_sql).then(pmts => { // 支付对象
+						const pid2pmts = assoc_by("product_id", _.flatMap(pmts,
+							pmt => pathget(pmt, "details/items").map( // 支付行项目
+								item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
+									gets(pmt, "id,order_id,payer_id,payee_id") // 提取指定字段
+								)))); // assocs 
+						const _lines = pcts.map(p => { // 为此产品数据添加支付信息
+							return Object.assign({}, p, alias(pid2pmts[p["id"]], -1)({ id: "payment_id" }));
 						});
-					}); // 
+						return PS(_lines); // Promise对象
+					}).then(_lines => { // 一级数据行
+						const bll_sql = `select * from t_billof_product where order_id = ${order_id}`;
+						return sqlquery2(bill_sql).then(bills => {
+							const pid2bills = assoc_by("product_id", _.flatMap(bills,
+								bill => pathget(bill, "details/items").map( // 支付行项目
+									item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
+										gets(bill, "id,bill_type,order_id,warehouse_id,freight_order_id") // 提取指定字段
+									)))); // assocs
+							const __lines = _lines.flatMap(p => { // 为此产品数据添加支付信息
+								return _.flatMap(pid2bills[p["id"]], bill => {
+									return Object.assign({}, p, alias(bill, -1)({ id: "bill_id" }));
+								});
+							});
+							return PS(__lines);
+						});
+					}).then(__lines => { // 二级数据行
+						this.lines = __lines;
+					});
 				} // if
 			} else if ("t_company_product" == tbl) {
 				const lines = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
@@ -220,7 +265,7 @@ const AComp = {
 		 * @param {*} tbl 表名 
 		 */
 		refresh_tbldata(tbl) {
-			sqlquery2(`select * from ${tbl}`, e => e).then(data => {
+			sqlquery2(`select * from ${tbl}`).then(data => {
 				this.tbldata = data;
 			});
 		},

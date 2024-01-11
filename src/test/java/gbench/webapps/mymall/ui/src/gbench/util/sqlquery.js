@@ -92,12 +92,13 @@ const sqlquery = function (sql) {
  * 
  * @param {*} sql 查询sql 
  * @param {*} data_handler 结果处理 
- * @returns 处理后的promise 
+ * @returns 处理后的promise
  */
 const sqlquery2 = function (sql, data_handler) {
+    const _data_handler = !data_handler ? e => e : data_handler;
     return sqlquery(sql).then(r => new Promise((resolve, reject) => !r.data.data
         ? reject(r.data) // 异常处理
-        : resolve(data_handler(r.data.data)))); // 正常返回
+        : resolve(_data_handler(r.data.data)))); // 正常返回
 };
 
 /**
@@ -124,4 +125,15 @@ const sqlexecute = function (sql) {
     return new Promise(executor);
 };
 
-export { http_post, http_get, sqlquery, sqlquery2, sqlexecute };
+/**
+ * 生成promise对象 
+ * @param {*} x 
+ * @returns 
+ */
+const PS = function (x) {
+    return new Promise((resolve, reject) => !x
+        ? reject("x is null") // 异常处理
+        : resolve(x));
+};
+
+export { PS, http_post, http_get, sqlquery, sqlquery2, sqlexecute };
