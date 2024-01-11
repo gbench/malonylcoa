@@ -34,6 +34,7 @@ public class DataController {
 	 * 数据演示
 	 * <p>
 	 * http://localhost:6010/finance/data/insert?sql=show tables json :
+	 * 
 	 * @param json JSON 数据{name,lines}
 	 * @return IRecord
 	 */
