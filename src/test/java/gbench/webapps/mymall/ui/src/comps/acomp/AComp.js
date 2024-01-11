@@ -66,6 +66,15 @@ function assoc_by(key, lines) {
 }
 
 /**
+ * 转换成 列表
+ * @param {*} obj 
+ * @returns 
+ */
+function aslist(obj) {
+	return Array.isArray(obj) ? obj : [obj];
+}
+
+/**
  * 
  */
 const AComp = {
@@ -216,12 +225,16 @@ const AComp = {
 								item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
 									gets(pmt, "id,order_id,payer_id,payee_id") // 提取指定字段
 								)))); // assocs 
-						const _lines = pcts.map(p => { // 为此产品数据添加支付信息
-							return Object.assign({}, p, alias(pid2pmts[p["id"]], -1)({ id: "payment_id" }));
+
+						const _lines = pcts.flatMap(p => { // 为此产品数据添加支付信息
+							const _pmts = pid2pmts[p["id"]];
+							return _.flatMap(aslist(_pmts), pmt => {
+								return Object.assign({}, p, alias(pmt, -1)({ id: "payment_id" }));
+							});
 						});
 						return PS(_lines); // Promise对象
 					}).then(_lines => { // 一级数据行
-						const bll_sql = `select * from t_billof_product where order_id = ${order_id}`;
+						const bill_sql = `select * from t_billof_product where order_id = ${order_id}`;
 						return sqlquery2(bill_sql).then(bills => {
 							const pid2bills = assoc_by("product_id", _.flatMap(bills,
 								bill => pathget(bill, "details/items").map( // 支付行项目
@@ -229,7 +242,8 @@ const AComp = {
 										gets(bill, "id,bill_type,order_id,warehouse_id,freight_order_id") // 提取指定字段
 									)))); // assocs
 							const __lines = _lines.flatMap(p => { // 为此产品数据添加支付信息
-								return _.flatMap(pid2bills[p["id"]], bill => {
+								const bills = pid2bills[p["id"]]; // 提取产品相关单据
+								return _.flatMap(aslist(bills), bill => {
 									return Object.assign({}, p, alias(bill, -1)({ id: "bill_id" }));
 								});
 							});
