@@ -5,6 +5,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.sql.SQL.sql;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,9 +46,9 @@ public class DataController {
 	 * @return IRecord
 	 */
 	@RequestMapping("clear")
-	public Mono<IRecord> clear(final @Param IRecord json) {
+	public Mono<IRecord> clear(final @Param Map<String, Object> json) {
 		jdbcApp.withTransaction(sess -> {
-			final var tbl = json.str("name");
+			final var tbl = REC(json).str("name");
 			final var sql = String.format("truncate table %s", tbl);
 			System.out.println(String.format("sql:[%s],\tjson:%s", json));
 			sess.sql2execute(sql);
