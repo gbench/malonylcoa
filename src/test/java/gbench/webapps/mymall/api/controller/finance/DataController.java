@@ -4,6 +4,8 @@ import static gbench.util.jdbc.Jdbcs.bytes2obj;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.sql.SQL.sql;
 
+import java.util.ArrayList;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,15 +15,19 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.webapps.mymall.api.config.param.Param;
 import reactor.core.publisher.Mono;
 
+/**
+ * 财务数据的接口控制器
+ */
 @RestController
 @RequestMapping("finance/data")
 public class DataController {
 
 	/**
-	 * 数据演示
+	 * 查询数据
 	 * <p>
 	 * http://localhost:6010/finance/data/sqlquery?sql=show tables
 	 * 
+	 * @param sql 语句
 	 * @return IRecord
 	 */
 	@RequestMapping("sqlquery")
@@ -31,7 +37,44 @@ public class DataController {
 	}
 
 	/**
-	 * 数据演示
+	 * 清空数据
+	 * <p>
+	 * http://localhost:6010/finance/data/clear?json="name":"t_order"
+	 * 
+	 * @param json JSON 数据{name}
+	 * @return IRecord
+	 */
+	@RequestMapping("clear")
+	public Mono<IRecord> clear(final @Param IRecord json) {
+		jdbcApp.withTransaction(sess -> {
+			final var tbl = json.str("name");
+			final var sql = String.format("truncate table %s", tbl);
+			System.out.println(String.format("sql:[%s],\tjson:%s", json));
+			sess.sql2execute(sql);
+		});
+		return Mono.just(REC("code", 0, "message", "OK"));
+	}
+
+	/**
+	 * 清空数据
+	 * <p>
+	 * http://localhost:6010/finance/data/execute?sql=update t_order set
+	 * creator_id=2 where id=1
+	 * 
+	 * @param sql SQL语句
+	 * @return IRecord
+	 */
+	@RequestMapping("execute")
+	public Mono<IRecord> execute(final @Param String sql) {
+		final var data = new ArrayList<IRecord>();
+		jdbcApp.withTransaction(sess -> {
+			data.addAll(sess.sql2execute(sql));
+		});
+		return Mono.just(REC("code", 0, "data", data));
+	}
+
+	/**
+	 * 插入数据
 	 * <p>
 	 * http://localhost:6010/finance/data/insert
 	 * 

@@ -69,11 +69,14 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 				retval = MyJson.recM().readValue(value, cls); // 尝试解析json
 			} catch (Exception e) {
 				try { // 尝试进行类型修复
-					if (type.isArray()
+					/**
+					 * 注意这里需要优先进行Map匹配而后在进行List防止继承了Iterable又继承了Map的情况，如：gbench.util.data.DataApp.IRecord，这样就把将Map结构给忽略了
+					 */
+					if (Map.class.isAssignableFrom(type) && !value.matches("\\s*\\{\\.*\\}\\s*")) { // 补充大括号,
+						retval = MyJson.recM().readValue(String.format("{%s}", value), cls);
+					} else if (type.isArray()
 							|| Iterable.class.isAssignableFrom(type) && !value.matches("\\s*\\[\\.*\\]\\s*")) { // 补充中括号
 						retval = MyJson.recM().readValue(String.format("[%s]", value), cls);
-					} else if (Map.class.isAssignableFrom(type) && !value.matches("\\s*\\{\\.*\\}\\s*")) { // 补充大括号
-						retval = MyJson.recM().readValue(String.format("{%s}", value), cls);
 					} else { // 打印一场
 						e.printStackTrace();
 					} // if
@@ -87,20 +90,19 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 		return serverWebExchange.getFormData().map(data -> {
 			final var ll = Optional.ofNullable(data.get(name)).orElse(qps.get(name));
 			final Optional<Object> opt = Optional.ofNullable(ll != null && ll.size() > 0 ? ll.get(0) : null)
-					.map(value -> {
+					.map(value -> switch (type.getName()) { // 根据类型名进行类型转换
+					case "gbench.util.lisp.IRecord" -> gbench.util.lisp.IRecord.REC(value);
+					case "gbench.util.jdbc.kvp.IRecord" -> gbench.util.jdbc.kvp.IRecord.REC(value);
+					case "gbench.util.data.DataApp.IRecord" -> gbench.util.data.DataApp.IRecord.REC(value);
+					case "gbench.util.math.algebra.tuple.IRecord" -> gbench.util.math.algebra.tuple.IRecord.REC(value);
+					default -> { // 其他类型
 						if (type.isArray() || Iterable.class.isAssignableFrom(type)
 								|| Map.class.isAssignableFrom(type)) { // 数组,集合,Map类型
-							return read_json.apply(value, type);
-						} else { // 其他类型
-							return switch (type.getName()) { // 根据类型名进行类型转换
-							case "gbench.util.lisp.IRecord" -> gbench.util.lisp.IRecord.REC(value);
-							case "gbench.util.jdbc.kvp.IRecord" -> gbench.util.jdbc.kvp.IRecord.REC(value);
-							case "gbench.util.data.DataApp.IRecord" -> gbench.util.data.DataApp.IRecord.REC(value);
-							case "gbench.util.math.algebra.tuple.IRecord" ->
-								gbench.util.math.algebra.tuple.IRecord.REC(value);
-							default -> (Object) Types.corece(value, type);
-							};
+							yield read_json.apply(value, type);
+						} else {
+							yield (Object) Types.corece(value, type);
 						} // if
+					} // default
 					});
 			return opt.orElse(Types.defaultValue(type));
 		});

@@ -87,7 +87,7 @@ const AComp = {
 		 */
 		on_order_btn_click(event) {
 			const rnd = n => parseInt((Math.random() * n) + 1);
-			const rnd2 = n => Math.random().toFixed(2) * n + 1;
+			const rnd2 = n => (Math.random() * n + 1).toFixed(2);
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
 			const flag = Math.random() > 0.5;
 			const order = { // 订单数据
