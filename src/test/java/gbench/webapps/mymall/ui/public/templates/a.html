@@ -6,7 +6,7 @@
       <button @click="on_login_click($event)">login</button>
     </span>
     <span v-else>
-      <a :href="current.company.website">{{current.company.name}}</a> &nbsp;
+      <a :href="current.company.website">{{current.company.name}} [ {{current.company.id}} ]</a> &nbsp;
       <button @click="on_logout_click($event)">logout</button>
     </span>
   </div>
@@ -55,7 +55,7 @@
           </select> &nbsp;
           <button @click="on_order_btn_click($event)">create order</button> &nbsp;
           <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">create invoice</button> &nbsp;
-          <button @click="on_receipt_btn_click($event)">create receipt</button> &nbsp;
+          <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">create receipt</button> &nbsp;
           <button @click="on_freight_btn_click($event)">create freight</button> &nbsp;
           <button @click="on_payment_btn_click($event)">create payment</button> &nbsp;
         </div>
