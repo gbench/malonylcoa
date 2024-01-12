@@ -11,14 +11,22 @@ import _ from "lodash";
  */
 function alias(obj, dft) {
 	return function (names) {
+		const _names = _.isObject(names) ? names : {};
+		let flag = false; // 是否是数组的标志位
+		if ((flag = Array.isArray(names)) || _.isString(names)) { // names 的分类处理
+			const ss = flag ? names : names.split(/[,;]+/);
+			for (let i = 0; i < ss.length - 1; i += 2) { // 分解成old->new的二元组
+				_names[ss[i]] = ss[i + 1];
+			}
+		}
 		return obj == null
-			? _.values(names).reduce((acc, a) => { acc[a] = dft; return acc; }, {})
-			: _.mapKeys(obj, (v, k) => names[k] ? names[k] : k);
+			? _.values(_names).reduce((acc, a) => { acc[a] = dft; return acc; }, {})
+			: _.mapKeys(obj, (v, k) => _names[k] ? _names[k] : k);
 	};
 }
 
 /**
- * 
+ * 路径读取 
  * @param {*} obj 
  * @param {*} path 
  * @returns 
@@ -113,13 +121,13 @@ const INIT_DATA = {
 		tbl_index: -1, // 数据表行行索引
 		//
 		tbldata_index: -1, // 行数据索引
-		tbldata_selected: [], // 表数据是否被选择
+		tbldatas_selected: [], // 表数据是否被选择
 		//
 		line_index: -1, // 明细行行索引
 		lines_selected: [], // 明细行选择索引集合
 		//
 		warehouse_index: -1, // 表数据是否被选择
-		warehouse_selected: [], // 表数据是否被选择
+		warehouses_selected: [], // 表数据是否被选择
 		//
 		product_index: -1, // 表数据是否被选择
 		product_selected: [], // 表数据是否被选择
@@ -177,7 +185,7 @@ const AComp = {
 	},
 
 	/**
-	 * 
+	 * 计算属性 
 	 */
 	computed: {
 		/**
@@ -188,16 +196,51 @@ const AComp = {
 		},
 
 		/**
+		 * 当前选择额数据行 
+		 * @returns 
+		 */
+		selected_lines() {
+			return this.current.lines_selected.map(i => this.lines[i]);
+		},
+
+		/**
 		 * Getters 数据
 		 */
 		...mapGetters("ACompStore", ["name"]),
 		...mapState("ACompStore", { state: state => state }),
 	},
 
+	/**
+	 * 方法属性
+	 */
 	methods: {
+		/**
+		 * 重置行项目 
+		 */
+		reset_selected_lines() {
+			this.current.lines_selected = [];
+			this.current.line_index = -1;
+		},
 
 		/**
-		 * 
+		 * 重置行项目 
+		 */
+		reset_selected_tbldata() {
+			this.current.tbldatas_selected = [];
+			this.current.tbldata_index = -1;
+		},
+
+		/**
+		 * 重置行项目 
+		 */
+		reset_selected_warehouses() {
+			this.current.warehouses_selected = [];
+			this.current.warehouse_index = -1;
+		},
+
+
+		/**
+		 * 登录 
 		 * @param {*} event 
 		 */
 		on_login_click(event) {
@@ -263,28 +306,35 @@ const AComp = {
 			this.current.tbldata_index = -1; // 设置一个非法值
 			this.current.line_index = -1; // 设置表偏移索引
 			this.lines = []; // 设置非法值 
-			this.current.tbldata_selected = []; // 设置非法值
+			this.current.tbldatas_selected = []; // 设置非法值
 			this.current.lines_selected = []; // 设置非法值
 			this.current.product_selected = []; // 设置非法值
 			const tbl = this.current.tbl = (line["name"]); // 更新当前表
 			let conditions = "";
 
-			switch (tbl) {
+			switch (tbl) { // 根据表名添加过滤条件
 				case "t_order": {
-					conditions = this.company_id < 0 ? "" : ` where parta=${this.company_id} or partb=${this.company_id}`;
+					conditions = this.company_id < 0
+						? ""
+						: ` where parta=${this.company_id} or partb=${this.company_id}`;
 					break;
 				}
 				case "t_payment": {
-					conditions = this.company_id < 0 ? "" : ` where payer_id=${this.company_id} or payee_id=${this.company_id}`;
+					conditions = this.company_id < 0
+						? ""
+						: ` where payer_id=${this.company_id} or payee_id=${this.company_id}`;
 					break;
 				}
 				default: {
-
+					// do nothing
 				}
 			};
+
+			// 读取指定表的数据
 			sqlquery2(`select * from ${tbl} ${conditions}`).then(data => {
 				this.tbldata = data;
 			});
+
 		},
 
 		/**
@@ -306,7 +356,7 @@ const AComp = {
 			sqlquery2(pmt_sql).then(_lines => { // 一级 
 				const pid2pmts = assoc_by("product_id", _.flatMap(_lines,
 					pmt => pathget(pmt, "details/items").map( // 支付行项目
-						item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
+						item => Object.assign({}, alias(item)("id,product_id"), // 改名
 							gets(pmt, "id,order_id,payer_id,payee_id") // 提取指定字段
 						)))); // assocs 
 				const __lines = pcts.flatMap(p => { // 为此产品数据添加支付信息
@@ -321,13 +371,13 @@ const AComp = {
 				return sqlquery2(bill_sql).then(bills => {
 					const pid2bills = assoc_by("product_id", _.flatMap(bills,
 						bill => pathget(bill, "details/items").map( // 支付行项目
-							item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
+							item => Object.assign({}, alias(item)("id,product_id"), // 改名
 								gets(bill, "id,bill_type,order_id,warehouse_id,freight_order_id") // 提取指定字段
 							)))); // assocs
 					const ___lines = __lines.flatMap(p => { // 为此产品数据添加支付信息
 						const bills = pid2bills[p["id"]]; // 提取产品相关单据
 						return _.flatMap(aslist(bills), bill => {
-							return Object.assign({}, p, alias(bill, -1)({ id: "bill_id" }));
+							return Object.assign({}, p, alias(bill, -1)("id,bill_id"));
 						});
 					});
 					return PS(___lines);
@@ -367,7 +417,7 @@ const AComp = {
 			if (event) { // 事件对象有效,无效事件对象是刷新请求
 				this.current.line_index = -1;
 				this.current.lines_selected = []; // 设置非法值
-				if (select(this.current.tbldata_selected, i)) {
+				if (select(this.current.tbldatas_selected, i)) {
 					this.current.tbldata_index = i;
 				} else { //  清空当前选的行
 					this.current.tbldata_index = -1;
@@ -393,7 +443,7 @@ const AComp = {
 		 * @param {*} param 
 		 */
 		on_warehouse_trclick({ line, i, event }) {
-			if (select(this.current.warehouse_selected, i)) {
+			if (select(this.current.warehouses_selected, i)) {
 				this.current.warehouse_index = i;
 			} else {
 				this.current.warehouse_index = -1;
@@ -439,7 +489,7 @@ const AComp = {
 		 * @param {*} i 
 		 */
 		is_tbldata_selected(i) {
-			return _.includes(this.current.tbldata_selected, i);
+			return _.includes(this.current.tbldatas_selected, i);
 		},
 
 		/**
@@ -455,7 +505,7 @@ const AComp = {
 		 * @param {*} i 
 		 */
 		is_warehouse_selected(i) {
-			return _.includes(this.current.warehouse_selected, i);
+			return _.includes(this.current.warehouses_selected, i);
 		},
 
 		/**
@@ -515,8 +565,7 @@ const AComp = {
 			if (!order || !order.partb || this.company_id != order.partb) { // 只有当前公司id是乙方公司才能进行发货 
 				return false;
 			}
-			const lines = this.current.lines_selected.map(i => this.lines[i])
-				.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
+			const lines = this.selected_lines.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
 			if (lines.length < 1) {
 				return false;
 			}
@@ -548,12 +597,13 @@ const AComp = {
 			};
 
 			persist(invoice_bill).then(e => { // 刷新订单行项目
+				this.reset_selected_lines();
 				this.refresh_lines();
 			});
 		},
 
 		/**
-		 * 
+		 * 入库单 
 		 * @param {*} event 
 		 */
 		on_receipt_btn_click(event) {
@@ -561,7 +611,7 @@ const AComp = {
 		},
 
 		/**
-		 * 
+		 * 付款单 
 		 * @param {*} event 
 		 */
 		on_payment_btn_click(event) {
@@ -569,7 +619,7 @@ const AComp = {
 		},
 
 		/**
-		 * 
+		 * 货运单 
 		 * @param {*} event 
 		 */
 		on_freight_btn_click(event) {
