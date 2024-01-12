@@ -31,11 +31,13 @@
       <div style="height:335px;width:350px;border:solid 1px red;float:left;margin-left:2px;overflow:auto">
         <div>
           <data-table style="width:100%" :data="lines" :tdrender="tbldata_td_render"
-            :trclass="(line,i)=>is_line_selected(i)?'highlight':'tdclass'" @trclick="on_lines_trclick" />
+            :trclass="(line,i)=>is_line_selected(i)?current.line_index==i?'highlight2':'highlight':'tdclass'"
+            @trclick="on_lines_trclick" />
         </div>
         <div>
           <data-table style="width:100%" :data="warehouses"
-            :trclass="(line,i)=>is_warehouse_selected(i)?'highlight':'tdclass'" @trclick="on_warehouse_trclick" />
+            :trclass="(line,i)=>is_warehouse_selected(i)?current.warehouse_index==i?'highlight2':'highlight':'tdclass'"
+            @trclick="on_warehouse_trclick" />
         </div>
       </div>
       <div style="clear:both"></div>

@@ -322,8 +322,11 @@ const AComp = {
 		 * @param {*} param 
 		 */
 		on_warehouse_trclick({ line, i, event }) {
-			this.current.warehouse_index = i;
-			select(this.current.warehouse_selected, i);
+			if (select(this.current.warehouse_selected, i)) {
+				this.current.warehouse_index = i;
+			} else {
+				this.current.warehouse_index = -1;
+			}
 		},
 
 		/**
@@ -380,8 +383,11 @@ const AComp = {
 		 * @param {*} param0 
 		 */
 		on_lines_trclick({ line, i, event }) {
-			this.current.line_index = i;
-			select(this.current.lines_selected, i);
+			if (select(this.current.lines_selected, i)) {
+				this.current.line_index = i;
+			} else {
+				this.current.line_index = -1;
+			}
 		},
 
 		/**
@@ -420,13 +426,16 @@ const AComp = {
 			if (this.current.tbl != "t_order") { // 订单试图才能进行发货
 				return false;
 			}
-			const lines = this.current.lines_selected.map(i => this.lines[i])
-				.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
-			if (lines.length < 1 || this.warehouses.length < 2 || this.warehouse_index < 0) {
+			if (this.warehouses.length < 2) {
 				return false;
 			}
-			const order = _.defaults(this.lines[this.current.lines_selected], {});
-			if (this.company_id < 0 && order.partb && this.company_id != order.partb) { // 只有当前公司id是乙方公司才能进行发货 
+			const order = this.tbldata[this.current.tbldata_index];
+			if (!order || !order.partb || this.company_id != order.partb) { // 只有当前公司id是乙方公司才能进行发货 
+				return false;
+			}
+			const lines = this.current.lines_selected.map(i => this.lines[i])
+				.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
+			if (lines.length < 1) {
 				return false;
 			}
 			return true;
