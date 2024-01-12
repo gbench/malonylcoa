@@ -76,12 +76,12 @@ function aslist(obj) {
 
 /**
  * 选入数据 
- * @param {*} items 
- * @param {*} item 
+ * @param {*} items 数据集合
+ * @param {*} item 待见检测数据
  */
 function select(items, item) {
-	const i = _.findIndex(items, x => item == x);
-	if (i >= 0) {
+	const i = _.findIndex(items, _item => _.isEqual(_item, item));
+	if (i >= 0) { // 已经存在 
 		items.splice(i, 1);
 		return false;
 	} else {
@@ -119,21 +119,28 @@ const AComp = {
 		return {
 			component: "-", //  组件名
 			current: { // 当前对象
+				//
 				tbl: "-", // 表名
 				tbl_index: -1, // 数据表行行索引
+				//
 				tbldata_index: -1, // 行数据索引
 				tbldata_selected: [], // 表数据是否被选择
+				//
 				line_index: -1, // 明细行行索引
 				lines_selected: [], // 明细行选择索引集合
-				warehouse_index: [], // 表数据是否被选择
+				//
+				warehouse_index: -1, // 表数据是否被选择
 				warehouse_selected: [], // 表数据是否被选择
-				product_index: [], // 表数据是否被选择
+				//
+				product_index: -1, // 表数据是否被选择
 				product_selected: [], // 表数据是否被选择
+				//
 				user: { // 用户信息
 					name: "gbench",
 					password: "123456"
 				},
-				company: null // 当前公司对象
+				//
+				company: null // 当前公司对象,仅当用户登录后才有效
 			},  //  当前对象
 			tables: [], // 数据表
 			tbldata: [], // 表数据
@@ -267,6 +274,74 @@ const AComp = {
 		},
 
 		/**
+		 * 订单处理 
+		 * @param {*} param0 
+		 */
+		handle_order({ line, i }) {
+			const order_id = line["id"];
+			const pcts = line.details.items; // 订单中的公司产品
+			const ids = pcts.map(e => e.id); // 公司产品id
+
+			// 逐渐展开处理层级
+			if (ids.length < 1) { //  产品数大于0
+				alert(`订单: ${JSON.stringify(line)} 中没有有效产品`);
+				return;
+			}
+
+			const pmt_sql = `select * from t_payment where order_id=${order_id} and id in (${ids.join(",")})`; // 支付集合
+			sqlquery2(pmt_sql).then(_lines => { // 一级 
+				const pid2pmts = assoc_by("product_id", _.flatMap(_lines,
+					pmt => pathget(pmt, "details/items").map( // 支付行项目
+						item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
+							gets(pmt, "id,order_id,payer_id,payee_id") // 提取指定字段
+						)))); // assocs 
+				const __lines = pcts.flatMap(p => { // 为此产品数据添加支付信息
+					const pmts = pid2pmts[p["id"]];
+					return _.flatMap(aslist(pmts), pmt => {
+						return Object.assign({}, p, alias(pmt, -1)({ id: "payment_id" }));
+					});
+				});
+				return PS(__lines); // Promise对象
+			}).then(__lines => { // 二级数据行
+				const bill_sql = `select * from t_billof_product where order_id = ${order_id}`;
+				return sqlquery2(bill_sql).then(bills => {
+					const pid2bills = assoc_by("product_id", _.flatMap(bills,
+						bill => pathget(bill, "details/items").map( // 支付行项目
+							item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
+								gets(bill, "id,bill_type,order_id,warehouse_id,freight_order_id") // 提取指定字段
+							)))); // assocs
+					const ___lines = __lines.flatMap(p => { // 为此产品数据添加支付信息
+						const bills = pid2bills[p["id"]]; // 提取产品相关单据
+						return _.flatMap(aslist(bills), bill => {
+							return Object.assign({}, p, alias(bill, -1)({ id: "bill_id" }));
+						});
+					});
+					return PS(___lines);
+				}); // sqlquery2
+			}).then(___lines => { // 三级数据行
+				this.lines = _.sortBy(___lines, e => e.id); // 按照产品id进行排序
+			});
+		},
+
+		/**
+		 * 公司产品 
+		 * @param {*} param0 
+		 */
+		handle_company_product({ line, i }) {
+			const attrs = line.attrs;
+			const lines = Object.keys(attrs).map(k => { return { key: k, value: attrs[k] }; });
+			this.lines = lines;
+		},
+
+		/**
+		 * 仓库的处理 
+		 * @param {*} param0 
+		 */
+		handle_warehouse({ line, i }) {
+			select(this.warehouses, line);
+		},
+
+		/**
 		 * 数据表的行点击 
 		 * @param {*} param 
 		 */
@@ -281,58 +356,18 @@ const AComp = {
 					this.lines = [];
 					return;
 				};
-			}
+			} // if
 
-			const tbl = this.current.tbl;
-			const row = this.tbldata[i];
+			switch (this.current.tbl) { // 表数据的处理
+				case "t_order": return this.handle_order({ line, i });
+				case "t_company_product": return this.handle_company_product({ line, i });
+				case "t_warehouse": return this.handle_warehouse({ line, i });
+				default: {
+					alert(JSON.stringify(line));
+				}
+			} // switch
 
-			if ("t_order" == tbl) { // 订单表的行项目的处理
-				const order_id = line["id"];
-				const pcts = row.details.items; // 公司产品
-				const ids = pcts.map(e => e.id); // 公司产品id
-
-				// 逐渐展开处理层级
-				if (ids.length > 0) { //  产品数大于0
-					const pmt_sql = `select * from t_payment where order_id=${order_id} and id in (${ids.join(",")})`; // 支付集合
-					sqlquery2(pmt_sql).then(_lines => { // 一级 
-						const pid2pmts = assoc_by("product_id", _.flatMap(_lines,
-							pmt => pathget(pmt, "details/items").map( // 支付行项目
-								item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
-									gets(pmt, "id,order_id,payer_id,payee_id") // 提取指定字段
-								)))); // assocs 
-						const __lines = pcts.flatMap(p => { // 为此产品数据添加支付信息
-							const pmts = pid2pmts[p["id"]];
-							return _.flatMap(aslist(pmts), pmt => {
-								return Object.assign({}, p, alias(pmt, -1)({ id: "payment_id" }));
-							});
-						});
-						return PS(__lines); // Promise对象
-					}).then(__lines => { // 二级数据行
-						const bill_sql = `select * from t_billof_product where order_id = ${order_id}`;
-						return sqlquery2(bill_sql).then(bills => {
-							const pid2bills = assoc_by("product_id", _.flatMap(bills,
-								bill => pathget(bill, "details/items").map( // 支付行项目
-									item => Object.assign({}, alias(item)({ id: "product_id" }), // 改名
-										gets(bill, "id,bill_type,order_id,warehouse_id,freight_order_id") // 提取指定字段
-									)))); // assocs
-							const ___lines = __lines.flatMap(p => { // 为此产品数据添加支付信息
-								const bills = pid2bills[p["id"]]; // 提取产品相关单据
-								return _.flatMap(aslist(bills), bill => {
-									return Object.assign({}, p, alias(bill, -1)({ id: "bill_id" }));
-								});
-							});
-							return PS(___lines);
-						}); // sqlquery2
-					}).then(___lines => { // 三级数据行
-						this.lines = _.sortBy(___lines, e => e.id); // 按照产品id进行排序
-					});
-				} // if 产品数>0
-			} else if ("t_company_product" == tbl) {
-				const lines = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
-				this.lines = lines;
-			} else if ("t_warehouse" == tbl) {
-				select(this.warehouses, line);
-			}
+			console.log("on_tbl_data_trclick 的默认收尾", this.current.tbl);
 		},
 
 		/**

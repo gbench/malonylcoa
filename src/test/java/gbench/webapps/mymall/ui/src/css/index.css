@@ -24,7 +24,7 @@ tr:hover {
     color: black;
     background-color: bisque;
     cursor: pointer;
-    text-decoration: underline;
+    font-weight:bold;
 }
 
 
