@@ -130,7 +130,7 @@ const INIT_DATA = {
 		warehouses_selected: [], // 表数据是否被选择
 		//
 		product_index: -1, // 表数据是否被选择
-		product_selected: [], // 表数据是否被选择
+		products_selected: [], // 表数据是否被选择
 		//
 		user: { // 用户信息
 			name: "gbench",
@@ -204,6 +204,45 @@ const AComp = {
 		},
 
 		/**
+		 * 
+		 * @returns 
+		 */
+		current_tbl() {
+			return this.current.tbl;
+		},
+
+		/**
+		 * 当前的表数据行 
+		 * @returns 
+		 */
+		current_tbldata() {
+			return this.tbldata[this.current.tbldata_index];
+		},
+
+		/**
+		 * 当前行项目 
+		 * @returns 
+		 */
+		current_line() {
+			return this.lines[this.current.line_index];
+		},
+
+		/**
+		 * 当前的仓库 
+		 * @returns 
+		 */
+		current_warehouse() {
+			return this.warehouses[this.current.warehouse_index];
+		},
+
+		/**
+		 * 当前用户是否登录 
+		 */
+		is_logined() {
+			return !!this.current.company;
+		},
+
+		/**
 		 * Getters 数据
 		 */
 		...mapGetters("ACompStore", ["name"]),
@@ -214,6 +253,20 @@ const AComp = {
 	 * 方法属性
 	 */
 	methods: {
+		/**
+		 * 行项目 
+		 */
+		reset_lines() {
+			this.lines = [];
+		},
+
+		/**
+		 * 表数据
+		 */
+		reset_tbldata() {
+			this.tbldata = [];
+		}
+		,
 		/**
 		 * 重置行项目 
 		 */
@@ -250,31 +303,31 @@ const AComp = {
 			sqlquery2(sql).then(e => {
 				if (e.length > 0) { // 登录成功
 					const user = e[0]; // 用户记录
-					const sql2 = `select c.* from (
+					const uc_sql = `select c.* from (
 						select * from t_user_company where id='${user.id}'
 					) uc left join t_company c on uc.company_id = c.id `;
-					sqlquery2(sql2).then(data1 => {
-						if (data1.length > 0) {
-							const company = this.current.company = data1[0];
-							const company_id = company.id; // 当前用户的企业id
-							const sql3 = `select * from t_company_warehouse where company_id=${company_id}`;
+					sqlquery2(uc_sql).then(ucdata => {
+						if (ucdata.length > 0) {
+							this.current.company = ucdata[0]; // this.current.company用于指示用户是否登录成功
+							const cw_sql = `select * from t_company_warehouse where company_id=${this.company_id}`;
 							// 加载公司仓库信息	
-							sqlquery2(sql3).then(data2 => {
-								const warehouse_ids = data2.map(e => e["warehouse_id"]);
-								return sqlquery2(`select * from t_warehouse where id in (${warehouse_ids.join(",")})`);
-							}).then(data3 => { // 公司仓库
-								this.warehouses = data3; // 加载公司仓库
+							sqlquery2(cw_sql).then(cwdata => {
+								const warehouse_ids = cwdata.map(e => e["warehouse_id"]);
+								const wh_sql = `select * from t_warehouse where id in (${warehouse_ids.join(",")})`;
+								return sqlquery2(wh_sql);
+							}).then(whdata => { // 公司仓库
+								this.warehouses = whdata; // 加载公司仓库
 							}); // 公司仓库
 							// 加载公司信息
-							sqlquery2(`select * from t_company where id!=${company_id}`).then(data => {
-								this.counterparts = data.map(e => { return { key: e["name"], value: e["id"] }; });
+							sqlquery2(`select * from t_company where id!=${this.company_id}`).then(cydata => {
+								this.counterparts = cydata.map(e => { return { key: e["name"], value: e["id"] }; });
 								this.counterpart = this.counterparts[0].value; // 选择默认交易对手方
 							}); // 公司信息
 							//公司产品信息
 							sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
 								from t_company_product cp left join t_product p on cp.product_id = p.id`
-							).then(data => {
-								this.pid2pcts = assoc_by("id", data); // 公司产品id
+							).then(cpdata => {
+								this.pid2pcts = assoc_by("id", cpdata); // 公司产品id
 							});
 						}// if
 					}); //
@@ -303,13 +356,9 @@ const AComp = {
 		 */
 		on_tables_trclick({ line, i, event }) {
 			this.current.tbl_index = i; // 设置表偏移索引
-			this.current.tbldata_index = -1; // 设置一个非法值
-			this.current.line_index = -1; // 设置表偏移索引
-			this.lines = []; // 设置非法值 
-			this.current.tbldatas_selected = []; // 设置非法值
-			this.current.lines_selected = []; // 设置非法值
-			this.current.product_selected = []; // 设置非法值
-			const tbl = this.current.tbl = (line["name"]); // 更新当前表
+			this.reset_selected_lines();
+			this.reset_selected_tbldata();
+			const tbl = this.current.tbl = line["name"]; // 更新当前表
 			let conditions = "";
 
 			switch (tbl) { // 根据表名添加过滤条件
@@ -561,7 +610,7 @@ const AComp = {
 			if (this.warehouses.length < 1) { // 至少需要有一个出品仓库
 				return false;
 			}
-			const order = this.tbldata[this.current.tbldata_index];
+			const order = this.current_tbldata;
 			if (!order || !order.partb_id || this.company_id != order.partb_id) { // 只有当前公司id是乙方公司才能进行发货 
 				return false;
 			}
@@ -577,28 +626,22 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_invoice_btn_click(event) {
-			const lines = this.current.lines_selected.map(i => this.lines[i])
-				.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
-			const order_id = this.tbldata[this.current.tbldata_index].id;
-			const warehouse_id = _.defaults(this.warehouses[this.current.warehouse_index],
-				this.warehouses[0]).id; // 默认仓库id
-			const items = lines.map(e => gets(e, "id,quantity,price"));
-			const invoice_bill = {
+			const bill_type = "invoice"; // 单据类型
+			const company_id = this.company_id; // 公司id
+			const warehouse_id = _.defaults(this.current_warehouse, this.warehouses[0]).id; // 默认仓库id
+			const order_id = this.current_tbldata.id; // 当前表数据行
+			const freight_order_id = -1; // 运单id
+			const lines = this.selected_lines.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"])); // 行项目
+			const items = lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
+			const creator_id = -1; //  创建人
+			const invoice_bill = { // 发票数据
 				name: "t_billof_product",
-				lines: [{
-					bill_type: "invoice",
-					company_id: this.company_id,
-					warehouse_id: warehouse_id,
-					order_id: order_id,
-					freight_order_id: -1,
-					details: { items },
-					creator_id: 1
-				}]
-			};
+				lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+			}; // 发票项目
 
 			persist(invoice_bill).then(e => { // 刷新订单行项目
-				this.reset_selected_lines();
-				this.refresh_lines();
+				this.reset_selected_lines(); // 重置选择行项目
+				this.refresh_lines(); // 刷新行项目
 			});
 		},
 
