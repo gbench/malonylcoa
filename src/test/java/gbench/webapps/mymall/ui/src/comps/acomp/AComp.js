@@ -146,7 +146,7 @@ const AComp = {
 			tbldata: [], // 表数据
 			lines: [], // 行项目
 			warehouses: [], // 仓库
-			products: [], // 产品 
+			pid2pcts: [], // 公司产品id->产品明细 
 			counterpart: -1, // 交易对手方
 			counterparts: [], // 对手方
 			position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb为当前的用户的company_id 
@@ -224,6 +224,12 @@ const AComp = {
 								this.counterparts = data.map(e => { return { key: e["name"], value: e["id"] }; });
 								this.counterpart = this.counterparts[0].value; // 选择默认交易对手方
 							}); // 公司信息
+							//公司产品信息
+							sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
+								from t_company_product cp left join t_product p on cp.product_id = p.id`
+							).then(data => {
+								this.pid2pcts = assoc_by("id", data); // 公司产品id
+							});
 						}// if
 					}); //
 				} else {
@@ -319,7 +325,11 @@ const AComp = {
 					return PS(___lines);
 				}); // sqlquery2
 			}).then(___lines => { // 三级数据行
-				this.lines = _.sortBy(___lines, e => e.id); // 按照产品id进行排序
+				this.lines = _.sortBy(___lines.map(e => { // 翻译产品名称
+					const id = e.id; // 公司产品id
+					const name = _.defaults(this.pid2pcts[id], { name: "-" }).name; // 产品详情
+					return Object.assign({ id, name }, e); // 加入产品名称字段
+				}), e => e.id); // 按照产品id进行排序
 			});
 		},
 
