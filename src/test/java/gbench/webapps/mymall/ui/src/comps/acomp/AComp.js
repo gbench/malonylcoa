@@ -75,6 +75,20 @@ function aslist(obj) {
 }
 
 /**
+ * 选入数据 
+ * @param {*} items 
+ * @param {*} item 
+ */
+function select(items, item) {
+	const i = _.findIndex(items, x => item == x);
+	if (i >= 0) {
+		items.splice(i, 1);
+	} else {
+		items.push(item);
+	}
+}
+
+/**
  * 
  */
 const AComp = {
@@ -89,9 +103,12 @@ const AComp = {
 		return {
 			component: "-", //  组件名
 			current: { // 当前对象
-				data_index: -1, // 行数据索引
 				tbl: "-", // 表名
 				tbl_index: -1, // 数据表行行索引
+				tbldata_index: -1, // 行数据索引
+				tbldata_selected: [], // 表数据是否被选择
+				line_index: -1, // 明细行行索引
+				lines_selected: [], // 明细行选择索引集合
 				user: { // 用户信息
 					name: "gbench",
 					password: "123456"
@@ -182,7 +199,9 @@ const AComp = {
 		 */
 		on_tables_trclick({ line, i, event }) {
 			this.current.tbl_index = i; // 设置表偏移索引
-			this.current.data_index = -1; // 设置一个非法值
+			this.current.tbldata_index = -1; // 设置一个非法值
+			this.current.line_index = i; // 设置表偏移索引
+			this.current.lines_selected = []; // 设置非法值
 			const tbl = this.current.tbl = (line["name"]); // 更新当前表
 			let conditions = "";
 
@@ -209,7 +228,11 @@ const AComp = {
 		 * @param {*} param 
 		 */
 		on_tbldata_trclick({ line, i, event }) {
-			this.current.data_index = i;
+			this.current.tbldata_index = i;
+			this.current.line_index = -1;
+			this.current.lines_selected = []; // 设置非法值
+			select(this.current.tbldata_selected, i);
+
 			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
 
@@ -286,6 +309,31 @@ const AComp = {
 		},
 
 		/**
+		 * 行是否被选中 
+		 * @param {*} i 
+		 */
+		is_tbldata_selected(i) {
+			return _.includes(this.current.tbldata_selected, i);
+		},
+
+		/**
+		 * 行是否被选中 
+		 * @param {*} i 
+		 */
+		is_line_selected(i) {
+			return _.includes(this.current.lines_selected, i);
+		},
+
+		/**
+		 * 
+		 * @param {*} param0 
+		 */
+		on_lines_trclick({ line, i, event }) {
+			this.current.line_index = i;
+			select(this.current.lines_selected, i);
+		},
+
+		/**
 		 * 随机创建订单 
 		 * @param {*} event 
 		 */
@@ -312,7 +360,31 @@ const AComp = {
 			http_post("/h5/finance/data/insert", { json: JSON.stringify(order) }).then(e => {
 				this.refresh_tbldata("t_order");
 			});
-		}
+		},
+
+		/**
+		 * 
+		 * @param {*} event 
+		 */
+		on_invoice_btn_click(event) {
+			alert("invoice btn");
+		},
+
+		/**
+		 * 
+		 * @param {*} event 
+		 */
+		on_receipt_btn_click(event) {
+			alert("receipt btn");
+		},
+
+		/**
+		 * 
+		 * @param {*} event 
+		 */
+		on_payment_btn_click(event) {
+			alert("payment btn");
+		},
 
 	}
 
