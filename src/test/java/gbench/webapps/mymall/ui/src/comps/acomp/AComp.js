@@ -324,7 +324,7 @@ const AComp = {
 							return PS(___lines);
 						}); // sqlquery2
 					}).then(___lines => { // 三级数据行
-						this.lines = ___lines;
+						this.lines = _.sortBy(___lines, e => e.id); // 按照产品id进行排序
 					});
 				} // if 产品数>0
 			} else if ("t_company_product" == tbl) {
@@ -428,9 +428,17 @@ const AComp = {
 			const counterpart = this.counterpart;  // 对手方
 			const parta = this.position == LONG ? this.company_id : counterpart;
 			const partb = this.position == SHORT ? this.company_id : counterpart;
-			const items = _.repeat("1", rnd(10)).split(/\s*/).map((v, i) => { //
-				return { id: rnd(10), quantity: rnd(10), price: rnd2(5) };
-			}); // 随机生成订单项目
+			const volume = rnd(10); // 模拟订单产品规模
+			const groups = assoc_by("id", // 依据产品id进行数据分组
+				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
+					return { id: rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量
+				})); // 随机生成订单项目
+			const items = Object.keys(groups).map(id => { // 产品id
+				const values = aslist(groups[id]); // 提取指定id订单产品项目列表
+				const quantity = _.sumBy(values, e => e["quantity"]); // 累计交易数量
+				const item = Object.assign(values[0], { quantity, price: rnd2(100) }); // 累计行项目的数量并补充价格
+				return item; // 返回产品行项目
+			});
 			const order_bill = { // 订单数据
 				name: "t_order", // 表名
 				lines: [{ parta, partb, details: { items }, creator_id: 1, "time": now }] // 行项目 
