@@ -44,13 +44,15 @@
       <div>
         <hr>
         <div v-if="current.tbl=='t_order'">
+          <!--交易头寸-->
           <select v-model="position">
             <option value="1">LONG</option>
             <option value="-1">SHORT</option>
           </select> &nbsp;
+          <!--交易对手方-->
           <select v-model="counterpart">
             <option v-for="part in counterparts" :value="part.value">{{part.key}}</option>
-          </select>
+          </select> &nbsp;
           <button @click="on_order_btn_click($event)">create order</button> &nbsp;
           <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">create invoice</button> &nbsp;
           <button @click="on_receipt_btn_click($event)">create receipt</button> &nbsp;

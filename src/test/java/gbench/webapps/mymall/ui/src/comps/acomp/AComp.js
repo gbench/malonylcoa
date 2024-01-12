@@ -406,7 +406,7 @@ const AComp = {
 		},
 
 		/**
-		 * 
+		 * 明细行项目 
 		 * @param {*} param0 
 		 */
 		on_lines_trclick({ line, i, event }) {
@@ -425,27 +425,15 @@ const AComp = {
 			const rnd = n => parseInt((Math.random() * n) + 1);
 			const rnd2 = n => (Math.random() * n + 1).toFixed(2);
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
-			const counterpart = this.counterpart;  // 对方公司
+			const counterpart = this.counterpart;  // 对手方
 			const parta = this.position == LONG ? this.company_id : counterpart;
 			const partb = this.position == SHORT ? this.company_id : counterpart;
-			if (counterpart < 0) {
-				alert(`非法对手方:${counterpart}`);
-				return;
-			}
+			const items = _.repeat("1", rnd(10)).split(/\s*/).map((v, i) => { //
+				return { id: rnd(10), quantity: rnd(10), price: rnd2(5) };
+			}); // 随机生成订单项目
 			const order_bill = { // 订单数据
-				name: "t_order",
-				lines: [ // 行项目集合
-					{ // 行项目
-						parta, partb,
-						details: {
-							items: [ // 订单项目
-								{ id: rnd(10), quantity: rnd(10), price: rnd2(5) },
-								{ id: rnd(10), quantity: rnd(10), price: rnd2(3) }
-							],
-						},
-						creator_id: 1, "time": now
-					}
-				] // lines
+				name: "t_order", // 表名
+				lines: [{ parta, partb, details: { items }, creator_id: 1, "time": now }] // 行项目 
 			}; // order
 
 			persist(order_bill).then(e => { this.refresh_tbldata("t_order"); });
