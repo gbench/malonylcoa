@@ -299,10 +299,10 @@ const AComp = {
 		on_login_click(event) {
 			const name = this.current.user.name;
 			const password = this.current.user.password;
-			const sql = `select * from t_user where name='${name}' and password='${password}'`;
-			sqlquery2(sql).then(e => {
-				if (e.length > 0) { // 登录成功
-					const user = e[0]; // 用户记录
+			const us_sql = `select * from t_user where name='${name}' and password='${password}'`;
+			sqlquery2(us_sql).then(usdata => {
+				if (usdata.length > 0) { // 登录成功
+					const user = usdata[0]; // 用户记录
 					const uc_sql = `select c.* from (
 						select * from t_user_company where id='${user.id}'
 					) uc left join t_company c on uc.company_id = c.id `;
@@ -328,13 +328,13 @@ const AComp = {
 								from t_company_product cp left join t_product p on cp.product_id = p.id`
 							).then(cpdata => {
 								this.pid2pcts = assoc_by("id", cpdata); // 公司产品id
-							});
+							}); // cpdata
 						}// if
-					}); //
+					}); // ucdata
 				} else {
 					alert("登录失败!");
-				}
-			});
+				} // usdata
+			}); // us_sql
 		},
 
 		/**
