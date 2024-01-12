@@ -23,8 +23,8 @@
         <!--表数据-->
         <div style="height:335px;overflow:auto;border:solid 1px red;">
           <data-table style="width:100%" :data="tbldata"
-            :trclass="(line,i)=>is_tbldata_selected(i)?'highlight':'tdclass'" :tdrender="tbldata_td_render"
-            @trclick="on_tbldata_trclick" />
+            :trclass="(line,i)=>is_tbldata_selected(i)?current.tbldata_index==i?'highlight2':'highlight':'tdclass'"
+            :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
         </div>
       </div>
       <!--行项目-->

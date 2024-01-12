@@ -20,6 +20,14 @@ tr:hover {
     cursor: pointer;
 }
 
+.highlight2 {
+    color: black;
+    background-color: bisque;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+
 ul,
 li {
     overflow: auto;
