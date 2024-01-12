@@ -40,7 +40,7 @@ public class AcctController {
 	/**
 	 * 数据演示
 	 * <p>
-	 * http://localhost:6010/finance/acct/demo?company_ids=[1]
+	 * http://localhost:6010/finance/acct/demo?company_ids=1,2
 	 * 
 	 * @return IRecord
 	 */

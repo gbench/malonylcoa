@@ -146,7 +146,7 @@ const INIT_DATA = {
 	pid2pcts: [], // 公司产品id->产品明细 
 	counterpart: -1, // 交易对手方
 	counterparts: [], // 对手方
-	position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb为当前的用户的company_id 
+	position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
 }; // INIT_DATA
 
 /**
@@ -316,7 +316,7 @@ const AComp = {
 				case "t_order": {
 					conditions = this.company_id < 0
 						? ""
-						: ` where parta=${this.company_id} or partb=${this.company_id}`;
+						: ` where parta_id=${this.company_id} or partb_id=${this.company_id}`;
 					break;
 				}
 				case "t_payment": {
@@ -529,8 +529,8 @@ const AComp = {
 			const rnd2 = n => (Math.random() * n + 1).toFixed(2);
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
 			const counterpart = this.counterpart;  // 对手方
-			const parta = this.position == LONG ? this.company_id : counterpart;
-			const partb = this.position == SHORT ? this.company_id : counterpart;
+			const parta_id = this.position == LONG ? this.company_id : counterpart;
+			const partb_id = this.position == SHORT ? this.company_id : counterpart;
 			const volume = rnd(10); // 模拟订单产品规模
 			const groups = assoc_by("id", // 依据产品id进行数据分组
 				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
@@ -544,7 +544,7 @@ const AComp = {
 			});
 			const order_bill = { // 订单数据
 				name: "t_order", // 表名
-				lines: [{ parta, partb, details: { items }, creator_id: 1, "time": now }] // 行项目 
+				lines: [{ parta_id, partb_id, details: { items }, creator_id: 1, "time": now }] // 行项目 
 			}; // order
 
 			persist(order_bill).then(e => { this.refresh_tbldata("t_order"); });
@@ -562,7 +562,7 @@ const AComp = {
 				return false;
 			}
 			const order = this.tbldata[this.current.tbldata_index];
-			if (!order || !order.partb || this.company_id != order.partb) { // 只有当前公司id是乙方公司才能进行发货 
+			if (!order || !order.partb_id || this.company_id != order.partb_id) { // 只有当前公司id是乙方公司才能进行发货 
 				return false;
 			}
 			const lines = this.selected_lines.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
