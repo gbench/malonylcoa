@@ -104,6 +104,43 @@ function persist(entity) {
 const LONG = 1; // 长头 
 const SHORT = -1; // 空头
 
+// 初始化数据 
+const INIT_DATA = {
+	component: "-", //  组件名
+	current: { // 当前对象
+		//
+		tbl: "-", // 表名
+		tbl_index: -1, // 数据表行行索引
+		//
+		tbldata_index: -1, // 行数据索引
+		tbldata_selected: [], // 表数据是否被选择
+		//
+		line_index: -1, // 明细行行索引
+		lines_selected: [], // 明细行选择索引集合
+		//
+		warehouse_index: -1, // 表数据是否被选择
+		warehouse_selected: [], // 表数据是否被选择
+		//
+		product_index: -1, // 表数据是否被选择
+		product_selected: [], // 表数据是否被选择
+		//
+		user: { // 用户信息
+			name: "gbench",
+			password: "123456"
+		},
+		//
+		company: null // 当前公司对象,仅当用户登录后才有效
+	},  //  当前对象
+	tables: [], // 数据表
+	tbldata: [], // 表数据
+	lines: [], // 行项目
+	warehouses: [], // 仓库
+	pid2pcts: [], // 公司产品id->产品明细 
+	counterpart: -1, // 交易对手方
+	counterparts: [], // 对手方
+	position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb为当前的用户的company_id 
+}; // INIT_DATA
+
 /**
  * 
  */
@@ -116,41 +153,7 @@ const AComp = {
 	 * @returns 
 	 */
 	data() {
-		return {
-			component: "-", //  组件名
-			current: { // 当前对象
-				//
-				tbl: "-", // 表名
-				tbl_index: -1, // 数据表行行索引
-				//
-				tbldata_index: -1, // 行数据索引
-				tbldata_selected: [], // 表数据是否被选择
-				//
-				line_index: -1, // 明细行行索引
-				lines_selected: [], // 明细行选择索引集合
-				//
-				warehouse_index: -1, // 表数据是否被选择
-				warehouse_selected: [], // 表数据是否被选择
-				//
-				product_index: -1, // 表数据是否被选择
-				product_selected: [], // 表数据是否被选择
-				//
-				user: { // 用户信息
-					name: "gbench",
-					password: "123456"
-				},
-				//
-				company: null // 当前公司对象,仅当用户登录后才有效
-			},  //  当前对象
-			tables: [], // 数据表
-			tbldata: [], // 表数据
-			lines: [], // 行项目
-			warehouses: [], // 仓库
-			pid2pcts: [], // 公司产品id->产品明细 
-			counterpart: -1, // 交易对手方
-			counterparts: [], // 对手方
-			position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb为当前的用户的company_id 
-		};
+		return Object.assign({}, INIT_DATA);
 	},
 
 	/**
@@ -243,7 +246,12 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_logout_click(event) {
-			this.current.company = null;
+			// 数据退出重置
+			const reserved_words = "component,tables".split(","); // 保留数据内容
+			this.current.company = null; // 公司清空
+			Object.keys(INIT_DATA).filter(k => !_.includes(reserved_words, k)).forEach(key => {
+				this.$data[key] = INIT_DATA[key];
+			});
 		},
 
 		/**
