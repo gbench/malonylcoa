@@ -110,6 +110,7 @@ const AComp = {
 				line_index: -1, // 明细行行索引
 				lines_selected: [], // 明细行选择索引集合
 				warehouse_index: [], // 表数据是否被选择
+				warehouse_selected: [], // 表数据是否被选择
 				product_index: [], // 表数据是否被选择
 				product_selected: [], // 表数据是否被选择
 				user: { // 用户信息
@@ -298,7 +299,8 @@ const AComp = {
 		 * @param {*} param 
 		 */
 		on_warehouse_trclick({ line, i, event }) {
-			alert(JSON.stringify(line));
+			this.current.warehouse_index = i;
+			select(this.current.warehouse_selected, i);
 		},
 
 		/**
@@ -347,7 +349,7 @@ const AComp = {
 		 * @param {*} i 
 		 */
 		is_warehouse_selected(i) {
-			return _.includes(this.current.warehouses_selected, i);
+			return _.includes(this.current.warehouse_selected, i);
 		},
 
 		/**
@@ -398,19 +400,23 @@ const AComp = {
 			if (this.company_id < 1) {
 				alert("请登录");
 				return;
-			} else {
-				const order_id = this.tbldata[this.current.tbldata_index].id;
-				const invoice_bill = {
-					bill_type: "invoice",
-					company_id: this.company_id,
-					warehouse_id: -1,
-					order_id: order_id,
-					freight_order_id: -1,
-					details: items.map(e => gets(e, "id,quantity,price")),
-					creator_id: 1
-				};
-				alert(JSON.stringify(invoice_bill));
 			}
+			if (this.warehouses.length < 2 || this.warehouse_index < 0) {
+				alert("请选定仓库");
+			}
+
+			const order_id = this.tbldata[this.current.tbldata_index].id;
+			const invoice_bill = {
+				bill_type: "invoice",
+				company_id: this.company_id,
+				warehouse_id: this.warehouses[this.current.warehouse_index].id,
+				order_id: order_id,
+				freight_order_id: -1,
+				details: items.map(e => gets(e, "id,quantity,price")),
+				creator_id: 1
+			};
+			alert(JSON.stringify(invoice_bill));
+
 		},
 
 		/**
@@ -427,6 +433,14 @@ const AComp = {
 		 */
 		on_payment_btn_click(event) {
 			alert("payment btn");
+		},
+
+		/**
+		 * 
+		 * @param {*} event 
+		 */
+		on_freight_btn_click(event) {
+			alert("freight btn");
 		},
 
 	}
