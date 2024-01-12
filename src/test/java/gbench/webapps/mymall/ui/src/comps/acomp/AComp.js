@@ -109,6 +109,9 @@ const AComp = {
 				tbldata_selected: [], // 表数据是否被选择
 				line_index: -1, // 明细行行索引
 				lines_selected: [], // 明细行选择索引集合
+				warehouse_index: [], // 表数据是否被选择
+				product_index: [], // 表数据是否被选择
+				product_selected: [], // 表数据是否被选择
 				user: { // 用户信息
 					name: "gbench",
 					password: "123456"
@@ -117,7 +120,9 @@ const AComp = {
 			},  //  当前对象
 			tables: [], // 数据表
 			tbldata: [], // 表数据
-			lines: [] // 行项目
+			lines: [], // 行项目
+			warehouses: [], // 仓库
+			products: [] // 产品 
 		};
 	},
 
@@ -201,7 +206,10 @@ const AComp = {
 			this.current.tbl_index = i; // 设置表偏移索引
 			this.current.tbldata_index = -1; // 设置一个非法值
 			this.current.line_index = i; // 设置表偏移索引
+			this.lines = []; // 设置非法值 
+			this.current.tbldata_selected = []; // 设置非法值
 			this.current.lines_selected = []; // 设置非法值
+			this.current.product_selected = []; // 设置非法值
 			const tbl = this.current.tbl = (line["name"]); // 更新当前表
 			let conditions = "";
 
@@ -280,7 +288,17 @@ const AComp = {
 			} else if ("t_company_product" == tbl) {
 				const lines = Object.keys(row.attrs).map(k => { return { key: k, value: row.attrs[k] }; });
 				this.lines = lines;
+			} else if ("t_warehouse" == tbl) {
+				select(this.warehouses, line);
 			}
+		},
+
+		/**
+		 * 数据表的行点击 
+		 * @param {*} param 
+		 */
+		on_warehouse_trclick({ line, i, event }) {
+			alert(JSON.stringify(line));
 		},
 
 		/**
@@ -322,6 +340,14 @@ const AComp = {
 		 */
 		is_line_selected(i) {
 			return _.includes(this.current.lines_selected, i);
+		},
+
+		/**
+		 * 行是否被选中 
+		 * @param {*} i 
+		 */
+		is_warehouse_selected(i) {
+			return _.includes(this.current.warehouses_selected, i);
 		},
 
 		/**
@@ -367,7 +393,24 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_invoice_btn_click(event) {
-			alert("invoice btn");
+			const items = this.current.lines_selected.map(i => this.lines[i])
+				.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
+			if (this.company_id < 1) {
+				alert("请登录");
+				return;
+			} else {
+				const order_id = this.tbldata[this.current.tbldata_index].id;
+				const invoice_bill = {
+					bill_type: "invoice",
+					company_id: this.company_id,
+					warehouse_id: -1,
+					order_id: order_id,
+					freight_order_id: -1,
+					details: items.map(e => gets(e, "id,quantity,price")),
+					creator_id: 1
+				};
+				alert(JSON.stringify(invoice_bill));
+			}
 		},
 
 		/**

@@ -28,9 +28,15 @@
         </div>
       </div>
       <!--行项目-->
-      <div style="width:270px;float:left;margin-left:2px;">
-        <data-table style="width:100%" :data="lines" :tdrender="tbldata_td_render"
-          :trclass="(line,i)=>is_line_selected(i)?'highlight':'tdclass'" @trclick="on_lines_trclick" />
+      <div style="width:370px;float:left;margin-left:2px;">
+        <div>
+          <data-table style="width:100%" :data="lines" :tdrender="tbldata_td_render"
+            :trclass="(line,i)=>is_line_selected(i)?'highlight':'tdclass'" @trclick="on_lines_trclick" />
+        </div>
+        <div>
+          <data-table style="width:100%" :data="warehouses"
+            :trclass="(line,i)=>is_warehouse_selected(i)?'highlight':'tdclass'" @trclick="on_warehouse_trclick" />
+        </div>
       </div>
       <div style="clear:both"></div>
       <div>
