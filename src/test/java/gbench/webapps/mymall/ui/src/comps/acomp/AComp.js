@@ -117,8 +117,8 @@ const INIT_DATA = {
 	component: "-", //  组件名
 	current: { // 当前对象
 		//
-		tbl: "-", // 表名
 		tbl_index: -1, // 数据表行行索引
+		tbls_selected: [],// 选择的表格
 		//
 		tbldata_index: -1, // 行数据索引
 		tbldatas_selected: [], // 表数据是否被选择
@@ -204,11 +204,11 @@ const AComp = {
 		},
 
 		/**
-		 * 
+		 * 当前数据表 
 		 * @returns 
 		 */
 		current_tbl() {
-			return this.current.tbl;
+			return _.defaults(this.tables[this.current.tbl_index], { name: "-" }).name;
 		},
 
 		/**
@@ -358,10 +358,9 @@ const AComp = {
 			this.current.tbl_index = i; // 设置表偏移索引
 			this.reset_selected_lines();
 			this.reset_selected_tbldata();
-			const tbl = this.current.tbl = line["name"]; // 更新当前表
 			let conditions = "";
 
-			switch (tbl) { // 根据表名添加过滤条件
+			switch (this.current_tbl) { // 根据表名添加过滤条件
 				case "t_order": {
 					conditions = this.company_id < 0
 						? ""
@@ -380,7 +379,7 @@ const AComp = {
 			};
 
 			// 读取指定表的数据
-			sqlquery2(`select * from ${tbl} ${conditions}`).then(data => {
+			sqlquery2(`select * from ${this.current_tbl} ${conditions}`).then(data => {
 				this.tbldata = data;
 			});
 
@@ -464,8 +463,7 @@ const AComp = {
 		 */
 		on_tbldata_trclick({ line, i, event }) {
 			if (event) { // 事件对象有效,无效事件对象是刷新请求
-				this.current.line_index = -1;
-				this.current.lines_selected = []; // 设置非法值
+				this.reset_selected_lines();
 				if (select(this.current.tbldatas_selected, i)) {
 					this.current.tbldata_index = i;
 				} else { //  清空当前选的行
@@ -475,7 +473,7 @@ const AComp = {
 				};
 			} // if
 
-			switch (this.current.tbl) { // 表数据的处理
+			switch (this.current_tbl) { // 表数据的处理
 				case "t_order": return this.handle_order({ line, i });
 				case "t_company_product": return this.handle_company_product({ line, i });
 				case "t_warehouse": return this.handle_warehouse({ line, i });
@@ -484,7 +482,7 @@ const AComp = {
 				}
 			} // switch
 
-			console.log("on_tbl_data_trclick 的默认收尾", this.current.tbl);
+			console.log("on_tbl_data_trclick 的默认收尾", this.current_tbl);
 		},
 
 		/**
@@ -604,7 +602,7 @@ const AComp = {
 		 * @returns 
 		 */
 		is_invoice_btn_enabled() {
-			if (this.current.tbl != "t_order") { // 订单试图才能进行发货
+			if (this.current_tbl != "t_order") { // 订单试图才能进行发货
 				return false;
 			}
 			if (this.warehouses.length < 1) { // 至少需要有一个出品仓库
