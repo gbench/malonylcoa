@@ -43,12 +43,20 @@
       <div style="clear:both"></div>
       <div>
         <hr>
-        <button v-if="current.tbl=='t_order'" @click="on_order_btn_click($event)">create order</button> &nbsp;
-        <button v-if="current.tbl=='t_order' && is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">create
-          invoice</button> &nbsp;
-        <button v-if="current.tbl=='t_order'" @click="on_receipt_btn_click($event)">create receipt</button> &nbsp;
-        <button v-if="current.tbl=='t_order'" @click="on_freight_btn_click($event)">create freight</button> &nbsp;
-        <button v-if="current.tbl=='t_order'" @click="on_payment_btn_click($event)">create payment</button> &nbsp;
+        <div v-if="current.tbl=='t_order'">
+          <select v-model="position">
+            <option value="1">LONG</option>
+            <option value="-1">SHORT</option>
+          </select> &nbsp;
+          <select v-model="counterpart">
+            <option v-for="part in counterparts" :value="part.value">{{part.key}}</option>
+          </select>
+          <button @click="on_order_btn_click($event)">create order</button> &nbsp;
+          <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">create invoice</button> &nbsp;
+          <button @click="on_receipt_btn_click($event)">create receipt</button> &nbsp;
+          <button @click="on_freight_btn_click($event)">create freight</button> &nbsp;
+          <button @click="on_payment_btn_click($event)">create payment</button> &nbsp;
+        </div>
       </div>
     </div>
   </div>

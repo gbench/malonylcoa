@@ -99,6 +99,11 @@ function persist(entity) {
 	return http_post("/h5/finance/data/insert", { json: JSON.stringify(entity) });
 }
 
+
+// 订单头寸
+const LONG = 1; // 长头 
+const SHORT = -1; // 空头
+
 /**
  * 
  */
@@ -134,7 +139,10 @@ const AComp = {
 			tbldata: [], // 表数据
 			lines: [], // 行项目
 			warehouses: [], // 仓库
-			products: [] // 产品 
+			products: [], // 产品 
+			counterpart: -1, // 交易对手方
+			counterparts: [], // 对手方
+			position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb为当前的用户的company_id 
 		};
 	},
 
@@ -155,6 +163,7 @@ const AComp = {
 		sqlquery2("show tables").then(data => {
 			this.tables = data.map(e => { return { name: e["TABLE_NAME"] }; });
 		});
+
 	},
 
 	/**
@@ -194,13 +203,20 @@ const AComp = {
 					sqlquery2(sql2).then(data1 => {
 						if (data1.length > 0) {
 							const company = this.current.company = data1[0];
-							const sql3 = `select * from t_company_warehouse where company_id=${company.id}`;
+							const company_id = company.id; // 当前用户的企业id
+							const sql3 = `select * from t_company_warehouse where company_id=${company_id}`;
+							// 加载公司仓库信息	
 							sqlquery2(sql3).then(data2 => {
 								const warehouse_ids = data2.map(e => e["warehouse_id"]);
 								return sqlquery2(`select * from t_warehouse where id in (${warehouse_ids.join(",")})`);
-							}).then(data3 => {
-								this.warehouses = data3; // 加载共公司仓库
-							});
+							}).then(data3 => { // 公司仓库
+								this.warehouses = data3; // 加载公司仓库
+							}); // 公司仓库
+							// 加载公司信息
+							sqlquery2(`select * from t_company where id!=${company_id}`).then(data => {
+								this.counterparts = data.map(e => { return { key: e["name"], value: e["id"] }; });
+								this.counterpart = this.counterparts[0].value; // 选择默认交易对手方
+							}); // 公司信息
 						}// if
 					}); //
 				} else {
@@ -409,13 +425,18 @@ const AComp = {
 			const rnd = n => parseInt((Math.random() * n) + 1);
 			const rnd2 = n => (Math.random() * n + 1).toFixed(2);
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
-			//const flag = Math.random() > 0.5;
-			const flag = false;
-			const order = { // 订单数据
+			const counterpart = this.counterpart;  // 对方公司
+			const parta = this.position == LONG ? this.company_id : counterpart;
+			const partb = this.position == SHORT ? this.company_id : counterpart;
+			if (counterpart < 0) {
+				alert(`非法对手方:${counterpart}`);
+				return;
+			}
+			const order_bill = { // 订单数据
 				name: "t_order",
-				lines: [
-					{
-						parta: flag ? 1 : 2, partb: flag ? 2 : 1,
+				lines: [ // 行项目集合
+					{ // 行项目
+						parta, partb,
 						details: {
 							items: [ // 订单项目
 								{ id: rnd(10), quantity: rnd(10), price: rnd2(5) },
@@ -427,7 +448,7 @@ const AComp = {
 				] // lines
 			}; // order
 
-			persist(order).then(e => { this.refresh_tbldata("t_order"); });
+			persist(order_bill).then(e => { this.refresh_tbldata("t_order"); });
 		},
 
 		/**
