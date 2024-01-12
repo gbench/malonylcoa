@@ -508,7 +508,7 @@ const AComp = {
 			if (this.current.tbl != "t_order") { // 订单试图才能进行发货
 				return false;
 			}
-			if (this.warehouses.length < 2) {
+			if (this.warehouses.length < 1) { // 至少需要有一个出品仓库
 				return false;
 			}
 			const order = this.tbldata[this.current.tbldata_index];
