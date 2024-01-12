@@ -279,25 +279,15 @@ const AComp = {
 		/**
 		 * 可以开发票的项目 
 		 */
-		invoice_availables() {
-			const invoice_ids = this.lines.filter(e => e["bill_type"] == "invoice").map(e => e.id); // 已经开完发票的行项目
-			const uniq_ids = _.uniq(this.lines.filter(e => !_.includes(invoice_ids, e.id)).map(e => e.id)); // 去重
-			const restings = _.keyBy(this.lines.filter(e => _.includes(uniq_ids, e.id)), "id"); // 剩余的id
-			const ids_selected = this.selected_lines.map(e => e.id); // 当前的选择项目的id
-			const entries = _.values(restings).filter(e => _.includes(ids_selected, e.id));
-			return entries;
+		invoice_avail_lines() {
+			return this.avail_lines("invoice");
 		},
 
 		/**
 		 * 可以开入库单的项目 
 		 */
-		receipt_availables() {
-			const invoice_ids = this.lines.filter(e => e["bill_type"] == "receipt").map(e => e.id); // 已经开完发票的行项目
-			const uniq_ids = _.uniq(this.lines.filter(e => !_.includes(invoice_ids, e.id)).map(e => e.id)); // 去重
-			const restings = _.keyBy(this.lines.filter(e => _.includes(uniq_ids, e.id)), "id"); // 剩余的id
-			const ids_selected = this.selected_lines.map(e => e.id); // 当前的选择项目的id
-			const entries = _.values(restings).filter(e => _.includes(ids_selected, e.id));
-			return entries;
+		receipt_avail_lines() {
+			return this.avail_lines("receipt");
 		},
 
 		/**
@@ -347,6 +337,18 @@ const AComp = {
 		reset_selected_warehouses() {
 			this.current.warehouses_selected = [];
 			this.current.warehouse_index = -1;
+		},
+
+		/**
+		 * 可以开发票的项目 
+		 */
+		avail_lines(bill_type) {
+			const issued_ids = this.lines.filter(e => e["bill_type"] == bill_type).map(e => e.id); // 已经开票的行项目id 
+			const unissued_ids = _.uniq(this.lines.filter(e => !_.includes(issued_ids, e.id)).map(e => e.id)); // 尚未开票的行项目id
+			const unissued_lines = _.keyBy(this.lines.filter(e => _.includes(unissued_ids, e.id)), "id"); // 尚未开票的行项目 
+			const selected_ids = this.selected_lines.map(e => e.id); // 当前选择项目的id
+			const lines = _.values(unissued_lines).filter(e => _.includes(selected_ids, e.id)); // 当前选择的尚未开票的行项目
+			return lines;
 		},
 
 		/**
@@ -402,6 +404,7 @@ const AComp = {
 			// 数据退出重置
 			const reserved_words = "component,tables".split(","); // 保留数据内容
 			this.current.company = null; // 公司清空
+			this.current.tbl_index = -1; // 清空选择表
 			Object.keys(INIT_DATA).filter(k => !_.includes(reserved_words, k)).forEach(key => {
 				this.$data[key] = INIT_DATA[key];
 			});
@@ -665,7 +668,7 @@ const AComp = {
 				if (this.warehouses.length < 1) { // 至少需要有一个出品仓库
 					return false;
 				}
-				if (this.invoice_availables.length < 1) {
+				if (this.invoice_avail_lines.length < 1) {
 					return false;
 				}
 				return true;
@@ -685,7 +688,7 @@ const AComp = {
 				if (this.warehouses.length < 1) { // 至少需要有一个出品仓库
 					return false;
 				}
-				if (this.receipt_availables.length < 1) {
+				if (this.receipt_avail_lines.length < 1) {
 					return false;
 				}
 				return true;
@@ -704,7 +707,7 @@ const AComp = {
 			const warehouse_id = _.defaults(this.current_warehouse, this.warehouses[0]).id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const freight_order_id = -1; // 运单id
-			const items = this.invoice_availables.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
+			const items = this.invoice_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
 			const creator_id = -1; //  创建人
 			const invoice_bill = { // 发票数据
 				name: "t_billof_product",
@@ -727,7 +730,7 @@ const AComp = {
 			const warehouse_id = _.defaults(this.current_warehouse, this.warehouses[0]).id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const freight_order_id = -1; // 运单id
-			const items = this.receipt_availables.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
+			const items = this.receipt_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
 			const creator_id = -1; //  创建人
 			const invoice_bill = { // 发票数据
 				name: "t_billof_product",
