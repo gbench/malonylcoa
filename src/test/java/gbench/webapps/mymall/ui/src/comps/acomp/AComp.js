@@ -83,8 +83,10 @@ function select(items, item) {
 	const i = _.findIndex(items, x => item == x);
 	if (i >= 0) {
 		items.splice(i, 1);
+		return false;
 	} else {
 		items.push(item);
+		return true;
 	}
 }
 
@@ -253,10 +255,15 @@ const AComp = {
 		 * @param {*} param 
 		 */
 		on_tbldata_trclick({ line, i, event }) {
-			this.current.tbldata_index = i;
 			this.current.line_index = -1;
 			this.current.lines_selected = []; // 设置非法值
-			select(this.current.tbldata_selected, i);
+			if (select(this.current.tbldata_selected, i)) {
+				this.current.tbldata_index = i;
+			} else { //  清空当前选的行
+				this.current.tbldata_index = -1;
+				this.lines = [];
+				return;
+			};
 
 			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
@@ -450,7 +457,6 @@ const AComp = {
 			};
 
 			persist(invoice_bill).then(e => { this.refresh_tbldata("t_billof_product"); });
-
 		},
 
 		/**
