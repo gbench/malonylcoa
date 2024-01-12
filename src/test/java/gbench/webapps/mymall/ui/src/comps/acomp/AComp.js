@@ -307,7 +307,7 @@ const AComp = {
 						select * from t_user_company where id='${user.id}'
 					) uc left join t_company c on uc.company_id = c.id `;
 					sqlquery2(uc_sql).then(ucdata => {
-						if (ucdata.length > 0) {
+						if (ucdata.length > 0) { // 用户与公司进行关联,默认登录用户的一个公司
 							this.current.company = ucdata[0]; // this.current.company用于指示用户是否登录成功
 							const cw_sql = `select * from t_company_warehouse where company_id=${this.company_id}`;
 							// 加载公司仓库信息	
@@ -329,8 +329,8 @@ const AComp = {
 							).then(cpdata => {
 								this.pid2pcts = assoc_by("id", cpdata); // 公司产品id
 							}); // cpdata
-						}// if
-					}); // ucdata
+						}// if ucdata
+					}); // uc_sql
 				} else {
 					alert("登录失败!");
 				} // usdata
