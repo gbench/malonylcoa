@@ -224,7 +224,7 @@ const AComp = {
 		on_tables_trclick({ line, i, event }) {
 			this.current.tbl_index = i; // 设置表偏移索引
 			this.current.tbldata_index = -1; // 设置一个非法值
-			this.current.line_index = i; // 设置表偏移索引
+			this.current.line_index = -1; // 设置表偏移索引
 			this.lines = []; // 设置非法值 
 			this.current.tbldata_selected = []; // 设置非法值
 			this.current.lines_selected = []; // 设置非法值
@@ -255,15 +255,17 @@ const AComp = {
 		 * @param {*} param 
 		 */
 		on_tbldata_trclick({ line, i, event }) {
-			this.current.line_index = -1;
-			this.current.lines_selected = []; // 设置非法值
-			if (select(this.current.tbldata_selected, i)) {
-				this.current.tbldata_index = i;
-			} else { //  清空当前选的行
-				this.current.tbldata_index = -1;
-				this.lines = [];
-				return;
-			};
+			if (event) { // 事件对象有效,无效事件对象是刷新请求
+				this.current.line_index = -1;
+				this.current.lines_selected = []; // 设置非法值
+				if (select(this.current.tbldata_selected, i)) {
+					this.current.tbldata_index = i;
+				} else { //  清空当前选的行
+					this.current.tbldata_index = -1;
+					this.lines = [];
+					return;
+				};
+			}
 
 			const tbl = this.current.tbl;
 			const row = this.tbldata[i];
@@ -275,7 +277,7 @@ const AComp = {
 
 				// 逐渐展开处理层级
 				if (ids.length > 0) { //  产品数大于0
-					const pmt_sql = `select * from t_payment where id in (${ids.join(",")})`; // 支付集合
+					const pmt_sql = `select * from t_payment where order_id=${order_id} and id in (${ids.join(",")})`; // 支付集合
 					sqlquery2(pmt_sql).then(_lines => { // 一级 
 						const pid2pmts = assoc_by("product_id", _.flatMap(_lines,
 							pmt => pathget(pmt, "details/items").map( // 支付行项目
@@ -355,6 +357,15 @@ const AComp = {
 		},
 
 		/**
+		 * 刷新详情区域中的数据
+		 */
+		refresh_lines() {
+			const i = this.current.tbldata_index;
+			const line = this.tbldata[i];
+			this.on_tbldata_trclick({ line, i }); // 注意这里传入了一个null的event对象
+		},
+
+		/**
 		 * 行是否被选中 
 		 * @param {*} i 
 		 */
@@ -398,7 +409,8 @@ const AComp = {
 			const rnd = n => parseInt((Math.random() * n) + 1);
 			const rnd2 = n => (Math.random() * n + 1).toFixed(2);
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
-			const flag = Math.random() > 0.5;
+			//const flag = Math.random() > 0.5;
+			const flag = false;
 			const order = { // 订单数据
 				name: "t_order",
 				lines: [
@@ -442,7 +454,7 @@ const AComp = {
 		},
 
 		/**
-		 * 
+		 * 发票 
 		 * @param {*} event 
 		 */
 		on_invoice_btn_click(event) {
@@ -465,7 +477,9 @@ const AComp = {
 				}]
 			};
 
-			persist(invoice_bill).then(e => { this.refresh_tbldata("t_billof_product"); });
+			persist(invoice_bill).then(e => { // 刷新订单行项目
+				this.refresh_lines();
+			});
 		},
 
 		/**
