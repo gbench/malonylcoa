@@ -28,7 +28,7 @@
         </div>
       </div>
       <!--行项目-->
-      <div style="width:370px;float:left;margin-left:2px;">
+      <div style="height:335px;width:350px;border:solid 1px red;float:left;margin-left:2px;overflow:auto">
         <div>
           <data-table style="width:100%" :data="lines" :tdrender="tbldata_td_render"
             :trclass="(line,i)=>is_line_selected(i)?'highlight':'tdclass'" @trclick="on_lines_trclick" />
@@ -42,7 +42,8 @@
       <div>
         <hr>
         <button v-if="current.tbl=='t_order'" @click="on_order_btn_click($event)">create order</button> &nbsp;
-        <button v-if="current.tbl=='t_order'" @click="on_invoice_btn_click($event)">create invoice</button> &nbsp;
+        <button v-if="current.tbl=='t_order' && is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">create
+          invoice</button> &nbsp;
         <button v-if="current.tbl=='t_order'" @click="on_receipt_btn_click($event)">create receipt</button> &nbsp;
         <button v-if="current.tbl=='t_order'" @click="on_freight_btn_click($event)">create freight</button> &nbsp;
         <button v-if="current.tbl=='t_order'" @click="on_payment_btn_click($event)">create payment</button> &nbsp;

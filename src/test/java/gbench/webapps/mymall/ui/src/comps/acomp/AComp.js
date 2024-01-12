@@ -189,9 +189,16 @@ const AComp = {
 					const sql2 = `select c.* from (
 						select * from t_user_company where id='${user.id}'
 					) uc left join t_company c on uc.company_id = c.id `;
-					sqlquery2(sql2).then(e1 => {
-						if (e1.length > 0) {
-							this.current.company = e1[0];
+					sqlquery2(sql2).then(data1 => {
+						if (data1.length > 0) {
+							const company = this.current.company = data1[0];
+							const sql3 = `select * from t_company_warehouse where company_id=${company.id}`;
+							sqlquery2(sql3).then(data2 => {
+								const warehouse_ids = data2.map(e => e["warehouse_id"]);
+								return sqlquery2(`select * from t_warehouse where id in (${warehouse_ids.join(",")})`);
+							}).then(data3 => {
+								this.warehouses = data3; // 加载共公司仓库
+							});
 						}// if
 					}); //
 				} else {
@@ -399,24 +406,36 @@ const AComp = {
 		},
 
 		/**
+		 * 发票订单按钮是否开启 
+		 * @returns 
+		 */
+		is_invoice_btn_enabled() {
+			if (this.current.tbl != "t_order") { // 订单试图才能进行发货
+				return false;
+			}
+			const lines = this.current.lines_selected.map(i => this.lines[i])
+				.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
+			if (lines.length < 1 || this.warehouses.length < 2 || this.warehouse_index < 0) {
+				return false;
+			}
+			const order = _.defaults(this.lines[this.current.lines_selected], {});
+			if (this.company_id < 0 && order.partb && this.company_id != order.partb) { // 只有当前公司id是乙方公司才能进行发货 
+				return false;
+			}
+			return true;
+		},
+
+		/**
 		 * 
 		 * @param {*} event 
 		 */
 		on_invoice_btn_click(event) {
-			const items = this.current.lines_selected.map(i => this.lines[i])
+			const lines = this.current.lines_selected.map(i => this.lines[i])
 				.filter(e => !_.includes("invoice,receipt".split(","), e["bill_type"]));
-			if (this.company_id < 1) {
-				alert("请登录");
-				return;
-			}
-			if (this.warehouses.length < 2 || this.warehouse_index < 0) {
-				alert("请选定仓库");
-				return;
-			}
-
 			const order_id = this.tbldata[this.current.tbldata_index].id;
 			const warehouse_id = _.defaults(this.warehouses[this.current.warehouse_index],
-				this.warehouses[0]).id;
+				this.warehouses[0]).id; // 默认仓库id
+			const items = lines.map(e => gets(e, "id,quantity,price"));
 			const invoice_bill = {
 				name: "t_billof_product",
 				lines: [{
@@ -425,7 +444,7 @@ const AComp = {
 					warehouse_id: warehouse_id,
 					order_id: order_id,
 					freight_order_id: -1,
-					details: { items: items.map(e => gets(e, "id,quantity,price")) },
+					details: { items },
 					creator_id: 1
 				}]
 			};
