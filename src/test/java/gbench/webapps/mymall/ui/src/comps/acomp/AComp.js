@@ -89,6 +89,15 @@ function select(items, item) {
 }
 
 /**
+ * 持久化数据 
+ * 
+ * @param entity 实体对象
+ */
+function persist(entity) {
+	return http_post("/h5/finance/data/insert", { json: JSON.stringify(entity) });
+}
+
+/**
  * 
  */
 const AComp = {
@@ -385,9 +394,8 @@ const AComp = {
 					}
 				] // lines
 			}; // order
-			http_post("/h5/finance/data/insert", { json: JSON.stringify(order) }).then(e => {
-				this.refresh_tbldata("t_order");
-			});
+
+			persist(order).then(e => { this.refresh_tbldata("t_order"); });
 		},
 
 		/**
@@ -403,19 +411,26 @@ const AComp = {
 			}
 			if (this.warehouses.length < 2 || this.warehouse_index < 0) {
 				alert("请选定仓库");
+				return;
 			}
 
 			const order_id = this.tbldata[this.current.tbldata_index].id;
+			const warehouse_id = _.defaults(this.warehouses[this.current.warehouse_index],
+				this.warehouses[0]).id;
 			const invoice_bill = {
-				bill_type: "invoice",
-				company_id: this.company_id,
-				warehouse_id: this.warehouses[this.current.warehouse_index].id,
-				order_id: order_id,
-				freight_order_id: -1,
-				details: items.map(e => gets(e, "id,quantity,price")),
-				creator_id: 1
+				name: "t_billof_product",
+				lines: [{
+					bill_type: "invoice",
+					company_id: this.company_id,
+					warehouse_id: warehouse_id,
+					order_id: order_id,
+					freight_order_id: -1,
+					details: { items: items.map(e => gets(e, "id,quantity,price")) },
+					creator_id: 1
+				}]
 			};
-			alert(JSON.stringify(invoice_bill));
+
+			persist(invoice_bill).then(e => { this.refresh_tbldata("t_billof_product"); });
 
 		},
 
