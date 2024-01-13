@@ -234,14 +234,22 @@ const AComp = {
 		 * 可以开发票的项目 
 		 */
 		invoice_avail_lines() {
-			return this.avail_lines("invoice");
+			return this.avail_bill_lines("invoice");
 		},
 
 		/**
 		 * 可以开入库单的项目 
 		 */
 		receipt_avail_lines() {
-			return this.avail_lines("receipt");
+			return this.avail_bill_lines("receipt");
+		},
+
+		/**
+		 * 可以等级或元旦的行项目 
+		 * @returns 
+		 */
+		freight_avail_lines() {
+			return this.selected_lines.filter(e => (o => !o || o == -1)(e["freight_order_id"]));
 		},
 
 		/**
@@ -296,7 +304,7 @@ const AComp = {
 		/**
 		 * 可以开发票的项目 
 		 */
-		avail_lines(bill_type) {
+		avail_bill_lines(bill_type) {
 			const issued_ids = this.lines.filter(e => e["bill_type"] == bill_type).map(e => e.id); // 已经开票的行项目id 
 			const unissued_ids = _.uniq(this.lines.filter(e => !_.includes(issued_ids, e.id)).map(e => e.id)); // 尚未开票的行项目id
 			const unissued_lines = _.keyBy(this.lines.filter(e => _.includes(unissued_ids, e.id)), "id"); // 尚未开票的行项目 
@@ -492,7 +500,7 @@ const AComp = {
 					const id = e.id; // 公司产品id
 					const cp = this.pid2pcts[id]; // 公司产品
 					const name = get(cp, "name", "-"); // 产品名称
-					const qty = get(e, "quantity", 0); // 单据类型 
+					const quantity = get(e, "quantity", 0); // 单据类型 
 					const price = get(e, "price", 0); // 单据类型 
 					const btp = get(e, "bill_type", "-"); // 单据类型 
 					const bid = get(e, "bill_id", 0); // 单据id 
@@ -500,7 +508,7 @@ const AComp = {
 					const pid = get(e, "payment_id", 0); // 支付id 
 					const fid = get(e, "freight_order_id", 0); // 货运id 
 					const wh = get(this.wid2whs[get(e, "warehouse_id", 0)], "name", "-"); // 单据id 
-					return Object.assign({ id, name, price, qty, wh, btp, bid, pid, fid }, e); // 加入产品名称字段
+					return Object.assign({ id, name, quantity, price, wh, btp, bid, pid, fid }, e); // 加入产品名称字段
 				}), e => e.id); // 按照产品id进行排序
 			});
 		},
@@ -690,98 +698,131 @@ const AComp = {
 				const i = _.findIndex(this.tbldata, e => _.isEqual(id, e.id));
 				if (i >= 0) {
 					const line = this.tbldata[i];
-					this.on_tbldata_trclick({ line, i, event:1 });
+					this.on_tbldata_trclick({ line, i, event: 1 });
 				} // if
 			}, 1000); // seTimeout
 		},
 
-	/**
-	 * 发票订单按钮是否开启 
-	 * @returns 
-	 */
-	is_invoice_btn_enabled() {
-		if (this.current_tbl != "t_order" || !this.is_short_position || this.invoice_avail_lines < 1) { // 订单视图才能进行发货
-			return false;
-		} else {
-			return true;
-		}
-	},
+		/**
+		 * 发票订单按钮是否开启 
+		 * @returns 
+		 */
+		is_invoice_btn_enabled() {
+			if (this.current_tbl != "t_order" || !this.is_short_position || this.invoice_avail_lines < 1) { // 订单视图才能进行发货
+				return false;
+			} else {
+				return true;
+			}
+		},
 
-	/**
-	 * 发票订单按钮是否开启 
-	 * @returns 
-	 */
-	is_receipt_btn_enabled() {
-		if (this.current_tbl != "t_order" || !this.is_long_position || this.receipt_avail_lines < 1) { // 订单视图才能进行收货
-			return false;
-		} else {
-			return true;
-		}
-	},
+		/**
+		 * 发票订单按钮是否开启 
+		 * @returns 
+		 */
+		is_receipt_btn_enabled() {
+			if (this.current_tbl != "t_order" || !this.is_long_position || this.receipt_avail_lines < 1) { // 订单视图才能进行收货
+				return false;
+			} else {
+				return true;
+			}
+		},
 
-	/**
-	 * 发票 
-	 * @param {*} event 
-	 */
-	on_invoice_btn_click(event) {
-		const bill_type = "invoice"; // 单据类型
-		const company_id = this.company_id; // 公司id
-		const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
-		const order_id = this.current_tbldata.id; // 当前表数据行
-		const freight_order_id = -1; // 运单id
-		const items = this.invoice_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
-		const creator_id = -1; //  创建人
-		const invoice_bill = { // 发票数据
-			name: "t_billof_product",
-			lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
-		}; // 发票项目
+		/**
+		 * 发票 
+		 * @param {*} event 
+		 */
+		on_invoice_btn_click(event) {
+			const bill_type = "invoice"; // 单据类型
+			const company_id = this.company_id; // 公司id
+			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
+			const order_id = this.current_tbldata.id; // 当前表数据行
+			const freight_order_id = -1; // 运单id
+			const items = this.invoice_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
+			const creator_id = -1; //  创建人
+			const invoice_bill = { // 发票数据
+				name: "t_billof_product",
+				lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+			}; // 发票项目
 
-		persist(invoice_bill).then(e => { // 刷新订单行项目
-			this.reset_selected_lines(); // 重置选择行项目
-			this.refresh_lines(); // 刷新行项目
-		});
-	},
+			persist(invoice_bill).then(e => { // 刷新订单行项目
+				this.reset_selected_lines(); // 重置选择行项目
+				this.refresh_lines(); // 刷新行项目
+			});
+		},
 
-	/**
-	 * 入库单 
-	 * @param {*} event 
-	 */
-	on_receipt_btn_click(event) {
-		const bill_type = "receipt"; // 单据类型
-		const company_id = this.company_id; // 公司id
-		const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
-		const order_id = this.current_tbldata.id; // 当前表数据行
-		const freight_order_id = -1; // 运单id
-		const items = this.receipt_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
-		const creator_id = -1; //  创建人
-		const invoice_bill = { // 发票数据
-			name: "t_billof_product",
-			lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
-		}; // 发票项目
+		/**
+		 * 入库单 
+		 * @param {*} event 
+		 */
+		on_receipt_btn_click(event) {
+			const bill_type = "receipt"; // 单据类型
+			const company_id = this.company_id; // 公司id
+			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
+			const order_id = this.current_tbldata.id; // 当前表数据行
+			const freight_order_id = -1; // 运单id
+			const items = this.receipt_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
+			const creator_id = -1; //  创建人
+			const invoice_bill = { // 发票数据
+				name: "t_billof_product",
+				lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+			}; // 发票项目
 
-		persist(invoice_bill).then(e => { // 刷新订单行项目
-			this.reset_selected_lines(); // 重置选择行项目
-			this.refresh_lines(); // 刷新行项目
-		});
-	},
+			persist(invoice_bill).then(e => { // 刷新订单行项目
+				this.reset_selected_lines(); // 重置选择行项目
+				this.refresh_lines(); // 刷新行项目
+			});
+		},
 
-	/**
-	 * 付款单 
-	 * @param {*} event 
-	 */
-	on_payment_btn_click(event) {
-		alert("payment btn");
-	},
+		/**
+		 * 付款单 
+		 * @param {*} event 
+		 */
+		on_payment_btn_click(event) {
+			alert("payment btn");
+		},
 
-	/**
-	 * 货运单 
-	 * @param {*} event 
-	 */
-	on_freight_btn_click(event) {
-		alert("freight btn");
-	},
+		/**
+		 * 是否开启货运按钮 
+		 * @returns 
+		 */
+		is_freight_btn_enabled() {
+			return this.freight_avail_lines.length > 0;
+		},
 
-}
+		/**
+		 * 货运单 
+		 * @param {*} event 
+		 */
+		on_freight_btn_click(event) {
+			const order = this.current_tbldata;
+			const order_id = order.id;
+			const supplier_id = order.partb_id;
+			const customer_id = order.parta_id;
+			const shipping_from = this.current.default_warehouse_id;
+			const shipping_to = this.current.counterpart.default_warehouse_id;
+			const items = this.freight_avail_lines.map(e => gets(e, "id,quantity,price"));
+			const details = { items };
+			const creator_id = 1;
+			const freight_bill = {
+				name: "t_freight_order",
+				lines: [{ order_id, supplier_id, customer_id, shipping_from, shipping_to, details, creator_id }]
+			};
+
+			// 货运单持久化
+			persist(freight_bill).then(e => { // 刷新订单行项目
+				const freight_order_id = e.data.data.ids[0].id; // 仅仅处理第一个订单
+				const bill_types = "invoice,receipt".split(",");
+				const bill_ids = _.uniq(this.freight_avail_lines.filter(e => _.includes(bill_types, e["bill_type"]))
+					.map(e => e.bill_id)); // 提取单据id
+				if (bill_ids.length > 0) { // 将货运单id写入单据（发票或收货单)
+					const sql = `update t_billof_product set freight_order_id = ${freight_order_id} 
+						where id in (${bill_ids.join(",")})`;
+					sqlexecute(sql).then(data => { this.refresh_lines(); });
+				} // if
+			});
+		},
+
+	}
 
 };
 

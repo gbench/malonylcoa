@@ -115,7 +115,7 @@ const sqlexecute = function (sql) {
                 "component-label": "mymall"
             },
             method: "post",
-            url: "/h5/finance/data/sqlquery",
+            url: "/h5/finance/data/sqlexecute",
             data: { sql: sql },
         }).then(response => {
             handle_response(response, resolve, reject);
