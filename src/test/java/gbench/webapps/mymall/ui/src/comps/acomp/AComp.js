@@ -184,8 +184,9 @@ const INIT_DATA = {
 	tbldata: [], // 表数据
 	lines: [], // 行项目
 	warehouses: [], // 仓库
-	pid2pcts: [], // 公司产品id->产品明细 
-	wid2whs: [], //  仓库id->仓库明细
+	pid2pcts: {}, // 公司产品id->产品明细 
+	wid2whs: {}, //  仓库id->仓库明细
+	cid2cys: {}, // 公司id->公司明细
 	counterpart: -1, // 交易对手方
 	counterparts: [], // 对手方
 	position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
@@ -434,6 +435,7 @@ const AComp = {
 							sqlquery2(`select * from t_company where id!=${this.company_id}`).then(cydata => {
 								this.counterparts = cydata.map(e => { return { key: e["name"], value: e["id"] }; });
 								this.counterpart = this.counterparts[0].value; // 选择默认交易对手方
+								this.cid2cys = assoc_by("id", _.concat([this.current.company], cydata)); // 公司字典
 							}); // 公司信息
 							//公司产品信息
 							sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
@@ -478,13 +480,22 @@ const AComp = {
 			let conditions = ""; // 过滤条件
 			let projections = "*"; // 选择列表
 			let orderby = ""; // 排序字段
+			let post_processor = e => e;
 
 			if (this.company_id > 0) { // 当前公司id有效
 				switch (this.current_tbl) { // 根据表名添加过滤条件
 					case "t_order": { // 产品订单
-						projections = `CASE ${this.company_id} WHEN parta_id then 'LONG' WHEN partb_id THEN 'SHORT' ELSE '-' END AS position,tbl.*`;
+						projections = `
+						CASE ${this.company_id} WHEN parta_id THEN 'LONG' WHEN partb_id THEN 'SHORT' ELSE '-' END AS position
+						,CASE ${this.company_id} WHEN parta_id THEN partb_id WHEN partb_id THEN parta_id ELSE '-' END as counterpart
+						,tbl.*`;
 						conditions = `WHERE parta_id=${this.company_id} OR partb_id=${this.company_id}`;
 						orderby = "order by position,id";
+						post_processor = e => {
+							const cid = e["counterpart"];
+							e["counterpart"] = get(this.cid2cys[cid], "name", cid);
+							return e;
+						};
 						break;
 					}
 					case "t_payment": { // 付款凭证
@@ -504,7 +515,7 @@ const AComp = {
 
 			// 读取指定表的数据
 			const sql = `SELECT ${projections} FROM ${this.current_tbl} tbl ${conditions} ${orderby}`;
-			sqlquery2(sql).then(data => this.tbldata = data);
+			sqlquery2(sql).then(data => this.tbldata = data.map(post_processor));
 
 		},
 
@@ -562,9 +573,9 @@ const AComp = {
 					const price = get(e, "price", 0); // 单据类型 
 					const btp = get(e, "bill_type", "-"); // 单据类型 
 					const bid = get(e, "bill_id", 0); // 单据id 
-					const oid = get(e, "order_id", 0); // 单据id 
-					const pid = get(e, "payment_id", 0); // 单据id 
-					const fid = get(e, "freight_order_id", 0); // 单据id 
+					const oid = get(e, "order_id", 0); // 订单id 
+					const pid = get(e, "payment_id", 0); // 支付id 
+					const fid = get(e, "freight_order_id", 0); // 货运id 
 					const wh = get(this.wid2whs[get(e, "warehouse_id", 0)], "name", "-"); // 单据id 
 					return Object.assign({ id, name, price, qty, wh, btp, bid, pid, fid }, e); // 加入产品名称字段
 				}), e => e.id); // 按照产品id进行排序
