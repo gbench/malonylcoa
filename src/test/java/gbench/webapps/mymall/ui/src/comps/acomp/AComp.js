@@ -654,9 +654,10 @@ const AComp = {
 				t = JSON.stringify(td);
 			} else {
 				t = td;
-			}
-			if (t.length > 10) {
-				return `${t.substring(0, 10)}...`;
+			} // if
+
+			if (t.length > 10) { // 超长省略
+				return `<a title='${t}'>${t.substring(0, 10)}...<a>`;
 			} else {
 				return t;
 			}
