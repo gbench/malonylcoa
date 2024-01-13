@@ -53,6 +53,17 @@ function gets(obj, keys) {
 }
 
 /**
+ * 带有默认属性的键值提取 
+ * @param {*} obj 
+ * @param {*} k 
+ * @param {*} v 
+ * @returns 
+ */
+function get(obj, k, v) {
+	return !obj ? v : !obj[k] ? v : obj[k];
+}
+
+/**
  * 依据键名进行分组
  *  
  * @param {*} key 
@@ -107,7 +118,6 @@ function persist(entity) {
 	return http_post("/h5/finance/data/insert", { json: JSON.stringify(entity) });
 }
 
-
 // 订单头寸
 const LONG = 1; // 多头 
 const SHORT = -1; // 空头
@@ -126,10 +136,10 @@ const INIT_DATA = {
 		line_index: -1, // 明细行行索引
 		lines_selected: [], // 明细行选择索引集合
 		//
-		warehouse_index: -1, // 表数据是否被选择
+		warehouse_index: -1, //仓库行索引
 		warehouses_selected: [], // 表数据是否被选择
 		//
-		product_index: -1, // 表数据是否被选择
+		product_index: -1, // 公司产品行索引
 		products_selected: [], // 表数据是否被选择
 		//
 		user: { // 用户信息
@@ -137,13 +147,16 @@ const INIT_DATA = {
 			password: "123456"
 		},
 		//
-		company: null // 当前公司对象,仅当用户登录后才有效
+		company: null, // 当前公司对象,仅当用户登录后才有效
+		//
+		default_warehouse: -1 // 默认的公司仓库
 	},  //  当前对象
 	tables: [], // 数据表
 	tbldata: [], // 表数据
 	lines: [], // 行项目
 	warehouses: [], // 仓库
 	pid2pcts: [], // 公司产品id->产品明细 
+	wid2whs: [], //  仓库id->仓库明细
 	counterpart: -1, // 交易对手方
 	counterparts: [], // 对手方
 	position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
@@ -375,7 +388,10 @@ const AComp = {
 								const wh_sql = `select * from t_warehouse where id in (${warehouse_ids.join(",")})`;
 								return sqlquery2(wh_sql);
 							}).then(whdata => { // 公司仓库
-								this.warehouses = whdata; // 加载公司仓库
+								if (whdata.length > 0) { // 放库非空 
+									this.warehouses = whdata; // 加载公司仓库
+									this.default_warehouse = whdata[0].id;
+								} // if
 							}); // 公司仓库
 							// 加载公司信息
 							sqlquery2(`select * from t_company where id!=${this.company_id}`).then(cydata => {
@@ -388,6 +404,10 @@ const AComp = {
 							).then(cpdata => {
 								this.pid2pcts = assoc_by("id", cpdata); // 公司产品id
 							}); // cpdata
+							//仓库数据
+							sqlquery2("select * from t_warehouse").then(whdata => {
+								this.wid2whs = assoc_by("id", whdata);
+							});
 						}// if ucdata
 					}); // uc_sql
 				} else {
@@ -493,8 +513,17 @@ const AComp = {
 			}).then(___lines => { // 三级数据行
 				this.lines = _.sortBy(___lines.map(e => { // 翻译产品名称
 					const id = e.id; // 公司产品id
-					const name = _.defaults(this.pid2pcts[id], { name: "-" }).name; // 产品详情
-					return Object.assign({ id, name }, e); // 加入产品名称字段
+					const cp = this.pid2pcts[id]; // 公司产品
+					const name = get(cp, "name", "-"); // 产品名称
+					const qty = get(e, "quantity", 0); // 单据类型 
+					const price = get(e, "price", 0); // 单据类型 
+					const bty = get(e, "bill_type", "-"); // 单据类型 
+					const bid = get(e, "bill_id", 0); // 单据id 
+					const oid = get(e, "order_id", 0); // 单据id 
+					const pid = get(e, "payment_id", 0); // 单据id 
+					const fid = get(e, "freight_order_id", 0); // 单据id 
+					const wh = get(this.wid2whs[get(e, "warehouse_id", 0)], "name", "-"); // 单据id 
+					return Object.assign({ id, name, price, qty, wh, oid, bty, bid, pid, fid }, e); // 加入产品名称字段
 				}), e => e.id); // 按照产品id进行排序
 			});
 		},
