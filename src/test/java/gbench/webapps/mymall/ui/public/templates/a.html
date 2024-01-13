@@ -56,11 +56,11 @@
           <select v-model="counterpart">
             <option v-for="part in counterparts" :value="part.value">{{part.key}}</option>
           </select> &nbsp;
-          <button @click="on_order_btn_click($event)">create order</button> &nbsp;
-          <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">create invoice</button> &nbsp;
-          <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">create receipt</button> &nbsp;
-          <button @click="on_freight_btn_click($event)">create freight</button> &nbsp;
-          <button @click="on_payment_btn_click($event)">create payment</button> &nbsp;
+          <button @click="on_order_btn_click($event)">order</button> &nbsp;
+          <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;
+          <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">receipt</button> &nbsp;
+          <button @click="on_freight_btn_click($event)">freight</button> &nbsp;
+          <button @click="on_payment_btn_click($event)">payment</button> &nbsp;
         </div>
       </div>
     </div>

@@ -755,18 +755,10 @@ const AComp = {
 		 * @returns 
 		 */
 		is_invoice_btn_enabled() {
-			if (this.current_tbl != "t_order") { // 订单试图才能进行发货
+			if (this.current_tbl != "t_order" || !this.is_short_position || this.invoice_avail_lines < 1) { // 订单视图才能进行发货
 				return false;
-			} else if (this.is_short_position) { // 空头位置
-				if (this.warehouses.length < 1) { // 至少需要有一个出品仓库
-					return false;
-				}
-				if (this.invoice_avail_lines.length < 1) {
-					return false;
-				}
+			} else {
 				return true;
-			} else { // 非空头
-				return false;
 			}
 		},
 
@@ -775,18 +767,10 @@ const AComp = {
 		 * @returns 
 		 */
 		is_receipt_btn_enabled() {
-			if (this.current_tbl != "t_order") { // 订单试图才能进行发货
+			if (this.current_tbl != "t_order" || !this.is_long_position || this.receipt_avail_lines < 1) { // 订单视图才能进行收货
 				return false;
-			} else if (this.is_long_position) { // 多头
-				if (this.warehouses.length < 1) { // 至少需要有一个出品仓库
-					return false;
-				}
-				if (this.receipt_avail_lines.length < 1) {
-					return false;
-				}
+			} else {
 				return true;
-			} else { // 非多头位置
-				return false;
 			}
 		},
 
