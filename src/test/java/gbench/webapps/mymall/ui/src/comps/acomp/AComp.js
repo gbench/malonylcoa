@@ -9,8 +9,10 @@ import _ from "lodash";
  * 
  * @param entity 实体对象
  */
-function persist(entity) {
-	return http_post("/h5/finance/data/insert", { json: JSON.stringify(entity) });
+function persist(entity, data_handler) {
+	const _data_handler = !data_handler ? e => e.data.data : data_handler;
+	return http_post("/h5/finance/data/insert", { json: JSON.stringify(entity) })
+		.then(e => { return PS(_data_handler(e)); });
 }
 
 /**
@@ -695,10 +697,10 @@ const AComp = {
 
 		/**
 		 * 刷新订单数据
-		 * @param {*} response 
+		 * @param {*} data 
 		 */
-		refresh_orders(response) {
-			const ids = (o => !o || !Array.isArray(o) ? [] : o)(response.data.data.ids);
+		refresh_orders(data) {
+			const ids = (o => !o || !Array.isArray(o) ? [] : o)(data.ids);
 			if (ids.length < 1) return; // 没有返回订单id则返回
 			this.refresh_tbldata("t_order"); // 刷新数据
 			setTimeout(() => { //  等待数据加载
@@ -848,8 +850,8 @@ const AComp = {
 			};
 
 			// 货运单持久化
-			persist(freight_bill).then(e => { // 刷新订单行项目
-				const freight_order_id = e.data.data.ids[0].id; // 仅仅处理第一个订单
+			persist(freight_bill).then(data => { // 刷新订单行项目
+				const freight_order_id = data.ids[0].id; // 仅仅处理第一个订单
 				const bill_types = "invoice,receipt".split(",");
 				const bill_ids = _.uniq(this.freight_avail_lines.filter(e => _.includes(bill_types, e["bill_type"]))
 					.map(e => e.bill_id)); // 提取单据id
