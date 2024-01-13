@@ -59,14 +59,14 @@ public class DataController {
 	/**
 	 * 清空数据
 	 * <p>
-	 * http://localhost:6010/finance/data/execute?sql=update t_order set
+	 * http://localhost:6010/finance/data/sqlexecute?sql=update t_order set
 	 * creator_id=2 where id=1
 	 * 
 	 * @param sql SQL语句
 	 * @return IRecord
 	 */
-	@RequestMapping("execute")
-	public Mono<IRecord> execute(final @Param String sql) {
+	@RequestMapping("sqlexecute")
+	public Mono<IRecord> sqlexecute(final @Param String sql) {
 		final var data = new ArrayList<IRecord>();
 		jdbcApp.withTransaction(sess -> {
 			data.addAll(sess.sql2execute(sql));
