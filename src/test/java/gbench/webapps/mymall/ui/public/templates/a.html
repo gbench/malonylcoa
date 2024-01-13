@@ -7,7 +7,7 @@
     </span>
     <span v-else>
       <a :href="current.company.website">{{current.company.name}} [ {{current.company.id}} ]</a> &nbsp;
-      <select v-model="default_warehouse">
+      <select v-model="current.default_warehouse">
         <option v-for="wh in warehouses" :value="wh.id">{{wh.name}}</option>
       </select> &nbsp;
       <button @click="on_logout_click($event)">logout</button>

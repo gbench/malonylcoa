@@ -110,6 +110,16 @@ function select(items, item) {
 }
 
 /**
+ * 清空数组 
+ * @param {*} items 
+ */
+function clear(items) {
+	if (Array.isArray(items)) {
+		items.splice(0, items.length);
+	}
+}
+
+/**
  * 持久化数据 
  * 
  * @param entity 实体对象
@@ -390,7 +400,7 @@ const AComp = {
 							}).then(whdata => { // 公司仓库
 								if (whdata.length > 0) { // 放库非空 
 									this.warehouses = whdata; // 加载公司仓库
-									this.default_warehouse = whdata[0].id;
+									this.current.default_warehouse = whdata[0].id;
 								} // if
 							}); // 公司仓库
 							// 加载公司信息
@@ -553,6 +563,7 @@ const AComp = {
 		on_tbldata_trclick({ line, i, event }) {
 			if (event) { // 事件对象有效,无效事件对象是刷新请求
 				this.reset_selected_lines();
+				clear(this.current.tbldatas_selected); // 清空前期选择,若是需要多选则注释掉这一行就可以了
 				if (select(this.current.tbldatas_selected, i)) {
 					this.current.tbldata_index = i;
 				} else { //  清空当前选的行
@@ -733,7 +744,7 @@ const AComp = {
 		on_invoice_btn_click(event) {
 			const bill_type = "invoice"; // 单据类型
 			const company_id = this.company_id; // 公司id
-			const warehouse_id = _.defaults(this.current_warehouse, this.warehouses[0]).id; // 默认仓库id
+			const warehouse_id = this.current.default_warehouse; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const freight_order_id = -1; // 运单id
 			const items = this.invoice_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
@@ -756,7 +767,7 @@ const AComp = {
 		on_receipt_btn_click(event) {
 			const bill_type = "receipt"; // 单据类型
 			const company_id = this.company_id; // 公司id
-			const warehouse_id = _.defaults(this.current_warehouse, this.warehouses[0]).id; // 默认仓库id
+			const warehouse_id = this.current.default_warehouse; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const freight_order_id = -1; // 运单id
 			const items = this.receipt_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
