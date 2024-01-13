@@ -253,6 +253,14 @@ const AComp = {
 		},
 
 		/**
+		 * 可以等级或元旦的行项目 
+		 * @returns 
+		 */
+		pmt_avail_lines() {
+			return this.selected_lines.filter(e => (o => !o || o == -1)(e["payment_id"]));
+		},
+
+		/**
 		 * Getters 数据
 		 */
 		...mapGetters("ACompStore", ["name"]),
@@ -728,6 +736,23 @@ const AComp = {
 		},
 
 		/**
+		 * 是否开启货运按钮 
+		 * @returns 
+		 */
+		is_freight_btn_enabled() {
+			return this.freight_avail_lines.length > 0;
+		},
+
+		/**
+		 * 是否开启货运按钮 
+		 * @returns 
+		 */
+		is_pmt_btn_enabled() {
+			return this.pmt_avail_lines.length > 0;
+		},
+
+
+		/**
 		 * 发票 
 		 * @param {*} event 
 		 */
@@ -778,15 +803,29 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_payment_btn_click(event) {
-			alert("payment btn");
-		},
+			const order = this.current_tbldata;
+			const order_id = order.id;
+			const payer_id = order.parta_id; // 甲方,付款方
+			const payee_id = order.partb_id; // 乙方,收款方
+			const rid2lines = assoc_by("bill_id", this.pmt_avail_lines);
+			const insert_pmts = (receipt_id, items) => { // items
+				const amount = _.sumBy(items, e => e["quantity"] * e["price"]);
+				const details = { items };
+				const creator_id = 1;
+				const payment_bill = {
+					name: "t_payment",
+					lines: [{ order_id, payer_id, payee_id, amount, receipt_id, details, creator_id }]
+				};
 
-		/**
-		 * 是否开启货运按钮 
-		 * @returns 
-		 */
-		is_freight_btn_enabled() {
-			return this.freight_avail_lines.length > 0;
+				// 货运单持久化
+				persist(payment_bill).then(e => { // 刷新订单行项目
+					this.refresh_lines();
+				});
+			};
+			Object.keys(rid2lines).filter(e => e).map(receipt_id => {// 根据receipt_id 进行分组付款
+				const items = aslist(rid2lines[receipt_id]).map(e => gets(e, "id,quantity,price"));
+				insert_pmts(receipt_id, items);
+			});
 		},
 
 		/**
