@@ -40,25 +40,6 @@ public class DataController {
 	/**
 	 * 清空数据
 	 * <p>
-	 * http://localhost:6010/finance/data/clear?json="name":"t_order"
-	 * 
-	 * @param json JSON 数据{name}
-	 * @return IRecord
-	 */
-	@RequestMapping("clear")
-	public Mono<IRecord> clear(final @Param Map<String, Object> json) {
-		jdbcApp.withTransaction(sess -> {
-			final var tbl = REC(json).str("name");
-			final var sql = String.format("truncate table %s", tbl);
-			System.out.println(String.format("sql:[%s],\tjson:%s", sql, json));
-			sess.sql2execute(sql);
-		});
-		return Mono.just(REC("code", 0, "message", "OK"));
-	}
-
-	/**
-	 * 清空数据
-	 * <p>
 	 * http://localhost:6010/finance/data/sqlexecute?sql=update t_order set
 	 * creator_id=2 where id=1
 	 * 
@@ -99,6 +80,25 @@ public class DataController {
 		});
 
 		return Mono.just(REC("code", 0, "data", data));
+	}
+
+	/**
+	 * 清空数据
+	 * <p>
+	 * http://localhost:6010/finance/data/clear?json="name":"t_order"
+	 * 
+	 * @param json JSON 数据{name}
+	 * @return IRecord
+	 */
+	@RequestMapping("clear")
+	public Mono<IRecord> clear(final @Param Map<String, Object> json) {
+		jdbcApp.withTransaction(sess -> {
+			final var tbl = REC(json).str("name");
+			final var sql = String.format("truncate table %s", tbl);
+			System.out.println(String.format("sql:[%s],\tjson:%s", sql, json));
+			sess.sql2execute(sql);
+		});
+		return Mono.just(REC("code", 0, "message", "OK"));
 	}
 
 	@Autowired
