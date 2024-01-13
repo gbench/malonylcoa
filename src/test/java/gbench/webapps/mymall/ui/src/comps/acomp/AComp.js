@@ -572,17 +572,21 @@ const AComp = {
 		 * @param {*} i 
 		 */
 		tbldata_td_render(td, h, line, i) {
-			let t = td;
-			if (_.isObject(td)) { // json 对象格式化
-				t = JSON.stringify(td);
-			} else {
-				t = td;
-			} // if
+			if (td == null) { // 空对象
+				return "-";
+			} else { // 非空对象
+				let t = td;
+				if (_.isObject(td)) { // json 对象格式化
+					t = JSON.stringify(td);
+				} else {
+					t = td;
+				} // if
 
-			if (t.length > 10) { // 超长省略
-				return `<a title='${t}'>${t.substring(0, 10)}...<a>`;
-			} else {
-				return t;
+				if (t.length > 10) { // 超长省略
+					return `<a title='${t}'>${t.substring(0, 10)}...<a>`;
+				} else {
+					return t;
+				}
 			}
 		},
 
