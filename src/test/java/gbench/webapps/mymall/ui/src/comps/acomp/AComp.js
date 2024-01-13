@@ -32,6 +32,26 @@ function position(order, entity_id) {
 	}
 }
 
+/**
+ * 交易者
+ * @param {*} id 公司id
+ * @returns 
+ */
+function trader(id) {
+	return {
+		id,
+		/**
+		 * 公司的信息 
+		 * @returns 
+		 */
+		warehouses(action) {
+			const sql = `select wh.* from (select * from t_company_warehouse where company_id=${id}) cy 
+				left join t_warehouse wh on cy.warehouse_id=wh.id`;
+			return sqlquery2(sql).then(action);
+		}
+	};
+}
+
 // 订单头寸
 const LONG = 1; // 多头 
 const SHORT = -1; // 空头
@@ -40,30 +60,36 @@ const SHORT = -1; // 空头
 const INIT_DATA = {
 	component: "-", //  组件名
 	current: { // 当前对象
-		//
+		// 数据表
 		tbl_index: -1, // 数据表行行索引
 		tbls_selected: [],// 选择的表格
-		//
+		// 表数据
 		tbldata_index: -1, // 行数据索引
 		tbldatas_selected: [], // 表数据是否被选择
-		//
+		// 明细行
 		line_index: -1, // 明细行行索引
 		lines_selected: [], // 明细行选择索引集合
-		//
+		// 仓库
 		warehouse_index: -1, //仓库行索引
 		warehouses_selected: [], // 表数据是否被选择
-		//
+		// 产品 
 		product_index: -1, // 公司产品行索引
 		products_selected: [], // 表数据是否被选择
-		//
+		// 用户
 		user: { // 用户信息
 			name: "gbench",
 			password: "123456"
 		},
-		//
+		// 交易对手方
+		counterpart: { // 对方明细
+			id: -1, // 交易对手
+			default_warehouse_id: -1, // 默认仓库
+			warehouses: []
+		},
+		// 公司对象
 		company: null, // 当前公司对象,仅当用户登录后才有效
-		//
-		default_warehouse: -1 // 默认的公司仓库
+		// 默认的仓库
+		default_warehouse_id: -1 // 默认的公司仓库
 	},  //  当前对象
 	tables: [], // 数据表
 	tbldata: [], // 表数据
@@ -72,9 +98,9 @@ const INIT_DATA = {
 	pid2pcts: {}, // 公司产品id->产品明细 
 	wid2whs: {}, //  仓库id->仓库明细
 	cid2cys: {}, // 公司id->公司明细
-	counterpart: -1, // 交易对手方
-	counterparts: [], // 对手方
-	position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
+	counterpart_id: -1, // 交易对手方id
+	counterparts: [], // 对手方集合
+	order_position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
 }; // INIT_DATA
 
 /**
@@ -311,16 +337,20 @@ const AComp = {
 								const wh_sql = `select * from t_warehouse where id in (${warehouse_ids.join(",")})`;
 								return sqlquery2(wh_sql);
 							}).then(whdata => { // 公司仓库
-								if (whdata.length > 0) { // 放库非空 
+								if (whdata.length > 0) { // 仓库非空 
 									this.warehouses = whdata; // 加载公司仓库
-									this.current.default_warehouse = whdata[0].id;
+									this.current.default_warehouse_id = whdata[0].id;
 								} // if
 							}); // 公司仓库
 							// 加载公司信息
 							sqlquery2(`select * from t_company where id!=${this.company_id}`).then(cydata => {
-								this.counterparts = cydata.map(e => { return { key: e["name"], value: e["id"] }; });
-								this.counterpart = this.counterparts[0].value; // 选择默认交易对手方
+								this.counterparts = cydata;
+								this.counterpart_id = this.counterparts[0].id; // 选择默认交易对手方
 								this.cid2cys = assoc_by("id", _.concat([this.current.company], cydata)); // 公司字典
+								trader(this.counterpart_id).warehouses(whdata => {
+									this.current.counterpart.default_warehouse_id = whdata[0].id;
+									this.current.counterpart.warehouses = whdata;
+								});
 							}); // 公司信息
 							//公司产品信息
 							sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
@@ -613,9 +643,8 @@ const AComp = {
 			const rnd = n => parseInt((Math.random() * n) + 1);
 			const rnd2 = n => (Math.random() * n + 1).toFixed(2);
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
-			const counterpart = this.counterpart;  // 对手方
-			const parta_id = this.position == LONG ? this.company_id : counterpart;
-			const partb_id = this.position == SHORT ? this.company_id : counterpart;
+			const parta_id = this.order_position == LONG ? this.company_id : this.counterpart_id;
+			const partb_id = this.order_position == SHORT ? this.company_id : this.counterpart_id;
 			const volume = rnd(10); // 模拟订单产品规模
 			const groups = assoc_by("id", // 依据产品id进行数据分组
 				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
@@ -666,7 +695,7 @@ const AComp = {
 		on_invoice_btn_click(event) {
 			const bill_type = "invoice"; // 单据类型
 			const company_id = this.company_id; // 公司id
-			const warehouse_id = this.current.default_warehouse; // 默认仓库id
+			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const freight_order_id = -1; // 运单id
 			const items = this.invoice_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
@@ -689,7 +718,7 @@ const AComp = {
 		on_receipt_btn_click(event) {
 			const bill_type = "receipt"; // 单据类型
 			const company_id = this.company_id; // 公司id
-			const warehouse_id = this.current.default_warehouse; // 默认仓库id
+			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const freight_order_id = -1; // 运单id
 			const items = this.receipt_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目

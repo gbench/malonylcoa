@@ -7,7 +7,7 @@
     </span>
     <span v-else>
       <a :href="current.company.website">{{current.company.name}} [ {{current.company.id}} ]</a> &nbsp;
-      <select v-model="current.default_warehouse">
+      <select v-model="current.default_warehouse_id">
         <option v-for="wh in warehouses" :value="wh.id">{{wh.name}}</option>
       </select> &nbsp;
       <button @click="on_logout_click($event)">logout</button>
@@ -48,13 +48,16 @@
         <hr>
         <div v-if="current_tbl=='t_order' && is_logined">
           <!--交易头寸-->
-          <select v-model="position">
+          <select v-model="order_position">
             <option value="1">LONG</option>
             <option value="-1">SHORT</option>
           </select> &nbsp;
           <!--交易对手方-->
-          <select v-model="counterpart">
-            <option v-for="part in counterparts" :value="part.value">{{part.key}}</option>
+          <select v-model="counterpart_id">
+            <option v-for="part in counterparts" :value="part.id">{{part.name}}</option>
+          </select> &nbsp;
+          <select v-model="current.counterpart.default_warehouse_id">
+            <option v-for="wh in current.counterpart.warehouses" :value="wh.id">{{wh.name}}</option>
           </select> &nbsp;
           <button @click="on_order_btn_click($event)">order</button> &nbsp;
           <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;
