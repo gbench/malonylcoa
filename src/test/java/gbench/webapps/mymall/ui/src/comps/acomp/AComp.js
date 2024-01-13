@@ -128,6 +128,25 @@ function persist(entity) {
 	return http_post("/h5/finance/data/insert", { json: JSON.stringify(entity) });
 }
 
+/**
+ * 获取所持有的订单头寸
+ * @param {*} order 
+ */
+function position(order, entity_id) {
+	const parta_id = order.parta_id;
+	const partb_id = order.partb_id;
+
+	if (_.isEqual(entity_id, parta_id) && !_.isEqual(entity_id, partb_id)) {
+		return 1;
+	} else if (!_.isEqual(entity_id, parta_id) && _.isEqual(entity_id, partb_id)) {
+		return -1;
+	} else if (_.isEqual(entity_id, parta_id) && _.isEqual(entity_id, partb_id)) {
+		return 0;
+	} else {
+		return NaN;
+	}
+}
+
 // 订单头寸
 const LONG = 1; // 多头 
 const SHORT = -1; // 空头
@@ -375,6 +394,14 @@ const AComp = {
 		},
 
 		/**
+		 * 获取所持有的订单头寸
+		 * @param {*} order 
+		 */
+		position(order) {
+			return position(order, this.company_id);
+		},
+
+		/**
 		 * 登录 
 		 * @param {*} event 
 		 */
@@ -448,30 +475,36 @@ const AComp = {
 			this.current.tbl_index = i; // 设置表偏移索引
 			this.reset_selected_lines();
 			this.reset_selected_tbldata();
-			let conditions = "";
+			let conditions = ""; // 过滤条件
+			let projections = "*"; // 选择列表
+			let orderby = ""; // 排序字段
 
-			switch (this.current_tbl) { // 根据表名添加过滤条件
-				case "t_order": {
-					conditions = this.company_id < 0
-						? ""
-						: ` where parta_id=${this.company_id} or partb_id=${this.company_id}`;
-					break;
+			if (this.company_id > 0) { // 当前公司id有效
+				switch (this.current_tbl) { // 根据表名添加过滤条件
+					case "t_order": { // 产品订单
+						projections = `CASE ${this.company_id} WHEN parta_id then 'LONG' WHEN partb_id THEN 'SHORT' ELSE '-' END AS position,tbl.*`;
+						conditions = `WHERE parta_id=${this.company_id} OR partb_id=${this.company_id}`;
+						orderby = "order by position,id";
+						break;
+					}
+					case "t_payment": { // 付款凭证
+						conditions = `WHERE payer_id=${this.company_id} OR payee_id=${this.company_id}`;
+						break;
+					}
+					case "t_company_product": { // 公司产品
+						conditions = `WHERE company_id=${this.company_id}`;
+						break;
+					}
+
+					default: {
+						// do nothing
+					}
 				}
-				case "t_payment": {
-					conditions = this.company_id < 0
-						? ""
-						: ` where payer_id=${this.company_id} or payee_id=${this.company_id}`;
-					break;
-				}
-				default: {
-					// do nothing
-				}
-			};
+			}
 
 			// 读取指定表的数据
-			sqlquery2(`select * from ${this.current_tbl} ${conditions}`).then(data => {
-				this.tbldata = data;
-			});
+			const sql = `SELECT ${projections} FROM ${this.current_tbl} tbl ${conditions} ${orderby}`;
+			sqlquery2(sql).then(data => this.tbldata = data);
 
 		},
 
@@ -527,13 +560,13 @@ const AComp = {
 					const name = get(cp, "name", "-"); // 产品名称
 					const qty = get(e, "quantity", 0); // 单据类型 
 					const price = get(e, "price", 0); // 单据类型 
-					const bty = get(e, "bill_type", "-"); // 单据类型 
+					const btp = get(e, "bill_type", "-"); // 单据类型 
 					const bid = get(e, "bill_id", 0); // 单据id 
 					const oid = get(e, "order_id", 0); // 单据id 
 					const pid = get(e, "payment_id", 0); // 单据id 
 					const fid = get(e, "freight_order_id", 0); // 单据id 
 					const wh = get(this.wid2whs[get(e, "warehouse_id", 0)], "name", "-"); // 单据id 
-					return Object.assign({ id, name, price, qty, wh, oid, bty, bid, pid, fid }, e); // 加入产品名称字段
+					return Object.assign({ id, name, price, qty, wh, btp, bid, pid, fid }, e); // 加入产品名称字段
 				}), e => e.id); // 按照产品id进行排序
 			});
 		},
@@ -605,10 +638,16 @@ const AComp = {
 		 * @param {*} i 
 		 */
 		tbldata_td_render(td, h, line, i) {
+			let t = td;
 			if (_.isObject(td)) { // json 对象格式化
-				return JSON.stringify(td);
+				t = JSON.stringify(td);
 			} else {
-				return td;
+				t = td;
+			}
+			if (t.length > 10) {
+				return `${t.substring(0, 10)}...`;
+			} else {
+				return t;
 			}
 		},
 
@@ -617,9 +656,11 @@ const AComp = {
 		 * @param {*} tbl 表名 
 		 */
 		refresh_tbldata(tbl) {
-			sqlquery2(`select * from ${tbl}`).then(data => {
-				this.tbldata = data;
-			});
+			const i = _.findIndex(this.tables, e => _.isEqual(e.name, tbl));
+			if (i >= 0) { // 表名索引有效
+				const line = this.tables[i];
+				this.on_tables_trclick({ line, i }); // 模拟tables点击效果
+			} // if
 		},
 
 		/**
