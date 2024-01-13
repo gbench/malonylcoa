@@ -392,10 +392,11 @@ const AComp = {
 			this.current.tbl_index = i; // 设置表偏移索引
 			this.reset_selected_lines();
 			this.reset_selected_tbldata();
+			clear(this.lines); // 清空数据行
 			let conditions = ""; // 过滤条件
 			let projections = "*"; // 选择列表
 			let orderby = ""; // 排序字段
-			let post_processor = e => e;
+			let data_handler = (data) => this.tbldata = data;
 
 			if (this.company_id > 0) { // 当前公司id有效
 				switch (this.current_tbl) { // 根据表名添加过滤条件
@@ -406,32 +407,39 @@ const AComp = {
 						,tbl.*`;
 						conditions = `WHERE parta_id=${this.company_id} OR partb_id=${this.company_id}`;
 						orderby = "order by position,id";
-						post_processor = e => {
-							const cid = e["counterpart"];
-							e["counterpart"] = get(this.cid2cys[cid], "name", cid);
-							return e;
-						};
+						data_handler = data => {
+							const _data = data.map(e => { // 翻译对手方id
+								const cid = e["counterpart"];
+								e["counterpart"] = get(this.cid2cys[cid], "name", cid);
+								return e;
+							}); // _data
+							this.tbldata = _data;
+							if (_data.length > 0) { // 展开第一行
+								const line = _data[0];
+								const i = this.current_tbldata_index = 0;
+								this.reset_selected_tbldata();
+								this.on_tbldata_trclick({ line, i, event: new Object() }); // 模拟点击事件
+							} // if
+						}; // data_handler
 						break;
-					}
+					} // t_order
 					case "t_payment": { // 付款凭证
 						conditions = `WHERE payer_id=${this.company_id} OR payee_id=${this.company_id}`;
 						break;
-					}
+					} // t_payment
 					case "t_company_product": { // 公司产品
 						conditions = `WHERE company_id=${this.company_id}`;
 						break;
-					}
-
+					} // t_company_product
 					default: {
 						// do nothing
-					}
-				}
-			}
+					} // default
+				} // switch
+			} // if
 
 			// 读取指定表的数据
 			const sql = `SELECT ${projections} FROM ${this.current_tbl} tbl ${conditions} ${orderby}`;
-			sqlquery2(sql).then(data => this.tbldata = data.map(post_processor));
-
+			sqlquery2(sql).then(data_handler); // 数据处理
 		},
 
 		/**
@@ -645,7 +653,7 @@ const AComp = {
 			const now = moment().format("YYYY-MM-DD HH:mm:ss");
 			const parta_id = this.order_position == LONG ? this.company_id : this.counterpart_id;
 			const partb_id = this.order_position == SHORT ? this.company_id : this.counterpart_id;
-			const volume = rnd(10); // 模拟订单产品规模
+			const volume = rnd(5); // 模拟订单产品规模
 			const groups = assoc_by("id", // 依据产品id进行数据分组
 				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
 					return { id: rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量

@@ -18,25 +18,25 @@
     {{component}}
     <div>
       <!--数据表-->
-      <div style="float:left;height:335px;overflow:auto;border:solid 1px red;">
+      <div style="float:left;height:405px;overflow:auto;border:solid 1px red;">
         <data-table :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
           @trclick="on_tables_trclick" />
       </div>
       <div style="float:left;width:699px;overflow:auto;margin-left:2px;">
         <!--表数据-->
-        <div style="height:335px;overflow:auto;border:solid 1px red;">
+        <div style="height:235px;overflow:auto;border:solid 1px red;">
           <data-table style="width:100%" :data="tbldata"
             :trclass="(line,i)=>is_tbldata_selected(i)?current.tbldata_index==i?'highlight2':'highlight':'tdclass'"
             :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
         </div>
-      </div>
-      <!--行项目-->
-      <div style="height:335px;width:350px;border:solid 1px red;float:left;margin-left:2px;overflow:auto">
-        <div>
+        <div style="height:166px;overflow:auto;border:solid 1px red;margin-top:2px;">
           <data-table style="width:100%" :data="lines" :tdrender="tbldata_td_render"
             :trclass="(line,i)=>is_line_selected(i)?current.line_index==i?'highlight2':'highlight':'tdclass'"
             @trclick="on_lines_trclick" />
         </div>
+      </div>
+      <!--行项目-->
+      <div style="height:405px;width:350px;border:solid 1px red;float:left;margin-left:2px;overflow:auto">
         <div>
           <data-table style="width:100%" :data="warehouses"
             :trclass="(line,i)=>is_warehouse_selected(i)?current.warehouse_index==i?'highlight2':'highlight':'tdclass'"
