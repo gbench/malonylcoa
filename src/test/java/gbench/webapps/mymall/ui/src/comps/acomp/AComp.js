@@ -824,8 +824,8 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_payment_btn_click(event) {
-			const order = this.current_tbldata;
-			const order_id = order.id;
+			const order = this.current_tbldata; // 订单对象
+			const order_id = order.id; // 订单id
 			const payer_id = order.parta_id; // 甲方,付款方
 			const payee_id = order.partb_id; // 乙方,收款方
 			const rid2pcts = assoc_by("bill_id", this.pmt_avail_lines); // 单据号->产品
@@ -835,10 +835,10 @@ const AComp = {
 				const details = { items }; // 付款单的产品明细
 				const creator_id = 1; // 创建者
 				const amount = _.sumBy(items, e => e["quantity"] * e["price"]); // 付款金额
-				const payment_bill = {
+				const payment_bill = { // 付款单
 					name: "t_payment",
 					lines: [{ order_id, payer_id, payee_id, amount, receipt_id, details, creator_id }]
-				};
+				}; // 付款单
 				// 货运单持久化
 				persist(payment_bill).then(e => { // 刷新订单行项目
 					const id = e.ids[0].id; // 付款单编号
@@ -865,22 +865,22 @@ const AComp = {
 		 * @param {*} event 
 		 */
 		on_freight_btn_click(event) {
-			const order = this.current_tbldata;
-			const order_id = order.id;
-			const supplier_id = order.partb_id;
-			const customer_id = order.parta_id;
-			const shipping_from = this.current.default_warehouse_id;
-			const shipping_to = this.current.counterpart.default_warehouse_id;
-			const bid2pcts = assoc_by("bill_id", this.freight_avail_lines); // 单据号->产品
+			const order = this.current_tbldata; // 订单数据
+			const order_id = order.id; // 订单号
+			const supplier_id = order.partb_id; // 发货方
+			const customer_id = order.parta_id; // 收货方
+			const shipping_from = this.current.default_warehouse_id; // 发货仓库
+			const shipping_to = this.current.counterpart.default_warehouse_id; // 收货仓库
+			const bid2pcts = assoc_by("bill_id", this.freight_avail_lines); // 单据发票号->产品
 			const bill_ids = Object.keys(bid2pcts); // 提取发货单编号
 			const completed_ids = []; // 已经完成付款的付款单号
 			const insert_freights = (bill_id, items) => { // 根据指定的单据发表号创建对应的发货单
 				const details = { items }; // 发货产品详情
-				const creator_id = 1;
+				const creator_id = 1; // 创建人
 				const freight_bill = { // 货运单
 					name: "t_freight_order",
 					lines: [{ order_id, supplier_id, customer_id, shipping_from, shipping_to, details, creator_id }]
-				};
+				}; // 货运单
 				// 货运单持久化
 				persist(freight_bill).then(data => { // 刷新订单行项目
 					const freight_order_id = data.ids[0].id; // 写入的运单号
@@ -891,7 +891,7 @@ const AComp = {
 					completed_ids.push(freight_order_id);
 					if (completed_ids.length == bill_ids.length) {
 						this.refresh_lines();
-						console.log("完成所有发货数据写入,各个付款单号为", completed_ids);
+						console.log("完成所有发货数据写入,各个发货单号为", completed_ids);
 					} else {
 						console.log("完成发货数据写入[", freight_order_id, "]", items);
 					} // if
@@ -903,7 +903,7 @@ const AComp = {
 				const pcts = bid2pcts[bill_id]; // 提取单据下的产品
 				const items = _.values(_.keyBy(aslist(pcts), e => e.id)).map(e => gets(e, "id,quantity,price"));
 				insert_freights(bill_id, items); // 根据发单填写发货单
-			}); // 
+			}); // bill_ids 
 		},
 
 		/**
