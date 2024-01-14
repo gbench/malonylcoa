@@ -30,9 +30,13 @@
             :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
         </div>
         <div>
-          <select v-if="current_tbl=='t_order'" v-model="btype">
+          <select v-if="current_tbl=='t_order'" v-model="btype" @change="on_btype_change($event)">
             <option v-for="bt in btypes" :value="bt">{{bt}}</option>
           </select> &nbsp;
+          <!--全选和清空-->
+          <button v-if="lines.length>0" @click="()=>current.lines_selected=lines.map((e,i)=>i)">all</button> &nbsp;
+          <button v-if="lines.length>0" @click="()=>current.lines_selected=[]">clear</button> &nbsp;
+          <!--功能按钮-->
           <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;
           <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">receipt</button> &nbsp;
           <button v-if="is_freight_btn_enabled()" @click="on_freight_btn_click($event)">freight</button> &nbsp;
@@ -65,7 +69,7 @@
             <option value="-1">SHORT</option>
           </select> &nbsp;
           <!--交易对手方-->
-          <select v-model="counterpart_id">
+          <select v-model="counterpart_id" @change="on_counterpart_change($event)">
             <option v-for="part in counterparts" :value="part.id">{{part.name}}</option>
           </select> &nbsp;
           <select v-model="current.counterpart.default_warehouse_id">

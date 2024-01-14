@@ -266,12 +266,12 @@ const AComp = {
 		},
 
 		/**
-		 * 
+		 * 表单类型 
 		 * @returns 
 		 */
 		btypes() {
 			const bb = _.uniq(this.lines.map(e => e["bill_type"]));
-			return _.concat(["all"], bb);
+			return _.concat(["all"], bb); // 补充默认的all类型
 		},
 
 		/**
@@ -477,12 +477,8 @@ const AComp = {
 							// 加载公司信息
 							sqlquery2(`select * from t_company where id!=${this.company_id}`).then(cydata => {
 								this.counterparts = cydata;
-								this.counterpart_id = this.counterparts[0].id; // 选择默认交易对手方
+								this.on_counterpart_change(null, this.counterparts[0].id); // 选择并刷新刷新对手方信息
 								this.cid2cys = assoc_by("id", _.concat([this.current.company], cydata)); // 公司字典
-								trader(this.counterpart_id).warehouses(whdata => {
-									this.current.counterpart.default_warehouse_id = whdata[0].id;
-									this.current.counterpart.warehouses = whdata;
-								});
 							}); // 公司信息
 							//公司产品信息
 							sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
@@ -776,7 +772,10 @@ const AComp = {
 			}; // order_bill 订单数据
 
 			// 持久化订单数据
-			persist(order_bill).then(this.refresh_orders); // 订单数据写入并刷新订单列表
+			persist(order_bill).then(data => { //  持久化事后回调
+				this.reset_selected_lines(); // 重置选择行项目
+				this.refresh_orders(data); // 刷新订单
+			}); // 订单数据写入并刷新订单列表
 		}, // on_order_btn_click
 
 		/**
@@ -873,6 +872,7 @@ const AComp = {
 					sqlexecute(sql).then(data => { this.refresh_lines(); });
 					completed_ids.push(freight_order_id);
 					if (completed_ids.length == bill_ids.length) {
+						this.reset_selected_lines(); // 清除当前选择行
 						this.refresh_lines();
 						console.log("完成所有发货数据写入,各个发货单号为", completed_ids);
 					} else {
@@ -919,6 +919,7 @@ const AComp = {
 					} else {
 						console.log("完成付款数据写入[", id, "]", items);
 					} // if
+					this.reset_selected_lines(); // 清除当前选择行
 				});
 			}; // 支付数据写入数据库
 
@@ -927,8 +928,36 @@ const AComp = {
 				const pcts = rid2pcts[receipt_id]; // 提取单据(收款单)下的产品
 				const items = _.values(_.keyBy(aslist(pcts), e => e.id)).map(e => gets(e, "id,quantity,price"));
 				insert_pmts(receipt_id, items); // 根据收款单填写付款单
-			});
+			}); // map
 		}, // on_payment_btn_click
+
+		/**
+		 * 表单类型的变更事件处理
+		 * @param {*} event 
+		 */
+		on_btype_change(event) {
+			this.reset_selected_lines();
+		},
+
+		/**
+		 * 对手方处理
+		 * @param {*} event 事件对象,当为null的时候表名这是自定义刷新用户信息的请求
+		 */
+		on_counterpart_change(event, counterpart_id) {
+			if (counterpart_id) { // 优先接收counterpart_id参数中给的值 
+				this.counterpart_id = counterpart_id;
+			} else if (event && event.target && event.target.value) { // 事件对象上的绑定作为默认值给予确认 
+				this.counterpart_id = event.target.value;
+			} // if
+
+			// 交易者的事件处理
+			trader(this.counterpart_id).warehouses(whdata => {
+				if (whdata.length > 0) { // 对手方的仓库有效
+					this.current.counterpart.default_warehouse_id = whdata[0].id;
+				} //if
+				this.current.counterpart.warehouses = whdata;
+			}); // warehouses
+		},
 
 	} // methods
 
