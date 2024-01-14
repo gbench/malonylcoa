@@ -498,7 +498,7 @@ const AComp = {
 				return;
 			}
 
-			const pmt_sql = `select * from t_payment where order_id=${order_id} and id in (${ids.join(",")})`; // 支付集合
+			const pmt_sql = `select * from t_payment where order_id=${order_id}`; // 支付集合
 			sqlquery2(pmt_sql).then(_lines => { // 一级 
 				const pid2pmts = assoc_by("product_id", _.flatMap(_lines,
 					pmt => pathget(pmt, "details/items").map( // 支付行项目
