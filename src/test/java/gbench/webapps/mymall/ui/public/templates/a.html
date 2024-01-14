@@ -24,13 +24,22 @@
       </div>
       <div style="float:left;width:699px;overflow:auto;margin-left:2px;">
         <!--表数据-->
-        <div style="height:235px;overflow:auto;border:solid 1px red;">
+        <div style="height:213px;overflow:auto;border:solid 1px red;">
           <data-table style="width:100%" :data="tbldata"
             :trclass="(line,i)=>is_tbldata_selected(i)?current.tbldata_index==i?'highlight2':'highlight':'tdclass'"
             :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
         </div>
+        <div>
+          <select v-if="current_tbl=='t_order'" v-model="btype" @change="on_btype_change($event)">
+            <option v-for="bt in btypes" :value="bt">{{bt}}</option>
+          </select> &nbsp;
+          <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;
+          <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">receipt</button> &nbsp;
+          <button v-if="is_freight_btn_enabled()" @click="on_freight_btn_click($event)">freight</button> &nbsp;
+          <button v-if="is_pmt_btn_enabled()" @click="on_payment_btn_click($event)">payment</button> &nbsp;
+        </div>
         <div style="height:166px;overflow:auto;border:solid 1px red;margin-top:2px;">
-          <data-table style="width:100%" :data="lines" :tdrender="tbldata_td_render"
+          <data-table style="width:100%" :data="datalines" :tdrender="tbldata_td_render"
             :trclass="(line,i)=>is_line_selected(i)?current.line_index==i?'highlight2':'highlight':'tdclass'"
             @trclick="on_lines_trclick" />
         </div>
@@ -60,10 +69,6 @@
             <option v-for="wh in current.counterpart.warehouses" :value="wh.id">{{wh.name}}</option>
           </select> &nbsp;
           <button @click="on_order_btn_click($event)">order</button> &nbsp;
-          <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;
-          <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">receipt</button> &nbsp;
-          <button v-if="is_freight_btn_enabled()" @click="on_freight_btn_click($event)">freight</button> &nbsp;
-          <button v-if="is_pmt_btn_enabled()" @click="on_payment_btn_click($event)">payment</button> &nbsp;
         </div>
       </div>
     </div>

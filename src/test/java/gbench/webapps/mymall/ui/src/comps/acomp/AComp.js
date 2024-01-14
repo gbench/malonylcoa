@@ -103,6 +103,7 @@ const INIT_DATA = {
 	counterpart_id: -1, // 交易对手方id
 	counterparts: [], // 对手方集合
 	order_position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
+	btype: "all",// bill_type 单据类型
 }; // INIT_DATA
 
 /**
@@ -156,7 +157,7 @@ const AComp = {
 		 * @returns 
 		 */
 		selected_lines() {
-			return this.current.lines_selected.map(i => this.lines[i]);
+			return this.current.lines_selected.map(i => this.lines[i]).filter(e => e);
 		},
 
 		/**
@@ -259,7 +260,28 @@ const AComp = {
 		 * @returns 
 		 */
 		pmt_avail_lines() {
-			return this.selected_lines.filter(e => (o => !o || o == -1)(e["payment_id"]));
+			return this.selected_lines.filter(e => _.isEqual("receipt", e["bill_type"]) && (o => !o || o == -1)(e["payment_id"]));
+		},
+
+		/**
+		 * 
+		 * @returns 
+		 */
+		btypes() {
+			const bb = _.uniq(this.lines.map(e => e["bill_type"]));
+			return _.concat(["all"], bb);
+		},
+
+		/**
+		 * 数据行 
+		 * @returns 
+		 */
+		datalines() {
+			return this.lines.filter(e => {
+				if (_.isEqual("all", this.btype)) return true;
+				const btype = e["bill_type"];
+				return _.isEqual(btype, this.btype);
+			});
 		},
 
 		/**
@@ -512,13 +534,8 @@ const AComp = {
 					const name = get(cp, "name", "-"); // 产品名称
 					const quantity = get(e, "quantity", 0); // 单据类型 
 					const price = get(e, "price", 0); // 单据类型 
-					const btp = get(e, "bill_type", "-"); // 单据类型 
-					const bid = get(e, "bill_id", 0); // 单据id 
-					const oid = get(e, "order_id", 0); // 订单id 
-					const pid = get(e, "payment_id", 0); // 支付id 
-					const fid = get(e, "freight_order_id", 0); // 货运id 
 					const wh = get(this.wid2whs[get(e, "warehouse_id", 0)], "name", "-"); // 单据id 
-					return Object.assign({ id, name, quantity, price, wh, btp, bid, pid, fid }, e); // 加入产品名称字段
+					return Object.assign({ id, name, quantity, price, wh }, e); // 加入产品名称字段
 				}), e => e.id); // 按照产品id进行排序
 			});
 		},
@@ -548,6 +565,7 @@ const AComp = {
 		on_tbldata_trclick({ line, i, event }) {
 			if (event) { // 事件对象有效,无效事件对象是刷新请求
 				this.reset_selected_lines();
+				this.btype = "all"; // 修改表单类型
 				clear(this.current.tbldatas_selected); // 清空前期选择,若是需要多选则注释掉这一行就可以了
 				if (select(this.current.tbldatas_selected, i)) {
 					this.current.tbldata_index = i;
@@ -753,7 +771,6 @@ const AComp = {
 			return this.pmt_avail_lines.length > 0;
 		},
 
-
 		/**
 		 * 发票 
 		 * @param {*} event 
@@ -824,8 +841,10 @@ const AComp = {
 					this.refresh_lines();
 				});
 			};
-			Object.keys(rid2lines).filter(e => e).map(receipt_id => {// 根据receipt_id 进行分组付款
-				const items = aslist(rid2lines[receipt_id]).map(e => gets(e, "id,quantity,price"));
+			Object.keys(rid2lines).map(receipt_id => {// 根据receipt_id 进行分组付款
+				const items = _.values(_.keyBy(aslist(rid2lines[receipt_id]), e => e.id))
+					.map(e => gets(e, "id,quantity,price"));
+				alert(receipt_id + "------" + JSON.stringify(items));
 				insert_pmts(receipt_id, items);
 			});
 		},
@@ -863,7 +882,15 @@ const AComp = {
 			});
 		},
 
-	}
+		/**
+		 * 
+		 * @param {*} $event 
+		 */
+		on_btype_change($event) {
+
+		},
+
+	} // methods
 
 };
 
