@@ -19,7 +19,7 @@
     <div>
       <!--数据表-->
       <div style="float:left;width:220px;height:405px;overflow:auto;border:solid 1px red;">
-        <data-table  style="width:100%" :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
+        <data-table style="width:100%" :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
           @trclick="on_tables_trclick" />
       </div>
       <div style="float:left;width:679px;overflow:auto;margin-left:2px;">
@@ -30,7 +30,7 @@
             :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
         </div>
         <div>
-          <select v-if="current_tbl=='t_order'" v-model="btype" @change="on_btype_change($event)">
+          <select v-if="current_tbl=='t_order'" v-model="btype">
             <option v-for="bt in btypes" :value="bt">{{bt}}</option>
           </select> &nbsp;
           <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;

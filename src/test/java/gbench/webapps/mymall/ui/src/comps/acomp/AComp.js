@@ -297,6 +297,71 @@ const AComp = {
 	 * 方法属性
 	 */
 	methods: {
+
+		/**
+		 * 行是否被选中 
+		* @param {*} i 
+		*/
+		is_tbldata_selected(i) {
+			return _.includes(this.current.tbldatas_selected, i);
+		},
+
+		/**
+		 * 行是否被选中 
+		 * @param {*} i 
+		 */
+		is_line_selected(i) {
+			return _.includes(this.current.lines_selected, i);
+		},
+
+		/**
+		 * 行是否被选中 
+		 * @param {*} i 
+		 */
+		is_warehouse_selected(i) {
+			return _.includes(this.current.warehouses_selected, i);
+		},
+
+		/**
+		 * 发票订单按钮是否开启 
+		 * @returns 
+		 */
+		is_invoice_btn_enabled() {
+			if (!this.is_short_position || this.invoice_avail_lines < 1) { // 订单视图才能进行发货
+				return false;
+			} else {
+				return true;
+			}
+		},
+
+		/**
+		 * 发票订单按钮是否开启 
+		 * @returns 
+		 */
+		is_receipt_btn_enabled() {
+			if (!this.is_long_position || this.receipt_avail_lines < 1) { // 订单视图才能进行收货
+				return false;
+			} else {
+				return true;
+			}
+		},
+
+		/**
+		 * 是否开启货运按钮 
+		 * @returns 
+		 */
+		is_freight_btn_enabled() {
+			return this.freight_avail_lines.length > 0;
+		},
+
+		/**
+		 * 是否开启货运按钮 
+		 * @returns 
+		 */
+		is_pmt_btn_enabled() {
+			return this.pmt_avail_lines.length > 0;
+		},
+
 		/**
 		 * 行项目 
 		 */
@@ -333,6 +398,27 @@ const AComp = {
 		reset_selected_warehouses() {
 			this.current.warehouses_selected = [];
 			this.current.warehouse_index = -1;
+		},
+
+		/**
+		 * 刷新表数据
+		 * @param {*} tbl 表名 
+		 */
+		refresh_tbldata(tbl) {
+			const i = _.findIndex(this.tables, e => _.isEqual(e.name, tbl));
+			if (i >= 0) { // 表名索引有效
+				const line = this.tables[i];
+				this.on_tables_trclick({ line, i }); // 注意这里传入了一个null的event对象
+			} // if
+		},
+
+		/**
+		 * 刷新详情区域中的数据
+		 */
+		refresh_lines() {
+			const i = this.current.tbldata_index;
+			const line = this.tbldata[i];
+			this.on_tbldata_trclick({ line, i }); // 注意这里传入了一个null的event对象
 		},
 
 		/**
@@ -375,9 +461,13 @@ const AComp = {
 							const cw_sql = `select * from t_company_warehouse where company_id=${this.company_id}`;
 							// 加载公司仓库信息	
 							sqlquery2(cw_sql).then(cwdata => {
-								const warehouse_ids = cwdata.map(e => e["warehouse_id"]);
-								const wh_sql = `select * from t_warehouse where id in (${warehouse_ids.join(",")})`;
-								return sqlquery2(wh_sql);
+								if (cwdata.length > 0) {
+									const warehouse_ids = cwdata.map(e => e["warehouse_id"]);
+									const wh_sql = `select * from t_warehouse where id in (${warehouse_ids.join(",")})`;
+									return sqlquery2(wh_sql);
+								} else {
+									alert(`${name}所在公司${this.current.company.name}没有配有仓库`);
+								} // if
 							}).then(whdata => { // 公司仓库
 								if (whdata.length > 0) { // 仓库非空 
 									this.warehouses = whdata; // 加载公司仓库
@@ -629,51 +719,6 @@ const AComp = {
 		},
 
 		/**
-		 * 刷新表数据
-		 * @param {*} tbl 表名 
-		 */
-		refresh_tbldata(tbl) {
-			const i = _.findIndex(this.tables, e => _.isEqual(e.name, tbl));
-			if (i >= 0) { // 表名索引有效
-				const line = this.tables[i];
-				this.on_tables_trclick({ line, i }); // 注意这里传入了一个null的event对象
-			} // if
-		},
-
-		/**
-		 * 刷新详情区域中的数据
-		 */
-		refresh_lines() {
-			const i = this.current.tbldata_index;
-			const line = this.tbldata[i];
-			this.on_tbldata_trclick({ line, i }); // 注意这里传入了一个null的event对象
-		},
-
-		/**
-		 * 行是否被选中 
-		 * @param {*} i 
-		 */
-		is_tbldata_selected(i) {
-			return _.includes(this.current.tbldatas_selected, i);
-		},
-
-		/**
-		 * 行是否被选中 
-		 * @param {*} i 
-		 */
-		is_line_selected(i) {
-			return _.includes(this.current.lines_selected, i);
-		},
-
-		/**
-		 * 行是否被选中 
-		 * @param {*} i 
-		 */
-		is_warehouse_selected(i) {
-			return _.includes(this.current.warehouses_selected, i);
-		},
-
-		/**
 		 * 明细行项目 
 		 * @param {*} param0 
 		 */
@@ -734,46 +779,6 @@ const AComp = {
 		},
 
 		/**
-		 * 发票订单按钮是否开启 
-		 * @returns 
-		 */
-		is_invoice_btn_enabled() {
-			if (this.current_tbl != "t_order" || !this.is_short_position || this.invoice_avail_lines < 1) { // 订单视图才能进行发货
-				return false;
-			} else {
-				return true;
-			}
-		},
-
-		/**
-		 * 发票订单按钮是否开启 
-		 * @returns 
-		 */
-		is_receipt_btn_enabled() {
-			if (this.current_tbl != "t_order" || !this.is_long_position || this.receipt_avail_lines < 1) { // 订单视图才能进行收货
-				return false;
-			} else {
-				return true;
-			}
-		},
-
-		/**
-		 * 是否开启货运按钮 
-		 * @returns 
-		 */
-		is_freight_btn_enabled() {
-			return this.freight_avail_lines.length > 0;
-		},
-
-		/**
-		 * 是否开启货运按钮 
-		 * @returns 
-		 */
-		is_pmt_btn_enabled() {
-			return this.pmt_avail_lines.length > 0;
-		},
-
-		/**
 		 * 发票 
 		 * @param {*} event 
 		 */
@@ -805,18 +810,25 @@ const AComp = {
 			const company_id = this.company_id; // 公司id
 			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
-			const freight_order_id = -1; // 运单id
-			const items = this.receipt_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
-			const creator_id = -1; //  创建人
-			const invoice_bill = { // 发票数据
-				name: "t_billof_product",
-				lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
-			}; // 发票项目
-
-			persist(invoice_bill).then(e => { // 刷新订单行项目
-				this.reset_selected_lines(); // 重置选择行项目
-				this.refresh_lines(); // 刷新行项目
-			});
+			const lines = this.receipt_avail_lines; // 发票的产品项目
+			const fid2items = assoc_by("freight_order_id", lines, -1); // 根据货运单编号进行分组
+			const insert_receipts = (freight_order_id, items) => { // 录入收货单
+				const creator_id = -1; //  创建人
+				const invoice_bill = { // 发票数据
+					name: "t_billof_product",
+					lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+				}; // 发票项目
+				// 数据持久化
+				persist(invoice_bill).then(e => { // 刷新订单行项目
+					this.reset_selected_lines(); // 重置选择行项目
+					this.refresh_lines(); // 刷新行项目
+				});
+			}; // insert_receipts
+			const freight_order_ids = Object.keys(fid2items); // 根据货运单号按照批次进行收货
+			freight_order_ids.forEach(freight_order_id => {
+				const items = aslist(fid2items[freight_order_ids]).map(e => gets(e, "id,quantity,price"));
+				insert_receipts(freight_order_id, items);
+			}); // forEach
 		},
 
 		/**
@@ -905,15 +917,6 @@ const AComp = {
 				insert_freights(bill_id, items); // 根据发单填写发货单
 			}); // bill_ids 
 		},
-
-		/**
-		 * 
-		 * @param {*} $event 
-		 */
-		on_btype_change($event) {
-
-		},
-
 	} // methods
 
 };

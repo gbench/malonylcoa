@@ -74,25 +74,34 @@ function gets(obj, keys) {
  * @returns 
  */
 function get(obj, k, v) {
-    return !obj ? v : !obj[k] ? v : obj[k];
+    return !obj
+        ? v
+        : (!obj[k]
+            ? v
+            : obj[k]);
 }
 
 /**
  * 依据键名进行分组
+ * 对于一个键k,当只有一个元素v的时候,键值保持原来不变.即k->v
+ * 若是对应多个值,v0,v1则返回一个数组[v0,v1]对应键值,即k->[v0,v1]
+ * 结果返回键值对
  *  
- * @param {*} key 
- * @param {*} lines 
+ * @param {*} keyname 键名用户从lines中的数据行提取分组k=line[keyname]
+ * @param {*} lines 数据行[line]一个又line元素构成的数组 
+ * @param {*} default_value 当line[keyname]属性不存在的时候采用的默认值
+ * @returns 加过返回一个键值对儿对象{k->v,k1:[v0,v1,...]}
  */
-function assoc_by(key, lines) {
-    return lines.reduce((acc, a) => {
-        const value = a[key];
-        const vv = acc[value];
+function assoc_by(keyname, lines, default_value) {
+    return lines.reduce((acc, line) => {
+        const k = get(line, keyname, default_value); // 计算分组k
+        const vv = acc[k]; // 提取键值对一个分组
         if (!vv) { // 第一次添加
-            acc[value] = a;
+            acc[k] = line;
         } else if (Array.isArray(vv)) { // 至少是第三次添加
-            vv.push(value);
+            vv.push(line);
         } else { // 第二次添加
-            acc[value] = [vv, a];
+            acc[k] = [vv, line]; // 把acc[k]转换成键值
         } // if
         return acc;
     }, {});
