@@ -787,19 +787,26 @@ const AComp = {
 			const company_id = this.company_id; // 公司id
 			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
-			const freight_order_id = -1; // 运单id
-			const items = this.invoice_avail_lines.map(e => gets(e, "id,quantity,price")); // 发票的产品项目
-			const creator_id = -1; //  创建人
-			const invoice_bill = { // 发票数据
-				name: "t_billof_product",
-				lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
-			}; // 发票项目
-
-			persist(invoice_bill).then(e => { // 刷新订单行项目
-				this.reset_selected_lines(); // 重置选择行项目
-				this.refresh_lines(); // 刷新行项目
-			});
-		},
+			const lines = this.invoice_avail_lines; // 发票的产品项目
+			const fid2items = assoc_by("freight_order_id", lines, -1); // 根据货运单编号进行分组,没有货运单默认为-1
+			const insert_invoices = (freight_order_id, items) => { // 录入收货单
+				const creator_id = -1; //  创建人
+				const invoice_bill = { // 发票数据
+					name: "t_billof_product",
+					lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+				}; // 发票项目
+				// 发票数据持久化
+				persist(invoice_bill).then(e => { // 刷新订单行项目
+					this.reset_selected_lines(); // 重置选择行项目
+					this.refresh_lines(); // 刷新行项目
+				});
+			}; // insert_invoices
+			const freight_order_ids = Object.keys(fid2items); // 根据货运单号按照批次进行收货
+			freight_order_ids.forEach(freight_order_id => { // 依据货源单号(如果有的话,没有直接写入-1)进行分组写入
+				const items = aslist(fid2items[freight_order_id]).map(e => gets(e, "id,quantity,price"));
+				insert_invoices(freight_order_id, items);
+			}); // forEach		
+		}, // on_invoice_btn_click 
 
 		/**
 		 * 入库单 
@@ -810,8 +817,8 @@ const AComp = {
 			const company_id = this.company_id; // 公司id
 			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
-			const lines = this.receipt_avail_lines; // 发票的产品项目
-			const fid2items = assoc_by("freight_order_id", lines, -1); // 根据货运单编号进行分组
+			const lines = this.receipt_avail_lines; // 收据的产品项目
+			const fid2items = assoc_by("freight_order_id", lines, -1); // 根据货运单编号进行分组,没有货运单默认为-1
 			const insert_receipts = (freight_order_id, items) => { // 录入收货单
 				const creator_id = -1; //  创建人
 				const invoice_bill = { // 发票数据
@@ -826,51 +833,10 @@ const AComp = {
 			}; // insert_receipts
 			const freight_order_ids = Object.keys(fid2items); // 根据货运单号按照批次进行收货
 			freight_order_ids.forEach(freight_order_id => {
-				const items = aslist(fid2items[freight_order_ids]).map(e => gets(e, "id,quantity,price"));
+				const items = aslist(fid2items[freight_order_id]).map(e => gets(e, "id,quantity,price"));
 				insert_receipts(freight_order_id, items);
 			}); // forEach
-		},
-
-		/**
-		 * 付款单 
-		 * @param {*} event 
-		 */
-		on_payment_btn_click(event) {
-			const order = this.current_tbldata; // 订单对象
-			const order_id = order.id; // 订单id
-			const payer_id = order.parta_id; // 甲方,付款方
-			const payee_id = order.partb_id; // 乙方,收款方
-			const rid2pcts = assoc_by("bill_id", this.pmt_avail_lines); // 单据号->产品
-			const receipt_ids = Object.keys(rid2pcts); // 提取单据号
-			const completed_ids = []; // 已经完成付款的付款单号
-			const insert_pmts = (receipt_id, items) => { // items
-				const details = { items }; // 付款单的产品明细
-				const creator_id = 1; // 创建者
-				const amount = _.sumBy(items, e => e["quantity"] * e["price"]); // 付款金额
-				const payment_bill = { // 付款单
-					name: "t_payment",
-					lines: [{ order_id, payer_id, payee_id, amount, receipt_id, details, creator_id }]
-				}; // 付款单
-				// 货运单持久化
-				persist(payment_bill).then(e => { // 刷新订单行项目
-					const id = e.ids[0].id; // 付款单编号
-					completed_ids.push(id);
-					if (completed_ids.length == receipt_ids.length) { // 所有收货数据都已付款完成
-						this.refresh_lines();
-						console.log("完成所有付款数据写入,各个付款单号为", completed_ids);
-					} else {
-						console.log("完成付款数据写入[", id, "]", items);
-					} // if
-				});
-			}; // 支付数据写入数据库
-
-			// 依据单据号进行分批写入
-			receipt_ids.map(receipt_id => {// 根据receipt_id 进行分组付款
-				const pcts = rid2pcts[receipt_id]; // 提取单据(收款单)下的产品
-				const items = _.values(_.keyBy(aslist(pcts), e => e.id)).map(e => gets(e, "id,quantity,price"));
-				insert_pmts(receipt_id, items); // 根据收款单填写付款单
-			});
-		},
+		}, // on_receipt_btn_click
 
 		/**
 		 * 货运单 
@@ -916,7 +882,49 @@ const AComp = {
 				const items = _.values(_.keyBy(aslist(pcts), e => e.id)).map(e => gets(e, "id,quantity,price"));
 				insert_freights(bill_id, items); // 根据发单填写发货单
 			}); // bill_ids 
-		},
+		}, //  on_freight_btn_click
+
+		/**
+		 * 付款单 
+		 * @param {*} event 
+		 */
+		on_payment_btn_click(event) {
+			const order = this.current_tbldata; // 订单对象
+			const order_id = order.id; // 订单id
+			const payer_id = order.parta_id; // 甲方,付款方
+			const payee_id = order.partb_id; // 乙方,收款方
+			const rid2pcts = assoc_by("bill_id", this.pmt_avail_lines); // 单据号->产品
+			const receipt_ids = Object.keys(rid2pcts); // 提取单据号
+			const completed_ids = []; // 已经完成付款的付款单号
+			const insert_pmts = (receipt_id, items) => { // items
+				const details = { items }; // 付款单的产品明细
+				const creator_id = 1; // 创建者
+				const amount = _.sumBy(items, e => e["quantity"] * e["price"]); // 付款金额
+				const payment_bill = { // 付款单
+					name: "t_payment",
+					lines: [{ order_id, payer_id, payee_id, amount, receipt_id, details, creator_id }]
+				}; // 付款单
+				// 货运单持久化
+				persist(payment_bill).then(e => { // 刷新订单行项目
+					const id = e.ids[0].id; // 付款单编号
+					completed_ids.push(id);
+					if (completed_ids.length == receipt_ids.length) { // 所有收货数据都已付款完成
+						this.refresh_lines();
+						console.log("完成所有付款数据写入,各个付款单号为", completed_ids);
+					} else {
+						console.log("完成付款数据写入[", id, "]", items);
+					} // if
+				});
+			}; // 支付数据写入数据库
+
+			// 依据单据号进行分批写入
+			receipt_ids.map(receipt_id => {// 根据receipt_id 进行分组付款
+				const pcts = rid2pcts[receipt_id]; // 提取单据(收款单)下的产品
+				const items = _.values(_.keyBy(aslist(pcts), e => e.id)).map(e => gets(e, "id,quantity,price"));
+				insert_pmts(receipt_id, items); // 根据收款单填写付款单
+			});
+		}, // on_payment_btn_click
+
 	} // methods
 
 };
