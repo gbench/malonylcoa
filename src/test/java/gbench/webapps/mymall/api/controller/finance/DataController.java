@@ -1,8 +1,11 @@
 package gbench.webapps.mymall.api.controller.finance;
 
+import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.jdbc.Jdbcs.bytes2obj;
+import static gbench.util.jdbc.Jdbcs.imports;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.sql.SQL.sql;
+import static java.time.LocalDateTime.now;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -98,7 +101,27 @@ public class DataController {
 			System.out.println(String.format("sql:[%s],\tjson:%s", sql, json));
 			sess.sql2execute(sql);
 		});
-		return Mono.just(REC("code", 0, "message", "OK"));
+		return Mono.just(REC("code", 0, "message", "OK", "time", now()));
+	}
+
+	/**
+	 * 清空数据
+	 * <p>
+	 * <a href=
+	 * "http://localhost:6010/finance/data/reset?datafile=F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx"
+	 * >reset</a>
+	 * 
+	 * @param json JSON 数据{name}
+	 * @return IRecord
+	 */
+	@RequestMapping("reset")
+	public Mono<IRecord> reset(final @Param String datafile) {
+		final var datafileXls = xls(datafile); // 数据-源文件
+		final var tables = datafileXls.sheetS().map(e -> e.getSheetName()).toArray(String[]::new); // 基础数据表
+		jdbcApp.withTransaction(
+				imports(e -> datafileXls.autoDetect(e).collect(gbench.util.jdbc.kvp.DFrame.dfmclc2), tables));
+
+		return Mono.just(REC("code", 0, "message", "OK", "time", now()));
 	}
 
 	@Autowired

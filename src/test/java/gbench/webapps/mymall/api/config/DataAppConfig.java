@@ -75,19 +75,19 @@ public class DataAppConfig {
 	 * @return 财务会计数据库
 	 */
 	@Bean
-	public IMySQL jdbcApp() {
+	public IMySQL jdbcApp(
+			@Value("${gbench.finance.acct.datafile:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx}") String datafile,
+			@Value("${gbench.finance.acct.sqlfile:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql}") String sqlfile) {
 		// 共享静态变量便于测试应用进行本地化修改与测试:建立一个静态块给予重新赋值就可以了
 		final String db = "myacct"; // 数据库名
-		final String acct_datafile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx"; // 数据文件
-		final String acct_sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql"; // sql文件
-		final var datafile = xls(acct_datafile); // 数据-源文件
+		final var datafileXls = xls(datafile); // 数据-源文件
 		final var url = String.format("jdbc:h2:mem:%s;mode=mysql;db_close_delay=-1;database_to_upper=false;", db); // h2连接字符串
 		final var h2_rec = gbench.util.jdbc.kvp.IRecord.REC("url", url, "driver", "org.h2.Driver", "user", "root",
 				"password", "123456"); // h2数据库
-		final var jdbcApp = IJdbcApp.newNsppDBInstance(acct_sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
-		final var tables = datafile.sheetS().map(e -> e.getSheetName()).toArray(String[]::new); // 基础数据表
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
+		final var tables = datafileXls.sheetS().map(e -> e.getSheetName()).toArray(String[]::new); // 基础数据表
 		jdbcApp.withTransaction(
-				imports(e -> datafile.autoDetect(e).collect(gbench.util.jdbc.kvp.DFrame.dfmclc2), tables));
+				imports(e -> datafileXls.autoDetect(e).collect(gbench.util.jdbc.kvp.DFrame.dfmclc2), tables));
 
 		return jdbcApp;
 	}
