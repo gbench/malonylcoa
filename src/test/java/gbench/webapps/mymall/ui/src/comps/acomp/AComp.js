@@ -252,7 +252,8 @@ const AComp = {
 		 * @returns 
 		 */
 		freight_avail_lines() {
-			return this.selected_lines.filter(e => (o => !o || o == -1)(e["freight_order_id"]));
+			return this.selected_lines.filter(e =>
+				_.isEqual("invoice", e["bill_type"]) && (o => !o || o == -1)(e["freight_order_id"]));
 		},
 
 		/**
@@ -831,19 +832,18 @@ const AComp = {
 			const receipt_ids = Object.keys(rid2pcts); // 提取单据号
 			const completed_ids = []; // 已经完成付款的付款单号
 			const insert_pmts = (receipt_id, items) => { // items
-				const amount = _.sumBy(items, e => e["quantity"] * e["price"]);
-				const details = { items };
-				const creator_id = 1;
+				const details = { items }; // 付款单的产品明细
+				const creator_id = 1; // 创建者
+				const amount = _.sumBy(items, e => e["quantity"] * e["price"]); // 付款金额
 				const payment_bill = {
 					name: "t_payment",
 					lines: [{ order_id, payer_id, payee_id, amount, receipt_id, details, creator_id }]
 				};
-
 				// 货运单持久化
 				persist(payment_bill).then(e => { // 刷新订单行项目
 					const id = e.ids[0].id; // 付款单编号
 					completed_ids.push(id);
-					if (completed_ids.length == receipt_ids.length) {
+					if (completed_ids.length == receipt_ids.length) { // 所有收货数据都已付款完成
 						this.refresh_lines();
 						console.log("完成所有付款数据写入,各个付款单号为", completed_ids);
 					} else {
@@ -854,10 +854,9 @@ const AComp = {
 
 			// 依据单据号进行分批写入
 			receipt_ids.map(receipt_id => {// 根据receipt_id 进行分组付款
-				const pcts = rid2pcts[receipt_id]; // 提取单据下的产品
-				const items = _.values(_.keyBy(aslist(pcts), e => e.id))
-					.map(e => gets(e, "id,quantity,price"));
-				insert_pmts(receipt_id, items);
+				const pcts = rid2pcts[receipt_id]; // 提取单据(收款单)下的产品
+				const items = _.values(_.keyBy(aslist(pcts), e => e.id)).map(e => gets(e, "id,quantity,price"));
+				insert_pmts(receipt_id, items); // 根据收款单填写付款单
 			});
 		},
 
@@ -872,26 +871,39 @@ const AComp = {
 			const customer_id = order.parta_id;
 			const shipping_from = this.current.default_warehouse_id;
 			const shipping_to = this.current.counterpart.default_warehouse_id;
-			const items = this.freight_avail_lines.map(e => gets(e, "id,quantity,price"));
-			const details = { items };
-			const creator_id = 1;
-			const freight_bill = {
-				name: "t_freight_order",
-				lines: [{ order_id, supplier_id, customer_id, shipping_from, shipping_to, details, creator_id }]
-			};
-
-			// 货运单持久化
-			persist(freight_bill).then(data => { // 刷新订单行项目
-				const freight_order_id = data.ids[0].id; // 仅仅处理第一个订单
-				const bill_types = "invoice,receipt".split(",");
-				const bill_ids = _.uniq(this.freight_avail_lines.filter(e => _.includes(bill_types, e["bill_type"]))
-					.map(e => e.bill_id)); // 提取单据id
-				if (bill_ids.length > 0) { // 将货运单id写入单据（发票或收货单)
+			const bid2pcts = assoc_by("bill_id", this.freight_avail_lines); // 单据号->产品
+			const bill_ids = Object.keys(bid2pcts); // 提取发货单编号
+			const completed_ids = []; // 已经完成付款的付款单号
+			const insert_freights = (bill_id, items) => { // 根据指定的单据发表号创建对应的发货单
+				const details = { items }; // 发货产品详情
+				const creator_id = 1;
+				const freight_bill = { // 货运单
+					name: "t_freight_order",
+					lines: [{ order_id, supplier_id, customer_id, shipping_from, shipping_to, details, creator_id }]
+				};
+				// 货运单持久化
+				persist(freight_bill).then(data => { // 刷新订单行项目
+					const freight_order_id = data.ids[0].id; // 写入的运单号
+					// 将货运单id写入单据（发票或收货单)
 					const sql = `update t_billof_product set freight_order_id = ${freight_order_id} 
-						where id in (${bill_ids.join(",")})`;
+						where id =${bill_id}`;
 					sqlexecute(sql).then(data => { this.refresh_lines(); });
-				} // if
-			});
+					completed_ids.push(freight_order_id);
+					if (completed_ids.length == bill_ids.length) {
+						this.refresh_lines();
+						console.log("完成所有发货数据写入,各个付款单号为", completed_ids);
+					} else {
+						console.log("完成发货数据写入[", freight_order_id, "]", items);
+					} // if
+				}); // persist
+			}; // insert_freights
+
+			// 依据单据号进行分批写入
+			bill_ids.map(bill_id => {// 根据receipt_id 进行分组付款
+				const pcts = bid2pcts[bill_id]; // 提取单据下的产品
+				const items = _.values(_.keyBy(aslist(pcts), e => e.id)).map(e => gets(e, "id,quantity,price"));
+				insert_freights(bill_id, items); // 根据发单填写发货单
+			}); // 
 		},
 
 		/**
