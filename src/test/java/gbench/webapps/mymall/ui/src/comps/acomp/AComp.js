@@ -469,7 +469,7 @@ const AComp = {
 									alert(`${name}所在公司${this.current.company.name}没有配有仓库`);
 								} // if
 							}).then(whdata => { // 公司仓库
-								if (whdata.length > 0) { // 仓库非空 
+								if (whdata && whdata.length > 0) { // 仓库非空 
 									this.warehouses = whdata; // 加载公司仓库
 									this.current.default_warehouse_id = whdata[0].id;
 								} // if
