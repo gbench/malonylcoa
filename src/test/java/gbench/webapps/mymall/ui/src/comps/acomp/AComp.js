@@ -511,6 +511,7 @@ const AComp = {
 			const reserved_words = "component,tables".split(","); // 保留数据内容
 			this.current.company = null; // 公司清空
 			this.current.tbl_index = -1; // 清空选择表
+			clear(this.current.lines_selected); // 清空当前的行号选择标记缓存
 			Object.keys(INIT_DATA).filter(k => !_.includes(reserved_words, k)).forEach(key => {
 				this.$data[key] = INIT_DATA[key];
 			});
@@ -731,36 +732,6 @@ const AComp = {
 		},
 
 		/**
-		 * 随机创建订单 
-		 * @param {*} event 
-		 */
-		on_order_btn_click(event) {
-			const rnd = n => parseInt((Math.random() * n) + 1);
-			const rnd2 = n => (Math.random() * n + 1).toFixed(2);
-			const now = moment().format("YYYY-MM-DD HH:mm:ss");
-			const parta_id = this.order_position == LONG ? this.company_id : this.counterpart_id;
-			const partb_id = this.order_position == SHORT ? this.company_id : this.counterpart_id;
-			const volume = rnd(5); // 模拟订单产品规模
-			const groups = assoc_by("id", // 依据产品id进行数据分组
-				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
-					return { id: rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量
-				})); // 随机生成订单项目
-			const items = Object.keys(groups).map(id => { // 产品id
-				const values = aslist(groups[id]); // 提取指定id订单产品项目列表
-				const quantity = _.sumBy(values, e => e["quantity"]); // 累计交易数量
-				const item = Object.assign(values[0], { quantity, price: rnd2(100) }); // 累计行项目的数量并补充价格
-				return item; // 返回产品行项目
-			});
-			const order_bill = { // 订单数据
-				name: "t_order", // 表名
-				lines: [{ parta_id, partb_id, details: { items }, creator_id: 1, "time": now }] // 行项目 
-			}; // order
-
-			// 持久化订单数据
-			persist(order_bill).then(this.refresh_orders);
-		},
-
-		/**
 		 * 刷新订单数据
 		 * @param {*} data 
 		 */
@@ -779,7 +750,37 @@ const AComp = {
 		},
 
 		/**
-		 * 发票 
+		 * 随机创建订单 
+		 * @param {*} event 
+		 */
+		on_order_btn_click(event) {
+			const rnd = n => parseInt((Math.random() * n) + 1); // 生成n范围内的整数
+			const rnd2 = n => (Math.random() * n + 1).toFixed(2); // 生成n范围内的浮点数,两位小数
+			const now = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
+			const parta_id = this.order_position == LONG ? this.company_id : this.counterpart_id; // 甲方id
+			const partb_id = this.order_position == SHORT ? this.company_id : this.counterpart_id; // 乙方id
+			const volume = rnd(5); // 模拟订单产品规模
+			const pid2pcts = assoc_by("id", // 依据产品id进行数据分组
+				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
+					return { id: rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量
+				})); // 随机生成订单项目
+			const items = Object.keys(pid2pcts).map(pid => { // 产品id
+				const pcts = aslist(pid2pcts[pid]); // 提取指定id订单产品项目列表
+				const quantity = _.sumBy(pcts, e => e["quantity"]); // 累计交易数量
+				const item = Object.assign(pcts[0], { quantity, price: rnd2(100) }); // 累计行项目的数量并补充价格
+				return item; // 返回产品行项目
+			});
+			const order_bill = { // 订单数据
+				name: "t_order", // 表名
+				lines: [{ parta_id, partb_id, details: { items }, creator_id: 1, "time": now }] // 行项目 
+			}; // order_bill 订单数据
+
+			// 持久化订单数据
+			persist(order_bill).then(this.refresh_orders); // 订单数据写入并刷新订单列表
+		}, // on_order_btn_click
+
+		/**
+		 * 发票又称发货单 
 		 * @param {*} event 
 		 */
 		on_invoice_btn_click(event) {
@@ -802,6 +803,8 @@ const AComp = {
 				});
 			}; // insert_invoices
 			const freight_order_ids = Object.keys(fid2items); // 根据货运单号按照批次进行收货
+
+			// 批次写入发货单
 			freight_order_ids.forEach(freight_order_id => { // 依据货源单号(如果有的话,没有直接写入-1)进行分组写入
 				const items = aslist(fid2items[freight_order_id]).map(e => gets(e, "id,quantity,price"));
 				insert_invoices(freight_order_id, items);
@@ -832,6 +835,8 @@ const AComp = {
 				});
 			}; // insert_receipts
 			const freight_order_ids = Object.keys(fid2items); // 根据货运单号按照批次进行收货
+
+			// 批次写入收货单
 			freight_order_ids.forEach(freight_order_id => {
 				const items = aslist(fid2items[freight_order_id]).map(e => gets(e, "id,quantity,price"));
 				insert_receipts(freight_order_id, items);
@@ -839,7 +844,7 @@ const AComp = {
 		}, // on_receipt_btn_click
 
 		/**
-		 * 货运单 
+		 * 货运单&又称收据 
 		 * @param {*} event 
 		 */
 		on_freight_btn_click(event) {

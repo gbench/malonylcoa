@@ -38,7 +38,7 @@
           <button v-if="is_freight_btn_enabled()" @click="on_freight_btn_click($event)">freight</button> &nbsp;
           <button v-if="is_pmt_btn_enabled()" @click="on_payment_btn_click($event)">payment</button> &nbsp;
           <span style='color:red;font-weight:bold;' v-if="this.current.lines_selected.length>0">[{{
-            this.current.lines_selected.map(i=>`${i}#${lines[i]["id"]}`).join(",")}}]
+            this.current.lines_selected.map(i=>`${i}#${lines&&lines[i]?lines[i]["id"]:"-"}`).join(",")}}]
           </span>
         </div>
         <div style="height:166px;overflow:auto;border:solid 1px red;margin-top:2px;">
