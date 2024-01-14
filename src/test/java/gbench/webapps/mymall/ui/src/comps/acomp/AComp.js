@@ -260,7 +260,8 @@ const AComp = {
 		 * @returns 
 		 */
 		pmt_avail_lines() {
-			return this.selected_lines.filter(e => _.isEqual("receipt", e["bill_type"]) && (o => !o || o == -1)(e["payment_id"]));
+			return this.selected_lines.filter(e =>
+				_.isEqual("receipt", e["bill_type"]) && ((o => !o || o == -1)(e["payment_id"])));
 		},
 
 		/**

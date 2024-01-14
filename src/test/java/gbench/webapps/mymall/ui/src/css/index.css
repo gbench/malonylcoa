@@ -9,8 +9,9 @@ td {
 }
 
 tr:hover {
-    color: black;
-    background-color: lightyellow;
+    color: red;
+    font-weight: bold;
+    /*background-color: lightyellow;*/
     cursor: pointer;
 }
 
@@ -24,7 +25,7 @@ tr:hover {
     color: black;
     background-color: bisque;
     cursor: pointer;
-    font-weight:bold;
+    font-weight: bold;
 }
 
 

@@ -18,11 +18,11 @@
     {{component}}
     <div>
       <!--数据表-->
-      <div style="float:left;height:405px;overflow:auto;border:solid 1px red;">
-        <data-table :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
+      <div style="float:left;width:220px;height:405px;overflow:auto;border:solid 1px red;">
+        <data-table  style="width:100%" :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
           @trclick="on_tables_trclick" />
       </div>
-      <div style="float:left;width:699px;overflow:auto;margin-left:2px;">
+      <div style="float:left;width:679px;overflow:auto;margin-left:2px;">
         <!--表数据-->
         <div style="height:213px;overflow:auto;border:solid 1px red;">
           <data-table style="width:100%" :data="tbldata"
