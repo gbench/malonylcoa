@@ -827,7 +827,9 @@ const AComp = {
 			const order_id = order.id;
 			const payer_id = order.parta_id; // 甲方,付款方
 			const payee_id = order.partb_id; // 乙方,收款方
-			const rid2lines = assoc_by("bill_id", this.pmt_avail_lines);
+			const rid2pcts = assoc_by("bill_id", this.pmt_avail_lines); // 单据号->产品
+			const receipt_ids = Object.keys(rid2pcts); // 提取单据号
+			const completed_ids = []; // 已经完成付款的付款单号
 			const insert_pmts = (receipt_id, items) => { // items
 				const amount = _.sumBy(items, e => e["quantity"] * e["price"]);
 				const details = { items };
@@ -839,13 +841,22 @@ const AComp = {
 
 				// 货运单持久化
 				persist(payment_bill).then(e => { // 刷新订单行项目
-					this.refresh_lines();
+					const id = e.ids[0].id; // 付款单编号
+					completed_ids.push(id);
+					if (completed_ids.length == receipt_ids.length) {
+						this.refresh_lines();
+						console.log("完成所有付款数据写入,各个付款单号为", completed_ids);
+					} else {
+						console.log("完成付款数据写入[", id, "]", items);
+					} // if
 				});
-			};
-			Object.keys(rid2lines).map(receipt_id => {// 根据receipt_id 进行分组付款
-				const items = _.values(_.keyBy(aslist(rid2lines[receipt_id]), e => e.id))
+			}; // 支付数据写入数据库
+
+			// 依据单据号进行分批写入
+			receipt_ids.map(receipt_id => {// 根据receipt_id 进行分组付款
+				const pcts = rid2pcts[receipt_id]; // 提取单据下的产品
+				const items = _.values(_.keyBy(aslist(pcts), e => e.id))
 					.map(e => gets(e, "id,quantity,price"));
-				alert(receipt_id + "------" + JSON.stringify(items));
 				insert_pmts(receipt_id, items);
 			});
 		},
