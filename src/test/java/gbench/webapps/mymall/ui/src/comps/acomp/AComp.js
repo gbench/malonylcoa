@@ -428,6 +428,7 @@ const AComp = {
 			if (i >= 0) { // 表名索引有效
 				const line = this.tables[i];
 				this.on_tables_trclick({ line, i }); // 注意这里传入了一个null的event对象
+				this.refresh_trial_balance(this.company_id); // 试算平衡表
 			} // if
 		},
 
@@ -437,8 +438,8 @@ const AComp = {
 		refresh_lines() {
 			const i = this.current.tbldata_index;
 			const line = this.tbldata[i];
-			this.refresh_trial_balance(this.company_id);
 			this.on_tbldata_trclick({ line, i }); // 注意这里传入了一个null的event对象
+			this.refresh_trial_balance(this.company_id); // 刷新试算平衡表
 		},
 
 		/**
@@ -510,7 +511,7 @@ const AComp = {
 							sqlquery2("select * from t_warehouse").then(whdata => {
 								this.wid2whs = assoc_by("id", whdata);
 							});
-							this.refresh_trial_balance(this.company_id);
+							this.refresh_tbldata("t_order");
 						}// if ucdata
 					}); // uc_sql
 				} else {
@@ -763,8 +764,6 @@ const AComp = {
 					const line = this.tbldata[i];
 					this.on_tbldata_trclick({ line, i, event: 1 });
 				} // if
-				// 刷新试算平衡表
-				this.refresh_trial_balance(this.company_id);
 			}, 1000); // seTimeout
 		},
 
@@ -1011,7 +1010,7 @@ const AComp = {
 			http_post("/h5/finance/data/reset", {
 				datafile: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx"
 			}).then(e => {
-				alert(JSON.stringify(e.data));
+				console.log(JSON.stringify(e.data));
 				this.refresh_tbldata(this.current_tbl);
 			});
 		},

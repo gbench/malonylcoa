@@ -64,9 +64,9 @@
         <div style="height:40%;border:solid 1px red;overflow: auto;">
           <data-table style="width:100%" :data="accts"></data-table>
         </div>
-        <input style="width:98%;margin:2px;border:none" v-model="pvtkeys" />
+        <input v-if="is_logined" style="width:98%;margin:2px;border:none" v-model="pvtkeys" />
         <div style="height:52.7%;border:solid 1px red;overflow: auto;">
-          <div id="tree" style="font-size:10px;"></div>
+          <div v-if="is_logined" id="tree" style="font-size:10px;"></div>
         </div>
       </div>
       <div style="clear:both"></div>
