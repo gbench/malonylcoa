@@ -2,7 +2,10 @@ import { mapGetters, mapState } from "vuex";
 import { PS, http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
 import { is_valid_url, image_url, alias, pathget, gets, get, assoc_by, aslist, select, clear } from "../../gbench/util/common";
 import moment from "moment";
+import $ from "jquery";
+import ztree from "ztree";
 import _ from "lodash";
+import "../../css/acomp.css";
 
 /**
  * 持久化数据 
@@ -104,6 +107,8 @@ const INIT_DATA = {
 	counterparts: [], // 对手方集合
 	order_position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
 	btype: "all",// bill_type 单据类型
+	keys: "ledger_id,name,warehouse,product,drcr", // pvt 透视表 
+	accts: [], // 会计分录 
 }; // INIT_DATA
 
 /**
@@ -418,6 +423,7 @@ const AComp = {
 		refresh_lines() {
 			const i = this.current.tbldata_index;
 			const line = this.tbldata[i];
+			this.refresh_trial_balance(this.company_id);
 			this.on_tbldata_trclick({ line, i }); // 注意这里传入了一个null的event对象
 		},
 
@@ -490,6 +496,7 @@ const AComp = {
 							sqlquery2("select * from t_warehouse").then(whdata => {
 								this.wid2whs = assoc_by("id", whdata);
 							});
+							this.refresh_trial_balance(this.company_id);
 						}// if ucdata
 					}); // uc_sql
 				} else {
@@ -742,6 +749,8 @@ const AComp = {
 					const line = this.tbldata[i];
 					this.on_tbldata_trclick({ line, i, event: 1 });
 				} // if
+				// 刷新试算平衡表
+				this.refresh_trial_balance(this.company_id);
 			}, 1000); // seTimeout
 		},
 
@@ -958,6 +967,58 @@ const AComp = {
 				this.current.counterpart.warehouses = whdata;
 			}); // warehouses
 		},
+
+		/**
+		 * 刷新试算平衡表 
+		 */
+		refresh_trial_balance(company_id) {
+			http_post("/h5/finance/acct/entries", { company_ids: company_id })
+				.then(e => {
+					const data = e.data.data;
+					const trans = p => {
+						const pct = this.pid2pcts[p.product_id];
+						return { name: `${p.name}` };
+					};
+					const lines = data.map(e => Object.assign({}, gets(e, "drcr,amount"), trans(e)));
+					const objs = _.groupBy(lines, line => line.name);
+					const entries = Object.keys(objs).map(k => {
+						const value = _.sumBy(objs[k], v => v.drcr * v.amount).toFixed(2);
+						return { "key": k, "value": value };
+					});
+					this.accts = entries;
+					this.build_tree();
+				});
+		},
+
+		/**
+		 * 节点点击 
+		 * @param {*} node 
+		 */
+		on_treenode_click(node) {
+			alert(JSON.stringify(node));
+		},
+
+		/**
+		 *  创建树形结构 
+		 */
+		build_tree() {
+			http_post("/h5/finance/acct/trial_balance", {
+				company_ids: this.company_id,
+				keys: this.keys
+			}).then(e => {
+				const data = e.data.data;
+				const rootdata = JSON.parse(data);
+				const tree = document.querySelector("#tree"); // 树形控件
+				this.$nextTick(p => { // z_tree 初始化
+					const $container = $(tree);
+					const setting = { // 树形节点的设置
+						callback: { onClick: this.on_treenode_click } // 树形节点操作
+					}; // setting
+					const $ztree = $.fn.zTree.init($container, setting, rootdata);
+					$ztree.expandAll(true);
+				}); // nextTick
+			});
+		}
 
 	} // methods
 

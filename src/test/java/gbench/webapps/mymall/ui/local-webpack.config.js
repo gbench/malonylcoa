@@ -45,7 +45,7 @@ module.exports = {
 			test: /\.css$/,
 			exclude: /node_modules/,
 			use: ["style-loader", "css-loader"]
-		}]
+		}],
 	},
 
 	/**
@@ -61,7 +61,12 @@ module.exports = {
 			scriptLoading: "blocking",
 			favicon: path.resolve(__dirname, "src/images/favicon.png"),
 			template: path.resolve(__dirname, "src/html/index.html")
-		})
+		}),
+		new webpack.ProvidePlugin({
+			$: "jquery",
+			jQuery: "jquery",
+			"window.jQuery": "jquery"
+		}),
 	],
 
 	/**
