@@ -1016,11 +1016,14 @@ const AComp = {
 		},
 
 		/**
-		 * 节点点击 
-		 * @param {*} node 
+		 * 树形节点击事件 
+		 * @param {*} event 
+		 * @param {*} treeId 
+		 * @param {*} treeNode 
+		 * @param {*} clickFlag 
 		 */
-		on_treenode_click(node) {
-			alert(JSON.stringify(node));
+		on_treenode_click(event, treeId, treeNode, clickFlag) {
+			alert(JSON.stringify(treeNode));
 		},
 
 		/**

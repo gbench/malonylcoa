@@ -3,6 +3,7 @@ package gbench.webapps.mymall.api.controller.finance;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
+import static gbench.util.jdbc.kvp.Json.objM;
 import static java.time.LocalDateTime.now;
 
 import java.util.HashMap;
@@ -18,12 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 import gbench.webapps.mymall.api.config.param.Param;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.util.jdbc.kvp.Json;
 import gbench.webapps.mymall.api.model.finance.acct.FinAcct;
 import gbench.webapps.mymall.api.model.finance.acct.FinAcctBuilder;
 import gbench.util.jdbc.IMySQL;
 import reactor.core.publisher.Mono;
 
+/**
+ * AcctController 会计核算
+ */
 @RestController
 @RequestMapping("finance/acct")
 public class AcctController {
@@ -87,7 +90,7 @@ public class AcctController {
 				(sb, node) -> "]}"); // 生成json
 		final var root = new HashMap<Object, Object>(); // 解析json生成根节点
 		try {
-			root.putAll(Json.objM.readValue(json, Map.class)); // 保存解析数据
+			root.putAll(objM.readValue(json, Map.class)); // 保存解析数据
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
