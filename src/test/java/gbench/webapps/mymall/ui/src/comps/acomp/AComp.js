@@ -1031,12 +1031,12 @@ const AComp = {
 				company_ids: this.company_id,
 				keys: this.pvtkeys
 			}).then(e => {
-				const data = e.data.data;
-				const rootdata = JSON.parse(data);
-				const tree = document.querySelector("#tree"); // 树形控件
+				const rootdata = e.data.data;
+				const tree = document.querySelector("#ztree"); // 树形控件
 				this.$nextTick(p => { // z_tree 初始化
 					const $container = $(tree);
 					const setting = { // 树形节点的设置
+						view: { showLine: true },
 						callback: { onClick: this.on_treenode_click } // 树形节点操作
 					}; // setting
 					const $ztree = $.fn.zTree.init($container, setting, rootdata);
