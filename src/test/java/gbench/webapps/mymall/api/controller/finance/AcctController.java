@@ -52,6 +52,7 @@ public class AcctController {
 	public Mono<IRecord> entries(final @Param Integer[] company_ids) {
 		final var fa = fabuilder.build("policy0001"); // 创建会计类型
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 })).forEach(executor_of(fa)); // 模拟各个公司的运行
+
 		return Mono.just(REC("code", "0", "data", fa.getEntrieS().toList()));
 	}
 
@@ -69,8 +70,20 @@ public class AcctController {
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 })).forEach(executor_of(fa)); // 模拟各个公司的运行
 		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,product,drcr").split(","); // 透视表键值列表
 		final var json = fa.trialBalance(_keys).json( // 生成josn
-				(sb, node) -> gbench.util.lisp.IRecord.FT("{\"name\":\"$0 --> $1\", \"value\":\"$1\", \"children\":[", //
-						node.getName(), node.attrval()), //
+				(sb, node) -> {
+					final var d = node.attrvalOpt().orElse(0d);
+					final String key = node.attr("key"); // 透视表索引路径
+					final var name = node.getName();
+					final var _name = switch (key) { // name 翻译
+					case "drcr" -> switch (name) { // drcr 借贷标记 替换
+					case "1" -> "DR";
+					case "-1" -> "CR";
+					default -> "";
+					};
+					default -> name;
+					};
+					return String.format("{\"name\":\"%s : %.2f\", \"value\":%f, \"children\":[", _name, d, d);
+				}, //
 				(sb, node) -> "]}"); // 生成json
 		final var root = new HashMap<Object, Object>(); // 解析json生成根节点
 		try {
