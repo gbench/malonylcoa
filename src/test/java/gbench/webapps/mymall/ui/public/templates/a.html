@@ -10,7 +10,8 @@
       <select v-model="current.default_warehouse_id">
         <option v-for="wh in warehouses" :value="wh.id">{{wh.name}}</option>
       </select> &nbsp;
-      <button @click="on_logout_click($event)">logout</button>
+      <button @click="on_logout_click($event)">logout</button> &nbsp;
+      <button @click="on_reset_click">reset</button>
     </span>
   </div>
   <hr />
@@ -63,8 +64,8 @@
         <div style="height:40%;border:solid 1px red;overflow: auto;">
           <data-table style="width:100%" :data="accts"></data-table>
         </div>
-        <input style="width:100%;margin:2px;" v-model="keys" />
-        <div style="height:50%;border:solid 1px red;overflow: auto;">
+        <input style="width:98%;margin:2px;border:none" v-model="pvtkeys" />
+        <div style="height:52.7%;border:solid 1px red;overflow: auto;">
           <div id="tree" style="font-size:10px;"></div>
         </div>
       </div>

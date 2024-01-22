@@ -107,7 +107,7 @@ const INIT_DATA = {
 	counterparts: [], // 对手方集合
 	order_position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
 	btype: "all",// bill_type 单据类型
-	keys: "ledger_id,name,warehouse,product,drcr", // pvt 透视表 
+	pvtkeys: "ledger_id,name,warehouse,product,drcr", // pvt 透视表 
 	accts: [], // 会计分录 
 }; // INIT_DATA
 
@@ -124,6 +124,20 @@ const AComp = {
 	 */
 	data() {
 		return Object.assign({}, INIT_DATA);
+	},
+
+	/**
+	 *  数据监听
+	 */
+	watch: {
+		/**
+		 * 透视表keys的监听事件 
+		 * @param {*} _old 
+		 * @param {*} _new 
+		 */
+		pvtkeys(_old, _new) {
+			this.build_pivot_table();
+		}
 	},
 
 	/**
@@ -986,8 +1000,20 @@ const AComp = {
 						return { "key": k, "value": value };
 					});
 					this.accts = entries;
-					this.build_tree();
+					this.build_pivot_table();
 				});
+		},
+
+		/**
+		 * 重置数据
+		 */
+		on_reset_click(event) {
+			http_post("/h5/finance/data/reset", {
+				datafile: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx"
+			}).then(e => {
+				alert(JSON.stringify(e.data));
+				this.refresh_tbldata(this.current_tbl);
+			});
 		},
 
 		/**
@@ -1001,10 +1027,10 @@ const AComp = {
 		/**
 		 *  创建树形结构 
 		 */
-		build_tree() {
+		build_pivot_table() {
 			http_post("/h5/finance/acct/trial_balance", {
 				company_ids: this.company_id,
-				keys: this.keys
+				keys: this.pvtkeys
 			}).then(e => {
 				const data = e.data.data;
 				const rootdata = JSON.parse(data);
