@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import gbench.webapps.mymall.api.config.param.Param;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.type.Types;
 import gbench.webapps.mymall.api.model.finance.acct.AbstractAcct.Position;
 import gbench.webapps.mymall.api.model.finance.acct.FinAcct;
 import gbench.webapps.mymall.api.model.finance.acct.FinAcctBuilder;
@@ -82,18 +83,18 @@ public class AcctController {
 		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,product,drcr").split(","); // 透视表键值列表
 		final var json = fa.trialBalance(_keys).json( // 生成josn
 				(sb, node) -> {
-					final var d = node.attrvalOpt().orElse(0d);
+					final var value = node.attrvalOpt().map(Types.obj2dbl(0d)).orElse(0d); // 提取数值性的节点值属性
 					final String key = node.attr("key"); // 透视表索引路径
-					final var name = node.getName();
-					final var _name = switch (key) { // name 翻译
-					case "drcr" -> switch (name) { // drcr 借贷标记 替换
-					case "1" -> "DR";
-					case "-1" -> "CR";
-					default -> "";
-					};
-					default -> name;
-					};
-					return String.format("{\"name\":\"%s : %.2f\", \"value\":%f, \"children\":[", _name, d, d);
+					final var nodename = node.getName(); // 节点名
+					final var name = switch (key) { // name 翻译
+					case "drcr" -> switch (nodename) { // drcr 借贷标记 替换
+					case "1" -> "DR"; // 借方
+					case "-1" -> "CR"; // 贷方
+					default -> "NONE"; // 非借贷标记
+					}; // 借贷标记字段的枢轴字段值的翻译
+					default -> nodename;
+					}; // 根据阶层键名key名进行对应的枢轴字段值的翻译
+					return String.format("{\"name\":\"%s : %.2f\", \"value\":%f, \"children\":[", name, value, value);
 				}, //
 				(sb, node) -> "]}"); // 生成json
 		final var root = new HashMap<Object, Object>(); // 解析json生成根节点
@@ -150,11 +151,11 @@ public class AcctController {
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
 				final var amount = line.dbl("price") * line.dbl("quantity"); // 交易金额
 				final var path = String.format("%s/%s", bill_type, position); // 会计测录路径
-				final var mykeys = "bill_id,bill_type,product_id,warehouse_id"; // 自定义属性的键名序列
+				final var mykeys = "bill_id,bill_type,product_id,warehouse_id"; // 会计凭证中需要写入会计分录的自定义字段名序列
 				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "product_id", product_id,
-						"warehouse_id", warehouse_id, "mykeys", mykeys);
-				// 账目誊写
-				ledger.handle(path, amount, vars); // 写入分类账
+						"warehouse_id", warehouse_id, "mykeys", mykeys); // 会计凭证中需要写入会计分录的自定义内容
+				// 账目誊写:是根据记账策略(特定类型的记账凭证的记账法)，把会计凭证中的内容编制成会计分录
+				ledger.handle(path, amount, vars); // 写入分类账：依据path所指定的记账测录，编制会计分录
 			}); // forEach
 
 			fa.getEntrieS().forEach(entry -> { // 增加id转名字
@@ -162,13 +163,13 @@ public class AcctController {
 				final var bill_type = entry.str("bill_type"); // 记账凭证类型
 				final var product_id = entry.i4("product_id"); // 公司产品id
 				final var warehouse_id = entry.i4("warehouse_id"); // 库房id
-				final var pcy_id = cpdfm.one2opt("id", product_id, "cp").map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
-				final var product = cpdfm.one2opt("id", product_id, "cp").map(e -> e.str("name")).orElse("-"); // 公司产品
+				final var cpopt = cpdfm.one2opt("id", product_id, "cp"); // 公司产品opt
+				final var pcy_id = cpopt.map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
+				final var product = cpopt.map(e -> e.str("name")).orElse("-"); // 公司产品
 				final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库"); // 库房
 				final var pcy = cydfm.one2opt("id", pcy_id, "cy2").map(e -> e.str("name")).orElse("无"); // 产品公司
-
 				final int counterpart_id; // 对手方类型
-				final Position position; // 单据头寸
+				final Position position; // 单据头寸，从订单方向查看
 				switch (bill_type) { // 根据记账凭证进行对应的分录字段补充
 				case "t_order": { // t_order类型的交易单的字段处理
 					position = oddfm.one2opt("id", bill_id, "od").map(od -> { // 订单对手方判断
