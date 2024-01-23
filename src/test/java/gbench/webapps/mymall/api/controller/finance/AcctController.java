@@ -52,7 +52,7 @@ public class AcctController {
 	 * <p>
 	 * http://localhost:6010/finance/acct/entries?company_ids=1
 	 * 
-	 * @return IRecord
+	 * @return IRecord {code:结果状态标记0表示成功,data:分录列表数组}
 	 */
 	@RequestMapping("entries")
 	public Mono<IRecord> entries(final @Param Integer[] company_ids) {
@@ -71,8 +71,8 @@ public class AcctController {
 	 * @param keys        透视表的键值路径，阶层的组织顺序，可选字段为:<br>
 	 *                    id:会计分录id,drcr:分录借贷标记,name:科目名称,amount:科目金额,ledger_id:分类账id,acctnum:科目编码
 	 *                    ,bill_id:单据id,bill_type:单据类型,product_id:产品id,product:产品名称,warehouse_id:库房id,warehouse:库房名称
-	 *                    ,pcy_id:产品公司id,pcy:产品公司,time:记账时间
-	 * @return IRecord
+	 *                    ,pcy_id:产品公司id,pcy:产品公司,countart_id:对手方id,counterpart:对手方名称,position:交易单据持有头寸,time:记账时间
+	 * @return IRecord {code:结果状态标记0表示成功,data:json结构根节点即透视表数据,keys:可供设计透视表的键值列表}
 	 */
 	@SuppressWarnings("unchecked")
 	@RequestMapping("trial_balance")
@@ -102,8 +102,8 @@ public class AcctController {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		final var all_keys = fa.getEntrieS().findFirst().map(IRecord::keys).orElse(new LinkedList<>());
-		return Mono.just(REC("code", "0", "data", root, "all_keys", all_keys));
+		final var kk = fa.getEntrieS().findFirst().map(IRecord::keys).orElse(new LinkedList<>()); // 可供设计透视表的键值列表
+		return Mono.just(REC("code", "0", "data", root, "keys", kk));
 	}
 
 	/**
@@ -166,6 +166,7 @@ public class AcctController {
 				final var product = cpdfm.one2opt("id", product_id, "cp").map(e -> e.str("name")).orElse("-"); // 公司产品
 				final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库"); // 库房
 				final var pcy = cydfm.one2opt("id", pcy_id, "cy2").map(e -> e.str("name")).orElse("无"); // 产品公司
+
 				final int counterpart_id; // 对手方类型
 				final Position position; // 单据头寸
 				switch (bill_type) { // 根据记账凭证进行对应的分录字段补充
@@ -177,9 +178,9 @@ public class AcctController {
 							return Position.LONG; // 交易头寸:多头
 						} else if (Objects.equals(company_id, partb_id)) {
 							return Position.SHORT; // 交易头寸:空头
-						} else {
+						} else { // 非交易头寸
 							return Position.NONE; // 非交易头寸
-						}
+						} // 头寸判断
 					}).orElse(Position.NONE); // 对手方id
 					counterpart_id = oddfm.one2opt("id", bill_id, "od") //
 							.map(od -> switch (position) { // 根据交易头寸判断交易对手方
@@ -197,7 +198,8 @@ public class AcctController {
 				final var counterpart = cydfm.one2opt("id", counterpart_id, "cy2").map(e -> e.str("name")).orElse("无"); // 对手方
 
 				entry.add("bill_id", bill_id, "bill_type", bill_type, "pcy_id", pcy_id, "pcy", pcy, "product", product,
-						"warehouse", warehouse, "counterpart_id", counterpart_id, "counterpart", counterpart); // 补充字段
+						"warehouse", warehouse, "counterpart_id", counterpart_id, "counterpart", counterpart,
+						"position", position); // 补充字段
 			}); // forEach
 		});
 	}
