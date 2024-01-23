@@ -420,6 +420,18 @@ const AComp = {
 		},
 
 		/**
+		 * 重置数据
+		 */
+		on_reset_click(event) {
+			http_post("/h5/finance/data/reset", {
+				datafile: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx"
+			}).then(e => {
+				console.log(JSON.stringify(e.data));
+				this.refresh_tbldata(this.current_tbl);
+			});
+		},
+
+		/**
 		 * 刷新表数据
 		 * @param {*} tbl 表名 
 		 */
@@ -1006,18 +1018,6 @@ const AComp = {
 					this.accts = entries;
 					this.build_pivot_table(this.pvtkeys); // 数据透视表
 				});
-		},
-
-		/**
-		 * 重置数据
-		 */
-		on_reset_click(event) {
-			http_post("/h5/finance/data/reset", {
-				datafile: "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx"
-			}).then(e => {
-				console.log(JSON.stringify(e.data));
-				this.refresh_tbldata(this.current_tbl);
-			});
 		},
 
 		/**
