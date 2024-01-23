@@ -136,7 +136,7 @@ const AComp = {
 		 * @param {*} _new 
 		 */
 		pvtkeys(_old, _new) {
-			this.build_pivot_table();
+			this.build_pivot_table(this.pvtkeys); // 更新数据透视表
 		}
 	},
 
@@ -988,18 +988,18 @@ const AComp = {
 			http_post("/h5/finance/acct/entries", { company_ids: company_id })
 				.then(e => {
 					const data = e.data.data;
-					const trans = p => {
-						const pct = this.pid2pcts[p.product_id];
+					const translate = p => { // 节点信息翻译
+						const pct = this.pid2pcts[p.product_id]; // 提取产品信息
 						return { name: `${p.name}` };
-					};
-					const lines = data.map(e => Object.assign({}, gets(e, "drcr,amount"), trans(e)));
-					const objs = _.groupBy(lines, line => line.name);
-					const entries = Object.keys(objs).map(k => {
-						const value = _.sumBy(objs[k], v => v.drcr * v.amount).toFixed(2);
+					}; // 翻译函数
+					const lines = data.map(e => Object.assign({}, gets(e, "drcr,amount"), translate(e)));
+					const glines = _.groupBy(lines, line => line.name); // 分组后的行
+					const entries = Object.keys(glines).map(k => { // 计算每一组的总额
+						const value = _.sumBy(glines[k], v => v.drcr * v.amount).toFixed(2);
 						return { "key": k, "value": value };
-					});
+					}); // 科目分录行
 					this.accts = entries;
-					this.build_pivot_table();
+					this.build_pivot_table(this.pvtkeys); // 数据透视表
 				});
 		},
 
@@ -1023,27 +1023,30 @@ const AComp = {
 		 * @param {*} clickFlag 
 		 */
 		on_treenode_click(event, treeId, treeNode, clickFlag) {
-			alert(JSON.stringify(treeNode));
+			// alert(JSON.stringify(treeNode));
 		},
 
 		/**
-		 *  创建树形结构 
+		 * 根据键值路径创建数据透视表
+		 * @param {*} keys 键值路径 
 		 */
-		build_pivot_table() {
+		build_pivot_table(keys) {
 			http_post("/h5/finance/acct/trial_balance", {
 				company_ids: this.company_id,
-				keys: this.pvtkeys
+				keys
 			}).then(e => {
-				const rootdata = e.data.data;
+				const rootdata = e.data.data; // 根节点数据
 				const tree = document.querySelector("#ztree"); // 树形控件
 				this.$nextTick(p => { // z_tree 初始化
 					const $container = $(tree);
 					const setting = { // 树形节点的设置
-						view: { showLine: true },
+						view: { showLine: true, selectedMulti: true },
 						callback: { onClick: this.on_treenode_click } // 树形节点操作
 					}; // setting
 					const $ztree = $.fn.zTree.init($container, setting, rootdata);
-					$ztree.expandAll(true);
+					$ztree.getNodesByParam("level", 1).forEach(node => { // 展开二级节点
+						$ztree.expandNode(node, true, false, false);
+					});
 				}); // nextTick
 			});
 		}
