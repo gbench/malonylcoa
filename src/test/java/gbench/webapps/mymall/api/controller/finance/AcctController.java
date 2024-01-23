@@ -156,7 +156,7 @@ public class AcctController {
 						"warehouse_id", warehouse_id, "mykeys", mykeys); // 会计凭证中需要写入会计分录的自定义内容
 				// 账目誊写:是根据记账策略(特定类型的记账凭证的记账法)，把会计凭证中的内容编制成会计分录
 				ledger.handle(path, amount, vars); // 写入分类账：依据path所指定的记账测录，编制会计分录
-			}); // forEach
+			}); // linedfm.rowS().forEach
 
 			fa.getEntrieS().forEach(entry -> { // 增加id转名字
 				final var bill_id = entry.i4("bill_id"); // 记账凭证id
@@ -201,13 +201,12 @@ public class AcctController {
 				entry.add("bill_id", bill_id, "bill_type", bill_type, "pcy_id", pcy_id, "pcy", pcy, "product", product,
 						"warehouse", warehouse, "counterpart_id", counterpart_id, "counterpart", counterpart,
 						"position", position); // 补充字段
-			}); // forEach
-		});
+			}); // fa.getEntrieS().forEach
+		}); // jdbcApp.withTransaction
 	}
 
 	@Autowired
 	private IMySQL jdbcApp;
-
 	@Autowired
 	private FinAcctBuilder fabuilder;
 
