@@ -483,7 +483,7 @@ const AComp = {
 			const password = this.current.user.password;
 			const us_sql = `select * from t_user where name='${name}' and password='${password}'`;
 			sqlquery2(us_sql).then(usdata => {
-				if (usdata.length < 1) { // 登录成功
+				if (usdata.length < 1) { // 登录失败
 					sqlquery2(`select count(*) cnt from t_user where name='${name}'`).then(e => { // 检查账号是否存在
 						if (e.length > 0 && e[0]["cnt"] > 0) { // 密码错误
 							alert(`【${name}】用户密码【${password}】错误`);
