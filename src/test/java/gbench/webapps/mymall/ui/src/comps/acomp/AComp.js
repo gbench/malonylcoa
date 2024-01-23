@@ -768,7 +768,7 @@ const AComp = {
 		},
 
 		/**
-		 * 随机创建订单 
+		 * 随机创建订单,counterpart_id的最大数量受限于t_company_product设计,目前受最大值为4
 		 * @param {*} event 
 		 */
 		on_order_btn_click(event) {
@@ -777,10 +777,15 @@ const AComp = {
 			const now = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
 			const parta_id = this.order_position == LONG ? this.company_id : this.counterpart_id; // 甲方id
 			const partb_id = this.order_position == SHORT ? this.company_id : this.counterpart_id; // 乙方id
+			if (partb_id > 4) { //
+				alert(`供应商partb_id:${partb_id}必须小于等于4,否则由于模拟数据限制:t_company_product表将没有对应产品数据`);
+				return;
+			}
 			const volume = rnd(5); // 模拟订单产品规模
 			const pid2pcts = assoc_by("id", // 依据产品id进行数据分组
 				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
-					return { id: rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量
+					// 产品id生成规则: 乙方id+10以内的随机数，这个产品id是有限制，依据t_company_prodduct的结构来进行设置
+					return { id: (partb_id - 1) * 10 + rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量
 				})); // 随机生成订单项目
 			const items = Object.keys(pid2pcts).map(pid => { // 产品id
 				const pcts = aslist(pid2pcts[pid]); // 提取指定id订单产品项目列表

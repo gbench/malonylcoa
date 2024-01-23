@@ -80,7 +80,7 @@
           </select> &nbsp;
           <!--交易对手方-->
           <select v-model="counterpart_id" @change="on_counterpart_change($event)">
-            <option v-for="part in counterparts" :value="part.id">{{part.name}}</option>
+            <option v-for="part in counterparts" :value="part.id">{{part.id}}#{{part.name}}</option>
           </select> &nbsp;
           <select v-model="current.counterpart.default_warehouse_id">
             <option v-for="wh in current.counterpart.warehouses" :value="wh.id">{{wh.name}}</option>
