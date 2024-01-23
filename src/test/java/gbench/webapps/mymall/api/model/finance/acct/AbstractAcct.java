@@ -29,21 +29,25 @@ public abstract class AbstractAcct<SELF> {
 	/**
 	 * 交易/订单头寸
 	 */
-	enum Position {
+	public enum Position {
 		/**
-		 * 长头买方
+		 * 交易头寸：多头买方
 		 */
 		LONG,
 		/**
-		 * 空头卖方
+		 * 交易头寸：空头卖方
 		 */
-		SHORT
+		SHORT,
+		/**
+		 * 非交易头寸
+		 */
+		NONE,
 	}; // 订单头寸
 
 	/**
 	 * 会计借贷
 	 */
-	enum Drcr {
+	public enum Drcr {
 		/**
 		 * 借方
 		 */
@@ -51,7 +55,11 @@ public abstract class AbstractAcct<SELF> {
 		/*
 		 * 贷方
 		 */
-		CR
+		CR,
+		/*
+		 * 非会计借贷
+		 */
+		NONE
 	}; // 会计借贷
 
 	final IMySQL jdbcApp;

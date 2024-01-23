@@ -18,6 +18,7 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.tree.Node;
 
 /**
+ * 会计记账的原理就是根据记账策略(特定类型的记账凭证的记账法)，把会计凭证中的内容编制成会计分录 <br>
  * Financial Accounting
  */
 public class FinAcct extends AbstractAcct<FinAcct> {

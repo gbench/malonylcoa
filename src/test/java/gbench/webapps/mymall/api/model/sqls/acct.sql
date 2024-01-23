@@ -25,7 +25,7 @@ from (
 		when 'receipt' then 'long' -- 收货方是long
 		else '-'
 		end position, -- 头寸
-		id, -- 订单id
+		id, -- 收发单据id
 		details, -- 产品明细
 		warehouse_id -- 仓库id
 		from t_billof_product  where company_id=##company_id
@@ -37,7 +37,7 @@ from (
 		when payer_id then 'long' -- 付款方 long
 		else '-'
 		end position, -- 头寸
-		id, -- 订单id
+		id, -- 付款凭证id
 		details, -- 产品明细
 		-1 warehouse_id, -- 仓库id
 		from t_payment where payer_id=##company_id or payee_id=##company_id
