@@ -45,7 +45,7 @@ public class AcctController {
 	}
 
 	/**
-	 * 数据演示
+	 * 会计分录
 	 * <p>
 	 * http://localhost:6010/finance/acct/entries?company_ids=1
 	 * 
@@ -64,6 +64,11 @@ public class AcctController {
 	 * <p>
 	 * http://localhost:6010/finance/acct/trial_balance?company_ids=1&keys=ledger_id,name,warehouse,product,drcr
 	 * 
+	 * @param company_ids
+	 * @param keys        透视表的键值路径，阶层的组织顺序，可选字段为:<br>
+	 *                    id:会计分录id,drcr:分录借贷标记,name:科目名称,amount:科目金额,ledger_id:分类账id,acctnum:科目编码<br>
+	 *                    ,bill_type:单据类型,product_id:产品id,warehouse_id:库房id,time:记账时间,pcy:产品公司,pcy_id:产品公司id<br>
+	 *                    ,product:产品名称,warehouse:库房名称
 	 * @return IRecord
 	 */
 	@SuppressWarnings("unchecked")
@@ -141,18 +146,20 @@ public class AcctController {
 				final var amount = line.dbl("price") * line.dbl("quantity"); // 交易金额
 				final var path = String.format("%s/%s", bill_type, position); // 会计测录路径
 				final var mykeys = "bill_type,product_id,warehouse_id"; // 自定义属性的键名序列
-				final var vars = REC("bill_type", bill_type, "product_id", product_id, //
-						"warehouse_id", warehouse_id, "mykeys", mykeys);
+				final var vars = REC("bill_type", bill_type, "product_id", product_id, "warehouse_id", warehouse_id,
+						"mykeys", mykeys);
 				// 账目誊写
 				ledger.handle(path, amount, vars); // 写入分类账
 			}); // forEach
 
 			fa.getEntrieS().forEach(entry -> { // 增加id转名字
-				final var product_id = entry.i4("product_id");
-				final var warehouse_id = entry.i4("warehouse_id");
-				final var product = cpdfm.one2opt("id", product_id, "cp").map(e -> e.str("name")).orElse("-");
-				final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库");
-				entry.add("product", product, "warehouse", warehouse);
+				final var product_id = entry.i4("product_id"); // 公司产品id
+				final var warehouse_id = entry.i4("warehouse_id"); // 库房id
+				final var pcy_id = cpdfm.one2opt("id", product_id, "cp").map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
+				final var product = cpdfm.one2opt("id", product_id, "cp").map(e -> e.str("name")).orElse("-"); // 公司产品
+				final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库"); // 库房
+				final var pcy = cydfm.one2opt("id", pcy_id, "cy2").map(e -> e.str("name")).orElse("无"); // 产品公司
+				entry.add("pcy", pcy, "pcy_id", pcy_id, "product", product, "warehouse", warehouse); // 补充字段
 			}); // forEach
 		});
 	}
