@@ -6,6 +6,7 @@
       <button @click="on_login_click($event)">login</button>
     </span>
     <span v-else>
+      <span>{{current.user.name}}#{{current.user.id}}</span> @
       <a :href="current.company.website">{{current.company.name}} [ {{current.company.id}} ]</a> &nbsp;
       <select v-model="current.default_warehouse_id">
         <option v-for="wh in warehouses" :value="wh.id">{{wh.name}}</option>

@@ -483,52 +483,52 @@ const AComp = {
 			const password = this.current.user.password;
 			const us_sql = `select * from t_user where name='${name}' and password='${password}'`;
 			sqlquery2(us_sql).then(usdata => {
-				if (usdata.length > 0) { // 登录成功
-					const user = usdata[0]; // 用户记录
-					const uc_sql = `select c.* from (
+				if (usdata.length < 1) { // 登录成功
+					alert("登录失败!");
+					return; // 登录失则退出
+				} // 登录失败
+				const user = this.current.user = usdata[0]; // 记录当前登录的用户信息
+				const uc_sql = `select c.* from (
 						select * from t_user_company where id='${user.id}'
 					) uc left join t_company c on uc.company_id = c.id `;
-					sqlquery2(uc_sql).then(ucdata => {
-						if (ucdata.length > 0) { // 用户与公司进行关联,默认登录用户的一个公司
-							this.current.company = ucdata[0]; // this.current.company用于指示用户是否登录成功
-							const cw_sql = `select * from t_company_warehouse where company_id=${this.company_id}`;
-							// 加载公司仓库信息	
-							sqlquery2(cw_sql).then(cwdata => {
-								if (cwdata.length > 0) {
-									const warehouse_ids = cwdata.map(e => e["warehouse_id"]);
-									const wh_sql = `select * from t_warehouse where id in (${warehouse_ids.join(",")})`;
-									return sqlquery2(wh_sql);
-								} else {
-									alert(`${name}所在公司${this.current.company.name}没有配有仓库`);
-								} // if
-							}).then(whdata => { // 公司仓库
-								if (whdata && whdata.length > 0) { // 仓库非空 
-									this.warehouses = whdata; // 加载公司仓库
-									this.current.default_warehouse_id = whdata[0].id;
-								} // if
-							}); // 公司仓库
-							// 加载公司信息
-							sqlquery2(`select * from t_company where id!=${this.company_id}`).then(cydata => {
-								this.counterparts = cydata;
-								this.on_counterpart_change(null, this.counterparts[0].id); // 选择并刷新刷新对手方信息
-								this.cid2cys = assoc_by("id", _.concat([this.current.company], cydata)); // 公司字典
-							}); // 公司信息
-							//公司产品信息
-							sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
+				sqlquery2(uc_sql).then(ucdata => {
+					if (ucdata.length > 0) { // 用户与公司进行关联,默认登录用户的一个公司
+						this.current.company = ucdata[0]; // this.current.company用于指示用户是否登录成功
+						const cw_sql = `select * from t_company_warehouse where company_id=${this.company_id}`;
+						// 加载公司仓库信息	
+						sqlquery2(cw_sql).then(cwdata => {
+							if (cwdata.length > 0) {
+								const warehouse_ids = cwdata.map(e => e["warehouse_id"]);
+								const wh_sql = `select * from t_warehouse where id in (${warehouse_ids.join(",")})`;
+								return sqlquery2(wh_sql);
+							} else {
+								alert(`${name}所在公司${this.current.company.name}没有配有仓库`);
+							} // if
+						}).then(whdata => { // 公司仓库
+							if (whdata && whdata.length > 0) { // 仓库非空 
+								this.warehouses = whdata; // 加载公司仓库
+								this.current.default_warehouse_id = whdata[0].id;
+							} // if
+						}); // 公司仓库
+						// 加载公司信息
+						sqlquery2(`select * from t_company where id!=${this.company_id}`).then(cydata => {
+							this.counterparts = cydata;
+							this.on_counterpart_change(null, this.counterparts[0].id); // 选择并刷新刷新对手方信息
+							this.cid2cys = assoc_by("id", _.concat([this.current.company], cydata)); // 公司字典
+						}); // 公司信息
+						//公司产品信息
+						sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
 								from t_company_product cp left join t_product p on cp.product_id = p.id`
-							).then(cpdata => {
-								this.pid2pcts = assoc_by("id", cpdata); // 公司产品id
-							}); // cpdata
-							//仓库数据
-							sqlquery2("select * from t_warehouse").then(whdata => {
-								this.wid2whs = assoc_by("id", whdata);
-							});
-							this.refresh_tbldata("t_order");
-						}// if ucdata
-					}); // uc_sql
-				} else {
-					alert("登录失败!");
-				} // usdata
+						).then(cpdata => {
+							this.pid2pcts = assoc_by("id", cpdata); // 公司产品id
+						}); // cpdata
+						//仓库数据
+						sqlquery2("select * from t_warehouse").then(whdata => {
+							this.wid2whs = assoc_by("id", whdata);
+						});
+						this.refresh_tbldata("t_order");
+					}// if ucdata
+				}); // uc_sql
 			}); // us_sql
 		},
 
