@@ -1,12 +1,12 @@
 -- --------------------------
 -- 公司日常经济活动的各种记账凭证
 -- # getBills
--- #company_id 公司id
+-- #company_id 公司id，即单据的持有者
 -- --------------------------
 select
 *
 from (
-	select 
+	select -- 订单的处理
 		't_order' bill_type, -- 凭证类型
 		case ##company_id -- 主体(company_id)持有凭证的头寸，依据company_id的位置进行分情形讨论
 		when partb_id then 'short' -- 乙方是short
@@ -17,7 +17,7 @@ from (
 		-1 warehouse_id -- 仓库id
 		from t_order where parta_id=##company_id or partb_id=##company_id
 	union
-	select
+	select -- 收发单的处理
 		b1.bill_type,b1.position,b1.id,b1.details, -- 把内层产品收发凭证的字段信息暴露出来
 		case b1.bill_type -- 根据收发货单据类型进行分别处理
 		when 'invoice' then -- 发货单
@@ -51,7 +51,7 @@ from (
 	) b1 left join t_freight_order f -- 尝试通过货运单获取获取精确的仓库id
 		on b1.freight_order_id = f.id -- 收发凭证关联货运单以便提取对应的精准warehouse_id
 	union
-	select
+	select -- 支付单的处理
 		't_payment' bill_type, -- 凭证类型
 		case ##company_id -- 主体(company_id)持有凭证的头寸，，依据company_id的位置进行分情形讨论
 		when payee_id then 'short' -- 收款方 short

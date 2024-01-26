@@ -837,7 +837,7 @@ const AComp = {
 		 */
 		on_invoice_btn_click(event) {
 			const bill_type = "invoice"; // 单据类型
-			const company_id = this.company_id; // 公司id
+			const issuer_id = this.company_id; // 单据发出公司id:空方
 			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const lines = this.invoice_avail_lines; // 发票的产品项目
@@ -846,7 +846,7 @@ const AComp = {
 				const creator_id = -1; //  创建人
 				const invoice_bill = { // 发票数据
 					name: "t_billof_product",
-					lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+					lines: [{ bill_type, issuer_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
 				}; // 发票项目
 				// 发票数据持久化
 				persist(invoice_bill).then(e => { // 刷新订单行项目
@@ -869,7 +869,7 @@ const AComp = {
 		 */
 		on_receipt_btn_click(event) {
 			const bill_type = "receipt"; // 单据类型
-			const company_id = this.company_id; // 公司id
+			const issuer_id = this.company_id; // 单据发出公司id:空方id
 			const warehouse_id = this.current.default_warehouse_id; // 默认仓库id
 			const order_id = this.current_tbldata.id; // 当前表数据行
 			const lines = this.receipt_avail_lines; // 收据的产品项目
@@ -878,7 +878,7 @@ const AComp = {
 				const creator_id = -1; //  创建人
 				const invoice_bill = { // 发票数据
 					name: "t_billof_product",
-					lines: [{ bill_type, company_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+					lines: [{ bill_type, issuer_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
 				}; // 发票项目
 				// 数据持久化
 				persist(invoice_bill).then(e => { // 刷新订单行项目
@@ -902,8 +902,8 @@ const AComp = {
 		on_freight_btn_click(event) {
 			const order = this.current_tbldata; // 订单数据
 			const order_id = order.id; // 订单号
-			const supplier_id = order.partb_id; // 发货方
-			const customer_id = order.parta_id; // 收货方
+			const consigner_id = order.partb_id; // 发货方
+			const consignee_id = order.parta_id; // 收货方
 			const shipping_from = this.current.default_warehouse_id; // 发货仓库
 			const shipping_to = this.current.counterpart.default_warehouse_id; // 收货仓库
 			const bid2pcts = assoc_by("bill_id", this.freight_avail_lines); // 单据发票号->产品
@@ -914,7 +914,7 @@ const AComp = {
 				const creator_id = 1; // 创建人
 				const freight_bill = { // 货运单
 					name: "t_freight_order",
-					lines: [{ order_id, supplier_id, customer_id, shipping_from, shipping_to, details, creator_id }]
+					lines: [{ order_id, consigner_id, consignee_id, shipping_from, shipping_to, details, creator_id }]
 				}; // 货运单
 				// 货运单持久化
 				persist(freight_bill).then(data => { // 刷新订单行项目
