@@ -38,6 +38,7 @@
           <!--全选和清空-->
           <button v-if="lines.length>0" @click="()=>current.lines_selected=lines.map((e,i)=>i)">all</button> &nbsp;
           <button v-if="lines.length>0" @click="()=>current.lines_selected=[]">clear</button> &nbsp;
+          <button v-if="is_logined" @click="()=>refresh_trial_balance(company_id)">trialblance</button> &nbsp;
           <!--功能按钮-->
           <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;
           <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">receipt</button> &nbsp;
