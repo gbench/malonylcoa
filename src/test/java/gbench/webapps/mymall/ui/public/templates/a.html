@@ -56,7 +56,7 @@
             <button @click="on_payment_btn_click($event)">payment</button>&nbsp;
           </span>
           <!--刷新试算平衡表-->
-          <span>
+          <span v-if="current_tbl=='t_order'">
             <button v-if="is_logined" @click="()=>refresh_trial_balance(company_id)">trialbal</button>&nbsp;
             &nbsp;
           </span>
