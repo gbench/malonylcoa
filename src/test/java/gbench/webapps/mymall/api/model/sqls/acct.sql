@@ -45,4 +45,3 @@ from (
 		-1 warehouse_id, -- 仓库id
 		from t_payment where payer_id=##company_id or payee_id=##company_id
 ) tbls where position in ('short', 'long') order by id
-

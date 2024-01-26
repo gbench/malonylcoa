@@ -125,7 +125,6 @@ public class AcctController {
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
 			final var oddfm = sess.sql2dframe("select * from t_order"); // 订单信息
 
-			println("------------",bldfm);
 			println("--------------------------------------------------------------------------");
 			println("模拟公司", cydfm.one2one("id", company_id, "cy"));
 			println("--------------------------------------------------------------------------");
