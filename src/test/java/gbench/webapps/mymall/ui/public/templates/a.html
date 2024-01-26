@@ -36,17 +36,33 @@
             <option v-for="bt in btypes" :value="bt">{{bt}}</option>
           </select> &nbsp;
           <!--全选和清空-->
-          <button v-if="lines.length>0" @click="()=>current.lines_selected=lines.map((e,i)=>i)">all</button> &nbsp;
-          <button v-if="lines.length>0" @click="()=>current.lines_selected=[]">clear</button> &nbsp;
-          <button v-if="is_logined" @click="()=>refresh_trial_balance(company_id)">trialblance</button> &nbsp;
-          <!--功能按钮-->
-          <button v-if="is_invoice_btn_enabled()" @click="on_invoice_btn_click($event)">invoice</button> &nbsp;
-          <button v-if="is_receipt_btn_enabled()" @click="on_receipt_btn_click($event)">receipt</button> &nbsp;
-          <button v-if="is_freight_btn_enabled()" @click="on_freight_btn_click($event)">freight</button> &nbsp;
-          <button v-if="is_pmt_btn_enabled()" @click="on_payment_btn_click($event)">payment</button> &nbsp;
-          <span style='color:red;font-weight:bold;' v-if="this.current.lines_selected.length>0">[{{
-            this.current.lines_selected.map(i=>`${i}#${lines&&lines[i]?lines[i]["id"]:"-"}`).join(",")}}]
+          <span v-if="lines.length>0">
+            <button @click="()=>current.lines_selected=lines.map((e,i)=>i)">all</button>
+            &nbsp;
+          </span><span v-if="lines.length>0">
+            <button @click="()=>current.lines_selected=[]">clear</button> &nbsp;
           </span>
+          <!--功能按钮-->
+          <span v-if="is_invoice_btn_enabled()">
+            <button @click="on_invoice_btn_click($event)">invoice</button>
+            &nbsp;
+          </span><span v-if="is_receipt_btn_enabled()">
+            <button @click="on_receipt_btn_click($event)">receipt</button>
+            &nbsp;
+          </span><span v-if="is_freight_btn_enabled()">
+            <button @click="on_freight_btn_click($event)">freight</button>
+            &nbsp;
+          </span><span v-if="is_pmt_btn_enabled()">
+            <button @click="on_payment_btn_click($event)">payment</button>&nbsp;
+          </span>
+          <!--刷新试算平衡表-->
+          <span>
+            <button v-if="is_logined" @click="()=>refresh_trial_balance(company_id)">trialbal</button>&nbsp;
+            &nbsp;
+          </span>
+          <span style='color:red;font-weight:bold;' v-if="this.current.lines_selected.length>0">[{{
+            this.current.lines_selected.map(i=>`${i}#${lines&&lines[i]?lines[i]["id"]:"-"}`).join(",")
+            }}]</span>
         </div>
         <div style="height:166px;overflow:auto;border:solid 1px red;margin-top:2px;">
           <div style="width:1200px;">
