@@ -185,8 +185,8 @@ public class AcctController {
 					}).orElse(Position.NONE); // 对手方id
 					counterpart_id = oddfm.one2opt("id", bill_id, "od") //
 							.map(od -> switch (position) { // 根据交易头寸判断交易对手方
-							case Position.LONG -> od.i4("partb_id"); // 多头的对手方为卖方
-							case Position.SHORT -> od.i4("parta_id"); // 空头的对手方为买
+							case LONG -> od.i4("partb_id"); // 多头的对手方为卖方
+							case SHORT -> od.i4("parta_id"); // 空头的对手方为买
 							default -> -1; // 非交易对手方
 							}).orElse(-1); // 非交易对手方
 					break;

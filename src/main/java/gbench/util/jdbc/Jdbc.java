@@ -2030,7 +2030,7 @@ public class Jdbc implements IManagedStreams {
 	public static String asString(final Object obj) {
 
 		String line = null;
-		final var _obj = obj instanceof Stream s ? s.toList() : obj;
+		final var _obj = obj instanceof Stream<?> s ? s.toList() : obj;
 
 		if (_obj instanceof Map || _obj instanceof Iterable || _obj instanceof IRecord) {
 			line = Json.obj2json(_obj);

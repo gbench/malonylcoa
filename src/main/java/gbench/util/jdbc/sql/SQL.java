@@ -256,7 +256,7 @@ public class SQL {
 	 */
 	public String insql(final Iterable<IRecord> datas, final Predicate<KVPair<String, Object>> pfilter) {
 		final var buffer = new StringBuilder();
-		final var initialCapacity = datas instanceof Collection c ? c.size() : 30; // 默认30个字段
+		final var initialCapacity = datas instanceof Collection<?> c ? c.size() : 30; // 默认30个字段
 		final var fldsAr = new AtomicReference<List<String>>(new ArrayList<String>(initialCapacity)); // 字段列表
 		final var values = new ArrayList<List<String>>(initialCapacity);// 字段值列表的列表其元素value与flds一一对应
 		final Predicate<KVPair<String, Object>> pft = pfilter == null ? kv -> true : pfilter;

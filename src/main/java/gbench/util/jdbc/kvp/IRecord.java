@@ -8131,7 +8131,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			return rec;
 		} else if (kvs.length == 1) {// 单个元素
 			final Object o = kvs[0];
-			if (o instanceof Map m) { // (key,value) 序列
+			if (o instanceof Map<?,?> m) { // (key,value) 序列
 				return LinkedRecord.of(m);
 			} else if (o instanceof IRecord r) { // (key,value) 序列
 				return r;
@@ -8161,17 +8161,17 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 				final var o = kvs[0];
 				if (o instanceof IRecord rec) {
 					return rec;
-				} else if (o instanceof Map m) {
+				} else if (o instanceof Map<?,?> m) {
 					return REC(m);
-				} else if (o instanceof Iterable aa) {
+				} else if (o instanceof Iterable<?> aa) {
 					final var rec = REC();
 					for (var a : aa) {
-						if (a instanceof Tuple2 t) {
+						if (a instanceof Tuple2<?,?> t) {
 							rec.add(t._1, t._2);
 						} // if
 					} // for
 					return rec;
-				} else if (o instanceof String s && Json.json2map(s) instanceof Map m) {
+				} else if (o instanceof String s && Json.json2map(s) instanceof Map<?,?> m) {
 					return REC(m);
 				} else { // 空项目
 					return REC();

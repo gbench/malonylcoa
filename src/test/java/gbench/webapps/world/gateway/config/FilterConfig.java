@@ -40,7 +40,7 @@ public class FilterConfig {
 			println(contentType, LocalDateTime.now());
 
 			if (HttpMethod.POST.compareTo(method) == 0 && //
-					Objects.equals("application/x-www-form-urlencoded", contentType)) { // POST
+					Objects.equals((Object) "application/x-www-form-urlencoded", contentType)) { // POST
 				println("GATEWAY", HttpMethod.POST, LocalDateTime.now());
 
 				return DataBufferUtils.join(exchange.getRequest().getBody()) //
