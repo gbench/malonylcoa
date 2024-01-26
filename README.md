@@ -18,7 +18,7 @@
 # 启动 jshell
 ``` batch
 set mvn_repos_home=D:/sliced/mvn_repos
-jshell --class-path %mvn_repos_home%/gbench/pubchem/malonylcoa/0.0.1-SNAPSHOT/malonylcoa-0.0.1-SNAPSHOT.jar;%mvn_repos_home%/mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar;%mvn_repos_home%/com/h2database/h2/2.2.220/h2-2.2.220.jar
+jshell --class-path %mvn_repos_home%/gbench/pubchem/malonylcoa/0.0.1-SNAPSHOT/malonylcoa-0.0.1-SNAPSHOT.jar;%mvn_repos_home%/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar;%mvn_repos_home%/com/h2database/h2/2.2.224/h2-2.2.224.jar
 ```
 
 ``` java
