@@ -263,7 +263,11 @@ const AComp = {
 		 * 可以开入库单的项目 
 		 */
 		receipt_avail_lines() {
-			return this.avail_bill_lines("receipt");
+			return this.avail_bill_lines("receipt")
+				.filter(e => (ids => // 检查关联单据的id字段是否有效
+					_.every(ids, id => id && !_.isEqual(-1, id)))
+					([e['bill_id'], e['freight_order_id']]) // 发票id和货运单id都有效
+				);
 		},
 
 		/**
@@ -272,7 +276,8 @@ const AComp = {
 		 */
 		freight_avail_lines() {
 			return this.selected_lines.filter(e =>
-				_.isEqual("invoice", e["bill_type"]) && (o => !o || o == -1)(e["freight_order_id"]));
+				_.isEqual("invoice", e["bill_type"])
+				&& (id => !id || _.isEqual(-1, id))(e["freight_order_id"]));
 		},
 
 		/**
@@ -370,7 +375,8 @@ const AComp = {
 		 * @returns 
 		 */
 		is_freight_btn_enabled() {
-			return this.freight_avail_lines.length > 0;
+			return this.is_short_position // 发货方即发票的签出方,亦即产品的空头位置尾提供货运单
+				&& this.freight_avail_lines.length > 0;
 		},
 
 		/**
