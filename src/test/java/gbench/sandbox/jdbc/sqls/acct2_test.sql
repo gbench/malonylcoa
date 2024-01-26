@@ -1,5 +1,5 @@
 -- --------------------------
--- 公司日常经济活动的各种记账凭证
+-- 公司日常经济活动的各种记账凭证：是会计记账的基础与依据
 -- # getBills
 -- #company_id 公司id，即单据的持有者
 -- --------------------------
@@ -17,7 +17,7 @@ from (
 		-1 warehouse_id -- 仓库id
 		from t_order where parta_id=##company_id or partb_id=##company_id
 	union
-	select -- 收发单的处理
+	select -- 收发单的处理，其实单据的签发人issuer_id是函数依赖于bill_type的，是个冗余字段，是为了数据查阅方便才给予保留的。这就是为何此处没有issuer_id的原因。
 		b1.bill_type,b1.position,b1.id,b1.details, -- 把内层产品收发凭证的字段信息暴露出来
 		case b1.bill_type -- 根据收发货单据类型进行分别处理
 		when 'invoice' then -- 发货单
@@ -33,11 +33,13 @@ from (
 		else b1.warehouse_id end warehouse_id -- 精准的仓库id
 	from ( select -- 内层产品收发凭证
 			b.bill_type, -- 凭证类型
-			case bill_type -- 主体(company_id)持有凭证的头寸，依据bill_type进行分情形讨论
+			case bill_type -- 主体(issuer_id)持有凭证的头寸，依据bill_type进行分情形讨论
 			when 'invoice' then casewhen(##company_id=o.partb_id, -- 主体(company_id)的持有发票的头寸，依据其是否是发货人而不同
-				'short', 'long') -- 单据主体的company_id是订单乙方即发货人 签出发票 是空头，否则是多头
+				'short', -- 对于发货单，单据的空方issuer_id就是订单的partb_id，即乙方，发货人，卖方
+				'long') -- 单据主体的issuer_id是订单乙方即发货人 签出发票 是空头，否则是多头
 			when 'receipt' then casewhen(##company_id=o.parta_id, -- 主体(company_id)的持有收票的头寸，依据其是否是收货人而不同
-				'short', 'long') -- 单据主体的company_id订单甲方即收货人 签出收票 是空头，否则是多头
+				'short', -- 对于收货单，单据的空方issuer_id就是订单的parta_id，即甲方，收货人，买方
+				'long') -- 单据主体的issuer_id订单甲方即收货人 签出收票 是空头，否则是多头
 			else '-' end position, -- 头寸
 			b.id, -- 收发单据id
 			b.details, -- 产品明细
