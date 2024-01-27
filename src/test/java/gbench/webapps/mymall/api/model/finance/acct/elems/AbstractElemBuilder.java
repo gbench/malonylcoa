@@ -1,0 +1,109 @@
+package gbench.webapps.mymall.api.model.finance.acct.elems;
+
+import static gbench.util.data.xls.SimpleExcel.xls;
+import static gbench.util.jdbc.Jdbcs.imports;
+
+import gbench.util.jdbc.IJdbcApp;
+import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.kvp.IRecord;
+
+/**
+ * AbstractElemBuilder 抽象构建器
+ */
+public abstract class AbstractElemBuilder<S, E> {
+	/**
+	 * AbstractElemBuilder
+	 * 
+	 * @param jdbcApp
+	 */
+	public AbstractElemBuilder(final IMySQL jdbcApp, final IRecord params) {
+		this.jdbcApp = jdbcApp;
+		this.params = params;
+	}
+
+	/**
+	 * 
+	 * @param jdbcApp
+	 */
+	public AbstractElemBuilder(final String datafile, final String sqlfile) {
+		this(jdbcApp(datafile, sqlfile), IRecord.REC());
+	}
+
+	/**
+	 * 默认构建
+	 */
+	public AbstractElemBuilder() {
+		this(datafile, sqlfile);
+	}
+
+	/**
+	 * 本身元素
+	 * 
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public S self() {
+		return (S) this;
+	}
+
+	/**
+	 * 添加元素
+	 * 
+	 * @param kvs
+	 * @return
+	 */
+	public S add(final Object... kvs) {
+		this.params.add(kvs);
+		return this.self();
+	}
+
+	/**
+	 * 创建一个 Finvent 对象
+	 * 
+	 * @param companyId 策略名称
+	 * @return Finvent 对象
+	 */
+	public abstract E build();
+
+	/**
+	 * 
+	 * @param <S>
+	 * @param clazz
+	 * @return
+	 */
+	public static <S> S of(final Class<S> clazz) {
+		S s = null;
+		try {
+			s = clazz.getConstructor().newInstance();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return s;
+	}
+
+	/**
+	 * jdbcApp
+	 * 
+	 * @return 财务会计数据库
+	 */
+	public static IMySQL jdbcApp(String datafile, String sqlfile) {
+		// 共享静态变量便于测试应用进行本地化修改与测试:建立一个静态块给予重新赋值就可以了
+		final String db = "myacct"; // 数据库名
+		final var datafileXls = xls(datafile); // 数据-源文件
+		final var url = String.format("jdbc:h2:mem:%s;mode=mysql;db_close_delay=-1;database_to_upper=false;", db); // h2连接字符串
+		final var h2_rec = gbench.util.jdbc.kvp.IRecord.REC("url", url, "driver", "org.h2.Driver", "user", "root",
+				"password", "123456"); // h2数据库
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
+		final var tables = datafileXls.sheetS().map(e -> e.getSheetName()).toArray(String[]::new); // 基础数据表
+		jdbcApp.withTransaction(
+				imports(e -> datafileXls.autoDetect(e).collect(gbench.util.jdbc.kvp.DFrame.dfmclc2), tables));
+
+		return jdbcApp;
+	}
+
+	public static final String datafile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx";
+	public static final String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql";
+
+	final protected IMySQL jdbcApp;
+	final protected IRecord params;
+}
