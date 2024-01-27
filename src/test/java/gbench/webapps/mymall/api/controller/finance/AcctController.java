@@ -57,7 +57,7 @@ public class AcctController {
 	 */
 	@RequestMapping("entries")
 	public Mono<IRecord> entries(final @Param Integer[] company_ids) {
-		final var fa = fabuilder.build("policy0001"); // 创建会计类型
+		final var fa = fabuilder.add("policy", "policy0001").build(); // 创建会计类型
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 })).forEach(executor_of(fa)); // 模拟各个公司的运行
 
 		return Mono.just(REC("code", "0", "data", fa.getEntrieS().toList()));
@@ -78,7 +78,7 @@ public class AcctController {
 	@SuppressWarnings("unchecked")
 	@RequestMapping("trial_balance")
 	public Mono<IRecord> trial_balance(final @Param Integer[] company_ids, final @Param String keys) {
-		final var fa = fabuilder.build("policy0001"); // 创建会计类型
+		final var fa = fabuilder.add("policy", "policy0001").build(); // 创建会计类型
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 })).forEach(executor_of(fa)); // 模拟各个公司的运行
 		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,product,drcr").split(","); // 透视表键值列表
 		final var json = fa.trialBalance(_keys).json( // 生成josn

@@ -1,11 +1,11 @@
 package gbench.webapps.mymall.api.model.finance.acct.elems.invt;
 
-import gbench.webapps.mymall.api.model.finance.acct.elems.AbstractElemBuilder;
+import gbench.webapps.mymall.api.model.finance.builder.AbstractFinBuilder;
 
 /**
  * FinAcctBuilder 财务会计构建器
  */
-public class InventoryBuilder extends AbstractElemBuilder<InventoryBuilder, Inventory> {
+public class InventoryBuilder extends AbstractFinBuilder<InventoryBuilder, Inventory> {
 
 	/**
 	 * 存货构建器对象
@@ -31,7 +31,7 @@ public class InventoryBuilder extends AbstractElemBuilder<InventoryBuilder, Inve
 	 * @return InventoryBuilder
 	 */
 	public static InventoryBuilder of(final Object... kvs) {
-		return AbstractElemBuilder.of(InventoryBuilder.class).add(kvs);
+		return AbstractFinBuilder.of(InventoryBuilder.class).add(kvs);
 	}
 
 	/**

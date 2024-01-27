@@ -6,17 +6,24 @@ import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
+import gbench.webapps.mymall.api.model.finance.builder.AbstractFinBuilder;
 
 /**
  * FinAcctBuilder 财务会计构建器
  */
-public class FinAcctBuilder {
+public class FinAcctBuilder extends AbstractFinBuilder<FinAcctBuilder, FinAcct> {
+	
 	/**
-	 * 
-	 * @param jdbcApp
+	 * FinAcctBuilder
+	 * @param jdbcApp 数据库
 	 */
 	public FinAcctBuilder(final IMySQL jdbcApp) {
-		this.jdbcApp = jdbcApp;
+		super(jdbcApp, IRecord.REC());
+	}
+
+	@Override
+	public FinAcct build() {
+		return this.fa(this.params.str("policy"));
 	}
 
 	/**
@@ -25,7 +32,7 @@ public class FinAcctBuilder {
 	 * @param policy 策略名称
 	 * @return FinAcct 对象
 	 */
-	public FinAcct build(final String policy) {
+	private FinAcct fa(final String policy) {
 		@SuppressWarnings("unchecked")
 		final var params = (Tuple2<DFrame, IRecord>) jdbcApp.withTransaction(sess -> {
 			final var coa = sess.sql2dframe("select * from t_coa") //
@@ -40,5 +47,4 @@ public class FinAcctBuilder {
 		return new FinAcct(this.jdbcApp, params._1(), params._2().rec(policy));
 	}
 
-	final IMySQL jdbcApp;
 }

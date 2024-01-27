@@ -1,4 +1,4 @@
-package gbench.webapps.mymall.api.model.finance.acct.elems;
+package gbench.webapps.mymall.api.model.finance.builder;
 
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.jdbc.Jdbcs.imports;
@@ -8,31 +8,45 @@ import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.IRecord;
 
 /**
- * AbstractElemBuilder 抽象构建器
+ * 抽象构建器
+ * 
+ * @param <S> 本身类：具体的构建器类型
+ * @param <T> 构建器的构建对象类型
  */
-public abstract class AbstractElemBuilder<S, E> {
+public abstract class AbstractFinBuilder<S, T> {
 	/**
-	 * AbstractElemBuilder
+	 * AbstractBuilder
 	 * 
-	 * @param jdbcApp
+	 * @param jdbcApp 数据库
+	 * @param params  构建参数
 	 */
-	public AbstractElemBuilder(final IMySQL jdbcApp, final IRecord params) {
+	public AbstractFinBuilder(final IMySQL jdbcApp, final IRecord params) {
 		this.jdbcApp = jdbcApp;
 		this.params = params;
 	}
 
 	/**
+	 * AbstractBuilder
 	 * 
-	 * @param jdbcApp
+	 * @param jdbcApp 数据库
 	 */
-	public AbstractElemBuilder(final String datafile, final String sqlfile) {
+	public AbstractFinBuilder(final IMySQL jdbcApp) {
+		this(jdbcApp, IRecord.REC());
+	}
+
+	/**
+	 * AbstractBuilder
+	 * 
+	 * @param jdbcApp 数据库
+	 */
+	public AbstractFinBuilder(final String datafile, final String sqlfile) {
 		this(jdbcApp(datafile, sqlfile), IRecord.REC());
 	}
 
 	/**
 	 * 默认构建
 	 */
-	public AbstractElemBuilder() {
+	public AbstractFinBuilder() {
 		this(datafile, sqlfile);
 	}
 
@@ -63,9 +77,10 @@ public abstract class AbstractElemBuilder<S, E> {
 	 * @param companyId 策略名称
 	 * @return Finvent 对象
 	 */
-	public abstract E build();
+	public abstract T build();
 
 	/**
+	 * 生成指定的类型的构建器
 	 * 
 	 * @param <S>
 	 * @param clazz
@@ -104,6 +119,6 @@ public abstract class AbstractElemBuilder<S, E> {
 	public static final String datafile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx";
 	public static final String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql";
 
-	final protected IMySQL jdbcApp;
-	final protected IRecord params;
+	final protected IMySQL jdbcApp; // 数据库
+	final protected IRecord params; // 构建参数
 }
