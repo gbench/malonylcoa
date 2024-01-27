@@ -20,27 +20,18 @@ import gbench.util.jdbc.kvp.IRecord;
  */
 public interface IMySQL {
 	/**
-	 * 创建一个数据库
-	 * 
-	 * @param dbName 数据库名称
-	 */
-	@JdbcExecute("create database {0} default character set utf8mb4")
-	void createDatabase(String dbName);
-
-	/**
 	 * 获取数据库名称
 	 */
 	@JdbcQuery("select database() db")
 	String getDbName();
 
 	/**
-	 * 可以返回一些简单的类型：非空则认为true
+	 * 创建一个数据库
 	 * 
-	 * @param tableName
-	 * @return 表格是否存在。
+	 * @param dbName 数据库名称
 	 */
-	@JdbcQuery("show tables like ''{0}''")
-	boolean exists(String tableName);
+	@JdbcExecute("create database {0} default character set utf8mb4")
+	void createDatabase(String dbName);
 
 	/**
 	 * 删除一张表
@@ -53,20 +44,48 @@ public interface IMySQL {
 	/**
 	 * 查询用户表记录
 	 * 
-	 * @param tableName
-	 * @return
+	 * @param tableName 表名
+	 * @return 数据表行
 	 */
 	@JdbcQuery("select * from {0}")
-	List<IRecord> getAll(String tableName);
+	List<IRecord> getLines(String tableName);
 
 	/**
 	 * 查询用户表记录
 	 * 
-	 * @param tableName
-	 * @return
+	 * @param tableName 表名
+	 * @param maxSize   最大行数
+	 * @return 数据表行
 	 */
 	@JdbcQuery("select * from {0} limit {1}")
-	List<IRecord> getAll(String tableName, int maxSize);
+	List<IRecord> getLines(String tableName, int maxSize);
+
+	/**
+	 * 返回一个获取代理对象 Jdbc 的代理对象：可以通过 IRecord.findOne(Jdbc.class) 获取jdbc对象。
+	 * 
+	 * @return Proxy
+	 */
+	IRecord getProxy();
+
+	/**
+	 * 返回数据表是否存在标记
+	 * 
+	 * @param tableName 表名
+	 * @return 数据表是否存在。
+	 */
+	default boolean exists(final String tableName) {
+		return this.jdbc().tblExists(tableName);
+	}
+
+	/**
+	 * 仅仅返回 SqlPattern 并不给予对参数进行替换。
+	 * 
+	 * @param sqlpattern 一个#开头的变量名。
+	 * @return SqlPatternPreprocessor 处理后的SQL语句。
+	 */
+	default String getSqlPattern(final String sqlpattern) {
+		return this.getSql(sqlpattern, (IRecord) null);
+	}
 
 	/**
 	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
@@ -132,6 +151,20 @@ public interface IMySQL {
 	 * params:REC("name","张三") <br>
 	 * 返回值:select * from user where name="张三" <br>
 	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
+	 * @return IRecord 流
+	 */
+	default Stream<IRecord> sqlqueryS(final String sqlpattern) {
+		return this.sqlqueryS(sqlpattern, null);
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
 	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。 <br>
 	 *                   #标记的参数会被添加引号: select * from user where name=#name <br>
 	 *                   ##标记的参数不会添加引号: select * from user limit ##cnt <br>
@@ -181,30 +214,6 @@ public interface IMySQL {
 	}
 
 	/**
-	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
-	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
-	 * sqlpattern: select * from user where name=#name <br>
-	 * params:REC("name","张三") <br>
-	 * 返回值:select * from user where name="张三" <br>
-	 * 
-	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
-	 * @return IRecord 流
-	 */
-	default Stream<IRecord> sqlqueryS(final String sqlpattern) {
-		return this.sqlqueryS(sqlpattern, null);
-	}
-
-	/**
-	 * 仅仅返回 SqlPattern 并不给予对参数进行替换。
-	 * 
-	 * @param sqlpattern 一个#开头的变量名。
-	 * @return SqlPatternPreprocessor 处理后的SQL语句。
-	 */
-	default String getSqlPattern(final String sqlpattern) {
-		return this.getSql(sqlpattern, (IRecord) null);
-	}
-
-	/**
 	 * 获取jdbc 对象
 	 * 
 	 * @param jdbc jdbc 对象 由代理进行传入
@@ -245,15 +254,10 @@ public interface IMySQL {
 		final var attrs = new HashMap<Object, Object>();
 		final var spp = this.getProxy().findOne(ISqlPatternPreprocessor.class);
 		final var jdbc = this.jdbc();
+
 		attrs.put(ISqlPatternPreprocessor.class, spp); // 增加值类型
 		attrs.put(Collector.class, DFrame.dfmclc); // 增加值类型
+
 		return jdbc.withTransaction(sess -> action.accept(sess), attrs);
 	}
-
-	/**
-	 * 返回一个获取代理对象 Jdbc 的代理对象：可以通过 IRecord.findOne(Jdbc.class) 获取jdbc对象。
-	 * 
-	 * @return Proxy
-	 */
-	IRecord getProxy();
 }
