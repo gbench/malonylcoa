@@ -3,8 +3,12 @@ package gbench.webapps.mymall.api.model.finance.builder;
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.jdbc.Jdbcs.imports;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 
 /**
@@ -101,23 +105,28 @@ public abstract class AbstractFinBuilder<S, T extends AbstractFinBase<T>> {
 	 * 
 	 * @return 财务会计数据库
 	 */
-	public static IMySQL jdbcApp(String datafile, String sqlfile) {
-		// 共享静态变量便于测试应用进行本地化修改与测试:建立一个静态块给予重新赋值就可以了
-		final String db = "myacct"; // 数据库名
-		final var datafileXls = xls(datafile); // 数据-源文件
-		final var url = String.format("jdbc:h2:mem:%s;mode=mysql;db_close_delay=-1;database_to_upper=false;", db); // h2连接字符串
-		final var h2_rec = gbench.util.jdbc.kvp.IRecord.REC("url", url, "driver", "org.h2.Driver", "user", "root",
-				"password", "123456"); // h2数据库
-		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
-		final var tables = datafileXls.sheetS().map(e -> e.getSheetName()).toArray(String[]::new); // 基础数据表
-		jdbcApp.withTransaction(
-				imports(e -> datafileXls.autoDetect(e).collect(gbench.util.jdbc.kvp.DFrame.dfmclc2), tables));
+	public static IMySQL jdbcApp(final String datafile, final String sqlfile) {
+		final var key = String.format("%s%s", datafile, sqlfile); // 分析key
 
-		return jdbcApp;
+		return jdbcApps.computeIfAbsent(key, k -> {
+			// 共享静态变量便于测试应用进行本地化修改与测试:建立一个静态块给予重新赋值就可以了
+			final String db = "myacct"; // 数据库名
+			final var datafileXls = xls(datafile); // 数据-源文件
+			final var url = String.format("jdbc:h2:mem:%s;mode=mysql;db_close_delay=-1;database_to_upper=false;", db); // h2连接字符串
+			final var h2_rec = gbench.util.jdbc.kvp.IRecord.REC("url", url, "driver", "org.h2.Driver", "user", "root",
+					"password", "123456"); // h2数据库
+			final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
+			final var tables = datafileXls.sheetS().map(e -> e.getSheetName()).toArray(String[]::new); // 基础数据表
+			// 数据初始化
+			jdbcApp.withTransaction(imports(e -> datafileXls.autoDetect(e).collect(DFrame.dfmclc2), tables));
+
+			return jdbcApp;
+		});
 	}
 
 	public static final String datafile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx";
 	public static final String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql";
+	public static Map<String, IMySQL> jdbcApps = new ConcurrentHashMap<>(); // jdbcs缓存
 
 	final protected IMySQL jdbcApp; // 数据库
 	final protected IRecord params; // 构建参数
