@@ -800,7 +800,7 @@ const AComp = {
 		on_order_btn_click(event) {
 			const rnd = n => parseInt((Math.random() * n) + 1); // 生成n范围内的整数
 			const rnd2 = n => (Math.random() * n + 1).toFixed(2); // 生成n范围内的浮点数,两位小数
-			const now = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
+			const time = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
 			const parta_id = this.order_position == LONG ? this.company_id : this.counterpart_id; // 甲方id
 			const partb_id = this.order_position == SHORT ? this.company_id : this.counterpart_id; // 乙方id
 			if (partb_id > 4) { //
@@ -821,7 +821,7 @@ const AComp = {
 			});
 			const order_bill = { // 订单数据
 				name: "t_order", // 表名
-				lines: [{ parta_id, partb_id, details: { items }, creator_id: 1, "time": now }] // 行项目 
+				lines: [{ parta_id, partb_id, details: { items }, creator_id: 1, time }] // 行项目 
 			}; // order_bill 订单数据
 
 			// 持久化订单数据
@@ -844,9 +844,10 @@ const AComp = {
 			const fid2items = assoc_by("freight_order_id", lines, -1); // 根据货运单编号进行分组,没有货运单默认为-1
 			const insert_invoices = (freight_order_id, items) => { // 录入收货单
 				const creator_id = -1; //  创建人
+				const time = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
 				const invoice_bill = { // 发票数据
 					name: "t_billof_product",
-					lines: [{ bill_type, issuer_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+					lines: [{ bill_type, issuer_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id, time }]
 				}; // 发票项目
 				// 发票数据持久化
 				persist(invoice_bill).then(e => { // 刷新订单行项目
@@ -876,9 +877,10 @@ const AComp = {
 			const fid2items = assoc_by("freight_order_id", lines, -1); // 根据货运单编号进行分组,没有货运单默认为-1
 			const insert_receipts = (freight_order_id, items) => { // 录入收货单
 				const creator_id = -1; //  创建人
+				const time = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
 				const invoice_bill = { // 发票数据
 					name: "t_billof_product",
-					lines: [{ bill_type, issuer_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id }]
+					lines: [{ bill_type, issuer_id, warehouse_id, order_id, freight_order_id, details: { items }, creator_id, time }]
 				}; // 发票项目
 				// 数据持久化
 				persist(invoice_bill).then(e => { // 刷新订单行项目
@@ -912,9 +914,10 @@ const AComp = {
 			const insert_freights = (bill_id, items) => { // 根据指定的单据发表号创建对应的发货单
 				const details = { items }; // 发货产品详情
 				const creator_id = 1; // 创建人
+				const time = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
 				const freight_bill = { // 货运单
 					name: "t_freight_order",
-					lines: [{ order_id, consigner_id, consignee_id, shipping_from, shipping_to, details, creator_id }]
+					lines: [{ order_id, consigner_id, consignee_id, shipping_from, shipping_to, details, creator_id, time }]
 				}; // 货运单
 				// 货运单持久化
 				persist(freight_bill).then(data => { // 刷新订单行项目
@@ -957,10 +960,11 @@ const AComp = {
 			const insert_pmts = (receipt_id, items) => { // items
 				const details = { items }; // 付款单的产品明细
 				const creator_id = 1; // 创建者
+				const time = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
 				const amount = _.sumBy(items, e => e["quantity"] * e["price"]); // 付款金额
 				const payment_bill = { // 付款单
 					name: "t_payment",
-					lines: [{ order_id, payer_id, payee_id, amount, receipt_id, details, creator_id }]
+					lines: [{ order_id, payer_id, payee_id, amount, receipt_id, details, creator_id, time }]
 				}; // 付款单
 				// 货运单持久化
 				persist(payment_bill).then(e => { // 刷新订单行项目
