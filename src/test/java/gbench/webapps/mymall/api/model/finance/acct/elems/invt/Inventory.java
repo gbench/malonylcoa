@@ -5,14 +5,14 @@ import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.Jdbcs;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.webapps.mymall.api.model.finance.acct.elems.AbstractElem;
+import gbench.webapps.mymall.api.model.finance.builder.AbstractFinBase;
 
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
 /**
  * 存货对象
  */
-public class Inventory extends AbstractElem<Inventory> {
+public class Inventory extends AbstractFinBase<Inventory> {
 
 	/**
 	 * 

@@ -13,7 +13,7 @@ import gbench.util.jdbc.kvp.IRecord;
  * @param <S> 本身类：具体的构建器类型
  * @param <T> 构建器的构建对象类型
  */
-public abstract class AbstractFinBuilder<S, T> {
+public abstract class AbstractFinBuilder<S, T extends AbstractFinBase<T>> {
 	/**
 	 * AbstractBuilder
 	 * 

@@ -1,13 +1,14 @@
 package gbench.webapps.mymall.api.model.finance.acct;
 
 import gbench.util.jdbc.IMySQL;
+import gbench.webapps.mymall.api.model.finance.builder.AbstractFinBase;
 
 /**
  * 会计对象
  * 
- * @param <SELF> 自身对象
+ * @param <S> 自身对象
  */
-public abstract class AbstractAcct<SELF> {
+public abstract class AbstractAcct<S> extends AbstractFinBase<S> {
 
 	/**
 	 * 数据库应用
@@ -15,15 +16,14 @@ public abstract class AbstractAcct<SELF> {
 	 * @param jdbcApp 数据库应用
 	 */
 	protected AbstractAcct(final IMySQL jdbcApp) {
-		this.jdbcApp = jdbcApp;
+		super(jdbcApp);
 	}
 
 	/**
 	 * 初始化
 	 */
-	@SuppressWarnings("unchecked")
-	public SELF intialize() {
-		return (SELF) this;
+	public S intialize() {
+		return this.self();
 	}
 
 	/**
@@ -62,5 +62,4 @@ public abstract class AbstractAcct<SELF> {
 		NONE
 	}; // 会计借贷
 
-	final IMySQL jdbcApp;
 }

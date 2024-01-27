@@ -1,7 +1,9 @@
-package gbench.webapps.mymall.api.model.finance.acct.elems.invt;
+package gbench.webapps.mymall.api.model.finance;
 
 import static gbench.util.io.Output.println;
 import org.junit.jupiter.api.Test;
+
+import gbench.webapps.mymall.api.model.finance.acct.elems.invt.InventoryBuilder;
 
 /**
  * 仓库的测试
