@@ -150,7 +150,7 @@ public class AcctController {
 				final var product_id = line.i4("product_id"); // 产品id
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
 				final var amount = line.dbl("price") * line.dbl("quantity"); // 交易金额
-				final var path = String.format("%s/%s", bill_type, position); // 会计测录路径
+				final var path = String.format("%s/%s", bill_type, position); // 会计策略路径：单据类型/持有头寸
 				final var mykeys = "bill_id,bill_type,product_id,warehouse_id"; // 会计凭证中需要写入会计分录的自定义字段名序列
 				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "product_id", product_id,
 						"warehouse_id", warehouse_id, "mykeys", mykeys); // 会计凭证中需要写入会计分录的自定义内容
