@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import gbench.util.jdbc.IMySQL;
-import gbench.webapps.mymall.api.model.finance.acct.FinAcctBuilder;
+import gbench.webapps.mymall.api.model.finance.acct.core.FinAcctBuilder;
 
 @Configuration
 public class MyMallConfig {

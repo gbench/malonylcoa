@@ -1,4 +1,4 @@
-package gbench.webapps.mymall.api.model.finance.acct;
+package gbench.webapps.mymall.api.model.finance.acct.core;
 
 import static gbench.util.jdbc.kvp.IRecord.getter;
 

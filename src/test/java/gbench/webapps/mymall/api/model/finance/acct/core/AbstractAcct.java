@@ -1,4 +1,4 @@
-package gbench.webapps.mymall.api.model.finance.acct;
+package gbench.webapps.mymall.api.model.finance.acct.core;
 
 import gbench.util.jdbc.IMySQL;
 import gbench.webapps.mymall.api.model.finance.builder.AbstractFinBase;

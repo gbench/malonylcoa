@@ -1,11 +1,12 @@
-package gbench.webapps.mymall.api.model.finance.trader;
+package gbench.webapps.mymall.api.model.finance.trading;
 
+import gbench.webapps.mymall.api.model.finance.acct.entity.AcctEntityBuilder;
 import gbench.webapps.mymall.api.model.finance.builder.AbstractFinBuilder;
 
 /**
  * FinAcctBuilder 财务会计构建器
  */
-public class FinTraderBuilder extends AbstractFinBuilder<FinTraderBuilder, FinTrader> {
+public class FinTraderBuilder extends AcctEntityBuilder {
 
 	@Override
 	public FinTrader build() {
@@ -19,7 +20,6 @@ public class FinTraderBuilder extends AbstractFinBuilder<FinTraderBuilder, FinTr
 	 * @return Inventory
 	 */
 	public static FinTrader build(final Object... kvs) {
-		return AbstractFinBuilder.of(FinTraderBuilder.class).add(kvs).build();
+		return (FinTrader) AbstractFinBuilder.of(FinTraderBuilder.class).add(kvs).build();
 	}
-
 }

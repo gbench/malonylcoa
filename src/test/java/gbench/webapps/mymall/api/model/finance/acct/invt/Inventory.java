@@ -1,4 +1,4 @@
-package gbench.webapps.mymall.api.model.finance.acct.elems.invt;
+package gbench.webapps.mymall.api.model.finance.acct.invt;
 
 import gbench.util.io.Output;
 import gbench.util.jdbc.IMySQL;

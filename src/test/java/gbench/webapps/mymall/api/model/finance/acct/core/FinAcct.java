@@ -1,4 +1,4 @@
-package gbench.webapps.mymall.api.model.finance.acct;
+package gbench.webapps.mymall.api.model.finance.acct.core;
 
 import static gbench.sandbox.jdbc.finance.acct.IJournalSession.evaluateBalance;
 import static java.util.stream.Collectors.summarizingDouble;
