@@ -3,6 +3,8 @@ package gbench.webapps.mymall.api.model.finance.trading;
 import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.sql.SQL.sql;
+import static gbench.webapps.mymall.api.model.finance.acct.core.AbstractAcct.Position.LONG;
+import static gbench.webapps.mymall.api.model.finance.acct.core.AbstractAcct.Position.SHORT;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -28,6 +30,7 @@ public class FinTrader extends AcctEntity {
 	 */
 	public FinTrader(final IMySQL jdbcApp, final long id) {
 		super(jdbcApp, id);
+		inventory = this.getInventory(id);
 	}
 
 	/**
@@ -57,7 +60,7 @@ public class FinTrader extends AcctEntity {
 		return this.rpvds(size).fmap(e -> REC( //
 				"id", e.i4("id"), // 公司产品
 				"price", e.rec("attrs").dbl("price") * (1 + rndgen.nextDouble(1)), // 产品价格 上浮基准价格10%
-				"quantity", rndgen.nextInt(10) // 产品数量
+				"quantity", rndgen.nextInt(10) + 1 // 产品数量
 		));
 	}
 
@@ -88,51 +91,44 @@ public class FinTrader extends AcctEntity {
 	/**
 	 * 存货对象
 	 * 
-	 * @return
+	 * @return Inventory
 	 */
-	public Inventory getInventory() {
-		final var inventory = InventoryBuilder.build("entityId", this.id);
+	public Inventory getInventory(final long companyId) {
+		final var inventory = InventoryBuilder.build("entityId", companyId);
 		return inventory;
 	}
 
 	/**
-	 * 签出发票：发货单据
+	 * 存货对象
 	 * 
-	 * @param stock
-	 * @return
+	 * @return Inventory
 	 */
-	public IRecord invoice(final Iterable<IRecord> items, long warehouseId, long orderId) {
-		return this.getInventory().invoice(items, warehouseId, orderId);
+	public Inventory getInventory() {
+		return this.inventory;
 	}
 
 	/**
 	 * 签出发票：发货单据
 	 * 
-	 * @param stock
+	 * @param itemdfm
+	 * @param warehouseId
+	 * @param orderId
 	 * @return
 	 */
-	public IRecord invoice(final DFrame itemdfm, long warehouseId, long orderId) {
-		return this.getInventory().invoice(itemdfm.rows(), warehouseId, orderId);
+	public IRecord invoice(final DFrame itemdfm, final long warehouseId, final long orderId) {
+		return inventory.checkout(itemdfm.rows(), warehouseId, orderId);
 	}
 
 	/**
 	 * 签出收票：收货单据
 	 * 
-	 * @param stock
+	 * @param itemdfm
+	 * @param warehouseId
+	 * @param orderId
 	 * @return
 	 */
-	public IRecord receipt(final Iterable<IRecord> items, long warehouseId, long orderId) {
-		return this.getInventory().receipt(items, warehouseId, orderId);
-	}
-
-	/**
-	 * 签出收票：收货单据
-	 * 
-	 * @param stock
-	 * @return
-	 */
-	public IRecord receipt(final DFrame itemdfm, long warehouseId, long orderId) {
-		return this.getInventory().receipt(itemdfm.rows(), warehouseId, orderId);
+	public IRecord receipt(final DFrame itemdfm, final long warehouseId, final long orderId) {
+		return inventory.checkin(itemdfm.rows(), warehouseId, orderId);
 	}
 
 	/**
@@ -148,8 +144,8 @@ public class FinTrader extends AcctEntity {
 			return null;
 		}
 
-		final var parta_id = position.equals(Position.LONG) ? this.id : counterpartId; // 甲方
-		final var partb_id = position.equals(Position.SHORT) ? this.id : counterpartId; // 乙方
+		final var parta_id = position.equals(LONG) ? this.id : counterpartId; // 甲方
+		final var partb_id = position.equals(SHORT) ? this.id : counterpartId; // 乙方
 		final var items = Optional.ofNullable(products).orElseGet(() -> this.roffers(5).rows());
 		final var order = REC("parta_id", parta_id, "partb_id", partb_id, "details", REC("items", items), "creator_id",
 				-1, "time", LocalDateTime.now());
@@ -162,14 +158,16 @@ public class FinTrader extends AcctEntity {
 	}
 
 	/**
+	 * 随机选取
 	 * 
 	 * @param dfm
-	 * @param size
-	 * @return
+	 * @param maxsize
+	 * @return DFrame
 	 */
-	public static DFrame rnd(final DFrame dfm, final int size) {
-		return dfm.shuffle().head(new Random().nextInt(size));
+	public static DFrame rnd(final DFrame dfm, final int maxsize) {
+		return dfm.shuffle().head(new Random().nextInt(maxsize) + 1);
 	}
 
 	final Random rndgen = new Random(); // 随机发生器
+	final Inventory inventory; // 随机发生器
 }

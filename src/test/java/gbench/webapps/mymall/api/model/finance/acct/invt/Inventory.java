@@ -31,7 +31,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 	 * @param stock
 	 * @return
 	 */
-	public IRecord billof(final Drcr drcr, final Iterable<IRecord> items, long warehouseId, long orderId,
+	public IRecord issue(final Drcr drcr, final Iterable<IRecord> items, long warehouseId, long orderId,
 			long freightId) {
 		if (drcr.equals(Drcr.NONE)) {
 			return null;
@@ -49,7 +49,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 		final var id = jdbcApp.withTransaction(sess -> {
 			sess.sql2execute2maybe(sql(tbl, bill).insql()).ifPresent(e -> sess.setResult(e.get(0)));
 		}).i4("result"); // 提取插入的数据生成的id字段
-		System.out.println("INVT#" + id);
+		System.out.println(String.format("%s#%s", billType, id));
 		return jdbcApp.getById(tbl, id).orElse(null);
 	}
 
@@ -59,8 +59,8 @@ public class Inventory extends AbstractFinBase<Inventory> {
 	 * @param stock
 	 * @return
 	 */
-	public IRecord billof(final Drcr drcr, final Iterable<IRecord> items, long warehouseId, long orderId) {
-		return this.billof(drcr, items, warehouseId, orderId, -1);
+	public IRecord issue(final Drcr drcr, final Iterable<IRecord> items, long warehouseId, long orderId) {
+		return this.issue(drcr, items, warehouseId, orderId, -1);
 	}
 
 	/**
@@ -69,8 +69,8 @@ public class Inventory extends AbstractFinBase<Inventory> {
 	 * @param stock
 	 * @return
 	 */
-	public IRecord invoice(final Iterable<IRecord> items, long warehouseId, long orderId) {
-		return this.billof(Drcr.CR, items, warehouseId, orderId, -1);
+	public IRecord checkout(final Iterable<IRecord> items, long warehouseId, long orderId) {
+		return this.issue(Drcr.CR, items, warehouseId, orderId, -1);
 	}
 
 	/**
@@ -79,8 +79,19 @@ public class Inventory extends AbstractFinBase<Inventory> {
 	 * @param stock
 	 * @return
 	 */
-	public IRecord receipt(final Iterable<IRecord> items, long warehouseId, long orderId) {
-		return this.billof(Drcr.DR, items, warehouseId, orderId, -1);
+	public IRecord checkin(final Iterable<IRecord> items, long warehouseId, long orderId) {
+		return this.issue(Drcr.DR, items, warehouseId, orderId, -1);
+	}
+
+	/**
+	 * 签发的单据
+	 * 
+	 * @return 先进先出
+	 */
+	public DFrame bills() {
+		final var bill_sql = String.format("select * from t_billof_product where issuer_id=%d order by time",
+				this.companyId);
+		return jdbcApp.sqldframe(bill_sql);
 	}
 
 	/**
@@ -89,18 +100,23 @@ public class Inventory extends AbstractFinBase<Inventory> {
 	 * @return 先进先出
 	 */
 	public DFrame fifo() {
-		final var sql = String.format("select * from t_billof_product where issuer_id=%d", this.companyId);
-		final var dfm = jdbcApp.sqldframe(sql).forEachBy(Jdbcs.h2_json_processor("details"));
-		final var cpdfm = jdbcApp
-				.sqldframe("select cp.id,p.name from t_company_product cp left join t_product p on cp.product_id=p.id");
-		final var lines = dfm.rowS() // 转换成数据行
-				.flatMap(e -> e.path2llS("details/items", IRecord::REC) // 展开行项目
-						.map(REC("drcr", switch (e.str("bill_type")) { // drcr 根据类型改名
-						case "invoice" -> -1; // 入库单
-						case "receipt" -> 1; // 出库单
-						default -> 0;
-						})::derive).map(p -> p.add("name", cpdfm.one2one("id", p.i4("id"), "cp"))))
-				.collect(DFrame.dfmclc);
+		final var bill_sql = String.format("select * from t_billof_product where issuer_id=%d order by time",
+				this.companyId);
+		final var cp_sql = "select cp.id,p.name from t_company_product cp left join t_product p on cp.product_id=p.id";
+		final var bldfm = jdbcApp.sqldframe(bill_sql).forEachBy(Jdbcs.h2_json_processor("details"));
+		final var cpdfm = jdbcApp.sqldframe(cp_sql); // 公司产品
+		final var lines = bldfm.rowS().flatMap(e -> e.path2llS("details/items", IRecord::REC) // 展开行项目
+				.map(REC("drcr", switch (e.str("bill_type")) { // drcr 根据类型改名
+				case "receipt" -> 1; // 入库单
+				case "invoice" -> -1; // 出库单
+				default -> 0;
+				})::derive).map(p -> {
+					final var bill_id = e.lng("id"); // 单据id
+					final var name = cpdfm.one2one("id", p.i4("id"), "cp").str("name"); // 货物名称
+					final var time = e.ldt("time"); // 单据时间
+					final var line = p.add("bill_id", bill_id, "name", name, "time", time); // 补充单据信息
+					return line;
+				})).collect(DFrame.dfmclc);
 		return lines;
 	}
 
