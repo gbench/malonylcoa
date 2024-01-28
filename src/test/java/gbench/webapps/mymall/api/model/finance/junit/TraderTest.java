@@ -8,7 +8,6 @@ import static gbench.util.jdbc.kvp.IRecord.M;
 import static gbench.webapps.mymall.api.model.finance.Finances.*;
 
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.util.lisp.Lisp;
 import gbench.webapps.mymall.api.model.finance.trading.FinTraderBuilder;
 
 /**
@@ -42,12 +41,12 @@ public class TraderTest {
 		} // for
 		println("bldfm", invt.bills().forEachBy(h2_json_processor("details")));
 		println("fifo", invt.fifo()); // 出入库信息
-		final var root = invt.fifo().pivotTable("id,drcr,bill_id", ss -> ss.collect(Lisp.aaclc(aa -> M(//
+		final var root = invt.fifo().pivotTable0("id,drcr,bill_id", aa -> M( //
 				"bill_id", aa.get(0).lng("bill_id"), // 数量
 				"qty", dqsum(aa), // 数量
 				"price", aa.get(0).ldt("price"), // 价格
 				"time", aa.get(0).ldt("time") // 时间
-		))));
+		));
 		println("tree");
 		root.treeNode().forEach(e -> {
 			final var ident = " | ".repeat(e.getLevel() - 1);

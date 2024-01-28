@@ -393,6 +393,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
 	 */
 	public <U> IRecord pivotTable(final String keys, final Function<Stream<IRecord>, U> mapper) {
+
 		return this.rowS().collect(IRecord.pvtclc(keys, mapper));
 	}
 
@@ -405,7 +406,21 @@ public class DFrame extends LinkedRecord {
 	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
 	 */
 	public <U> IRecord pivotTable(final String keys[], final Function<Stream<IRecord>, U> mapper) {
+
 		return this.rowS().collect(IRecord.pvtclc(keys, mapper));
+	}
+
+	/**
+	 * 数据透视表（指标变换批量mapper）
+	 * 
+	 * @param <U>    结果类型
+	 * @param keys   键名序列,用逗号分隔
+	 * @param mapper 列指标：分类结果的计算器
+	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
+	 */
+	public <U> IRecord pivotTable0(final String keys, final Function<List<IRecord>, U> mapper) {
+
+		return this.rowS().collect(IRecord.pvtclc(keys, ss -> mapper.apply(ss.toList())));
 	}
 
 	/**
@@ -417,6 +432,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
 	 */
 	public <U> IRecord pivotTable1(final String keys, final Function<IRecord, U> mapper) {
+
 		return this.rowS().collect(IRecord.pvtclc1(keys, mapper));
 	}
 
@@ -429,6 +445,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 按照keys标识的pivotPath所组织的阶梯式指标数据格式
 	 */
 	public <U> IRecord pivotTable1(final String keys[], final Function<IRecord, U> mapper) {
+
 		return this.rowS().collect(IRecord.pvtclc1(keys, mapper));
 	}
 
@@ -438,6 +455,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 返回行统计
 	 */
 	public DFrame summary() {
+
 		return this.summary(2);
 	}
 
@@ -448,6 +466,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 返回行统计
 	 */
 	public DFrame summary(final int margin) {
+
 		final var numS = margin == 1 // 数值流
 				? this.rowS().map(e -> DFrame.dblS(e.values())) // 行数据流
 				: this.colS(DFrame::dblS); // 列数据流
@@ -467,6 +486,7 @@ public class DFrame extends LinkedRecord {
 	 * @return key 所指定的列的数值的数值序列
 	 */
 	public DoubleStream dblS(final String key) {
+
 		return DFrame.dblS(this.lls(key));
 	}
 
@@ -477,6 +497,7 @@ public class DFrame extends LinkedRecord {
 	 * @return key 所指定的列的数值的数值序列
 	 */
 	public DoubleStream dblS(final Integer idx) {
+
 		return this.dblS(this.keyOfIndex(idx));
 	}
 
@@ -486,6 +507,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的平均值
 	 */
 	public long count() {
+
 		return this.dblS(0).summaryStatistics().getCount();
 	}
 
@@ -496,6 +518,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的平均值
 	 */
 	public long count(final String key) {
+
 		return this.dblS(key).summaryStatistics().getCount();
 	}
 
@@ -506,6 +529,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的平均值
 	 */
 	public long count(final Integer idx) {
+
 		return this.count(this.keyOfIndex(idx));
 	}
 
@@ -516,6 +540,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的平均值
 	 */
 	public double sum(final String key) {
+
 		return this.dblS(key).summaryStatistics().getSum();
 	}
 
@@ -526,6 +551,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的平均值
 	 */
 	public double sum(final Integer idx) {
+
 		return this.sum(this.keyOfIndex(idx));
 	}
 
@@ -536,6 +562,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的平均值
 	 */
 	public double avg(final String key) {
+
 		return this.dblS(key).summaryStatistics().getAverage();
 	}
 
@@ -546,6 +573,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的平均值
 	 */
 	public double avg(final Integer idx) {
+
 		return this.avg(this.keyOfIndex(idx));
 	}
 
@@ -556,6 +584,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的最大值
 	 */
 	public double min(final String key) {
+
 		return this.dblS(key).summaryStatistics().getMin();
 	}
 
@@ -566,6 +595,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的最大值
 	 */
 	public double min(final Integer idx) {
+
 		return this.min(this.keyOfIndex(idx));
 	}
 
@@ -576,6 +606,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的最大值
 	 */
 	public double max(final String key) {
+
 		return this.dblS(key).summaryStatistics().getMax();
 	}
 
@@ -586,6 +617,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列的最大值
 	 */
 	public double max(final Integer idx) {
+
 		return this.max(this.keyOfIndex(idx));
 	}
 
@@ -595,6 +627,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 数据流
 	 */
 	public Object data() {
+
 		return this.dataS().toArray();
 	}
 
@@ -604,6 +637,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 数据流
 	 */
 	public Stream<Object> dataS() {
+
 		return this.dataS(2);
 	}
 
@@ -613,6 +647,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 数据流
 	 */
 	public List<Object> datas() {
+
 		return this.dataS().toList();
 	}
 
@@ -625,6 +660,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 数据数组
 	 */
 	public <A> A[] data(final IntFunction<A[]> generator) {
+
 		return this.dataS().toArray(generator);
 	}
 
@@ -635,6 +671,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 数据流
 	 */
 	public Stream<Object> dataS(final int margin) {
+
 		final Stream<Stream<Object>> dataS = margin == 1 //
 				? this.rowS(e -> e.values().stream()) //
 				: this.colS(e -> e.stream());
@@ -651,6 +688,7 @@ public class DFrame extends LinkedRecord {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T, U> Stream<U> dataS(final int margin, final Function<T, U> mapper) {
+
 		return this.dataS(margin).map(e -> mapper.apply((T) e));
 	}
 
