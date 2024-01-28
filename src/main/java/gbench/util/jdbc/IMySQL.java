@@ -2,6 +2,7 @@ package gbench.util.jdbc;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
@@ -211,6 +212,17 @@ public interface IMySQL {
 	 */
 	default DFrame sqldframe(final String sqlpattern) {
 		return this.sqldframe(sqlpattern, (IRecord) null);
+	}
+
+	/**
+	 * 依据主键查询
+	 * 
+	 * @param table 表名
+	 * @param id    主键值
+	 * @return 主键对应的表字段
+	 */
+	default Optional<IRecord> getById(final String table, final Object id) {
+		return this.sqlqueryS(String.format("select * from %s where id=%s", table, id)).findFirst();
 	}
 
 	/**
