@@ -10,6 +10,11 @@ import gbench.webapps.mymall.api.model.finance.builder.AbstractFinBase;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.sql.SQL.sql;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * 存货对象
@@ -117,6 +122,74 @@ public class Inventory extends AbstractFinBase<Inventory> {
 					final var line = p.add("bill_id", bill_id, "name", name, "time", time); // 补充单据信息
 					return line;
 				})).collect(DFrame.dfmclc);
+		return lines;
+	}
+
+	/**
+	 * 将发货单与存货单进行匹配对应
+	 * 
+	 * @param receipts 库存单
+	 * @param invoices 发货单
+	 */
+	public static Stream<IRecord> correspondS(final double[] receipts, final double[] invoices) {
+		return corresponds(receipts, invoices).stream();
+	}
+
+	/**
+	 * 将发货单与存货单进行匹配对应
+	 * 
+	 * @param receipts 库存单
+	 * @param invoices 发货单
+	 */
+	public static List<IRecord> corresponds(final double[] receipts, final double[] invoices) {
+		final Function<double[], double[]> cumsum = origin -> { // 帕累托累计和函数
+			double[] dd = Arrays.copyOf(origin, origin.length);
+			for (int i = 1; i < dd.length; i++) {
+				dd[i] += dd[i - 1];
+			}
+			return dd;
+		}; // 帕累托累计和函数
+		final List<IRecord> lines = new LinkedList<IRecord>();
+		final double[] rcpcums = cumsum.apply(receipts); // 帕累托累计和
+		final double[] ivccums = cumsum.apply(invoices); // 帕累托累计和
+		int i = 0; // 收货单/入库单索引
+		int j = 0; // 发货单/出库单所索引
+		for (; j < ivccums.length; j++) { // 逐个发货单进行匹配,发货单索引逐次向后递增
+			final var provides = new LinkedList<IRecord>();
+			final var i0 = i; // 记录初始位置
+			while (i < rcpcums.length && rcpcums[i] < ivccums[j]) { // 直到拓展到收货单的数量累计和大于发货单的数量累计和
+				i++; // 继续拓展到下一个收货单
+			} // 当收货单索引拓展到收货单最大数量后就不再增加了
+			final var initial = i0 >= rcpcums.length // 发货单索引是否有效
+					? -1 // 发货单索引非法,用-1标识非法数量
+					: j == 0 // 是否时首个发货单
+							? Math.min(receipts[0], invoices[0]) // 首个：收货单数量与发货单数量中的较小者
+							: Math.min(rcpcums[i0] - ivccums[j - 1], invoices[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小着
+			final var line = REC("id", j, "volume", invoices[j], "requires", invoices[j], "provides", provides);
+			if (i >= rcpcums.length) { // 库存不足
+				for (int k = i0; k < i; k++) {
+					final var quantity = k == i0 ? initial : receipts[k];
+					if (quantity > 0) { // 初始数量大于0时才给予写入
+						provides.add(REC("index", k, "quantity", quantity));
+					} // if
+				}
+				final var lacks = ivccums[j] - rcpcums[i - 1]; // 缺失数量
+				lines.add(
+						line.derive("lacks", lacks, "eror", String.format("空间不足,缺少:%f", ivccums[j] - rcpcums[i - 1])));
+				// break;
+			} else {// 库存足够
+				final var unused = rcpcums[i] - ivccums[j]; // 多余部分未使用的数量
+				final var used = receipts[i] - unused; // 实际使用的部分,最终数量
+				for (int k = i0; k <= i; k++) {
+					final var quantity = k == i0 ? initial : k == i ? used : receipts[k];
+					if (quantity > 0) { // 初始数量大于0时才给予写入
+						provides.add(REC("index", k, "quantity", quantity));
+					} // if
+				}
+				lines.add(line);
+			} // if
+		}
+
 		return lines;
 	}
 
