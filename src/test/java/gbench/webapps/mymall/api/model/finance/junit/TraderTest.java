@@ -80,13 +80,13 @@ public class TraderTest {
 	@Test
 	public void bar() {
 		// 货源充足
-		println("corresponds", correspondfm(new double[] { 1000 }, //
+		println("correspondfm", correspondfm(new double[] { 1000 }, //
 				new double[] { 2, 4, 8 }));
 		// 首次发货：精确匹配
-		println("corresponds", correspondfm(new double[] { 1, 5, 1, 3, 5 }, //
+		println("correspondfm", correspondfm(new double[] { 1, 5, 1, 3, 5 }, //
 				new double[] { 2, 4, 8 }));
 		// 不经精确匹配
-		println("corresponds", correspondfm(new double[] { 1, 5, 1, 3, 5, 1, 3, 1 }, //
+		println("correspondfm", correspondfm(new double[] { 1, 5, 1, 3, 5, 1, 3, 1 }, //
 				new double[] { 2, 4, 8, 8, 9 }));
 	}
 }
