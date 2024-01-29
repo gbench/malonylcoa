@@ -126,28 +126,53 @@ public class Inventory extends AbstractFinBase<Inventory> {
 	}
 
 	/**
-	 * 将发货单与存货单进行匹配对应
+	 * 将发货单与存货单进行匹配对应(数据流版) <br>
+	 * 通过排序对receipts和invoices个这种排序再结合correspondS就可以实现: <br>
+	 * FIFO(receipts的按照时间正序排序),LIFO(receipts的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
-	 * @param receipts 库存单
-	 * @param invoices 发货单
+	 * @param receipts 入库单的各个入库数量
+	 * @param invoices 发货单的各个出库数量
+	 * @return 发货方案列表,逐项罗列各个发货单对应的入库单的中所需货物数量:
+	 *         [{id:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
+	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,eror:缺货信息 }]}]
+	 */
+	public static DFrame correspondfm(final double[] receipts, final double[] invoices) {
+		return correspondS(receipts, invoices).collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 将发货单与存货单进行匹配对应(数据流版) <br>
+	 * 通过排序对receipts和invoices个这种排序再结合correspondS就可以实现: <br>
+	 * FIFO(receipts的按照时间正序排序),LIFO(receipts的按照时间逆向排序)等会计记账需要的存货成本核算策略。
+	 * 
+	 * @param receipts 入库单的各个入库数量
+	 * @param invoices 发货单的各个出库数量
+	 * @return 发货方案列表,逐项罗列各个发货单对应的入库单的中所需货物数量:
+	 *         [{id:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
+	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,eror:缺货信息 }]}]
 	 */
 	public static Stream<IRecord> correspondS(final double[] receipts, final double[] invoices) {
 		return corresponds(receipts, invoices).stream();
 	}
 
 	/**
-	 * 将发货单与存货单进行匹配对应
+	 * 将发货单与存货单进行匹配对应(列表版本) <br>
+	 * 通过排序对receipts和invoices个这种排序再结合correspondS就可以实现: <br>
+	 * FIFO(receipts的按照时间正序排序),LIFO(receipts的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
-	 * @param receipts 库存单
-	 * @param invoices 发货单
+	 * @param receipts 入库单的各个入库数量
+	 * @param invoices 发货单的各个出库数量
+	 * @return 发货方案列表,逐项罗列各个发货单对应的入库单的中所需货物数量:
+	 *         [{id:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
+	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,eror:缺货信息 }]}]
 	 */
 	public static List<IRecord> corresponds(final double[] receipts, final double[] invoices) {
 		final Function<double[], double[]> cumsum = origin -> { // 帕累托累计和函数
-			double[] dd = Arrays.copyOf(origin, origin.length);
-			for (int i = 1; i < dd.length; i++) {
-				dd[i] += dd[i - 1];
-			}
-			return dd;
+			double[] data = Arrays.copyOf(origin, origin.length); // 复制原来的数量
+			for (int i = 1; i < data.length; i++) { // 逐次向后累计递增
+				data[i] += data[i - 1]; // 累计递增
+			} // for 逐次向后累计递增
+			return data; // 累计和
 		}; // 帕累托累计和函数
 		final List<IRecord> lines = new LinkedList<IRecord>();
 		final double[] rcpcums = cumsum.apply(receipts); // 帕累托累计和
@@ -165,7 +190,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 					: j == 0 // 是否时首个发货单
 							? Math.min(receipts[0], invoices[0]) // 首个：收货单数量与发货单数量中的较小者
 							: Math.min(rcpcums[i0] - ivccums[j - 1], invoices[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小着
-			final var line = REC("id", j, "volume", invoices[j], "requires", invoices[j], "provides", provides);
+			final var line = REC("id", j, "requires", invoices[j], "provides", provides);
 			if (i >= rcpcums.length) { // 库存不足
 				for (int k = i0; k < i; k++) {
 					final var quantity = k == i0 ? initial : receipts[k];

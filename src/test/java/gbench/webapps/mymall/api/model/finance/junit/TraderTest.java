@@ -7,7 +7,7 @@ import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.DFrame.dfmclc;
 import static gbench.util.jdbc.kvp.IRecord.M;
 import static gbench.webapps.mymall.api.model.finance.Finances.*;
-import static gbench.webapps.mymall.api.model.finance.acct.invt.Inventory.correspondS;
+import static gbench.webapps.mymall.api.model.finance.acct.invt.Inventory.correspondfm;
 
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -79,10 +79,14 @@ public class TraderTest {
 	 */
 	@Test
 	public void bar() {
-		println("corresponds", correspondS(new double[] { 1, 5, 1, 3, 5 }, //
-				new double[] { 2, 4, 8 }).collect(dfmclc));
-		//
-		println("corresponds", correspondS(new double[] { 1,5, 1, 3, 5,1,3,1 }, //
-				new double[] { 2, 4, 8, 8,9 }).collect(dfmclc));
+		// 货源充足
+		println("corresponds", correspondfm(new double[] { 1000 }, //
+				new double[] { 2, 4, 8 }));
+		// 首次发货：精确匹配
+		println("corresponds", correspondfm(new double[] { 1, 5, 1, 3, 5 }, //
+				new double[] { 2, 4, 8 }));
+		// 不经精确匹配
+		println("corresponds", correspondfm(new double[] { 1, 5, 1, 3, 5, 1, 3, 1 }, //
+				new double[] { 2, 4, 8, 8, 9 }));
 	}
 }
