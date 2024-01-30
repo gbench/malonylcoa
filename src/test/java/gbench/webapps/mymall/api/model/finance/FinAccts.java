@@ -65,7 +65,7 @@ public class FinAccts {
 			linedfm.rowS().map(line -> {
 				final var item_id = line.i4("item_id"); // 公司产品id
 				final var product_id = cpdfm.one2one("id", item_id, "cp").i4("product_id"); // 产品id
-				return line.add("product_id", product_id); // 增加h产品id字段
+				return line.add("product_id", product_id); // 增加产品id字段
 			}).flatMap(acct_item_adjuster(fa)).forEach(line -> { // 依次处理各个单据凭证行项目
 				final var bill_id = line.i4("id"); // 单据id
 				final var bill_type = line.str("bill_type"); // 单据类型
@@ -179,7 +179,7 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 分解之后的发货处理科目
+	 * @return 调整以后记账凭证项目(往往是一次发货或会根据成本核算模式要求拆分成多组不同成本构成的记账凭证项目）
 	 */
 	public static Stream<IRecord> bill_short_fifo_handler(final FinAcct fa, IRecord item) {
 		return bill_short_handler(fa, item, true);
@@ -192,10 +192,10 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 分解之后的发货处理科目
+	 * @return 调整以后记账凭证项目(往往是一次发货或会根据成本核算模式要求拆分成多组不同成本构成的记账凭证项目）
 	 */
 	public static Stream<IRecord> bill_short_lifo_handler(final FinAcct fa, IRecord item) {
-		return bill_short_handler(fa, item, true);
+		return bill_short_handler(fa, item, false);
 	}
 
 	/**
@@ -205,7 +205,8 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 分解之后的发货处理科目
+	 * @param flag 是否采用fifo模式来核算成本,true:filo模式,false:lifo模式
+	 * @return 调整以后记账凭证项目(往往是一次发货或会根据成本核算模式要求拆分成多组不同成本构成的记账凭证项目）
 	 */
 	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item, final boolean flag) {
 		final var bill_type = item.str("bill_type").toUpperCase(); // 单据类型
