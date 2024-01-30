@@ -179,20 +179,20 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 调整后的记账凭证项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_fifo_handler(final FinAcct fa, IRecord item) {
 		return bill_short_handler(fa, item, true);
 	}
 
 	/**
-	 * 出入库票据的空头方的price和quantity调整(先入先出算法) <br>
+	 * 出入库票据的空头方的price和quantity调整(后入先出算法) <br>
 	 * 凭证项目调整:以便适配会计策略的算法 <br>
 	 * 空头持有发货凭证,按照货物的入库成本法进行数量核算:原理就是分析item成一组新的items,每个item具有更为精确的quantiy和price
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 调整后的记账凭证项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_lifo_handler(final FinAcct fa, IRecord item) {
 		return bill_short_handler(fa, item, false);
@@ -206,7 +206,7 @@ public class FinAccts {
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
 	 * @param flag 是否采用fifo模式来核算成本,true:filo模式,false:lifo模式
-	 * @return 调整后的记账凭证项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item, final boolean flag) {
 		final var bill_type = item.str("bill_type").toUpperCase(); // 单据类型
@@ -232,7 +232,7 @@ public class FinAccts {
 				.filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(-1)).collect(DFrame.dfmclc); // 贷方余额
 		println(String.format("crdfm#\n%s", checkoutdfm));
 
-		if (checkindfm.length() > 0) { // 发现库存产品,根据库存产品进行发货凭证中的quantity与price调整。即 调整记账凭证项目。
+		if (checkindfm.length() > 0) { // 发现库存产品,根据库存产品进行发货凭证中的quantity与price调整。即 调整记账凭证行项目。
 			final Function<DFrame, double[]> todbls = dfm -> dfm.rowS().mapToDouble(e -> e.dbl("quantity")).toArray(); // 转换成double[]
 			final var checkins = todbls.apply(checkindfm); // 入库单:checkin方向
 			final var checkouts = Arrays.copyOf(todbls.apply(checkoutdfm), checkoutdfm.length() + 1); // 出库单:checkout方向
@@ -242,10 +242,10 @@ public class FinAccts {
 			final var linedfm = Inventory.correspondfm(checkins, checkouts); // 根据checkins为checkouts生成发货方案
 			final var checkout_index = checkouts.length - 1; // item 对应的发货单的发货计划
 			final var items_adjusted = linedfm.rowS().filter(e -> e.i4("index").equals(checkout_index))
-					.flatMap(line -> { // 每个line代表一个发货单的发货方案
+					.flatMap(line -> { // 每个line代表一个发货单的发货方案,每个记账项目可以由一组缺货数量lacks_items与可供应数量provides_items来进行表示
 						final var provides = line.llS("provides", IRecord::REC); // 可供应数量
 						final var lacks_items = line.i4opt("lacks") // 缺货项目数量
-								.map(lacks -> Arrays.asList(item.derive("quantity", lacks))) //
+								.map(lacks -> Arrays.asList(item.derive("quantity", lacks))) // 使用记账凭证行项目修正为缺货数量
 								.orElseGet(LinkedList::new); // 缺货项目按照订单价格与缺货数量进行发货
 						final var provides_items = provides.equals(Stream.empty()) // 缺货判定
 								? Arrays.asList(item) // provides 为空带表缺货
@@ -271,10 +271,10 @@ public class FinAccts {
 						return plan_items.stream();
 					}); // flatMap
 
-			return items_adjusted; // 调整后的凭证项目
+			return items_adjusted; // 调整后的记账凭证行项目
 		} else { // 没有相应的库存产品,则保持原理的记账凭证不变,即不做任何调整
 			return Stream.of(item);
-		} // if 发现库存产品，调整记账凭证项目。
+		} // if 发现库存产品，调整记账凭证行项目。
 	}
 
 	final static IRecord ACCTS = REC(1406, "库存商品", 1407L, "发出商品"); // 分录编号字典
