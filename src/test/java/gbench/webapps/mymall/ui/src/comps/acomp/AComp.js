@@ -583,7 +583,7 @@ const AComp = {
 						,CASE ${this.company_id} WHEN parta_id THEN partb_id WHEN partb_id THEN parta_id ELSE '-' END as counterpart
 						,tbl.*`;
 						conditions = `WHERE parta_id=${this.company_id} OR partb_id=${this.company_id}`;
-						orderby = "order by position,id";
+						orderby = "order by position desc,id desc";
 						data_handler = data => {
 							const _data = data.map(e => { // 翻译对手方id
 								const cid = e["counterpart"];
