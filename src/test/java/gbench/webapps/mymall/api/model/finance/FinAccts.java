@@ -178,7 +178,7 @@ public class FinAccts {
 								Stream.of(item.dbl("quantity"))).mapToDouble(e -> e).toArray(); // 出库单
 						final var lines = Inventory.correspondfm(receipts, invoices); // 生成发货方案
 						final var ivc_index = invoices.length - 1; // item 对应的发货单的发货计划
-						final var checkout_lines = lines.rowS().filter(e -> e.i4("id").equals(ivc_index))
+						final var checkout_lines = lines.rowS().filter(e -> e.i4("index").equals(ivc_index))
 								.flatMap(line -> { // 每个line代表一个发货单的发货方案
 									final var provides = line.llS("provides", IRecord::REC); // 可供应数量
 									final var lack_items = line.i4opt("lacks") // 缺货项目数量
