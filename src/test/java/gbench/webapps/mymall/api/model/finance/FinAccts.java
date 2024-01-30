@@ -93,10 +93,10 @@ public class FinAccts {
 	 * 提交后的分录项目调整
 	 * 
 	 * @param acct_entity_id 记账主体id
-	 * @param cpdfm
-	 * @param whdfm
-	 * @param cydfm
-	 * @param oddfm
+	 * @param cpdfm          公司产品信息
+	 * @param whdfm          仓库信息
+	 * @param cydfm          公司信息
+	 * @param oddfm          订单信息
 	 * @return 提交后的分录项目调整方法
 	 */
 	public static Consumer<? super IRecord> post_entry_adjuster(final int acct_entity_id, final DFrame cpdfm,
@@ -253,10 +253,10 @@ public class FinAccts {
 							final var checkin = checkindfm.row(checkin_index); // 提取对应额收货单
 							return item.derive("quantity", quantity, "price", checkin.dbl("price")); // 使用存货产品数量进行发货
 						}).toList(); // 对应于存货的发货方案
-				final var colines = new LinkedList<IRecord>(); // 发货方案
+				final var plan_items = new LinkedList<IRecord>(); // 发货方案
 
-				colines.addAll(provides_items); // 可提供部分
-				colines.addAll(lacks_items); // 缺失部分
+				plan_items.addAll(provides_items); // 可提供部分
+				plan_items.addAll(lacks_items); // 缺失部分
 				println(String.format("----\n发货方案#%s\n%s", checkout_index, item));
 				REC("lacks_items", lacks_items, "provides_items", provides_items).forEach(p -> { // 发出方案的打印
 					@SuppressWarnings("unchecked")
@@ -266,7 +266,7 @@ public class FinAccts {
 					} // if
 				}); // forEach
 
-				return colines.stream();
+				return plan_items.stream();
 			}); // flatMap
 
 			return items_adjusted; // 调整后的凭证项目
