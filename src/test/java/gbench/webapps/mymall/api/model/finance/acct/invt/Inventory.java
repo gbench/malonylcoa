@@ -198,9 +198,10 @@ public class Inventory extends AbstractFinBase<Inventory> {
 						provides.add(REC("index", k, "quantity", quantity));
 					} // if
 				}
-				final var lacks = ivccums[j] - rcpcums[i - 1]; // 缺失数量
-				lines.add(
-						line.derive("lacks", lacks, "eror", String.format("空间不足,缺少:%f", ivccums[j] - rcpcums[i - 1])));
+				final var lacks_total = ivccums[j] - rcpcums[i - 1]; // 缺货累计
+				final var lacks = Math.min(invoices[j], lacks_total); // 当前单缺货数量
+				final var error = String.format("空间不足,缺少:%f", lacks_total);
+				lines.add(line.derive("lacks", lacks, "lacks_total", lacks_total, "eror", error));
 				// break;
 			} else {// 库存足够
 				final var unused = rcpcums[i] - ivccums[j]; // 多余部分未使用的数量

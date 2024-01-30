@@ -5,6 +5,8 @@ import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -51,25 +53,32 @@ public class FinAccts {
 					.rowS(item -> item.alias(k -> switch (k) { // 字段改名
 					case "id" -> "item_id"; // id改为item_id即公司产品id
 					default -> k; // 其他保持默认不变
-					}).derive(e.filter("id,bill_type,position,warehouse_id")))).flatMap(acct_item_adjuster(fa))
-					.collect(DFrame.dfmclc); // 数据行
+					}).derive(e.filter("id,bill_type,position,warehouse_id")))).collect(DFrame.dfmclc); // 数据行
 			final var ledger = fa.getLedger(String.format("公司账【%s】", //
 					cydfm.one2one("id", company_id, "cy").str("name"))); // 会计账簿
 
 			println("单据凭证行项目linedfm", linedfm);
 
 			// 单据凭证行项目日记账
-			linedfm.rowS().forEach(line -> { // 依次处理各个单据凭证行项目
+			linedfm.rowS().map(line -> {
+				final var item_id = line.i4("item_id"); // 公司产品id
+				final var product_id = cpdfm.one2one("id", item_id, "cp").i4("product_id"); // 产品id
+				return line.add("product_id", product_id); // 增加h产品id字段
+			}).flatMap(acct_item_adjuster(fa)).forEach(line -> { // 依次处理各个单据凭证行项目
 				final var bill_id = line.i4("id"); // 单据id
 				final var bill_type = line.str("bill_type"); // 单据类型
 				final var position = line.str("position"); // 交易的产品头寸
 				final var item_id = line.i4("item_id"); // 公司产品id
+				final var product_id = line.i4("product_id"); // 公司产品id
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
-				final var amount = line.dbl("price") * line.dbl("quantity"); // 交易金额
+				final var quantity = line.dbl("quantity"); // 数量
+				final var price = line.dbl("price"); // 单价
+				final var amount = price * quantity; // 交易金额
 				final var path = String.format("%s/%s", bill_type, position); // 会计策略路径：单据类型/持有头寸
-				final var mykeys = "bill_id,bill_type,item_id,warehouse_id"; // 会计凭证中需要写入会计分录的自定义字段名序列
-				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "item_id", item_id, "warehouse_id",
-						warehouse_id, "mykeys", mykeys); // 会计凭证中需要写入会计分录的自定义内容
+				final var mykeys = "bill_id,bill_type,item_id,product_id,warehouse_id,price,quantity"; // 会计凭证中需要写入会计分录的自定义字段名序列
+				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "item_id", item_id, "product_id",
+						product_id, "warehouse_id", warehouse_id, "price", price, "quantity", quantity, "mykeys",
+						mykeys); // 会计凭证中需要写入会计分录的自定义内容
 				// 账目誊写:是根据记账策略(特定类型的记账凭证的记账法)，把会计凭证中的内容编制成会计分录
 				ledger.handle(path, amount, vars); // 写入分类账：依据path所指定的记账测录，编制会计分录
 			}); // linedfm.rowS().forEach
@@ -95,7 +104,7 @@ public class FinAccts {
 			final var bill_type = entry.str("bill_type"); // 记账凭证类型
 			final var item_id = entry.i4("item_id"); // 公司产品id
 			final var warehouse_id = entry.i4("warehouse_id"); // 库房id
-			final var cpopt = cpdfm.one2opt("id", item_id, "cp"); // 公司产品opt
+			final var cpopt = cpdfm.one2opt("id", item_id, "cp1"); // 公司产品opt
 			final var pcy_id = cpopt.map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
 			final var product = cpopt.map(e -> e.str("name")).orElse("-"); // 公司产品
 			final var product_id = cpopt.map(e -> e.i4("product_id")).orElse(-1); // 公司产品id
@@ -145,19 +154,22 @@ public class FinAccts {
 	private static Function<IRecord, Stream<IRecord>> acct_item_adjuster(final FinAcct fa) {
 		return item -> { // 产品调整,根据需要会把一单分拆成多单
 			final var position = item.str("position"); // 交易的产品头寸
-			final var item_id = item.i4("item_id"); // 公司产品id
+			final var product_id = item.i4("product_id"); // 产品id,注意这里使用的是产品id而不是公司产品id
 			switch (item.str("bill_type")) {
 			case "invoice": { // 发货单中的产品项目的的处理
 				switch (position) { // 交易头寸
-				case "short": { // 空头持有发货凭证,按照货物的入库成本法进行数量核算
-					final var rcps = fa.getEntrieS().filter(e -> e.i4("acctnum").equals(1406) // 库存商品
-							&& e.i4("drcr").equals(1) // 入库产品
-							&& e.i4("item_id").equals(item_id)) //
+				case "short": { // 空头持有发货凭证,按照货物的入库成本法进行数量核算:原理就是分析item成一组新的items,每个item具有更为精确的quantiy和price
+					println("====================================================================");
+					println(String.format("SHORT FOR INVOICE [%s]", item));
+					println("====================================================================");
+
+					final var entries = fa.getEntrieS().filter(e -> e.i4("product_id").equals(product_id)).toList();
+					final var rcps = entries.stream() // 库存商品借方分录
+							.filter(e -> e.i4("acctnum").equals(1406) && e.i4("drcr").equals(1)) // 入库产品
 							.sorted(IRecord.cmp("time")) // 入库时间进行排序
 							.toList(); // 入库单
-					final var ivcs = fa.getEntrieS().filter(e -> e.i4("acctnum").equals(1406) // 库存商品
-							&& e.i4("drcr").equals(1) // 出库产品
-							&& e.i4("item_id").equals(item_id)) // 按照产品id
+					final var ivcs = entries.stream() // 库存商品贷方分录
+							.filter(e -> e.i4("acctnum").equals(1406) && e.i4("drcr").equals(-1))// 出库产品
 							.sorted(IRecord.cmp("time")) // 入库时间进行排序
 							.toList(); // 入库单
 					if (rcps.size() > 0) { // 发现库存产品
@@ -165,23 +177,36 @@ public class FinAccts {
 						final var invoices = Stream.concat(ivcs.stream().map(e -> e.dbl("quantity")), //
 								Stream.of(item.dbl("quantity"))).mapToDouble(e -> e).toArray(); // 出库单
 						final var lines = Inventory.correspondfm(receipts, invoices); // 生成发货方案
-						println(String.format("发货方案,receipts:%s,invoices:%s,lines:%s", receipts, invoices, lines)); // 发货方案
-						println("item_id#", item_id, rcps);
-						return lines.rowS().flatMap(line -> { // 每个line代表一个发货单的发货方案
-							// final var i_ivc = line.i4("id"); // 发票索引
-							final var provides = line.llS("provides", IRecord::REC);
-							final var lackS = line.i4opt("lacks").map(e -> Stream.of(item)).orElse(Stream.empty()); // 缺货
-							final var provideS = provides.equals(Stream.empty()) // 缺货判定
-									? Stream.of(item) //// provides 为空带表缺货
-									: line.llS("provides", IRecord::REC).map(e -> {// i_ivc发货单需要拆分曾provides个给予核算
-										final var i_rcp = e.i4("index"); // 收据索引
-										// final var quantity = e.dbl("quantity"); // 对应的收货单数量
-										final var receipt = rcps.get(i_rcp); // 提取对应额收货单
-										return item.derive("price", receipt.dbl("price")); // 使用receipt中的产品介个
-									}); // 对应于存货的发货方案
-							return Stream.concat(lackS, provideS); // 缺货记录与库存计价进行一并处理
-						}); // flatMap
-					} // 发现库存产品
+						final var ivc_index = invoices.length - 1; // item 对应的发货单的发货计划
+						final var checkout_lines = lines.rowS().filter(e -> e.i4("id").equals(ivc_index))
+								.flatMap(line -> { // 每个line代表一个发货单的发货方案
+									final var provides = line.llS("provides", IRecord::REC); // 可供应数量
+									final var lack_items = line.i4opt("lacks") // 缺货项目数量
+											.map(lacks -> Arrays.asList(item.derive("quantity", lacks))) //
+											.orElseGet(LinkedList::new); // 缺货项目按照订单价格与缺货数量进行发货
+									final var provide_items = provides.equals(Stream.empty()) // 缺货判定
+											? Arrays.asList(item) //// provides 为空带表缺货
+											: line.llS("provides", IRecord::REC).map(e -> {// i_ivc发货单需要拆分曾provides个给予核算
+												final var i_rcp = e.i4("index"); // 收据索引
+												final var quantity = e.dbl("quantity"); // 对应的收货单数量
+												final var receipt = rcps.get(i_rcp); // 提取对应额收货单
+												return item.derive("quantity", quantity, "price", receipt.dbl("price")); // 使用存货产品数量进行发货
+											}).toList(); // 对应于存货的发货方案
+									final var checkouts = new LinkedList<IRecord>(); // 发货方案
+									checkouts.addAll(lack_items);
+									checkouts.addAll(provide_items);
+									println("发货方案#", ivc_index, item);
+									if (lack_items.size() > 0) {
+										println("lack_items:", DFrame.of(lack_items));
+									}
+									if (provide_items.size() > 0) {
+										println("provide_items:", DFrame.of(provide_items));
+									}
+									return checkouts.stream();
+								}); // flatMap
+
+						return checkout_lines;
+					} // if 发现库存产品
 				} // short
 				default: {
 					// do nothing

@@ -757,6 +757,17 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 构建DFrame
+	 * 
+	 * @param rows 行数据
+	 * @return DFrame
+	 */
+	public static DFrame of(final Iterable<IRecord> rows) {
+
+		return StreamSupport.stream(rows.spliterator(), false).collect(dfmclc);
+	}
+
+	/**
 	 * 浮点数的流
 	 * 
 	 * @param objs 浮点数对象
