@@ -235,7 +235,7 @@ public class FinAccts {
 			final Function<DFrame, double[]> todbls = dfm -> dfm.rowS().mapToDouble(e -> e.dbl("quantity")).toArray();
 			final var checkins = todbls.apply(checkindfm); // 入库单:checkin方向
 			final var checkouts = Arrays.copyOf(todbls.apply(checkoutdfm), checkoutdfm.height() + 1); // 出库单:checkout方向
-			checkouts[checkouts.length + 1] = item.dbl("quantity"); // 最后一项使用当前凭证项目的数量,这就是逐次累计的实现逻辑，始终在最后追加
+			checkouts[checkouts.length - 1] = item.dbl("quantity"); // 最后一项使用当前凭证项目的数量,这就是逐次累计的实现逻辑，始终在最后追加
 			println(String.format("checkins:%s\ncheckouts:%s", nd(checkins), nd(checkouts)));
 
 			final var lines = Inventory.correspondfm(checkins, checkouts); // 生成发货方案
