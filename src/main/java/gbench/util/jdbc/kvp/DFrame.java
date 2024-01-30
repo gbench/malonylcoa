@@ -725,12 +725,21 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
-	 * 行数量
+	 * 行数量(length别名)
 	 * 
 	 * @return 行数量
 	 */
 	public int height() {
-		return this.shape()._1;
+		return this.length();
+	}
+
+	/**
+	 * 行数量
+	 * 
+	 * @return 行数量
+	 */
+	public int length() {
+		return this.rows().size();
 	}
 
 	/**
@@ -739,7 +748,7 @@ public class DFrame extends LinkedRecord {
 	 * @return 列数量
 	 */
 	public int width() {
-		return this.shape()._2;
+		return this.size();
 	}
 
 	/**

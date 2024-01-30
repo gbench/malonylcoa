@@ -128,46 +128,49 @@ public class Inventory extends AbstractFinBase<Inventory> {
 
 	/**
 	 * 将发货单与存货单进行匹配对应(数据流版) <br>
-	 * 通过排序对receipts和invoices个这种排序再结合correspondS就可以实现: <br>
-	 * FIFO(receipts的按照时间正序排序),LIFO(receipts的按照时间逆向排序)等会计记账需要的存货成本核算策略。
+	 * 通过排序对checkins和checkouts个这种排序再结合correspondS就可以实现: <br>
+	 * FIFO(checkins的按照时间正序排序),LIFO(checkins的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
-	 * @param receipts 入库单的各个入库数量
-	 * @param invoices 发货单的各个出库数量
+	 * @param checkins  入库单的各个入库数量
+	 * @param checkouts 发货单的各个出库数量
 	 * @return 发货方案列表,逐项罗列各个发货单对应的入库单的中所需货物数量:
-	 *         [{id:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
-	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,eror:缺货信息 }]}]
+	 *         [{index:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
+	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,lacks_total:整个发货批次的累计缺货数量,eror:缺货信息
+	 *         }]}]
 	 */
-	public static DFrame correspondfm(final double[] receipts, final double[] invoices) {
-		return correspondS(receipts, invoices).collect(DFrame.dfmclc);
+	public static DFrame correspondfm(final double[] checkins, final double[] checkouts) {
+		return correspondS(checkins, checkouts).collect(DFrame.dfmclc);
 	}
 
 	/**
 	 * 将发货单与存货单进行匹配对应(数据流版) <br>
-	 * 通过排序对receipts和invoices个这种排序再结合correspondS就可以实现: <br>
-	 * FIFO(receipts的按照时间正序排序),LIFO(receipts的按照时间逆向排序)等会计记账需要的存货成本核算策略。
+	 * 通过排序对checkins和checkouts个这种排序再结合correspondS就可以实现: <br>
+	 * FIFO(checkins的按照时间正序排序),LIFO(checkins的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
-	 * @param receipts 入库单的各个入库数量
-	 * @param invoices 发货单的各个出库数量
+	 * @param checkins  入库单的各个入库数量
+	 * @param checkouts 发货单的各个出库数量
 	 * @return 发货方案列表,逐项罗列各个发货单对应的入库单的中所需货物数量:
-	 *         [{id:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
-	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,eror:缺货信息 }]}]
+	 *         [{index:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
+	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,lacks_total:整个发货批次的累计缺货数量,eror:缺货信息
+	 *         }]}]
 	 */
-	public static Stream<IRecord> correspondS(final double[] receipts, final double[] invoices) {
-		return corresponds(receipts, invoices).stream();
+	public static Stream<IRecord> correspondS(final double[] checkins, final double[] checkouts) {
+		return corresponds(checkins, checkouts).stream();
 	}
 
 	/**
 	 * 将发货单与存货单进行匹配对应(列表版本) <br>
-	 * 通过排序对receipts和invoices个这种排序再结合correspondS就可以实现: <br>
-	 * FIFO(receipts的按照时间正序排序),LIFO(receipts的按照时间逆向排序)等会计记账需要的存货成本核算策略。
+	 * 通过排序对checkins和checkouts个这种排序再结合correspondS就可以实现: <br>
+	 * FIFO(checkins的按照时间正序排序),LIFO(checkins的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
-	 * @param receipts 入库单的各个入库数量
-	 * @param invoices 发货单的各个出库数量
+	 * @param checkins  入库单的各个入库数量
+	 * @param checkouts 发货单的各个出库数量
 	 * @return 发货方案列表,逐项罗列各个发货单对应的入库单的中所需货物数量:
-	 *         [{id:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
-	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,eror:缺货信息 }]}]
+	 *         [{index:发货单单号,requires:发货单中要求的数量,provides:的回应的入库单列表,即[{
+	 *         index:入库单索引,quantity:入库单的对应与出库单的数量,lacks:该入库单缺少的数量,lacks_total:整个发货批次的累计缺货数量,eror:缺货信息
+	 *         }]}]
 	 */
-	public static List<IRecord> corresponds(final double[] receipts, final double[] invoices) {
+	public static List<IRecord> corresponds(final double[] checkins, final double[] checkouts) {
 		final Function<double[], double[]> cumsum = origin -> { // 帕累托累计和函数
 			double[] data = Arrays.copyOf(origin, origin.length); // 复制原来的数量
 			for (int i = 1; i < data.length; i++) { // 逐次向后累计递增
@@ -176,46 +179,46 @@ public class Inventory extends AbstractFinBase<Inventory> {
 			return data; // 累计和
 		}; // 帕累托累计和函数
 		final List<IRecord> lines = new LinkedList<IRecord>();
-		final double[] rpcums = cumsum.apply(receipts); // 帕累托累计和
-		final double[] ivcums = cumsum.apply(invoices); // 帕累托累计和
+		final double[] incums = cumsum.apply(checkins); // 帕累托累计和
+		final double[] outcums = cumsum.apply(checkouts); // 帕累托累计和
 		int i = 0; // 收货单/入库单索引
 		int j = 0; // 发货单/出库单所索引
-		for (; j < ivcums.length; j++) { // 逐个发货单进行匹配,发货单索引逐次向后递增
-			final var provides = new LinkedList<IRecord>();
+		for (; j < outcums.length; j++) { // 逐个发货单进行匹配,发货单索引逐次向后递增
+			final var provides = new LinkedList<IRecord>(); // 由入库单向发货单提供的发货方案项目明细。[{index:入库单索引,quantity:checkins[index]中需要发货的数量}]
 			final var i0 = i; // 记录初始位置
-			while (i < rpcums.length && rpcums[i] < ivcums[j]) { // 直到拓展到收货单的数量累计和大于发货单的数量累计和
+			while (i < incums.length && incums[i] < outcums[j]) { // 直到拓展到收货单的数量累计和大于发货单的数量累计和
 				i++; // 继续拓展到下一个收货单
 			} // 当收货单索引拓展到收货单最大数量后就不再增加了
-			final var initial = i0 >= rpcums.length // 发货单索引是否有效
+			final var initial = i0 >= incums.length // 发货单索引是否有效
 					? -1 // 发货单索引非法,用-1标识非法数量
 					: j == 0 // 是否时首个发货单
-							? Math.min(receipts[0], invoices[0]) // 首个：收货单数量与发货单数量中的较小者
-							: Math.min(rpcums[i0] - ivcums[j - 1], invoices[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小着
-			final var line = REC("index", j, "requires", invoices[j], "provides", provides); // 发货方案,index是invoices的索引，requires是invoices的需求熟练
-			final var iqrb = IRecord.rb("index,quantity"); // receipt的对应项构建器
+							? Math.min(checkins[0], checkouts[0]) // 首个：收货单数量与发货单数量中的较小者
+							: Math.min(incums[i0] - outcums[j - 1], checkouts[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小着
+			final var line = REC("index", j, "requires", checkouts[j], "provides", provides); // 发货方案,index是checkouts的索引，requires是checkouts的需求熟练
+			final var iqrb = IRecord.rb("index,quantity"); // checkin的对应项构建器:{index,quantity}的结构
 			final BiConsumer<Integer, Function<Integer, Double>> provides_push = (pos, qty) -> { // 登记到可库存发货的商品集合。pos:读写位置,qty:数量计算器
-				for (int k = i0; k <= pos; k++) {
-					final var quantity = qty.apply(k);
+				for (int k = i0; k <= pos; k++) { // 遍历checkins从[i0,到pos]这个范围的入库单都需要为checkouts[j]提供发货产品
+					final var quantity = qty.apply(k); // 根据索引提取对应checkin入库单的发货数量
 					if (quantity > 0) { // 初始数量大于0时才给予写入
-						provides.add(iqrb.get(k, quantity));
+						provides.add(iqrb.get(k, quantity)); // 为checkouts[j]匹配checkins[k]的发货数量
 					} // if
-				}
+				} // for
 			}; // provides_push
 			final var pos = i; // 常量当前库存的读写位置
-			if (i >= rpcums.length) { // 库存不足
-				provides_push.accept(pos, _k -> _k == i0 ? initial : _k >= rpcums.length ? -1 : receipts[_k]);
-				final var lacks_total = ivcums[j] - rpcums[i - 1]; // 缺货累计
-				final var lacks = Math.min(invoices[j], lacks_total); // 当前单缺货数量
-				final var error = String.format("空间不足,缺少:%f", lacks_total);
+			if (i >= incums.length) { // 库存不足
+				provides_push.accept(pos, k -> k == i0 ? initial : k >= incums.length ? -1 : checkins[k]);
+				final var lacks_total = outcums[j] - incums[i - 1]; // 缺货累计,整个发货批次的累计缺货数量
+				final var lacks = Math.min(checkouts[j], lacks_total); // 当前发货单中的缺货数量,系统没有二外的入库单来提供发货产品了。
+				final var error = String.format("空间不足,缺少:%f", lacks_total); //
 				lines.add(line.derive("lacks", lacks, "lacks_total", lacks_total, "eror", error));
 				// break;
 			} else {// 库存足够
-				final var unused = rpcums[i] - ivcums[j]; // 多余部分未使用的数量
-				final var used = receipts[i] - unused; // 实际使用的部分,最终数量
-				provides_push.accept(pos, _k -> _k == i0 ? initial : _k == pos ? used : receipts[_k]);
+				final var unused = incums[i] - outcums[j]; // 多余部分未使用的数量
+				final var used = checkins[i] - unused; // 实际使用的部分,最终数量
+				provides_push.accept(pos, k -> k == i0 ? initial : k == pos ? used : checkins[k]);
 				lines.add(line);
-			} // if
-		}
+			} // if i >= incums.length
+		} // for j 逐个发货单进行匹配,发货单索引逐次向后递增
 
 		return lines;
 	}
