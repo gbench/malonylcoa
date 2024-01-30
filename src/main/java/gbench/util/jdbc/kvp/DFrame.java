@@ -725,6 +725,24 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 行数量
+	 * 
+	 * @return 行数量
+	 */
+	public int height() {
+		return this.shape()._1;
+	}
+
+	/**
+	 * 列数量：等同于 size 方法
+	 * 
+	 * @return 列数量
+	 */
+	public int width() {
+		return this.shape()._2;
+	}
+
+	/**
 	 * 数据格式化
 	 */
 	@Override
