@@ -66,8 +66,9 @@ public class AcctController {
 	 * @param company_ids 公司id集合
 	 * @param keys        透视表的键值路径，阶层的组织顺序，可选字段为:<br>
 	 *                    id:会计分录id,drcr:分录借贷标记,name:科目名称,amount:科目金额,ledger_id:分类账id,acctnum:科目编码
-	 *                    ,bill_id:单据id,bill_type:单据类型,product_id:产品id,product:产品名称,warehouse_id:库房id,warehouse:库房名称
-	 *                    ,pcy_id:产品公司id,pcy:产品公司,countart_id:对手方id,counterpart:对手方名称,position:交易单据持有头寸,time:记账时间
+	 *                    ,bill_id:单据id,bill_type:单据类型,product_id:产品id,item_id:公司产品id,product:产品名称,warehouse_id:库房id
+	 *                    ,warehouse:库房名称,pcy_id:产品公司id,pcy:产品公司,countart_id:对手方id,counterpart:对手方名称,position:交易单据持有头寸
+	 *                    ,time:记账时间
 	 * @return IRecord {code:结果状态标记0表示成功,data:json结构根节点即透视表数据,keys:可供设计透视表的键值列表}
 	 */
 	@SuppressWarnings("unchecked")

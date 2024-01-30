@@ -49,7 +49,7 @@ public class FinAccts {
 
 			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 记账单据凭证行项目:产品/资产明细
 					.rowS(item -> item.alias(k -> switch (k) { // 字段改名
-					case "id" -> "product_id"; // 公司产品id改为产品id
+					case "id" -> "item_id"; // id改为item_id即公司产品id
 					default -> k; // 其他保持默认不变
 					}).derive(e.filter("id,bill_type,position,warehouse_id")))).flatMap(acct_item_adjuster(fa))
 					.collect(DFrame.dfmclc); // 数据行
@@ -63,13 +63,13 @@ public class FinAccts {
 				final var bill_id = line.i4("id"); // 单据id
 				final var bill_type = line.str("bill_type"); // 单据类型
 				final var position = line.str("position"); // 交易的产品头寸
-				final var product_id = line.i4("product_id"); // 产品id
+				final var item_id = line.i4("item_id"); // 公司产品id
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
 				final var amount = line.dbl("price") * line.dbl("quantity"); // 交易金额
 				final var path = String.format("%s/%s", bill_type, position); // 会计策略路径：单据类型/持有头寸
-				final var mykeys = "bill_id,bill_type,product_id,warehouse_id"; // 会计凭证中需要写入会计分录的自定义字段名序列
-				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "product_id", product_id,
-						"warehouse_id", warehouse_id, "mykeys", mykeys); // 会计凭证中需要写入会计分录的自定义内容
+				final var mykeys = "bill_id,bill_type,item_id,warehouse_id"; // 会计凭证中需要写入会计分录的自定义字段名序列
+				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "item_id", item_id, "warehouse_id",
+						warehouse_id, "mykeys", mykeys); // 会计凭证中需要写入会计分录的自定义内容
 				// 账目誊写:是根据记账策略(特定类型的记账凭证的记账法)，把会计凭证中的内容编制成会计分录
 				ledger.handle(path, amount, vars); // 写入分类账：依据path所指定的记账测录，编制会计分录
 			}); // linedfm.rowS().forEach
@@ -93,11 +93,12 @@ public class FinAccts {
 		return entry -> { // 提交后调整
 			final var bill_id = entry.i4("bill_id"); // 记账凭证id
 			final var bill_type = entry.str("bill_type"); // 记账凭证类型
-			final var product_id = entry.i4("product_id"); // 公司产品id
+			final var item_id = entry.i4("item_id"); // 公司产品id
 			final var warehouse_id = entry.i4("warehouse_id"); // 库房id
-			final var cpopt = cpdfm.one2opt("id", product_id, "cp"); // 公司产品opt
+			final var cpopt = cpdfm.one2opt("id", item_id, "cp"); // 公司产品opt
 			final var pcy_id = cpopt.map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
 			final var product = cpopt.map(e -> e.str("name")).orElse("-"); // 公司产品
+			final var product_id = cpopt.map(e -> e.i4("product_id")).orElse(-1); // 公司产品id
 			final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库"); // 库房
 			final var pcy = cydfm.one2opt("id", pcy_id, "cy2").map(e -> e.str("name")).orElse("无"); // 产品公司
 			final int counterpart_id; // 对手方类型
@@ -130,9 +131,9 @@ public class FinAccts {
 			} // 根据记账凭证进行对应的分录字段补充
 			final var counterpart = cydfm.one2opt("id", counterpart_id, "cy2").map(e -> e.str("name")).orElse("无"); // 对手方
 
-			entry.add("bill_id", bill_id, "bill_type", bill_type, "pcy_id", pcy_id, "pcy", pcy, "product", product,
-					"warehouse", warehouse, "counterpart_id", counterpart_id, "counterpart", counterpart, "position",
-					position); // 补充字段
+			entry.add("bill_id", bill_id, "bill_type", bill_type, "pcy_id", pcy_id, "pcy", pcy, "product_id",
+					product_id, "product", product, "warehouse", warehouse, "counterpart_id", counterpart_id,
+					"counterpart", counterpart, "position", position); // 补充字段
 		};
 	}
 
@@ -144,24 +145,28 @@ public class FinAccts {
 	private static Function<IRecord, Stream<IRecord>> acct_item_adjuster(final FinAcct fa) {
 		return item -> { // 产品调整,根据需要会把一单分拆成多单
 			final var position = item.str("position"); // 交易的产品头寸
-			final var product_id = item.i4("product_id"); // 产品id
+			final var item_id = item.i4("item_id"); // 公司产品id
 			switch (item.str("bill_type")) {
 			case "invoice": { // 发货单中的产品项目的的处理
 				switch (position) { // 交易头寸
 				case "short": { // 空头持有发货凭证,按照货物的入库成本法进行数量核算
 					final var rcps = fa.getEntrieS().filter(e -> e.i4("acctnum").equals(1406) // 库存商品
 							&& e.i4("drcr").equals(1) // 入库产品
-							&& e.i4("product_id").equals(product_id)).sorted(IRecord.cmp("time")).toList(); // 入库单
+							&& e.i4("item_id").equals(item_id)) //
+							.sorted(IRecord.cmp("time")) // 入库时间进行排序
+							.toList(); // 入库单
 					final var ivcs = fa.getEntrieS().filter(e -> e.i4("acctnum").equals(1406) // 库存商品
 							&& e.i4("drcr").equals(1) // 出库产品
-							&& e.i4("product_id").equals(product_id)).sorted(IRecord.cmp("time")).toList(); // 入库单
+							&& e.i4("item_id").equals(item_id)) // 按照产品id
+							.sorted(IRecord.cmp("time")) // 入库时间进行排序
+							.toList(); // 入库单
 					if (rcps.size() > 0) { // 发现库存产品
 						final var receipts = rcps.stream().mapToDouble(e -> e.dbl("quantity")).toArray(); // 入库单
 						final var invoices = Stream.concat(ivcs.stream().map(e -> e.dbl("quantity")), //
 								Stream.of(item.dbl("quantity"))).mapToDouble(e -> e).toArray(); // 出库单
 						final var lines = Inventory.correspondfm(receipts, invoices); // 生成发货方案
 						println(String.format("发货方案,receipts:%s,invoices:%s,lines:%s", receipts, invoices, lines)); // 发货方案
-						println("product_id#", product_id, rcps);
+						println("item_id#", item_id, rcps);
 						return lines.rowS().flatMap(line -> { // 每个line代表一个发货单的发货方案
 							// final var i_ivc = line.i4("id"); // 发票索引
 							final var provides = line.llS("provides", IRecord::REC);
