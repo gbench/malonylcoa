@@ -185,7 +185,7 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_fifo_handler(final FinAcct fa, IRecord item) {
 		return bill_short_handler(fa, item, IRecord.cmp("time", true));
@@ -198,7 +198,7 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_lifo_handler(final FinAcct fa, IRecord item) {
 		return bill_short_handler(fa, item, IRecord.cmp("time", false));
@@ -213,9 +213,9 @@ public class FinAccts {
 	 * @param item        发货单 凭证项目
 	 * @param cost_method 成本计算方法:比如：<br>
 	 *                    IRecord.cmp("time", true)为lifo模式, <br>
-	 *                    IRecord.cmp("time",
-	 *                    false)为lifo模式，当然还可自行定义会计分录的排序方法来进行成本核算方法的定制
-	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
+	 *                    IRecord.cmp("time", false)为lifo模式，<br>
+	 *                    当然还可自行定义会计分录的排序方法来进行成本核算方法的定制.
+	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(cost_method),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item,
 			final Comparator<? super IRecord> cost_method) {
