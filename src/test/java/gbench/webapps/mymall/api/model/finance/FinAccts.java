@@ -47,7 +47,7 @@ public class FinAccts {
 			final var oddfm = sess.sql2dframe(od_sql); // 订单信息
 
 			println("--------------------------------------------------------------------------");
-			println("财务记账公司", cydfm.one2one("id", company_id, "cy"));
+			println("财务记账主体", cydfm.one2one("id", company_id, "cy"));
 			println("--------------------------------------------------------------------------");
 			println("公司cydfm", cydfm.head(5));
 			println("公司产品cpdfm", cpdfm.head(5));
@@ -226,54 +226,56 @@ public class FinAccts {
 		println(String.format("SHORT FOR %s:%s#%s [ %s ]", bill_type, acctnum, ACCTS.get(acctnum + ""), item));
 		println("====================================================================");
 
-		final var entrydfm = fa.getEntrieS() // 会计科目
-				.filter(e -> e.i4("product_id").equals(product_id)).sorted(IRecord.cmp("time", flag)) // 入库时间进行排序
-				.collect(DFrame.dfmclc);
+		final var entrydfm = fa.getEntrieS() // 财务记账的会计分类
+				.filter(e -> e.i4("product_id").equals(product_id)) // *指定产品的会计分录*,注意这里使用的通用产品product_id,而不是item_id,以保证不同公司产品的checkin可以混合发货。
+				.sorted(IRecord.cmp("time", flag)) // 按照入库时间进行排序(FIFO/LIFO)
+				.collect(DFrame.dfmclc); // 满足记账策略算法编制要求的会计分录表,即本次会计凭证行项目的涉及分录范围(借方分录集checkins与贷方分录集checkouts),以便后续根据借贷标记将其进行分解
 		println(String.format("entrydfm#\n%s", entrydfm));
-		final var checkindfm = entrydfm.rowS() // 库存商品借方分录
-				.filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(1)).collect(DFrame.dfmclc); // 核算科目借方余额-流入
-		println(String.format("entrydfm#\n%s", checkindfm));
-		final var checkoutdfm = entrydfm.rowS() // 库存商品贷方分录
-				.filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(-1)).collect(DFrame.dfmclc); // 核算科目贷方余额-流出
-		println(String.format("crdfm#\n%s", checkoutdfm));
+		final var checkindfm = entrydfm.rowS().filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(1)) // 核算科目账户的借方余额表示流入
+				.collect(DFrame.dfmclc); // 分解出checkins,核算科目借方余额-流入
+		println(String.format("checkindfm#\n%s", checkindfm));
+		final var checkoutdfm = entrydfm.rowS().filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(-1)) // 核算科目账户的贷方余额表示流出
+				.collect(DFrame.dfmclc); // 分解出checkouts,核算科目贷方余额-流出
+		println(String.format("checkoutdfm#\n%s", checkoutdfm));
 
 		if (checkindfm.length() > 0) { // 发现库存产品,根据库存产品进行发货凭证中的quantity与price调整。即 调整记账凭证行项目。
 			final Function<DFrame, double[]> todbls = dfm -> dfm.rowS().mapToDouble(e -> e.dbl("quantity")).toArray(); // 转换成double[]
-			final var checkins = todbls.apply(checkindfm); // 入库单:checkin方向
-			final var checkouts = Arrays.copyOf(todbls.apply(checkoutdfm), checkoutdfm.length() + 1); // 出库单:checkout方向
-			checkouts[checkouts.length - 1] = item.dbl("quantity"); // 最后一项使用当前凭证项目的数量,这就是逐次累计的实现逻辑，始终在最后追加
+			final var checkins = todbls.apply(checkindfm); // 流入向checkin数量单
+			final var checkouts = Arrays.copyOf(todbls.apply(checkoutdfm), checkoutdfm.length() + 1); // 流出向checkout数量单,加1是为当前的凭证行项目item做空间预留。
+			checkouts[checkouts.length - 1] = item.dbl("quantity"); // 最后一项使用当前凭证项目的数量,这就是逐次累计的实现逻辑，始终在最后追加。
 			println(String.format("checkins:%s\ncheckouts:%s", nd(checkins), nd(checkouts)));
 
 			final var linedfm = Inventory.correspondfm(checkins, checkouts); // 根据checkins为checkouts生成发货方案
-			final var checkout_index = checkouts.length - 1; // item 对应的发货单的发货计划
-			final var items_adjusted = linedfm.rowS().filter(e -> e.i4("index").equals(checkout_index))
+			final var checkout_index = checkouts.length - 1; // 记账凭证行项目item对应的发货单的发货计划,也就是checkouts的最后一项的偏移/索引位置
+			final var items_adjusted = linedfm.rowS().filter(e -> e.i4("index").equals(checkout_index)) // 提取记账凭证行项目item对应发货方案，然后计算其发货成本(quantiti&price)
 					.flatMap(line -> { // 每个line代表一个发货单的发货方案,每个记账项目可以由一组缺货数量lacks_items与可供应数量provides_items来进行表示
 						final var provides = line.llS("provides", IRecord::REC); // 可供应数量
 						final var lacks_items = line.dblopt("lacks") // 缺货项目数量
-								.map(lacks -> Arrays.asList(item.derive("quantity", lacks))) // 使用记账凭证行项目修正为缺货数量
+								.map(lacks -> Arrays.asList(item.derive("quantity", lacks))) // 创建一条与当前行项目即price为市场item价格且quantity数量为缺货lacks大小的调整调整出库行项目
 								.orElseGet(LinkedList::new); // 缺货项目按照订单价格与缺货数量进行发货
 						final var provides_items = provides.equals(Stream.empty()) // 缺货判定
 								? Arrays.asList(item) // provides为空代表缺货
 								: line.llS("provides", IRecord::REC).map(e -> {// 发货单需要拆分曾provides个给予核算
 									final var checkin_index = e.i4("index"); // 收据索引
 									final var checkin = checkindfm.row(checkin_index); // 提取对应的收货单
-									final var quantity = e.dbl("quantity"); // 对应的收货单数量
-									return item.derive("quantity", quantity, "price", checkin.dbl("price")); // 使用存货产品数量进行发货
-								}).toList(); // 对应于存货的发货方案
-						final var plan_items = new LinkedList<IRecord>(); // 发货方案
+									final var quantity = e.dbl("quantity"); // 根据发货方案安排下的对应的收货单中的发货数量
+									final var price = checkin.dbl("price"); // *入库的历史成本价格*重点关注这就是可以逐个产品项的按照历史成本进行计价的原理。因为将每个出库项目对应&定位到具体的入库单
+									return item.derive("quantity", quantity, "price", price); // 使用存货产品数量进行发货
+								}).toList(); // 对应于可供库存发货的发货方案
+						final var plan_items = new LinkedList<IRecord>(); // 最终的整体发货方案
 
-						plan_items.addAll(provides_items); // 可提供部分
-						plan_items.addAll(lacks_items); // 缺失部分
+						plan_items.addAll(lacks_items); // 缺失部分：转单或是市价购入等，具体业务如何实现这里不关注，这里仅仅是给予核算
+						plan_items.addAll(provides_items); // 可供应部分
 						println(String.format("----\n发货方案#%s\n%s", checkout_index, item));
 						REC("lacks_items", lacks_items, "provides_items", provides_items).forEach(p -> { // 发出方案的打印
 							@SuppressWarnings("unchecked")
 							final var rows = (List<IRecord>) p._2();
-							if (rows.size() > 0) {
+							if (rows.size() > 0) { // 仅打印含有内容部分
 								println(String.format("%s:\n%s", p._1(), DFrame.of(rows)));
 							} // if
 						}); // forEach
 
-						return plan_items.stream();
+						return plan_items.stream(); // 转换成数据流的形式予以返回。
 					}); // flatMap
 
 			return items_adjusted; // 调整后的记账凭证行项目
