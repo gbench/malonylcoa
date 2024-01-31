@@ -20,13 +20,13 @@
     {{component}}
     <div>
       <!--数据表-->
-      <div style="float:left;width:220px;height:405px;overflow:auto;border:solid 1px red;">
+      <div style="float:left;width:220px;height:455px;overflow:auto;border:solid 1px red;">
         <data-table style="width:100%" :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
           @trclick="on_tables_trclick" />
       </div>
       <div style="float:left;width:679px;overflow:auto;margin-left:2px;">
         <!--表数据-->
-        <div style="height:213px;overflow:auto;border:solid 1px red;">
+        <div style="height:263px;overflow:auto;border:solid 1px red;">
           <data-table style="width:100%" :data="tbldata"
             :trclass="(line,i)=>is_tbldata_selected(i)?current.tbldata_index==i?'highlight2':'highlight':'tdclass'"
             :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
@@ -73,7 +73,7 @@
         </div>
       </div>
       <!--行项目-->
-      <div style="height:405px;width:348px;border:solid 1px red;float:left;margin-left:2px;overflow:auto">
+      <div style="height:455px;width:348px;border:solid 1px red;float:left;margin-left:2px;overflow:auto">
         <div>
           <data-table v-if="1!=1" style="width:100%" :data="warehouses"
             :trclass="(line,i)=>is_warehouse_selected(i)?current.warehouse_index==i?'highlight2':'highlight':'tdclass'"
