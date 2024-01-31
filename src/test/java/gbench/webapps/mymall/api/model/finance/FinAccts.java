@@ -51,7 +51,7 @@ public class FinAccts {
 			println("公司cydfm", cydfm.head(5));
 			println("公司产品cpdfm", cpdfm.head(5));
 			println("仓库whdfm", whdfm.head(5));
-			println("仓库oddfm", ordfm.head(5));
+			println("订单ordfm", ordfm.head(5));
 
 			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 记账记账凭证行项目:产品/资产明细
 					.rowS(item -> item.alias(k -> switch (k) { // 字段改名
