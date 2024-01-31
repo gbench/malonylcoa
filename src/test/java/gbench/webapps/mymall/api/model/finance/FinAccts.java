@@ -39,7 +39,7 @@ public class FinAccts {
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
 			final var bldfm = sess.sql2dframe("#getBills", "company_id", company_id) // 读取指定的记账记账凭证信息
-					.forEachBy(h2_json_processor("details")); // 记账凭证/单据信息
+					.forEachBy(h2_json_processor("details")); // 记账凭证&单据信息
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
 			final var od_sql = String.format("select * from t_order where ##company_id in (parta_id, partb_id)",
@@ -69,8 +69,8 @@ public class FinAccts {
 				final var product_id = cpdfm.one2one("id", item_id, "cp").i4("product_id"); // 产品id
 				return line.add("product_id", product_id); // 增加产品id字段
 			}).flatMap(acct_item_adjuster(fa)).forEach(line -> { // 依次处理各个记账凭证行项目
-				final var bill_id = line.i4("id"); // 单据id
-				final var bill_type = line.str("bill_type"); // 单据类型
+				final var bill_id = line.i4("id"); // 记账凭证&单据id
+				final var bill_type = line.str("bill_type"); // 记账凭证&单据类型
 				final var position = line.str("position"); // 交易的产品头寸
 				final var item_id = line.i4("item_id"); // 公司产品id
 				final var product_id = line.i4("product_id"); // 公司产品id
@@ -78,7 +78,7 @@ public class FinAccts {
 				final var quantity = line.dbl("quantity"); // item数量
 				final var price = line.dbl("price"); // item单价
 				final var amount = price * quantity; // *交易金额* 重点关注，这是科目金额的默认值
-				final var path = String.format("%s/%s", bill_type, position); // 会计策略路径：单据类型/持有头寸
+				final var path = String.format("%s/%s", bill_type, position); // 会计策略路径：记账凭证类型/持有头寸
 				final var mykeys = "bill_id,bill_type,item_id,product_id,warehouse_id,price,quantity"; // 会计凭证中需要写入会计分录的自定义字段名序列
 				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "item_id", item_id, "product_id",
 						product_id, "warehouse_id", warehouse_id, "price", price, "quantity", quantity, "mykeys",
@@ -107,7 +107,7 @@ public class FinAccts {
 			final var bill_id = entry.i4("bill_id"); // 记账凭证id
 			final var bill_type = entry.str("bill_type"); // 记账凭证类型
 			final var item_id = entry.i4("item_id"); // 公司产品id
-			final var itopt = cpdfm.one2opt("id", item_id, "item"); // 公司产品opt
+			final var itopt = cpdfm.one2opt("id", item_id, "it"); // 公司产品opt
 			final var item = itopt.map(e -> e.str("name")).orElse("-"); // 公司产品名称
 			final var pcy_id = itopt.map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
 			final var pcy = cydfm.one2opt("id", pcy_id, "cy2").map(e -> e.str("name")).orElse("无"); // 产品公司
@@ -116,7 +116,7 @@ public class FinAccts {
 			final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库"); // 库房名称
 
 			final int counterpart_id; // 对手方类型
-			final Position position; // 单据头寸，从订单方向查看
+			final Position position; // 记账凭证&单据头寸，从订单方向查看
 			switch (bill_type) { // 根据记账凭证进行对应的分录字段补充
 			case "t_order": { // t_order类型的交易单的字段处理
 				position = oddfm.one2opt("id", bill_id, "od").map(od -> { // 订单对手方判断
@@ -152,19 +152,21 @@ public class FinAccts {
 	}
 
 	/**
-	 * 凭证项目的记账调整
+	 * 记账凭证行项目即产品行的记账调整（以符合会计策略的编制要求）
 	 * 
 	 * @param fa 会计对象
 	 */
 	public static Function<IRecord, Stream<IRecord>> acct_item_adjuster(final FinAcct fa) {
 		return item -> { // 产品调整,根据需要会把一单分拆成多单
 			final var position = item.str("position"); // 交易的产品头寸
-			final var bill_type = item.str("bill_type"); // 单据类型
+			final var bill_type = item.str("bill_type"); // 记账凭证&单据类型
 
 			return switch (bill_type) { // bill_type/position勾构成了会计策略的定位路径
 			// 收发货单的处理
 			case "invoice", "receipt" -> switch (position) { // 交易头寸
-			// 空头方的交易头寸的处理
+			// 空头方的交易头寸的处理，对于空头持有的该种记账凭证(invoice,receipt)的会计主体acct_entity而言，需要采用历史成本策略来调整记账凭证行项目item的price和quantity,
+			// 这里涉及记账凭证行项目item由于数量巨大需要多个入库存单checkin来进行合并才能满足发货要求,以及一个入库单checkin数量巨大,可以满足多个出库单checkout的记账凭证行项目的情况。
+			// 但具体对chekcout而则只需要考虑是否合并多个checkin的问题(checkin的拆分与合并问题可交由存货算法的来匹配chekout)，所以这里这里的checkout需要与至少一个checkin进行关联。
 			case "short" -> bill_short_fifo_handler(fa, item);
 			default -> Stream.of(item); // 默认处理
 			}; // switch position
@@ -212,9 +214,9 @@ public class FinAccts {
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item, final boolean flag) {
-		final var bill_type = item.str("bill_type").toUpperCase(); // 单据类型
+		final var bill_type = item.str("bill_type").toUpperCase(); // 记账凭证&单据类型
 		final var product_id = item.i4("product_id"); // 产品id,注意这里使用的是产品id而不是公司产品id
-		final var acctnum = switch (bill_type) { // 根据单据类型选择具体的核算科目
+		final var acctnum = switch (bill_type) { // 根据记账凭证&单据类型选择具体的核算科目
 		case "INVOICE" -> 1406L;// 库存商品
 		case "RECEIPT" -> 1407L; // 发出商品
 		default -> null;
