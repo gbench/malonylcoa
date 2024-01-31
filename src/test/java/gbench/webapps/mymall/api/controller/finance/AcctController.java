@@ -55,7 +55,7 @@ public class AcctController {
 		final var fa = fabuilder.add("policy", "policy0001").build(); // 创建会计类型
 		final var ledger = fa.getLedger(this.glid(company_ids)); // 总账
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Long[] { 1l, 2l }))
-				.forEach(executor_of(jdbcApp, ledger, "#getBills")); // 模拟各个公司的运行
+				.forEach(executor_of(jdbcApp, ledger, "#GJVs")); // 模拟各个公司的运行
 
 		return Mono.just(REC("code", "0", "data", fa.getEntrieS().toList()));
 	}
