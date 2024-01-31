@@ -7,6 +7,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import java.util.Objects;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -106,9 +107,9 @@ public class FinAccts {
 		return entry -> { // 提交后调整
 			final var bill_id = entry.i4("bill_id"); // 记账凭证id
 			final var bill_type = entry.str("bill_type"); // 记账凭证类型
-			final var item_id = entry.i4("item_id"); // 公司产品id
-			final var itopt = cpdfm.one2opt("id", item_id, "it"); // 公司产品opt
-			final var item = itopt.map(e -> e.str("name")).orElse("-"); // 公司产品名称
+			final var item_id = entry.i4("item_id"); // 公司产品id,记账凭证行项目的核算对象
+			final var itopt = cpdfm.one2opt("id", item_id, "it"); // 公司产品opt,记账凭证行项目的核算对象opt
+			final var item = itopt.map(e -> e.str("name")).orElse("-"); // 公司产品名称,记账凭证行项目的核算对象名称，是自定义公司产品名称,一般或是默认采用通用的产品名称
 			final var pcy_id = itopt.map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
 			final var pcy = cydfm.one2opt("id", pcy_id, "cy2").map(e -> e.str("name")).orElse("无"); // 产品公司
 			final var product_id = itopt.map(e -> e.i4("product_id")).orElse(-1); // 公司产品id
@@ -166,7 +167,7 @@ public class FinAccts {
 			case "invoice", "receipt" -> switch (position) { // 交易头寸
 			// 空头方的交易头寸的处理，对于空头持有的该种记账凭证(invoice,receipt)的会计主体acct_entity而言，需要采用历史成本策略来调整记账凭证行项目item的price和quantity,
 			// 这里涉及记账凭证行项目item由于数量巨大需要多个入库存单checkin来进行合并才能满足发货要求,以及一个入库单checkin数量巨大,可以满足多个出库单checkout的记账凭证行项目的情况。
-			// 但具体对chekcout而则只需要考虑是否合并多个checkin的问题(checkin的拆分与合并问题可交由存货算法的来匹配chekout)，所以这里这里的checkout需要与至少一个checkin进行关联。
+			// 但具体对checkout而则只需要考虑是否合并多个checkin的问题(checkin的拆分与合并问题可交由存货算法的来匹配chekout)，所以这里这里的checkout需要与至少一个checkin进行关联。
 			case "short" -> bill_short_fifo_handler(fa, item);
 			default -> Stream.of(item); // 默认处理
 			}; // switch position
@@ -187,7 +188,7 @@ public class FinAccts {
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_fifo_handler(final FinAcct fa, IRecord item) {
-		return bill_short_handler(fa, item, true);
+		return bill_short_handler(fa, item, IRecord.cmp("time", true));
 	}
 
 	/**
@@ -200,7 +201,7 @@ public class FinAccts {
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_lifo_handler(final FinAcct fa, IRecord item) {
-		return bill_short_handler(fa, item, false);
+		return bill_short_handler(fa, item, IRecord.cmp("time", false));
 	}
 
 	/**
@@ -208,12 +209,16 @@ public class FinAccts {
 	 * 凭证项目调整:以便适配会计策略的算法 <br>
 	 * 空头持有发货凭证,按照货物的入库成本法进行数量核算:原理就是分析item成一组新的items,每个item具有更为精确的quantiy和price
 	 * 
-	 * @param fa   会计对象
-	 * @param item 发货单 凭证项目
-	 * @param flag 是否采用fifo模式来核算成本,true:filo模式,false:lifo模式
+	 * @param fa          会计对象
+	 * @param item        发货单 凭证项目
+	 * @param cost_method 成本计算方法:比如：<br>
+	 *                    IRecord.cmp("time", true)为lifo模式, <br>
+	 *                    IRecord.cmp("time",
+	 *                    false)为lifo模式，当然还可自行定义会计分录的排序方法来进行成本核算方法的定制
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
-	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item, final boolean flag) {
+	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item,
+			final Comparator<? super IRecord> cost_method) {
 		final var bill_type = item.str("bill_type").toUpperCase(); // 记账凭证&单据类型
 		final var product_id = item.i4("product_id"); // 产品id,注意这里使用的是产品id而不是公司产品id
 		final var acctnum = switch (bill_type) { // 根据记账凭证&单据类型选择具体的核算科目
@@ -226,9 +231,9 @@ public class FinAccts {
 		println(String.format("SHORT FOR %s:%s#%s [ %s ]", bill_type, acctnum, ACCTS.get(acctnum + ""), item));
 		println("====================================================================");
 
-		final var entrydfm = fa.getEntrieS() // 财务记账的会计分类
+		final var entrydfm = fa.getEntrieS() // 财务记账的会计分录
 				.filter(e -> e.i4("product_id").equals(product_id)) // *指定产品的会计分录*,注意这里使用的通用产品product_id,而不是item_id,以保证不同公司产品的checkin可以混合发货。
-				.sorted(IRecord.cmp("time", flag)) // 按照入库时间进行排序(FIFO/LIFO)
+				.sorted(cost_method) // 根据成本核算方法所执行的顺序进行编排会计分录
 				.collect(DFrame.dfmclc); // 满足记账策略算法编制要求的会计分录表,即本次会计凭证行项目的涉及分录范围(借方分录集checkins与贷方分录集checkouts),以便后续根据借贷标记将其进行分解
 		println(String.format("entrydfm#\n%s", entrydfm));
 		final var checkindfm = entrydfm.rowS().filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(1)) // 核算科目账户的借方余额表示流入
@@ -238,7 +243,7 @@ public class FinAccts {
 				.collect(DFrame.dfmclc); // 分解出checkouts,核算科目贷方余额-流出
 		println(String.format("checkoutdfm#\n%s", checkoutdfm));
 
-		if (checkindfm.length() > 0) { // 发现库存产品,根据库存产品进行发货凭证中的quantity与price调整。即 调整记账凭证行项目。
+		if (checkindfm.length() > 0) { // 发现库存产品,根据库存产品进行发货凭证中的quantity与price调整。即调整记账凭证行项目。
 			final Function<DFrame, double[]> todbls = dfm -> dfm.rowS().mapToDouble(e -> e.dbl("quantity")).toArray(); // 转换成double[]
 			final var checkins = todbls.apply(checkindfm); // 流入向checkin数量单
 			final var checkouts = Arrays.copyOf(todbls.apply(checkoutdfm), checkoutdfm.length() + 1); // 流出向checkout数量单,加1是为当前的凭证行项目item做空间预留。
