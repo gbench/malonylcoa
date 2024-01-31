@@ -42,9 +42,8 @@ public class FinAccts {
 					.forEachBy(h2_json_processor("details")); // 记账凭证&单据信息
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
-			final var od_sql = String.format("select * from t_order where ##company_id in (parta_id, partb_id)",
-					company_id); // 订单sql
-			final var oddfm = sess.sql2dframe(od_sql); // 订单信息
+			final var ord_sql = String.format("select * from t_order where %s in (parta_id, partb_id)", company_id); // 订单sql
+			final var ordfm = sess.sql2dframe(ord_sql); // 订单信息
 
 			println("--------------------------------------------------------------------------");
 			println("财务记账主体", cydfm.one2one("id", company_id, "cy"));
@@ -52,6 +51,7 @@ public class FinAccts {
 			println("公司cydfm", cydfm.head(5));
 			println("公司产品cpdfm", cpdfm.head(5));
 			println("仓库whdfm", whdfm.head(5));
+			println("仓库oddfm", ordfm.head(5));
 
 			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 记账记账凭证行项目:产品/资产明细
 					.rowS(item -> item.alias(k -> switch (k) { // 字段改名
@@ -87,7 +87,7 @@ public class FinAccts {
 				ledger.handle(path, amount, vars); // 写入分类账：依据path所指定的记账测录，编制会计分录
 			}); // linedfm.rowS().forEach
 
-			fa.getEntrieS().forEach(post_entry_adjuster(company_id, cpdfm, whdfm, cydfm, oddfm)); // fa.getEntrieS().forEach
+			fa.getEntrieS().forEach(post_entry_adjuster(company_id, cpdfm, whdfm, cydfm, ordfm)); // fa.getEntrieS().forEach
 		}); // jdbcApp.withTransaction
 	}
 
