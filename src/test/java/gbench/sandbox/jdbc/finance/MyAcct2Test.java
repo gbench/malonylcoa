@@ -46,7 +46,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			final var cpdfm = sess.sql2dframe("select * from t_company_product") // 公司产品表
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
-			final var bldfm = sess.sql2dframe("#getBills", "company_id", company_id) // 读取指定的记账单据凭证信息
+			final var bldfm = sess.sql2dframe("#GJVs", "company_id", company_id) // 读取指定的记账单据凭证信息
 					.forEachBy(h2_json_processor("details"));
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息

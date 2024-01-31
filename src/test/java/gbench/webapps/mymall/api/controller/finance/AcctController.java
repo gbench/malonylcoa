@@ -80,7 +80,7 @@ public class AcctController {
 		final var fa = fabuilder.add("policy", "policy0001").build(); // 创建会计类型
 		final var ledger = fa.getLedger(glid(company_ids));
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Long[] { 1l, 2l }))
-				.forEach(executor_of(jdbcApp, ledger, "#getBills")); // 模拟各个公司的运行
+				.forEach(executor_of(jdbcApp, ledger, "#GJVs")); // 模拟各个公司的运行
 		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,item,drcr").split(","); // 透视表键值列表
 		final var json = fa.trialBalance(_keys).json( // 生成josn
 				(sb, node) -> {
