@@ -39,13 +39,15 @@ public class FinAccts {
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
 			final var bldfm = sess.sql2dframe("#getBills", "company_id", company_id) // 读取指定的记账记账凭证信息
-					.forEachBy(h2_json_processor("details"));
+					.forEachBy(h2_json_processor("details")); // 记账凭证/单据信息
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
-			final var oddfm = sess.sql2dframe("select * from t_order"); // 订单信息
+			final var od_sql = String.format("select * from t_order where ##company_id in (parta_id, partb_id)",
+					company_id); // 订单sql
+			final var oddfm = sess.sql2dframe(od_sql); // 订单信息
 
 			println("--------------------------------------------------------------------------");
-			println("模拟公司", cydfm.one2one("id", company_id, "cy"));
+			println("财务记账公司", cydfm.one2one("id", company_id, "cy"));
 			println("--------------------------------------------------------------------------");
 			println("公司cydfm", cydfm.head(5));
 			println("公司产品cpdfm", cpdfm.head(5));
@@ -73,9 +75,9 @@ public class FinAccts {
 				final var item_id = line.i4("item_id"); // 公司产品id
 				final var product_id = line.i4("product_id"); // 公司产品id
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
-				final var quantity = line.dbl("quantity"); // 数量
-				final var price = line.dbl("price"); // 单价
-				final var amount = price * quantity; // 交易金额
+				final var quantity = line.dbl("quantity"); // item数量
+				final var price = line.dbl("price"); // item单价
+				final var amount = price * quantity; // *交易金额* 重点关注，这是科目金额的默认值
 				final var path = String.format("%s/%s", bill_type, position); // 会计策略路径：单据类型/持有头寸
 				final var mykeys = "bill_id,bill_type,item_id,product_id,warehouse_id,price,quantity"; // 会计凭证中需要写入会计分录的自定义字段名序列
 				final var vars = REC("bill_id", bill_id, "bill_type", bill_type, "item_id", item_id, "product_id",
@@ -105,13 +107,14 @@ public class FinAccts {
 			final var bill_id = entry.i4("bill_id"); // 记账凭证id
 			final var bill_type = entry.str("bill_type"); // 记账凭证类型
 			final var item_id = entry.i4("item_id"); // 公司产品id
-			final var warehouse_id = entry.i4("warehouse_id"); // 库房id
-			final var cpopt = cpdfm.one2opt("id", item_id, "cp1"); // 公司产品opt
-			final var pcy_id = cpopt.map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
-			final var product = cpopt.map(e -> e.str("name")).orElse("-"); // 公司产品
-			final var product_id = cpopt.map(e -> e.i4("product_id")).orElse(-1); // 公司产品id
-			final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库"); // 库房
+			final var itopt = cpdfm.one2opt("id", item_id, "item"); // 公司产品opt
+			final var item = itopt.map(e -> e.str("name")).orElse("-"); // 公司产品名称
+			final var pcy_id = itopt.map(e -> e.i4("company_id")).orElse(-1); // 产品公司id
 			final var pcy = cydfm.one2opt("id", pcy_id, "cy2").map(e -> e.str("name")).orElse("无"); // 产品公司
+			final var product_id = itopt.map(e -> e.i4("product_id")).orElse(-1); // 公司产品id
+			final var warehouse_id = entry.i4("warehouse_id"); // 库房id
+			final var warehouse = whdfm.one2opt("id", warehouse_id, "wh").map(e -> e.str("name")).orElse("总库"); // 库房名称
+
 			final int counterpart_id; // 对手方类型
 			final Position position; // 单据头寸，从订单方向查看
 			switch (bill_type) { // 根据记账凭证进行对应的分录字段补充
@@ -143,8 +146,8 @@ public class FinAccts {
 			final var counterpart = cydfm.one2opt("id", counterpart_id, "cy2").map(e -> e.str("name")).orElse("无"); // 对手方
 
 			entry.add("bill_id", bill_id, "bill_type", bill_type, "pcy_id", pcy_id, "pcy", pcy, "product_id",
-					product_id, "product", product, "warehouse", warehouse, "counterpart_id", counterpart_id,
-					"counterpart", counterpart, "position", position); // 补充字段
+					product_id, "item", item, "warehouse", warehouse, "counterpart_id", counterpart_id, "counterpart",
+					counterpart, "position", position); // 补充字段
 		}; // entry
 	}
 
@@ -179,7 +182,7 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 调整后的记账凭证行项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证行项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_fifo_handler(final FinAcct fa, IRecord item) {
 		return bill_short_handler(fa, item, true);
@@ -192,7 +195,7 @@ public class FinAccts {
 	 * 
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
-	 * @return 调整后的记账凭证行项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证行项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_lifo_handler(final FinAcct fa, IRecord item) {
 		return bill_short_handler(fa, item, false);
@@ -206,7 +209,7 @@ public class FinAccts {
 	 * @param fa   会计对象
 	 * @param item 发货单 凭证项目
 	 * @param flag 是否采用fifo模式来核算成本,true:filo模式,false:lifo模式
-	 * @return 调整后的记账凭证行项目(在一次在发货中,根据成本核算模式要求,将库存单拆分成多组与之对应的不同成本构成的记账凭证行项目）
+	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo/lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
 	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item, final boolean flag) {
 		final var bill_type = item.str("bill_type").toUpperCase(); // 单据类型
@@ -226,10 +229,10 @@ public class FinAccts {
 				.collect(DFrame.dfmclc);
 		println(String.format("entrydfm#\n%s", entrydfm));
 		final var checkindfm = entrydfm.rowS() // 库存商品借方分录
-				.filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(1)).collect(DFrame.dfmclc); // 借方余额
+				.filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(1)).collect(DFrame.dfmclc); // 核算科目借方余额-流入
 		println(String.format("entrydfm#\n%s", checkindfm));
 		final var checkoutdfm = entrydfm.rowS() // 库存商品贷方分录
-				.filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(-1)).collect(DFrame.dfmclc); // 贷方余额
+				.filter(e -> e.lng("acctnum").equals(acctnum) && e.i4("drcr").equals(-1)).collect(DFrame.dfmclc); // 核算科目贷方余额-流出
 		println(String.format("crdfm#\n%s", checkoutdfm));
 
 		if (checkindfm.length() > 0) { // 发现库存产品,根据库存产品进行发货凭证中的quantity与price调整。即 调整记账凭证行项目。
@@ -244,15 +247,15 @@ public class FinAccts {
 			final var items_adjusted = linedfm.rowS().filter(e -> e.i4("index").equals(checkout_index))
 					.flatMap(line -> { // 每个line代表一个发货单的发货方案,每个记账项目可以由一组缺货数量lacks_items与可供应数量provides_items来进行表示
 						final var provides = line.llS("provides", IRecord::REC); // 可供应数量
-						final var lacks_items = line.i4opt("lacks") // 缺货项目数量
+						final var lacks_items = line.dblopt("lacks") // 缺货项目数量
 								.map(lacks -> Arrays.asList(item.derive("quantity", lacks))) // 使用记账凭证行项目修正为缺货数量
 								.orElseGet(LinkedList::new); // 缺货项目按照订单价格与缺货数量进行发货
 						final var provides_items = provides.equals(Stream.empty()) // 缺货判定
-								? Arrays.asList(item) // provides 为空带表缺货
-								: line.llS("provides", IRecord::REC).map(e -> {// i_ivc发货单需要拆分曾provides个给予核算
+								? Arrays.asList(item) // provides为空代表缺货
+								: line.llS("provides", IRecord::REC).map(e -> {// 发货单需要拆分曾provides个给予核算
 									final var checkin_index = e.i4("index"); // 收据索引
+									final var checkin = checkindfm.row(checkin_index); // 提取对应的收货单
 									final var quantity = e.dbl("quantity"); // 对应的收货单数量
-									final var checkin = checkindfm.row(checkin_index); // 提取对应额收货单
 									return item.derive("quantity", quantity, "price", checkin.dbl("price")); // 使用存货产品数量进行发货
 								}).toList(); // 对应于存货的发货方案
 						final var plan_items = new LinkedList<IRecord>(); // 发货方案

@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -69,6 +70,17 @@ public class DFrame extends LinkedRecord {
 			this.rowsCache = null;
 		}
 		return Optional.ofNullable(this.rowsCache).orElseGet(() -> this.rowsCache = super.rows());
+	}
+
+	/**
+	 * 第rowid 所在的行记录
+	 * 
+	 * @param rowid 行号索引：从0开始
+	 * @return rowid所标记行记录
+	 */
+	@Override
+	public IRecord row(final int rowid) {
+		return this.rows().get(rowid);
 	}
 
 	/**
@@ -847,7 +859,7 @@ public class DFrame extends LinkedRecord {
 				(rows, t) -> rows.add(mapper.apply(t)), (a, b) -> { //
 					a.addAll(b);
 					return a;
-				}, (rows) -> { //
+				}, (rows) -> { // 行项目
 					final var data = new LinkedHashMap<String, List<Object>>(); // 列式结构的数据框数据。
 					for (final var row : rows) { // 依据行进行遍历
 						for (final var key : row.keys()) { // 按照列进行逐个元素增长
@@ -856,7 +868,7 @@ public class DFrame extends LinkedRecord {
 						} // for key 列名
 					} // for rows
 					final var dfm = new DFrame(data);
-					dfm.rowsCache = rows; // 更新行缓存
+					dfm.rowsCache = new ArrayList<>(rows); // 更新行缓存,改用数组列表
 					return dfm;
 				});
 	}

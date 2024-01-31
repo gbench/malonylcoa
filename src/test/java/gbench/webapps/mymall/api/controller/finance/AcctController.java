@@ -61,15 +61,16 @@ public class AcctController {
 	/**
 	 * 数据演示
 	 * <p>
-	 * http://localhost:6010/finance/acct/trial_balance?company_ids=1&keys=ledger_id,name,warehouse,product,drcr
+	 * http://localhost:6010/finance/acct/trial_balance?company_ids=1&keys=ledger_id,name,warehouse,item,drcr
 	 * 
 	 * @param company_ids 公司id集合
 	 * @param keys        透视表的键值路径，阶层的组织顺序，可选字段为:<br>
-	 *                    id:会计分录id,drcr:分录借贷标记,name:科目名称,amount:科目金额,ledger_id:分类账id,acctnum:科目编码
-	 *                    ,bill_id:单据id,bill_type:单据类型,product_id:产品id,item_id:公司产品id,product:产品名称,warehouse_id:库房id
-	 *                    ,warehouse:库房名称,pcy_id:产品公司id,pcy:产品公司,countart_id:对手方id,counterpart:对手方名称,position:交易单据持有头寸
-	 *                    ,time:记账时间
-	 * @return IRecord {code:结果状态标记0表示成功,data:json结构根节点即透视表数据,keys:可供设计透视表的键值列表}
+	 *                    id:会计分录id,drcr:分录借贷标记,name:科目名称,amount:科目金额即单价与数量的乘积,ledger_id:分类账id,acctnum:科目编码
+	 *                    ,bill_id:单据id,bill_type:单据类型,product_id:产品id,item_id:公司产品id,item:公司产品名称,warehouse_id:库房id
+	 *                    ,warehouse:库房名称,pcy_id:产品公司id,pcy:产品公司,counterart_id:对手方id,counterpart:对手方名称,position:交易单据持有头寸
+	 *                    ,price:公司产品单价,quantity:公司产品数量,time:记账时间
+	 * @return IRecord {code:结果状态标记0表示成功,data:json结构根节点即透视表数据,
+	 *         keys:当前结果所使用的keys,allkeys:可供设计透视表的键值列表}
 	 */
 	@SuppressWarnings("unchecked")
 	@RequestMapping("trial_balance")
@@ -77,7 +78,7 @@ public class AcctController {
 		final var fa = fabuilder.add("policy", "policy0001").build(); // 创建会计类型
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 }))
 				.forEach(executor_of(jdbcApp, fa)); // 模拟各个公司的运行
-		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,product,drcr").split(","); // 透视表键值列表
+		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,item,drcr").split(","); // 透视表键值列表
 		final var json = fa.trialBalance(_keys).json( // 生成josn
 				(sb, node) -> {
 					final var value = node.attrvalOpt().map(Types.obj2dbl(0d)).orElse(0d); // 提取数值性的节点值属性
@@ -100,8 +101,8 @@ public class AcctController {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		final var kk = fa.getEntrieS().findFirst().map(IRecord::keys).orElse(new LinkedList<>()); // 可供设计透视表的键值列表
-		return Mono.just(REC("code", "0", "data", root, "keys", kk));
+		final var allkeys = fa.getEntrieS().findFirst().map(IRecord::keys).orElse(new LinkedList<>()); // 可供设计透视表的键值列表
+		return Mono.just(REC("code", "0", "data", root, "keys", keys, "allkeys", allkeys));
 	}
 
 	@Autowired

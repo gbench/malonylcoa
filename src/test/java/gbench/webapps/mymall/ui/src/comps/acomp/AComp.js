@@ -107,7 +107,7 @@ const INIT_DATA = {
 	counterparts: [], // 对手方集合
 	order_position: SHORT, // 默认订单头寸,空头,即 创建一个卖出单,order的partb_id为当前的用户的company_id 
 	btype: "all",// bill_type 单据类型
-	pvtkeys: "ledger_id,name,warehouse,product,drcr", // pvt 透视表 
+	pvtkeys: "ledger_id,name,warehouse,item,drcr", // pvt 透视表 
 	accts: [], // 会计分录 
 }; // INIT_DATA
 
