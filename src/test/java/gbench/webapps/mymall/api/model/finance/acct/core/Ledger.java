@@ -124,11 +124,21 @@ public class Ledger {
 	}
 
 	/**
+	 * 获取会计分录
 	 * 
 	 * @return
 	 */
 	public DFrame getEntries() {
 		return fa.getEntries(id).stream().collect(DFrame.dfmclc);
+	}
+
+	/**
+	 * 获取会计分录
+	 * 
+	 * @return
+	 */
+	public Stream<IRecord> getEntrieS() {
+		return fa.getEntrieS(id);
 	}
 
 	/**

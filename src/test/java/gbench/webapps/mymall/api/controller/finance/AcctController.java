@@ -4,6 +4,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.Json.objM;
 import static gbench.webapps.mymall.api.model.finance.FinAccts.executor_of;
 import static java.time.LocalDateTime.now;
+import static java.util.stream.Collectors.joining;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -50,10 +51,11 @@ public class AcctController {
 	 * @return IRecord {code:结果状态标记0表示成功,data:分录列表数组}
 	 */
 	@RequestMapping("entries")
-	public Mono<IRecord> entries(final @Param Integer[] company_ids) {
+	public Mono<IRecord> entries(final @Param Long[] company_ids) {
 		final var fa = fabuilder.add("policy", "policy0001").build(); // 创建会计类型
-		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 }))
-				.forEach(executor_of(jdbcApp, fa)); // 模拟各个公司的运行
+		final var ledger = fa.getLedger(this.glid(company_ids)); // 总账
+		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Long[] { 1l, 2l }))
+				.forEach(executor_of(jdbcApp, ledger, "#getBills")); // 模拟各个公司的运行
 
 		return Mono.just(REC("code", "0", "data", fa.getEntrieS().toList()));
 	}
@@ -74,10 +76,11 @@ public class AcctController {
 	 */
 	@SuppressWarnings("unchecked")
 	@RequestMapping("trial_balance")
-	public Mono<IRecord> trial_balance(final @Param Integer[] company_ids, final @Param String keys) {
+	public Mono<IRecord> trial_balance(final @Param Long[] company_ids, final @Param String keys) {
 		final var fa = fabuilder.add("policy", "policy0001").build(); // 创建会计类型
-		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Integer[] { 1, 2 }))
-				.forEach(executor_of(jdbcApp, fa)); // 模拟各个公司的运行
+		final var ledger = fa.getLedger(glid(company_ids));
+		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Long[] { 1l, 2l }))
+				.forEach(executor_of(jdbcApp, ledger, "#getBills")); // 模拟各个公司的运行
 		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,item,drcr").split(","); // 透视表键值列表
 		final var json = fa.trialBalance(_keys).json( // 生成josn
 				(sb, node) -> {
@@ -103,6 +106,23 @@ public class AcctController {
 		}
 		final var allkeys = fa.getEntrieS().findFirst().map(IRecord::keys).orElse(new LinkedList<>()); // 可供设计透视表的键值列表
 		return Mono.just(REC("code", "0", "data", root, "keys", keys, "allkeys", allkeys));
+	}
+
+	/**
+	 * 根据公司id生成总账id,General Ledger Id
+	 * 
+	 * @param company_ids 公司id列表
+	 * @return 总账id
+	 */
+	private String glid(final Long... company_ids) {
+		if (company_ids == null || company_ids.length < 1) { // 默认加时间戳
+			return String.format("GL[NONE%s]", now());
+		} else {
+			final var sql = String.format("select name from t_company where id in ( %s ) ",
+					Stream.of(company_ids).map(Object::toString).collect(joining(",")));
+			final var names = jdbcApp.sqlqueryS(sql).map(e -> e.str(0)).collect(joining(","));
+			return String.format("GL[%s]", names);
+		} // if
 	}
 
 	@Autowired

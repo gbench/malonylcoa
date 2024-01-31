@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.webapps.mymall.api.model.finance.acct.core.FinAcct;
+import gbench.webapps.mymall.api.model.finance.acct.core.Ledger;
 import gbench.webapps.mymall.api.model.finance.acct.core.AbstractAcct.Position;
 import gbench.webapps.mymall.api.model.finance.acct.invt.Inventory;
 
@@ -30,16 +30,18 @@ public class FinAccts {
 	 * 会计核算运行器：财务记账器
 	 * 
 	 * @param jdbcApp 业务数据库
-	 * @param fa      FinAcct 会计对象
+	 * @param ledger  分类账对象
+	 * @param jvs     记账凭证数据源 journal voucher sources,
+	 *                通过指定不同的记账凭证源，就可以实现不同业务范围的账目核算了。
 	 * @return 获取会计核算运行器
 	 */
-	public static Consumer<Integer> executor_of(final IMySQL jdbcApp, final FinAcct fa) {
+	public static Consumer<Long> executor_of(final IMySQL jdbcApp, final Ledger ledger, final String jvs) {
 		return company_id -> jdbcApp.withTransaction(sess -> {
 			println("平台数据表", sess.sql2dframe("show tables")); // 数据表
 			final var cpdfm = sess.sql2dframe("select * from t_company_product") // 公司产品表
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
-			final var bldfm = sess.sql2dframe("#getBills", "company_id", company_id) // 读取指定的记账记账凭证信息
+			final var bldfm = sess.sql2dframe(jvs, "company_id", company_id) // 依据凭证源头，加载指定的记账凭证信息
 					.forEachBy(h2_json_processor("details")); // 记账凭证&单据信息
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
@@ -54,13 +56,11 @@ public class FinAccts {
 			println("仓库whdfm", whdfm.head(5));
 			println("订单ordfm", ordfm.head(5));
 
-			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 记账记账凭证行项目:产品/资产明细
+			final var linedfm = bldfm.rowS().flatMap(e -> e.dfm("details/items") // 记账凭证行项目:产品/资产明细
 					.rowS(item -> item.alias(k -> switch (k) { // 字段改名
 					case "id" -> "item_id"; // id改为item_id即公司产品id
 					default -> k; // 其他保持默认不变
 					}).derive(e.filter("id,bill_type,position,warehouse_id")))).collect(DFrame.dfmclc); // 数据行
-			final var ledger = fa.getLedger(String.format("公司账【%s】", //
-					cydfm.one2one("id", company_id, "cy").str("name"))); // 会计账簿
 
 			println("记账凭证行项目linedfm", linedfm);
 
@@ -69,7 +69,7 @@ public class FinAccts {
 				final var item_id = line.i4("item_id"); // 公司产品id
 				final var product_id = cpdfm.one2one("id", item_id, "cp").i4("product_id"); // 产品id
 				return line.add("product_id", product_id); // 增加产品id字段
-			}).flatMap(acct_item_adjuster(fa)).forEach(line -> { // 依次处理各个记账凭证行项目
+			}).flatMap(acct_item_adjuster(ledger)).forEach(line -> { // 依次处理各个记账凭证行项目
 				final var bill_id = line.i4("id"); // 记账凭证&单据id
 				final var bill_type = line.str("bill_type"); // 记账凭证&单据类型
 				final var position = line.str("position"); // 交易的产品头寸
@@ -88,7 +88,7 @@ public class FinAccts {
 				ledger.handle(path, amount, vars); // 写入分类账：依据path所指定的记账测录，编制会计分录
 			}); // linedfm.rowS().forEach
 
-			fa.getEntrieS().forEach(post_entry_adjuster(company_id, cpdfm, whdfm, cydfm, ordfm)); // fa.getEntrieS().forEach
+			ledger.getEntrieS().forEach(post_entry_adjuster(company_id, cpdfm, whdfm, cydfm, ordfm)); // 分类帐分录的最后补充&调整
 		}); // jdbcApp.withTransaction
 	}
 
@@ -102,7 +102,7 @@ public class FinAccts {
 	 * @param oddfm          订单信息
 	 * @return 提交后的分录项目调整方法
 	 */
-	public static Consumer<? super IRecord> post_entry_adjuster(final int acct_entity_id, final DFrame cpdfm,
+	public static Consumer<? super IRecord> post_entry_adjuster(final long acct_entity_id, final DFrame cpdfm,
 			final DFrame whdfm, final DFrame cydfm, final DFrame oddfm) {
 		return entry -> { // 提交后调整
 			final var bill_id = entry.i4("bill_id"); // 记账凭证id
@@ -121,8 +121,8 @@ public class FinAccts {
 			switch (bill_type) { // 根据记账凭证进行对应的分录字段补充
 			case "t_order": { // t_order类型的交易单的字段处理
 				position = oddfm.one2opt("id", bill_id, "od").map(od -> { // 订单对手方判断
-					final var parta_id = od.i4("parta_id"); // 订单的甲方id:多头交易方,买方
-					final var partb_id = od.i4("partb_id"); // 订单的乙方id:空头交易方,卖方
+					final var parta_id = od.lng("parta_id"); // 订单的甲方id:多头交易方,买方
+					final var partb_id = od.lng("partb_id"); // 订单的乙方id:空头交易方,卖方
 					if (Objects.equals(acct_entity_id, parta_id)) {
 						return Position.LONG; // 交易头寸:多头
 					} else if (Objects.equals(acct_entity_id, partb_id)) {
@@ -155,9 +155,9 @@ public class FinAccts {
 	/**
 	 * 记账凭证行项目即产品行的记账调整（以符合会计策略的编制要求）
 	 * 
-	 * @param fa 会计对象
+	 * @param ledger 分类账对象
 	 */
-	public static Function<IRecord, Stream<IRecord>> acct_item_adjuster(final FinAcct fa) {
+	public static Function<IRecord, Stream<IRecord>> acct_item_adjuster(final Ledger ledger) {
 		return item -> { // 产品调整,根据需要会把一单分拆成多单
 			final var position = item.str("position"); // 交易的产品头寸
 			final var bill_type = item.str("bill_type"); // 记账凭证&单据类型
@@ -168,7 +168,7 @@ public class FinAccts {
 			// 空头方的交易头寸的处理，对于空头持有的该种记账凭证(invoice,receipt)的会计主体acct_entity而言，需要采用历史成本策略来调整记账凭证行项目item的price和quantity,
 			// 这里涉及记账凭证行项目item由于数量巨大需要多个入库存单checkin来进行合并才能满足发货要求,以及一个入库单checkin数量巨大,可以满足多个出库单checkout的记账凭证行项目的情况。
 			// 但具体对checkout而则只需要考虑是否合并多个checkin的问题(checkin的拆分与合并问题可交由存货算法的来匹配chekout)，所以这里这里的checkout需要与至少一个checkin进行关联。
-			case "short" -> bill_short_fifo_handler(fa, item);
+			case "short" -> bill_short_fifo_handler(ledger, item);
 			default -> Stream.of(item); // 默认处理
 			}; // switch position
 
@@ -183,12 +183,12 @@ public class FinAccts {
 	 * 凭证项目调整:以便适配会计策略的算法 <br>
 	 * 空头持有发货凭证,按照货物的入库成本法进行数量核算:原理就是分析item成一组新的items,每个item具有更为精确的quantiy和price
 	 * 
-	 * @param fa   会计对象
-	 * @param item 发货单 凭证项目
+	 * @param ledger 分类账对象
+	 * @param item   发货单 凭证项目
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
-	public static Stream<IRecord> bill_short_fifo_handler(final FinAcct fa, IRecord item) {
-		return bill_short_handler(fa, item, IRecord.cmp("time", true));
+	public static Stream<IRecord> bill_short_fifo_handler(final Ledger ledger, IRecord item) {
+		return bill_short_handler(ledger, item, IRecord.cmp("time", true));
 	}
 
 	/**
@@ -196,12 +196,12 @@ public class FinAccts {
 	 * 凭证项目调整:以便适配会计策略的算法 <br>
 	 * 空头持有发货凭证,按照货物的入库成本法进行数量核算:原理就是分析item成一组新的items,每个item具有更为精确的quantiy和price
 	 * 
-	 * @param fa   会计对象
-	 * @param item 发货单 凭证项目
+	 * @param ledger 分类账对象
+	 * @param item   发货单 凭证项目
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
-	public static Stream<IRecord> bill_short_lifo_handler(final FinAcct fa, IRecord item) {
-		return bill_short_handler(fa, item, IRecord.cmp("time", false));
+	public static Stream<IRecord> bill_short_lifo_handler(final Ledger ledger, IRecord item) {
+		return bill_short_handler(ledger, item, IRecord.cmp("time", false));
 	}
 
 	/**
@@ -209,7 +209,7 @@ public class FinAccts {
 	 * 凭证项目调整:以便适配会计策略的算法 <br>
 	 * 空头持有发货凭证,按照货物的入库成本法进行数量核算:原理就是分析item成一组新的items,每个item具有更为精确的quantiy和price
 	 * 
-	 * @param fa          会计对象
+	 * @param ledger      分类账对象
 	 * @param item        发货单 凭证项目
 	 * @param cost_method 成本计算方法:比如：<br>
 	 *                    IRecord.cmp("time", true)为lifo模式, <br>
@@ -217,7 +217,7 @@ public class FinAccts {
 	 *                    当然还可自行定义会计分录的排序方法来进行成本核算方法的定制.
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(cost_method),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
-	public static Stream<IRecord> bill_short_handler(final FinAcct fa, IRecord item,
+	public static Stream<IRecord> bill_short_handler(final Ledger ledger, IRecord item,
 			final Comparator<? super IRecord> cost_method) {
 		final var bill_type = item.str("bill_type").toUpperCase(); // 记账凭证&单据类型
 		final var product_id = item.i4("product_id"); // 产品id,注意这里使用的是产品id而不是公司产品id
@@ -231,7 +231,7 @@ public class FinAccts {
 		println(String.format("SHORT FOR %s:%s#%s [ %s ]", bill_type, acctnum, ACCTS.get(acctnum + ""), item));
 		println("====================================================================");
 
-		final var entrydfm = fa.getEntrieS() // 财务记账的会计分录
+		final var entrydfm = ledger.getEntrieS() // 财务记账的会计分录
 				.filter(e -> e.i4("product_id").equals(product_id)) // *指定产品的会计分录*,注意这里使用的通用产品product_id,而不是item_id,以保证不同公司产品的checkin可以混合发货。
 				.sorted(cost_method) // 根据成本核算方法所执行的顺序进行编排会计分录
 				.collect(DFrame.dfmclc); // 满足记账策略算法编制要求的会计分录表,即本次会计凭证行项目的涉及分录范围(借方分录集checkins与贷方分录集checkouts),以便后续根据借贷标记将其进行分解
