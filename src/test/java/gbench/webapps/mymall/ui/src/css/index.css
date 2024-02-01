@@ -1,3 +1,7 @@
+body {
+    font-family: Sans-serif;
+}
+
 th {
     color: white;
     background-color: red;
@@ -6,6 +10,7 @@ th {
 
 td {
     border: solid 1px red;
+    white-space: nowrap;
 }
 
 tr:hover {
@@ -26,6 +31,14 @@ tr:hover {
     background-color: bisque;
     cursor: pointer;
     font-weight: bold;
+}
+
+select input {
+    vertical-align: top;
+}
+
+select {
+    height: 21px;
 }
 
 /*

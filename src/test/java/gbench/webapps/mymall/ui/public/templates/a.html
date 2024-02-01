@@ -17,10 +17,10 @@
   </div>
   <hr />
   <div>
-    {{component}}
+    <div style="font-weight:bold;margin-bottom:8px;">{{component}}</div>
     <div>
       <!--数据表-->
-      <div style="float:left;width:220px;height:455px;overflow:auto;border:solid 1px red;">
+      <div style="float:left;width:220px;height:453px;overflow:auto;border:solid 1px red;">
         <data-table style="width:100%" :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
           @trclick="on_tables_trclick" />
       </div>
@@ -31,7 +31,7 @@
             :trclass="(line,i)=>is_tbldata_selected(i)?current.tbldata_index==i?'highlight2':'highlight':'tdclass'"
             :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
         </div>
-        <div>
+        <div style="height:21px;border:solid 1px red;margin-top:1px;padding:0px;vertical-align: middle;">
           <select v-if="current_tbl=='t_order'" v-model="btype" @change="on_btype_change($event)">
             <option v-for="bt in btypes" :value="bt">{{bt}}</option>
           </select> &nbsp;
@@ -64,48 +64,61 @@
             this.current.lines_selected.map(i=>`${i}#${lines&&lines[i]?lines[i]["id"]:"-"}`).join(",")
             }}]</span>
         </div>
-        <div style="height:166px;overflow:auto;border:solid 1px red;margin-top:2px;">
-          <div style="width:1200px;">
-            <data-table :data="datalines" :tdrender="tbldata_td_render"
+        <div style="height:163px;overflow:auto;border:solid 1px red;margin-top:1px;">
+          <div>
+            <data-table style="width:100%" :data="datalines" :tdrender="tbldata_td_render"
               :trclass="(line,i)=>is_line_selected(i)?current.line_index==i?'highlight2':'highlight':'tdclass'"
               @trclick="on_lines_trclick" />
           </div>
         </div>
       </div>
       <!--行项目-->
-      <div style="height:455px;width:348px;border:solid 1px red;float:left;margin-left:2px;overflow:auto">
+      <div style="height:455px;width:348px;border:solid 0px blue ;float:left;margin-left:2px;overflow:auto">
         <div>
           <data-table v-if="1!=1" style="width:100%" :data="warehouses"
             :trclass="(line,i)=>is_warehouse_selected(i)?current.warehouse_index==i?'highlight2':'highlight':'tdclass'"
             @trclick="on_warehouse_trclick" />
         </div>
-        <div style="height:40%;border:solid 1px red;overflow: auto;">
+        <div style="height:30%;border:solid 1px red;overflow: auto;">
           <data-table style="width:100%" :data="accts"></data-table>
         </div>
-        <input v-if="is_logined" style="width:98%;margin:2px;border:none" v-model="pvtkeys" />
-        <div style="height:52.75%;border:solid 1px red;overflow:auto;">
+        <div style="border:solid 1px red;height:21px;margin-top:1px;margin-bottom:1px;">
+          <input v-if="is_logined" style="width:98%;margin:2px;border:none" v-model="pvtkeys" />
+        </div>
+        <div style="height:63.6%;border:solid 1px red;overflow:auto;">
           <div v-if="is_logined" id="ztree" class="ztree left"></div>
         </div>
       </div>
       <div style="clear:both"></div>
       <div>
         <hr>
-        <div v-if="current_tbl=='t_order' && is_logined">
-          <!--交易头寸-->
-          <select v-model="order_position">
-            <option value="1">LONG</option>
-            <option value="-1">SHORT</option>
-          </select> &nbsp;
-          <!--交易对手方-->
-          <select v-model="counterpart_id" @change="on_counterpart_change($event)">
-            <option v-for="part in counterparts" :value="part.id">{{part.id}}#{{part.name}}</option>
-          </select> &nbsp;
-          <select v-model="current.counterpart.default_warehouse_id">
-            <option v-for="wh in current.counterpart.warehouses" :value="wh.id">{{wh.name}}</option>
-          </select> &nbsp;
-          <button @click="on_order_btn_click($event)">order</button> &nbsp;
+        <div v-if="current_tbl=='t_order' && is_logined" style="border:solid 1px red;height:60px;width:99%">
+          <div style="float:left;width:220px;height:60px;background-color: red;color:white;overflow:hidden;">
+            <a style='font-size:45px;font-weight:bold;color:white;' :href="this.current.counterpart.website">
+              {{this.current.counterpart.name}}
+          </div>
+          <div style="float:left;margin:2px;">
+            <!--客户操作-->
+            <div>
+              <!--交易头寸-->
+              <select v-model="order_position">
+                <option value="1">LONG</option>
+                <option value="-1">SHORT</option>
+              </select> &nbsp;
+              <!--交易对手方-->
+              <select v-model="counterpart_id" @change="on_counterpart_change($event)">
+                <option v-for="part in counterparts" :value="part.id">{{part.id}}#{{part.name}}</option>
+              </select> &nbsp;
+              <select v-model="current.counterpart.default_warehouse_id">
+                <option v-for="wh in current.counterpart.warehouses" :value="wh.id">{{wh.name}}</option>
+              </select> &nbsp;
+            </div>
+            <!--订单操作-->
+            <div style="margin-top:2px;">
+              <button @click="on_order_btn_click($event)">order</button> &nbsp;
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>

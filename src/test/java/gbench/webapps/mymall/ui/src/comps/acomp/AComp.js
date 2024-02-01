@@ -9,6 +9,10 @@ import "../../css/acomp.css";
 
 /**
  * 持久化数据 
+ * 设计BUG:t_freight_order应该是多对一于t_billof_product(invoice)的但是这里给设计成了一对一的了。
+ * 于是当为一个发货单进行多次货运t_freight_order的时候,invoice只能记录第一次给予发货的货单,结果就是
+ * 对于一个invoice只要货运一次,不是不是将其所有产品都给予货运,系统一概都将该invoice的中的商品视为全部
+ * 货运,结果就造成了收货方的应收于实收不一致的情况了。
  * 
  * @param entity 实体对象
  */
@@ -45,6 +49,15 @@ function position(order, entity_id) {
 function trader(id) {
 	return {
 		id,
+
+		/**
+		 * 信息重新加载
+		 * @param {*} action 
+		 * @returns 
+		 */
+		reload(action) {
+			return sqlquery2(`select * from t_company where id=${id} limit 1`).then(action);
+		},
 		/**
 		 * 公司的信息 
 		 * @returns 
@@ -100,7 +113,7 @@ const INIT_DATA = {
 	tbldata: [], // 表数据
 	lines: [], // 行项目
 	warehouses: [], // 仓库
-	pid2pcts: {}, // 公司产品id->产品明细 
+	iid2pcts: {}, // 公司产品id->产品明细 
 	wid2whs: {}, //  仓库id->仓库明细
 	cid2cys: {}, // 公司id->公司明细
 	counterpart_id: -1, // 交易对手方id
@@ -534,7 +547,7 @@ const AComp = {
 						sqlquery2(`select cp.id, p.id product_id,p.name name, cp.attrs
 								from t_company_product cp left join t_product p on cp.product_id = p.id`
 						).then(cpdata => {
-							this.pid2pcts = assoc_by("id", cpdata); // 公司产品id
+							this.iid2pcts = assoc_by("id", cpdata); // 公司产品id
 						}); // cpdata
 						//仓库数据
 						sqlquery2("select * from t_warehouse").then(whdata => {
@@ -636,13 +649,13 @@ const AComp = {
 
 			const pmt_sql = `select * from t_payment where order_id=${order_id}`; // 支付集合
 			sqlquery2(pmt_sql).then(_lines => { // 一级 
-				const pid2pmts = assoc_by("product_id", _.flatMap(_lines,
+				const iid2pmts = assoc_by("item_id", _.flatMap(_lines,
 					pmt => pathget(pmt, "details/items").map( // 支付行项目
-						item => Object.assign({}, alias(item)("id,product_id"), // 改名
+						item => Object.assign({}, alias(item)("id,item_id"), // 改名
 							gets(pmt, "id,order_id,payer_id,payee_id") // 提取指定字段
 						)))); // assocs 
 				const __lines = pcts.flatMap(p => { // 为此产品数据添加支付信息
-					const pmts = pid2pmts[p["id"]];
+					const pmts = iid2pmts[p["id"]];
 					return _.flatMap(aslist(pmts), pmt => {
 						return Object.assign({}, p, alias(pmt, -1)({ id: "payment_id" }));
 					});
@@ -651,13 +664,13 @@ const AComp = {
 			}).then(__lines => { // 二级数据行
 				const bill_sql = `select * from t_billof_product where order_id = ${order_id}`;
 				return sqlquery2(bill_sql).then(bills => {
-					const pid2bills = assoc_by("product_id", _.flatMap(bills,
+					const iid2bills = assoc_by("item_id", _.flatMap(bills,
 						bill => pathget(bill, "details/items").map( // 支付行项目
-							item => Object.assign({}, alias(item)("id,product_id"), // 改名
+							item => Object.assign({}, alias(item)("id,item_id"), // 改名
 								gets(bill, "id,bill_type,order_id,warehouse_id,freight_order_id") // 提取指定字段
 							)))); // assocs
 					const ___lines = __lines.flatMap(p => { // 为此产品数据添加支付信息
-						const bills = pid2bills[p["id"]]; // 提取产品相关单据
+						const bills = iid2bills[p["id"]]; // 提取产品相关单据
 						return _.flatMap(aslist(bills), bill => {
 							return Object.assign({}, p, alias(bill, -1)("id,bill_id"));
 						});
@@ -667,7 +680,7 @@ const AComp = {
 			}).then(___lines => { // 三级数据行
 				this.lines = _.sortBy(___lines.map(e => { // 翻译产品名称
 					const id = e.id; // 公司产品id
-					const cp = this.pid2pcts[id]; // 公司产品
+					const cp = this.iid2pcts[id]; // 公司产品
 					const name = get(cp, "name", "-"); // 产品名称
 					const quantity = get(e, "quantity", 0); // 单据类型 
 					const price = get(e, "price", 0); // 单据类型 
@@ -711,6 +724,20 @@ const AComp = {
 					this.lines = [];
 					return;
 				};
+
+				// 根据当前数据表的位置进行对应项目的处理
+				switch (this.current_tbl) {
+					case "t_order": { // 订单表，则刷新交易对手区域的信息
+						const counterpart_id = line["position"] == "LONG"
+							? line['partb_id']  //  多头持有订单的对手是卖方
+							: line["parta_id"]; // 空头持有的订单的对手方买方
+						this.on_counterpart_change(null, counterpart_id); // 更新对手方信息
+						break;
+					} // t_order
+					default: { // 其余不予处置
+						// do nothing
+					} // default
+				} // switch
 			} // if
 
 			switch (this.current_tbl) { // 表数据的处理
@@ -808,13 +835,13 @@ const AComp = {
 				return;
 			}
 			const volume = rnd(5); // 模拟订单产品规模
-			const pid2pcts = assoc_by("id", // 依据产品id进行数据分组
+			const iid2pcts = assoc_by("id", // 依据产品id进行数据分组
 				_.repeat("1", volume).split(/\s*/).map((v, i) => { // 随机生成数据序列
 					// 产品id生成规则: 乙方id+10以内的随机数，这个产品id是有限制，依据t_company_prodduct的结构来进行设置
 					return { id: (partb_id - 1) * 10 + rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量
 				})); // 随机生成订单项目
-			const items = Object.keys(pid2pcts).map(pid => { // 产品id
-				const pcts = aslist(pid2pcts[pid]); // 提取指定id订单产品项目列表
+			const items = Object.keys(iid2pcts).map(pid => { // 产品id
+				const pcts = aslist(iid2pcts[pid]); // 提取指定id订单产品项目列表
 				const quantity = _.sumBy(pcts, e => e["quantity"]); // 累计交易数量
 				const item = Object.assign(pcts[0], { quantity, price: rnd2(100) }); // 累计行项目的数量并补充价格
 				return item; // 返回产品行项目
@@ -1006,14 +1033,21 @@ const AComp = {
 			} else if (event && event.target && event.target.value) { // 事件对象上的绑定作为默认值给予确认 
 				this.counterpart_id = event.target.value;
 			} // if
-
+			const ct = trader(this.counterpart_id);
 			// 交易者的事件处理
-			trader(this.counterpart_id).warehouses(whdata => {
+			ct.warehouses(whdata => {
 				if (whdata.length > 0) { // 对手方的仓库有效
 					this.current.counterpart.default_warehouse_id = whdata[0].id;
 				} //if
 				this.current.counterpart.warehouses = whdata;
 			}); // warehouses
+
+			// 基础信息重新加载
+			ct.reload(lines => {
+				if (lines.length > 0) {
+					this.current.counterpart = Object.assign(this.current.counterpart, lines[0]);
+				}
+			});
 		},
 
 		/**
@@ -1024,7 +1058,7 @@ const AComp = {
 				.then(e => {
 					const data = e.data.data;
 					const translate = p => { // 节点信息翻译
-						const pct = this.pid2pcts[p.product_id]; // 提取产品信息
+						const pct = this.iid2pcts[p.item_id]; // 提取产品信息
 						return { name: `${p.name}` };
 					}; // 翻译函数
 					const lines = data.map(e => Object.assign({}, gets(e, "drcr,amount"), translate(e)));

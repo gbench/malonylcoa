@@ -60,7 +60,7 @@ from (
 			b.freight_order_id -- 暴露出货运单id
 			from ( -- 单据类型是 收货单 或是 发货单
 				select * from t_billof_product where bill_type in ('invoice', 'receipt')
-			) b left join ( -- 依据核算主体来筛选相应订单,确保核算主体要么是订单的甲方parta_id，要么是订单的乙方partb_id
+			) b right join ( -- 依据核算主体来筛选相应订单,确保核算主体要么是订单的甲方parta_id，要么是订单的乙方partb_id
 				select * from t_order where ##company_id in (parta_id, partb_id)
 			) o on b.order_id=o.id 
 	) b1 left join t_freight_order f -- 尝试通过货运单获取获取精确的仓库id
