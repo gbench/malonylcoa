@@ -16,7 +16,7 @@ import javax.sql.DataSource;
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.jdbc.Jdbcs.imports;
 import static gbench.util.lisp.IRecord.REC;
-import static gbench.webapps.world.api.model.DataModel.*;
+import static gbench.webapps.mymall.api.model.DataModel.*;
 
 @Configuration
 public class DataAppConfig {
