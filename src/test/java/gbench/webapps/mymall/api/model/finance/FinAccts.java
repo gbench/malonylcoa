@@ -187,7 +187,7 @@ public class FinAccts {
 	 * @param item   发货单 凭证项目
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(fifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
-	public static Stream<IRecord> bill_short_fifo_handler(final Ledger ledger, IRecord item) {
+	public static Stream<IRecord> bill_short_fifo_handler(final Ledger ledger, final IRecord item) {
 		return bill_short_handler(ledger, item, IRecord.cmp("time", true));
 	}
 
@@ -200,7 +200,7 @@ public class FinAccts {
 	 * @param item   发货单 凭证项目
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(lifo),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
-	public static Stream<IRecord> bill_short_lifo_handler(final Ledger ledger, IRecord item) {
+	public static Stream<IRecord> bill_short_lifo_handler(final Ledger ledger, final IRecord item) {
 		return bill_short_handler(ledger, item, IRecord.cmp("time", false));
 	}
 
@@ -217,7 +217,7 @@ public class FinAccts {
 	 *                    当然还可自行定义会计分录的排序方法来进行成本核算方法的定制.
 	 * @return 调整后的记账凭证行项目(在一次在发货checkout中,根据成本核算模式要求(cost_method),将与发货单chekout即记账凭证行项目相对应的一系列库存单拆分成多组具有不同成本结构的记账凭证行项目）
 	 */
-	public static Stream<IRecord> bill_short_handler(final Ledger ledger, IRecord item,
+	public static Stream<IRecord> bill_short_handler(final Ledger ledger, final IRecord item,
 			final Comparator<? super IRecord> cost_method) {
 		final var bill_type = item.str("bill_type").toUpperCase(); // 记账凭证&单据类型
 		final var product_id = item.i4("product_id"); // 产品id,注意这里使用的是产品id而不是公司产品id
