@@ -2,6 +2,11 @@ body {
     font-family: Sans-serif;
 }
 
+thead {
+    position: sticky;
+    top: -1px;
+}
+
 th {
     color: white;
     background-color: red;

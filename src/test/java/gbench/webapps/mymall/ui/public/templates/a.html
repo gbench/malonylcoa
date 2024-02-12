@@ -93,7 +93,8 @@
       <div>
         <hr>
         <div v-if="current_tbl=='t_order' && is_logined" style="border:solid 1px red;height:60px;width:99%">
-          <div style="float:left;width:220px;height:60px;background-color: red;color:white;overflow:hidden;">
+          <div
+            style="float:left;width:220px;height:60px;text-align:center;background-color:red;color:white;overflow:hidden;">
             <a style='font-size:45px;font-weight:bold;color:white;' :href="this.current.counterpart.website">
               {{this.current.counterpart.name}}
             </a>

@@ -3,11 +3,11 @@ import _ from 'lodash';
 const DataTable = {
     template: ` 
     <table :id="id" :class="tblclass" style="border-collapse:collapse"> 
-            <tr> 
+            <thead><tr> 
                 <th :class="thclass" 
                     v-for="h in heads(data)">{{label(h)}}</th> 
-            </tr> 
-            <tr v-for="line,i in data" 
+            </tr></thead>
+            <tbody><tr v-for="line,i in data" 
                 :class="f_trclass(line,i)" 
                 @click="on_tr_click($event,line,i)" 
                 @mouseover="on_tr_mouseover($event,line,i)" > 
@@ -16,7 +16,7 @@ const DataTable = {
                     @blur="on_td_blur($event,line[h],h,line,i)" 
                     v-for="h in heads(data)" v-html="f_tdrender(line[h],h,line,i)" > 
                 </td> 
-            </tr> 
+            </tr></tbody>
     </table> 
     `,
 
