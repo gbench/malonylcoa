@@ -3,7 +3,7 @@ package gbench.sandbox.data;
 import org.junit.jupiter.api.Test;
 
 import gbench.util.data.DataApp.IRecord;
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.data.MyDataApp;
 
 import static gbench.sandbox.data.pg.Pgdb.*;

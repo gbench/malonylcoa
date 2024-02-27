@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;

@@ -6,7 +6,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 
 import org.junit.jupiter.api.Test;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.Jdbcs;

@@ -22,7 +22,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.array.INdarray;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;

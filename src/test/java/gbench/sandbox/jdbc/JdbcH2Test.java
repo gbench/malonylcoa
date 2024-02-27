@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.DFrame;
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.IMySQL;

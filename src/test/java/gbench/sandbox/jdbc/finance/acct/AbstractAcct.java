@@ -4,7 +4,7 @@ import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.jdbc.Jdbcs.imports;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;

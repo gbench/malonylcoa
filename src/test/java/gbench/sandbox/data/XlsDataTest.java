@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static gbench.util.io.Output.println;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.data.xls.SimpleExcel;
 
 /**

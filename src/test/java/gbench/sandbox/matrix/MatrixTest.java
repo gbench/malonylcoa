@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.array.INdarray;
 import gbench.util.array.Tensor;
 import gbench.util.data.xls.SimpleExcel;

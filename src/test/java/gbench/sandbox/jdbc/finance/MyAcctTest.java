@@ -4,7 +4,7 @@ import static gbench.util.io.Output.println;
 
 import org.junit.jupiter.api.Test;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.sandbox.jdbc.finance.acct.AbstractAcct;
 import gbench.sandbox.jdbc.finance.acct.FinAcct;
 import gbench.util.jdbc.kvp.DFrame;

@@ -12,7 +12,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import gbench.sandbox.global.Globals;
+import gbench.global.Globals;
 import gbench.util.array.INdarray;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;

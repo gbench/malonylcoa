@@ -6,6 +6,7 @@ import static gbench.util.jdbc.Jdbcs.imports;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import gbench.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
@@ -124,8 +125,10 @@ public abstract class AbstractFinBuilder<S, T extends AbstractFinBase<T>> {
 		});
 	}
 
-	public static final String datafile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx";
-	public static final String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql";
+	public static final String datafile = Globals.WS_HOME
+			+ "/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data/acct_data.xlsx";
+	public static final String sqlfile = Globals.WS_HOME
+			+ "/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql";
 	public static Map<String, IMySQL> jdbcApps = new ConcurrentHashMap<>(); // jdbcs缓存
 
 	final protected IMySQL jdbcApp; // 数据库
