@@ -22,6 +22,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import gbench.sandbox.global.Globals;
 import gbench.util.array.INdarray;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
@@ -162,7 +163,7 @@ public class H2db {
 	 * @return StrMatrix
 	 */
 	public static StrMatrix shtmx(final String name) {
-		final var datafile = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
+		final var datafile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
 		StrMatrix mx = null;
 		try (final var excel = SimpleExcel.of(datafile)) {
 			mx = excel.autoDetect(name);

@@ -12,6 +12,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import gbench.sandbox.global.Globals;
 import gbench.util.array.INdarray;
 import gbench.util.data.DataApp;
 import gbench.util.data.DataApp.DFrame;
@@ -163,7 +164,7 @@ public class Pgdb {
 	 * @return StrMatrix
 	 */
 	public static StrMatrix shtmx(final String name) {
-		final var datafile = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
+		final var datafile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx";
 		return shtmx(datafile, name);
 	}
 

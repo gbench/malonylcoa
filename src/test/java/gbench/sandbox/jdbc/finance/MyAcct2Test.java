@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import gbench.sandbox.global.Globals;
 import gbench.sandbox.jdbc.finance.acct.AbstractAcct;
 import gbench.sandbox.jdbc.finance.acct.FinAcct;
 import gbench.util.jdbc.kvp.DFrame;
@@ -28,8 +29,10 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 
 	static { // 设置数据文件名
 		AbstractAcct.db = "myaccts2"; // 更改数据库名，否则会因为与MyAcctTest共享数据库而出错
-		AbstractAcct.file = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct2_data.xlsx";
-		AbstractAcct.sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/acct2_test.sql";
+		AbstractAcct.file = Globals.WS_HOME
+				+ "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct2_data.xlsx";
+		AbstractAcct.sqlfile = Globals.WS_HOME
+				+ "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/acct2_test.sql";
 	}
 
 	/**

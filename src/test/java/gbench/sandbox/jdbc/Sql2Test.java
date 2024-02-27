@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import gbench.sandbox.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
@@ -33,7 +34,7 @@ public class Sql2Test {
 	public void foo() {
 		final var proto = rb("name,sex,address") //
 				.get("zhangsan,man,shanghai".split(","));
-		final var datafile = xls("f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx"); // 数据-源文件
+		final var datafile = xls(Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx"); // 数据-源文件
 		SQL.debug = true; // 开启调试标记
 
 		jdbcApp.withTransaction(sess -> {

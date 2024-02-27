@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 
+import gbench.sandbox.global.Globals;
 import gbench.util.array.INdarray;
 import gbench.util.array.Tensor;
 import gbench.util.data.xls.SimpleExcel;
@@ -136,7 +137,7 @@ public class MatrixTest {
 	@Test
 	public void matrix() {
 		try (final var excel = SimpleExcel
-				.of("F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/matrix/data.xlsx")) {
+				.of(Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/matrix/data.xlsx")) {
 			final var x = excel.autoDetect(0).row2S(INdarray::of).flatMap(e -> e.stream()).collect(INdarray.nxclc(6));
 			println(x);
 			println(x.colS(6).map(e -> e.fflat().sum()).collect(INdarray.ndclc()));

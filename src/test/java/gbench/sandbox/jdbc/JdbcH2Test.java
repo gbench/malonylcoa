@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.DFrame;
+import gbench.sandbox.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.IMySQL;
@@ -210,8 +211,8 @@ public class JdbcH2Test {
 	public void foo() {
 
 		// 创造一个IJdbcApp接口应用
-		final var datafile = xls("f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx"); // 数据-源文件
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
+		final var datafile = xls(Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx"); // 数据-源文件
+		final var sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
 		final var db = "mymall"; // 数据库名
 		final var url = String.format("jdbc:h2:mem:%s;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", db); // h2连接字符串
 		final var h2_rec = REC("url", url, "driver", "org.h2.Driver", "user", "root", "password", "123456"); // h2数据库

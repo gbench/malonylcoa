@@ -2,6 +2,7 @@ package gbench.sandbox.jdbc;
 
 import org.junit.jupiter.api.Test;
 
+import gbench.sandbox.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.ISqlPatternPreprocessor;
@@ -47,7 +48,7 @@ public class Neo4jTest {
 		println(g);
 
 		// 数据库主要构件的创建。
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/neo4j_test.sql";
+		final var sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/neo4j_test.sql";
 		final var database = IJdbcApp.newNsppDBInstance(sqlfile, MyNeo4j.class);
 		// 根据SQL语句模板文件neo4j.sql 生成代理数据库
 		final var proxy = database.getProxy();// 提取代理对象

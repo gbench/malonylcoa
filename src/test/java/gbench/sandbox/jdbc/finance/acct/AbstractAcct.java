@@ -4,6 +4,7 @@ import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.jdbc.Jdbcs.imports;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
+import gbench.sandbox.global.Globals;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
@@ -56,8 +57,10 @@ public abstract class AbstractAcct<SELF> {
 
 	// 共享静态变量便于测试应用进行本地化修改与测试:建立一个静态块给予重新赋值就可以了
 	public static String db = "myaccts"; // 数据库名
-	public static String file = "f:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct_data.xlsx"; // 数据文件
-	public static String sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
+	public static String file = Globals.WS_HOME
+			+ "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/finance/acct/acct_data.xlsx"; // 数据文件
+	public static String sqlfile = Globals.WS_HOME
+			+ "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
 
 	// 成员变量
 	final SimpleExcel datafile = xls(file); // 数据-源文件

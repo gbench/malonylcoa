@@ -11,6 +11,7 @@ import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 
+import gbench.sandbox.global.Globals;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.annotation.JdbcConfig;
@@ -116,7 +117,7 @@ public class JdbcMysqlTest {
 	@Test
 	public void foo() {
 		// 创造一个IJdbcApp接口应用
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
+		final var sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
 		final var jdbcApp = IJdbcApp.newDBInstance(() -> nspp(sqlfile), JdbcApp.class);
 
 		this.run(jdbcApp);
@@ -128,7 +129,7 @@ public class JdbcMysqlTest {
 	@Test
 	public void bar() {
 		// 创造一个IJdbcApp接口应用
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
+		final var sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
 		final var dbname = String.format("malonylcoa_%s", "bar"); // 更换一个数据库
 		final var url = String.format("jdbc:h2:mem:%s1;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", dbname);
 		final var driver = "org.h2.Driver";
@@ -150,7 +151,7 @@ public class JdbcMysqlTest {
 	@Test
 	public void quz() {
 		// 创造一个IJdbcApp接口应用
-		final var sqlfile = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
+		final var sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
 		final var dbname = "hitler"; // 更换一个数据库
 		final var url = String.format("jdbc:mysql://127.0.0.1:3309/%s?serverTimezone=UTC", dbname);
 		final var driver = "com.mysql.cj.jdbc.Driver";
