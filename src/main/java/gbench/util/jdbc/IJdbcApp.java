@@ -6,6 +6,7 @@ import static gbench.util.jdbc.Jdbc.parse2namedsqls;
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -13,6 +14,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.sql.DataSource;
+
 import gbench.util.io.FileSystem;
 import gbench.util.jdbc.kvp.IRecord;
 
@@ -79,6 +83,20 @@ public interface IJdbcApp {
 	 */
 	static <T> T newNsppDBInstance(final String sqlfile, final Class<T> dbClazz, final IRecord dbConfig) {
 		return Jdbc.newInstance(dbClazz, dbConfig, nspp(sqlfile, null));
+	}
+
+	/**
+	 * 创建数据库接口实例 注意：当sql文件不存在的啥时候，返回一个不含有任何匀速的 空Map，即new
+	 * HashMap&lt;String,String&gt;() 的 spp.
+	 * 
+	 * @param <T>     数据库类型
+	 * @param sqlfile sql语句脚本。 可以为null,但会得到一个不做任何语句处理的spp:SqlPatternPrePreocessor
+	 * @param dbClazz 数据库类型
+	 * @param ds      数据源
+	 * @return 数据库接口实例
+	 */
+	static <T> T newNsppDBInstance(final String sqlfile, final Class<T> dbClazz, final DataSource ds) {
+		return Jdbc.newInstance(dbClazz, ds, nspp(sqlfile, null), (ISqlInterceptor<List<IRecord>>) null, null);
 	}
 
 	/**

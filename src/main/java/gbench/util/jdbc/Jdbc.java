@@ -1079,6 +1079,54 @@ public class Jdbc implements IManagedStreams {
 	}
 
 	/**
+	 * 根据JDBC的上下文构建一个JDBC的执行环境。<br>
+	 * 创建一个接口itf的实现bean 根据注解信息来给予实现。 <br>
+	 * 请确保jdbcConfig 含有有效的driver,url,user,password<br>
+	 * 也可以直接加入一个 jdbcClass键
+	 * jdbcConfig.put("jdbcClass",MyJdbc.class.getName()),jdbcClass 需要有一个
+	 * Map&lt;?,?&gt;的构造函数 <br>
+	 * jdbcClass键还可以直接是一个类对象： jdbcConfig.put("jdbcClass",MyJdbc.class),jdbcClass
+	 * 需要有一个 Map&lt;?,?&gt;的构造函数 <br>
+	 * 或者是直接传入一个非空的Jdbc实例。jdbcConfig.put("_",new
+	 * MyJdbc),键名可以任意，当存在多个Jdbc实例的时候，选取第一个。<br>
+	 * 
+	 * @param <T>                     访问接口 类的类型
+	 * @param <U>                     jdbcPostProcessor的返回结果的类型
+	 * @param itf                     访问接口
+	 * @param ds                      数据源
+	 * 
+	 * @param sqlpattern_preprocessor sql语句pattern预处理：比如对于特征占位符个与替换，特别是datasharding的分数据分表．
+	 *                                是一个(m,a,p,j)-&gt;p 的形式<br>
+	 *                                method(m) 方法对象,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
+	 *                                sqlpattern(p pattern) sql模板 ，sql
+	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
+	 *                                jdbc(j) 当前连接的数据库对象．<br>
+	 * 
+	 * @param sqlinterceptor          SQL方法执行拦截器：需要注意 sqlinterceptor 是在
+	 *                                sqlpattern_preprocessor 处理之后才给予调用的。<br>
+	 *                                也就是说先调用sqlpattern_preprocessor，然后在调用sqlinterceptor;<br>
+	 *                                method(m) 方法对象,<br>
+	 *                                params(a args) 参数列表:name-&gt;value,<br>
+	 *                                sqlpattern(p pattern) sql模板 ，sql
+	 *                                模板通称会携带模板参数，以完成分数据库，分表的能力,<br>
+	 *                                jdbc(j) 当前连接的数据库对象．<br>
+	 * @param jdbcPostProcessor       结果的后置处理处理器：对一般标准的处理结果进行后续处理。<br>
+	 * @return 数据库访问的代理接口
+	 */
+	public static <T, U> T newInstance(final Class<T> itf, final DataSource ds,
+			final ISqlPatternPreprocessor sqlpattern_preprocessor, final ISqlInterceptor<List<IRecord>> sqlinterceptor,
+			final IJdbcPostProcessor<U> jdbcPostProcessor) {
+		T objT = null;// 接口实例对象
+		try {
+			objT = newInstance(itf, new Jdbc(ds), sqlpattern_preprocessor, sqlinterceptor, jdbcPostProcessor);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return objT;
+	}
+
+	/**
 	 * 根据JDBC的上下文构建一个JDBC的执行环境。 <br>
 	 * 创建一个接口itf的实现bean 根据注解信息来给予实现。
 	 * 
