@@ -2443,6 +2443,7 @@ public class Jdbc implements IManagedStreams {
 		boolean success = true;// 执行状态，不是成功就是失败，判断标志就是 completed是否爆出异常
 		// IJdbcSession 专门定义了一套jdbc的操作函数。这些函数的操作不会关闭数据库连接。
 		final Connection conn = this.supplierConn.get();// 自己创建一个数据库连接，这个数据库连接将在整个transaction 进行共享。
+		boolean conn_closed = false; // 数据库连接关闭标记
 		Exception exception = null;// 异常结构
 		Throwable throwable = null;// 可抛出性异常的结构
 		Object result = null;
@@ -2509,8 +2510,12 @@ public class Jdbc implements IManagedStreams {
 			} finally { // try 异常出现则回滚，标记执行失败
 				if (success)
 					conn.commit();// 未出现异常则提交结果
-				if (conn != null && !conn.isClosed())
+				if (conn != null && !conn.isClosed()) {
 					conn.close();// 关闭连接
+					conn_closed = true;
+				} else {
+					conn_closed = false;
+				}
 			} // try 异常处理
 		} catch (Exception e) {
 			exception = e;// 记录异常场景
@@ -2520,7 +2525,7 @@ public class Jdbc implements IManagedStreams {
 			e.printStackTrace();
 		} finally {
 			try {
-				if (conn != null && !conn.isClosed()) {
+				if (!conn_closed && conn != null && !conn.isClosed()) {
 					conn.close();
 				} // if
 			} catch (Exception e) {
