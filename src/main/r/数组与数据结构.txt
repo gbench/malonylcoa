@@ -75,8 +75,15 @@ structure(1:16)[8]
 > structure(1:16,dim=c(2,2,2,2))[1,1,2,2]
 [1] 13
 
-# 分组处理
-> apply(structure(1:16,dim=c(2,2,2,2)),c(1,2,3),\(x) range(x)|>paste(collapse=","))
+# 分组处理，c(1,2,3) 输出结果的数据结构（形状）:c(1,2,3) 表示按照第一个第二第三维度度进行展开。
+# 相当于 for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,])
+X=structure(1:16,dim=c(2,2,2,2))
+dim = c(2,2,2,2)
+FUN=\(x) range(x) |> cat(paste(collapse=",",";"))
+for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,])
+
+#apply的使用
+> apply(X=structure(1:16,dim=c(2,2,2,2)),c(1,2,3),FUN=\(x) range(x)|>paste(collapse=","))
 , , 1
 
      [,1]   [,2]  
