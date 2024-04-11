@@ -164,3 +164,18 @@ $even$nd[[1]]
 29    5    5
 34    4    6
 
+# 设置并排序：substitute(x$key) 表示模版替换,生成表达式语句:指定对象名的字段提取，倒序按照Var1进行排序
+> rep(2,2) |> lapply(seq) |> expand.grid() |> (\(x,key=Var1) x[order(eval(substitute(x$key)),decreasing = T),])()
+  Var1 Var2
+2    2    1
+4    2    2
+1    1    1
+3    1    2
+# 制定排序字段，倒序按照Var2进行排序
+> rep(2,2) |> lapply(seq) |> expand.grid() |> (\(x,key=Var1) x[order(eval(substitute(x$key)),decreasing = T),])(Var2)
+  Var1 Var2
+3    1    2
+4    2    2
+1    1    1
+2    2    1
+> 
