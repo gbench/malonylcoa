@@ -148,8 +148,16 @@ $even$nd[[1]]
 18    2    3    3
 24    2    3    4
 
-#   投掷两个色子出现10点的机会
-> rep(6,2) |> lapply(seq) |> expand.grid() |> (\(x,n) x[apply(x,1,sum)==n,])(10)
+#   投掷两个色子出现10点的机会集合
+> rep(6,2) |> lapply(seq) |> expand.grid() |> (\(x,n=10) x[apply(x,1,sum)==n,])()
+
+   Var1 Var2
+24    6    4
+29    5    5
+34    4    6
+
+#   投掷两个色子出现4点的机会集合
+> rep(6,2) |> lapply(seq) |> expand.grid() |> (\(x,n=10) x[apply(x,1,sum)==n,])(4)
 
    Var1 Var2
 24    6    4
