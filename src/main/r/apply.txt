@@ -1,0 +1,2 @@
+# 构造函数结构，do.call(what=f,args=list(x=1,y=2)) 等价于 f(x=1,y=2). do.call 拆分函数与参数
+sapply(1:10,\(i) \(x) x^i) |> lapply(do.call,args=list(x=1:10)) |> do.call(cbind,args=_)
