@@ -52,7 +52,7 @@
 [1] 5 5 5 5 5
 
 # promise lazy 计算的实例
-> f2<-function(i) {force(i);function(x) x^i} # 定义函数，这里使用force保证每次调用f2都立即计算i,即i不是共享的，禁止lazy计算而是立即计算
+> f2<-function(i) {force(i);function(x) x^i} # 定义函数，这里使用force(i)保证每次调用f2都立即计算i. 而不必等待真正x^i的时候才计算。
 > fs2<-list();for(i in 1:5)fs2[[i]]<-f2(i) #生成函数
 > lapply(fs2,do.call,args=list(1:10)) |> do.call(cbind,args=_)
       [,1] [,2] [,3]  [,4]   [,5]
