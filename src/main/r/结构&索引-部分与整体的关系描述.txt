@@ -194,7 +194,7 @@ NULL
 [1] "insert into t_data(a,b,c) values (1,2,3)"
 
 # 字符串的模板替换
-> "insert into %tbl values (%vs)" |> gsub(x=_,"%tbl","t_data") |> gsub(x=_,"%vs","1,2,3")
+> "insert into %tbl values (%vs)" |> gsub(x=_,"%tbl","t_data(a,b,c)") |> gsub(x=_,"%vs","1,2,3")
 [1] "insert into t_data values (1,2,3)"
 
 
