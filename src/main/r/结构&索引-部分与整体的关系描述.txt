@@ -188,3 +188,8 @@ insert into t_data(a,b,c) values( 2,1,2 );
 insert into t_data(a,b,c) values( 1,2,2 );
 insert into t_data(a,b,c) values( 2,2,2 );
 NULL
+
+# 模板字符串的拼接
+> strsplit("insert into %1 values (%2)","%\\d")[[1]] |> append("t_data(a,b,c)",1) |> append("1,2,3",3) |> paste0(collapse="")
+[1] "insert into t_data(a,b,c) values (1,2,3)"
+
