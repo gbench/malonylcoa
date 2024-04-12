@@ -28,10 +28,15 @@
 > f<-function(i) function(x) x^i # 定义函数：i是位于定义f的环境的（），注意这里的i,是共享的,是lazy计算的。
 > environment(f) # f 的定义函数
 <environment: R_GlobalEnv>
-> fs<-list();for(i in 1:5)fs[[i]]<-f(i) # 注意,由于i是lazy计算的promise,for 循环的i变量其是在fs中共享的都是R_GlobalEnv中的i
+# 注意,由于i是lazy计算的promise,这里调用f(i) 其实并没有指定i值，只记录下f的形参数i指向R_GlobalEnv的i而已。 f.i->R_GlobalEnv.i
+> fs<-list();for(i in 1:5)fs[[i]]<-f(i) 
 > i
 [1] 5
-> lapply(fs,do.call,args=list(1:10)) |> do.call(cbind,args=_)
+# 直到lapply的调用fs中函数的时候，也就是计算 x^i 的时候，由于需要获得i的具体值，
+# 又由于i 是promise是他是不会函数调用的时候分配空间的，所以是lapply的调用给i分配变量空间。
+# 根据promise的也就是f的closure的关系, promise.i 是引用R_GlobalEnv.i 的，而此时R_GlobalEnv.i 是5
+# lapply的调用就把fs中的各个元素promise.i 都给同意的实例化成了5，这也是为何f[[i]] 计算的结构都都一样的原因。
+> lapply(fs,do.call,args=list(1:10)) |> do.call(cbind,args=_) 
          [,1]   [,2]   [,3]   [,4]   [,5]
  [1,]      1      1      1      1      1
  [2,]     32     32     32     32     32
