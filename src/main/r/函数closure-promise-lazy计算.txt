@@ -41,15 +41,13 @@ c4(1:10)
  [8,]    8   64  512  4096  32768  262144  2097152  16777216  134217728  1073741824
  [9,]    9   81  729  6561  59049  531441  4782969  43046721  387420489  3486784401
 [10,]   10  100 1000 10000 100000 1000000 10000000 100000000 1000000000 10000000000
-> 
+
 # promise lazy 计算的实例
 > f<-function(i) function(x) x^i # 定义函数：i是位于定义f的环境的（），注意这里的i,是共享的,是lazy计算的。
 > environment(f) # f 的定义函数
 <environment: R_GlobalEnv>
 # 注意,由于i是lazy计算的promise,这里调用f(i) 其实并没有指定i值，只记录下f的形参数i指向R_GlobalEnv的i而已。 f.i->R_GlobalEnv.i
 > fs<-list();for(i in 1:5)fs[[i]]<-f(i) 
-> i
-[1] 5
 # 直到lapply的调用fs中函数的时候，也就是计算 x^i 的时候，由于需要获得i的具体值，
 # 又由于i 是promise是他是不会函数调用的时候分配空间的，所以是lapply的调用给i分配变量空间。
 # 根据promise的也就是f的closure的关系, promise.i 是引用R_GlobalEnv.i 的，而此时R_GlobalEnv.i 是5
@@ -86,6 +84,4 @@ c4(1:10)
 [10,]   10  100 1000 10000 100000
 > sapply(fs2,\(f.i2) get("i",envir=environment(f.i2))) #查看f.i2函数中的运行环境中的i的变量
 [1] 1 2 3 4 5
-
-
 
