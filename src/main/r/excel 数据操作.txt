@@ -6,7 +6,7 @@ batch(install.packages,"readxl,purrr,dplyr")
 batch(require,"readxl,purrr,dplyr") 
 
 # 设置工作空间
-home="F:/slicef/home/gbench/dwk/diary/2024-04-13/data"
+home <- "F:/slicef/home/gbench/dwk/diary/2024-04-13/data"
 #  设置数据文件目录
 setwd(home)
 
@@ -49,7 +49,7 @@ $value
 install.packages("tidyverse")
 require(tidyverse)
 # diamonds 数据演示与绘图
-f <- function(dfm,...) {
+diamonds_f <- function(dfm,...) {
 	ensyms(...) |> # 参数符号化
 	lapply(\(key) substitute( # 元编程
 		df |> select(price,k) |> mutate(name=as.character(quote(k))) |> rename(k=k), # 表达式模板
@@ -58,6 +58,6 @@ f <- function(dfm,...) {
 	do.call(rbind,args=_) |> #合并结果数据(x,y,z) 合并成长结构格式的数据框
 	ggplot(aes(k,price))+geom_point()+facet_grid(~name)
 }
-f(diamonds,x,y,z)
+diamonds_f(diamonds,x,y,z)
 
 
