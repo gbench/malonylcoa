@@ -1,0 +1,46 @@
+# 批量函数
+batch <- function(cmd,pkgs) pkgs |> strsplit(",") |> `[[`(_,1) |> sapply(\(pkg) eval(substitute(f(p),list(f=cmd,p=pkg))))
+# 批量安装包
+batch(install.packages,"readxl,purrr,dplyr")
+# 批量加载包
+batch(require,"readxl,purrr,dplyr") 
+
+# 设置工作空间
+home="F:/slicef/home/gbench/dwk/diary/2024-04-13/data"
+#  设置数据文件目录
+setwd(home)
+
+# 列出文件excel文件
+> list.files(path=home,pattern="xlsx",recursive=T,full.names = TRUE) -> files; files;
+[1] "F:/slicef/home/gbench/dwk/diary/2024-04-13/data/a.xlsx"     
+[2] "F:/slicef/home/gbench/dwk/diary/2024-04-13/data/b.xlsx"     
+[3] "F:/slicef/home/gbench/dwk/diary/2024-04-13/data/set1/c.xlsx"
+
+# 读取数据文件
+> df <- map_dfr(files, read_xlsx) ; df
+# A tibble: 15 × 3
+      id name    vlaue
+   <dbl> <chr>   <dbl>
+ 1     1 a.1   0.964  
+ 2     2 a.2   0.428  
+ 3     3 a.3   0.00177
+ 4     4 a.4   0.869  
+ 5     5 a.5   0.0931 
+ 6     1 b.1   0.218  
+ 7     2 b.2   0.985  
+ 8     3 b.3   0.909  
+ 9     4 b.4   0.376  
+10     5 b.5   0.735  
+11     1 c.1   0.537  
+12     2 c.2   0.971  
+13     3 c.3   0.132  
+14     4 c.4   0.356  
+15     5 c.5   0.535
+
+# 求和
+> df |> select(id,value) |> map(sum)
+$id
+[1] 45
+
+$value
+[1] 6.281929
