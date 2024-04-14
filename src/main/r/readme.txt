@@ -4,6 +4,7 @@
 
 #语言是一种思想的表达，思想是一种概念的的结构,有层次（有结构）的逻辑细节就是组织。这种方法在计算机中被叫做通用表:也就是树形结构。
 # ----------------------------------------------------------
+require(lobstr)
 ast(expr(a+b+c))
 idea<-expr(a+b+c)
 ast(!!idea)
@@ -139,5 +140,46 @@ https://purrr.tidyverse.org/reference/map.html
 #形式参数
 formals(rnorm)
 
+# defused 分解中断 （http://127.0.0.1:21349/library/rlang/html/topic-data-mask.html）
+# R的代码可以被中断执行，也就是R的代码，在运行过程中可以进行动态编辑，即他可以被分解成：
+# 1） defusal interrupted 动态结构编译（动态生成代码语法树）：expr
+# 程序启动了，程序还没有写好好，一边干一边修改程序。类似于 开工了，图纸还没设计好，
+# 需要临时停下来修改一下图纸参数（具体数据的结构细节&变量的组织关系等）。
+# 例如：code<-expr(mean(cyl + am)) ，此时cyl与am还有数据框与之对应。我们先编码然后暂停interrupt执行。
+# 可以视为把cyl与am的属主数据框给数据掩盖掉：Data-masking了。
+# 2）resume to evaluate 恢复执行 : eval
+# 找到mtcars数据后，即先前Data-masking的数据给暴露出来，在恢复执行code, eval(code,mtcars);
+# 使用with暴露数据去除Data-masking：with(mtcars, mean(cyl + am))，
+# 即用mtcars 加油/驱动 mean(cyl + am) 命令的执行。
 
-
+# quosiquotation 注入injection !!var与 嵌入 {{var}}. 
+# !! 其实就是R语言类似于C语言的宏替换，比如：
+idea<-expr(a+b+c)
+# 注入
+# 错误，!! 是无法嵌入的，它只能在expr里左类似于 expr(!!idea+!!idea) 的宏替换
+!!idea
+# 单变量
+expr(!!idea)
+# 表达式
+expr(!!idea+!!idea)
+# 嵌入
+# 错误
+{{idea}}+{{idea}} 
+# 展开
+expr({{idea}}+{{idea}})
+# 当使用在函数中使用 summarise这样的自动参数给defussal的函数
+# 比如
+my_mean <- function(data, var1, var2) dplyr::summarise(data, mean(var1 + var2))
+my_mean(mtcars,cyl,am）
+# 试图设置var1=cyl,var2=am,期望可以计算mean(cyl + am) 是不行的。
+# 因为mean(var1 + var2)被defuse成与语法树的形式给冻结了，所以我们就需要把冻结的mean(var1 + var2)
+# 给化开一点把var1,var2 分别用 cyl 与 am 用实际参数给嵌进去： dplyr::summarise(data, mean({{ var1 }} + {{ var2 }}))
+# {{var1}},就是把var1的实际参数值给嵌入到mean(var1 + var2)语法数的意思，也就是：{{镶嵌位置}} 就是嵌入的语法。
+# 注意这里并不是整个mean(var1 + var2)语法树给解冻，把var1給var2替换而已。所以并不会嵌入完成后立即执行mean(cyl+am)
+# 而是依旧保持interrupted直到被dplyr::summarise结合了具体的data数据比如mtcars 后才恢复执行。
+# 比如：
+my_mean2 <- function(data, var1, var2) dplyr::summarise(data, mean({{var1}}+{{var2}}))
+my_mean2(mtcars,cyl,am)
+# !! 是无法嵌入的，它只能在expr里左类似于 expr(!!idea+!!idea) 的宏替换
+my_mean3 <- function(data, var1, var2) dplyr::summarise(data, mean(!!var1+!!var2))
+my_mean3(mtcars,cyl,am)
