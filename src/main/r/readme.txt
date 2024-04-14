@@ -1,8 +1,26 @@
-#描述用分解与组合，分解及时把目标的对象细节或者说特征进行测量与记录（measurment），
-组合就是用逻辑关系（原因结论：因为所以，动机目的：为了&需要，空间分布前后左右，生长发育的过程，开始发展结束，包含&构成）将measuremeng进行组织成。观点和结论。
-逻辑：因果关系，目的动因关系，空间分布关系，发展过程关系。
-
+# 描述用分解与组合，分解及时把目标的对象细节或者说特征进行测量与记录（measurement）
+#
+# 联系：事物是普遍联系association，这种联系可以作为一种关联形成一种可以相互映射的反应。A->B, A<-B, A<->B.
+# 记录：是一种association，它采用一种单向的关联反应：object->notation。
+#           即采用一种notation即symbol的结构.或者说把symbol组织成expression的形式去 复述/复制/表达object.
+# 测量: 是一种特殊的关联记录:object->notation(unit)，他所采用的notation是一种被我们称为度量衡的unit标准单元的数量结构。
+#          具体来说是 object->quantity*unit。 这种quantity*unit的记录语法是将object视为一种由unit作为基本构造单元，
+#          通过quantity次的不断地 积累&重复 而构造出一种与object形成的等效关系。近似于或是无法在现实意义上进行有效区分。
+#          即quantity倍的unit等价于object。或者是 object/unit=quantity. 也就是quantity是作为量化比率ratio来记录object。
+#          一般而言我们就直接说object的measurement量化数值就是quantity。更一步我们将这种可以被measure的object成为variable.
+# 变量: 可以测量的对象。可以建立 object/variable->notation(unit) 关系的对象。
+# 模型：模型其实一种特殊的测量，object(y)->notation(VARs),VARs是一种变量向量(var1,var2,....,varn) 。简单的说就是
+#           y~model(x1,x2,...,xn). 用测量的话来说就是我们通过组织（x1,x2,...,xn）形成一种新的unit去测量y. 特别当模型表示成:Y,X是矩阵
+#           Y=X*alpha。即alpha一种Quantity向量，即作为一种 Q=Y/A的比例系数。（quantity1,quantity2,....,quantityn）.
+#           此时X*Quantity就成称为线性回归模型。也就是用构造出一种x1,x2,...,xn）的计量单元去测量Y。
+#
+# 组合: 就是用逻辑关系（原因结论：因为所以，动机目的：为了/需要，空间分布/前后左右，生长发育的过程，开始发展结束，包含&构成）将
+# measurement 进行组织成 观点和结论。
+#
+# 逻辑：因果关系，目的动因关系，空间分布关系，发展过程关系。
+#
 #语言是一种思想的表达，思想是一种概念的的结构,有层次（有结构）的逻辑细节就是组织。这种方法在计算机中被叫做通用表:也就是树形结构。
+#
 # ----------------------------------------------------------
 require(lobstr)
 ast(expr(a+b+c))
@@ -10,6 +28,7 @@ idea<-expr(a+b+c)
 ast(!!idea)
 ast(!!idea+!!idea)
 
+# 语法树
 > ast(expr(a+b+c))
 █─expr 
 └─█─`+` 
@@ -112,33 +131,71 @@ library(lobstr)
 #对象的结构
 x <- 1:1e6
 y <- list(x, x, x)
-#
-str(y)
-#
-ref(y)
-
+# 结构
+> str(y)
+List of 3
+ $ : int [1:1000000] 1 2 3 4 5 6 7 8 9 10 ...
+ $ : int [1:1000000] 1 2 3 4 5 6 7 8 9 10 ...
+ $ : int [1:1000000] 1 2 3 4 5 6 7 8 9 10 ...
+> # 引用参考
+> ref(y)
+█ [1:0x1ba7030de68] <list> 
+├─[2:0x1ba6edc9e68] <int> 
+├─[2:0x1ba6edc9e68] 
+└─[2:0x1ba6edc9e68] 
 
 # 环境的结构
 e <- rlang::env()
 e$self <- e
-ref(e)
+> ref(e)
+█ [1:0x1ba7191c718] <env> 
+└─self = [1:0x1ba7191c718] 
 
-obj_size(x)
-obj_size(y)
-f <- function(x) g(x)
-g <- function(x) h(x)
-h <- function(x) x
-# 显示调用的堆栈结构
-f(cst())
+> # 对象大小
+> obj_size(x)
+680 B
+> obj_size(y)
+760 B
+> f <- function(x) g(x)
+> g <- function(x) h(x)
+> h <- function(x) x
+> # 显示调用的堆栈结构
+> f(cst())
+    ▆
+ 1. ├─global f(cst())
+ 2. │ └─global g(x)
+ 3. │   └─global h(x)
+ 4. └─lobstr::cst()
+> 
 
 #按照行遍历数据框
-expand.grid(rep(1:6,6)|>matrix(ncol=6)|>data.frame())|>head(10)
+> expand.grid(rep(1:6,6)|>matrix(ncol=6)|>data.frame())|>head(10)
+   X1 X2 X3 X4 X5 X6
+1   1  1  1  1  1  1
+2   2  1  1  1  1  1
+3   3  1  1  1  1  1
+4   4  1  1  1  1  1
+5   5  1  1  1  1  1
+6   6  1  1  1  1  1
+7   1  2  1  1  1  1
+8   2  2  1  1  1  1
+9   3  2  1  1  1  1
+10  4  2  1  1  1  1
 
-#purrr
+
+# R的函数编程 purrr
 https://purrr.tidyverse.org/reference/map.html
 
-#形式参数
+# 形式参数
 formals(rnorm)
+> formals(rnorm)
+$n
+
+$mean
+[1] 0
+
+$sd
+[1] 1
 
 # defused 分解中断 （http://127.0.0.1:21349/library/rlang/html/topic-data-mask.html）
 # R的代码可以被中断执行，也就是R的代码，在运行过程中可以进行动态编辑，即他可以被分解成：
