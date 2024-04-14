@@ -1,21 +1,47 @@
 # 描述用分解与组合，分解及时把目标的对象细节或者说特征进行测量与记录（measurement）
 #
 # 联系：事物是普遍联系association，这种联系可以作为一种关联形成一种可以相互映射的反应。A->B, A<-B, A<->B.
-# 记录：是一种association，它采用一种单向的关联反应：object->notation。
-#           即采用一种notation即symbol的结构.或者说把symbol组织成expression的形式去 复述/复制/表达object.
+# 记录：是一种association，它采用一种单向的关联反映：object->notation。
+#   即采用一种notation即symbol的结构.或者说把symbol组织成expression的形式去 复述/复制/表达object.
 # 测量: 是一种特殊的关联记录:object->notation(unit)，他所采用的notation是一种被我们称为度量衡的unit标准单元的数量结构。
-#          具体来说是 object->quantity*unit。 这种quantity*unit的记录语法是将object视为一种由unit作为基本构造单元，
-#          通过quantity次的不断地 积累&重复 而构造出一种与object形成的等效关系。近似于或是无法在现实意义上进行有效区分。
-#          即quantity倍的unit等价于object。或者是 object/unit=quantity. 也就是quantity是作为量化比率ratio来记录object。
-#          一般而言我们就直接说object的measurement量化数值就是quantity。更一步我们将这种可以被measure的object成为variable.
-# 变量: 可以测量的对象。可以建立 object/variable->notation(unit) 关系的对象。
-# 模型：模型其实一种特殊的测量，object(y)->notation(VARs),VARs是一种变量向量(var1,var2,....,varn) 。简单的说就是
-#           y~model(x1,x2,...,xn). 用测量的话来说就是我们通过组织（x1,x2,...,xn）形成一种新的unit去测量y. 特别当模型表示成:Y,X是矩阵
-#           Y=X*alpha。即alpha一种Quantity向量，即作为一种 Q=Y/A的比例系数。（quantity1,quantity2,....,quantityn）.
-#           此时X*Quantity就成称为线性回归模型。也就是用构造出一种x1,x2,...,xn）的计量单元去测量Y。
+#   具体来说是 object->quantity*unit。 这种quantity*unit的记录语法是将object视为一种由unit作为基本构造单元，
+#   通过quantity次的不断地 积累&重复 而构造出一种与object形成的等效关系。近似于或是无法在现实意义上进行有效区分。
+#   即quantity倍的unit等价于object。或者是 object/unit=quantity. 也就是quantity是作为量化比率ratio来记录object。
+#   一般而言我们就直接说object的measurement量化数值就是quantity。更一步我们将这种可以被measure的object成为variable.
+# 变量: 可以测量的对象/属性。可以建立 object/variable->notation(unit) 关系的对象/属性。
+#   属性被对象拥有/决定的可以被分辨与观测的特征。在采用模型化描述的时候，一般用 某个/些variables代表去代表真个object。
+#   即对象事物是一种variable集合。或者说 对象以是一种属性variables的向量(var1,var2,...,varn) 来进行表达记录组织。
+# ----------------------------------------------------------------------------------------------------------------------------
+# 数据集: tabular data,tidy的表格数据是一种对象集合: 这是一种标准的理想的数据形式。
+#   也可以理解我们就是需要如此的去准备数据记录：输入数据的样例。即tidyverse都是按照如此的结构去理解数据的
+#   换句话说要是需要使用tidyverse去处理数据，就必须私用这样的语法与记录规则去准备数据。
+#   用于表示对事物的个体，通过一定观测计量手段进行记录后的结果。
+#   {obj1,var2,...} <=> 
+#              	var1	var2	...	varn
+#   object1	v11	v12	...	vn1
+#   object2	v21	v22	...	v2n
+#    ...		...	..	...	...
+#    objectm	vm1	vm2	...	vm2n
+# ----------------------------------------------------------------------------------------------------------------------------
+# ref: https://r4ds.hadley.nz/data-visualize
+# 1) A variable is a quantity, quality, or property that you can measure.
+# 2) A value is the state of a variable when you measure it. The value of a variable may change from measurement to measurement.
+# 3) An observation is a set of measurements made under similar conditions (you usually make all of the measurements in 
+#   an observation at the same time and on the same object). An observation will contain several values, each associated 
+#   with a different variable. We’ll sometimes      refer to an observation as a data point.
+# 4) Tabular data is a set of values, each associated with a variable and an observation. Tabular data is tidy if each value is 
+#   placed in its own “cell”, each variable in its own column, and each observation in its own row.
+# ----------------------------------------------------------------------------------------------------------------------------
+# object1行 又被称为一次observation1。列var_i (var_1i,var_2i,...,var_mi) 构造事物的属性向量（跨越了多个观测），所以可以
+# 近似var_i是事物即总体的属性var_i的观测记录，也可以理解为事物的var_i属性的本质。注意：本质是对类型而言的而不是个体。
 #
-# 组合: 就是用逻辑关系（原因结论：因为所以，动机目的：为了/需要，空间分布/前后左右，生长发育的过程，开始发展结束，包含&构成）将
-# measurement 进行组织成 观点和结论。
+# 模型：模型其实一种特殊的测量，object(y)->notation(VARs),VARs是一种变量向量(var1,var2,....,varn) 。简单的说就是
+#  y~model(x1,x2,...,xn). 用测量的话来说就是我们通过组织（x1,x2,...,xn）形成一种新的unit去测量y. 特别当模型表示成:Y,X是矩阵
+#  Y=X*alpha。即alpha一种Quantity向量，即作为一种 Q=Y/A的比例系数。（quantity1,quantity2,....,quantityn）.
+#  此时X*Quantity就成称为线性回归模型。也就是用构造出一种x1,x2,...,xn）的计量单元去测量Y。
+#
+# 组合: 就是用逻辑关系（原因结论：因为所以，动机目的：为了/需要，空间分布/前后左右，生长发育的过程，
+#   开始发展结束，包含&构成）将 variable/measurement 进行组织成 观点和结论。
 #
 # 逻辑：因果关系，目的动因关系，空间分布关系，发展过程关系。
 #
