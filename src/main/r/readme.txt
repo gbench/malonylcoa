@@ -1,4 +1,9 @@
-# 描述用分解与组合，分解及时把目标的对象细节或者说特征进行测量与记录（measurement）
+# 描述: 用 分解与组合 的方式记录去 表达(结构化) 事物。
+# 1）分解 就是 把目标的对象的细节或者说特征 以 测量与记录（measurement）的形式进行组织罗列。
+# 2）组合 就是 在对象的细节，获得的 测量与记录 中 发现 
+#   2.1) 新的观点与关系,变化的 趋势/动力,或是
+#   2.2) 形成 对未来/下一步的发展状况,状态,可行性的空间分布,属性特征等的看法与预测。
+# 
 #
 # 联系：事物是普遍联系association，这种联系可以作为一种关联形成一种可以相互映射的反应。A->B, A<-B, A<->B.
 # 记录：是一种association，它采用一种单向的关联反映：object->notation。
@@ -28,9 +33,9 @@
 # 2) A value is the state of a variable when you measure it. The value of a variable may change from measurement to measurement.
 # 3) An observation is a set of measurements made under similar conditions (you usually make all of the measurements in 
 #   an observation at the same time and on the same object). An observation will contain several values, each associated 
-#   with a different variable. We’ll sometimes      refer to an observation as a data point.
+#   with a different variable. We’ll sometimes refer to an observation as a data point.
 # 4) Tabular data is a set of values, each associated with a variable and an observation. Tabular data is tidy if each value is 
-#   placed in its own “cell”, each variable in its own column, and each observation in its own row.
+#   placed in its own“cell”, each variable in its own column, and each observation in its own row.
 # ----------------------------------------------------------------------------------------------------------------------------
 # object1行 又被称为一次observation1。列var_i (var_1i,var_2i,...,var_mi) 构造事物的属性向量（跨越了多个观测），所以可以
 # 近似var_i是事物即总体的属性var_i的观测记录，也可以理解为事物的var_i属性的本质。注意：本质是对类型而言的而不是个体。
