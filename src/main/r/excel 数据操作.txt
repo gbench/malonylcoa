@@ -52,7 +52,7 @@ require(tidyverse)
 long_f <- function(dfm,value,...) { # 转换成长格式数据
 	ensyms(...) |> # 参数符号化,把...输入的内容统统都转换为符号
 	lapply(\(key) substitute( # 元编程
-		df |> select(v,k) |> mutate(name=as.character(quote(k))) |> rename(var=k), # 表达式模板
+		df |> select(v,k) |> mutate(name=as.character(quote(k))) |> rename(var=k), # 表达式模板, 用name记录k的名称
 		list(df=dfm,k=key,v=ensym(value)) # 根据key提取数据,ensym(value) 表示把参数输入的内容是作为符号而不是去计算变量值
 	) |> eval()) |> # 选择列数据
 	do.call(rbind,args=_) |> #合并结果数据(x,y,z) 合并成长结构格式的数据框
@@ -62,7 +62,7 @@ long_f <- function(dfm,value,...) { # 转换成长格式数据
 }
 long_f(diamonds,price,x,y,z)
 
-# 相当于
+# long_f 相当于 pivot_longer
 pivot_longer(diamonds,cols=c(x,y,z),values_to="var") |> ggplot(aes(var,price))+geom_point()+facet_wrap(~name)
 
 
