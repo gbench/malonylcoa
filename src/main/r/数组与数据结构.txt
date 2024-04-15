@@ -145,11 +145,11 @@ for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,
 # 切分示例
 split(iris,iris$Species) |> sapply(data.matrix) |> array(dim=c(50,5,3))
 # 启动求维度数混合split与dim维度折叠 双手并用的 分解&结构化数据。
-# 准备数据
-split(iris[,-5],iris$Species) |> sapply(data.matrix) |> (\(x,...) array(x,dim=c(prod(dim(x))/prod(c(...)), ...)))(4,3) |>
-  structure(dimnames=list(NULL, colnames(iris)[-5], iris$Species |> unique() |> as.character())) -> iris.S 
+# 合并成通用函数,x:源数据, i:分类数据索引 
+(\(x,i) x[,-i] |> split(x[,i]) |> sapply(data.matrix) |> (\(x,...) array(x,dim=c(prod(dim(x))/prod(c(...)), ...)))(4,3) |>
+  structure(dimnames=list(NULL,names(x)[-i],unique(x[,i]))))(iris,5) -> iris.arr
 # 画图
-matplot(iris.S[, "Petal.Length",], iris.S[, "Petal.Width",], pch = "SCV",
+matplot(iris.arr[, "Petal.Length",], iris.arr[, "Petal.Width",], pch = "SCV",
         col = rainbow(3, start = 0.8, end = 0.1),
         sub = paste(c("S", "C", "V"), dimnames(iris.S)[[3]],
                     sep = "=", collapse= ",  "),
