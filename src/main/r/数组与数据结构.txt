@@ -141,11 +141,20 @@ for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,
 # 往后我们就可以采用设置的dim向量的形式进行高位数组折叠了
 
 # 维度组织函数根据给出的多维数据x,以及头前的维度长度序列...,自动算出最后一维度空间长度.组织成dim维度向量。
-(\(x,...) c(prod(dim(x))/prod(c(...)),...))(iris,5,3)
+(\(x,...) c(prod(dim(x))/prod(c(...)), ...))(iris,5,3)
 # 切分示例
 split(iris,iris$Species) |> sapply(data.matrix) |> array(dim=c(50,5,3))
 # 启动求维度数混合split与dim维度折叠 双手并用的 分解&结构化数据。
-split(iris,iris$Species) |> sapply(data.matrix) |> (\(x,...) array(x,dim=c(prod(dim(x))/prod(c(...)),...)))(5,3)
+# 准备数据
+split(iris[,-5],iris$Species) |> sapply(data.matrix) |> (\(x,...) array(x,dim=c(prod(dim(x))/prod(c(...)), ...)))(4,3) |>
+  structure(dimnames=list(NULL, colnames(iris)[-5], iris$Species |> unique() |> as.character())) -> iris.S 
+# 画图
+matplot(iris.S[, "Petal.Length",], iris.S[, "Petal.Width",], pch = "SCV",
+        col = rainbow(3, start = 0.8, end = 0.1),
+        sub = paste(c("S", "C", "V"), dimnames(iris.S)[[3]],
+                    sep = "=", collapse= ",  "),
+        main = "Fisher's Iris Data")
+
 
 # 提取数据
 iris |> (\(x,...) x[x[,5]%in%c(...),])("setosa","versicolor","virginica")
