@@ -1,0 +1,26 @@
+# 加载数据集
+data('cars',package='datasets')
+
+# 生成模型
+lm.cars<-lm(dist~speed,cars)
+
+# 预测数据:自定义数据
+new.speeds<-data.frame(speed=c(12,19,24))
+predict(lm.cars,newdata=new.speeds)
+
+# confidence interval : 均值区间
+conf.int<-predict(lm.cars,interval="confidence");conf.int
+
+# prediction interval ： 预测值区间
+pred.int<-predict(lm.cars,interval="prediction");pred.int
+
+# 绘图数据
+data.pred.int<-cbind(cars,pred.int)
+
+# 绘图
+require(ggplot2)
+ggplot(data.pred.int,aes(speed,dist))+
+  geom_point()+
+  stat_smooth(formula=y~x,method=lm)+
+  geom_line(aes(y=lwr),color="red",linetype="dashed")+
+  geom_line(aes(y=upr),color="red",linetype="dashed")
