@@ -127,5 +127,9 @@ for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,
 [2,] "5,6,7,8"    "17,18,19,20"
 [3,] "9,10,11,12" "21,22,23,24"
 
-
-
+# 维度分割
+(\(x,...) c(prod(dim(x))/prod(c(...)),...))(iris,5,3)
+# 数据数据分割
+split(iris,iris$Species) |> sapply(data.matrix) |> array(dim=c(50,5,3))
+# 合二为一
+split(iris,iris$Species) |> sapply(data.matrix) |> (\(x,...) array(x,dim=c(prod(dim(x))/prod(c(...)),...)))(5,3)
