@@ -5,7 +5,7 @@
 #   2.2) 形成 对未来/下一步的发展状况,状态,可行性的空间分布,属性特征等的看法与预测。
 # 
 #
-# 联系：事物是普遍联系association，这种联系可以作为一种关联形成一种可以相互映射的反应。A->B, A<-B, A<->B.
+# 联系：事物是普遍联系association，这种联系可以作为一种关联形成一种可以相互映射的反映。A->B, A<-B, A<->B.
 # 记录：是一种association，它采用一种单向的关联反映：object->notation。
 #   即采用一种notation即symbol的结构.或者说把symbol组织成expression的形式去 复述/复制/表达object.
 # 测量: 是一种特殊的关联记录:object->notation(unit)，他所采用的notation是一种被我们称为度量衡的unit标准单元的数量结构。
