@@ -1,17 +1,58 @@
-# 函数的闭包，闭包类似于过程式语言的堆栈，但是函数的闭包并不会随着过程式语言函数的执行完毕而被系统自动回收。
-# 函数的闭包是会持续保存的，有点类似于函数的属性集合的意思，函数的属性集合可以通过environment(函数名)来进行获取
-# 我们通过访问或是更改这个environment，就可以获得或是设置函数的性质。
-# 每个函数都有一个与之对应闭包，或者说每个函数都是一个闭包。
-# 函数可以嵌套，闭包也可以嵌套。
+# 函数对象
+# 
+# 基本概念：
+# 1) environment ：是（frame，enclosing）二元结构。
+#  Environments can be thought of as consisting of two things. A frame, consisting of a set of symbol-value pairs, 
+#  and an enclosure, a pointer to an enclosing environment.
+# 1.1）frame 是 一个{name1=value1,name2=value2,...,} 结构的变量集合。
+# 1.2）enclosing 是指向包被环境enclosing environment 的指针构成.
+# 
+# 2) Promise objects：Promise 对象.（promise objects are almost only seen implicitly，几乎没有办法去判断一个对象是否是promise）
+#   2.1) Promise objects are part of R's lazy evaluation mechanism. Promise是一种R lazy evaluation 的实现机制。
+#     Promise是一三元组 (expression,value,environment) 。They contain three slots: a value,an expression, and an environment. 
+#    2.2) when function is called the arguments are matched（match 的标志就是为每个 formal argument 创建出相应的 promise）
+#     2.2.1）each of the formal arguments is bound to a promise. The expression that was given for that formal argument ,
+#     2.2.2）a pointer to the environment the function was called from are stored in the promise.
+#     2.2.3）When the argument is accessed, the stored expression is evaluated in the stored environment。
+#       2.2.3.1) argument（stored expression）只有在真正被使用的时候，才会进行计算，计算后的结果会被保存在Promise的环境里面。
+#       2.2.3.2) substitute拥有操作Promise的expression slot 中的内容能力。这样就可以以程序的方式去控制，
+#         到底是去 使用Promise里面expression 还是去 计算&获得 该expression中的数值。也就是 动态编辑 expression语法树
+#         元编程能力：在运行中去自动的修改代码，运行过程中的编译（暂停），然后去结合具体数据，继续运行。
+#        
+# 3) 函数: 在R中函数是被定义为一种被称为闭包closure的结构。
+#    3.1) Functions (or more precisely, function closures) have three basic components: 
+#      3.1.1) a formal argument list,函数形式参数列表。
+#      3.1.2) a body: 函数的定义体，usually a collection of statements in braces but
+#        it can be a single statement, a symbol or even a constant.
+#      3.1.3) 定义环境：environment: 每个closure 都会包含一个environment指针，可以通过environment(fun) 来获得这个定义&声明环境。
+#        我们可以 访问或是更改这个函数的 定义&声明环境，以 获得，设置，改变 函数的性质 或 行为。
+#        定义环境：function's environment is the environment that was active at the time that the function was created.
+#        Any symbols bound in that environment are captured and available to the function. 定义环境中的符号function可以进行访问
+#        This combination of the code of the function and the bindings in its environment is called a'function closure', 
+#        a term from functional programming theory. 闭包其实就是 代码与环境的绑定组合，这是一种functional programming理论的术语。
+#        the term 'function', but use 'closure' to emphasize the importance of the attached environment。
+#        用closure去强调:这是一种附加在environment上的计算功能。
+#   3.2)closures的成分是可修改的。 It is possible to extract and manipulate the three parts of a closure object using formals, body, and environment constructs 
+#     3.2.1) formals 操作函数的形式参数
+#     3.2.2) body 操作函数的语句序列
+#     3.2.3) environment 操作函数的定义环境
+#   3.3 计算环境：when a function is called, a new environment (called the evaluation environment) is created, 
+#     whose enclosure  is the environment from the function closure 。在函数子被调用时,会创建一个相应的 计算环境evaluation environment
+#     This new environment is initially populated with the unevaluated arguments to the function; 计算环境 最初只包含 unevaluated arguments
+#     as evaluation proceeds, local variables are created within it。随着函数执行 local variables 也会在evaluation environment给予创建。
+#  3.4 There is also a facility for converting functions to and from list structures using as.list and as.function。
+#    3.4.1) as.list 会把函数对象转成一个列表
+#    3.4.2) as.function 会把列表转成一个函数
+#
 # closure 闭包
 closure <- function(i) function(x) x^i
 #创建闭包函数
 c4 <- closure(4)
-#执行闭包函数
+#执行函数
 c4(1:10)
-# 读取c4闭包中的i变量的值
+# 读取c4定义环境中的i变量的值
 get("i",environment(c4))
-# 修改c4闭包中的变量的值
+# 修改c4定义环境中的变量的值
 assign("i",-4,environment(c4))
 # c4结构变成x^-4的函数了
 c4(1:10)
