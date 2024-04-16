@@ -4,17 +4,16 @@
 #   2.1) 新的观点与关系,变化的 趋势/动力,或是
 #   2.2) 形成 对未来/下一步的发展状况,状态,可行性的空间分布,属性特征等的看法与预测。
 # 
-#
 # 联系：事物是普遍联系association，这种联系可以作为一种关联形成一种可以相互映射的反映。A->B, A<-B, A<->B.
 # 记录：是一种association，它采用一种单向的关联反映：object->notation。
-#   即采用一种notation即symbol的结构.或者说把symbol组织成expression的形式去 复述/复制/表达object.
+#   即采用一种notation，即symbol的结构.或者说把symbol组织成expression的形式去 复述/复制/表达object.
 # 测量: 是一种特殊的关联记录:object->notation(unit)，他所采用的notation是一种被我们称为度量衡的unit标准单元的数量结构。
 #   具体来说是 object->quantity*unit。 这种quantity*unit的记录语法是将object视为一种由unit作为基本构造单元，
 #   通过quantity次的不断地 积累&重复 而构造出一种与object形成的等效关系。近似于或是无法在现实意义上进行有效区分。
 #   即quantity倍的unit等价于object。或者是 object/unit=quantity. 也就是quantity是作为量化比率ratio来记录object。
 #   一般而言我们就直接说object的measurement量化数值就是quantity。更一步我们将这种可以被measure的object成为variable.
 # 变量: 可以测量的对象/属性。可以建立 object/variable->notation(unit) 关系的对象/属性。
-#   属性被对象拥有/决定的可以被分辨与观测的特征。在采用模型化描述的时候，一般用 某个/些variables代表去代表真个object。
+#   属性被对象拥有/决定的可以被分辨与观测的特征。在采用模型化描述的时候，一般用 某个/些variables代表去代表整个object。
 #   即对象事物是一种variable集合。或者说 对象以是一种属性variables的向量(var1,var2,...,varn) 来进行表达记录组织。
 # ----------------------------------------------------------------------------------------------------------------------------
 # 数据集: tabular data,tidy的表格数据是一种对象集合: 这是一种标准的理想的数据形式。
