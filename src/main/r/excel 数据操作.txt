@@ -5,6 +5,9 @@ batch(install.packages,"readxl,purrr,dplyr")
 # 批量加载包
 batch(require,"readxl,purrr,dplyr") 
 
+# 设置工作区
+file.choose() |> gsub("[^\\]+$","",x=_) |> setwd()
+
 # 设置工作空间
 home <- "F:/slicef/home/gbench/dwk/diary/2024-04-13/data"
 #  设置数据文件目录
