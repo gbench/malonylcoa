@@ -57,6 +57,130 @@ assign("i",-4,environment(c4))
 # c4结构变成x^-4的函数了
 c4(1:10)
 
+# 调用堆栈的结构
+# The parent frame of a function evaluation is the environment in which the function was called. 
+# 运行环境的parent frame上级frame就是那个调用该函数的运行环境。
+# 注意 这个环境不一定是当前运行环境的帧号-1的那frame环境，也不是那个定义该函数的环境。
+# It is not necessarily numbered one less than the frame number of the current evaluation, 
+# nor is it the environment within which the function was defined. 
+# 上级环境需要使用sys.parent来进行获得，n默认为1,表示直接上级，父亲，n=2,  就是父亲的父亲，依次类推
+# sys.parent returns the number of the parent frame if n is 1 (the default), the grandparent if n is 2, and so on. 
+#
+# 从严格意义上说，所谓的 sys.parent and parent.frame 里面的上级，是指  interpreted function 的上级环境。
+# Strictly, sys.parent and parent.frame refer to the context of the parent interpreted function. 
+# 所以  internal functions 也就是那些不一定通过 set contexts 即建立运行环境的方式去执行的函数，
+# 就是时有时无的出现在调用堆栈call stack)，结果就是 internal functions 可能会被sys.*族的函数所统计不到
+# 同样 S3方法也会做成一些令人吃惊的事情。 
+# So internal functions (which may or may not set contexts and so may or may not appear on
+# the call stack) may not be counted, and S3 methods can also do surprising things.
+
+# 从 lazy evaluation 的执行结果上来看，出现在call stack上的函数是仅当他们处于运行的时候/状态，而不是在他们被调用call的时候/状态
+As an effect of lazy evaluation, these functions look at the call stack at the time they are evaluated, not at the time they are called. 
+#将一个调用call 采用函数参数的形式进行传递不是一个看起来令人满意的想法。
+Passing calls to them as function arguments is unlikely to be a good idea, 
+# 不过，这些函数仍然会在 call stack（从他们被调用call的时候的那些计算环境） 上看到并且占有相应数量frames：
+but these functions still look at the call stack and count frames
+from the frame of the function evaluation from which they were called.
+# 
+# 由此，当以默认值参数的方式把一个函数提供给另一个函数的时候。他们是在被调用函数的执行环境中进行运行的。
+# 他们的frame计数也是从这个时候（lazy计算的时候）开始的。
+# Hence, when these functions are called to provide default values for function arguments, 
+# they are evaluated in the evaluation of the called function and 
+# they count frames accordingly (see e.g. the envir argument of eval).
+
+# --------------------------------------------------------------------------------------
+#  函数调用堆栈的说明
+inner_f<-function(x) list(
+    call=sys.call(), # 函数调用
+    calls=sys.calls(), # 调用堆栈
+    nframe=sys.nframe(), # 数据帧号 从1开始
+    frms=sys.frames(), # 系统调用堆栈只有一层，也就是调用参数2的那一层
+    flag=identical(sys.frame(sys.nframe()),environment()), # 当前运行环境与sys.frames()的最后一项相同
+    ge=sys.frame(), # 工作空间全局环境，相当于sys.frame(0)
+    frm0=sys.frame(0), # 工作空间全局环境。全局环境是是所有
+    pfs=sys.parents(), # frame 的上级环境帧号索引。
+    fs=sapply(1:sys.nframe(),\(i) parent.env(sys.frame(i))) # 运行环境的eclosure 都是全局环境
+  );
+outer_f<-function(x) inner_f(x);
+outer_f(x);
+
+# --------------------------------------------------------------------------------------
+$call
+function(x) inner_f(x)
+
+$calls
+$calls[[1]]
+outer_f(x)
+
+$calls[[2]]
+function(x) inner_f(x)
+
+
+$nframe
+[1] 2
+
+$frms
+$frms[[1]]
+<environment: 0x0000016dcb7eed00>
+
+$frms[[2]]
+<environment: 0x0000016dcb7eee18>
+
+
+$flag
+[1] TRUE
+
+$ge
+<environment: R_GlobalEnv>
+
+$frm0
+<environment: R_GlobalEnv>
+
+$pfs
+[1] 0 1
+
+$fs
+$fs[[1]]
+<environment: R_GlobalEnv>
+
+$fs[[2]]
+<environment: R_GlobalEnv>
+
+# --------------------------------------------------------------------------------------
+# 外层x:1,内层x:2, f的运行环境 构成了 sys.function()即f(1) 的定义环境。
+# 运行环境列表，就是函数调用堆栈,sys.frames.  列表最后一项就是当前运行函数的evaluation environment
+f<-function(x) function(x) list(
+    outer_x = get("x",sys.function()|>environment()), # 外层x
+    inner_x = get("x",sys.frame(sys.nframe())), # 内层x
+    frms=sys.frames(), # 系统调用堆栈只有一层，也就是调用参数2的那一层
+    flag=identical(sys.frame(sys.nframe()),environment()), # 当前运行环境与sys.frames()的最后一项相同
+    ge=sys.frame(), # 工作空间全局环境，相当于sys.frame(0)
+    frm0=sys.frame(0) # 工作空间全局环境。
+  );f(1)(2);
+
+# --------------------------------------------------------------------------------------
+$outer_x
+[1] 1
+
+$inner_x
+[1] 2
+
+$frms
+$frms[[1]]
+<environment: 0x0000016dcbf8b510>
+
+
+$flag
+[1] TRUE
+
+$ge
+<environment: R_GlobalEnv>
+
+$frm0
+<environment: R_GlobalEnv>
+
+# --------------------------------------------------------------------------------------
+
 # 构造函数结构，do.call(what=f,args=list(x=1,y=2)) 等价于 f(x=1,y=2). do.call 拆分函数与参数
 > sapply(1:10,\(i) \(x) x^i) |> lapply(do.call,args=list(x=1:10)) |> do.call(rbind,args=_)
       [,1] [,2]  [,3]    [,4]    [,5]     [,6]      [,7]       [,8]       [,9] [,10]
