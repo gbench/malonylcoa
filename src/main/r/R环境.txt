@@ -1,5 +1,5 @@
 # R把 运行环境叫做frame,调用堆栈就是一个frame列表。
-# 列表第一项是命令行call,最后一项是当前运行的 evaluation evironment
+# frame列表第一项是命令行call,最后一项是当前运行的 evaluation evironment
 # 可以给你改过 parent.frame(n) 获取当前frame的第几上级，也就是调用者或调用者的某几个调用者的运行环境。
 # parent.frame() 是当前调用该函数的父环境。
 # sys.frame() 即 sys.frame(n=0) 始终指向 .GlobalEnv
@@ -17,6 +17,7 @@
 fun<-function(a,b){
 	list(
 		nframe=sys.nframe(), # 当前运行evaluation environment的调用层级，也就是frames列表长度
+		nfrmlen=c(sys.nframe(),length(sys.frames())), # nframe与调用堆栈长度
 		call=sys.call(),# 当前的函数调用，也就是现在正在运行什么命令
 		calls=sys.calls(), #  命令的调用层级，也就是调用栈，frames, frames 索引最大表示越是最近调用。
 		pfs=sys.parents(), # 运行环境的上级环境的frame索引。
@@ -24,10 +25,11 @@ fun<-function(a,b){
 		frm=sys.frame(sys.nframe()), # 当前运行的运行环境
 		evalenv=environment(),# 当前运行的运行环境
 		newenv=new.env(), # 创建一个新环境
-		frms=sys.frames(), # 运行栈列表，与 sys.calls() 向对应
-		frms2=list(sys.frame(1),sys.frame(length(sys.frames())))
+		frms=sys.frames() # 运行栈列表，与 sys.calls() 向对应
 	)
 }
+
+# 
 #0级别
 fun(1,2)->x;x;
 identical(x$evalenv,parent.env(x$newenv))
@@ -37,6 +39,9 @@ identical(x$evalenv,parent.env(x$newenv))
 > fun(1,2)->x;x;
 $nframe
 [1] 1
+
+$nfrmlen
+[1] 1 1
 
 $call
 fun(1, 2)
@@ -53,25 +58,17 @@ $pf
 <environment: R_GlobalEnv>
 
 $frm
-<environment: 0x0000024985065630>
+<environment: 0x00000249869f7550>
 
 $evalenv
-<environment: 0x0000024985065630>
+<environment: 0x00000249869f7550>
 
 $newenv
-<environment: 0x0000024985067f70>
+<environment: 0x00000249836f3e70>
 
 $frms
 $frms[[1]]
-<environment: 0x0000024985065630>
-
-
-$frms2
-$frms2[[1]]
-<environment: 0x0000024985065630>
-
-$frms2[[2]]
-<environment: 0x0000024985065630>
+<environment: 0x00000249869f7550>
 
 
 > identical(x$evalenv,parent.env(x$newenv))
@@ -84,15 +81,17 @@ fun1<-function(a,b) list(evalenv=environment(),fun=fun(a,b))
 fun1(1,2)
 
 # ------------------------------------------------------------------------------
-> # 一级
 > fun1<-function(a,b) list(evalenv=environment(),fun=fun(a,b))
 > fun1(1,2)
 $evalenv
-<environment: 0x00000249850693b0>
+<environment: 0x00000249837003d8>
 
 $fun
 $fun$nframe
 [1] 2
+
+$fun$nfrmlen
+[1] 2 2
 
 $fun$call
 function(a,b) list(evalenv=environment(),fun=fun(a,b))
@@ -109,31 +108,23 @@ $fun$pfs
 [1] 0 1
 
 $fun$pf
-<environment: 0x00000249850693b0>
+<environment: 0x00000249837003d8>
 
 $fun$frm
-<environment: 0x000002498505eee0>
+<environment: 0x00000249837006e8>
 
 $fun$evalenv
-<environment: 0x000002498505eee0>
+<environment: 0x00000249837006e8>
 
 $fun$newenv
-<environment: 0x000002498666c4d8>
+<environment: 0x00000249836f5780>
 
 $fun$frms
 $fun$frms[[1]]
-<environment: 0x00000249850693b0>
+<environment: 0x00000249837003d8>
 
 $fun$frms[[2]]
-<environment: 0x000002498505eee0>
-
-
-$fun$frms2
-$fun$frms2[[1]]
-<environment: 0x00000249850693b0>
-
-$fun$frms2[[2]]
-<environment: 0x000002498505eee0>
+<environment: 0x00000249837006e8>
 
 # ------------------------------------------------------------------------------
 #  二级
@@ -144,15 +135,18 @@ fun2(1,2)
 > fun2<-function(a,b) list(evalenv=environment(),fun1=fun1(a,b))
 > fun2(1,2)
 $evalenv
-<environment: 0x0000024986687908>
+<environment: 0x00000249836d1340>
 
 $fun1
 $fun1$evalenv
-<environment: 0x0000024986687518>
+<environment: 0x00000249836d1688>
 
 $fun1$fun
 $fun1$fun$nframe
 [1] 3
+
+$fun1$fun$nfrmlen
+[1] 3 3
 
 $fun1$fun$call
 function(a,b) list(evalenv=environment(),fun=fun(a,b))
@@ -172,33 +166,24 @@ $fun1$fun$pfs
 [1] 0 1 2
 
 $fun1$fun$pf
-<environment: 0x0000024986687518>
+<environment: 0x00000249836d1688>
 
 $fun1$fun$frm
-<environment: 0x0000024986987d40>
+<environment: 0x0000024981924eb8>
 
 $fun1$fun$evalenv
-<environment: 0x0000024986987d40>
+<environment: 0x0000024981924eb8>
 
 $fun1$fun$newenv
-<environment: 0x00000249869aaf98>
+<environment: 0x000002498192e140>
 
 $fun1$fun$frms
 $fun1$fun$frms[[1]]
-<environment: 0x0000024986687908>
+<environment: 0x00000249836d1340>
 
 $fun1$fun$frms[[2]]
-<environment: 0x0000024986687518>
+<environment: 0x00000249836d1688>
 
 $fun1$fun$frms[[3]]
-<environment: 0x0000024986987d40>
-
-
-$fun1$fun$frms2
-$fun1$fun$frms2[[1]]
-<environment: 0x0000024986687908>
-
-$fun1$fun$frms2[[2]]
-<environment: 0x0000024986987d40>
-
+<environment: 0x0000024981924eb8>
 
