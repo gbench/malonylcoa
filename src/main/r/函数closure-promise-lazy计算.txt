@@ -66,7 +66,7 @@ c4(1:10)
 # 上级环境需要使用sys.parent来进行获得，n默认为1,表示直接上级，父亲，n=2,  就是父亲的父亲，依次类推
 # sys.parent returns the number of the parent frame if n is 1 (the default), the grandparent if n is 2, and so on. 
 #
-# 从严格意义上说，所谓的 sys.parent and parent.frame 里面的上级，是指  interpreted function 的上级环境。
+# 从严格意义上说，所谓的 sys.parent and parent.frame 里面的上级parent，指的一个是interpreted function的函数的环境。
 # Strictly, sys.parent and parent.frame refer to the context of the parent interpreted function. 
 # 所以  internal functions 也就是那些不一定通过 set contexts 即建立运行环境的方式去执行的函数，
 # 就是时有时无的出现在调用堆栈call stack)，结果就是 internal functions 可能会被sys.*族的函数所统计不到
