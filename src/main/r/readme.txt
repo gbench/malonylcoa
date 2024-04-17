@@ -49,7 +49,7 @@
 #
 # 逻辑：因果关系，目的动因关系，空间分布关系，发展过程关系。
 #
-#语言是一种思想的表达，思想是一种概念的的结构,有层次（有结构）的逻辑细节就是组织。这种方法在计算机中被叫做通用表:也就是树形结构。
+# 语言是一种思想的表达，思想是一种概念的的结构,有层次（有结构）的逻辑细节就是组织。这种方法在计算机中被叫做通用表:也就是树形结构。
 #
 # ----------------------------------------------------------
 require(lobstr)
@@ -90,7 +90,7 @@ ast(!!idea+!!idea)
 # 发展就是给一个方向（下一个步/元素的位置），然后下一步作为目标的从当前进行执行：
 # 从当前到下一步，从下一步再到下下一步，依此类推直到无穷。
 # 记录就是在平面上（下一步的位置要么在正右，要么在正下） 一行一行的从左向右，从上到下的 把 发展的过程 用符号进行 标记
-#R的数据显示方法：索引从1开始，从上到下，从左到右
+# R的数据显示方法：索引从1开始，从上到下，从左到右
 structure(1:36,dim=c(6,6))
 --------------------------------------------------------
      [,1] [,2] [,3] [,4] [,5] [,6]
@@ -113,7 +113,7 @@ structure(rep(1:6,6),dim=c(6,6))
 
 # attr 提取一定对象的属性。
 attr(structure(rep(1:6,6),dim=c(6,6),name='zhangsan'),'name')
-#生成数据框:
+# 生成数据框:
 data.frame(structure(rep(1:6,6),dim=c(6,6)))->dd
 
 #展开
@@ -124,41 +124,41 @@ outer(1:6,1:6)
 # 加法
 outer(1:7,1:9,FUN='+')
 
-#联加法
+# 联加法
 sum(1:6)
 
-#联合乘法
+# 联合乘法
 prod(1:6)
-#6^6
+# 6^6
 prod(rep(6,6))
 
-#循环
+# 循环
 sapply(1:5,\(i) i^i)
 
-#显示并绘图
+# 显示并绘图
 sapply(1:9,\(i) i^i) |>barplot(main="X^X",xlab="x")
 
-#组合方法
+# 组合方法
 data.frame(x=1:3,y=c('a','b','c')) |> expand.grid() -> dd
-#提取维度信息
+# 提取维度信息
 dim(dd)
-#class 属性,data.frame 其实就是一个list
+# class 属性,data.frame 其实就是一个list
 data.frame(mode=mode(dd),typeof=typeof(dd),class=class(dd))
-#class属性
+# class属性
 class(list(i=1:6,name='a'))
 
-#list 转换合格data.frame,data.frame 是一种特殊的list
+# list 转换合格data.frame,data.frame 是一种特殊的list
 list(i=1:6,name='a')|>as.data.frame()
 
-#rlang::ensym 读取符号
+# rlang::ensym 读取符号
 x<-1
-#ensym 定义一种符号计算的方式，expr(!!x+1) 构造了一种符号结构，用于表单特定概念。
+# ensym 定义一种符号计算的方式，expr(!!x+1) 构造了一种符号结构，用于表单特定概念。
 add<-function(var) {x<-ensym(var);expr(!!x+1)}
 eval(add(x))
 
-#lobstr: 符号结构
+# lobstr: 符号结构
 library(lobstr)
-#对象的结构
+# 对象的结构
 x <- 1:1e6
 y <- list(x, x, x)
 # 结构
@@ -198,7 +198,7 @@ e$self <- e
  4. └─lobstr::cst()
 > 
 
-#按照行遍历数据框
+# 按照行遍历数据框
 > expand.grid(rep(1:6,6)|>matrix(ncol=6)|>data.frame())|>head(10)
    X1 X2 X3 X4 X5 X6
 1   1  1  1  1  1  1
