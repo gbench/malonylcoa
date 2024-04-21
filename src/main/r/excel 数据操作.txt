@@ -68,4 +68,38 @@ long_f(diamonds,price,x,y,z)
 # long_f 相当于 pivot_longer
 pivot_longer(diamonds,cols=c(x,y,z),values_to="var") |> ggplot(aes(var,price))+geom_point()+facet_wrap(~name)
 
+# -----------------------------------------------------------------------------------------------------------------------
+# nest 嵌入式函数
+(model_summary<-diamonds |> group_by(cut) |> nest() |> mutate(
+	model=map(data,~lm(price~carat,data=.)),
+	model_summaries = map(model, broom::glance),
+	model_coef = map(model, broom::tidy))
+)
 
+>
+# A tibble: 5 × 5
+# Groups:   cut [5]
+  cut       data                  model  model_summaries   model_coef      
+  <ord>     <list>                <list> <list>            <list>          
+1 Ideal     <tibble [21,551 × 9]> <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+2 Premium   <tibble [13,791 × 9]> <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+3 Good      <tibble [4,906 × 9]>  <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+4 Very Good <tibble [12,082 × 9]> <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+5 Fair      <tibble [1,610 × 9]>  <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+
+# -----------------------------------------------------------------------------------------------------------------------
+# 模型的摘要
+model_summary %>% unnest(model_summaries)
+
+>
+# A tibble: 5 × 16
+# Groups:   cut [5]
+  cut      data     model r.squared adj.r.squared sigma statistic p.value    df  logLik    AIC
+  <ord>    <list>   <lis>     <dbl>         <dbl> <dbl>     <dbl>   <dbl> <dbl>   <dbl>  <dbl>
+1 Ideal    <tibble> <lm>      0.867         0.867 1388.   140582.       0     1 -1.87e5 3.73e5
+2 Premium  <tibble> <lm>      0.856         0.856 1653.    81725.       0     1 -1.22e5 2.44e5
+3 Good     <tibble> <lm>      0.851         0.851 1421.    27999.       0     1 -4.26e4 8.52e4
+4 Very Go… <tibble> <lm>      0.858         0.858 1482.    73088.       0     1 -1.05e5 2.11e5
+5 Fair     <tibble> <lm>      0.738         0.738 1822.     4539.       0     1 -1.44e4 2.87e4
+# ℹ 5 more variables: BIC <dbl>, deviance <dbl>, df.residual <int>, nobs <int>,
+#   model_coef <list>
