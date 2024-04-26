@@ -151,7 +151,7 @@ split(iris,iris$Species) |> sapply(data.matrix) |> array(dim=c(50,5,3))
 # 画图
 matplot(iris.arr[, "Petal.Length",], iris.arr[, "Petal.Width",], pch = "SCV",
         col = rainbow(3, start = 0.8, end = 0.1),
-        sub = paste(c("S", "C", "V"), dimnames(iris.S)[[3]],
+        sub = paste(c("S", "C", "V"), dimnames(iris.arr)[[3]],
                     sep = "=", collapse= ",  "),
         main = "Fisher's Iris Data")
 
