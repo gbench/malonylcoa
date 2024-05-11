@@ -163,8 +163,34 @@ my_mutate <- function (data,...) {
 	call <- match.call() # 获取函数调用
 	exprs <- 2:length(call) |> sapply(\(i) call[[i]] ) # 提取函数调用的参数列表
 	names <- 2:length(call) |> sapply(\(i) names(call)[[i]] ) # 提取函数调用的参数列表
-	vs <- exprs |> sapply(\(x) eval(x,env=data)) # 执行函数调用计算结果值,使用data数据作为运算环境
+	myenv <- as.environment(data) # 把数据转换成运行环境
+	parent.env(myenv) <- sys.frame() # 将新创建的环境与当前运行环境进行关联，以保证在e环境中运行的时候可以访问当前运行环境中的数据对象
+	vs <- seq_along(exprs) |> sapply(\(i) assign(names[i], eval(exprs[[i]], env=myenv), env=myenv)) # 执行函数调用计算结果值,并更新e中数据的状态
 	do.call(cbind,vs[-1]) |> structure(dimnames=list(NULL,names[-1])) # 把结果值拼装成向量
 }
 # 函数调用
 data.frame(x=1:5,y=6:10) |> my_mutate(x=x,y=y,u=x*2,v=x+y)
+
+#  综合 上面消费贷款的例子，分解按揭贷款为一组折扣债券
+# 一个按揭贷款，可以分解为一组以折扣债券，折扣债券的数量为按揭贷款的期数。
+data.frame(rate, pvs, pmts) |> my_mutate(rate=rate, pvs=pvs, pmts=pmts, 
+	interest=pvs-pmts, # 利息
+	r=abs(interest/pvs), # 折扣利息，这个本质就是把一个按揭贷款，分解成一系列的 discount bond的折价利率
+	nrate=seq_along(rate)*rate, # n倍的rate
+	diff=r-nrate # 倍率差值， 折扣利率 与 nrate 之间的差，二者近乎相等，这也是为何 年利率=月利率*12的原因
+) # 分解按揭贷款为一组折扣债券
+
+>
+             rate       pvs      pmts  interest
+ [1,] 0.002755332 -846.0023 -848.3333  2.331017
+ [2,] 0.002755332 -843.6777 -848.3333  4.655629
+ [3,] 0.002755332 -841.3595 -848.3333  6.973854
+ [4,] 0.002755332 -839.0476 -848.3333  9.285708
+ [5,] 0.002755332 -836.7421 -848.3333 11.591210
+ [6,] 0.002755332 -834.4430 -848.3333 13.890378
+ [7,] 0.002755332 -832.1501 -848.3333 16.183227
+ [8,] 0.002755332 -829.8636 -848.3333 18.469777
+ [9,] 0.002755332 -827.5833 -848.3333 20.750043
+[10,] 0.002755332 -825.3093 -848.3333 23.024044
+[11,] 0.002755332 -823.0415 -848.3333 25.291797
+[12,] 0.002755332 -820.7800 -848.3333 27.553318
