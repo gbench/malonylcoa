@@ -1,5 +1,5 @@
 # 二分法 求值：过程方式
-bisect <- function (f,a=0,b=1,eps=1e-10) {
+bisect <- function (f, a=0, b=1, eps=1e-10) {
 	if (f(a)*f(b)>0) #  相同符号则放弃运算
 		NA
 	else repeat { 
@@ -9,21 +9,18 @@ bisect <- function (f,a=0,b=1,eps=1e-10) {
 	(a+b)/2
 }
 
-# 二分法 求值:  递归方式
-bisect2 <- function (f,a=0,b=1,eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  \(x) ifelse(abs(b-a)<eps, x,
-	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f,x,b,eps) )) ) ((a+b)/2)) ()
-
 # 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
-npv <-function (rate,pmts,price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
+npv <-function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
 
 # 按揭贷款的支付周期的实际利率计算。
 pmts <- -rep((10000+30*0.5*12)/12,12) # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
 price <- 10000 # 1万元现金资产的当前价值
-rate <- bisect2(\(r) npv(r,pmts,price)) # 二分法求实际利率，1万元，日利息0.5元的月利率
+rate <- bisect(\(r) npv(r, pmts, price)) # 二分法求实际利率，1万元，日利息0.5元的月利率
 # 支付的利率折现值
 pvs <- pmts*((1+rate)^-(1:length(pmts)))
 # 结果汇总
-vs <- data.frame(rate,pvs,pmts,interest=pvs-pmts); vs; # 打包列向量组成data.frame
+vs <- data.frame(rate, pvs, pmts, interest=pvs-pmts); vs; # 打包列向量组成data.frame
+
 >
           rate       pvs      pmts  interest
 1  0.002755332 -846.0023 -848.3333  2.331017
@@ -40,7 +37,49 @@ vs <- data.frame(rate,pvs,pmts,interest=pvs-pmts); vs; # 打包列向量组成da
 12 0.002755332 -820.7800 -848.3333 27.553318
 
 # 对列向量组，按照列，进行累计汇总
-apply(vs[,-1],2,sum)
+apply(vs[,-1], 2, sum)
+
 >
  pvs     pmts interest 
   -10000   -10180      180 
+
+# ------------------------------------------------------------------------------------------
+# 性能统计: 递归的运行效率
+# ------------------------------------------------------------------------------------------
+# 二分法 求值:  递归方式1
+bisect2 <- function (f, a=0, b=1, eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  \(x) ifelse(abs(b-a)<eps, x,
+	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f, x, b, eps) )) ) ((a+b)/2)) ()
+
+# 二分法 求值:  递归方式2
+bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse( f(a)*f(b)>0, NA,  \(x) ifelse(abs(b-a)<eps, x,
+	ifelse(f(a)*f(x)<0, bisect3(f, a, x, eps), bisect3(f, x, b, eps) )) ) ((a+b)/2)
+
+# 各个函数的计算统计
+(\(fs) { # 分别执行fs中指定的函数n次,并进行统计运算效率
+	args <- match.call() |> as.list() |>_[-1]$fs |> paste() |>_[-1] # 提取输入参数字符串
+	sapply(fs, \(f) f( \(r) npv(r, pmts, price) ) ) |> structure(names=args)
+})(c(bisect, bisect2, bisect3))
+
+>
+ bisect     bisect2     bisect3 
+0.002755332 0.002755332 0.002755332 
+
+# ------------------------------------------------------------------------------------------
+# bisect,bisect2,bisect3的执行效率, 多一层函数调用就降低一层效率，bisect 的高效 来源于就是其中函数调用的次数比较少
+# bisect3 比 bisect2 的函数调用次数 也要少
+# 
+(\(fs, n=1000) { # 分别执行fs中指定的函数n次,并进行统计运算效率
+	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
+	xs <- sapply(fs, \(f) lapply(1:n, \(i) f(\(r) npv(r, pmts, price))) |> system.time()) # 分别执行n次测试函数并统计函数执行时间。
+	dimnames(xs)[[2]] <- args # 修改数组维度名称
+	xs
+})(c(bisect, bisect2, bisect3), 10000) # 批量运行1万次
+
+>
+           bisect bisect2 bisect3
+user.self    7.91   15.36   16.28
+sys.self     0.30    0.42    0.59
+elapsed      8.34   16.11   17.17
+user.child     NA      NA      NA
+sys.child      NA      NA      NA
+
