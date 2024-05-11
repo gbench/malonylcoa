@@ -14,10 +14,10 @@ npv <-function (rate,pmts,price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
 # 按揭贷款的支付周期的实际利率计算。
 pmts <- -rep((10000+30*0.5*12)/12,12) # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
 price <- 10000 # 1万元现金资产的当前价值
-rate<-bisect (\(r) npv(r,pmts,price)) # 二分法求实际利率，1万元，日利息0.5元的月利率
+rate <- bisect (\(r) npv(r,pmts,price)) # 二分法求实际利率，1万元，日利息0.5元的月利率
 # 支付的利率折现值
 pvs <- pmts*((1+rate)^-(1:length(pmts)))
 # 结果汇总
-data.frame(rate,pvs,pmts,interest=pvs-pmts) -> data; data;
-# 累计汇总
-apply(data[,-1],2,sum)
+vs <- data.frame(rate,pvs,pmts,interest=pvs-pmts); vs; # 打包列向量组成data.frame
+# 对列向量组，按照列，进行累计汇总
+apply(vs[,-1],2,sum)
