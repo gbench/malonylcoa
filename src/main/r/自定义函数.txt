@@ -10,8 +10,8 @@ bisect <- function (f,a=0,b=1,eps=1e-10) {
 }
 
 # 二分法 求值:  递归方式
-bisect2 <- function (f,a=0,b=1,eps=1e-10) ifelse(f(a)*f(b)>0, NA,  
-	(\(x) ifelse(abs(b-a)<eps, x, ifelse( f(a)*f(x)<0, bisect2(f,a,x,eps), bisect2(f,x,b,eps) ))) ((a+b)/2) )
+bisect2 <- function (f,a=0,b=1,eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  \(x) ifelse(abs(b-a)<eps, x,
+	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f,x,b,eps) )) ) ((a+b)/2)) ()
 
 # 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
 npv <-function (rate,pmts,price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
