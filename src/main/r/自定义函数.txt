@@ -15,6 +15,8 @@ bisect <- function (f, a=0, b=1, eps=1e-10) {
 
 # 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
 npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
+# 使用管道的一种写法, 不过这样的写法，运行效率要比上一种低。管道增加了函数call的调用深度。
+# npv <- function (rate, pmts, price) seq_along(pmts) |> lapply(\(i) (1+rate)^-i*pmts[i]) |> append(price) |> do.call(sum,args=_)
 
 # 按揭贷款的支付周期的实际利率计算。
 pmts <- -rep((10000+30*0.5*12)/12,12) # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
@@ -76,7 +78,7 @@ bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse( f(a)*f(b)>0, NA,  \(x) ifel
 (\(fs) { # 分别执行fs中指定的函数n次,并进行统计运算效率
 	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
 	sapply(fs, \(f) f( \(r) npv(r, pmts, price) ) ) |> structure(names=args)
-})(c(bisect, bisect1, bisect2, bisect3));
+})(c(bisect, bisect1, bisect2, bisect3))
 
 >
      bisect     bisect1     bisect2     bisect3 
@@ -175,6 +177,14 @@ my_mutate <- function (data, ...) { # 确保第一个参数为data, 其余为用
 }
 # 函数调用
 data.frame(x=1:5, y=6:10) |> my_mutate(x=x, y=y, u=x*2, v=x+y)
+
+>
+     x  y  u  v
+[1,] 1  6  2  7
+[2,] 2  7  4  9
+[3,] 3  8  6 11
+[4,] 4  9  8 13
+[5,] 5 10 10 15
 
 #  综合 上面消费贷款的例子，分解按揭贷款为一组折扣债券
 # 一个按揭贷款，可以分解为一组以折扣债券，折扣债券的数量为按揭贷款的期数。
