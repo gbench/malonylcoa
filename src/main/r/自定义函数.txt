@@ -74,7 +74,7 @@ bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse( f(a)*f(b)>0, NA,  \(x) ifel
 
 # 各个函数的计算统计
 (\(fs) { # 分别执行fs中指定的函数n次,并进行统计运算效率
-	args <- match.call() |> as.list() |>_[-1]$fs |> paste() |>_[-1] # 提取输入参数字符串
+	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
 	sapply(fs, \(f) f( \(r) npv(r, pmts, price) ) ) |> structure(names=args)
 })(c(bisect, bisect1, bisect2, bisect3));
 
@@ -108,3 +108,63 @@ elapsed      6.17    8.08   15.36   16.86
 user.child     NA      NA      NA      NA
 sys.child      NA      NA      NA      NA
 
+# ------------------------------------------------------------------------------------------
+# 函数调用call相当于lisp的S表达式，即 f(x,y,z) 相当于 lisp 的(f,x,y,z)
+# 可以像访问列表一样的去访问call对象。
+( f<-function(u,v) match.call() |> (\(x) list( call=x, mode=mode(x) , type=typeof(x), names=names(x) )) ()  ) (u=f(x),v=g(y)) -> fc; fc
+
+>
+$call
+(f <- function(u, v) (function(x) list(call = x, mode = mode(x), 
+    type = typeof(x), names = names(x)))(match.call()))(u = f(x), 
+    v = g(y))
+
+$mode
+[1] "call"
+
+$type
+[1] "language"
+
+$names
+[1] ""  "u" "v"
+
+# 读取 match.call() 中的数据
+# ------------------------------------------------------------------------------------------
+# 按照名称进行访问
+fc$names |> sapply(\(i) fc$call[[i]])
+
+>
+[[1]]
+NULL
+
+$u
+f(x)
+
+$v
+g(y)
+
+
+# 按照索引进行访问，
+(length(fc$call)) |> seq() |> sapply(\(i) fc$call[[i]])
+
+>
+[[1]]
+(f <- function(u, v) (function(x) list(call = x, mode = mode(x), 
+    type = typeof(x), names = names(x)))(match.call()))
+
+[[2]]
+f(x)
+
+[[3]]
+g(y)
+
+# 通过call的访问，我们可以实现一个类似于 tidyverse 的 mutate类似的函数功能
+my_mutate <- function (data,...) {
+	call <- match.call() # 获取函数调用
+	exprs <- 2:length(call) |> sapply(\(i) call[[i]] ) # 提取函数调用的参数列表
+	names <- 2:length(call) |> sapply(\(i) names(call)[[i]] ) # 提取函数调用的参数列表
+	vs <- exprs |> sapply(\(x) eval(x,env=data)) # 执行函数调用计算结果值,使用data数据作为运算环境
+	do.call(cbind,vs[-1]) |> structure(dimnames=list(NULL,names[-1])) # 把结果值拼装成向量
+}
+# 函数调用
+data.frame(x=1:5,y=6:10) |> my_mutate(x=x,y=y,u=x*2,v=x+y)
