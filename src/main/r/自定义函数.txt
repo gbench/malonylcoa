@@ -1,12 +1,16 @@
-# 二分法 求值：过程方式
+# 自定义函数 编写式例
+# 
+# 二分法 求值：过程方式。缓存fa, 减少一次调用。注意，不要小看这减少的一次调用，对性能影响是很大的，详见 后面的性能分析。
 bisect <- function (f, a=0, b=1, eps=1e-10) {
-	if (f(a)*f(b)>0) #  相同符号则放弃运算
-		NA
-	else repeat { 
-		if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
-		((a+b)/2) |> (\(x) assign(ifelse(f(a)*f(x)<0,'b','a'),x,parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
-	}
-	(a+b)/2
+	(\(fa) { # 缓存f(a)的计算结果
+		if (fa*f(b)>0) # 相同符号则放弃运算
+			NA # 结果不可用
+		else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
+			if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
+			((a+b)/2) |> (\(x) assign(ifelse(fa*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
+		}
+		(a+b)/2 
+	}) (f(a)) # 计算f(a) 并将结果缓存到fa
 }
 
 # 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
@@ -47,6 +51,18 @@ apply(vs[,-1], 2, sum)
 # ------------------------------------------------------------------------------------------
 # 性能统计: 递归的运行效率
 # ------------------------------------------------------------------------------------------
+
+# 二分法 求值：过程方式,  不换缓存fa
+bisect1 <- function (f, a=0, b=1, eps=1e-10) {
+	if (f(a)*f(b)>0) # 相同符号则放弃运算
+		NA
+	else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
+		if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
+		((a+b)/2) |> (\(x) assign(ifelse(f(a)*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
+	}
+	(a+b)/2
+}
+
 # 二分法 求值:  递归方式1
 bisect2 <- function (f, a=0, b=1, eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  \(x) ifelse(abs(b-a)<eps, x,
 	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f, x, b, eps) )) ) ((a+b)/2)) ()
@@ -60,11 +76,18 @@ bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse( f(a)*f(b)>0, NA,  \(x) ifel
 (\(fs) { # 分别执行fs中指定的函数n次,并进行统计运算效率
 	args <- match.call() |> as.list() |>_[-1]$fs |> paste() |>_[-1] # 提取输入参数字符串
 	sapply(fs, \(f) f( \(r) npv(r, pmts, price) ) ) |> structure(names=args)
-})(c(bisect, bisect2, bisect3))
+})(c(bisect, bisect1, bisect2, bisect3));
 
 >
- bisect     bisect2     bisect3 
-0.002755332 0.002755332 0.002755332 
+     bisect     bisect1     bisect2     bisect3 
+0.002755332 0.002755332 0.002755332 0.002755332
+
+# 所有值是否相等
+.Last.value==mean(.Last.value)
+
+>
+bisect bisect1 bisect2 bisect3 
+   TRUE    TRUE    TRUE    TRUE 
 
 # ------------------------------------------------------------------------------------------
 # bisect,bisect2,bisect3的执行效率, 多一层函数调用就降低一层效率，bisect 的高效 来源于就是其中函数调用的次数比较少
@@ -75,12 +98,13 @@ bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse( f(a)*f(b)>0, NA,  \(x) ifel
 	xs <- sapply(fs, \(f) lapply(1:n, \(i) f(\(r) npv(r, pmts, price))) |> system.time()) # 分别执行n次测试函数并统计函数执行时间。
 	dimnames(xs)[[2]] <- args # 修改数组维度名称
 	xs
-})(c(bisect, bisect2, bisect3), 10000) # 批量运行1万次
+})(c(bisect, bisect1, bisect2, bisect3), 10000) # 批量运行1万次
 
 >
-           bisect bisect2 bisect3
-user.self    7.91   15.36   16.28
-sys.self     0.30    0.42    0.59
-elapsed      8.34   16.11   17.17
-user.child     NA      NA      NA
-sys.child      NA      NA      NA
+           bisect bisect1 bisect2 bisect3
+user.self    6.14    8.02   15.28   16.70
+sys.self     0.00    0.04    0.07    0.07
+elapsed      6.17    8.08   15.36   16.86
+user.child     NA      NA      NA      NA
+sys.child      NA      NA      NA      NA
+
