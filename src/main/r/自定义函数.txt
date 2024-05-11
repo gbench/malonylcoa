@@ -90,8 +90,9 @@ bisect bisect1 bisect2 bisect3
    TRUE    TRUE    TRUE    TRUE 
 
 # ------------------------------------------------------------------------------------------
-# bisect,bisect2,bisect3的执行效率, 多一层函数调用就降低一层效率，bisect 的高效 来源于就是其中函数调用的次数比较少
-# bisect2较bisect3来说,使用一层fa=f(a)的函数调用来减少一次f计算，bisect2 使用fa 参数来保留中间的计算结果
+# bisect,bisect1,bisect2,bisect3的执行效率, 多一层函数调用就降低一层效率，bisect 的高效 来源于就是其中函数调用的次数比较少
+# bisect2较bisect3来说,使用一层fa=f(a)的函数调用来减少一次f计算，bisect2 使用fa参数缓存来保留中间的计算结果
+# 此外从执行时间：bisect1>bisect, bisect3>bisect2 可以看出，参数计算的数据缓存是非常影响效率的，于是可以的话请多使用参数缓存。
 # 
 (\(fs, n=1000) { # 分别执行fs中指定的函数n次,并进行统计运算效率
 	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
