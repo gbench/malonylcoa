@@ -164,26 +164,25 @@ f(x)
 g(y)
 
 # 通过call的访问，我们可以实现一个类似于 tidyverse 的 mutate类似的函数功能
-my_mutate <- function (data,...) {
+my_mutate <- function (data, ...) { # 确保第一个参数为data, 其余为用户的指定。
 	call <- match.call() # 获取函数调用
-	exprs <- 2:length(call) |> sapply(\(i) call[[i]] ) # 提取函数调用的参数列表
-	names <- 2:length(call) |> sapply(\(i) names(call)[[i]] ) # 提取函数调用的参数列表
-	myenv <- as.environment(data) # 把数据转换成运行环境
-	parent.env(myenv) <- sys.frame() # 将新创建的环境与当前运行环境进行关联，以保证在e环境中运行的时候可以访问当前运行环境中的数据对象
-	vs <- seq_along(exprs) |> sapply(\(i) assign(names[i], eval(exprs[[i]], env=myenv), env=myenv)) # 执行函数调用计算结果值,并更新e中数据的状态
-	do.call(cbind,vs[-1]) |> structure(dimnames=list(NULL,names[-1])) # 把结果值拼装成向量
+	exprs <- 2:length(call) |> lapply(\(i) call[[i]] ) # 提取函数调用的参数列表
+	names <- 2:length(call) |> lapply(\(i) names(call)[[i]] ) # 提取函数调用的参数列表
+	myenv <- list2env(data, parent=sys.frame()) # 把数据转换成运行环境并将当前运行环境作为新新建的data的环境的父亲环境。
+	vs <- seq_along(exprs) |> lapply(\(i) assign(names[[i]], eval(exprs[[i]], env=myenv), env=myenv)) # 执行函数调用计算结果值,并更新e中数据的状态
+	do.call(cbind,vs[-1]) |> structure(dimnames=list(NULL, names[-1])) # 把结果值拼装成向量,去除data参数
 }
 # 函数调用
-data.frame(x=1:5,y=6:10) |> my_mutate(x=x,y=y,u=x*2,v=x+y)
+data.frame(x=1:5, y=6:10) |> my_mutate(x=x, y=y, u=x*2, v=x+y)
 
 #  综合 上面消费贷款的例子，分解按揭贷款为一组折扣债券
 # 一个按揭贷款，可以分解为一组以折扣债券，折扣债券的数量为按揭贷款的期数。
-data.frame(rate, pvs, pmts) |> my_mutate(rate=rate, pvs=pvs, pmts=pmts, 
+data.frame(rate, pvs, pmts) |> my_mutate(rate=rate, pvs=pvs, pmts=pmts, # 原来的变量
 	interest=pvs-pmts, # 利息
 	r=abs(interest/pvs), # 折扣利息，这个本质就是把一个按揭贷款，分解成一系列的 discount bond的折价利率
 	nrate=seq_along(rate)*rate, # n倍的rate
 	diff=r-nrate # 倍率差值， 折扣利率 与 nrate 之间的差，二者近乎相等，这也是为何 年利率=月利率*12的原因
-) # 分解按揭贷款为一组折扣债券
+) 
 
 >
              rate       pvs      pmts  interest           r       nrate          diff
