@@ -213,6 +213,8 @@ data.frame(rate, pvs, pmts) |> my_mutate(rate=rate, pvs=pvs, pmts=pmts, # 原来
 # ------------------------------------------------------------------------------------------
 # 迭代函数
 iterate <- function (init,f,n=10) if(n<1) c() else c(init, iterate(f(init), f, n-1))
+
+# 数据规模
 n <- 10
 # 等比(几何）级数的收敛序列
 (a <- iterate(1, \(x) x/2, 10) |> cumsum()) |> plot()
@@ -221,6 +223,6 @@ n <- 10
 (b <- iterate(1, \(x) 2*x, 10) |> cumsum()) |> plot()
 
 # 数据绘图
-matplot(data.frame(a=seq(n),b=seq(n)+2*n), data.frame(a,b), pch="ab")
+matplot(data.frame(a=seq(n), b=seq(n)+2*n), data.frame(a, b), pch="ab")
 
 
