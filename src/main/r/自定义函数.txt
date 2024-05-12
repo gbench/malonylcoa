@@ -66,13 +66,13 @@ bisect1 <- function (f, a=0, b=1, eps=1e-10) {
 }
 
 # 二分法 求值:  递归方式1
-bisect2 <- function (f, a=0, b=1, eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  \(x) ifelse(abs(b-a)<eps, x,
-	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f, x, b, eps) )) ) ((a+b)/2)) ()
+bisect2 <- function (f, a=0, b=1, eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  (\(x) ifelse(abs(b-a)<eps, x,
+	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f, x, b, eps) ))) ((a+b)/2))) ()
 
 # 二分法 求值:  递归方式2
 # bisect2较bisect3来说,使用一层fa=f(a)的函数调用来减少一次f计算，bisect2 使用fa 参数来保留中间的计算结果
-bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse( f(a)*f(b)>0, NA,  \(x) ifelse(abs(b-a)<eps, x,
-	ifelse(f(a)*f(x)<0, bisect3(f, a, x, eps), bisect3(f, x, b, eps) )) ) ((a+b)/2)
+bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse(f(a)*f(b)>0, NA,  (\(x) ifelse(abs(b-a)<eps, x,
+	ifelse(f(a)*f(x)<0, bisect3(f, a, x, eps), bisect3(f, x, b, eps) ))) ((a+b)/2)) 
 
 # 各个函数的计算统计
 (\(fs) { # 分别执行fs中指定的函数n次,并进行统计运算效率
@@ -209,3 +209,10 @@ data.frame(rate, pvs, pmts) |> my_mutate(rate=rate, pvs=pvs, pmts=pmts, # 原来
 [10,] 0.002755332 -825.3093 -848.3333 23.024044 0.027897473 0.027553318  3.441557e-04
 [11,] 0.002755332 -823.0415 -848.3333 25.291797 0.030729672 0.030308650  4.210225e-04
 [12,] 0.002755332 -820.7800 -848.3333 27.553318 0.033569674 0.033063981  5.056929e-04
+
+# ------------------------------------------------------------------------------------------
+# 迭代函数
+iterate <- function (init,f,n=10) if(n<1) c() else c(init, iterate(f(init), f, n-1))
+
+# 等比(几何）级数的收敛序列
+iterate(1, \(x) x/2, 100) |> sum() |> plot()
