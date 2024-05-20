@@ -421,10 +421,10 @@ F    Admitted          22     24
      Rejected         351    317
 
 # 多维数组
-evalq((\(dim=sapply(dimnames,length)) array(1:prod(dim),dim,dimnames)) ()|>ftable(col.vars=c("字母","希腊")),
+evalq((\(dim=sapply(dimnames, length)) array(1:prod(dim), dim, dimnames)) () |> ftable(col.vars=c("字母", "希腊")),
  list(dimnames=strsplit(c(天干="子丑寅卯", 地支="甲乙丙丁", 字母="ABCDE", 希腊="αβγδ"),"")))
 
-> evalq((\(dim=sapply(dimnames,length)) array(1:prod(dim),dim,dimnames)) ()|>ftable(col.vars=c("字母","希腊")),
+> evalq((\(dim=sapply(dimnames, length)) array(1:prod(dim), dim, dimnames)) () |> ftable(col.vars=c("字母", "希腊")),
 +  list(dimnames=strsplit(c(天干="子丑寅卯", 地支="甲乙丙丁", 字母="ABCDE", 希腊="αβγδ"),"")))
           字母   A               B               C               D               E            
           希腊   α   β   γ   δ   α   β   γ   δ   α   β   γ   δ   α   β   γ   δ   α   β   γ   δ
