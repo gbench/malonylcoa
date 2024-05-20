@@ -245,6 +245,50 @@ structure(c(512, 313, 89, 19, 353, 207, 17, 8, 120, 205, 202,
     c("Male", "Female"), c("A", "B", "C", "D", "E", "F")), names = c("Admit", 
 "Gender", "Dept")), class = "table")
 
+# 数据内容
+> UCBAdmissions
+, , Dept = A
+
+          Gender
+Admit      Male Female
+  Admitted  512     89
+  Rejected  313     19
+
+, , Dept = B
+
+          Gender
+Admit      Male Female
+  Admitted  353     17
+  Rejected  207      8
+
+, , Dept = C
+
+          Gender
+Admit      Male Female
+  Admitted  120    202
+  Rejected  205    391
+
+, , Dept = D
+
+          Gender
+Admit      Male Female
+  Admitted  138    131
+  Rejected  279    244
+
+, , Dept = E
+
+          Gender
+Admit      Male Female
+  Admitted   53     94
+  Rejected  138    299
+
+, , Dept = F
+
+          Gender
+Admit      Male Female
+  Admitted   22     24
+  Rejected  351    317
+
 
 #数据遍历
 apply(c("Dept","Addmit"),\(xs) xs[1]/xs[2])
@@ -260,11 +304,11 @@ Dept   Admitted   Rejected
    F  0.9166667  1.1072555
 
 
-#  高位数组 遍历,特别需要注意的就是 append(list(xs),is)) 用于构造一个((xs),is[1],is[2],...) 模样的数据结构。
-evalq(expand.grid(dimnames(xs)) |> apply(1, \(is) do.call(`[`,append(list(xs), is)) |> (\(v) c(is, value=v))()) |> t(), list(xs=UCBAdmissions))
+#  高位数组 遍历,特别需要注意的就是 append(list(xs),is)) 用于构造一个(xs,is[1],is[2],...) 模样的数据结构。
+evalq(expand.grid(dimnames(xs)) |> apply(1, \(is) do.call(`[`, append(list(xs), is)) |> (\(v) c(is, value=v))()) |> t(), list(xs=UCBAdmissions))
 
 # 展开成列表形式，这样就可以做数据透视表的运算了。
-> evalq(expand.grid(dimnames(xs)) |> apply(1, \(is) do.call(`[`,append(list(xs), is)) |> (\(v) c(is, value=v))()) |> t(), list(xs=UCBAdmissions))
+> evalq(expand.grid(dimnames(xs)) |> apply(1, \(is) do.call(`[`, append(list(xs), is)) |> (\(v) c(is, value=v))()) |> t(), list(xs=UCBAdmissions))
       Admit      Gender   Dept value
  [1,] "Admitted" "Male"   "A"  "512"
  [2,] "Rejected" "Male"   "A"  "313"
@@ -291,6 +335,47 @@ evalq(expand.grid(dimnames(xs)) |> apply(1, \(is) do.call(`[`,append(list(xs), i
 [23,] "Admitted" "Female" "F"  "24" 
 [24,] "Rejected" "Female" "F"  "317"
 
+# 数据透视
+evalq(expand.grid(dimnames(xs)) |> apply(1, \(is) do.call(`[`, append(list(xs), is)) |> (\(v) c(is, value=v))()) |> t() |> 
+(\(data ) aggregate(as.numeric(value) ~ Dept+Gender+Admit, data=data, sum) ) ()
+, list(xs=UCBAdmissions))
 
+> evalq(expand.grid(dimnames(xs)) |> apply(1, \(is) do.call(`[`, append(list(xs), is)) |> (\(v) c(is, value=v))()) |> t() |> 
++ (\(data ) aggregate(as.numeric(value) ~ Dept+Gender+Admit, data=data, sum) ) ()
++  , list(xs=UCBAdmissions))
+   Dept Gender    Admit as.numeric(value)
+1     A Female Admitted                89
+2     B Female Admitted                17
+3     C Female Admitted               202
+4     D Female Admitted               131
+5     E Female Admitted                94
+6     F Female Admitted                24
+7     A   Male Admitted               512
+8     B   Male Admitted               353
+9     C   Male Admitted               120
+10    D   Male Admitted               138
+11    E   Male Admitted                53
+12    F   Male Admitted                22
+13    A Female Rejected                19
+14    B Female Rejected                 8
+15    C Female Rejected               391
+16    D Female Rejected               244
+17    E Female Rejected               299
+18    F Female Rejected               317
+19    A   Male Rejected               313
+20    B   Male Rejected               207
+21    C   Male Rejected               205
+22    D   Male Rejected               279
+23    E   Male Rejected               138
+24    F   Male Rejected               351
+
+# 透视表
+> ftable(UCBAdmissions)
+                Dept   A   B   C   D   E   F
+Admit    Gender                             
+Admitted Male        512 353 120 138  53  22
+         Female       89  17 202 131  94  24
+Rejected Male        313 207 205 279 138 351
+         Female       19   8 391 244 299 317
 
 
