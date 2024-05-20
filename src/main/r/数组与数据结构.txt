@@ -378,4 +378,47 @@ Admitted Male        512 353 120 138  53  22
 Rejected Male        313 207 205 279 138 351
          Female       19   8 391 244 299 317
 
+# 调整维度
+ftable(UCBAdmissions |> aperm(c(3, 1, 2)))
+# 使用维度名称进行调整
+ftable(UCBAdmissions |> aperm(c("Dept", "Admit", "Gender")))
+
+>
+              Gender Male Female
+Dept Admit                      
+A    Admitted         512     89
+     Rejected         313     19
+B    Admitted         353     17
+     Rejected         207      8
+C    Admitted         120    202
+     Rejected         205    391
+D    Admitted         138    131
+     Rejected         279    244
+E    Admitted          53     94
+     Rejected         138    299
+F    Admitted          22     24
+     Rejected         351    317
+
+# 使用维度名称进行调整
+ftable(UCBAdmissions, row.vars=c("Dept","Admit"))
+# 指定行列
+ftable(UCBAdmissions, row.vars=c("Dept","Admit"), col.vars=c("Gender"))
+
+>
+              Gender Male Female
+Dept Admit                      
+A    Admitted         512     89
+     Rejected         313     19
+B    Admitted         353     17
+     Rejected         207      8
+C    Admitted         120    202
+     Rejected         205    391
+D    Admitted         138    131
+     Rejected         279    244
+E    Admitted          53     94
+     Rejected         138    299
+F    Admitted          22     24
+     Rejected         351    317
+
+
 
