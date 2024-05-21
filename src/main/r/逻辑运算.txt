@@ -42,7 +42,7 @@ truths(p %<=>% q)
 truths( (p%=>%q) %<=>% (!(p&!q)) )
 
 # 定义验证2
-truths( p|q|(p%=>%q) %<=>% p&q )
+truths( p|q|(p%=>%q) %<=>% (p&q) )
 
 # --------------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ truths( p|q|(p%=>%q) %<=>% p&q )
 [4,] FALSE FALSE TRUE
 > 
 > # 定义验证2
-> truths( p|q|(p%=>%q) %<=>% p&q )
+> truths( p|q|(p%=>%q) %<=>% (p&q) )
          p     q  expr
 [1,]  TRUE  TRUE  TRUE
 [2,] FALSE  TRUE  TRUE
