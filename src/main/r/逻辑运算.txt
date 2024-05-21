@@ -16,8 +16,8 @@ truths <- function(expr) {
   .expr= substitute(c(p=p, q=q, expr=expr)) # 真值表达式
   
   # 罗列各种可能性
-  expand.grid(p=c(T, F), q=c(T, F)) |> apply(1, \(e) # 计算
-    eval(.expr, c(as.list(e)) |>list2env(parent=ops))
+  expand.grid(p=c(T, F), q=c(T, F)) |> apply(1, \(params) # 计算
+    eval(.expr, c(as.list(params)) |> list2env(parent=ops)) # 在指定函数定义环境了运算
   ) |> t() # 结果转置
 }
 
@@ -102,5 +102,3 @@ truths( p|q|(p%=>%q) %<=>% p&q )
 [3,]  TRUE FALSE  TRUE
 [4,] FALSE FALSE FALSE
 > 
-
-
