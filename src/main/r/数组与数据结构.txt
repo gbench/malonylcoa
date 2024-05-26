@@ -458,15 +458,15 @@ evalq((\(dim=sapply(dimnames, length)) array(1:prod(dim), dim, dimnames)) () |> 
 # 数组索引的读取
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 # 一维度索引转多维索引, xs:高维数组; i:一维度索引
-ids <- \(xs)  \(i) {
-  rs <- c() # 返回值
-  strides<-rev(cumprod(dim(xs)))[-1]; # 索引跨度
-  .i<- i-1 # 索引改为偏移
-  for(j in seq(length(strides))) {
-    rs <- c(.i %/% strides[j], rs) # 列顺序
+ids <- \(xs)  \(i) { # 为xs设计一维索引转高维索引的的函数
+  rs <- c() # 返回值向量
+  strides <- rev(cumprod(dim(xs)))[-1]; # 索引跨度,列顺序优先，后面索引在内存排序上优先前面的索引。
+  .i <- i-1 # 索引改为偏移
+  for(j in seq(length(strides))) { # 遍历索引跨度，strides[j]表示第j维度所占据的连续区域(内存单元的数量)长度。
+    rs <- c(.i %/% strides[j], rs) # 列顺序优先
     .i <- .i %% strides[j] 
   }
-  c(.i, rs)+1 # 偏移该索引
+  c(.i, rs) + 1 # 偏移该索引
 }
 
 # 读取索引
@@ -499,3 +499,35 @@ ids <- \(xs)  \(i) {
 [23,]    1    2    6   24
 [24,]    2    2    6  317
 > 
+
+# 索引翻译
+(\(xs) sapply(seq_along(xs), \(i) ids(xs)(i) |> (\(ys) lapply(seq_along(ys),\(j) dimnames(xs)[[j]][ys[j]])) () |> append(as.array(xs)[i])) |> t()) (UCBAdmissions)
+
+>
+      [,1]       [,2]     [,3] [,4]
+ [1,] "Admitted" "Male"   "A"  512 
+ [2,] "Rejected" "Male"   "A"  313 
+ [3,] "Admitted" "Female" "A"  89  
+ [4,] "Rejected" "Female" "A"  19  
+ [5,] "Admitted" "Male"   "B"  353 
+ [6,] "Rejected" "Male"   "B"  207 
+ [7,] "Admitted" "Female" "B"  17  
+ [8,] "Rejected" "Female" "B"  8   
+ [9,] "Admitted" "Male"   "C"  120 
+[10,] "Rejected" "Male"   "C"  205 
+[11,] "Admitted" "Female" "C"  202 
+[12,] "Rejected" "Female" "C"  391 
+[13,] "Admitted" "Male"   "D"  138 
+[14,] "Rejected" "Male"   "D"  279 
+[15,] "Admitted" "Female" "D"  131 
+[16,] "Rejected" "Female" "D"  244 
+[17,] "Admitted" "Male"   "E"  53  
+[18,] "Rejected" "Male"   "E"  138 
+[19,] "Admitted" "Female" "E"  94  
+[20,] "Rejected" "Female" "E"  299 
+[21,] "Admitted" "Male"   "F"  22  
+[22,] "Rejected" "Male"   "F"  351 
+[23,] "Admitted" "Female" "F"  24  
+[24,] "Rejected" "Female" "F"  317 
+> 
+
