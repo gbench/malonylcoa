@@ -501,7 +501,7 @@ ids <- \(xs)  \(i) { # 为xs设计一维索引转高维索引的的函数
 > 
 
 # 索引翻译
-(\(xs) sapply(seq_along(xs), \(i) ids(xs)(i) |> (\(id) lapply(seq_along(id),\(j) dimnames(xs)[[j]][id[j]])) () |> append(as.array(xs)[i])) |> t()) (UCBAdmissions)
+(\(xs) (\(nms) sapply(seq_along(xs), \(i) ids(xs)(i) |> (\(id) lapply(seq_along(id),\(j) nms[[j]][id[j]])) () |> append(xs[i]))) (dimnames(xs)) |> t()) (UCBAdmissions)
 
 >
       [,1]       [,2]     [,3] [,4]
