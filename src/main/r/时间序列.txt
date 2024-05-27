@@ -1,0 +1,27 @@
+# 序列变换函数
+map <-function (xs, f=\(x, i) x) sapply(seq_along(xs), \(i) f(xs[i], i))
+
+# 移动平均过程，xs：原始序列, thetas 权重系数向量,权重为p阶+1。
+ma <- function (xs, thetas) (\(n) map(xs, \(x,t) ifelse(t<n, NA, thetas %*% xs[t:(t-n+1)]))) (length(thetas))
+
+# 任意次绘图
+plots <- function(...) {
+  fs <- list(...) # 提取参数
+  op <- par(mfrow=c(length(fs), 1), mar=rep(2, 4)) # 缓存原有的图形参数
+  lapply(fs, \(f) f()) # 批量调用绘图
+  par(op) # 恢复图形参数
+}
+
+# 绘图
+(\(xs=rnorm(100)) 
+  list( # 函数列表 , 随着 theta 的增加,前后相关性有所增加
+      # 原始数据绘图
+      origin= \() xs |> plot(type='b', main="origin"),
+      # 移动平均绘图
+      ma0.2 =  \() ma(xs,c(1, 0.2)) |> plot(type='b', main='ma0.2'),
+      # 移动平均绘图
+      ma0.4 =  \() ma(xs,c(1, 0.4)) |> plot(type='b', main='ma0.4'),
+      # 移动平均绘图
+      ma0.8 =  \() ma(xs,c(1, 0.8)) |> plot(type='b', main='ma0.8')
+  ) # 函数序列
+) () |> do.call(plots, args=_)
