@@ -255,3 +255,37 @@ $frm0
 # ------------------------------------------------------------------------------------------------------------------------------------------
 # 函数（closure）相当于符号计算的 evalq , 也就是创建一个 带有x=1的frame环境尔后再该frame里进行计算表达式:1+x
 (\(x) 1+x)(1) == evalq(1+x,list(x=1) |> list2env())
+
+#--------------------------------------------------------------------------------------
+# lazy 计算的一个设计实例（排序初探）
+#--------------------------------------------------------------------------------------
+# 数据排序(默认倒序), 根据输入的键名列表进行数据排序，用substitute把...中输入的参数做成具体的符号：列名key
+descend0 <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) |> eval(envir=data)
+# 倒序
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() ) (2) |> descend0(, X1, X2)
+
+# 上面的写的descend0有问题，eval 函数计算的参数是延迟计算，并且是在 envir=data 环境中进行的，于是 对于
+# data 是动态生成的数据的情况，会出现data无法计算的情况
+descend0_uneval <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) 
+
+# 演示运算过程, descend0_uneval 中的data是layzy计算的
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend0_uneval(F, X1, X2) ) (2)
+
+>
+expand.grid(data.frame(matrix(rep(1:n, n), ncol = n)))[order(X1, 
+    X2, decreasing = F), ]
+
+# 也就是说下面的写法是错误的
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend0(F, X1, X2) ) (2)
+
+>
+Error in eval(substitute(data[order(..., decreasing = decreasing), ]),  : 
+  object 'n' not found
+
+
+#--------------------------------------------------------------------------------------
+# 所以eval的时候需要用 envir=list2env(data, parent=parent.frame()) 的形式进行eval
+#--------------------------------------------------------------------------------------
+descend <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) |> eval(envir=list2env(data, parent=parent.frame()))
+# 正序排序
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend(F, X1, X2) ) (2)
