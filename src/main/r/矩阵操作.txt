@@ -6,3 +6,6 @@ Eij <- function(xs, j=1) lapply(1:nrow(xs), \(i) if(i<=j & xs[j,j] !=0) xs[i,] e
 
 # 化简
 Eij(xs, 1)
+
+# 高阶操作
+Reduce(x=1:2, f=\(acc,i) Eij(acc, i), init=xs)
