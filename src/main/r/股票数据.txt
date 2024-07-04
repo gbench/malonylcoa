@@ -1,0 +1,38 @@
+# json文件读取包
+install.packages("jsonlite")
+install.packages("tidyverse")
+install.packages("lubridate")
+
+#安装接口数据包
+library(tidyverse)
+library(lubridate)
+library("jsonlite")
+
+# 设置工作区
+fjson <-file.choose()
+fjson |> gsub("[^\\]+$","",x=_) |> setwd()
+#获取当前工作目录
+getwd()
+#列示工作目录中的数据
+list.files()
+
+
+
+# 读取股票代码
+read_stockcode <- function(fjson,code) {
+  #读取数据
+  jsdata <- fromJSON(fjson)
+  #csv file
+  fcsv <- sprintf("%s.csv", code)
+
+  #转换数据
+  write.csv(jsdata, fcsv)
+
+  #再次读取数据
+  data <- read_table( fcsv, 
+    col_types=cols( .default=col_double(),
+    d=col_date(format="%Y%m%d")))
+}
+
+# 选择json文件
+read_stockcode(file.choose(), 600207)
