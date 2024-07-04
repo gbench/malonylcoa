@@ -5,7 +5,48 @@ http://api.mairui.club/hslt/list/e56089405bb2317c8
 # 历史交易数据: 600207
 http://api.mairui.club/hszbl/fsjy/600207/dn/e56089405bb2317c8
 
-# -----------------------------------------------------------------------
+# -------------------------------------------------------------------
+# 数据写入
+# -------------------------------------------------------------------
+# 导入数据库包文件
+library(httr)
+
+# 设置工作区
+freadme <-file.choose()
+freadme |> gsub("[^\\]+$","",x=_) |> setwd()
+#获取当前工作目录
+getwd()
+#列示工作目录中的数据
+list.files()
+
+
+# 指定股票代码
+code <- 600719 #大连热电
+
+# 读取股票数据函数
+get_stock_data <- function(code){
+  license <- 'e56089405bb2317c8' #API接口证书
+  url = sprintf('http://api.mairui.club/hszbl/fsjy/%s/dn/%s',code, license)
+  response <- GET(url) # GET数据请求
+  result <- content(response, "text") #读取请求内容
+}
+
+# 根据代码读取股票数据
+get_stock_data(code) -> lines
+
+#写入股票数据文件，code 股票代码, lines 股票数据
+write_stockdata <- function(code, lines){
+  filename <- sprintf('%s/日交易数据-%s.json', getwd(), code)
+  write(lines, filename)
+}
+
+# 写入股票交易数据
+write_stockdata(code, lines)
+
+# -------------------------------------------------------------------
+# 数据读取
+# -------------------------------------------------------------------
+
 
 # json文件读取包
 install.packages("jsonlite")
@@ -18,8 +59,9 @@ library(lubridate)
 library("jsonlite")
 
 # 设置工作区
-fjson <-file.choose()
-fjson |> gsub("[^\\]+$","",x=_) |> setwd()
+freadme <-file.choose()
+freadme |> gsub("[^\\]+$","",x=_) |> setwd()
+
 #获取当前工作目录
 getwd()
 #列示工作目录中的数据
@@ -44,6 +86,6 @@ read_stockcode <- function(fjson, code) {
 }
 
 # 选择json文件
-read_stockcode(file.choose()) -> d600207; head(d600207);
+read_stockcode(file.choose()) -> dstock; head(dstock);
 #  sort by c
-d600207 |> arrange(c)
+dstock |> arrange(c)
