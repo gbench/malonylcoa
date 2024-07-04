@@ -33,13 +33,15 @@ read_stockcode <- function(fjson,code) {
   fcsv <- sprintf("%s.csv", code)
 
   #转换数据
-  write.csv(jsdata, fcsv)
+  write.csv(jsdata, fcsv, row.names=F)
 
   #再次读取数据
-  data <- read_table( fcsv, 
-    col_types=cols( .default=col_double(),
-    d=col_date(format="%Y%m%d")))
+  data <- read_csv( fcsv, 
+    col_types=cols(.default=col_double(),
+    d=col_date(format='%Y-%m-%d')))
 }
 
 # 选择json文件
-read_stockcode(file.choose(), 600207)
+read_stockcode(file.choose(), 600207) -> d600207; head(d600207);
+#  sort by c
+d600207 |> arrange(c)
