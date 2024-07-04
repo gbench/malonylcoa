@@ -25,8 +25,10 @@ getwd()
 #列示工作目录中的数据
 list.files()
 
-# 读取股票代码
-read_stockcode <- function(fjson,code) {
+# 读取股票代码,fjson json数据文件的名称
+read_stockcode <- function(fjson, code) {
+  #从文件名中提取股票代码
+  code <- ifelse(missing(code), gsub('.+[^0-9]([0-9]+)\\.json', '\\1', fjson,), code)
   #读取数据
   jsdata <- fromJSON(fjson)
   #csv file
@@ -36,12 +38,12 @@ read_stockcode <- function(fjson,code) {
   write.csv(jsdata, fcsv, row.names=F)
 
   #再次读取数据
-  data <- read_csv( fcsv, 
+  data <- read_csv(fcsv, 
     col_types=cols(.default=col_double(),
     d=col_date(format='%Y-%m-%d')))
 }
 
 # 选择json文件
-read_stockcode(file.choose(), 600207) -> d600207; head(d600207);
+read_stockcode(file.choose()) -> d600207; head(d600207);
 #  sort by c
 d600207 |> arrange(c)
