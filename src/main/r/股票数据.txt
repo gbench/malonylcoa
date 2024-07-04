@@ -1,3 +1,12 @@
+# 免费接口
+https://www.mairui.club/
+# 股票列表
+http://api.mairui.club/hslt/list/e56089405bb2317c8
+# 历史交易数据: 600207
+http://api.mairui.club/hszbl/fsjy/600207/dn/e56089405bb2317c8
+
+# -----------------------------------------------------------------------
+
 # json文件读取包
 install.packages("jsonlite")
 install.packages("tidyverse")
@@ -15,8 +24,6 @@ fjson |> gsub("[^\\]+$","",x=_) |> setwd()
 getwd()
 #列示工作目录中的数据
 list.files()
-
-
 
 # 读取股票代码
 read_stockcode <- function(fjson,code) {
