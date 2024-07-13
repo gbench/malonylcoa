@@ -245,7 +245,7 @@ public class DFrame implements Iterable<IRecord> {
 	 * @return 行数据流
 	 */
 	public Optional<IRecord> rowOpt(final int idx) {
-		return Optional.ofNullable(this.rowsData[idx]);
+		return Optional.ofNullable(this.rowsData == null || this.rowsData.length < 1 ? null : this.rowsData[idx]);
 	}
 
 	/**

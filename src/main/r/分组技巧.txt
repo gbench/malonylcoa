@@ -1,0 +1,23 @@
+data <- read.csv(file.choose())
+
+# 提取最新的价格数据，10天一个分组
+tail(data,100)|>split((\(x) (x-1)%/%10+1)(1:100))
+
+# 提取最新的价格数据，10天一个分组
+tail(data,100) |> split(rep(1:10, rep(10,10)))
+
+# 提取收盘价格
+tail(data,100) |> split(rep(1:10,rep(10,10))) |> sapply(\(p) p['c']) 
+
+# 任意次绘图
+plots <- function(...) {
+  fs <- list(...) # 提取参数
+  op <- par(mfrow=c(length(fs), 1), mar=rep(2, 4)) # 缓存原有的图形参数
+  lapply(fs, \(f) f()) # 批量调用绘图
+  par(op) # 恢复图形参数
+}
+
+# 收盘价格绘图
+tail(data,100) |> split(rep(1:10,rep(10,10))) |> lapply(\(p) \() plot(p[['c']])) |> tail(2) |> do.call(plots,args=_)
+
+
