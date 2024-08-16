@@ -191,7 +191,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 			} // 当收货单索引拓展到收货单最大数量后就不再增加了
 			final var initial = i0 >= incums.length // 发货单索引是否有效
 					? -1 // 发货单索引非法,用-1标识非法数量
-					: j == 0 // 是否时首个发货单
+					: j == 0 // 是否是首个发货单
 							? Math.min(checkins[0], checkouts[0]) // 首个：收货单数量与发货单数量中的较小者
 							: Math.min(incums[i0] - outcums[j - 1], checkouts[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小着
 			final var line = REC("index", j, "requires", checkouts[j], "provides", provides); // 发货方案,index是checkouts的索引，requires是checkouts的需求熟练
