@@ -179,8 +179,8 @@ public class Inventory extends AbstractFinBase<Inventory> {
 			return data; // 累计和
 		}; // 帕累托累计和函数
 		final List<IRecord> lines = new LinkedList<IRecord>();
-		final double[] incums = cumsum.apply(checkins); // 帕累托累计和
-		final double[] outcums = cumsum.apply(checkouts); // 帕累托累计和
+		final double[] incums = cumsum.apply(checkins); // 帕累托累计和-入库单累计和
+		final double[] outcums = cumsum.apply(checkouts); // 帕累托累计和-出库单累计和
 		int i = 0; // 收货单/入库单索引
 		int j = 0; // 发货单/出库单所索引
 		for (; j < outcums.length; j++) { // 逐个发货单进行匹配,发货单索引逐次向后递增
@@ -193,7 +193,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 					? -1 // 发货单索引非法,用-1标识非法数量
 					: j == 0 // 是否是首个发货单
 							? Math.min(checkins[0], checkouts[0]) // 首个：收货单数量与发货单数量中的较小者
-							: Math.min(incums[i0] - outcums[j - 1], checkouts[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小着
+							: Math.min(incums[i0] - outcums[j - 1], checkouts[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小者
 			final var line = REC("index", j, "requires", checkouts[j], "provides", provides); // 发货方案,index是checkouts的索引，requires是checkouts的需求熟练
 			final var iqrb = IRecord.rb("index,quantity"); // checkin的对应项构建器:{index,quantity}的结构
 			final BiConsumer<Integer, Function<Integer, Double>> provides_push = (pos, qty) -> { // 登记到可库存发货的商品集合。pos:读写位置,qty:数量计算器
