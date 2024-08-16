@@ -205,9 +205,9 @@ public class Inventory extends AbstractFinBase<Inventory> {
 				} // for
 			}; // provides_push
 			final var pos = i; // 常量当前库存的读写位置
-			if (i >= incums.length) { // 库存不足
+			if (i >= incums.length) { // 库存不足, 需要考虑i==0也就是checkins中没有数据的情况
 				provides_push.accept(pos, k -> k == i0 ? initial : k >= incums.length ? -1 : checkins[k]);
-				final var lacks_total = outcums[j] - incums[i - 1]; // 缺货累计,整个发货批次的累计缺货数量
+				final var lacks_total = i <= 0 ? outcums[j] : (outcums[j] - incums[i - 1]); // 缺货累计,整个发货批次的累计缺货数量
 				final var lacks = Math.min(checkouts[j], lacks_total); // 当前发货单中的缺货数量,系统没有二外的入库单来提供发货产品了。
 				final var error = String.format("空间不足,缺少:%f", lacks_total); //
 				lines.add(line.derive("lacks", lacks, "lacks_total", lacks_total, "eror", error));
