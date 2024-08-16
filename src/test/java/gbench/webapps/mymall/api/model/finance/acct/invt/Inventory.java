@@ -128,7 +128,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 
 	/**
 	 * 将发货单与存货单进行匹配对应(数据流版) <br>
-	 * 通过排序对checkins和checkouts个这种排序再结合correspondS就可以实现: <br>
+	 * 通过对checkins和checkouts进行时间排序，再结合correspondS就可以实现: <br>
 	 * FIFO(checkins的按照时间正序排序),LIFO(checkins的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
 	 * @param checkins  入库单的各个入库数量
@@ -144,7 +144,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 
 	/**
 	 * 将发货单与存货单进行匹配对应(数据流版) <br>
-	 * 通过排序对checkins和checkouts个这种排序再结合correspondS就可以实现: <br>
+	 * 通过对checkins和checkouts进行时间排序，再结合correspondS就可以实现: <br>
 	 * FIFO(checkins的按照时间正序排序),LIFO(checkins的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
 	 * @param checkins  入库单的各个入库数量
@@ -160,7 +160,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 
 	/**
 	 * 将发货单与存货单进行匹配对应(列表版本) <br>
-	 * 通过排序对checkins和checkouts个这种排序再结合correspondS就可以实现: <br>
+	 * 通过对checkins和checkouts进行时间排序，再结合correspondS就可以实现: <br>
 	 * FIFO(checkins的按照时间正序排序),LIFO(checkins的按照时间逆向排序)等会计记账需要的存货成本核算策略。
 	 * 
 	 * @param checkins  入库单的各个入库数量
