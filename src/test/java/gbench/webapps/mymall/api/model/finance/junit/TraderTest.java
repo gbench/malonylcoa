@@ -79,14 +79,20 @@ public class TraderTest {
 	 */
 	@Test
 	public void bar() {
+		// 空库存，空出库单
+		println("空库存 correspondfm", correspondfm(new double[] {}, //
+				new double[] {}));
+		// 空库存
+		println("空库存 correspondfm", correspondfm(new double[] {}, //
+				new double[] { 2, 4, 8 }));
 		// 货源充足
-		println("correspondfm", correspondfm(new double[] { 1000 }, //
+		println("货源充足 correspondfm", correspondfm(new double[] { 1000 }, //
 				new double[] { 2, 4, 8 }));
 		// 首次发货：精确匹配
-		println("correspondfm", correspondfm(new double[] { 1, 5, 1, 3, 5 }, //
+		println("首次发货：精确匹配 correspondfm", correspondfm(new double[] { 1, 5, 1, 3, 5 }, //
 				new double[] { 2, 4, 9 }));
 		// 不经精确匹配
-		println("correspondfm", correspondfm(new double[] { 1, 5, 1, 3, 5, 1, 3, 1 }, //
+		println("不经精确匹配correspondfm", correspondfm(new double[] { 1, 5, 1, 3, 5, 1, 3, 1 }, //
 				new double[] { 2, 4, 8, 8, 9 }));
 	}
 }

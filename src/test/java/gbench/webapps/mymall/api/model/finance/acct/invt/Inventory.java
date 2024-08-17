@@ -172,15 +172,15 @@ public class Inventory extends AbstractFinBase<Inventory> {
 	 */
 	public static List<IRecord> corresponds(final double[] checkins, final double[] checkouts) {
 		final Function<double[], double[]> cumsum = origin -> { // 帕累托累计和函数
-			double[] data = Arrays.copyOf(origin, origin.length); // 复制原来的数量
+			final var data = Arrays.copyOf(origin, origin.length); // 复制原来的数量
 			for (int i = 1; i < data.length; i++) { // 逐次向后累计递增
 				data[i] += data[i - 1]; // 累计递增
 			} // for 逐次向后累计递增
 			return data; // 累计和
 		}; // 帕累托累计和函数
-		final List<IRecord> lines = new LinkedList<IRecord>();
-		final double[] incums = cumsum.apply(checkins); // 帕累托累计和-入库单累计和
-		final double[] outcums = cumsum.apply(checkouts); // 帕累托累计和-出库单累计和
+		final var lines = new LinkedList<IRecord>(); // 结果数据行
+		final var incums = cumsum.apply(checkins); // 帕累托累计和-入库单累计和
+		final var outcums = cumsum.apply(checkouts); // 帕累托累计和-出库单累计和
 		int i = 0; // 收货单/入库单索引
 		int j = 0; // 发货单/出库单所索引
 		for (; j < outcums.length; j++) { // 逐个发货单进行匹配,发货单索引逐次向后递增
@@ -207,7 +207,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 			final var pos = i; // 常量当前库存的读写位置
 			if (i >= incums.length) { // 库存不足, 需要考虑i==0也就是checkins中没有数据的情况
 				provides_push.accept(pos, k -> k == i0 ? initial : k >= incums.length ? -1 : checkins[k]);
-				final var lacks_total = i <= 0 ? outcums[j] : (outcums[j] - incums[i - 1]); // 缺货累计,整个发货批次的累计缺货数量
+				final var lacks_total = outcums[j] - (i <= 0 ? 0 : incums[i - 1]); // 缺货累计,整个发货批次的累计缺货数量
 				final var lacks = Math.min(checkouts[j], lacks_total); // 当前发货单中的缺货数量,系统没有二外的入库单来提供发货产品了。
 				final var error = String.format("空间不足,缺少:%f", lacks_total); //
 				lines.add(line.derive("lacks", lacks, "lacks_total", lacks_total, "eror", error));
