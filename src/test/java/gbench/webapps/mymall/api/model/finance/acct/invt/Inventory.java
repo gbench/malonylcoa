@@ -203,7 +203,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 						provides.add(iqrb.get(k, quantity)); // 为checkouts[j]匹配checkins[k]的发货数量
 					} // if
 				} // for
-			}; // provides_push
+			}; // calculate_provides
 			final var pos = i; // 常量当前库存的读写位置
 			if (i >= incums.length) { // 库存不足, 需要考虑i==0也就是checkins中没有数据的情况
 				calculate_provides.accept(pos, k -> k == i0 ? initial : k >= incums.length ? -1 : checkins[k]);
