@@ -80,7 +80,7 @@ public class TraderTest {
 	@Test
 	public void bar() {
 		// 空库存，空出库单
-		println("空库存 correspondfm", correspondfm(new double[] {}, //
+		println("空库存，空出库单 correspondfm", correspondfm(new double[] {}, //
 				new double[] {}));
 		// 空库存
 		println("空库存 correspondfm", correspondfm(new double[] {}, //
