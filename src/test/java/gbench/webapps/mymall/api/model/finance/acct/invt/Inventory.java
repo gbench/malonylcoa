@@ -181,22 +181,22 @@ public class Inventory extends AbstractFinBase<Inventory> {
 		final var lines = new LinkedList<IRecord>(); // 结果数据行
 		final var incums = cumsum.apply(checkins); // 帕累托累计和-入库单累计和
 		final var outcums = cumsum.apply(checkouts); // 帕累托累计和-出库单累计和
-		int i = 0; // 收货单/入库单索引
-		int j = 0; // 发货单/出库单所索引
-		for (; j < outcums.length; j++) { // 逐个发货单进行匹配,发货单索引逐次向后递增
+		int i = 0; // 收货单/入库单索引：读取索引
+		int j = 0; // 发货单/出库单所索引：读取索引
+		for (; j < outcums.length; j++) { // 逐个发货单进行匹配,发货单读取索引逐次向后递增
 			final var provides = new LinkedList<IRecord>(); // 由入库单向发货单提供的发货方案项目明细。[{index:入库单索引,quantity:checkins[index]中需要发货的数量}]
-			final var i0 = i; // 记录初始位置
+			final var i0 = i; // 记录收货单索引的初始位置
 			while (i < incums.length && incums[i] < outcums[j]) { // 直到拓展到收货单的数量累计和大于发货单的数量累计和
-				i++; // 继续拓展到下一个收货单
+				i++; // 继续拓展到下一个收货单读取索引
 			} // 当收货单索引拓展到收货单最大数量后就不再增加了
-			final var initial = i0 >= incums.length // 发货单索引是否有效
-					? -1 // 发货单索引非法,用-1标识非法数量
+			final var initial = i0 >= incums.length // 收货单索引是否有效
+					? -1 // 收货单索引i0非法,用-1标识非法数量
 					: j == 0 // 是否是首个发货单
 							? Math.min(checkins[0], checkouts[0]) // 首个：收货单数量与发货单数量中的较小者
 							: Math.min(incums[i0] - outcums[j - 1], checkouts[j]); // 非首个：初始的发货单所对应的收货单中的数目上次发货剩余与本次发货需求之间的较小者
 			final var line = REC("index", j, "requires", checkouts[j], "provides", provides); // 发货方案,index是checkouts的索引，requires是checkouts的需求熟练
 			final var iqrb = IRecord.rb("index,quantity"); // checkin的对应项构建器:{index,quantity}的结构
-			final BiConsumer<Integer, Function<Integer, Double>> provides_push = (pos, qty) -> { // 登记到可库存发货的商品集合。pos:读写位置,qty:数量计算器
+			final BiConsumer<Integer, Function<Integer, Double>> calculate_provides = (pos, qty) -> { // 登记到可库存发货的商品集合。pos:读写位置,qty:数量计算器
 				for (int k = i0; k <= pos; k++) { // 遍历checkins从[i0,到pos]这个范围的入库单都需要为checkouts[j]提供发货产品
 					final var quantity = qty.apply(k); // 根据索引提取对应checkin入库单的发货数量
 					if (quantity > 0) { // 初始数量大于0时才给予写入
@@ -206,7 +206,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 			}; // provides_push
 			final var pos = i; // 常量当前库存的读写位置
 			if (i >= incums.length) { // 库存不足, 需要考虑i==0也就是checkins中没有数据的情况
-				provides_push.accept(pos, k -> k == i0 ? initial : k >= incums.length ? -1 : checkins[k]);
+				calculate_provides.accept(pos, k -> k == i0 ? initial : k >= incums.length ? -1 : checkins[k]);
 				final var lacks_total = outcums[j] - (i <= 0 ? 0 : incums[i - 1]); // 缺货累计,整个发货批次的累计缺货数量
 				final var lacks = Math.min(checkouts[j], lacks_total); // 当前发货单中的缺货数量,系统没有二外的入库单来提供发货产品了。
 				final var error = String.format("空间不足,缺少:%f", lacks_total); //
@@ -215,7 +215,7 @@ public class Inventory extends AbstractFinBase<Inventory> {
 			} else {// 库存足够
 				final var unused = incums[i] - outcums[j]; // 多余部分未使用的数量
 				final var used = checkins[i] - unused; // 实际使用的部分,最终数量
-				provides_push.accept(pos, k -> k == i0 ? initial : k == pos ? used : checkins[k]);
+				calculate_provides.accept(pos, k -> k == i0 ? initial : k == pos ? used : checkins[k]);
 				lines.add(line);
 			} // if i >= incums.length
 		} // for j 逐个发货单进行匹配,发货单索引逐次向后递增
