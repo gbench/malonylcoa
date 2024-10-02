@@ -273,8 +273,17 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 *
 	 * @return 节点路径
 	 */
-	public Stream<Node<T>> getPathNodes() {
-		return Node.getPathNodes(this);
+	public Stream<Node<T>> getPathNodeS() {
+		return Node.getPathNodeS(this);
+	}
+
+	/**
+	 * 获取节点路径
+	 *
+	 * @return 节点路径
+	 */
+	public List<Node<T>> getPathNodes() {
+		return Node.getPathNodeS(this).collect(Collectors.toList());
 	}
 
 	/**
@@ -284,7 +293,7 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 * @return 节点路径的编号
 	 */
 	public String getPathCode(int start) {
-		return this.getPathNodes().map(e -> String.valueOf(e.getIndex() + start)).collect(Collectors.joining("."));
+		return this.getPathNodeS().map(e -> String.valueOf(e.getIndex() + start)).collect(Collectors.joining("."));
 	}
 
 	/**
@@ -312,8 +321,17 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 *
 	 * @return 节点路径
 	 */
-	public Stream<Node<T>> getParentPathNodes() {
+	public List<Node<T>> getParentPathNodes() {
 		return Node.getPathNodes(this.getParent());
+	}
+
+	/**
+	 * 获取父节点 节点路径
+	 *
+	 * @return 节点路径
+	 */
+	public Stream<Node<T>> getParentPathNodeS() {
+		return Node.getPathNodeS(this.getParent());
 	}
 
 	/**
@@ -553,6 +571,16 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 */
 	public LinkedList<Node<T>> childrenL() {
 		return this.getChildren();
+	}
+
+	/**
+	 * getChildren别名 <br>
+	 * 获取所有的子节点信息记录
+	 *
+	 * @return 所有子节点包括空节点
+	 */
+	public Stream<Node<T>> childrenS() {
+		return this.getChildren().stream();
 	}
 
 	/**
@@ -1199,12 +1227,23 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 * @param node       节点对象
 	 * @return 节点路径
 	 */
-	public static <X> Stream<Node<X>> getPathNodes(final Node<X> node) {
+	public static <X> Stream<Node<X>> getPathNodeS(final Node<X> node) {
 		if (node == null) {
 			return Stream.of();
 		} else {
-			return Stream.concat(Node.getPathNodes(node.getParent()), Stream.of(node));
+			return Stream.concat(Node.getPathNodeS(node.getParent()), Stream.of(node));
 		}
+	}
+
+	/**
+	 * 获取节点路径
+	 *
+	 * @param <X>节点的值的类型
+	 * @param node       节点对象
+	 * @return 节点路径
+	 */
+	public static <X> List<Node<X>> getPathNodes(final Node<X> node) {
+		return getPathNodeS(node).collect(Collectors.toList());
 	}
 
 	/**
