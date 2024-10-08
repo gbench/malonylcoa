@@ -64,6 +64,7 @@ public class YuhuanAnalyzer extends Analyzer {
 	 *
 	 * @param fieldName 组件对于使用同一个分词器进行分词，即 重用策略ReuseStrategy 具有标记意义。
 	 */
+	@SuppressWarnings("resource")
 	@Override
 	protected TokenStreamComponents createComponents(final String fieldName) {
 

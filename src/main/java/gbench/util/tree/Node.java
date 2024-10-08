@@ -97,6 +97,19 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	}
 
 	/**
+	 * 构造函数 带有父节点
+	 * 
+	 * @param parent 父节点
+	 * @param value  节点的值
+	 */
+	public Node(final Node<T> parent, final T value) {
+		this.value = value;
+		if (parent != null) {
+			parent.addChild(this);
+		}
+	}
+
+	/**
 	 * 克隆函数
 	 */
 	@Override
@@ -342,6 +355,19 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 */
 	public String getPath(final Node<T> node) {
 		return Node.getPath(node, null);
+	}
+
+	/**
+	 * 根据节点路径查询节点
+	 * 
+	 * 节点结构 a/b/c <br>
+	 * node_a.getNode([a,b,c]) 返回 node_c <br>
+	 * 
+	 * @param path 节点路径包括当前节点名称 node_a.getNode([a,b,c]) 返回node_c
+	 * @return 根据节点路径查询节点信息
+	 */
+	public Optional<Node<T>> getNodeOpt(final String path) {
+		return Optional.ofNullable(this.getNode(path));
 	}
 
 	/**
@@ -644,11 +670,73 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	/**
 	 * 提取第i个索引位置的节点
 	 *
+	 * @param i 子节点索引 从0开始,当节点索引i超过节点数量（包含）时候，返回null
+	 * @return 第i个子节点
+	 */
+	public Optional<Node<T>> getChildOpt(final int i) {
+		return Optional.ofNullable(this.getChild(i));
+	}
+
+	/**
+	 * 提取子节点
+	 *
+	 * @param c   孩子节点
+	 * @param cmp T 类型的比较器
+	 * @return 是否含有指定的节点数据
+	 */
+	public Optional<Node<T>> getChildOpt(final T t, final Comparator<T> cmp) {
+		return this.childrenS().filter(e -> cmp.compare(e.getValue(), t) == 0).findFirst();
+	}
+
+	/**
+	 * 提取 T t
+	 *
+	 * @param t 子节点参考值
+	 * @return 是否含有指定的节点数据
+	 */
+	public Optional<Node<T>> getChildOpt(final T t) {
+		@SuppressWarnings("unchecked")
+		final Predicate<T> test = p -> {
+			var flag = false;
+			try { // 强制转换成可比较类型
+				flag = Comparator.comparing(e -> (Comparable<Object>) e).compare(p, t) == 0;
+			} catch (Exception e) { // 类型转换失败
+				flag = (p == t); // 进行引用比较
+				// do nothing
+			}
+			return flag;
+		};
+		return this.childrenS().filter(e -> test.test(e.getValue())).findFirst();
+	}
+
+	/**
+	 * 提取第i个索引位置的节点
+	 *
 	 * @param p 节点判定
 	 * @return 第i个子节点
 	 */
 	public Node<T> getChild(final Predicate<Node<T>> p) {
 		return this.children.stream().filter(p).findAny().orElse(null);
+	}
+
+	/**
+	 * 提取 t 值子节点
+	 *
+	 * @param t 子节点参考值
+	 * @return 是否含有指定的节点数据
+	 */
+	public Optional<Node<T>> childOpt(final T t) {
+		return this.getChildOpt(t);
+	}
+
+	/**
+	 * 提取 t 值子节点
+	 *
+	 * @param t 子节点参考值
+	 * @return 是否含有指定的节点数据
+	 */
+	public Node<T> child(final T t) {
+		return this.getChildOpt(t).orElse(null);
 	}
 
 	/**
@@ -777,6 +865,27 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 */
 	public boolean hasChild(final Node<T> c) {
 		return this.getChildren().contains(c);
+	}
+
+	/**
+	 * 是否包含由孩子节点
+	 *
+	 * @param c   孩子节点
+	 * @param cmp T 类型的比较器
+	 * @return 是否含有指定的节点数据
+	 */
+	public boolean hasChild(final T t, final Comparator<T> cmp) {
+		return this.childrenS().filter(e -> cmp.compare(e.getValue(), t) == 0).findFirst().isPresent();
+	}
+
+	/**
+	 * 是否包含由孩子节点
+	 *
+	 * @param c 孩子节点
+	 * @return 是否含有指定的节点数据
+	 */
+	public boolean hasChild(final String name) {
+		return this.getNodeOpt(name).isPresent();
 	}
 
 	/**
@@ -1379,7 +1488,8 @@ public class Node<T> implements INodeWriter<Node<T>> {
 		if (name.equals(node.getName())) {
 			return node;
 		} else {
-			final Optional<Node<T>> c = node.children.stream().filter(e -> e.getName().equals(name)).findFirst();
+			final Optional<Node<T>> c = node.children.stream() //
+					.filter(e -> Objects.equals(e.getName(), name)).findFirst();
 			if (c.isPresent() && rest != null)
 				return Node.getNode(c.get(), rest);// 从子节点重继续寻找
 		}
@@ -1507,11 +1617,7 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 * @return 元素节点
 	 */
 	public static <T> Node<T> of(final Node<T> parent, final T t) {
-		final Node<T> node = new Node<T>(t);
-		if (parent != null) {
-			parent.addChild(node);
-		}
-		return node;
+		return new Node<>(parent, t);
 	}
 
 	private T value;// 节点的信息值

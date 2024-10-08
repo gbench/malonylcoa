@@ -1894,7 +1894,9 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
-	 * 生成一个 同结构的对象,健名使用新值
+	 * 子集别名:生成一个 同结构的对象,健名使用新值 <br>
+	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
+	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3}
 	 *
 	 * @param <T>        占位符类型：name1类型，
 	 * @param <U>        占位符类型：alias_name1 类型
@@ -1907,8 +1909,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
-	 * 生成一个 同结构的对象,健名使用新值
-	 *
+	 * 子集别名:生成一个 同结构的对象,健名使用新值 <br>
+	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
+	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3}
+	 * 
 	 * @param kvps 健名映射序列, name1,alias_name1,name2,alias_name2 ...
 	 * @return 生成一个 同结构的对象,健名使用新值 {alias_name1,alias_name2}
 	 */
@@ -1917,7 +1921,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
-	 * 生成一个 同结构的对象,健名使用新值
+	 * 子集别名:生成一个 同结构的对象,健名使用新值 <br>
+	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
+	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3}
+	 * 
 	 *
 	 * @param kvps 健名映射序列, name1,alias_name1,name2,alias_name2 ... , 键名间采用英文 逗号',',
 	 *             分号';'分隔
@@ -1925,6 +1932,54 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	default IRecord alias(final String kvps) {
 		return this.alias((Object[]) kvps.split("[,;]+"));
+	}
+
+	/**
+	 * 全集别名-kvp键名顺序:保持kvps记录键名顺序的全序列键名的别名构建 <br>
+	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
+	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3,b:2,d:4}
+	 *
+	 * @param kvps 健名映射序列, name1,alias_name1,name2,alias_name2 ... , 键名间采用英文 逗号',',
+	 *             分号';'分隔
+	 * @return 生成一个 同结构的对象,健名使用新值 {alias_name1,alias_name2}
+	 */
+	default IRecord alias2(final String kvps) {
+		final var clone = this.duplicate(); // 克隆体
+		final var rec = REC(); // 返回值新纪录
+		final var ps = kvps.split("[,;]+");
+
+		for (int i = 0; i < ps.length; i += 2) {
+			final var k = ps[i];
+			final var _k = ps[i + 1];
+			if (clone.has(k)) { //
+				rec.add(_k, clone.get(k)); // 在新记录中增加改名后的变量值
+				clone.remove(k); // 从克隆体 剔除原来的k
+			}
+		}
+
+		return rec.add(clone);
+	}
+
+	/**
+	 * 全集别名-源键名顺序:保持源记录键名顺序的全序列键名的别名构建 <br>
+	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
+	 * rec.alias("a,A,c,C"); 返回 {A:1,b:2,C:3,d:4}
+	 *
+	 * @param kvps 健名映射序列, name1,alias_name1,name2,alias_name2 ... , 键名间采用英文 逗号',',
+	 *             分号';'分隔
+	 * @return 生成一个 同结构的对象,健名使用新值 {alias_name1,alias_name2}
+	 */
+	default IRecord alias3(final String kvps) {
+		final var ks = new LinkedHashMap<String, String>();
+		final var ps = kvps.split("[,;]+");
+		this.keys().forEach(k -> ks.put(k, k));
+		for (int i = 0; i < ps.length; i += 2) {
+			final var k = ps[i]; // 旧名称
+			final var _k = ps[i + 1]; // 新名称
+			ks.put(k, _k);
+		}
+		final var _ps = ks.entrySet().stream().flatMap(e -> Stream.of(e.getKey(), e.getValue())).toArray();
+		return this.alias(_ps);
 	}
 
 	/**
@@ -1937,6 +1992,26 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	@SuppressWarnings("unchecked")
 	default <T> T mutate(final Function<IRecord, T> mapper) {
 		return mapper == null ? (T) this : mapper.apply(this);
+	}
+
+	/**
+	 * 是否 包含收键名 k
+	 * 
+	 * @param k 键名
+	 * @return 是否 包含收键名 k
+	 */
+	default boolean has(final String k) {
+		return this.keys().contains(k);
+	}
+
+	/**
+	 * 是否包含键名索引 idx
+	 * 
+	 * @param idx 键名索引从0开始
+	 * @return 是否包含键名索引 idx
+	 */
+	default boolean has(final int idx) {
+		return this.keys().size() > idx;
 	}
 
 	/**
