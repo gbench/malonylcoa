@@ -694,7 +694,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
-	 * 把key列转换成逻辑值
+	 * 把key列转换成逻辑值<br>
+	 * 对于数字或是数字类型的字符串会转换为整数而后与0进行比较，非0为true，0为false
 	 *
 	 * @param key 键名
 	 * @return 布尔类型
@@ -705,13 +706,22 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 
 		if (o instanceof Number) {
 			b = ((Number) o).intValue() != 0;
-		} else {
-			try {
-				b = Boolean.parseBoolean(o + "");
-			} catch (Exception e) {
-				// do nothing
-			} // try
-		} // if
+		} else if (o != null) {
+			b = Optional.ofNullable(o) //
+					.map(IRecord.obj2int()) //
+					.map(e -> !e.equals(0)) //
+					.orElse(false);
+			if (!b) {
+				try {
+					b = Boolean.parseBoolean(String.valueOf(o));
+				} catch (Exception e) {
+					// do nothing
+				} // try
+			} // if
+		} else { // o is null
+			b = false;
+		}
+
 		return b;
 	}
 
@@ -3576,12 +3586,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 			} // if
 
 			final int n = oo.length;
-			for (int i = 0; n > 0 && i < size; i++) {
-				final String key = keys.get(i);
-				final Object value = oo[i % n];
-				data.put(key, value == null ? "" : value); // key 默认为 ""
-			} // for
-
 			for (int i = 0; n > 0 && i < size; i++) {
 				final String key = keys.get(i);
 				final Object value = oo[i % n];
