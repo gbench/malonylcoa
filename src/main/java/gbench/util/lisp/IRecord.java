@@ -1896,7 +1896,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 子集别名:生成一个 同结构的对象,健名使用新值 <br>
 	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
-	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3}
+	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3} <br>
+	 * rec.alias("a,A,c,C,e,E"); 返回 {A:1,C:3}
 	 *
 	 * @param <T>        占位符类型：name1类型，
 	 * @param <U>        占位符类型：alias_name1 类型
@@ -1904,8 +1905,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return 生成一个 同结构的对象,健名使用新值 {alias_name1,alias_name2}
 	 */
 	default <T, U> IRecord alias(final Iterable<Tuple2<T, U>> name_pairs) {
-		return StreamSupport.stream(name_pairs.spliterator(), false).map(e -> Tuple2.of(e._2 + "", this.get(e._1 + "")))
-				.collect(IRecord.recclc());
+		return StreamSupport.stream(name_pairs.spliterator(), false) //
+				.map(e -> Optional.ofNullable(this.get(e._1 + "")) //
+						.map(p -> Tuple2.of(e._2 + "", p)).orElse(null))
+				.filter(Objects::nonNull).collect(IRecord.recclc());
 	}
 
 	/**
@@ -1923,8 +1926,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 子集别名:生成一个 同结构的对象,健名使用新值 <br>
 	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
-	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3}
-	 * 
+	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3} <br>
 	 *
 	 * @param kvps 健名映射序列, name1,alias_name1,name2,alias_name2 ... , 键名间采用英文 逗号',',
 	 *             分号';'分隔
@@ -1937,7 +1939,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 全集别名-kvp键名顺序:保持kvps记录键名顺序的全序列键名的别名构建 <br>
 	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
-	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3,b:2,d:4}
+	 * rec.alias("a,A,c,C"); 返回 {A:1,C:3,b:2,d:4} <br>
+	 * rec.alias("a,A,c,C,e,E"); 返回 {A:1,b:2,C:3,d:4} <br>
 	 *
 	 * @param kvps 健名映射序列, name1,alias_name1,name2,alias_name2 ... , 键名间采用英文 逗号',',
 	 *             分号';'分隔
@@ -1963,7 +1966,8 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 全集别名-源键名顺序:保持源记录键名顺序的全序列键名的别名构建 <br>
 	 * 例如：对象 rec={a:1,b:2,c:3,d:4} <br>
-	 * rec.alias("a,A,c,C"); 返回 {A:1,b:2,C:3,d:4}
+	 * rec.alias("a,A,c,C"); 返回 {A:1,b:2,C:3,d:4} <br>
+	 * rec.alias("a,A,c,C,e,E"); 返回 {A:1,b:2,C:3,d:4} <br>
 	 *
 	 * @param kvps 健名映射序列, name1,alias_name1,name2,alias_name2 ... , 键名间采用英文 逗号',',
 	 *             分号';'分隔
@@ -1976,7 +1980,9 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 		for (int i = 0; i < ps.length; i += 2) {
 			final var k = ps[i]; // 旧名称
 			final var _k = ps[i + 1]; // 新名称
-			ks.put(k, _k);
+			if (this.has(k)) {
+				ks.put(k, _k);
+			}
 		}
 		final var _ps = ks.entrySet().stream().flatMap(e -> Stream.of(e.getKey(), e.getValue())).toArray();
 		return this.alias(_ps);
