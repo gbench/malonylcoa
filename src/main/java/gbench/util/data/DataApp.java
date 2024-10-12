@@ -64,6 +64,15 @@ public class DataApp {
 	}
 
 	/**
+	 * 返回数据源
+	 * 
+	 * @return DataSource
+	 */
+	public DataSource ds() {
+		return this.dataSource;
+	}
+
+	/**
 	 * 获取数据库连接
 	 *
 	 * @return 数据库连接

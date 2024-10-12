@@ -1,11 +1,18 @@
 package gbench.util.jdbc;
 
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.logging.Logger;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
+
+import javax.sql.DataSource;
 
 import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.annotation.JdbcExecute;
@@ -215,6 +222,36 @@ public interface IMySQL {
 	}
 
 	/**
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
+	 * @param params     sharp变量的占位符参数
+	 * @return Optional&lt;IRecord&gt;
+	 */
+	default Optional<IRecord> sql2maybe(final String sqlpattern, final IRecord params) {
+		return this.sqlqueryS(sqlpattern, params).findAny();
+	}
+
+	/**
+	 * 调用SqlPatternPreprocessor sqlpattern SqlPatternPreprocessor &amp;
+	 * sqlpattern的说明 SqlPatternPreprocessor 会自动对sqlpattern中的命名参数进行替换： <br>
+	 * sqlpattern: select * from user where name=#name <br>
+	 * params:REC("name","张三") <br>
+	 * 返回值:select * from user where name="张三" <br>
+	 * 
+	 * @param sqlpattern 一个#开头的SQL语句模板语句变量。或是含有#变量的sql语句模板。
+	 * @param params     sharp变量的占位符参数
+	 * @return Optional&lt;IRecord&gt;
+	 */
+	default Optional<IRecord> sql2maybe(final String sqlpattern) {
+		return this.sql2maybe(sqlpattern, null);
+	}
+
+	/**
 	 * 依据主键查询
 	 * 
 	 * @param table 表名
@@ -271,5 +308,64 @@ public interface IMySQL {
 		attrs.put(Collector.class, DFrame.dfmclc); // 增加值类型
 
 		return jdbc.withTransaction(sess -> action.accept(sess), attrs);
+	}
+
+	/**
+	 * 返回IMySQL的数据数据源
+	 * 
+	 * @return DataSource
+	 */
+	default DataSource ds() {
+		final var jdbc = this.jdbc(); // 提取jdbc对象
+
+		/**
+		 * 构造匿名数据源
+		 */
+		return new DataSource() {
+			@Override
+			public <T> T unwrap(final Class<T> iface) throws SQLException {
+				return null;
+			}
+
+			@Override
+			public boolean isWrapperFor(final Class<?> iface) throws SQLException {
+				return false;
+			}
+
+			@Override
+			public Connection getConnection() throws SQLException {
+				return jdbc.getConnection();
+			}
+
+			@Override
+			public Connection getConnection(final String username, final String password) throws SQLException {
+				return jdbc.getConnection();
+			}
+
+			@Override
+			public PrintWriter getLogWriter() throws SQLException {
+				return null;
+			}
+
+			@Override
+			public void setLogWriter(final PrintWriter out) throws SQLException {
+				// do nothing
+			}
+
+			@Override
+			public void setLoginTimeout(final int seconds) throws SQLException {
+				// do nothing
+			}
+
+			@Override
+			public int getLoginTimeout() throws SQLException {
+				return 0;
+			}
+
+			@Override
+			public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+				return null;
+			}
+		};
 	}
 }
