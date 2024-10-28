@@ -246,7 +246,9 @@ public class DFrame implements Iterable<IRecord> {
 	 * @return 行数据流
 	 */
 	public Optional<IRecord> rowOpt(final int idx) {
-		return Optional.ofNullable(this.rowsData == null || this.rowsData.length < 1 ? null : this.rowsData[idx]);
+		return Optional.ofNullable(this.rowsData == null || this.rowsData.length < 1 || idx >= this.rowsData.length //
+				? null // 空值
+				: this.rowsData[idx]);
 	}
 
 	/**
@@ -258,7 +260,7 @@ public class DFrame implements Iterable<IRecord> {
 	 * @return 行数据流
 	 */
 	public <T> Optional<List<T>> rowOpt(final int idx, final Function<Tuple2<String, Object>, T> mapper) {
-		return Optional.ofNullable(this.rowsData[idx]).map(e -> e.tupleS().map(mapper).collect(Collectors.toList()));
+		return this.rowOpt(idx).map(e -> e.tupleS().map(mapper).collect(Collectors.toList()));
 	}
 
 	/**
