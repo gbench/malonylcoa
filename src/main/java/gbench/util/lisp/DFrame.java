@@ -37,16 +37,16 @@ public class DFrame implements Iterable<IRecord> {
 	 * @param data 源数据
 	 */
 	public DFrame(final Iterable<IRecord> data) {
-		this.rowsData = StreamSupport.stream(data.spliterator(), false).toArray(IRecord[]::new);
+		this(StreamSupport.stream(data.spliterator(), false).toArray(IRecord[]::new));
 	}
 
 	/**
-	 * 构造函数
+	 * 基础构造函数
 	 * 
 	 * @param data 源数据
 	 */
 	public DFrame(final IRecord[] data) {
-		this.rowsData = data;
+		this.rowsData = Optional.ofNullable(data).orElse(new IRecord[] {});
 	}
 
 	/**
@@ -555,6 +555,16 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 头部元素
 	 * 
+	 * @param n 头数据长度
+	 * @return 头数据的元素的流
+	 */
+	public Optional<IRecord> headOpt() {
+		return Optional.ofNullable(this.head());
+	}
+
+	/**
+	 * 头部元素
+	 * 
 	 * @return IRecord
 	 */
 	public IRecord head() {
@@ -598,6 +608,27 @@ public class DFrame implements Iterable<IRecord> {
 			}
 			return aa.stream();
 		}).orElse(Stream.empty());
+	}
+
+	/**
+	 * 最后一个元素
+	 * 
+	 * @param n 头数据长度
+	 * @return 头数据的元素的流
+	 */
+	public IRecord last() {
+		final IRecord[] dd = this.rowsData;
+		return dd.length > 0 ? dd[dd.length - 1] : null;
+	}
+
+	/**
+	 * 最后一个元素
+	 * 
+	 * @param n 头数据长度
+	 * @return 头数据的元素的流
+	 */
+	public Optional<IRecord> lastOpt() {
+		return Optional.ofNullable(this.last());
 	}
 
 	/**
