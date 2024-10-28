@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -602,7 +603,7 @@ public class DFrame implements Iterable<IRecord> {
 		final IRecord[] dd = this.rowsData;
 		final int sz = dd.length;
 		return Optional.ofNullable(dd.length > 1 ? Arrays.copyOfRange(dd, sz - n, dd.length) : null).map(lines -> {
-			final ArrayList<IRecord> aa = new ArrayList<IRecord>();
+			final CopyOnWriteArrayList<IRecord> aa = new CopyOnWriteArrayList<IRecord>();
 			for (final IRecord line : lines) {
 				aa.add(line);
 			}
@@ -614,7 +615,7 @@ public class DFrame implements Iterable<IRecord> {
 	 * 最后一个元素
 	 * 
 	 * @param n 头数据长度
-	 * @return 头数据的元素的流
+	 * @return 最后一个元素
 	 */
 	public IRecord last() {
 		final IRecord[] dd = this.rowsData;
@@ -624,8 +625,7 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 最后一个元素
 	 * 
-	 * @param n 头数据长度
-	 * @return 头数据的元素的流
+	 * @return 最后一个元素
 	 */
 	public Optional<IRecord> lastOpt() {
 		return Optional.ofNullable(this.last());
