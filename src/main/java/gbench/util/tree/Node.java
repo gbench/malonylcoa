@@ -1102,6 +1102,17 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	}
 
 	/**
+	 * this.attrSet("value", value) 的简写
+	 * 
+	 * @param value 值对象
+	 * @return Node 对象本身
+	 */
+	public Node<T> attrval(final Object value) {
+		this.attrSet("value", value);
+		return this;
+	}
+
+	/**
 	 * this.getAttribute("value")的结果变换
 	 * 
 	 * @param <U>    mapper 参数类型

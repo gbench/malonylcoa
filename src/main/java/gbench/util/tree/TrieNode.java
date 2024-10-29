@@ -949,6 +949,17 @@ public class TrieNode<T> implements INodeWriter<TrieNode<T>> {
 	}
 
 	/**
+	 * this.attrSet("value", value) 的简写
+	 * 
+	 * @param value 值对象
+	 * @return TrieNode 对象本身
+	 */
+	public TrieNode<T> attrval(final Object value) {
+		this.attrSet("value", value);
+		return this;
+	}
+
+	/**
 	 * this.getAttribute("value")的结果变换
 	 * 
 	 * @param <U>    mapper 参数类型
