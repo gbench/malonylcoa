@@ -1643,7 +1643,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
-	 * 把 IRecord 值转换成 Object 一维数组
+	 * 把IRecord的值系列即values转换成一维的Object对象数组
 	 *
 	 * @return Object 一维数组
 	 */
@@ -1652,7 +1652,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
-	 * 把 IRecord 值转换成 数组结构
+	 * 把IRecord的值系列即values转换成数组结构
 	 *
 	 * @param <X>    mapper 参数类型
 	 * @param <T>    mapper 值类型

@@ -863,26 +863,31 @@ public class SimpleExcel implements AutoCloseable {
 		if (rangedef == null) {
 			println("无法获得rangedef数据,rangedef 为空数据");
 			return null;
-		}
+		} else {
+			final DataMatrix<String> strmx = this.evaluate(sht, rangedef.x0(), rangedef.y0(), rangedef.x1(),
+					rangedef.y1(), keys, e -> { // 数字类型 的值转换
+						if (e instanceof Number) { // 数值类型
+							final Double dbl = ((Number) e).doubleValue();
+							final Long lng = ((Number) e).longValue();
 
-		final DataMatrix<String> cc = this.evaluate(sht, rangedef.x0(), rangedef.y0(), rangedef.x1(), rangedef.y1(),
-				keys, e -> { // 数字类型 的值转换
-					if (e instanceof Number) { // 数值类型
-						final Double dbl = ((Number) e).doubleValue();
-						final Long lng = ((Number) e).longValue();
-						if (Math.abs(dbl - lng) < SimpleExcel.EPSILON) // 浮点数与整形误差小于 误差容忍限度 EPSILON ，采用 整数表述
-							return lng + ""; // 长整形
-						else
-							return dbl + ""; // 浮点数
-					} else { // 其他类型
-						return Optional.ofNullable(e).map(Object::toString).orElse(null);
-					} // if
-				});
-		if (cc == null)
-			return null;
-		final String cells[][] = cc.data();
-		final List<String> headers = cc.keys();
-		return new StrMatrix(cells, headers);
+							if (Math.abs(dbl - lng) < SimpleExcel.EPSILON) // 浮点数与整形误差小于 误差容忍限度 EPSILON ，采用 整数表述
+								return String.valueOf(lng); // 长整形
+							else
+								return String.valueOf(dbl); // 浮点数
+						} else { // 其他类型
+							return Optional.ofNullable(e).map(Object::toString).orElse(null);
+						} // if
+					}); // 计算数据集合
+
+			if (strmx == null) {
+				return null;
+			} else {
+				final String cells[][] = strmx.data();
+				final List<String> headers = strmx.keys();
+
+				return new StrMatrix(cells, headers);
+			} // if
+		} // if
 	}
 
 	/**
@@ -893,7 +898,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return 数据区域的数据内容
 	 */
 	public StrMatrix range(final Sheet sht, final RangeDef rangedef) {
-		return range(sht, rangedef, null);
+		return this.range(sht, rangedef, null);
 	}
 
 	/**
@@ -904,13 +909,13 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return 获得指定表单的值
 	 */
 	public StrMatrix range(final int shtid, final String rangeName, final List<String> keys) {
-		Sheet sht = sheet(shtid);// 获得表单名称
+		final Sheet sht = sheet(shtid);// 获得表单名称
 		if (sht == null) {
 			System.out.println("不存在编号为" + shtid + "sheet,不予读取任何数据");
 			return null;
-		} // if
-
-		return range(sht, name2rngdef(rangeName), keys);
+		} else {
+			return this.range(sht, name2rngdef(rangeName), keys);
+		}
 	}
 
 	/**
@@ -919,8 +924,8 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param rangedef 数据区域
 	 * @return 数据区域的数据内容
 	 */
-	public StrMatrix range(RangeDef rangedef) {
-		return range(activesht, rangedef, null);
+	public StrMatrix range(final RangeDef rangedef) {
+		return this.range(activesht, rangedef, null);
 	}
 
 	/**
@@ -931,7 +936,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return 数据区域的数据内容
 	 */
 	public StrMatrix range(final RangeDef rangedef, final List<String> keys) {
-		return range(activesht, rangedef, keys);
+		return this.range(activesht, rangedef, keys);
 	}
 
 	/**
@@ -941,28 +946,23 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return excel 范围数据
 	 */
 	public StrMatrix range(final String name) {
-		return range(name, (List<String>) null);
+		return this.range(name, (List<String>) null);
 	}
 
-	/*
-	 * *
+	/**
+	 * range
 	 * 
 	 * @param name 获得数据区域
-	 * 
 	 * @param keys null,表示数据中包含表头,第一行就是表头
 	 * 
 	 * @return excel 范围数据
 	 */
 	public StrMatrix range(final String name, final String[] keys) {
-		if (keys == null) {
-			return range(name, (List<String>) null);
-		}
-
-		return range(name, Arrays.asList(keys));
+		return this.range(name, Arrays.asList(keys));
 	}
 
 	/**
-	 * s range
+	 * range
 	 * 
 	 * @param name 获得数据区域：range 全名用比如sheet1!A1:B10
 	 * @param keys null,表示数据中包含表头,第一行就是表头
@@ -970,12 +970,12 @@ public class SimpleExcel implements AutoCloseable {
 	 */
 	public StrMatrix range(final String name, final List<String> keys) {
 		if (name.contains("!")) {// 名称中包含有表单名
-			final String ss[] = name.split("!");
-			if (ss.length > 1) {
+			final String ss[] = name.split("!"); // 从name里提取sheet与区域名称
+			if (ss.length > 1) { //
 				final String sheetname = ss[0].trim();
 				final String rangeName = ss[1].trim();
 				// 按表单进行区域rangedef内容的获取
-				return range(sheetname, rangeName, keys);
+				return this.range(sheetname, rangeName, keys);
 			} else {// 名称不包含表单名
 				System.out.println("非法表单名称:" + name);
 				return null;
@@ -983,18 +983,19 @@ public class SimpleExcel implements AutoCloseable {
 		} // if name.contains("!")
 
 		// 设置默认的额sheet数据
-		if (activesht == null)
-			activesht = selectSheet(0);
+		if (activesht == null) {
+			this.activesht = selectSheet(0);
+		}
 
-		return range(name2rngdef(name), keys);
+		return this.range(name2rngdef(name), keys);
 	}
 
 	/**
-	 * 读取sheet :
+	 * 读取sheet
 	 * 
 	 * @param shtname   sheet 名字
 	 * @param rangeName 区域名称
-	 * @return IDFrame
+	 * @return StrMatrix
 	 */
 	public StrMatrix range(final String shtname, final String rangeName, final List<String> keys) {
 		final Integer shtid = this.shtid(shtname);
@@ -1002,7 +1003,33 @@ public class SimpleExcel implements AutoCloseable {
 			System.out.println("不存在表单:\"" + shtname + "\"");
 			return null;
 		}
-		return range(shtid, rangeName, keys);
+		return this.range(shtid, rangeName, keys);
+	}
+
+	/**
+	 * 读取数据区域
+	 * 
+	 * @param name 获得数据区域
+	 * @param keys null,表示数据中包含表头,第一行就是表头
+	 * 
+	 * @return excel 范围数据
+	 */
+	public Optional<StrMatrix> rangeOpt(final String name, final String[] keys) {
+		return Optional.ofNullable(this.range(name, keys));
+	}
+
+	/**
+	 * 读取数据区域
+	 * 
+	 * @param name   获得数据区域
+	 * @param keys   null,表示数据中包含表头,第一行就是表头
+	 * @param mapper StrMatrix 结果变换器
+	 * 
+	 * @return excel 范围数据
+	 */
+	public <T> Optional<T> rangeOpt(final String name, final String[] keys,
+			final Function<? super StrMatrix, T> mapper) {
+		return Optional.ofNullable(this.range(name, keys)).map(mapper);
 	}
 
 	/**
