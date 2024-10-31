@@ -20,11 +20,12 @@ import gbench.util.lisp.IRecord;
  */
 public class FinModValTest {
 
+	@SuppressWarnings("unused")
 	@Test
 	public void foo() {
 		println("datafile", datafile);
 
-		final var excel = SimpleExcel.of(datafile);
+		final var excel = SimpleExcel.of(datafile); // 读入财务数据
 		final var hdname = "INCOME_STATEMENT3!B15:E15"; // 表头区域:head name
 		final var bdname = "INCOME_STATEMENT3!B16:E41"; // 表数据区域: body name
 		final Function<StrMatrix, DFrame> dfmapper = strmx -> strmx.collect(DFrame.dfmclc2); // 转换成DFrame
@@ -32,42 +33,44 @@ public class FinModValTest {
 				.flatMap(strmx -> strmx.headOpt().map(rec -> rec.set(0, "item").toArray(String.class::cast)))
 				.flatMap(keys -> excel.rangeOpt(bdname, keys, dfmapper)).orElse(null);
 		println("INCOME STATEMENT", stmtdfm); // 利润表
-		final var lines = stmtdfm.rowS().collect(Collectors.toMap(e -> e.str(0), e -> e.filterNot(0), (a, b) -> b));
+		final var lines = stmtdfm.rowS().collect(Collectors.toMap(e -> e.str(0), e -> e.filterNot(0), (a, b) -> b)); // 数据行
 		println("-- ".repeat(100));
-		final var NPS = "Net product sales"; //
-		final var NSS = "Net service sales"; //
+		final var NPS = "Net product sales"; // 产品销售收入
+		final var NSS = "Net service sales"; // 服务销售收入
 		println(NPS, lines.get(NPS));
 		println(NSS, lines.get(NSS));
 
 		// 数据行提取操作
-		final Function<String[], Stream<IRecord>> aslineS = keys -> Stream.of(keys).map(lines::get);
-		final Function<String[], IRecord> add = aslineS.andThen(lns -> lns.reduce(IRecord.plus()).get());
-		final Function<String[], IRecord> sub = aslineS.andThen(lns -> lns.reduce(IRecord.subtract()).get());
-		final Function<String[], IRecord> div = aslineS.andThen(lns -> lns.reduce(IRecord.divide()).get());
-		@SuppressWarnings("unused")
-		final Function<String[], IRecord> mul = aslineS.andThen(lns -> lns.reduce(IRecord.multiply()).get());
+		final Function<String[], Stream<IRecord>> gets = keys -> Stream.of(keys).map(lines::get); // 提取指定keys中的数据行
+		final Function<String[], IRecord> add = gets.andThen(lns -> lns.reduce(IRecord.plus()).get()); // 加法
+		final Function<String[], IRecord> sub = gets.andThen(lns -> lns.reduce(IRecord.subtract()).get()); // 减法
+		final Function<String[], IRecord> div = gets.andThen(lns -> lns.reduce(IRecord.divide()).get()); // 除法
+		final Function<String[], IRecord> mul = gets.andThen(lns -> lns.reduce(IRecord.multiply()).get()); // 乘法
 
 		// 计算总收入
-		final var total = add.apply(A(NPS, NSS));
-		final var TOTAL = "TOTAL"; // 总利润
-		lines.put(TOTAL, total); // 加入总利润
-		println(TOTAL, total);
+		final var revenue = add.apply(A(NPS, NSS)); // 计算总销售收入
+		final var REVENUE = "REVENUE"; // 总收入（交税收入）
+		lines.put(REVENUE, revenue); // 写入总收入
+		println(REVENUE, revenue);
 
 		// 毛利润
 		final var COGS = "Cost of Goods Sold"; // 销售成本
 		final var GPROFIT = "Gross Profit"; // 毛利润
-		lines.put(COGS, lines.get("Cost of sales")); // 改名
-		final var gprofit = sub.apply(A(TOTAL, COGS)); // 计算毛利润
+		lines.put(COGS, lines.get("Cost of sales")); // 写入COGS
+		final var gprofit = sub.apply(A(REVENUE, COGS)); // 计算毛利润
 		lines.put(GPROFIT, gprofit); // 毛利润
 		println(GPROFIT, gprofit);
 
 		// 毛利率
 		final var GMARGIN = "Gross Margin"; // 毛利率
-		final var gmargin = div.apply(A(GPROFIT, TOTAL)); // 计算毛利率
-		lines.put(GMARGIN, gmargin);
+		final var gmargin = div.apply(A(GPROFIT, REVENUE)); // 计算毛利率
+		lines.put(GMARGIN, gmargin); // 写入毛利率
 		println(GMARGIN, gmargin);
 	}
 
-	final String datafile = "%s/gitws/malonylcoa/src/test/java/gbench/sandbox/data/pignatoro/files/amazon-2021-10k.xls"
-			.formatted(WS_HOME);
+	/**
+	 * 数据源文件
+	 */
+	final String fileshome = "%s/gitws/malonylcoa/src/test/java/gbench/sandbox/data/pignatoro/files".formatted(WS_HOME); // 数据文件目录
+	final String datafile = "%s/%s".formatted(fileshome, "amazon-2021-10k.xls"); // 财务数据文件
 }
