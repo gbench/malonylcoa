@@ -33,7 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.FSDirectory;
@@ -836,9 +836,9 @@ public abstract class AbstractJdbcSrchEngine {
 				topDocs = searcher.searchAfter(after, query, pageSize, sort);
 			} else {
 				final int hitsThreshold = exactHitsCount ? Integer.MAX_VALUE : PAGEQUEY_DEFAULT_TOTAL_HITS_THRESHOLD; // 是否返回精准的匹配数量
-				final TopScoreDocCollector collector = TopScoreDocCollector.create(pageSize, after, hitsThreshold);
-				searcher.search(query, collector);
-				topDocs = collector.topDocs();
+				final TopScoreDocCollectorManager tsdcm = new TopScoreDocCollectorManager(pageSize, after,
+						hitsThreshold);
+				topDocs = searcher.search(query, tsdcm);
 			}
 
 			// reset total hits for the current query
@@ -883,8 +883,8 @@ public abstract class AbstractJdbcSrchEngine {
 			// proceed to next page
 			currentPage += 1;
 
-			if (totalHits.value == 0 || (totalHits.relation == TotalHits.Relation.EQUAL_TO
-					&& currentPage * pageSize >= totalHits.value)) {
+			if (totalHits.value() == 0 || (totalHits.relation() == TotalHits.Relation.EQUAL_TO
+					&& currentPage * pageSize >= totalHits.value())) {
 				log("No more next search results are available.");
 				return Optional.empty();
 			}

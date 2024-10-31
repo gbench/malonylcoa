@@ -194,7 +194,7 @@ public class SrchController extends AbstractState<SrchController> {
 			this.setState(line, lineKey);// 记录当前检索的请求
 			this.setState(pageQuery, pageQueryKey);
 			this.setState(1l, pageNumKey);// 记录行号
-			this.setState((long) Math.ceil(pageQuery.getTotalHits().value / pageSize) + 1, pageTotalKey);
+			this.setState((long) Math.ceil(pageQuery.getTotalHits().value() / pageSize) + 1, pageTotalKey);
 		} else { // 非初次访问
 			optional = (pageQuery = this.stateOfT(pageQueryKey, PageQuery.class)).nextPageNoThrow();
 			// 获取页面状态
@@ -208,7 +208,7 @@ public class SrchController extends AbstractState<SrchController> {
 				"pagenum", this.stateOfInteger(pageNumKey), // 页号
 				"pagetotal", this.stateOfInteger(pageTotalKey), // 总页数
 				"pagesize", pageSize, // 页面尺寸
-				"size", optional.map(e -> e.getTotalHits().value).orElse(0l), // 中数量
+				"size", optional.map(e -> e.getTotalHits().value()).orElse(0l), // 中数量
 				"result", optional.map(e -> e.hitsStream()).orElse(Stream.of()).toList() // 数据结果
 		);// REC
 	}
@@ -446,7 +446,7 @@ class AbstractState<SELF> {
 	 * 
 	 * @param <T>          返回值类型
 	 * @param defaultValue 默认值 或者 值类型
-	 * @param fields      键名序列
+	 * @param fields       键名序列
 	 * @return 属性的值
 	 */
 	@SuppressWarnings("unchecked")

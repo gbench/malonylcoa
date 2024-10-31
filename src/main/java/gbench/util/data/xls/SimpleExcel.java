@@ -160,7 +160,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param readonly    是否只读
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
-	public SimpleExcel loadWithExtension(InputStream inputStream, String ext, boolean readonly) {
+	public SimpleExcel loadWithExtension(final InputStream inputStream, final String ext, final boolean readonly) {
 		try {
 			final String final_ext = ext == null ? "xlsx" : ext;
 			if (this.workbook != null)
@@ -484,7 +484,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param <T>       元素类型
 	 * @param sht       表单名
 	 * @param rangeName 区域名称
-	 * @param mapper    数据变换操作: o-&gt;t 完成 aij->bij的变换
+	 * @param mapper    数据变换操作: o-&gt;t 完成 aij-&gt;bij的变换
 	 * @return 新数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final Sheet sht, final String rangeName, final Function<Object, T> mapper) {
@@ -506,7 +506,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param <T>    元素类型
 	 * @param name   区域全名称比如sheet2!A1:B100
 	 * @param keys   列名序列,即选择那些列数据 这就点类似于 select mapper(keys) from name 这样的数据操作。
-	 * @param mapper 数据变换操作: o-&gt;t 完成 aij->bij的变换
+	 * @param mapper 数据变换操作: o-&gt;t 完成 aij-&gt;bij的变换
 	 * @return 重新计算后的新的数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final String name, final List<String> keys, final Function<Object, T> mapper) {
@@ -537,7 +537,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @param <T>    元素类型
 	 * @param name   区域全名称比如sheet2!A1:B100
-	 * @param mapper 数据变换操作: o-&gt;t 完成 aij->bij的变换
+	 * @param mapper 数据变换操作: o-&gt;t 完成 aij-&gt;bij的变换
 	 * @return 重新计算后的新的数据矩阵
 	 */
 	public <T> DataMatrix<T> evaluate(final String name, final Function<Object, T> mapper) {
@@ -558,7 +558,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @param <T>    元素类型
 	 * @param sht    表单数据
-	 * @param mapper 数据变换操作: o-&gt;t 完成 aij->bij的变换
+	 * @param mapper 数据变换操作: o-&gt;t 完成 aij-&gt;bij的变换
 	 * @param keys   null,表示数据中包含表头,第一行就是表头
 	 * @return 新数据矩阵
 	 */
