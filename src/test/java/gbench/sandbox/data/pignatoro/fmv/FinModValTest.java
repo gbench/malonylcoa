@@ -29,7 +29,8 @@ public class FinModValTest {
 		final var hdname = "INCOME_STATEMENT3!B15:E15"; // 表头区域:head name
 		final var bdname = "INCOME_STATEMENT3!B16:E41"; // 表数据区域: body name
 		final Function<StrMatrix, DFrame> dfmapper = strmx -> strmx.collect(DFrame.dfmclc2); // 转换成DFrame
-		final var stmtdfm = excel.rangeOpt(hdname, new String[] {}, dfmapper)
+		// new String[0]表示使用默认的自定义表头,不可用null代替,null表示区域第一行作为表头
+		final var stmtdfm = excel.rangeOpt(hdname, new String[0], dfmapper) // 强制使用默认表头_A,_B,_C进行StrMatrix字段命名
 				.flatMap(strmx -> strmx.headOpt().map(rec -> rec.set(0, "item").toArray(String.class::cast)))
 				.flatMap(keys -> excel.rangeOpt(bdname, keys, dfmapper)).orElse(null);
 		println("INCOME STATEMENT", stmtdfm); // 利润表
