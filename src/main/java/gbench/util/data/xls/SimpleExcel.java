@@ -903,14 +903,14 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param rangeName 表单的名称 比如：A1:B10
 	 * @return 获得指定表单的值
 	 */
-	public StrMatrix range(final int shtid, final String rangeName) {
+	public StrMatrix range(final int shtid, final String rangeName, final List<String> keys) {
 		Sheet sht = sheet(shtid);// 获得表单名称
 		if (sht == null) {
 			System.out.println("不存在编号为" + shtid + "sheet,不予读取任何数据");
 			return null;
 		} // if
 
-		return range(sht, name2rngdef(rangeName));
+		return range(sht, name2rngdef(rangeName), keys);
 	}
 
 	/**
@@ -970,12 +970,12 @@ public class SimpleExcel implements AutoCloseable {
 	 */
 	public StrMatrix range(final String name, final List<String> keys) {
 		if (name.contains("!")) {// 名称中包含有表单名
-			String ss[] = name.split("!");
+			final String ss[] = name.split("!");
 			if (ss.length > 1) {
-				String sheetname = ss[0].trim();
-				String rangeName = ss[1].trim();
+				final String sheetname = ss[0].trim();
+				final String rangeName = ss[1].trim();
 				// 按表单进行区域rangedef内容的获取
-				return range(sheetname, rangeName);
+				return range(sheetname, rangeName, keys);
 			} else {// 名称不包含表单名
 				System.out.println("非法表单名称:" + name);
 				return null;
@@ -996,13 +996,13 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param rangeName 区域名称
 	 * @return IDFrame
 	 */
-	public StrMatrix range(final String shtname, final String rangeName) {
+	public StrMatrix range(final String shtname, final String rangeName, final List<String> keys) {
 		final Integer shtid = this.shtid(shtname);
 		if (shtid == null || shtid < 0) {
 			System.out.println("不存在表单:\"" + shtname + "\"");
 			return null;
 		}
-		return range(shtid, rangeName);
+		return range(shtid, rangeName, keys);
 	}
 
 	/**
