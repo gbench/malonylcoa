@@ -2045,6 +2045,91 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	}
 
 	/**
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param accumulator (result,e)-&gt;result
+	 * @param recs        归集集合
+	 * @return 规约结果
+	 */
+	default IRecord reduce(final BinaryOperator<IRecord> accumulator, final IRecord... recs) {
+		final BinaryOperator<IRecord> acc = (result, e) -> result; // 返回第一个元素(result)保持运算结果不变
+		return Optional.ofNullable(recs)
+				.map(rs -> Stream.of(rs).reduce(this, Optional.ofNullable(accumulator).orElse(acc))).orElse(this);
+	}
+
+	/**
+	 * 加法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param quantizer 量化器: t-&gt;num
+	 * @param recs      归集集合
+	 * @return 规约结果
+	 */
+	default <T> IRecord max(final Function<T, Number> quantizer, final IRecord... recs) {
+		return this.reduce(IRecord.max(quantizer), recs);
+	}
+
+	/**
+	 * 加法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param quantizer 量化器: t-&gt;num
+	 * @param recs      归集集合
+	 * @return 规约结果
+	 */
+	default <T> IRecord min(final Function<T, Number> quantizer, final IRecord... recs) {
+		return this.reduce(IRecord.min(quantizer), recs);
+	}
+
+	/**
+	 * 加法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param accumulator (result,e)-&gt;result
+	 * @param recs        归集集合
+	 * @return 规约结果
+	 */
+	default IRecord plus(final IRecord... recs) {
+		return this.reduce(IRecord.plus(), recs);
+	}
+
+	/**
+	 * 减法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param accumulator (result,e)-&gt;result
+	 * @param recs        归集集合
+	 * @return 规约结果
+	 */
+	default IRecord subtract(final IRecord... recs) {
+		return this.reduce(IRecord.subtract(), recs);
+	}
+
+	/**
+	 * 乘法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param recs 归集集合
+	 * @return 规约结果
+	 */
+	default IRecord multiply(final IRecord... recs) {
+		return this.reduce(IRecord.multiply(), recs);
+	}
+
+	/**
+	 * 除法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param recs 归集集合
+	 * @return 规约结果
+	 */
+	default IRecord divide(final IRecord... recs) {
+		return this.reduce(IRecord.divide(), recs);
+	}
+
+	/**
 	 * 生成 构建器
 	 *
 	 * @param n     键数量,正整数
@@ -2733,8 +2818,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	@SuppressWarnings("unchecked")
 	static <T> BinaryOperator<IRecord> max(final Function<T, Number> quantizer) {
 		return IRecord.combine2((k, tup) -> {
-			final double a = quantizer.apply((T) tup._1).doubleValue();
-			final double b = quantizer.apply((T) tup._2).doubleValue();
+			final double a = Optional.ofNullable(tup._1).map(e -> (T) e).map(quantizer).map(Number::doubleValue)
+					.orElse(0d);
+			final double b = Optional.ofNullable(tup._2).map(e -> (T) e).map(quantizer).map(Number::doubleValue)
+					.orElse(0d);
 			return a > b ? tup._1 : tup._2;
 		});
 	}
