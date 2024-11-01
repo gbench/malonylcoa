@@ -2,6 +2,7 @@ package gbench.sandbox.data.pignatoro.fmv;
 
 import static gbench.global.Globals.WS_HOME;
 import static gbench.util.array.INdarray.nats;
+import static gbench.util.io.Output.println;
 
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import gbench.util.lisp.DFrame;
 import gbench.util.data.xls.DataMatrix;
 import gbench.util.data.xls.SimpleExcel;
-import gbench.util.io.Output;
 import gbench.util.lisp.IRecord;
 
 /**
@@ -26,13 +26,14 @@ public class WriteFileTest {
 			final var rb = nats(10).fmap(e -> DataMatrix.xlsn(e)).arrayOf(IRecord::rb);
 			final var dfm = nats(100).cuts(10).map(e -> rb.get(e)).collect(DFrame.dfmclc);
 
-			excel.select("C3:H8").rowS().forEach(line -> {
+			excel.select("X!C3:H8").rowS().forEach(line -> {
 				line.bgclr(IndexedColors.YELLOW);
 				line.bdclr();
+				println(line.dump());
 			});
 			excel.write(dfm).save();
 		}
-		Output.println("completed:%s".formatted(this.outfile));
+		println("completed:%s".formatted(this.outfile));
 	}
 
 	/**

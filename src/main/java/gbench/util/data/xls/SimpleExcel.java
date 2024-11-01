@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
@@ -1294,7 +1293,16 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public SimpleExcel write(final DataMatrix<?> dmx) {
-		return this.write(DEFAULT_WRITE_CELL_ADDRESS, dmx);
+		final var fulladdress = Optional.ofNullable(this.activesht).map(e -> e.getSheetName()).map(sheetName -> {
+			final var d = DEFAULT_WRITE_CELL_ADDRESS; // 简写
+			final var i = d.indexOf("!"); // 索引偏移位置
+			final var rngName = i >= 0 && d.length() > i + 1 // d 中包含了 sheetName
+					? d.substring(i + 1) // 提出掉sheetName
+					: d; // d中没有SheetName,d 就是一个 表单的内的Range
+			final var fulladdr = "%s!%s".formatted(sheetName, rngName); // 皮装全地址
+			return fulladdr;
+		}).orElse(DEFAULT_WRITE_CELL_ADDRESS);
+		return this.write(fulladdress, dmx);
 	}
 
 	/**
@@ -1498,6 +1506,17 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param i sheet 的编号
 	 * @return 选择表单
 	 */
+	public Sheet selectSheet(final String name) {
+		return Optional.ofNullable(getOrCreateSheet(name)).map(this.workbook::getSheetIndex).map(this::selectSheet)
+				.orElse(null);
+	}
+
+	/**
+	 * 选择制定位置的sheet
+	 * 
+	 * @param i sheet 的编号
+	 * @return 选择表单
+	 */
 	public Sheet selectSheet(final int i) {
 		if (i < 0 || i >= this.workbook.getNumberOfSheets()) {
 			System.out.println("sheet[" + i + "] 编号非法!");
@@ -1638,10 +1657,14 @@ public class SimpleExcel implements AutoCloseable {
 	 * @param rangeName
 	 */
 	public AffectedArea select(final String rangeName) {
-		if (Objects.isNull(this.activesht)) {
+		final var rdf = SimpleExcel.name2rngdef(rangeName);
+		if (rdf.isBlankName()) {
 			this.selectSheet(0);
+		} else {
+			this.selectSheet(rdf.sheetName());
+
 		}
-		return this.new AffectedArea(rangeName).select();
+		return this.new AffectedArea(rdf, 0, 0).select();
 	}
 
 	/**
@@ -1764,20 +1787,23 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		final String name = rangeName.toUpperCase(); // 转换成大写形式
-		final Matcher matcher = Pattern.compile(pattern).matcher(name);
+		final var i = name.indexOf("!");
+		final var line = i < 0 ? name : name.substring(i + 1);
+		final var sheetName = i >= 0 ? name.substring(0, i) : null;
+		final Matcher matcher = Pattern.compile(pattern).matcher(line);
 
 		RangeDef rangedef = null;// 数值区域
 		if (matcher.find()) {
-			final String y0 = matcher.group(2).replaceAll("\\s*", "");
-			final String x0 = matcher.group(3).replaceAll("\\s*", "");
-			final String y1 = matcher.group(6).replaceAll("\\s*", "");
-			final String x1 = matcher.group(7).replaceAll("\\s*", "");
+			final String y0 = matcher.group(2).replaceAll("\\s*", ""); // 左上列号
+			final String x0 = matcher.group(3).replaceAll("\\s*", ""); // 左上行号
+			final String y1 = matcher.group(6).replaceAll("\\s*", ""); // 右下列号
+			final String x1 = matcher.group(7).replaceAll("\\s*", ""); // 右下行号
 			final Integer ix0 = DataMatrix.excel_name_to_index(x0);
 			final Integer iy0 = DataMatrix.excel_name_to_index(y0);
 			final Integer ix1 = DataMatrix.excel_name_to_index(x1);
 			final Integer iy1 = DataMatrix.excel_name_to_index(y1);
 
-			rangedef = new RangeDef(ix0, iy0, ix1, iy1);
+			rangedef = new RangeDef(sheetName, ix0, iy0, ix1, iy1);
 		} // if
 
 		return rangedef; // 数据区域内容
@@ -1951,7 +1977,29 @@ public class SimpleExcel implements AutoCloseable {
 		 * @param starty 开始列偏移从0开始
 		 */
 		public AffectedArea(final String rgname, final int startx, int starty) {
-			final var rdf = SimpleExcel.name2rngdef(rgname);
+			this(SimpleExcel.name2rngdef(rgname), startx, starty);
+
+		}
+
+		/**
+		 * 影响范围
+		 * 
+		 * @param rgname 相对区域名称
+		 * @param startx 开始行偏移从0开始
+		 * @param starty 开始列偏移从0开始
+		 */
+		public AffectedArea(final RangeDef rdf) {
+			this(rdf, 0, 0);
+		}
+
+		/**
+		 * 影响范围
+		 * 
+		 * @param rgname 相对区域名称
+		 * @param startx 开始行偏移从0开始
+		 * @param starty 开始列偏移从0开始
+		 */
+		public AffectedArea(final RangeDef rdf, final int startx, int starty) {
 			final var ltCell = SimpleExcel.this.cell(rdf.x0() + startx, rdf.y0() + starty);
 			final var shape = Tuple2.of(rdf.width(), rdf.height());
 			this.ltCell = ltCell;
@@ -2443,13 +2491,12 @@ public class SimpleExcel implements AutoCloseable {
 		/**
 		 * 详情罗列
 		 * 
-		 * @return
+		 * @return 详情罗列
 		 */
 		public String dump() {
-			return "{[%s]\n%s}".formatted(this.toString(),
-					this.rowS()
-							.map(e -> "[%s]".formatted(e.cellS().map(String::valueOf).collect(Collectors.joining(","))))
-							.collect(Collectors.joining("\n")));
+			return "{%s:%s}".formatted(this.toString(),
+					this.rowS().map(e -> "[%s]".formatted(e.cellS().map(String::valueOf) //
+							.collect(Collectors.joining(",")))).collect(Collectors.joining("\n")));
 		}
 
 		/**
