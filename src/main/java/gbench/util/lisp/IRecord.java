@@ -2439,7 +2439,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return 滑动窗口列表
 	 */
 	static <T> Stream<List<T>> slidingS(final T[] aa, final int size, final int step, final boolean flag) {
-
 		return IRecord.slidingS(Arrays.asList(aa), size, step, flag);
 	}
 
@@ -2669,7 +2668,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return (record0, record1)->record2
 	 */
 	static BinaryOperator<IRecord> divide() {
-
 		return IRecord.binaryOp((a, b) -> a / b);
 	}
 
@@ -2681,7 +2679,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return (record0, record1)->record2
 	 */
 	static BinaryOperator<IRecord> multiply() {
-
 		return IRecord.binaryOp((a, b) -> a * b);
 	}
 
@@ -2693,7 +2690,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return (record0, record1)->record2
 	 */
 	static BinaryOperator<IRecord> subtract() {
-
 		return IRecord.binaryOp((a, b) -> a - b);
 	}
 
@@ -2705,7 +2701,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return (record0, record1)->record2
 	 */
 	static BinaryOperator<IRecord> plus() {
-
 		return IRecord.binaryOp(Double::sum);
 	}
 
@@ -2718,7 +2713,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return (record0, record1)->record2
 	 */
 	static BinaryOperator<IRecord> binaryOp(final BinaryOperator<Double> biop) {
-
 		return IRecord.combine2((key, tup) -> {
 			final Double[] aa = Stream.of(tup._1, tup._2).map(IRecord.obj2dbl()).toArray(Double[]::new);
 			if (aa[0] != null && null != aa[1]) {
@@ -2738,7 +2732,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> BinaryOperator<IRecord> max(final Function<T, Number> quantizer) {
-
 		return IRecord.combine2((k, tup) -> {
 			final double a = quantizer.apply((T) tup._1).doubleValue();
 			final double b = quantizer.apply((T) tup._2).doubleValue();
@@ -2755,7 +2748,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> BinaryOperator<IRecord> min(final Function<T, Number> quantizer) {
-
 		return IRecord.combine2((k, tup) -> {
 			final double a = quantizer.apply((T) tup._1).doubleValue();
 			final double b = quantizer.apply((T) tup._2).doubleValue();
@@ -2820,10 +2812,10 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	@SuppressWarnings("unchecked")
 	static <T, U, V> BinaryOperator<IRecord> combine4(
 			final BiFunction<Tuple2<Integer, String>, Tuple2<T, U>, V> bifunc) {
-
 		return (record_left, record_right) -> {
-			final List<String> keys_left = record_left.keys();
-			final List<String> keys_right = record_right.keys();
+			final List<String> empty = Arrays.asList();
+			final List<String> keys_left = Optional.ofNullable(record_left).map(IRecord::keys).orElse(empty);
+			final List<String> keys_right = Optional.ofNullable(record_right).map(IRecord::keys).orElse(empty);
 			final List<String> keys = Stream.concat(keys_left.stream(), keys_right.stream()).distinct()
 					.collect(Collectors.toList());
 			final Builder rb = IRecord.rb(keys); // 返回结果的构建器
@@ -2875,7 +2867,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return 元素列表
 	 */
 	static <T> List<T> itr2list(final Iterable<T> iterable, final int maxSize) {
-
 		final Stream<T> stream = StreamSupport.stream(iterable.spliterator(), false).limit(maxSize);
 		return stream.collect(Collectors.toList());
 	}
@@ -2888,7 +2879,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return 元素列表
 	 */
 	static <T> List<T> itr2list(final Iterable<T> iterable) {
-
 		return IRecord.itr2list(iterable, MAX_SIZE);
 	}
 
@@ -3058,7 +3048,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	static <T, U> Collector<T, ?, U> splitclc(final BiPredicate<Integer, Tuple2<List<T>, T>> predicate,
 			final Function<List<List<T>>, U> mapper, final boolean flag) {
-
 		final Function<LinkedList<List<T>>, BiConsumer<Integer, T>> reader_builder = lines -> (i, t) -> {
 			if (i == 0 || predicate.test(i, Tuple2.of(i == 0 ? null : lines.peekLast(), t))) { // 首元素或是满足切断条件新列表追加
 				lines.add(new ArrayList<>()); // 添加新行
@@ -3153,7 +3142,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	public static <T, U> Collector<T, ?, Stream<U>> slidingclc(final Function<List<T>, U> winctor, final int size,
 			final int step, final boolean flag) {
 		@SuppressWarnings("unchecked")
-		final Function<List<T>, U> identity = o -> (U) o;
+		final Function<List<T>, U> identity = e -> (U) e;
 		return IRecord.slidingclc(size, step, flag, e -> e.stream().map(Optional.ofNullable(winctor).orElse(identity)));
 	}
 
@@ -3248,7 +3237,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @return Map:{(K,U)}
 	 */
 	public static <X, K> Collector<X, ?, Map<K, List<X>>> grpclc2(final Function<X, K> keyer) {
-
 		return grpclc(keyer, e -> e, e -> e, e -> e);
 	}
 
@@ -3266,7 +3254,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
 			final Function<X, V> valueer, final Collector<V, ?, U> uclc) {
-
 		return IRecord.grpclc(keyer, valueer, uclc, e -> e);
 	}
 
@@ -3284,7 +3271,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	public static <X, K, V, U> Collector<X, ?, Map<K, U>> grpclc2(final Function<X, K> keyer,
 			final Function<X, V> valueer, final Function<List<V>, U> u_finisher) {
-
 		return IRecord.grpclc(keyer, valueer, u_finisher, e -> e);
 	}
 
@@ -3300,7 +3286,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	public static <X, K, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer,
 			final Function<Map<K, List<X>>, Z> z_finisher) {
-
 		return grpclc(keyer, e -> e, e -> e, z_finisher);
 	}
 
@@ -3318,7 +3303,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	public static <X, K, V, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valuerer,
 			final Function<Map<K, List<V>>, Z> z_finisher) {
-
 		return grpclc(keyer, valuerer, e -> e, z_finisher);
 	}
 
@@ -3338,7 +3322,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valueer,
 			final Collector<V, ?, U> uclc, final Function<Map<K, U>, Z> z_finisher) {
-
 		return IRecord.grpclc(keyer, valueer, ll -> ll.stream().collect(uclc), z_finisher);
 	}
 
@@ -3358,7 +3341,6 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	public static <X, K, V, U, Z> Collector<X, ?, Z> grpclc(final Function<X, K> keyer, final Function<X, V> valueer,
 			final Function<List<V>, U> u_finisher, final Function<Map<K, U>, Z> z_finisher) {
-
 		final Collector<X, LinkedHashMap<K, List<V>>, Z> clc = Collector.of( // 创建轨迹器
 				(Supplier<LinkedHashMap<K, List<V>>>) () -> new LinkedHashMap<K, List<V>>(),
 				(LinkedHashMap<K, List<V>> lhm, X x) -> {
