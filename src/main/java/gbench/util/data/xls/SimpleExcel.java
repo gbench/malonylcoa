@@ -2363,11 +2363,12 @@ public class SimpleExcel implements AutoCloseable {
 
 		/**
 		 * 设置背景色
+		 * 
+		 * @param color
+		 * @return
 		 */
 		public AffectedArea bgclr(final IndexedColors color) {
-			excel.packCellStyle().peek(cellstyle -> cellstyle.setFillPattern(FillPatternType.SOLID_FOREGROUND)) // 填充图案
-					.peek(cellstyle -> cellstyle.setFillForegroundColor(color.getIndex())) // 图案颜色
-					.peek(this::paint);
+			excel.packCellStyle().peek(background_color.apply(color)).peek(this::paint);
 			return this;
 		}
 
@@ -2522,6 +2523,7 @@ public class SimpleExcel implements AutoCloseable {
 	 */
 	public static final Function<IndexedColors, Consumer<CellStyle>> background_color = color -> cellstyle -> {
 		cellstyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		cellstyle.setFillBackgroundColor(color.getIndex());
 		cellstyle.setFillForegroundColor(color.getIndex());
 	};
 

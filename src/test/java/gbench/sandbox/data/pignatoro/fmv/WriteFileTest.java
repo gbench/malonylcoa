@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import gbench.util.lisp.DFrame;
 import gbench.util.data.xls.DataMatrix;
 import gbench.util.data.xls.SimpleExcel;
+import gbench.util.data.xls.SimpleExcel.BorderName;
 import gbench.util.lisp.IRecord;
 
 /**
@@ -28,10 +29,10 @@ public class WriteFileTest {
 
 			excel.select("X!C3:H8").rowS().forEach(line -> {
 				line.bgclr(IndexedColors.YELLOW);
-				line.bdclr();
+				line.bdclr(BorderName.L,IndexedColors.BLUE);
 				println(line.dump());
 			});
-			excel.write(dfm).save();
+			excel.write("D2",dfm).save();
 		}
 		println("completed:%s".formatted(this.outfile));
 	}

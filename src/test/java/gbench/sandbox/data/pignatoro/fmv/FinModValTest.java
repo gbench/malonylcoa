@@ -142,10 +142,10 @@ public class FinModValTest {
 			render_header.accept(excel, rg_header_name); // 绘制首行
 			// 数据写入
 			excel.write(rg_data_name, render_data.apply(widedfm)).withAffectedArea(aa -> { // 数据格调整
-				final var yellow = excel.packCellStyle().peek(background_color.apply(IndexedColors.YELLOW))
+				final var pcs = excel.packCellStyle().peek(background_color.apply(IndexedColors.YELLOW))// PackCellStyle
 						.peek(border_color.apply(BorderStyle.THIN).apply(BorderName.BOTTOM, IndexedColors.GREEN));
 				final var ai = new AtomicInteger(1); // 计数器
-				aa.rowS().filter(e -> ai.getAndIncrement() % 2 == 0).forEach(e -> e.paint(yellow));
+				aa.rowS().filter(e -> ai.getAndIncrement() % 2 == 0).forEach(e -> e.paint(pcs));
 			}).save(); // !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 		}
 		println("完成写入！%s".formatted(path));
