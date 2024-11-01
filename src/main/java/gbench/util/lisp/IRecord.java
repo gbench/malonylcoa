@@ -3142,6 +3142,24 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 滑动窗口的T元素归集器
 	 *
+	 * @param <T>     流元素类型
+	 * @param winctor 窗口构建函数:[t]-&gt;u
+	 * @param size    窗口长度 大于0的整数
+	 * @param step    移动步长 大于0的整数
+	 * @param flag    是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
+	 * @param flag    是否返回齐次窗口，true:齐次窗口,false:非齐次窗口
+	 * @return 滑动窗口的T元素归集器
+	 */
+	public static <T, U> Collector<T, ?, Stream<U>> slidingclc(final Function<List<T>, U> winctor, final int size,
+			final int step, final boolean flag) {
+		@SuppressWarnings("unchecked")
+		final Function<List<T>, U> identity = o -> (U) o;
+		return IRecord.slidingclc(size, step, flag, e -> e.stream().map(Optional.ofNullable(winctor).orElse(identity)));
+	}
+
+	/**
+	 * 滑动窗口的T元素归集器
+	 *
 	 * @param <T>      流元素类型
 	 * @param <U>      结果归集器的结果类型，即窗口集合的数据类型，比如 把 List&lt;List&lt;T&gt;&gt; 变换
 	 *                 List&lt;DFrame&gt; 这样的类型
