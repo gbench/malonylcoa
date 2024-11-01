@@ -587,7 +587,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @param <T>     数据矩阵的的元素类型
 	 * @param sht     sht 表单数据
-	 * @param _i0     行范围 开始位置 ,从 0开始,包含
+	 * @param _i0     行范围 开始位置,从 0开始,包含
 	 * @param _j0     行范围 开始位置,从 0开始,包括
 	 * @param _i1     列范围 结束位置,包含
 	 * @param _j1     列范围 结束位置,包含
@@ -1044,12 +1044,38 @@ public class SimpleExcel implements AutoCloseable {
 	 */
 	public Cell getOrCreateCell(final Sheet sht, final int i, final int j) {
 		Row row = sht.getRow(i);
-		if (row == null)
+		if (row == null) {
 			row = sht.createRow(i);
+		}
 		Cell c = row.getCell(j);
-		if (c == null)
+		if (c == null) {
 			c = row.createCell(j);
+		}
 		return c;
+	}
+
+	/**
+	 * 创建一个单元格
+	 * 
+	 * @param sht 表单对象
+	 * @param i   行索引 从0开始
+	 * @param j   列索引 从0开始
+	 * @return 单元格对象
+	 */
+	public Cell getOrCreateCell(final int i, final int j) {
+		return this.getOrCreateCell(this.activesht, i, j);
+	}
+
+	/**
+	 * 创建一个单元格(getOrCreateCell 的别名)
+	 * 
+	 * @param sht 表单对象
+	 * @param i   行索引 从0开始
+	 * @param j   列索引 从0开始
+	 * @return 单元格对象
+	 */
+	public Cell cell(final int i, final int j) {
+		return this.getOrCreateCell(i, j);
 	}
 
 	/**
@@ -1861,12 +1887,12 @@ public class SimpleExcel implements AutoCloseable {
 	};
 
 	/**
-	 * 影响范围
+	 * 影响范围(AffectedArea AA)
 	 * 
 	 * @author xuqinghua
 	 *
 	 */
-	public class AffectedArea {
+	public class AffectedArea implements Iterable<Cell> {
 
 		/**
 		 * 影响范围
@@ -1880,18 +1906,61 @@ public class SimpleExcel implements AutoCloseable {
 			this.shape = area;
 		}
 
+		/**
+		 * 影响范围
+		 * 
+		 * @param ltCell 左上单元格
+		 * @param area
+		 */
+		public AffectedArea(final Cell ltCell, final int width, final int height) {
+			this(ltCell, Tuple2.of(width, height));
+		}
+
+		/**
+		 * 影响范围
+		 * 
+		 * @param rgname 相对区域名称
+		 * @param startx 开始行偏移从0开始
+		 * @param starty 开始列偏移从0开始
+		 */
+		public AffectedArea(final String rgname, final int startx, int starty) {
+			final var rdf = SimpleExcel.name2rngdef(rgname);
+			final var ltCell = SimpleExcel.this.cell(rdf.x0() + startx, rdf.y0() + starty);
+			final var shape = Tuple2.of(rdf.width(), rdf.height());
+			this.ltCell = ltCell;
+			this.shape = shape;
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
 		public Cell getLtCell() {
 			return ltCell;
 		}
 
+		/**
+		 * 
+		 * @param ltCell
+		 */
 		public void setLtCell(final Cell ltCell) {
 			this.ltCell = ltCell;
 		}
 
+		/**
+		 * 返回区域行列数量
+		 * 
+		 * @return shape (_1:nrows行数量,_2:ncols列数量)
+		 */
 		public Tuple2<Integer, Integer> getShape() {
 			return shape;
 		}
 
+		/**
+		 * 设置区域行数量与列数据量
+		 * 
+		 * @param shape (_1:nrows行数量,_2:ncols列数量)
+		 */
 		public void setShape(final Tuple2<Integer, Integer> shape) {
 			this.shape = shape;
 		}
@@ -1915,18 +1984,85 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 相对向定位<br>
+		 * 
+		 * this.cell(0,0)表示AA的基点单元格 <br>
+		 * this.cell(0,1)表示AA的基点单元格的右侧第一个单元格 <br>
+		 * this.cell(1,0)表示AA的基点单元格的下侧第一个单元格 <br>
+		 * this.cell(1,1)表示AA的基点单元格的右下第一个单元格 <br>
+		 * 
+		 * @param i AA区域单元格的行索引,从0开始,
+		 * @param j AA区域单元格的列索引,从0开始,
+		 * @return
+		 */
+		public Cell cell(final int i, final int j) {
+			return this.cellOpt(i, j).orElse(null);
+		}
+
+		/**
+		 * 相对向定位<br>
+		 * 
+		 * this.cell(0,0)表示AA的基点单元格 <br>
+		 * this.cell(0,1)表示AA的基点单元格的右侧第一个单元格 <br>
+		 * this.cell(1,0)表示AA的基点单元格的下侧第一个单元格 <br>
+		 * this.cell(1,1)表示AA的基点单元格的右下第一个单元格 <br>
+		 * 
+		 * @param i AA区域单元格的行索引,从0开始,
+		 * @param j AA区域单元格的列索引,从0开始,
+		 * @return
+		 */
+		public Optional<Cell> cellOpt(final int i, final int j) {
+			return Optional.ofNullable(this.ltCell).map(cell -> {
+				final int origin_x = cell.getRowIndex(); // 行索引
+				final int origin_y = cell.getColumnIndex(); // 列索引
+				final int _x = origin_x + i;
+				final int _y = origin_y + j;
+				return SimpleExcel.this.getOrCreateCell(cell.getSheet(), _x, _y); //
+			});
+		}
+
+		/**
+		 * 基点位置
+		 * 
+		 * @return
+		 */
+		public Cell origin() {
+			return this.ltCell;
+		}
+
+		/**
+		 * nrows 别名
 		 * 
 		 * @return
 		 */
 		public int height() {
-			return this.shape._2;
+			return this.nrows();
 		}
 
 		/**
+		 * 行数量(shape的1号位置)
+		 * 
+		 * @return
+		 */
+		public int nrows() {
+			return this.shape._1;
+		}
+
+		/**
+		 * ncols别名
 		 * 
 		 * @return
 		 */
 		public int width() {
+			return this.ncols();
+		}
+
+		/**
+		 * 列数量(shape的2号位置)
+		 * 
+		 * @return
+		 */
+		public int ncols() {
 			return this.shape._2;
 		}
 
@@ -2113,16 +2249,104 @@ public class SimpleExcel implements AutoCloseable {
 			return this;
 		}
 
+		/**
+		 * 格式喷涂
+		 * 
+		 * @param style 单元格式样
+		 * @return
+		 */
+		public AffectedArea paint(final CellStyle style) {
+			this.forEach(cell -> cell.setCellStyle(style));
+			return this;
+		}
+
+		/**
+		 * 格式喷涂
+		 * 
+		 * @param pstyle 单元格式样
+		 * @return
+		 */
+		public AffectedArea paint(final Pack<CellStyle> pstyle) {
+			pstyle.peek(this::paint);
+			return this;
+		}
+
+		/**
+		 * 数据行
+		 * 
+		 * @return
+		 */
+		public Stream<AffectedArea> rowS() {
+			return Stream.iterate(0, i -> i + 1).limit(this.height())
+					.map(i -> new AffectedArea(this.cell(i, 0), 1, this.width())); // 行高度为1
+		}
+
+		/**
+		 * 数据列
+		 * 
+		 * @return
+		 */
+		public Stream<AffectedArea> colS() {
+			return Stream.iterate(0, i -> i + 1).limit(this.width())
+					.map(i -> new AffectedArea(this.cell(0, i), this.height(), 1)); // 列宽度为1
+		}
+
+		/**
+		 * 设置选区
+		 * 
+		 * @return
+		 */
+		public AffectedArea select() {
+			SimpleExcel.this.affectedArea.setLtCell(ltCell);
+			SimpleExcel.this.affectedArea.setShape(this.shape);
+			return this;
+		}
+
+		/**
+		 * 单元格流序列（行顺序）
+		 * 
+		 * @return
+		 */
+		public Stream<Cell> cellS() {
+			return Stream.iterate(0, i -> i + 1).limit(this.nrows())
+					.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(this.ncols()).map(j -> this.cell(i, j)));
+
+		}
+
+		@Override
+		public Iterator<Cell> iterator() {
+			return this.cellS().iterator();
+		}
+
 		@Override
 		public String toString() {
-			return "AffectedArea [startCell=" + ltCell + ", area=" + shape + "]";
+			return "AffectedArea [startCell=%s(%d,%d), shape=(rows:%s,cols:%s)]".formatted(ltCell, ltCell.getRowIndex(),
+					ltCell.getColumnIndex(), this.nrows(), this.ncols());
+		}
+
+		/**
+		 * 详情罗列
+		 * 
+		 * @return
+		 */
+		public String dump() {
+			return "{[%s]\n%s}".formatted(this.toString(),
+					this.rowS()
+							.map(e -> "[%s]".formatted(e.cellS().map(String::valueOf).collect(Collectors.joining(","))))
+							.collect(Collectors.joining("\n")));
 		}
 
 		/**
 		 * 左上角的单元格
 		 */
 		private Cell ltCell;
+
+		/**
+		 * 行数量(shape的1号位置) <br>
+		 * 列数量(shape的2号位置)
+		 */
 		private Tuple2<Integer, Integer> shape;
+
 		/**
 		 * excel
 		 */
@@ -2156,7 +2380,7 @@ public class SimpleExcel implements AutoCloseable {
 	private Workbook workbook = new XSSFWorkbook();
 	private DataFormat datafmt = DataFormat.AUTO_FORMAT;
 	private boolean write_keys_flag = true;
-	private AffectedArea affectedArea = new AffectedArea(null, Tuple2.of(0, 0)); // 操作的影响范围
+	private final AffectedArea affectedArea = new AffectedArea(null, Tuple2.of(0, 0)); // 操作的影响范围
 	private final SimpleDateFormat sdf = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
 
 }

@@ -128,6 +128,24 @@ public class RangeDef {
 		this._y1 = y1;
 	}
 
+	/**
+	 * 高度
+	 * 
+	 * @return
+	 */
+	public int height() {
+		return Math.abs(this._y1 - this._y0) + 1;
+	}
+
+	/**
+	 * 宽度
+	 * 
+	 * @return
+	 */
+	public int width() {
+		return Math.abs(this._x1 - this._x0) + 1;
+	}
+
 	@Override
 	public String toString() {
 		return "Range [x0=" + _x0 + ", y0=" + _y0 + ", x1=" + _x1 + ", y1=" + _y1 + "]";

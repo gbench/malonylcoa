@@ -1,6 +1,7 @@
 package gbench.sandbox.data.pignatoro.fmv;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
@@ -14,8 +15,10 @@ import static gbench.util.lisp.Lisp.CONS;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -124,10 +127,24 @@ public class FinModValTest {
 		final BiFunction<Integer, Integer, Object[]> xn = (from, to) -> Stream.of(from, to).map(e -> xlsn(e))
 				.toArray(Object[]::new); // Excel列标签名
 
+		// 喷涂背景颜色
+		final Function<IndexedColors, Consumer<CellStyle>> bgcolor = color -> style -> {
+			style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+			style.setFillForegroundColor(color.getIndex());
+			style.setFillBackgroundColor(color.getIndex());
+		};
+
 		// 数据写入与格式化
 		try (final var excel = SimpleExcel.of(path)) {
-			render_header.accept(excel, "%s!%s1:%s1".formatted(CONS(shtname, xn.apply(0, widedfm.ncols() - 1)))); // 绘制首行
-			excel.write("%s!A1".formatted(shtname), render_data.apply(widedfm)).save();
+			final var address = "%s!A1".formatted(shtname);
+			final var hname = "%s!%s1:%s1".formatted(CONS(shtname, xn.apply(0, widedfm.ncols() - 1)));
+			final var data = render_data.apply(widedfm);
+			render_header.accept(excel, hname); // 绘制首行
+			excel.write(address, data).withAffectedArea(aa -> { // 数据格调整
+				final var ai = new AtomicInteger(1); // 计数器
+				final var yellow = excel.packCellStyle().peek(bgcolor.apply(IndexedColors.YELLOW));
+				aa.rowS().filter(e -> ai.getAndIncrement() % 2 == 0).forEach(e -> e.paint(yellow));
+			}).save();
 		}
 		println("完成写入！%s".formatted(path));
 	}
