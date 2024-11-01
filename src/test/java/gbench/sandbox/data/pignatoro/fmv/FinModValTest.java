@@ -1,11 +1,13 @@
 package gbench.sandbox.data.pignatoro.fmv;
 
+import org.junit.jupiter.api.Test;
+
 import static gbench.global.Globals.WS_HOME;
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.A;
+import static gbench.util.lisp.Lisp.CONS;
 
-import org.junit.jupiter.api.Test;
-
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,6 +55,18 @@ public class FinModValTest {
 		final var REVENUE = "REVENUE"; // 总收入（交税收入）
 		lines.put(REVENUE, revenue); // 写入总收入
 		println(REVENUE, revenue);
+
+		// 计算同比增长率
+		final var stmt_proto = stmtdfm.head(); // 表头
+		final var pre_cur_rb = IRecord.rb("previous,current"); // 前期值与当期值
+		final Function<String, IRecord> growth_eval = key -> Optional.ofNullable(lines.get(key))
+				.map(e -> e.valueS().collect(IRecord.slidingclc(2, 1, true)).map(pre_cur_rb::get) // 齐次的宽度2步长1的连续窗口滑动
+						.map(entry -> entry.dbl("current") / entry.dbl("previous") - 1).toArray(Double[]::new)) // 计算增长率
+				.map(e -> CONS(null, CONS(null, e))).map(IRecord.rb(stmt_proto.keys())::get).orElse(null); // item,首项的整张率为null
+		final var REVENUE_GROWTH = "REVENUE_GROWTH"; // 收入增长率
+		final var revenue_growth = growth_eval.apply(REVENUE); // 计算收入增长率
+		lines.put(REVENUE_GROWTH, revenue_growth); // 写入收入增长率
+		println(REVENUE_GROWTH, revenue_growth);
 
 		// 毛利润
 		final var COGS = "Cost of Goods Sold"; // 销售成本

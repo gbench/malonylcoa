@@ -193,6 +193,34 @@ public class Lisp {
 	}
 
 	/**
+	 * 列表构造器,参见 Lisp 语言的cons <br>
+	 * 在数组头前添加一个元素 t <bar> 样例： CONS(0,[1,2]) 返回 [0,1,2] <br>
+	 * CONS(1,null) [1] <br>
+	 * CONS(null, null) [null] <br>
+	 * CONS(1, A(2, 3)) [1, 2, 3] <br>
+	 * CONS(null, A(2, 3)) [null, 2, 3] <br>
+	 *
+	 * @param <T> 元素类型
+	 * @param t   头前元素 t0
+	 * @param ts  元素序列,[t1,t2,...]
+	 * @return t[t0,t1,t2]
+	 */
+	public static <T> T[] CONS(final T t, final T[] ts) {
+		@SuppressWarnings("unchecked")
+		final Class<T> tclazz = Optional.ofNullable(ts)
+				.map(e -> Optional.ofNullable(e.getClass()).map(p -> (Class<T>) p.getComponentType())) //
+				.orElseGet(() -> Optional.ofNullable(t).map(e -> (Class<T>) e.getClass()))
+				.orElseGet(() -> (Class<T>) Object.class);
+		final var n0 = Optional.ofNullable(t).map(e -> 1).orElse(1);
+		final var n1 = Optional.ofNullable(ts).map(e -> e.length).orElse(0);
+		final var aa = Stream
+				.concat(Stream.of(t), Optional.ofNullable(ts).map(Stream::of).orElseGet(() -> Stream.empty()))
+				.collect(aaclc(n0 + n1, tclazz, e -> e));
+
+		return aa;
+	}
+
+	/**
 	 * 列表元素
 	 *
 	 * @param <T> 元素类型
