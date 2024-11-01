@@ -1,7 +1,6 @@
 package gbench.sandbox.data.pignatoro.fmv;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
@@ -17,8 +16,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,6 +25,8 @@ import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
+
+import static gbench.util.data.xls.SimpleExcel.*;
 
 /**
  * 财务估值模型
@@ -132,8 +131,16 @@ public class FinModValTest {
 			final var rg_data_name = "%s!%s%s".formatted(shtname, xlsn(offset_col), offset_row); // 数据写入位置
 			final var rg_header_name = IRecord.FT("%s!%s$0:%s$0}", offset_row).formatted(CONS(shtname,
 					Stream.of(0, widedfm.ncols() - 1).map(e -> e + offset_col).map(DataMatrix::xlsn).toArray())); // 表头位置
+			final Function<DFrame, DFrame> render_data = data -> { // 数据处理
+				final var dfm = data.rowS().map(row -> row.tupleS().map(p -> // 二元组 key value pair
+				p.fmap2(e -> Objects.isNull(e) ? "-" : e)).collect(IRecord.recclc())) // p.fmap2表示值位置变换:把空值转换成'-'
+						.collect(DFrame.dfmclc);
+				return dfm;
+			};
+			// 数据喷涂
 			println("rg_data_name:%s,rg_header_name:%s".formatted(rg_data_name, rg_header_name));
 			render_header.accept(excel, rg_header_name); // 绘制首行
+			// 数据写入
 			excel.write(rg_data_name, render_data.apply(widedfm)).withAffectedArea(aa -> { // 数据格调整
 				final var yellow = excel.packCellStyle().peek(background_color.apply(IndexedColors.YELLOW))
 						.peek(border_color.apply(BorderStyle.THIN).apply(BorderName.BOTTOM, IndexedColors.GREEN));
@@ -147,92 +154,12 @@ public class FinModValTest {
 	/**
 	 * 渲染数据
 	 */
-	final Function<DFrame, DFrame> render_data = data -> { // 数据处理
-		final var dfm = data.rowS().map(row -> row.tupleS().map(p -> // 二元组 key value pair
-		p.fmap2(e -> Objects.isNull(e) ? "-" : e)).collect(IRecord.recclc())) // p.fmap2表示值位置变换:把空值转换成'-'
-				.collect(DFrame.dfmclc);
-		return dfm;
-	};
-
-	/**
-	 * 喷涂背景颜色
-	 */
-	final Function<IndexedColors, Consumer<CellStyle>> background_color = color -> cellstyle -> {
-		cellstyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-		cellstyle.setFillForegroundColor(color.getIndex());
-	};
-
-	/**
-	 * 边名称
-	 */
-	enum BorderName {
-		L, LEFT, T, TOP, R, RIGHT, B, BOTTOM, LT, LEFT_TOP, LB, LEFT_BOTTOM, TR, TOP_RIGHT, RB, RIGHT_BOTTOM, ALL, NONE
-	}
-
-	/**
-	 * 喷涂背景颜色
-	 */
-	final Function<BorderStyle, BiFunction<BorderName, IndexedColors, Consumer<CellStyle>>> border_color = borderstyle -> (
-			border, color) -> cellstyle -> {
-				switch (border) {
-				case L, LEFT: {
-					cellstyle.setBorderLeft(borderstyle);
-					break;
-				}
-				case T, TOP: {
-					cellstyle.setBorderTop(borderstyle);
-					break;
-				}
-				case R, RIGHT: {
-					cellstyle.setBorderRight(borderstyle);
-					break;
-				}
-				case B, BOTTOM: {
-					cellstyle.setBorderBottom(borderstyle);
-					break;
-				}
-				case LT, LEFT_TOP: {
-					cellstyle.setBorderLeft(borderstyle);
-					cellstyle.setBorderTop(borderstyle);
-					break;
-				}
-				case LB, LEFT_BOTTOM: {
-					cellstyle.setBorderLeft(borderstyle);
-					cellstyle.setBorderBottom(borderstyle);
-					break;
-				}
-				case TR, TOP_RIGHT: {
-					cellstyle.setBorderTop(borderstyle);
-					cellstyle.setBorderRight(borderstyle);
-					break;
-				}
-				case RB, RIGHT_BOTTOM: {
-					cellstyle.setBorderRight(borderstyle);
-					cellstyle.setBorderBottom(borderstyle);
-					break;
-				}
-				case ALL: {
-					cellstyle.setBorderLeft(borderstyle);
-					cellstyle.setBorderTop(borderstyle);
-					cellstyle.setBorderRight(borderstyle);
-					cellstyle.setBorderBottom(borderstyle);
-					break;
-				}
-				case NONE: {
-					// goto default
-				}
-				default: {
-					// nothing
-				}
-				} // switch
-				cellstyle.setBottomBorderColor(color.getIndex());
-			};
 
 	/**
 	 * 数据源文件
 	 */
 	final String outhome = "E:/slicee/temp/malonylcoa/test/data/excel/%s"; // 输出文件路径
-	final String outfile = outhome.formatted("amazon-2021-10k-evaluated.xls"); // 输出文件
+	final String outfile = outhome.formatted("amazon-2021-10k-evaluated.xlsx"); // 输出文件
 	final String fileshome = "%s/gitws/malonylcoa/src/test/java/gbench/sandbox/data/pignatoro/files".formatted(WS_HOME); // 数据文件目录
 	final String datafile = "%s/%s".formatted(fileshome, "amazon-2021-10k.xls"); // 财务数据文件
 

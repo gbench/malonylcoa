@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
@@ -33,13 +34,16 @@ import java.util.stream.StreamSupport;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.util.ZipSecureFile;
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -1629,6 +1633,18 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
+	 * 选择一块数据区域
+	 * 
+	 * @param rangeName
+	 */
+	public AffectedArea select(final String rangeName) {
+		if (Objects.isNull(this.activesht)) {
+			this.selectSheet(0);
+		}
+		return this.new AffectedArea(rangeName).select();
+	}
+
+	/**
 	 * 文件关闭
 	 */
 	@Override
@@ -1923,6 +1939,17 @@ public class SimpleExcel implements AutoCloseable {
 		 * @param startx 开始行偏移从0开始
 		 * @param starty 开始列偏移从0开始
 		 */
+		public AffectedArea(final String rgname) {
+			this(rgname, 0, 0);
+		}
+
+		/**
+		 * 影响范围
+		 * 
+		 * @param rgname 相对区域名称
+		 * @param startx 开始行偏移从0开始
+		 * @param starty 开始列偏移从0开始
+		 */
 		public AffectedArea(final String rgname, final int startx, int starty) {
 			final var rdf = SimpleExcel.name2rngdef(rgname);
 			final var ltCell = SimpleExcel.this.cell(rdf.x0() + startx, rdf.y0() + starty);
@@ -2176,6 +2203,21 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 书写一行(writeLine的别名) <br>
+		 * 写入excel (不带有表头的书写格式) <br>
+		 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+		 * 
+		 * @param <T>     元素类型
+		 * @param address 起始位置地址(全SHEET绝对地址)
+		 * @param line    数据内容
+		 * @return SimpleExcel 对象本身 以实现链式编程
+		 */
+		@SafeVarargs
+		public final <T> AffectedArea writeRow(final String address, T... line) {
+			return this.writeLine(line);
+		}
+
+		/**
 		 * 书写一行 <br>
 		 * 写入excel (不带有表头的书写格式) <br>
 		 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
@@ -2272,6 +2314,62 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 设置背景色
+		 */
+		public AffectedArea bgclr(final IndexedColors color) {
+			excel.packCellStyle().peek(cellstyle -> cellstyle.setFillPattern(FillPatternType.SOLID_FOREGROUND)) // 填充图案
+					.peek(cellstyle -> cellstyle.setFillForegroundColor(color.getIndex())) // 图案颜色
+					.peek(this::paint);
+			return this;
+		}
+
+		/**
+		 * 设置背景色
+		 * 
+		 * @param borderName
+		 * @param color
+		 * @return
+		 */
+		public AffectedArea bdclr(final BorderName borderName, BorderStyle borderStyle, final IndexedColors color) {
+			final var bn = Optional.ofNullable(borderName).orElse(BorderName.ALL);
+			final var bs = Optional.ofNullable(borderStyle).orElse(BorderStyle.THIN);
+			final var clr = Optional.ofNullable(color).orElse(IndexedColors.BLACK);
+			excel.packCellStyle().peek(border_color.apply(bs).apply(bn, clr)).peek(this::paint);
+			return this;
+		}
+
+		/**
+		 * 设置背景色
+		 * 
+		 * @param borderName
+		 * @param color
+		 * @return
+		 */
+		public AffectedArea bdclr(final BorderName borderName, final IndexedColors color) {
+			return this.bdclr(borderName, null, color);
+		}
+
+		/**
+		 * 设置背景色
+		 * 
+		 * @param borderName
+		 * @param color
+		 * @return
+		 */
+		public AffectedArea bdclr() {
+			return this.bdclr(null, null, null);
+		}
+
+		/**
+		 * 数据行(rowS的别名)
+		 * 
+		 * @return
+		 */
+		public Stream<AffectedArea> lineS() {
+			return this.rowS();
+		}
+
+		/**
 		 * 数据行
 		 * 
 		 * @return
@@ -2282,6 +2380,15 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 数据行
+		 * 
+		 * @return
+		 */
+		public List<AffectedArea> rows() {
+			return this.rowS().toList();
+		}
+
+		/**
 		 * 数据列
 		 * 
 		 * @return
@@ -2289,6 +2396,15 @@ public class SimpleExcel implements AutoCloseable {
 		public Stream<AffectedArea> colS() {
 			return Stream.iterate(0, i -> i + 1).limit(this.width())
 					.map(i -> new AffectedArea(this.cell(0, i), this.height(), 1)); // 列宽度为1
+		}
+
+		/**
+		 * 数据列
+		 * 
+		 * @return
+		 */
+		public List<AffectedArea> cols() {
+			return this.colS().toList();
 		}
 
 		/**
@@ -2352,6 +2468,80 @@ public class SimpleExcel implements AutoCloseable {
 		 */
 		public final SimpleExcel excel = SimpleExcel.this;
 
+	}
+
+	/**
+	 * 喷涂背景颜色
+	 */
+	public static final Function<IndexedColors, Consumer<CellStyle>> background_color = color -> cellstyle -> {
+		cellstyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		cellstyle.setFillForegroundColor(color.getIndex());
+	};
+
+	/**
+	 * 喷涂背景颜色
+	 */
+	public final static Function<BorderStyle, BiFunction<BorderName, IndexedColors, Consumer<CellStyle>>> border_color = borderstyle -> (
+			border, color) -> cellstyle -> {
+				switch (border) {
+				case L, LEFT: {
+					cellstyle.setBorderLeft(borderstyle);
+					break;
+				}
+				case T, TOP: {
+					cellstyle.setBorderTop(borderstyle);
+					break;
+				}
+				case R, RIGHT: {
+					cellstyle.setBorderRight(borderstyle);
+					break;
+				}
+				case B, BOTTOM: {
+					cellstyle.setBorderBottom(borderstyle);
+					break;
+				}
+				case LT, LEFT_TOP: {
+					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setBorderTop(borderstyle);
+					break;
+				}
+				case LB, LEFT_BOTTOM: {
+					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setBorderBottom(borderstyle);
+					break;
+				}
+				case TR, TOP_RIGHT: {
+					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setBorderRight(borderstyle);
+					break;
+				}
+				case RB, RIGHT_BOTTOM: {
+					cellstyle.setBorderRight(borderstyle);
+					cellstyle.setBorderBottom(borderstyle);
+					break;
+				}
+				case ALL: {
+					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setBorderRight(borderstyle);
+					cellstyle.setBorderBottom(borderstyle);
+					break;
+				}
+				case NONE: {
+					// goto default
+				}
+				default: {
+					// nothing
+				}
+				} // switch
+				cellstyle.setBottomBorderColor(color.getIndex());
+			};
+
+	/**
+	 * 边名称
+	 */
+	public static enum BorderName {
+		L, LEFT, T, TOP, R, RIGHT, B, BOTTOM, LT, LEFT_TOP, LB, LEFT_BOTTOM, TR, TOP_RIGHT, RB, RIGHT_BOTTOM, ALL, NONE
 	}
 
 	/**
