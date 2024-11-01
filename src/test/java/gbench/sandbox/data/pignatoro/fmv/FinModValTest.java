@@ -23,6 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import gbench.util.data.xls.DataMatrix;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.StrMatrix;
 import gbench.util.lisp.DFrame;
@@ -33,6 +34,9 @@ import gbench.util.lisp.IRecord;
  */
 public class FinModValTest {
 
+	/**
+	 * Excel 读写测试
+	 */
 	@Test
 	public void foo() {
 		println("datafile", datafile);
@@ -93,61 +97,103 @@ public class FinModValTest {
 		final var gmargin = lines.computeIfAbsent(GMARGIN, k -> div.apply(A(GPROFIT, REVENUE))); // 毛利率
 		println(GMARGIN, gmargin);
 
-		this.write(outfile, lines);
+		this.write(outfile, lines, "INCOME STATEMENT", 2, 1);
 	}
 
 	/**
 	 * 数据写入
 	 * 
-	 * @param path  文件路径
-	 * @param lines {(key,[value0,value1,value2,...])}
+	 * @param path       文件路径
+	 * @param lines      {(key,[value0,value1,value2,...])}
+	 * @param shtname    表单名称
+	 * @param offset_row 行偏移,从0开始的正整数
+	 * @param offset_col 列偏移,从0开始的正整数
 	 */
-	public void write(final String path, final Map<String, IRecord> lines) {
+	public void write(final String path, final Map<String, IRecord> lines, final String shtname, final int offset_row,
+			final int offset_col) {
 		final var widedfm = lines.entrySet().stream() // 提取数据行结构(key:记录字段如'item';value:字段序列值,如：[2019,2020,2021])
 				.map(e -> IRecord.REC("item", e.getKey()).derive(e.getValue())).collect(DFrame.dfmclc); // 数据宽格式(首列元素为key)
-		final var shtname = "INCOME STATEMENT";
 		final BiConsumer<SimpleExcel, String> render_header = (excel, rngname) -> { // 绘制表头
-			excel.withRange(rngname, cell -> {
-				excel.packCellStyle().peek(e -> e.setFillPattern(FillPatternType.ALT_BARS))
-						.peek(e -> e.setFillForegroundColor(IndexedColors.BLUE.getIndex()))
-						.peek(e -> e.setFillBackgroundColor(IndexedColors.GREY_25_PERCENT.getIndex()))
-						.peek(e -> excel.packFont().peek(p -> p.setFontName("等线 Light")) // 设置单元格字体
-								.peek(p -> p.setColor(IndexedColors.WHITE.getIndex())).peek(p -> p.setBold(true))
-								.peek(e::setFont))
-						.peek(e -> e.setBorderBottom(BorderStyle.THICK))
-						.peek(e -> e.setBottomBorderColor(IndexedColors.RED.getIndex())).peek(cell::setCellStyle);
-			}); // 区域处理
+			excel.withRange(rngname, cell -> excel.packCellStyle() // 区域处理
+					.peek(cellstyle -> cellstyle.setFillPattern(FillPatternType.ALT_BARS)) // 填充图案
+					.peek(cellstyle -> cellstyle.setFillForegroundColor(IndexedColors.BLUE.getIndex())) // 图案颜色
+					.peek(cellstyle -> cellstyle.setFillBackgroundColor(IndexedColors.GREY_25_PERCENT.getIndex())) // 背景颜色
+					.peek(cellstyle -> cellstyle.setBorderBottom(BorderStyle.THICK)) // 边线宽度
+					.peek(cellstyle -> cellstyle.setBottomBorderColor(IndexedColors.RED.getIndex())) // 边线颜色
+					.peek(cellstyle -> excel.packFont().peek(font -> font.setFontName("等线 Light")) // 设置单元格字体
+							.peek(font -> font.setColor(IndexedColors.WHITE.getIndex())) // 字体颜色
+							.peek(font -> font.setBold(true)) // 黑体
+							.peek(cellstyle::setFont))
+					.peek(cell::setCellStyle)); // 设置单元格式样
 		}; // 表头渲染
-		final Function<DFrame, DFrame> render_data = data -> { // 数据处理
-			final var dfm = data.rowS().map(row -> row.tupleS().map(p -> // 二元组 key value pair
-			p.fmap2(e -> Objects.isNull(e) ? "-" : e)).collect(IRecord.recclc())) // p.fmap2表示值位置变换:把空值转换成'-'
-					.collect(DFrame.dfmclc);
-			return dfm;
-		}; // 数据处理
-		final BiFunction<Integer, Integer, Object[]> xn = (from, to) -> Stream.of(from, to).map(e -> xlsn(e))
-				.toArray(Object[]::new); // Excel列标签名
-
-		// 喷涂背景颜色
-		final Function<IndexedColors, Consumer<CellStyle>> bgcolor = color -> style -> {
-			style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-			style.setFillForegroundColor(color.getIndex());
-			style.setFillBackgroundColor(color.getIndex());
-		};
 
 		// 数据写入与格式化
-		try (final var excel = SimpleExcel.of(path)) {
-			final var address = "%s!A1".formatted(shtname);
-			final var hname = "%s!%s1:%s1".formatted(CONS(shtname, xn.apply(0, widedfm.ncols() - 1)));
-			final var data = render_data.apply(widedfm);
-			render_header.accept(excel, hname); // 绘制首行
-			excel.write(address, data).withAffectedArea(aa -> { // 数据格调整
+		try (final var excel = SimpleExcel.of(path)) { // 创建或读取path位置的excel文件
+			final var rg_data_name = "%s!%s%s".formatted(shtname, xlsn(offset_col), offset_row); // 数据写入位置
+			final var rg_header_name = IRecord.FT("%s!%s$0:%s$0}", offset_row).formatted(CONS(shtname,
+					Stream.of(0, widedfm.ncols() - 1).map(e -> e + offset_col).map(DataMatrix::xlsn).toArray())); // 表头位置
+			println("rg_data_name:%s,rg_header_name:%s".formatted(rg_data_name, rg_header_name));
+			render_header.accept(excel, rg_header_name); // 绘制首行
+			excel.write(rg_data_name, render_data.apply(widedfm)).withAffectedArea(aa -> { // 数据格调整
+				final var yellow = excel.packCellStyle().peek(background_color.apply(IndexedColors.YELLOW))
+						.peek(border_color.apply(BorderStyle.THIN).apply(BorderName.BOTTOM, IndexedColors.GREEN));
 				final var ai = new AtomicInteger(1); // 计数器
-				final var yellow = excel.packCellStyle().peek(bgcolor.apply(IndexedColors.YELLOW));
 				aa.rowS().filter(e -> ai.getAndIncrement() % 2 == 0).forEach(e -> e.paint(yellow));
-			}).save();
+			}).save(); // !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 		}
 		println("完成写入！%s".formatted(path));
 	}
+
+	/**
+	 * 渲染数据
+	 */
+	final Function<DFrame, DFrame> render_data = data -> { // 数据处理
+		final var dfm = data.rowS().map(row -> row.tupleS().map(p -> // 二元组 key value pair
+		p.fmap2(e -> Objects.isNull(e) ? "-" : e)).collect(IRecord.recclc())) // p.fmap2表示值位置变换:把空值转换成'-'
+				.collect(DFrame.dfmclc);
+		return dfm;
+	};
+
+	/**
+	 * 喷涂背景颜色
+	 */
+	final Function<IndexedColors, Consumer<CellStyle>> background_color = color -> cellstyle -> {
+		cellstyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+		cellstyle.setFillForegroundColor(color.getIndex());
+		cellstyle.setFillBackgroundColor(color.getIndex());
+	};
+
+	/**
+	 * 边名称
+	 */
+	enum BorderName {
+		LEFT, TOP, RIGHT, BOTTOM
+	}
+
+	/**
+	 * 喷涂背景颜色
+	 */
+	final Function<BorderStyle, BiFunction<BorderName, IndexedColors, Consumer<CellStyle>>> border_color = borderstyle -> (
+			border, color) -> cellstyle -> {
+				switch (border) {
+				case LEFT: {
+					cellstyle.setBorderBottom(borderstyle);
+				}
+				case TOP: {
+					cellstyle.setBorderBottom(borderstyle);
+				}
+				case RIGHT: {
+					cellstyle.setBorderBottom(borderstyle);
+				}
+				case BOTTOM: {
+					cellstyle.setBorderBottom(borderstyle);
+				}
+				default: {
+					// nothing
+				}
+				} // switch
+				cellstyle.setBottomBorderColor(color.getIndex());
+			};
 
 	/**
 	 * 数据源文件
@@ -156,4 +202,5 @@ public class FinModValTest {
 	final String outfile = outhome.formatted("amazon-2021-10k-evaluated.xls"); // 输出文件
 	final String fileshome = "%s/gitws/malonylcoa/src/test/java/gbench/sandbox/data/pignatoro/files".formatted(WS_HOME); // 数据文件目录
 	final String datafile = "%s/%s".formatted(fileshome, "amazon-2021-10k.xls"); // 财务数据文件
+
 }
