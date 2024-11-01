@@ -90,16 +90,16 @@ public class FinModValTest {
 		final var gmargin = lines.computeIfAbsent(GMARGIN, k -> div.apply(A(GPROFIT, REVENUE))); // 毛利率
 		println(GMARGIN, gmargin);
 
-		this.write("C:/Users/Administrator/Desktop/a.xlsx", lines);
+		this.write(outfile, lines);
 	}
 
 	/**
 	 * 数据写入
 	 * 
-	 * @param file  文件路径
+	 * @param path  文件路径
 	 * @param lines {(key,[value0,value1,value2,...])}
 	 */
-	public void write(final String file, final Map<String, IRecord> lines) {
+	public void write(final String path, final Map<String, IRecord> lines) {
 		final var widedfm = lines.entrySet().stream() // 提取数据行结构(key:记录字段如'item';value:字段序列值,如：[2019,2020,2021])
 				.map(e -> IRecord.REC("item", e.getKey()).derive(e.getValue())).collect(DFrame.dfmclc); // 数据宽格式(首列元素为key)
 		final var shtname = "INCOME STATEMENT";
@@ -125,16 +125,18 @@ public class FinModValTest {
 				.toArray(Object[]::new); // Excel列标签名
 
 		// 数据写入与格式化
-		try (final var excel = SimpleExcel.of(file)) {
+		try (final var excel = SimpleExcel.of(path)) {
 			render_header.accept(excel, "%s!%s1:%s1".formatted(CONS(shtname, xn.apply(0, widedfm.ncols() - 1)))); // 绘制首行
 			excel.write("%s!A1".formatted(shtname), render_data.apply(widedfm)).save();
 		}
-		println("完成写入！%s".formatted(file));
+		println("完成写入！%s".formatted(path));
 	}
 
 	/**
 	 * 数据源文件
 	 */
+	final String outhome = "E:/slicee/temp/malonylcoa/test/data/excel/%s"; // 输出文件路径
+	final String outfile = outhome.formatted("amazon-2021-10k-evaluated.xls"); // 输出文件
 	final String fileshome = "%s/gitws/malonylcoa/src/test/java/gbench/sandbox/data/pignatoro/files".formatted(WS_HOME); // 数据文件目录
 	final String datafile = "%s/%s".formatted(fileshome, "amazon-2021-10k.xls"); // 财务数据文件
 }
