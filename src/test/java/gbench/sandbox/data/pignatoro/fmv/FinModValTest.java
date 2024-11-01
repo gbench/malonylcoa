@@ -167,7 +167,7 @@ public class FinModValTest {
 	 * 边名称
 	 */
 	enum BorderName {
-		LEFT, TOP, RIGHT, BOTTOM
+		L, LEFT, T, TOP, R, RIGHT, B, BOTTOM, LT, LEFT_TOP, LB, LEFT_BOTTOM, TR, TOP_RIGHT, RB, RIGHT_BOTTOM, ALL
 	}
 
 	/**
@@ -176,16 +176,38 @@ public class FinModValTest {
 	final Function<BorderStyle, BiFunction<BorderName, IndexedColors, Consumer<CellStyle>>> border_color = borderstyle -> (
 			border, color) -> cellstyle -> {
 				switch (border) {
-				case LEFT: {
+				case L, LEFT: {
+					cellstyle.setBorderLeft(borderstyle);
+				}
+				case T, TOP: {
+					cellstyle.setBorderTop(borderstyle);
+				}
+				case R, RIGHT: {
+					cellstyle.setBorderRight(borderstyle);
+				}
+				case B, BOTTOM: {
 					cellstyle.setBorderBottom(borderstyle);
 				}
-				case TOP: {
+				case LT, LEFT_TOP: {
+					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setBorderTop(borderstyle);
+				}
+				case LB, LEFT_BOTTOM: {
+					cellstyle.setBorderLeft(borderstyle);
 					cellstyle.setBorderBottom(borderstyle);
 				}
-				case RIGHT: {
+				case TR, TOP_RIGHT: {
+					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setBorderRight(borderstyle);
+				}
+				case RB, RIGHT_BOTTOM: {
+					cellstyle.setBorderRight(borderstyle);
 					cellstyle.setBorderBottom(borderstyle);
 				}
-				case BOTTOM: {
+				case ALL: {
+					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setBorderRight(borderstyle);
 					cellstyle.setBorderBottom(borderstyle);
 				}
 				default: {
