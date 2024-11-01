@@ -160,14 +160,13 @@ public class FinModValTest {
 	final Function<IndexedColors, Consumer<CellStyle>> background_color = color -> cellstyle -> {
 		cellstyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 		cellstyle.setFillForegroundColor(color.getIndex());
-		cellstyle.setFillBackgroundColor(color.getIndex());
 	};
 
 	/**
 	 * 边名称
 	 */
 	enum BorderName {
-		L, LEFT, T, TOP, R, RIGHT, B, BOTTOM, LT, LEFT_TOP, LB, LEFT_BOTTOM, TR, TOP_RIGHT, RB, RIGHT_BOTTOM, ALL
+		L, LEFT, T, TOP, R, RIGHT, B, BOTTOM, LT, LEFT_TOP, LB, LEFT_BOTTOM, TR, TOP_RIGHT, RB, RIGHT_BOTTOM, ALL, NONE
 	}
 
 	/**
@@ -178,37 +177,49 @@ public class FinModValTest {
 				switch (border) {
 				case L, LEFT: {
 					cellstyle.setBorderLeft(borderstyle);
+					break;
 				}
 				case T, TOP: {
 					cellstyle.setBorderTop(borderstyle);
+					break;
 				}
 				case R, RIGHT: {
 					cellstyle.setBorderRight(borderstyle);
+					break;
 				}
 				case B, BOTTOM: {
 					cellstyle.setBorderBottom(borderstyle);
+					break;
 				}
 				case LT, LEFT_TOP: {
 					cellstyle.setBorderLeft(borderstyle);
 					cellstyle.setBorderTop(borderstyle);
+					break;
 				}
 				case LB, LEFT_BOTTOM: {
 					cellstyle.setBorderLeft(borderstyle);
 					cellstyle.setBorderBottom(borderstyle);
+					break;
 				}
 				case TR, TOP_RIGHT: {
 					cellstyle.setBorderTop(borderstyle);
 					cellstyle.setBorderRight(borderstyle);
+					break;
 				}
 				case RB, RIGHT_BOTTOM: {
 					cellstyle.setBorderRight(borderstyle);
 					cellstyle.setBorderBottom(borderstyle);
+					break;
 				}
 				case ALL: {
 					cellstyle.setBorderLeft(borderstyle);
 					cellstyle.setBorderTop(borderstyle);
 					cellstyle.setBorderRight(borderstyle);
 					cellstyle.setBorderBottom(borderstyle);
+					break;
+				}
+				case NONE: {
+					// goto default
 				}
 				default: {
 					// nothing
