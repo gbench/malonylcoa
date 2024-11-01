@@ -38,6 +38,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -48,6 +49,7 @@ import gbench.util.io.FileSystem;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
 import gbench.util.lisp.Tuple2;
+import gbench.util.type.Pack;
 import gbench.util.type.Times;
 
 /**
@@ -1064,7 +1066,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入一段数据(不带有表头的书写格式) <br>
-	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param firstCell 第一个单元格
 	 * @param height    行数
@@ -1145,7 +1149,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入一段数据<br>
-	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param firstCell 第一个单元格
 	 * @param lines     按照行序列编排的数据内容，
@@ -1157,7 +1163,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * EXCEL 写入 <br>
-	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param firstCell 第一个单元格
 	 * @param mx        待写入的数据内容
@@ -1182,7 +1190,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入excel(不有表头的书写格式)<br>
-	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param shtname sheet 名称
 	 * @param address 地址名称
@@ -1195,7 +1205,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入excel (有表头的书写格式) <br>
-	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param shtname sheet 名称
 	 * @param address 地址名称
@@ -1209,7 +1221,9 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
-	 * 写入excel
+	 * 写入excel <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param fulladdress 位置全地址 比如：sheet2!C3
 	 * @param datas       数据内容
@@ -1222,7 +1236,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入excel (有表头的书写格式) <br>
-	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param fulladdress sheet2!C3
 	 * @param dmx         数据内容
@@ -1240,6 +1256,9 @@ public class SimpleExcel implements AutoCloseable {
 	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
 	 * 
 	 * 书写位置 默认为: DEFAULT_WRITE_CELL_ADDRESS <br>
+	 * <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param dmx 数据内容
 	 * @return SimpleExcel 对象本身 以实现链式编程
@@ -1250,7 +1269,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入excel (有表头的书写格式) <br>
-	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param fulladdress sheet2!C3
 	 * @param dfm         数据框
@@ -1267,6 +1288,9 @@ public class SimpleExcel implements AutoCloseable {
 	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。<br>
 	 * 
 	 * 书写位置 默认为: DEFAULT_WRITE_CELL_ADDRESS <br>
+	 * <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param dfm 数据内容
 	 * @return SimpleExcel 对象本身 以实现链式编程
@@ -1277,7 +1301,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入excel (不带有表头的书写格式) <br>
-	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param <T>         元素类型
 	 * @param fulladdress eg. sheet2!C3
@@ -1294,7 +1320,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入excel (不带有表头的书写格式) <br>
-	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param <T>         元素类型
 	 * @param fulladdress eg. sheet2!C3
@@ -1333,7 +1361,9 @@ public class SimpleExcel implements AutoCloseable {
 
 	/**
 	 * 写入excel (有表头的书写格式) <br>
-	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 若开启表头写入（默认），公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。 <br>
+	 * <br>
+	 * !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!
 	 * 
 	 * @param fulladdress sheet的全路径名
 	 * @param mx          数据矩阵
@@ -1399,10 +1429,37 @@ public class SimpleExcel implements AutoCloseable {
 	/**
 	 * 创建单元格式样
 	 * 
+	 * @return Font
+	 */
+	public Font createFont() {
+		return this.workbook.createFont();
+	}
+
+	/**
+	 * 创建字体
+	 * 
+	 * @return Pack&lt;Font&gt;
+	 */
+	public Pack<Font> packFont() {
+		return Pack.of(this.workbook.createFont());
+	}
+
+	/**
+	 * 创建单元格式样
+	 * 
 	 * @return CellStyle
 	 */
 	public CellStyle createCellStyle() {
 		return this.workbook.createCellStyle();
+	}
+
+	/**
+	 * 创建单元格式样
+	 * 
+	 * @return Pack&lt;CellStyle&gt;
+	 */
+	public Pack<CellStyle> packCellStyle() {
+		return Pack.of(this.workbook.createCellStyle());
 	}
 
 	/**

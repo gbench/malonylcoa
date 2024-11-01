@@ -1,13 +1,21 @@
 package gbench.sandbox.data.pignatoro.fmv;
 
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
 
 import static gbench.global.Globals.WS_HOME;
+import static gbench.util.data.xls.DataMatrix.xlsn;
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.CONS;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,6 +89,47 @@ public class FinModValTest {
 		final var GMARGIN = "Gross Margin"; // 毛利率
 		final var gmargin = lines.computeIfAbsent(GMARGIN, k -> div.apply(A(GPROFIT, REVENUE))); // 毛利率
 		println(GMARGIN, gmargin);
+
+		this.write("C:/Users/Administrator/Desktop/a.xlsx", lines);
+	}
+
+	/**
+	 * 数据写入
+	 * 
+	 * @param file  文件路径
+	 * @param lines {(key,[value0,value1,value2,...])}
+	 */
+	public void write(final String file, final Map<String, IRecord> lines) {
+		final var widedfm = lines.entrySet().stream() // 提取数据行结构(key:记录字段如'item';value:字段序列值,如：[2019,2020,2021])
+				.map(e -> IRecord.REC("item", e.getKey()).derive(e.getValue())).collect(DFrame.dfmclc); // 数据宽格式(首列元素为key)
+		final var shtname = "INCOME STATEMENT";
+		final BiConsumer<SimpleExcel, String> render_header = (excel, rngname) -> { // 绘制表头
+			excel.withRange(rngname, cell -> {
+				excel.packCellStyle().peek(e -> e.setFillPattern(FillPatternType.ALT_BARS))
+						.peek(e -> e.setFillForegroundColor(IndexedColors.BLUE.getIndex()))
+						.peek(e -> e.setFillBackgroundColor(IndexedColors.GREY_25_PERCENT.getIndex()))
+						.peek(e -> excel.packFont().peek(p -> p.setFontName("等线 Light")) // 设置单元格字体
+								.peek(p -> p.setColor(IndexedColors.WHITE.getIndex())).peek(p -> p.setBold(true))
+								.peek(e::setFont))
+						.peek(e -> e.setBorderBottom(BorderStyle.THICK))
+						.peek(e -> e.setBottomBorderColor(IndexedColors.RED.getIndex())).peek(cell::setCellStyle);
+			}); // 区域处理
+		}; // 表头渲染
+		final Function<DFrame, DFrame> render_data = data -> { // 数据处理
+			final var dfm = data.rowS().map(row -> row.tupleS().map(p -> // 二元组 key value pair
+			p.fmap2(e -> Objects.isNull(e) ? "-" : e)).collect(IRecord.recclc())) // p.fmap2表示值位置变换:把空值转换成'-'
+					.collect(DFrame.dfmclc);
+			return dfm;
+		}; // 数据处理
+		final BiFunction<Integer, Integer, Object[]> xn = (from, to) -> Stream.of(from, to).map(e -> xlsn(e))
+				.toArray(Object[]::new); // Excel列标签名
+
+		// 数据写入与格式化
+		try (final var excel = SimpleExcel.of(file)) {
+			render_header.accept(excel, "%s!%s1:%s1".formatted(CONS(shtname, xn.apply(0, widedfm.ncols() - 1)))); // 绘制首行
+			excel.write("%s!A1".formatted(shtname), render_data.apply(widedfm)).save();
+		}
+		println("完成写入！%s".formatted(file));
 	}
 
 	/**

@@ -467,9 +467,45 @@ public class DFrame implements Iterable<IRecord> {
 	 * @return 数据的尺寸 (行数,列数)
 	 */
 	public Tuple2<Integer, Integer> shape() {
+		return Tuple2.of(this.nrows(), this.ncols());
+	}
+
+	/**
+	 * 行数
+	 * 
+	 * @return
+	 */
+	public int nrows() {
 		final int m = this.rowsData.length;
+		return m;
+	}
+
+	/**
+	 * 行数(nrows)别名
+	 * 
+	 * @return
+	 */
+	public int height() {
+		return this.nrows();
+	}
+
+	/**
+	 * 列数量
+	 * 
+	 * @return
+	 */
+	public int ncols() {
 		final int n = this.cols().size();
-		return Tuple2.of(m, n);
+		return n;
+	}
+
+	/**
+	 * 列数量(ncols别名)
+	 * 
+	 * @return
+	 */
+	public int width() {
+		return this.ncols();
 	}
 
 	/**

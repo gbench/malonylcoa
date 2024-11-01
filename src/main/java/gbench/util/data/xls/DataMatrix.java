@@ -33,7 +33,7 @@ import java.util.stream.StreamSupport;
 import gbench.util.lisp.Tuple2;
 
 /**
- * DataMatrix
+ * DataMatrix(数据矩阵/二维对象数组)
  * 
  * @author gbench
  *
@@ -1495,6 +1495,17 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * index_to_excel_name 的 别名 <br>
+	 * 列名称： 从0开始 0->A,1->B;2->C;....,25->Z,26->AA
+	 *
+	 * @param n 数字 从0开始映射
+	 * @return 类似于EXCEL的列名称
+	 */
+	public static String xlsn(final int n) {
+		return index_to_excel_name(n);
+	}
+
+	/**
 	 * 列名称： 从0开始 0->A,1->B;2->C;....,25->Z,26->AA
 	 *
 	 * @param index 数字 从0开始映射
@@ -1924,8 +1935,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 矩阵归集器 列方向
 	 * 
-	 * @param <T> 元素
-	 * @param <V> 列元素
+	 * @param <T>    元素
+	 * @param <V>    列元素
 	 * @param tclass 元素类型类
 	 * @return 矩阵归集器
 	 */
