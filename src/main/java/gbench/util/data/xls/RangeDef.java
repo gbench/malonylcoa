@@ -2,6 +2,8 @@ package gbench.util.data.xls;
 
 import java.util.Optional;
 
+import gbench.util.jdbc.kvp.Tuple2;
+
 /**
  * 表示一个平面的额区的矩形区域(x:行号,y:列号) <br>
  * 
@@ -77,7 +79,7 @@ public class RangeDef {
 	}
 
 	/**
-	 * x0
+	 * x0 左上行号
 	 * 
 	 * @return x0
 	 */
@@ -146,6 +148,24 @@ public class RangeDef {
 	 */
 	public void y1(final int y1) {
 		this._y1 = y1;
+	}
+
+	/**
+	 * Left Top
+	 * 
+	 * @return (_1:左上行号,_2:左上列号)
+	 */
+	public Tuple2<Integer, Integer> lt() {
+		return Tuple2.of(this.x0(), this.y0());
+	}
+
+	/**
+	 * Right Bottom
+	 * 
+	 * @return (_1:右下行号,_2:右下列号)
+	 */
+	public Tuple2<Integer, Integer> rb() {
+		return Tuple2.of(this.x1(), this.y1());
 	}
 
 	/**

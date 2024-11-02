@@ -2178,6 +2178,34 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 生成新的长度空间
+		 * 
+		 * @param i      行偏移
+		 * @param j      列偏移
+		 * @param width  行长度
+		 * @param height 列长度
+		 * @return
+		 */
+		public AffectedArea span(final int i, final int j, final int width, final int height) {
+			return new AffectedArea(this.cell(i, j), width, height);
+		}
+
+		/**
+		 * 生成新的长度空间
+		 * 
+		 * @param i      行偏移
+		 * @param j      列偏移
+		 * @param width  行长度
+		 * @param height 列长度
+		 * @return
+		 */
+		public AffectedArea span(final String rngName) {
+			final var rng = SimpleExcel.name2rngdef(rngName);
+			final var lt = rng.lt();
+			return this.span(lt._1(), lt._2(), rng.width(), rng.height());
+		}
+
+		/**
 		 * 右下角的 偏移位置的地址 (0,0) 右下角元素
 		 * 
 		 * @param offset_x 行偏移 从0开始

@@ -41,7 +41,8 @@ public class WriteFileTest {
 				aa.row(0).border(BorderName.BOTTOM, BorderStyle.THICK, IndexedColors.RED)
 						.background(IndexedColors.BLUE_GREY).color(IndexedColors.WHITE)
 						.forEach(e -> e.setCellValue(ai.getAndIncrement()));
-				aa.row(1).write(1, 2, 4);
+				aa.row(1).write(1, 2, 4).offset(0, 0);
+				aa.row(1).span("A1:C6").background(IndexedColors.RED);
 				aa.row(2).color(IndexedColors.BLUE).bold(true).italic(true)
 						.forEach(e -> e.setCellValue(ai.getAndIncrement()));
 			});
