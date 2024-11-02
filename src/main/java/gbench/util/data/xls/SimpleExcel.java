@@ -1172,8 +1172,7 @@ public class SimpleExcel implements AutoCloseable {
 		} // for
 
 		// 更新影响区域
-		this.affectedArea.setShape(Tuple2.of(final_height, width));
-		this.affectedArea.setLtCell(firstCell);
+		this.setAffectedArea(new AffectedArea(firstCell, width, height));
 		// System.err.println(this.affectedArea);
 
 		return this;
@@ -1679,7 +1678,17 @@ public class SimpleExcel implements AutoCloseable {
 			this.selectSheet(rdf.sheetName());
 
 		}
-		return this.new AffectedArea(rdf, 0, 0).select();
+		return this.new AffectedArea(rdf, 0, 0).focus();
+	}
+
+	/**
+	 * 
+	 * @param aa
+	 * @return
+	 */
+	public synchronized SimpleExcel setAffectedArea(AffectedArea aa) {
+		this.affectedArea = aa;
+		return this;
 	}
 
 	/**
@@ -1919,6 +1928,7 @@ public class SimpleExcel implements AutoCloseable {
 	};
 
 	/**
+	 * AffectedArea被设计为记录一次书写完成以后的数据区域（受影响区域），但实际的使用却未必如此，他可以用于选区和改写
 	 * 影响范围(AffectedArea AA)
 	 * 
 	 * @author xuqinghua
@@ -2097,6 +2107,26 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 下一个区域
+		 * 
+		 * @param width
+		 * @param height
+		 */
+		public AffectedArea next(final int width, final int height) {
+			return new AffectedArea(this.activeCell(), width, height);
+		}
+
+		/**
+		 * 下一个区域
+		 * 
+		 * @param width
+		 * @param height
+		 */
+		public AffectedArea next() {
+			return this.next(1, 1);
+		}
+
+		/**
 		 * 基点位置
 		 * 
 		 * @return
@@ -2192,7 +2222,8 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
-		 * 当前活动Cell
+		 * AffectedArea被设计为记录一次书写完成以后的数据区域（受影响区域）,于是下一个可以书写的Cell就被称为ActiveCell <br>
+		 * 当前活动Cell(比邻选区正下方的第一个cell:可以用写入数据的位置)
 		 * 
 		 * @return 当前活动Cell
 		 */
@@ -2202,7 +2233,8 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
-		 * 当前活动Cell的地址
+		 * AffectedArea被视为一次书写完成以后得数据数据,于是下一个可以书写的Cell就被称为ActiveCell <br>
+		 * 当前活动Cell(比邻选区正下方的第一个cell)的地址
 		 * 
 		 * @return 当前活动Cell的地址
 		 */
@@ -2598,17 +2630,16 @@ public class SimpleExcel implements AutoCloseable {
 		 * 
 		 * @return
 		 */
-		public AffectedArea select() {
-			SimpleExcel.this.affectedArea.setLtCell(ltCell);
-			SimpleExcel.this.affectedArea.setShape(this.shape);
+		public AffectedArea focus() {
+			SimpleExcel.this.setAffectedArea(this);
 			return this;
 		}
 
 		/**
-		 * 数据书写
+		 * 数据书写（选区内数据写入）
 		 * 
-		 * @param <T>
-		 * @param ts
+		 * @param <T> 数据类型
+		 * @param ts  吸入的数据行
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
@@ -2617,15 +2648,14 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
-		 * 数据书写
+		 * 数据书写（选区内数据写入）
 		 * 
-		 * @param <T>
+		 * @param <T>  数据类型
 		 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
 		 * @param ts   书写的数据内容
 		 * @return
 		 */
-		@SuppressWarnings("unchecked")
-		public <T> AffectedArea writeLine(final boolean flag, final T... ts) {
+		public <T> AffectedArea writeLine(final boolean flag, final T[] ts) {
 			Optional.ofNullable(ts).map(e -> e.length > 0 ? e : null).ifPresent(data -> {
 				var i = 0; // 写入索引
 				final var n = ts.length; // 数据长度
@@ -2654,6 +2684,17 @@ public class SimpleExcel implements AutoCloseable {
 				}
 			});
 			return this;
+		}
+
+		/**
+		 * 提取数据流
+		 * 
+		 * @param <T>
+		 * @param mapper 单元格变换对象 cell-&gt;T
+		 * @return 流对象
+		 */
+		public <T> Stream<T> stream(final Function<? super Cell, T> mapper) {
+			return this.cellS().map(mapper);
 		}
 
 		/**
@@ -2838,7 +2879,7 @@ public class SimpleExcel implements AutoCloseable {
 	private Workbook workbook = new XSSFWorkbook();
 	private DataFormat datafmt = DataFormat.AUTO_FORMAT;
 	private boolean write_keys_flag = true;
-	private final AffectedArea affectedArea = new AffectedArea(null, Tuple2.of(0, 0)); // 操作的影响范围
+	private AffectedArea affectedArea = null; // 操作的影响范围
 	private final SimpleDateFormat sdf = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
 
 }
