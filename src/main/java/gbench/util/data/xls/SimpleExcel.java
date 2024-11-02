@@ -1529,6 +1529,16 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
+	 * 选择制定位置的sheet
+	 * 
+	 * @param i sheet 的编号
+	 * @return 选择表单
+	 */
+	public Optional<Sheet> selectSheetOpt(final int i) {
+		return Optional.ofNullable(this.selectSheet(i));
+	}
+
+	/**
 	 * 所有的Sheet 的流
 	 */
 	public Stream<Sheet> sheetS() {
@@ -1659,7 +1669,9 @@ public class SimpleExcel implements AutoCloseable {
 	public AffectedArea select(final String rangeName) {
 		final var rdf = SimpleExcel.name2rngdef(rangeName);
 		if (rdf.isBlankName()) {
-			this.selectSheet(0);
+			this.selectSheetOpt(0).orElseGet(() -> {
+				return this.selectSheet("Sheet1"); // 打开默认Sheet1
+			});
 		} else {
 			this.selectSheet(rdf.sheetName());
 
@@ -1942,10 +1954,20 @@ public class SimpleExcel implements AutoCloseable {
 		 * @param ltCell 左上单元格
 		 * @param area
 		 */
-		public AffectedArea(final Cell ltCell, final Tuple2<Integer, Integer> area) {
-			super();
+		public AffectedArea(final Cell ltCell, final Tuple2<Integer, Integer> area, final Pack<CellStyle> pcs) {
 			this.ltCell = ltCell;
 			this.shape = area;
+			this.pcs = pcs;
+		}
+
+		/**
+		 * 影响范围
+		 * 
+		 * @param ltCell 左上单元格
+		 * @param area
+		 */
+		public AffectedArea(final Cell ltCell, final Tuple2<Integer, Integer> area) {
+			this(ltCell, area, null);
 		}
 
 		/**
@@ -2367,8 +2389,8 @@ public class SimpleExcel implements AutoCloseable {
 		 * @param color
 		 * @return
 		 */
-		public AffectedArea bgclr(final IndexedColors color) {
-			excel.packCellStyle().peek(background_color.apply(color)).peek(this::paint);
+		public AffectedArea background(final IndexedColors color) {
+			this.pcs().peek(background_color.apply(color)).peek(this::paint);
 			return this;
 		}
 
@@ -2379,11 +2401,33 @@ public class SimpleExcel implements AutoCloseable {
 		 * @param color
 		 * @return
 		 */
-		public AffectedArea bdclr(final BorderName borderName, BorderStyle borderStyle, final IndexedColors color) {
+		public AffectedArea border() {
+			return this.border(null, null, null);
+		}
+
+		/**
+		 * 设置背景色
+		 * 
+		 * @param borderName
+		 * @param color
+		 * @return
+		 */
+		public AffectedArea border(final BorderName borderName, final IndexedColors color) {
+			return this.border(borderName, null, color);
+		}
+
+		/**
+		 * 设置背景色
+		 * 
+		 * @param borderName
+		 * @param color
+		 * @return
+		 */
+		public AffectedArea border(final BorderName borderName, BorderStyle borderStyle, final IndexedColors color) {
 			final var bn = Optional.ofNullable(borderName).orElse(BorderName.ALL);
 			final var bs = Optional.ofNullable(borderStyle).orElse(BorderStyle.THIN);
 			final var clr = Optional.ofNullable(color).orElse(IndexedColors.BLACK);
-			excel.packCellStyle().peek(border_color.apply(bs).apply(bn, clr)).peek(this::paint);
+			this.pcs().peek(border_color.apply(bs).apply(bn, clr)).peek(this::paint);
 			return this;
 		}
 
@@ -2394,8 +2438,10 @@ public class SimpleExcel implements AutoCloseable {
 		 * @param color
 		 * @return
 		 */
-		public AffectedArea bdclr(final BorderName borderName, final IndexedColors color) {
-			return this.bdclr(borderName, null, color);
+		public AffectedArea color(final IndexedColors color) {
+			excel.packFont().peek(font -> font.setColor(color.getIndex()))
+					.flatMap(font -> this.pcs().peek(e -> e.setFont(font))).peek(this::paint);
+			return this;
 		}
 
 		/**
@@ -2405,8 +2451,23 @@ public class SimpleExcel implements AutoCloseable {
 		 * @param color
 		 * @return
 		 */
-		public AffectedArea bdclr() {
-			return this.bdclr(null, null, null);
+		public AffectedArea bold(final boolean bold) {
+			excel.packFont().peek(font -> font.setBold(bold)).flatMap(font -> this.pcs().peek(e -> e.setFont(font)))
+					.peek(this::paint);
+			return this;
+		}
+
+		/**
+		 * 设置背景色
+		 * 
+		 * @param borderName
+		 * @param color
+		 * @return
+		 */
+		public AffectedArea italic(final boolean italic) {
+			excel.packFont().peek(font -> font.setItalic(italic)).flatMap(font -> this.pcs().peek(e -> e.setFont(font)))
+					.peek(this::paint);
+			return this;
 		}
 
 		/**
@@ -2438,6 +2499,41 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 
+		 * @param n 航索引
+		 * @return
+		 */
+		public Optional<AffectedArea> rowOpt(final int n) {
+			return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
+					.map(i -> new AffectedArea(this.cell(i, 0), 1, this.width()));
+		}
+
+		/**
+		 * 
+		 * @param n 航索引
+		 * @return
+		 */
+		public AffectedArea row(final int n) {
+			return this.rowOpt(n).orElse(null);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		public AffectedArea firstRow() {
+			return this.row(0);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		public AffectedArea lastRow() {
+			return this.row(this.nrows() - 1);
+		}
+
+		/**
 		 * 数据列
 		 * 
 		 * @return
@@ -2454,6 +2550,41 @@ public class SimpleExcel implements AutoCloseable {
 		 */
 		public List<AffectedArea> cols() {
 			return this.colS().toList();
+		}
+
+		/**
+		 * 
+		 * @param n 航索引
+		 * @return
+		 */
+		public Optional<AffectedArea> colOpt(final int n) {
+			return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
+					.map(i -> new AffectedArea(this.cell(0, i), this.height(), 1));
+		}
+
+		/**
+		 * 
+		 * @param n 航索引
+		 * @return
+		 */
+		public AffectedArea col(final int n) {
+			return this.colOpt(n).orElse(null);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		public AffectedArea firstCol() {
+			return this.col(0);
+		}
+
+		/**
+		 * 
+		 * @return
+		 */
+		public AffectedArea lastCol() {
+			return this.col(this.ncols() - 1);
 		}
 
 		/**
@@ -2499,6 +2630,27 @@ public class SimpleExcel implements AutoCloseable {
 					this.rowS().map(e -> "[%s]".formatted(e.cellS().map(String::valueOf) //
 							.collect(Collectors.joining(",")))).collect(Collectors.joining("\n")));
 		}
+
+		/**
+		 * 属性清空
+		 * 
+		 * @return
+		 */
+		public synchronized AffectedArea clear() {
+			this.pcs = null;
+			return this;
+		}
+
+		/**
+		 * 获取 Pack CellStyle
+		 * 
+		 * @return Pack CellStyle
+		 */
+		private synchronized Pack<CellStyle> pcs() {
+			return this.pcs == null ? this.pcs = excel.packCellStyle() : this.pcs;
+		}
+
+		private Pack<CellStyle> pcs;
 
 		/**
 		 * 左上角的单元格

@@ -47,6 +47,17 @@ public class Pack<T> {
 	};
 
 	/**
+	 * 值变换
+	 * 
+	 * @param <U>    结果对象
+	 * @param mapper t-&gt;u
+	 * @return
+	 */
+	public <U> Pack<U> flatMap(final Function<T, Pack<U>> mapper) {
+		return mapper.apply(value);
+	}
+
+	/**
 	 * 返回原来的数据
 	 * 
 	 * @return
