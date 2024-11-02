@@ -88,16 +88,8 @@ public class WriteFileTest {
 						style.setBorderBottom(BorderStyle.DASH_DOT);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
 					}).withTransaction(aa -> {
-						aa.firstRow().paint(style -> {
-							style.setBorderTop(BorderStyle.THIN);
-							style.setBottomBorderColor(IndexedColors.BLUE.getIndex());
-							style.setBorderBottom(BorderStyle.THICK);
-							style.setBottomBorderColor(IndexedColors.BLUE.getIndex());
-						});
-						aa.lastRow().paint(style -> {
-							style.setBorderBottom(BorderStyle.THIN);
-							style.setBottomBorderColor(IndexedColors.BLUE.getIndex());
-						});
+						aa.firstRow().paintHead(IndexedColors.RED);
+						aa.lastRow().paintLast(IndexedColors.RED);
 					}).save();
 		}
 		println("书写完毕");

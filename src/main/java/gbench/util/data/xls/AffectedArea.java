@@ -549,6 +549,34 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 头部行 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea paintHead(final IndexedColors color) {
+		this.paint(style -> {
+			style.setBorderTop(BorderStyle.THIN);
+			style.setBottomBorderColor(color.getIndex());
+			style.setBorderBottom(BorderStyle.THICK);
+			style.setBottomBorderColor(color.getIndex());
+		});
+		return this;
+	}
+
+	/**
+	 * 尾部行 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea paintLast(final IndexedColors color) {
+		this.paint(style -> {
+			style.setBorderBottom(BorderStyle.THIN);
+			style.setBottomBorderColor(color.getIndex());
+		});
+		return this;
+	}
+
+	/**
 	 * 设置背景色
 	 * 
 	 * @param color
