@@ -3,6 +3,7 @@ package gbench.sandbox.data.pignatoro.fmv;
 import static gbench.global.Globals.WS_HOME;
 import static gbench.util.array.INdarray.nats;
 import static gbench.util.io.Output.println;
+import static org.apache.poi.ss.usermodel.IndexedColors.RED;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +42,7 @@ public class WriteFileTest {
 				aa.row(0).border(BorderName.BOTTOM, BorderStyle.THICK, IndexedColors.RED)
 						.background(IndexedColors.BLUE_GREY).color(IndexedColors.WHITE)
 						.forEach(e -> e.setCellValue(ai.getAndIncrement()));
-				aa.row(1).write(1, 2, 4).offset(0, 0);
+				aa.row(1).update(1, 2, 4).offset(0, 0);
 				aa.row(1).span("A1:C6").background(IndexedColors.RED);
 				aa.row(2).color(IndexedColors.BLUE).bold(true).italic(true)
 						.forEach(e -> e.setCellValue(ai.getAndIncrement()));
@@ -49,6 +50,38 @@ public class WriteFileTest {
 			excel.write("C!D2", dfm).save();
 		}
 		println("completed:%s".formatted(this.outfile));
+	}
+
+	@Test
+	public void bar() {
+		try (final var excel = SimpleExcel.of(outfile)) {
+			excel.select("B4:E4") // 设置响应区域
+					.update("A,B,C,D".split(",")) // 表头:首行元素使用update
+					.italic().bold().topThin(RED).bottomThick(RED) //
+					.writeLine(1, 2, 3, 4) // 区域行使用writeLine
+					.writeLine(4, 5, 6, 7).bottomThin(RED) // 区域行使用writeLine
+					.save();
+		}
+		println("书写完毕");
+	}
+
+	@Test
+	public void qux() {
+		try (final var excel = SimpleExcel.of(outfile)) {
+			excel.select("B4:E4") // 设置响应区域
+					.update("A,B,C,D".split(",")) // 表头:首行元素使用update
+					.paint(style -> {
+						style.setBorderTop(BorderStyle.THIN);
+						style.setBorderBottom(BorderStyle.THICK);
+						style.setBottomBorderColor(IndexedColors.RED.getIndex());
+					}).writeLine(1, 2, 3, 4) // 区域行使用writeLine
+					.writeLine(4, 5, 6, 7) //
+					.paint(style -> {
+						style.setBorderBottom(BorderStyle.THIN);
+						style.setBottomBorderColor(IndexedColors.RED.getIndex());
+					}).save();
+		}
+		println("书写完毕");
 	}
 
 	/**

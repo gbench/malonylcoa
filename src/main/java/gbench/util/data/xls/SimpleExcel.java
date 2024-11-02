@@ -1169,7 +1169,7 @@ public class SimpleExcel implements AutoCloseable {
 		} // for
 
 		// 更新影响区域
-		this.setAffectedArea(new AffectedArea(this, firstCell, width, height));
+		this.setAffectedArea(new AffectedArea(this, firstCell, height, width));
 		// System.err.println(this.affectedArea);
 
 		return this;
@@ -1680,13 +1680,24 @@ public class SimpleExcel implements AutoCloseable {
 		final var rdf = DataMatrix.name2rdf(rangeName);
 		if (rdf.isBlankName()) {
 			this.selectSheetOpt(0).orElseGet(() -> {
-				return this.selectSheet("Sheet1"); // 打开默认Sheet1
+				final var shtname = this.getDefaultSheet();
+				println("使用默认“%s”代替".formatted(shtname));
+				return this.selectSheet(shtname); // 打开默认Sheet1
 			});
 		} else {
 			this.selectSheet(rdf.sheetName());
 
 		}
 		return new AffectedArea(this, rdf, 0, 0).focus();
+	}
+
+	/**
+	 * 默认sheet名称
+	 * 
+	 * @return
+	 */
+	public String getDefaultSheet() {
+		return DEFAULT_WRITE_CELL_ADDRESS.substring(0, DEFAULT_WRITE_CELL_ADDRESS.indexOf("!"));
 	}
 
 	/**

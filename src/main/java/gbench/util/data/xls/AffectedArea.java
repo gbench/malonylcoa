@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,14 +35,14 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 影响范围
 	 * 
 	 * @param ltCell 左上单元格
-	 * @param area
+	 * @param shape  (nrows,ncols)
 	 * @param excel  TODO
 	 */
-	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> area,
+	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> shape,
 			final Pack<CellStyle> pcs) {
 		this.excel = excel;
 		this.ltCell = ltCell;
-		this.shape = area;
+		this.shape = shape;
 		this.pcs = pcs;
 	}
 
@@ -49,22 +50,22 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 影响范围
 	 * 
 	 * @param ltCell 左上单元格
-	 * @param area
+	 * @param shape  (nrows,ncols)
 	 * @param excel  TODO
 	 */
-	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> area) {
-		this(excel, ltCell, area, null);
+	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> shape) {
+		this(excel, ltCell, shape, null);
 	}
 
 	/**
-	 * 影响范围
 	 * 
-	 * @param ltCell 左上单元格
-	 * @param excel  TODO
-	 * @param area
+	 * @param excel
+	 * @param ltCell
+	 * @param nrows
+	 * @param ncols
 	 */
-	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final int width, final int height) {
-		this(excel, ltCell, Tuple2.of(width, height));
+	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final int nrows, final int ncols) {
+		this(excel, ltCell, Tuple2.of(nrows, ncols));
 	}
 
 	/**
@@ -443,7 +444,7 @@ public class AffectedArea implements Iterable<Cell> {
 	@SafeVarargs
 	public final <T> AffectedArea writeLine(final String address, T... line) {
 		this.excel.write(address, line);
-		return this;
+		return this.excel.getAffectedArea();
 	}
 
 	/**
@@ -457,7 +458,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public <T> AffectedArea writeLines(final String address, final T lines[][]) {
 		this.excel.write(address, lines);
-		return this;
+		return this.excel.getAffectedArea();
 	}
 
 	/**
@@ -487,7 +488,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public <T> AffectedArea writeTable(final String address, final DataMatrix<T> datas) {
 		this.excel.write(address, datas);
-		return this;
+		return this.excel.getAffectedArea();
 	}
 
 	/**
@@ -501,7 +502,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public <T> AffectedArea writeTable(final String address, final DFrame datas) {
 		this.excel.write(address, datas);
-		return this;
+		return this.excel.getAffectedArea();
 	}
 
 	/**
@@ -518,12 +519,32 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 格式喷涂
 	 * 
+	 * @param pcs 单元格式样
+	 * @return
+	 */
+	public AffectedArea paint(final Pack<CellStyle> pcs) {
+		Optional.ofNullable(pcs).ifPresent(p -> p.peek(this::paint));
+		return this;
+	}
+
+	/**
+	 * 格式喷涂
+	 * 
 	 * @param pstyle 单元格式样
 	 * @return
 	 */
-	public AffectedArea paint(final Pack<CellStyle> pstyle) {
-		pstyle.peek(this::paint);
-		return this;
+	public AffectedArea paint() {
+		return this.paint(this.pcs);
+	}
+
+	/**
+	 * 设置区域喷涂
+	 * 
+	 * @param prepare 喷涂式样转呗
+	 * @return
+	 */
+	public AffectedArea paint(final Consumer<CellStyle> prepare) {
+		return this.paint(excel.packCellStyle().peek(prepare));
 	}
 
 	/**
@@ -566,6 +587,74 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param color
 	 * @return
 	 */
+	public AffectedArea bottomThick(final IndexedColors color) {
+		return this.border(BorderName.BOTTOM, BorderStyle.THICK,
+				Optional.ofNullable(color).orElse(IndexedColors.BLACK));
+	}
+
+	/**
+	 * 设置背景色
+	 * 
+	 * @param borderName
+	 * @param color
+	 * @return
+	 */
+	public AffectedArea bottomThin(final IndexedColors color) {
+		return this.border(BorderName.BOTTOM, BorderStyle.THIN, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
+	}
+
+	/**
+	 * 设置背景色
+	 * 
+	 * @param borderName
+	 * @param color
+	 * @return
+	 */
+	public AffectedArea bottomDouble(final IndexedColors color) {
+		return this.border(BorderName.BOTTOM, BorderStyle.DOUBLE,
+				Optional.ofNullable(color).orElse(IndexedColors.BLACK));
+	}
+
+	/**
+	 * 设置背景色
+	 * 
+	 * @param borderName
+	 * @param color
+	 * @return
+	 */
+	public AffectedArea topThick(final IndexedColors color) {
+		return this.border(BorderName.TOP, BorderStyle.THICK, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
+	}
+
+	/**
+	 * 设置背景色
+	 * 
+	 * @param borderName
+	 * @param color
+	 * @return
+	 */
+	public AffectedArea topThin(final IndexedColors color) {
+		return this.border(BorderName.TOP, BorderStyle.THIN, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
+	}
+
+	/**
+	 * 设置背景色
+	 * 
+	 * @param borderName
+	 * @param color
+	 * @return
+	 */
+	public AffectedArea topDouble(final IndexedColors color) {
+		return this.border(BorderName.TOP, BorderStyle.DOUBLE, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
+	}
+
+	/**
+	 * 设置背景色
+	 * 
+	 * @param borderName
+	 * @param color
+	 * @return
+	 */
 	public AffectedArea border(final BorderName borderName, BorderStyle borderStyle, final IndexedColors color) {
 		final var bn = Optional.ofNullable(borderName).orElse(BorderName.ALL);
 		final var bs = Optional.ofNullable(borderStyle).orElse(BorderStyle.THIN);
@@ -588,10 +677,9 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 设置背景色
+	 * 设置或是取消字体加黑
 	 * 
-	 * @param borderName
-	 * @param color
+	 * @param bold 是否字体加黑
 	 * @return
 	 */
 	public AffectedArea bold(final boolean bold) {
@@ -601,16 +689,33 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 设置背景色
+	 * 字体加黑
 	 * 
-	 * @param borderName
-	 * @param color
+	 * @return
+	 */
+	public AffectedArea bold() {
+		return bold(true);
+	}
+
+	/**
+	 * 设置或是取消字体倾斜
+	 * 
+	 * @param italic 是否字体倾斜
 	 * @return
 	 */
 	public AffectedArea italic(final boolean italic) {
 		excel.packFont().peek(font -> font.setItalic(italic)).flatMap(font -> this.pcs().peek(e -> e.setFont(font)))
 				.peek(this::paint);
 		return this;
+	}
+
+	/**
+	 * 设置或是取消字体倾斜
+	 * 
+	 * @return
+	 */
+	public AffectedArea italic() {
+		return this.italic(true);
 	}
 
 	/**
@@ -748,8 +853,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> AffectedArea write(final T... ts) {
-		return this.writeLine(true, ts);
+	public <T> AffectedArea update(final T... ts) {
+		return this.updateLine(true, ts);
 	}
 
 	/**
@@ -760,7 +865,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param ts   书写的数据内容
 	 * @return
 	 */
-	public <T> AffectedArea writeLine(final boolean flag, final T[] ts) {
+	public <T> AffectedArea updateLine(final boolean flag, final T[] ts) {
 		Optional.ofNullable(ts).map(e -> e.length > 0 ? e : null).ifPresent(data -> {
 			var i = 0; // 写入索引
 			final var n = ts.length; // 数据长度
@@ -822,6 +927,15 @@ public class AffectedArea implements Iterable<Cell> {
 		return this.cellS().toList();
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
+	public AffectedArea save() {
+		this.excel.save();
+		return this;
+	}
+
 	@Override
 	public Iterator<Cell> iterator() {
 		return this.cellS().iterator();
@@ -856,9 +970,19 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 获取 Pack CellStyle
 	 * 
+	 * @param cs 式样如处理器
 	 * @return Pack CellStyle
 	 */
-	private synchronized Pack<CellStyle> pcs() {
+	public Pack<CellStyle> pcs(final Consumer<CellStyle> cs) {
+		return this.pcs().peek(cs);
+	}
+
+	/**
+	 * 获取 Pack CellStyle
+	 * 
+	 * @return Pack CellStyle
+	 */
+	public synchronized Pack<CellStyle> pcs() {
 		return this.pcs == null ? this.pcs = excel.packCellStyle() : this.pcs;
 	}
 
