@@ -1796,32 +1796,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return 名称转rangedef
 	 */
 	public static RangeDef name2rngdef(final String rangeName) {
-		final String pattern = "(([A-Z]+)\\s*(\\d+))(\\s*:\\s*(([A-Z]+)\\s*(\\d+)))?";
-		if (rangeName == null) {
-			return null;
-		}
-
-		final String name = rangeName.toUpperCase(); // 转换成大写形式
-		final var i = name.indexOf("!");
-		final var line = i < 0 ? name : name.substring(i + 1);
-		final var sheetName = i >= 0 ? name.substring(0, i) : null;
-		final Matcher matcher = Pattern.compile(pattern).matcher(line);
-
-		RangeDef rangedef = null;// 数值区域
-		if (matcher.find()) {
-			final String y0 = matcher.group(2).replaceAll("\\s*", ""); // 左上列号
-			final String x0 = matcher.group(3).replaceAll("\\s*", ""); // 左上行号
-			final String y1 = matcher.group(6).replaceAll("\\s*", ""); // 右下列号
-			final String x1 = matcher.group(7).replaceAll("\\s*", ""); // 右下行号
-			final Integer ix0 = DataMatrix.excel_name_to_index(x0);
-			final Integer iy0 = DataMatrix.excel_name_to_index(y0);
-			final Integer ix1 = DataMatrix.excel_name_to_index(x1);
-			final Integer iy1 = DataMatrix.excel_name_to_index(y1);
-
-			rangedef = new RangeDef(sheetName, ix0, iy0, ix1, iy1);
-		} // if
-
-		return rangedef; // 数据区域内容
+		return DataMatrix.name2rdf(rangeName);
 	}
 
 	/**

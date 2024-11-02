@@ -913,7 +913,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return DataMatrix 对象
 	 */
 	public DataMatrix<T> submx(final String rangeName) {
-		final RangeDef rangeDef = DataMatrix.name2rngdef(rangeName);
+		final RangeDef rangeDef = DataMatrix.name2rdf(rangeName);
 		final T[][] tt = DataMatrix.submx(this.cells, rangeDef.x0(), rangeDef.y0(), rangeDef.x1(), rangeDef.y1());
 		return DataMatrix.of((Iterable<String>) null, tt);
 	}
@@ -1452,35 +1452,41 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 把excel 名称转换成位置坐标
-	 *
-	 * @param rangeName A1:B13这样的字符串
+	 * 把excel名称转换成位置坐标(RangeDef)
+	 * 
+	 * @param nameline 名称行‘Sheet1!C2:D3’ 或是 ‘C2:D3’ 这样的字符串
 	 * @return 名称转rangedef
 	 */
-	public static RangeDef name2rngdef(final String rangeName) {
+	public static RangeDef name2rdf(final String nameline) {
 		final String pattern = "(([A-Z]+)\\s*(\\d+))(\\s*:\\s*(([A-Z]+)\\s*(\\d+)))?";
-		if (rangeName == null) {
+		if (nameline == null) {
 			return null;
 		}
 
-		final String name = rangeName.toUpperCase(); // 转换成大写形式
-		final Matcher matcher = Pattern.compile(pattern).matcher(name);
-
-		RangeDef rangedef = null;// 数值区域
+		final var i = nameline.indexOf("!");
+		final String name = nameline.toUpperCase(); // 转换成大写形式
+		final var line = (i < 0 ? name : name.substring(i + 1)).strip();
+		final var sheetName = i >= 0 ? nameline.substring(0, i).strip() : null;
+		final Matcher matcher = Pattern.compile(pattern).matcher(line);
+		final Function<Integer, String> reader = id -> Optional.ofNullable(matcher.group(id)) //
+				.map(String::strip).orElse(null);
+		final RangeDef rdf;// 数值区域
 		if (matcher.find()) {
-			final String y0 = matcher.group(2).replaceAll("\\s*", "");
-			final String x0 = matcher.group(3).replaceAll("\\s*", "");
-			final String y1 = matcher.group(6).replaceAll("\\s*", "");
-			final String x1 = matcher.group(7).replaceAll("\\s*", "");
-			final Integer ix0 = DataMatrix.excel_name_to_index(x0);
-			final Integer iy0 = DataMatrix.excel_name_to_index(y0);
-			final Integer ix1 = DataMatrix.excel_name_to_index(x1);
-			final Integer iy1 = DataMatrix.excel_name_to_index(y1);
+			final String y0 = reader.apply(2); // 左上列号
+			final String x0 = reader.apply(3); // 左上行号
+			final String y1 = reader.apply(6); // 右下列号
+			final String x1 = reader.apply(7); // 右下行号
+			final Integer ix0 = DataMatrix.xlsn2id(x0);
+			final Integer iy0 = DataMatrix.xlsn2id(y0);
+			final Integer ix1 = DataMatrix.xlsn2id(x1);
+			final Integer iy1 = DataMatrix.xlsn2id(y1);
 
-			rangedef = new RangeDef(ix0, iy0, ix1, iy1);
-		} // if
+			rdf = new RangeDef(sheetName, ix0, iy0, ix1, iy1);
+		} else { // if
+			rdf = null;
+		}
 
-		return rangedef; // 数据区域内容
+		return rdf; // 数据区域内容
 	}
 
 	/**
@@ -1548,6 +1554,16 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		final int index = num;
 
 		return index;
+	}
+
+	/**
+	 * 把A转换成0,b转换成1,aa 转换成26 如果line 本身就是一个数字则直接返回 "A1:B2" -> x0=0, y0=0, x1=1, y1=1
+	 *
+	 * @param name 字符串: 字符类别,A:转换成0,B 转换成1,AAA 转换成 702 数字类别 ,1:转换哼0,2 转换成 1;
+	 * @return 数据解析
+	 */
+	public static Integer xlsn2id(final String name) {
+		return DataMatrix.excel_name_to_index(name);
 	}
 
 	/**
