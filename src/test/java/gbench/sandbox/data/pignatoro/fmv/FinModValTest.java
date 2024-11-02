@@ -11,6 +11,7 @@ import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.CONS;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,7 +50,8 @@ public class FinModValTest {
 				.flatMap(strmx -> strmx.headOpt().map(rec -> rec.set(0, "item").toArray(String.class::cast))) // 第一列改名为item
 				.flatMap(keys -> excel.rangeOpt(bdname, keys, dfmapper)).orElse(null);
 		println("INCOME STATEMENT", stmtdfm); // 利润表
-		final var lines = stmtdfm.rowS().collect(Collectors.toMap(e -> e.str(0), e -> e.filterNot(0), (a, b) -> b)); // 数据行,同名覆盖
+		final var lines = stmtdfm.rowS().collect(Collectors.toMap(e -> e.str(0), e -> e.filterNot(0), //
+				(a, b) -> b, LinkedHashMap::new)); // 数据行,同名覆盖
 		println("-- ".repeat(100));
 		final var NPS = "Net product sales"; // 产品销售收入
 		final var NSS = "Net service sales"; // 服务销售收入
@@ -75,7 +77,8 @@ public class FinModValTest {
 						.map(entry -> entry.dbl("current") / entry.dbl("previous") - 1).toArray(Double[]::new)) // 计算增长率
 				.map(e -> CONS(null, CONS(null, e))).map(IRecord.rb(stmtproto.keys())::get).orElse(null); // item,首项的增长率为null
 		final var REVENUE_GROWTH = "REVENUE_GROWTH"; // 收入增长率
-		final var revenue_growth = lines.computeIfAbsent(REVENUE_GROWTH, k -> growth_eval.apply(REVENUE)); // 计算收入增长率
+		final var revenue_growth = lines.computeIfAbsent(REVENUE_GROWTH, // 计算收入增长率
+				k -> growth_eval.apply(REVENUE).set("item", REVENUE_GROWTH)); // 指定item项目为为计算收入增长率
 		println(REVENUE_GROWTH, revenue_growth);
 
 		// 毛利润
