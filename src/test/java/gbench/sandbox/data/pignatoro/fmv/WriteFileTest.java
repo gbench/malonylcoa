@@ -3,12 +3,14 @@ package gbench.sandbox.data.pignatoro.fmv;
 import static gbench.global.Globals.WS_HOME;
 import static gbench.util.array.INdarray.nats;
 import static gbench.util.io.Output.println;
+import static gbench.util.lisp.Lisp.RPTA;
 import static org.apache.poi.ss.usermodel.IndexedColors.RED;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
 
@@ -69,16 +71,33 @@ public class WriteFileTest {
 	public void qux() {
 		try (final var excel = SimpleExcel.of(outfile)) {
 			excel.select("B4:E4") // 设置响应区域
-					.update("A,B,C,D".split(",")) // 表头:首行元素使用update
-					.paint(style -> {
+					.update("A,B,C,D".split(",")).paint(style -> { // 表头:首行元素使用update
 						style.setBorderTop(BorderStyle.THIN);
 						style.setBorderBottom(BorderStyle.THICK);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
 					}).writeLine(1, 2, 3, 4) // 区域行使用writeLine
-					.writeLine(4, 5, 6, 7) //
-					.paint(style -> {
+					.writeLine(4, 5, 6, 7).paint(style -> { // 绘制结尾 式样
 						style.setBorderBottom(BorderStyle.THIN);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
+					}).writeColumn(1, 2, 3, 4).paint(style -> { // 书写一列元素
+						style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+						style.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
+					}).writeLines(RPTA("".split(""), 5)) // 吸入5个空行
+					.writeTable(nats(25).cuts(5).map(d -> IRecord.rb("ABCDE".split("")).get(d)).collect(DFrame.dfmclc))
+					.paint(style -> { // 绘制数据表式样
+						style.setBorderBottom(BorderStyle.DASH_DOT);
+						style.setBottomBorderColor(IndexedColors.RED.getIndex());
+					}).withTransaction(aa -> {
+						aa.firstRow().paint(style -> {
+							style.setBorderTop(BorderStyle.THIN);
+							style.setBottomBorderColor(IndexedColors.BLUE.getIndex());
+							style.setBorderBottom(BorderStyle.THICK);
+							style.setBottomBorderColor(IndexedColors.BLUE.getIndex());
+						});
+						aa.lastRow().paint(style -> {
+							style.setBorderBottom(BorderStyle.THIN);
+							style.setBottomBorderColor(IndexedColors.BLUE.getIndex());
+						});
 					}).save();
 		}
 		println("书写完毕");

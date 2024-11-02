@@ -958,6 +958,17 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 单位会话处理
+	 * 
+	 * @param action 单位会话
+	 * @return
+	 */
+	public AffectedArea withTransaction(final Consumer<AffectedArea> action) {
+		action.accept(this);
+		return this;
+	}
+
+	/**
 	 * 属性清空
 	 * 
 	 * @return
