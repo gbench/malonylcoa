@@ -8,9 +8,11 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,6 +45,7 @@ import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -2599,6 +2602,58 @@ public class SimpleExcel implements AutoCloseable {
 		}
 
 		/**
+		 * 数据书写
+		 * 
+		 * @param <T>
+		 * @param ts
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+		public <T> AffectedArea write(final T... ts) {
+			return this.writeLine(true, ts);
+		}
+
+		/**
+		 * 数据书写
+		 * 
+		 * @param <T>
+		 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
+		 * @param ts   书写的数据内容
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+		public <T> AffectedArea writeLine(final boolean flag, final T... ts) {
+			Optional.ofNullable(ts).map(e -> e.length > 0 ? e : null).ifPresent(data -> {
+				var i = 0; // 写入索引
+				final var n = ts.length; // 数据长度
+
+				for (final var e : this.cells()) {
+					if (flag && i >= n) { // 信息书写完毕
+						break;
+					}
+					final var value = data[(i++) % n];
+					if (value instanceof Number num) {
+						e.setCellValue(num.doubleValue());
+					} else if (value instanceof Date dt) {
+						e.setCellValue(dt);
+					} else if (value instanceof Boolean bool) {
+						e.setCellValue(bool);
+					} else if (value instanceof LocalDate ldt) {
+						e.setCellValue(ldt);
+					} else if (value instanceof RichTextString rts) {
+						e.setCellValue(rts);
+					} else if (value instanceof Calendar calendar) {
+						e.setCellValue(calendar);
+					} else { //
+						e.setCellValue(String.valueOf(value));
+					}
+
+				}
+			});
+			return this;
+		}
+
+		/**
 		 * 单元格流序列（行顺序）
 		 * 
 		 * @return
@@ -2607,6 +2662,15 @@ public class SimpleExcel implements AutoCloseable {
 			return Stream.iterate(0, i -> i + 1).limit(this.nrows())
 					.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(this.ncols()).map(j -> this.cell(i, j)));
 
+		}
+
+		/**
+		 * 单元格流序列（行顺序）
+		 * 
+		 * @return
+		 */
+		public List<Cell> cells() {
+			return this.cellS().toList();
 		}
 
 		@Override
