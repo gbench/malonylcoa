@@ -116,13 +116,13 @@ public class FinModValTest {
 		final var widedfm = lines.entrySet().stream() // 提取数据行结构(key:记录字段如'item';value:字段序列值,如：[2019,2020,2021])
 				.map(e -> IRecord.REC("item", e.getKey()).derive(e.getValue())).collect(DFrame.dfmclc); // 数据宽格式(首列元素为key)
 		final BiConsumer<SimpleExcel, String> render_header = (excel, rngname) -> { // 绘制表头
-			excel.withRange(rngname, cell -> excel.packCellStyle() // 区域处理
+			excel.withRange(rngname, cell -> excel.packCellStyle(null) // 区域处理
 					.peek(cellstyle -> cellstyle.setFillPattern(FillPatternType.ALT_BARS)) // 填充图案
 					.peek(cellstyle -> cellstyle.setFillForegroundColor(IndexedColors.BLUE.getIndex())) // 图案颜色
 					.peek(cellstyle -> cellstyle.setFillBackgroundColor(IndexedColors.GREY_25_PERCENT.getIndex())) // 背景颜色
 					.peek(cellstyle -> cellstyle.setBorderBottom(BorderStyle.THICK)) // 边线宽度
 					.peek(cellstyle -> cellstyle.setBottomBorderColor(IndexedColors.RED.getIndex())) // 边线颜色
-					.peek(cellstyle -> excel.packFont().peek(font -> font.setFontName("等线 Light")) // 设置单元格字体
+					.peek(cellstyle -> excel.packFont(null).peek(font -> font.setFontName("等线 Light")) // 设置单元格字体
 							.peek(font -> font.setColor(IndexedColors.WHITE.getIndex())) // 字体颜色
 							.peek(font -> font.setBold(true)) // 黑体
 							.peek(cellstyle::setFont))
@@ -145,7 +145,7 @@ public class FinModValTest {
 			render_header.accept(excel, rg_header_name); // 绘制首行
 			// 数据写入
 			excel.write(rg_data_name, render_data.apply(widedfm)).withAffectedArea(aa -> { // 数据格调整
-				final var pcs = excel.packCellStyle().peek(background_color.apply(IndexedColors.YELLOW))// PackCellStyle
+				final var pcs = excel.packCellStyle(null).peek(background_color.apply(IndexedColors.YELLOW))// PackCellStyle
 						.peek(border_color.apply(BorderStyle.THIN).apply(BorderName.BOTTOM, IndexedColors.GREEN));
 				final var ai = new AtomicInteger(1); // 计数器
 				aa.rowS().filter(e -> ai.getAndIncrement() % 2 == 0).forEach(e -> e.paint(pcs));

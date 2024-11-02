@@ -537,7 +537,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paint(final CellStyle newstyle) {
-		return this.paint((cell, oldstyle) -> cell.setCellStyle(newstyle));
+		return this.paint((cell, oldstyle) -> {
+			System.out.println("%s".formatted(oldstyle.equals(newstyle)));
+			cell.setCellStyle(newstyle);
+		});
 	}
 
 	/**
