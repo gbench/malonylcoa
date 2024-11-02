@@ -1466,24 +1466,6 @@ public class SimpleExcel implements AutoCloseable {
 	/**
 	 * 创建单元格式样
 	 * 
-	 * @return Font
-	 */
-	public Font createFont() {
-		return this.workbook.createFont();
-	}
-
-	/**
-	 * 创建字体
-	 * 
-	 * @return Pack&lt;Font&gt;
-	 */
-	public Pack<Font> packFont() {
-		return Pack.of(this.workbook.createFont());
-	}
-
-	/**
-	 * 创建单元格式样
-	 * 
 	 * @return CellStyle
 	 */
 	public CellStyle createCellStyle() {
@@ -1495,8 +1477,21 @@ public class SimpleExcel implements AutoCloseable {
 	 * 
 	 * @return Pack&lt;CellStyle&gt;
 	 */
-	public Pack<CellStyle> packCellStyle() {
-		return Pack.of(this.workbook.createCellStyle());
+	public Pack<CellStyle> packCellStyle(final Cell cell) {
+		return Optional.ofNullable(cell).map(c -> Pack.of(c.getCellStyle()))
+				.orElseGet(() -> Pack.of(this.createCellStyle()));
+
+	}
+
+	/**
+	 * 创建字体
+	 * 
+	 * @return Pack&lt;Font&gt;
+	 */
+	public Pack<Font> packFont(final Cell cell) {
+		return Optional.ofNullable(cell).map(c -> c.getCellStyle().getFontIndex()).map(this.workbook::getFontAt)
+				.map(Pack::of).orElseGet(() -> Pack.of(this.workbook.createFont()));
+
 	}
 
 	/**

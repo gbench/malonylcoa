@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -522,9 +523,21 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param style 单元格式样
 	 * @return
 	 */
-	public AffectedArea paint(final CellStyle style) {
-		this.forEach(cell -> cell.setCellStyle(style));
+	public AffectedArea paint(final BiConsumer<Cell, CellStyle> action) {
+		this.forEach(cell -> {
+			action.accept(cell, cell.getCellStyle());
+		});
 		return this;
+	}
+
+	/**
+	 * 格式喷涂
+	 * 
+	 * @param newstyle 单元格式样
+	 * @return
+	 */
+	public AffectedArea paint(final CellStyle newstyle) {
+		return this.paint((cell, oldstyle) -> cell.setCellStyle(newstyle));
 	}
 
 	/**
@@ -555,7 +568,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paint(final Consumer<CellStyle> prepare) {
-		return this.paint(excel.packCellStyle().peek(prepare));
+		return this.paint(excel.packCellStyle(this.origin()).peek(prepare));
 	}
 
 	/**
@@ -593,7 +606,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea background(final IndexedColors color) {
-		this.pcs().peek(SimpleExcel.background_color.apply(color)).peek(this::paint);
+		this.pcs(SimpleExcel.background_color.apply(color)).peek(this::paint);
 		return this;
 	}
 
@@ -698,7 +711,8 @@ public class AffectedArea implements Iterable<Cell> {
 		final var bn = Optional.ofNullable(borderName).orElse(BorderName.ALL);
 		final var bs = Optional.ofNullable(borderStyle).orElse(BorderStyle.THIN);
 		final var clr = Optional.ofNullable(color).orElse(IndexedColors.BLACK);
-		this.pcs().peek(SimpleExcel.border_color.apply(bs).apply(bn, clr)).peek(this::paint);
+		this.pcs(SimpleExcel.border_color.apply(bs).apply(bn, clr)).peek(this::paint);
+
 		return this;
 	}
 
@@ -710,8 +724,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea color(final IndexedColors color) {
-		excel.packFont().peek(font -> font.setColor(color.getIndex()))
-				.flatMap(font -> this.pcs().peek(e -> e.setFont(font))).peek(this::paint);
+		excel.packFont(this.ltCell).peek(font -> font.setColor(color.getIndex()))
+				.flatMap(font -> this.pcs(e -> e.setFont(font))).peek(this::paint);
 		return this;
 	}
 
@@ -722,7 +736,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea bold(final boolean bold) {
-		excel.packFont().peek(font -> font.setBold(bold)).flatMap(font -> this.pcs().peek(e -> e.setFont(font)))
+		excel.packFont(this.origin()).peek(font -> font.setBold(bold)).flatMap(font -> this.pcs(e -> e.setFont(font)))
 				.peek(this::paint);
 		return this;
 	}
@@ -743,8 +757,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea italic(final boolean italic) {
-		excel.packFont().peek(font -> font.setItalic(italic)).flatMap(font -> this.pcs().peek(e -> e.setFont(font)))
-				.peek(this::paint);
+		excel.packFont(this.origin()).peek(font -> font.setItalic(italic))
+				.flatMap(font -> this.pcs(e -> e.setFont(font))).peek(this::paint);
 		return this;
 	}
 
@@ -1033,7 +1047,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return Pack CellStyle
 	 */
 	public synchronized Pack<CellStyle> pcs() {
-		return this.pcs == null ? this.pcs = excel.packCellStyle() : this.pcs;
+		return this.pcs == null ? this.pcs = excel.packCellStyle(this.origin()) : this.pcs;
 	}
 
 	/**
