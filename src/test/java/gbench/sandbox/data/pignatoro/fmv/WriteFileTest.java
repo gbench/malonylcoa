@@ -15,6 +15,7 @@ import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
 
 import gbench.util.lisp.DFrame;
+import gbench.util.data.xls.AffectedArea;
 import gbench.util.data.xls.DataMatrix;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.data.xls.SimpleExcel.BorderName;
@@ -64,7 +65,7 @@ public class WriteFileTest {
 					.writeLine(4, 5, 6, 7).bottomThin(RED) // 区域行使用writeLine
 					.save();
 		}
-		println("书写完毕");
+		println("书写完毕：%s".formatted(outfile));
 	}
 
 	@Test
@@ -92,13 +93,14 @@ public class WriteFileTest {
 						aa.lastRow().paintLast(IndexedColors.RED);
 					}).save();
 		}
-		println("书写完毕");
+		println("书写完毕：%s".formatted(outfile));
 	}
 
 	@Test
 	public void quz() {
+		AffectedArea.debug = true; // 开启调试标记
 		try (final var excel = SimpleExcel.of(outfile)) {
-			excel.select("Sheet2!A1") // 设置响应区域
+			excel.select("Sheet2!B1") // 设置响应区域
 					.writeTable(nats(25).cuts(5).map(d -> IRecord.rb("ABCDE".split("")).get(d)).collect(DFrame.dfmclc))
 					.paint(style -> { // 绘制数据表式样
 						style.setBorderBottom(BorderStyle.DASH_DOT);
@@ -108,6 +110,7 @@ public class WriteFileTest {
 						aa.lastRow().paintLast(IndexedColors.RED);
 					}).save();
 		}
+		println("书写完毕：%s".formatted(outfile));
 	}
 
 	/**

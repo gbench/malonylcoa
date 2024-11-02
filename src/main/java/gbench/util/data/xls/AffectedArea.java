@@ -417,8 +417,11 @@ public class AffectedArea implements Iterable<Cell> {
 		final var origin = this.origin();
 		final var origin_address = origin.getAddress();
 		final var active_address = this.activeAddress();
+
 		if (AffectedArea.debug) {
-			System.err.println("writeTable:origin:%s,active:%s(write at)".formatted(origin_address, active_address));
+			final var line = "清洁区的writeTable:origin:%s(affected:内容/感染区),active:%s(write at:清洁区)" //
+					.formatted(origin_address, active_address);
+			System.err.println(line);
 		}
 		return this.writeTable(active_address, datas);
 	}
