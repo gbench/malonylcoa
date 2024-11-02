@@ -36,7 +36,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param ltCell 左上单元格
 	 * @param shape  (nrows,ncols)
-	 * @param excel  TODO
+	 * @param excel  excel对象
 	 */
 	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> shape,
 			final Pack<CellStyle> pcs) {
@@ -51,7 +51,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param ltCell 左上单元格
 	 * @param shape  (nrows,ncols)
-	 * @param excel  TODO
+	 * @param excel  excel对象
 	 */
 	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> shape) {
 		this(excel, ltCell, shape, null);
@@ -72,7 +72,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 影响范围
 	 * 
 	 * @param rgname 相对区域名称
-	 * @param excel  TODO
+	 * @param excel  excel对象
 	 * @param startx 开始行偏移从0开始
 	 * @param starty 开始列偏移从0开始
 	 */
@@ -86,7 +86,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param rgname 相对区域名称
 	 * @param startx 开始行偏移从0开始
 	 * @param starty 开始列偏移从0开始
-	 * @param excel  TODO
+	 * @param excel  excel对象
 	 */
 	public AffectedArea(final SimpleExcel excel, final String rgname, final int startx, int starty) {
 		this(excel, DataMatrix.name2rdf(rgname), startx, starty);
@@ -96,7 +96,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 影响范围
 	 * 
-	 * @param excel  TODO
+	 * @param excel  excel对象
 	 * 
 	 * @param rgname 相对区域名称
 	 * @param startx 开始行偏移从0开始
@@ -112,7 +112,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param rgname 相对区域名称
 	 * @param startx 开始行偏移从0开始
 	 * @param starty 开始列偏移从0开始
-	 * @param excel  TODO
+	 * @param excel  excel对象
 	 */
 	public AffectedArea(final SimpleExcel excel, final RangeDef rdf, final int startx, int starty) {
 		this.excel = excel;
@@ -414,7 +414,13 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public <T> AffectedArea writeTable(final DFrame datas) {
-		return this.writeTable(this.activeAddress(), datas);
+		final var origin = this.origin();
+		final var origin_address = origin.getAddress();
+		final var active_address = this.activeAddress();
+		if (AffectedArea.debug) {
+			System.err.println("writeTable:origin:%s,active:%s(write at)".formatted(origin_address, active_address));
+		}
+		return this.writeTable(active_address, datas);
 	}
 
 	/**
@@ -1043,5 +1049,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 * excel
 	 */
 	public final SimpleExcel excel;
+
+	/**
+	 * 调试标记
+	 */
+	public static boolean debug = false;
 
 }

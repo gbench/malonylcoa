@@ -95,6 +95,21 @@ public class WriteFileTest {
 		println("书写完毕");
 	}
 
+	@Test
+	public void quz() {
+		try (final var excel = SimpleExcel.of(outfile)) {
+			excel.select("Sheet2!A1") // 设置响应区域
+					.writeTable(nats(25).cuts(5).map(d -> IRecord.rb("ABCDE".split("")).get(d)).collect(DFrame.dfmclc))
+					.paint(style -> { // 绘制数据表式样
+						style.setBorderBottom(BorderStyle.DASH_DOT);
+						style.setBottomBorderColor(IndexedColors.RED.getIndex());
+					}).withTransaction(aa -> {
+						aa.firstRow().paintHead(IndexedColors.RED);
+						aa.lastRow().paintLast(IndexedColors.RED);
+					}).save();
+		}
+	}
+
 	/**
 	 * 数据源文件
 	 */

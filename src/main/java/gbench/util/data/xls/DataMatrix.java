@@ -1454,7 +1454,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	/**
 	 * 把excel名称转换成位置坐标(RangeDef)
 	 * 
-	 * @param nameline 名称行‘Sheet1!C2:D3’ 或是 ‘C2:D3’ 这样的字符串
+	 * @param nameline 名称行‘Sheet1!C2:D3’ 或是 ‘C2:D3’ 这样的字符串;<br>
+	 *                 需要注意对于nameline为:'A1'这样的名称长会被视为'A1:A1'的单个单元格进行处理
 	 * @return 名称转rangedef
 	 */
 	public static RangeDef name2rdf(final String nameline) {
@@ -1474,8 +1475,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		if (matcher.find()) {
 			final String y0 = reader.apply(2); // 左上列号
 			final String x0 = reader.apply(3); // 左上行号
-			final String y1 = reader.apply(6); // 右下列号
-			final String x1 = reader.apply(7); // 右下行号
+			final String y1 = Optional.ofNullable(reader.apply(6)).orElse(y0); // 右下列号:默认为y0
+			final String x1 = Optional.ofNullable(reader.apply(7)).orElse(x0); // 右下行号:默认为x0
 			final Integer ix0 = DataMatrix.xlsn2id(x0);
 			final Integer iy0 = DataMatrix.xlsn2id(y0);
 			final Integer ix1 = DataMatrix.xlsn2id(x1);
