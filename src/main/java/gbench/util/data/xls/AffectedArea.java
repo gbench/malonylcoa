@@ -328,6 +328,7 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 书写位点:write操作的默认书写位置<br>
 	 * AffectedArea被设计为记录一次书写完成以后的数据区域（受影响区域）,于是下一个可以书写的Cell就被称为ActiveCell <br>
 	 * 当前活动Cell(比邻选区正下方的第一个cell:可以用写入数据的位置)
 	 * 
