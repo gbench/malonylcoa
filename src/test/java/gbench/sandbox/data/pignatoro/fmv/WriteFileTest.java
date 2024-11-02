@@ -108,6 +108,7 @@ public class WriteFileTest {
 					}).withTransaction(aa -> {
 						aa.firstRow().paintHead(IndexedColors.RED);
 						aa.lastRow().paintLast(IndexedColors.RED);
+						println(aa.firstRow().equals(aa.firstRow()));
 					}).save();
 		}
 		println("书写完毕：%s".formatted(outfile));

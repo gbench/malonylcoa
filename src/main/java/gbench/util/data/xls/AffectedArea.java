@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -1033,6 +1034,29 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public synchronized Pack<CellStyle> pcs() {
 		return this.pcs == null ? this.pcs = excel.packCellStyle() : this.pcs;
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public int hashCode() {
+		return Objects.hash(pcs, ltCell, shape, excel);
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj == this)
+			return true;
+		if (obj instanceof AffectedArea aa) {
+			return Objects.equals(this.pcs, aa.pcs) && Objects.equals(this.pcs, aa.pcs)
+					&& Objects.equals(this.shape, aa.shape) && Objects.equals(this.excel, aa.excel);
+		}
+
+		return false;
 	}
 
 	private Pack<CellStyle> pcs;
