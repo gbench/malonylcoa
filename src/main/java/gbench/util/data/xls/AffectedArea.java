@@ -615,13 +615,13 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @return
 	 */
-	public AffectedArea paintHead(final IndexedColors color) {
+	public AffectedArea paintTop(final IndexedColors color) {
 		return excel.packWKCellStyle(this.origin()).valueOpt().map(s -> {
 			s.setBorderTop(BorderStyle.THIN);
-			s.setBottomBorderColor(color.getIndex());
+			s.setTopBorderColor(color.getIndex());
 			s.setBorderBottom(BorderStyle.THICK);
 			s.setBottomBorderColor(color.getIndex());
-			return this.paint(s);
+			return this.top().paint(s);
 		}).orElse(null);
 	}
 
@@ -630,12 +630,42 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @return
 	 */
-	public AffectedArea paintLast(final IndexedColors color) {
-		return excel.packWKCellStyle(this.origin()).valueOpt().map(s -> {
+	public AffectedArea paintBottom(final IndexedColors color) {
+		return excel.packWKCellStyle(this.bottom().origin()).valueOpt().map(s -> {
 			s.setBorderBottom(BorderStyle.THIN);
 			s.setBottomBorderColor(color.getIndex());
-			return this.paint(s);
+			return this.bottom().paint(s);
 		}).orElse(null);
+	}
+
+	/**
+	 * 尾部行 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea paintLeft(final IndexedColors color) {
+		this.left().forEach(cell -> {
+			excel.packWKCellStyle(cell).wrap(style -> {
+				style.setBorderLeft(BorderStyle.THIN);
+				style.setLeftBorderColor(color.getIndex());
+			}).evaluate(cell::setCellStyle);
+		});
+		return this;
+	}
+
+	/**
+	 * 尾部行 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea paintRight(final IndexedColors color) {
+		this.right().forEach(cell -> {
+			excel.packWKCellStyle(cell).wrap(style -> {
+				style.setBorderRight(BorderStyle.THIN);
+				style.setRightBorderColor(color.getIndex());
+			}).evaluate(cell::setCellStyle);
+		});
+		return this;
 	}
 
 	/**
@@ -858,6 +888,7 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 区域最后一行（顶部的别名）
 	 * 
 	 * @return
 	 */
@@ -866,10 +897,29 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 区域最后一行（底部的别名）
 	 * 
 	 * @return
 	 */
 	public AffectedArea lastRow() {
+		return this.row(this.nrows() - 1);
+	}
+
+	/**
+	 * 区域顶部
+	 * 
+	 * @return
+	 */
+	public AffectedArea top() {
+		return this.row(0);
+	}
+
+	/**
+	 * 区域底部
+	 * 
+	 * @return
+	 */
+	public AffectedArea bottom() {
 		return this.row(this.nrows() - 1);
 	}
 
@@ -920,10 +970,29 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 最后一列
 	 * 
 	 * @return
 	 */
 	public AffectedArea lastCol() {
+		return this.col(this.ncols() - 1);
+	}
+
+	/**
+	 * 区域左侧
+	 * 
+	 * @return
+	 */
+	public AffectedArea left() {
+		return this.col(0);
+	}
+
+	/**
+	 * 区域右侧
+	 * 
+	 * @return
+	 */
+	public AffectedArea right() {
 		return this.col(this.ncols() - 1);
 	}
 
