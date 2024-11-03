@@ -647,7 +647,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea ptop(final IndexedColors color) {
-		return this.paintTop(color);
+		return this.paintTop(color, null);
 	}
 
 	/**
@@ -655,10 +655,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @return
 	 */
-	public AffectedArea paintTop(final IndexedColors color) {
+	public AffectedArea paintTop(final IndexedColors color, final BorderStyle bs) {
 		final var top = this.top();
 		excel.packWKCellStyle(top.origin()).valueOpt().map(s -> {
-			s.setBorderTop(BorderStyle.THIN);
+			s.setBorderTop(Optional.ofNullable(bs).orElse(BorderStyle.THIN));
 			s.setTopBorderColor(color.getIndex());
 			return top.paint(s);
 		}).orElse(null);
@@ -671,7 +671,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea pbottom(final IndexedColors color) {
-		return this.paintBottom(color);
+		return this.paintBottom(color, null);
 	}
 
 	/**
@@ -679,10 +679,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @return
 	 */
-	public AffectedArea paintBottom(final IndexedColors color) {
+	public AffectedArea paintBottom(final IndexedColors color, final BorderStyle bs) {
 		final var bottom = this.bottom();
 		excel.packWKCellStyle(this.bottom().origin()).valueOpt().map(s -> {
-			s.setBorderBottom(BorderStyle.THIN);
+			s.setBorderBottom(Optional.ofNullable(bs).orElse(BorderStyle.THIN));
 			s.setBottomBorderColor(color.getIndex());
 			return bottom.paint(s);
 		}).orElse(null);
@@ -695,7 +695,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea pleft(final IndexedColors color) {
-		return this.paintLeft(color);
+		return this.paintLeft(color, null);
 	}
 
 	/**
@@ -703,10 +703,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @return
 	 */
-	public AffectedArea paintLeft(final IndexedColors color) {
+	public AffectedArea paintLeft(final IndexedColors color, final BorderStyle bs) {
 		this.left().forEach(cell -> {
 			excel.packWKCellStyle(cell).wrap(style -> {
-				style.setBorderLeft(BorderStyle.THIN);
+				style.setBorderLeft(Optional.ofNullable(bs).orElse(BorderStyle.THIN));
 				style.setLeftBorderColor(color.getIndex());
 			}).evaluate(cell::setCellStyle);
 		});
@@ -719,7 +719,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea pright(final IndexedColors color) {
-		return this.paintRight(color);
+		return this.paintRight(color, null);
 	}
 
 	/**
@@ -727,10 +727,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @return
 	 */
-	public AffectedArea paintRight(final IndexedColors color) {
+	public AffectedArea paintRight(final IndexedColors color, final BorderStyle bs) {
 		this.right().forEach(cell -> {
 			excel.packWKCellStyle(cell).wrap(style -> {
-				style.setBorderRight(BorderStyle.THIN);
+				style.setBorderRight(Optional.ofNullable(bs).orElse(BorderStyle.THIN));
 				style.setRightBorderColor(color.getIndex());
 			}).evaluate(cell::setCellStyle);
 		});
@@ -743,7 +743,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea poutline(final IndexedColors color) {
-		return this.paintOutline(color);
+		return this.paintOutline(color, null);
 	}
 
 	/**
@@ -751,12 +751,12 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @return
 	 */
-	public AffectedArea paintOutline(final IndexedColors color) {
-		this.paintTop(color);
-		this.paintBottom(color);
-		this.paintLeft(color);
-		this.paintBottom(color);
-		return this.paintRight(color);
+	public AffectedArea paintOutline(final IndexedColors color, final BorderStyle bs) {
+		this.paintTop(color, null);
+		this.paintBottom(color, null);
+		this.paintLeft(color, null);
+		this.paintRight(color, null);
+		return this;
 	}
 
 	/**

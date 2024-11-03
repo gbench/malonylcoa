@@ -1690,7 +1690,10 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
-	 * 选择一块数据区域
+	 * 指定(AffectedArea)作为落笔留白 <br>
+	 * 选择一块数据区域: (响应区域)落笔点设置作为书写位置的前一行: <br>
+	 * 比如：excel.select("Sheet2!B1").writeTable(dfm) <br>
+	 * dfm实际写在B2
 	 * 
 	 * @param rangeName 区域名称
 	 */

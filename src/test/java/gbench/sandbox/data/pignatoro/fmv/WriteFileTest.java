@@ -89,8 +89,8 @@ public class WriteFileTest {
 						style.setBorderBottom(BorderStyle.DASH_DOT);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
 					}).withTransaction(aa -> {
-						aa.firstRow().paintTop(IndexedColors.RED);
-						aa.lastRow().paintBottom(IndexedColors.RED);
+						aa.firstRow().ptop(IndexedColors.RED);
+						aa.lastRow().pbottom(IndexedColors.RED);
 					}).save();
 		}
 		println("书写完毕：%s".formatted(outfile));
@@ -100,8 +100,9 @@ public class WriteFileTest {
 	public void quz() {
 		AffectedArea.debug = true; // 开启调试标记
 		try (final var excel = SimpleExcel.of(outfile)) {
-			excel.select("Sheet2!B1") // 设置响应区域
-					.writeTable(nats(25).cuts(5).map(d -> IRecord.rb("ABCDE".split("")).get(d)).collect(DFrame.dfmclc))
+			excel.select("Sheet2!B1") // (响应区域)落笔点设置作为书写位置的前一行(实际写入在B2)
+					.writeTable(nats(25).cuts(5).stream() // 切割成长度为5的均匀片段
+							.map(IRecord.rb("ABCDE".split(""))::get).collect(DFrame.dfmclc))
 					.paint(style -> { // 绘制数据表式样
 						style.setBorderBottom(BorderStyle.DASH_DOT);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
