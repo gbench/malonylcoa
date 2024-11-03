@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -186,7 +187,7 @@ public class AffectedArea implements Iterable<Cell> {
 
 			return "%s%s%s:%s%s".formatted(
 					Optional.ofNullable(flag ? sheetName : null).map("%s!"::formatted).orElse(""), // sheet前缀
-					xlsn(y0), x0, xlsn(y1), x1);
+					xlsn(y0), x0 + 1, xlsn(y1), x1 + 1); // x0+1, x1+1是吧0based索引号转换成行号
 		}).orElse(null);
 	}
 
@@ -503,6 +504,144 @@ public class AffectedArea implements Iterable<Cell> {
 	public final <T> AffectedArea writeLine(final String address, T... line) {
 		this.excel.write(address, line);
 		return this.excel.getAffectedArea();
+	}
+
+	/**
+	 * 书写一行 <br>
+	 * 写入excel (不带有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 
+	 * @param <T>     元素类型
+	 * @param address 起始位置地址(全SHEET绝对地址)
+	 * @param line    数据内容
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public final <T> AffectedArea writeLine(final BiConsumer<AffectedArea, Integer> action, final int n) {
+		final var point = this.writePoint();
+		System.out.println("=========>%s".formatted(point));
+		for (var i = 0; i < n; i++) {
+			final var p = point.shift(0, i);
+			System.out.println("%s-->%s".formatted(point, p));
+			action.accept(p, i);
+		}
+		return this.writePoint().extend(0, n);
+	}
+
+	/**
+	 * 区间拉伸
+	 * 
+	 * @param nrows
+	 * @param ncols
+	 * @return
+	 */
+	public AffectedArea extend(int nrows, int ncols) {
+		return this.create(this.origin(), nrows + this.nrows(), ncols + this.ncols());
+	}
+
+	/**
+	 * 区间拉伸
+	 * 
+	 * @param ncols 水平拉伸列宽
+	 * @return
+	 */
+	public AffectedArea hextend(int ncols) {
+		return this.extend(0, ncols);
+	}
+
+	/**
+	 * 区间拉伸
+	 * 
+	 * @param ncols 垂直拉伸行高
+	 * @return
+	 */
+	public AffectedArea vextend(int nrows) {
+		return this.extend(nrows, 0);
+	}
+
+	/**
+	 * 起点(区域起始位置）
+	 * 
+	 * @return
+	 */
+	public AffectedArea startPoint() {
+		return this.singleton(this.origin());
+	}
+
+	/**
+	 * 写入点
+	 * 
+	 * @return
+	 */
+	public AffectedArea writePoint() {
+		return this.singleton(this.activeCell());
+	}
+
+	/**
+	 * 单点
+	 * 
+	 * @param cell
+	 * @return
+	 */
+	public AffectedArea singleton(final Cell cell) {
+		return create(cell, 1, 1);
+	}
+
+	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_nrows 平移行数
+	 * @param e_nrows 扩展行数
+	 * @return
+	 */
+	public AffectedArea vsve(int s_nrows, int e_nrows) {
+		return this.vshift(s_nrows).vextend(e_nrows);
+	}
+
+	/**
+	 * 水平平移
+	 * 
+	 * @param nrows
+	 * @param ncols
+	 * @return
+	 */
+	public AffectedArea vshift(int nrows) {
+		return this.shift(nrows, 0);
+	}
+
+	/**
+	 * 垂直平移
+	 * 
+	 * @param ncols
+	 * @return
+	 */
+	public AffectedArea hshift(int ncols) {
+		return this.shift(0, ncols);
+	}
+
+	/**
+	 * 平移
+	 * 
+	 * @param nrows
+	 * @param ncols
+	 * @return
+	 */
+	public AffectedArea shift(int nrows, int ncols) {
+		final var x0 = this.ltCell.getRowIndex();
+		final var y0 = this.ltCell.getColumnIndex();
+		final var newcell = excel.getOrCreateCell(x0 + nrows, y0 + ncols);
+		return create(newcell, this.nrows(), this.ncols());
+	}
+
+	/**
+	 * 创建一个 AffectedArea
+	 * 
+	 * @param cell   基点位置
+	 * @param height 高度
+	 * @param width  宽度
+	 * @return
+	 */
+	public AffectedArea create(final Cell cell, int height, int width) {
+		return new AffectedArea(this.excel, cell, height, width);
 	}
 
 	/**
@@ -1095,6 +1234,38 @@ public class AffectedArea implements Iterable<Cell> {
 	public AffectedArea focus() {
 		this.excel.setAffectedArea(this);
 		return this;
+	}
+
+	/**
+	 * 公式写入书写（选区内数据写入）
+	 * 
+	 * @param <T>      数据类型
+	 * @param formulas 单元格公式
+	 * @return
+	 */
+	public <T> AffectedArea setCellFormula(final String... formulas) {
+		Optional.ofNullable(formulas).ifPresent(fs -> {
+			var i = 0;
+			final var n = fs.length;
+			for (final var cell : this) {
+				final var formula = fs[i % n];
+				cell.setCellFormula(formula);
+			}
+		});
+
+		return null;
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T> 数据类型
+	 * @param ts  吸入的数据行
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> AffectedArea set(final T... ts) {
+		return this.update(ts);
 	}
 
 	/**

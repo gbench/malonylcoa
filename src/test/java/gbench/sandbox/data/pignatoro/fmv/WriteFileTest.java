@@ -106,7 +106,13 @@ public class WriteFileTest {
 					.paint(style -> { // 绘制数据表式样
 						style.setBorderBottom(BorderStyle.DASH_DOT);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
-					}).withTransaction(aa -> aa.ptitle(RED).pbottom(RED)).save();
+					}).withTransaction(aa -> aa.ptitle(RED).pbottom(RED)) //
+					.writeLine((point, i) -> { // 公式写入
+						final var formula = "sum(%s)".formatted(point.vsve(-5, 4));
+						point.setCellFormula(formula);
+					}, 10).writeLine((point, i) -> { // 写入区域名称
+						point.set("=%s".formatted(point.vshift(-1)));
+					}, 10).save();
 		}
 		println("书写完毕：%s".formatted(outfile));
 	}
