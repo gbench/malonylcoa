@@ -153,8 +153,11 @@ public class WriteFileTest {
 						// cscale(2)表吧宽度修改为2即A到B的两列的aa1,rscale(2)又把aa1的高度设置为3行，最后形成最终的cliplines:以A1为基点的2x3区域
 						final var cliplines = right.hshift(-2).hextend(-2).cscale(2).rscale(3); // 一块选区，剪切一段数据行
 						final var addrAa = right.hshift(3); // 写入 I2位置
+
 						println("addrAa", addrAa, "cliplines", cliplines); // 打印操作信息
-						aa.writeLines(addrAa, cliplines.toArray2()); // 把该块选区写入右侧第三个位置
+
+						// 把该块选区写入右侧第三个位置,并用红框标注
+						aa.writeLines(addrAa, cliplines).poutline(RED);
 					}) // 式样绘制
 					.writeLine((p, i) -> { // 下侧margin公式写入
 						final var formula = "sum(%s)".formatted(p.vsve(-5, 4));
