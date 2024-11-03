@@ -41,14 +41,20 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 影响范围
 	 * 
 	 * @param ltCell 左上单元格
-	 * @param shape  (nrows,ncols)
+	 * @param shape  (1:nrows,2:ncols), 如果 nrows, ncols 小于0, 实际的 ltCell
+	 *               将沿着逆方向（向上，相左）进行对应位置的调整。比如 <br>
+	 *               1) C3,(-1,-2) 等价于 A2,(1,2); <br>
+	 *               2) C3,(1,-2) 等价于 A2,(1,2); <br>
 	 * @param excel  excel对象
 	 */
 	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> shape,
 			final Pack<CellStyle> pcs) {
 		this.excel = excel;
-		this.ltCell = ltCell;
-		this.shape = shape;
+
+		final var nrows = shape._1;
+		final var ncols = shape._2;
+		this.ltCell = this.ajustLtCell(ltCell, nrows, ncols);
+		this.shape = Tuple2.of(Math.abs(nrows), Math.abs(ncols));
 		this.pcs = pcs;
 	}
 
@@ -126,6 +132,39 @@ public class AffectedArea implements Iterable<Cell> {
 		final var shape = Tuple2.of(rdf.width(), rdf.height());
 		this.ltCell = ltCell;
 		this.shape = shape;
+	}
+
+	/**
+	 * 
+	 * 调整LtCell(左上角Cell)
+	 * 
+	 * @param cell  待调整的ltCell
+	 * @param nrows 行偏移
+	 * @param ncols 列偏移
+	 * @return
+	 */
+	public Cell ajustLtCell(final Cell cell, final int nrows, final int ncols) {
+		final var origin_irow = cell.getRowIndex(); // 原来行索引
+		final var origin_icol = cell.getColumnIndex(); // 原来列索引
+		var irow = origin_irow; // 调整后行索引：初始化origin_irow
+		var icol = origin_icol; // 调整后的列索引：初始化为 origin_icol
+
+		if (nrows < 0) { // 行数量小于0:调整移动行索引
+			irow = Math.max(irow + nrows, 0); // 更新行索引(向上运动）
+		} else {
+			// do nothing
+		}
+		if (ncols < 0) { // 列数量小于0:调整移动列索引
+			icol = Math.max(icol + ncols, 0); // 更新列索引（向左运动
+		} else {
+			// do nothing
+		}
+
+		final var ltcell = excel.getOrCreateCell(cell.getSheet(), //
+				Math.min(origin_irow, irow), // 选择左上端的行索引
+				Math.min(origin_icol, icol) // 选择左边的列索引
+		); // 移动后的ltCell
+		return ltcell;
 	}
 
 	/**
@@ -292,6 +331,15 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public Cell origin() {
 		return this.ltCell;
+	}
+
+	/**
+	 * originAddress
+	 * 
+	 * @return
+	 */
+	public String originAddress() {
+		return Optional.of(this.origin()).map(e -> e.getAddress()).map(String::valueOf).orElse(null);
 	}
 
 	/**
@@ -531,14 +579,51 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 区间拉伸
+	 * 缩放：采用指定的nrows与ncols数量
 	 * 
-	 * @param nrows
-	 * @param ncols
+	 * @param nrows 缩放后的行数量
+	 * @param ncols 缩放后的列数量
 	 * @return
 	 */
+	public AffectedArea scale(final Integer nrows, final Integer ncols) {
+		final var new_nrows = Optional.ofNullable(nrows == null || nrows < 1 ? null : nrows).orElse(this.nrows());
+		final var new_ncols = Optional.ofNullable(ncols == null || ncols < 1 ? null : ncols).orElse(this.ncols());
+		return this.create(this.origin(), new_nrows, new_ncols);
+	}
+
+	/**
+	 * 缩放：采用指定的nrows与ncols数量
+	 * 
+	 * @param nrows 缩放后的行数量
+	 * @return
+	 */
+	public AffectedArea rscale(final int nrows) {
+		return this.scale(nrows, null);
+	}
+
+	/**
+	 * 缩放：采用指定的nrows与ncols数量
+	 * 
+	 * @param ncols 缩放后的列数量
+	 * @return
+	 */
+	public AffectedArea cscale(final int ncols) {
+		return scale(null, ncols);
+	}
+
+	/**
+	 * 区间拉伸（增长） <br>
+	 * nrows,ncols的绝对值表示拉伸程度，正负号表示拉伸方向 <br>
+	 * 也就是 无论 nrows，ncols 是正是负，返回的AffectedArea的尺寸shape都至少是原来的尺寸，<br>
+	 * 也就是 不肯能出现 extend 以后 shape变小的情况是不存在的。
+	 * 
+	 * @param nrows: 大于0 表示向右扩展,小于0表示向左扩展
+	 * @param ncols: 大于0 表示向下扩展,小于0表示向上扩展
+	 * @return AffectedArea
+	 */
 	public AffectedArea extend(int nrows, int ncols) {
-		return this.create(this.origin(), nrows + this.nrows(), ncols + this.ncols());
+		final var cell = this.ajustLtCell(this.origin(), nrows, ncols);
+		return this.create(cell, Math.abs(nrows) + this.nrows(), Math.abs(ncols) + this.ncols());
 	}
 
 	/**
@@ -647,14 +732,16 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 平移
 	 * 
-	 * @param nrows 垂直平移行数量
-	 * @param ncols 水平平移列数量
+	 * @param nrows 垂直平移行数量:小于0表示向上移动,大于0表示向下移动，等于0不移动
+	 * @param ncols 水平平移列数量:小于0表示向左移动,大于0表示向右移动，等于0不移动
 	 * @return
 	 */
 	public AffectedArea shift(int nrows, int ncols) {
-		final var x0 = this.ltCell.getRowIndex();
-		final var y0 = this.ltCell.getColumnIndex();
-		final var newcell = excel.getOrCreateCell(x0 + nrows, y0 + ncols);
+		final var origin_irow = this.ltCell.getRowIndex();
+		final var origin_icol = this.ltCell.getColumnIndex();
+		final var new_irow = Math.max(origin_irow + nrows, 0);
+		final var new_icol = Math.max(origin_icol + ncols, 0);
+		final var newcell = excel.getOrCreateCell(this.ltCell.getSheet(), new_irow, new_icol);
 		return create(newcell, this.nrows(), this.ncols());
 	}
 
@@ -687,6 +774,30 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public AffectedArea create(final Cell cell, int height, int width) {
 		return new AffectedArea(this.excel, cell, height, width);
+	}
+
+	/**
+	 * 写入excel (不带有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 
+	 * @param <T>    元素类型
+	 * @param addrAa 起始位置地址(全SHEET绝对地址:默认为originAddress)
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public <T> AffectedArea writeLines(final AffectedArea addrAa, final T lines[][]) {
+		return this.writeLines(addrAa.originAddress(), lines);
+	}
+
+	/**
+	 * 写入excel (不带有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 
+	 * @param <T>    元素类型
+	 * @param addrAa 起始位置地址(全SHEET绝对地址:默认为originAddress)
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public <T> AffectedArea writeLines(final AffectedArea addrAa, final AffectedArea lines) {
+		return this.writeLines(addrAa.originAddress(), lines.toArray2());
 	}
 
 	/**
@@ -1413,6 +1524,25 @@ public class AffectedArea implements Iterable<Cell> {
 	public Stream<Cell> cellS() {
 		return Stream.iterate(0, i -> i + 1).limit(this.nrows())
 				.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(this.ncols()).map(j -> this.cell(i, j)));
+
+	}
+
+	/**
+	 * 行顺序的一维数组 <br>
+	 * 
+	 * @return
+	 */
+	public Cell[] toArray() {
+		return this.cellS().toArray(Cell[]::new);
+	}
+
+	/**
+	 * 行顺序的二维数组<br>
+	 * 
+	 * @return
+	 */
+	public Cell[][] toArray2() {
+		return this.rowS().map(AffectedArea::toArray).toArray(Cell[][]::new);
 
 	}
 
