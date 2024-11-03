@@ -539,9 +539,9 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public AffectedArea paint(final CellStyle newstyle) {
 		excel.packCellStyle(null).valueOpt().ifPresent(s -> { // 创建一个新的式样
-			s.cloneStyleFrom(s);
+			s.cloneStyleFrom(newstyle);
 			this.forEach(cell -> {
-				cell.setCellStyle(newstyle);
+				cell.setCellStyle(s);
 			});
 		});
 
@@ -585,13 +585,13 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paintHead(final IndexedColors color) {
-		final var s = excel.packCellStyle(null).value();
-		s.setBorderTop(BorderStyle.THIN);
-		s.setBottomBorderColor(color.getIndex());
-		s.setBorderBottom(BorderStyle.THICK);
-		s.setBottomBorderColor(color.getIndex());
-		this.paint(s);
-		return this;
+		return excel.packCellStyle(this.origin()).valueOpt().map(s -> {
+			s.setBorderTop(BorderStyle.THIN);
+			s.setBottomBorderColor(color.getIndex());
+			s.setBorderBottom(BorderStyle.THICK);
+			s.setBottomBorderColor(color.getIndex());
+			return this.paint(s);
+		}).orElse(null);
 	}
 
 	/**
@@ -600,11 +600,11 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paintLast(final IndexedColors color) {
-		final var s = excel.packCellStyle(null).value();
-		s.setBorderBottom(BorderStyle.THIN);
-		s.setBottomBorderColor(color.getIndex());
-		this.paint(s);
-		return this;
+		return excel.packCellStyle(this.origin()).valueOpt().map(s -> {
+			s.setBorderBottom(BorderStyle.THIN);
+			s.setBottomBorderColor(color.getIndex());
+			return this.paint(s);
+		}).orElse(null);
 	}
 
 	/**
