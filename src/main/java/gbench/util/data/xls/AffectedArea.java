@@ -595,6 +595,39 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_nrows 平移行数
+	 * @param e_nrows 扩展行数
+	 * @return
+	 */
+	public AffectedArea vshe(int s_nrows, int e_ncols) {
+		return this.vshift(s_nrows).hextend(e_ncols);
+	}
+
+	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_cols 平移行数
+	 * @param e_rows 扩展行数
+	 * @return
+	 */
+	public AffectedArea hsve(int s_cols, int e_rows) {
+		return this.hshift(s_cols).vextend(e_rows);
+	}
+
+	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_ncols 平移行数
+	 * @param e_ncols 扩展行数
+	 * @return
+	 */
+	public AffectedArea hshe(int s_ncols, int e_ncols) {
+		return this.hshift(s_ncols).hextend(e_ncols);
+	}
+
+	/**
 	 * 水平平移
 	 * 
 	 * @param nrows
