@@ -1103,8 +1103,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea italic(final boolean italic) {
-		excel.packWKFont(null).wrap(font -> font.setItalic(italic))
-				.flatMap(font -> this.pcs(e -> e.setFont(font))).wrap(this::paint);
+		excel.packWKFont(null).wrap(font -> font.setItalic(italic)).flatMap(font -> this.pcs(e -> e.setFont(font)))
+				.wrap(this::paint);
 		return this;
 	}
 
@@ -1146,8 +1146,9 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 第n行
 	 * 
-	 * @param n 航索引
+	 * @param n 行索引从0开始
 	 * @return
 	 */
 	public Optional<AffectedArea> rowOpt(final int n) {
@@ -1156,8 +1157,9 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 第n行
 	 * 
-	 * @param n 航索引
+	 * @param n 行索引从0开始
 	 * @return
 	 */
 	public AffectedArea row(final int n) {
@@ -1220,8 +1222,9 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 第n列
 	 * 
-	 * @param n 航索引
+	 * @param n 列索引从0开始
 	 * @return
 	 */
 	public Optional<AffectedArea> colOpt(final int n) {
@@ -1230,8 +1233,9 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 第n列
 	 * 
-	 * @param n 航索引
+	 * @param n 列索引从0开始
 	 * @return
 	 */
 	public AffectedArea col(final int n) {
@@ -1239,8 +1243,9 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 第一列
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea firstCol() {
 		return this.col(0);
@@ -1249,7 +1254,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 最后一列
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea lastCol() {
 		return this.col(this.ncols() - 1);
@@ -1258,7 +1263,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 区域左侧
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea left() {
 		return this.col(0);
@@ -1267,7 +1272,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 区域右侧
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea right() {
 		return this.col(this.ncols() - 1);
@@ -1276,7 +1281,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置选区
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea focus() {
 		this.excel.setAffectedArea(this);
@@ -1288,7 +1293,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param <T>      数据类型
 	 * @param formulas 单元格公式
-	 * @return
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea setCellFormula(final String... formulas) {
 		Optional.ofNullable(formulas).ifPresent(fs -> {
@@ -1297,10 +1302,10 @@ public class AffectedArea implements Iterable<Cell> {
 			for (final var cell : this) {
 				final var formula = fs[i % n];
 				cell.setCellFormula(formula);
-			}
-		});
+			} // for
+		}); // ifPresent
 
-		return null;
+		return this;
 	}
 
 	/**
@@ -1308,7 +1313,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param <T> 数据类型
 	 * @param ts  吸入的数据行
-	 * @return
+	 * @return AffectedArea
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> AffectedArea set(final T... ts) {
@@ -1320,7 +1325,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param <T> 数据类型
 	 * @param ts  吸入的数据行
-	 * @return
+	 * @return AffectedArea
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> AffectedArea update(final T... ts) {
@@ -1332,7 +1337,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param <T> 数据类型
 	 * @param ts  吸入的数据行
-	 * @return
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea update(final Iterable<T> ts) {
 		return this.updateLine(true, ts);
@@ -1344,7 +1349,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param <T>  数据类型
 	 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
 	 * @param ts   书写的数据内容
-	 * @return
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea updateLine(final boolean flag, final Iterable<T> ts) {
 		return this.updateLine(flag, Types.itr2array(ts));
@@ -1356,7 +1361,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param <T>  数据类型
 	 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
 	 * @param ts   书写的数据内容
-	 * @return
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea updateLine(final boolean flag, final T[] ts) {
 		Optional.ofNullable(ts).map(e -> e.length > 0 ? e : null).ifPresent(data -> {
