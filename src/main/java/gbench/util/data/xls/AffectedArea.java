@@ -538,9 +538,13 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paint(final CellStyle newstyle) {
-		this.forEach(cell -> {
-			cell.setCellStyle(newstyle);
+		excel.packCellStyle(null).valueOpt().ifPresent(s -> { // 创建一个新的式样
+			s.cloneStyleFrom(s);
+			this.forEach(cell -> {
+				cell.setCellStyle(newstyle);
+			});
 		});
+
 		return this;
 	}
 
@@ -586,9 +590,7 @@ public class AffectedArea implements Iterable<Cell> {
 		s.setBottomBorderColor(color.getIndex());
 		s.setBorderBottom(BorderStyle.THICK);
 		s.setBottomBorderColor(color.getIndex());
-		this.forEach(cell -> {
-			cell.setCellStyle(s);
-		});
+		this.paint(s);
 		return this;
 	}
 
@@ -601,9 +603,7 @@ public class AffectedArea implements Iterable<Cell> {
 		final var s = excel.packCellStyle(null).value();
 		s.setBorderBottom(BorderStyle.THIN);
 		s.setBottomBorderColor(color.getIndex());
-		this.forEach(cell -> {
-			cell.setCellStyle(s);
-		});
+		this.paint(s);
 		return this;
 	}
 

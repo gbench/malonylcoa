@@ -1,6 +1,7 @@
 package gbench.util.type;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -64,6 +65,15 @@ public class Pack<T> {
 	 */
 	public T value() {
 		return this.value;
+	}
+
+	/**
+	 * 返回原来的数据
+	 * 
+	 * @return
+	 */
+	public Optional<T> valueOpt() {
+		return Optional.ofNullable(this.value);
 	}
 
 	/**
