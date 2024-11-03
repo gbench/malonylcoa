@@ -46,11 +46,10 @@ public class WriteFileTest {
 			});
 			Optional.of(excel.select("B!C3:H8")).ifPresent(aa -> {
 				aa.row(0).border(BorderName.BOTTOM, BorderStyle.THICK, IndexedColors.RED)
-						.background(IndexedColors.BLUE_GREY).color(IndexedColors.WHITE)
+						.background(IndexedColors.BLUE_GREY).pcolor(IndexedColors.WHITE)
 						.forEach(e -> e.setCellValue(ai.getAndIncrement()));
 				aa.row(1).update(1, 2, 4).offset(0, 0);
-				aa.row(1).span("A1:C6").background(IndexedColors.RED);
-				aa.row(2).color(IndexedColors.BLUE).bold(true).italic(true)
+				aa.row(2).pcolor(IndexedColors.BLUE).bold(true).italic(true)
 						.forEach(e -> e.setCellValue(ai.getAndIncrement()));
 			});
 			excel.write("C!D2", dfm).save();
@@ -77,6 +76,7 @@ public class WriteFileTest {
 			excel.select("B4:E4") // 设置响应区域
 					.update("A,B,C,D".split(",")).paint(style -> { // 表头:首行元素使用update
 						style.setBorderTop(BorderStyle.THIN);
+						style.setTopBorderColor(IndexedColors.RED.getIndex());
 						style.setBorderBottom(BorderStyle.THICK);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
 					}).writeLine(1, 2, 3, 4) // 区域行使用writeLine

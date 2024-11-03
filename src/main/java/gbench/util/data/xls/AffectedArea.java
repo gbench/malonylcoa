@@ -358,34 +358,6 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 生成新的长度空间
-	 * 
-	 * @param i      行偏移
-	 * @param j      列偏移
-	 * @param width  行长度
-	 * @param height 列长度
-	 * @return
-	 */
-	public AffectedArea span(final int i, final int j, final int width, final int height) {
-		return new AffectedArea(this.excel, this.cell(i, j), width, height);
-	}
-
-	/**
-	 * 生成新的长度空间
-	 * 
-	 * @param i      行偏移
-	 * @param j      列偏移
-	 * @param width  行长度
-	 * @param height 列长度
-	 * @return
-	 */
-	public AffectedArea span(final String rngName) {
-		final var rng = DataMatrix.name2rdf(rngName);
-		final var lt = rng.lt();
-		return this.span(lt._1(), lt._2(), rng.width(), rng.height());
-	}
-
-	/**
 	 * 右下角的 偏移位置的地址 (0,0) 右下角元素
 	 * 
 	 * @param offset_x 行偏移 从0开始
@@ -1100,19 +1072,6 @@ public class AffectedArea implements Iterable<Cell> {
 		final var clr = Optional.ofNullable(color).orElse(IndexedColors.BLACK);
 		this.pcs(SimpleExcel.border_color.apply(bs).apply(bn, clr)).evaluate(this::paint);
 
-		return this;
-	}
-
-	/**
-	 * 设置背景色
-	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
-	 */
-	public AffectedArea color(final IndexedColors color) {
-		excel.packWKFont(this.ltCell).wrap(font -> font.setColor(color.getIndex()))
-				.flatMap(font -> this.pcs(e -> e.setFont(font))).evaluate(this::paint);
 		return this;
 	}
 

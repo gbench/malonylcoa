@@ -1538,11 +1538,16 @@ public class SimpleExcel implements AutoCloseable {
 		if (i < 0 || i >= this.workbook.getNumberOfSheets()) {
 			System.out.println("sheet[" + i + "] 编号非法!");
 			return null;
-		}
-		this.workbook.setActiveSheet(i);
-		this.activesht = this.workbook.getSheetAt(this.workbook.getActiveSheetIndex());
+		} else {
+			// 所有sheet取消选择（防止多重选择），这里采用先全部unselected而后再专门select的策略。
+			for (final var sheet : this.sheets()) {
+				sheet.setSelected(false);
+			}
+			this.workbook.setActiveSheet(i); // 选中i号sheet
+			this.activesht = this.workbook.getSheetAt(this.workbook.getActiveSheetIndex());
 
-		return this.activesht;
+			return this.activesht;
+		}
 	}
 
 	/**
