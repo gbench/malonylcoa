@@ -117,16 +117,16 @@ public class FinModValTest {
 				.map(e -> IRecord.REC("item", e.getKey()).derive(e.getValue())).collect(DFrame.dfmclc); // 数据宽格式(首列元素为key)
 		final BiConsumer<SimpleExcel, String> render_header = (excel, rngname) -> { // 绘制表头
 			excel.withRange(rngname, cell -> excel.packWKCellStyle(null) // 区域处理
-					.peek(cellstyle -> cellstyle.setFillPattern(FillPatternType.ALT_BARS)) // 填充图案
-					.peek(cellstyle -> cellstyle.setFillForegroundColor(IndexedColors.BLUE.getIndex())) // 图案颜色
-					.peek(cellstyle -> cellstyle.setFillBackgroundColor(IndexedColors.GREY_25_PERCENT.getIndex())) // 背景颜色
-					.peek(cellstyle -> cellstyle.setBorderBottom(BorderStyle.THICK)) // 边线宽度
-					.peek(cellstyle -> cellstyle.setBottomBorderColor(IndexedColors.RED.getIndex())) // 边线颜色
-					.peek(cellstyle -> excel.packWKFont(null).peek(font -> font.setFontName("等线 Light")) // 设置单元格字体
-							.peek(font -> font.setColor(IndexedColors.WHITE.getIndex())) // 字体颜色
-							.peek(font -> font.setBold(true)) // 黑体
-							.peek(cellstyle::setFont))
-					.peek(cell::setCellStyle)); // 设置单元格式样
+					.wrap(cellstyle -> cellstyle.setFillPattern(FillPatternType.ALT_BARS)) // 填充图案
+					.wrap(cellstyle -> cellstyle.setFillForegroundColor(IndexedColors.BLUE.getIndex())) // 图案颜色
+					.wrap(cellstyle -> cellstyle.setFillBackgroundColor(IndexedColors.GREY_25_PERCENT.getIndex())) // 背景颜色
+					.wrap(cellstyle -> cellstyle.setBorderBottom(BorderStyle.THICK)) // 边线宽度
+					.wrap(cellstyle -> cellstyle.setBottomBorderColor(IndexedColors.RED.getIndex())) // 边线颜色
+					.wrap(cellstyle -> excel.packWKFont(null).wrap(font -> font.setFontName("等线 Light")) // 设置单元格字体
+							.wrap(font -> font.setColor(IndexedColors.WHITE.getIndex())) // 字体颜色
+							.wrap(font -> font.setBold(true)) // 黑体
+							.evaluate(cellstyle::setFont))
+					.evaluate(cell::setCellStyle)); // 设置单元格式样
 		}; // 表头渲染
 
 		// 数据写入与格式化
@@ -145,8 +145,8 @@ public class FinModValTest {
 			render_header.accept(excel, rg_header_name); // 绘制首行
 			// 数据写入
 			excel.write(rg_data_name, render_data.apply(widedfm)).withAffectedArea(aa -> { // 数据格调整
-				final var pcs = excel.packWKCellStyle(null).peek(background_color.apply(IndexedColors.YELLOW))// PackCellStyle
-						.peek(border_color.apply(BorderStyle.THIN).apply(BorderName.BOTTOM, IndexedColors.GREEN));
+				final var pcs = excel.packWKCellStyle(null).wrap(background_color.apply(IndexedColors.YELLOW))// PackCellStyle
+						.wrap(border_color.apply(BorderStyle.THIN).apply(BorderName.BOTTOM, IndexedColors.GREEN));
 				final var ai = new AtomicInteger(1); // 计数器
 				aa.rowS().filter(e -> ai.getAndIncrement() % 2 == 0).forEach(e -> e.paint(pcs));
 			}).save(); // !!需要注意,write后一定要save才可以将数据写入到文件,没有save操作数据不会写入!

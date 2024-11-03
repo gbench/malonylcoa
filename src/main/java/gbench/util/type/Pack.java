@@ -22,14 +22,25 @@ public class Pack<T> {
 	};
 
 	/**
-	 * 之查看
+	 * 值查看
 	 * 
 	 * @param cs t-&gt;{}
 	 * @return
 	 */
-	public Pack<T> peek(final Consumer<T> cs) {
+	public Pack<T> wrap(final Consumer<T> cs) {
 		cs.accept(this.value);
 		return this;
+	};
+
+	/**
+	 * 值查看（触发计算）
+	 * 
+	 * @param cs t-&gt;{}
+	 * @return
+	 */
+	public T evaluate(final Consumer<T> cs) {
+		cs.accept(this.value);
+		return value;
 	};
 
 	/**
