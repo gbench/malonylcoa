@@ -34,7 +34,8 @@ public class WriteFileTest {
 	 */
 	@Test
 	public void foo() {
-		try (final var excel = SimpleExcel.of(outfile)) {
+		final var file = outhome.formatted("foo.xlsx");
+		try (final var excel = SimpleExcel.of(file)) {
 			final var rb = nats(10).fmap(e -> DataMatrix.xlsn(e)).arrayOf(IRecord::rb);
 			final var dfm = nats(100).cuts(10).map(e -> rb.get(e)).collect(DFrame.dfmclc);
 			final var ai = new AtomicInteger();
@@ -54,12 +55,13 @@ public class WriteFileTest {
 			});
 			excel.write("C!D2", dfm).save();
 		}
-		println("completed:%s".formatted(this.outfile));
+		println("completed:%s".formatted(file));
 	}
 
 	@Test
 	public void bar() {
-		try (final var excel = SimpleExcel.of(outfile)) {
+		final var file = outhome.formatted("bar.xlsx");
+		try (final var excel = SimpleExcel.of(file)) {
 			excel.select("B4:E4") // 设置响应区域
 					.update("A,B,C,D".split(",")) // 表头:首行元素使用update
 					.italic().bold().topThin(RED).bottomThick(RED) //
@@ -67,12 +69,13 @@ public class WriteFileTest {
 					.writeLine(4, 5, 6, 7).bottomThin(RED) // 区域行使用writeLine
 					.save();
 		}
-		println("书写完毕：%s".formatted(outfile));
+		println("书写完毕：%s".formatted(file));
 	}
 
 	@Test
 	public void qux() {
-		try (final var excel = SimpleExcel.of(outfile)) {
+		final var file = outhome.formatted("qux.xlsx");
+		try (final var excel = SimpleExcel.of(file)) {
 			excel.select("B4:E4") // 设置响应区域
 					.update("A,B,C,D".split(",")).paint(style -> { // 表头:首行元素使用update
 						style.setBorderTop(BorderStyle.THIN);
@@ -96,13 +99,14 @@ public class WriteFileTest {
 						aa.lastRow().pbottom(IndexedColors.RED);
 					}).save();
 		}
-		println("书写完毕：%s".formatted(outfile));
+		println("书写完毕：%s".formatted(file));
 	}
 
 	@Test
 	public void quz() {
 		AffectedArea.debug = true; // 开启调试标记
-		try (final var excel = SimpleExcel.of(outfile)) {
+		final var file = outhome.formatted("quz.xlsx");
+		try (final var excel = SimpleExcel.of(file)) {
 			excel.select("Sheet2!B1") // (响应区域)落笔点设置作为书写位置的前一行(实际写入在B2)
 					.writeTable(nats(25).cuts(5).stream() // 切割成长度为5的均匀片段
 							.map(IRecord.rb("ABCDE".split(""))::get).collect(DFrame.dfmclc))
@@ -121,7 +125,7 @@ public class WriteFileTest {
 					.pcolor(IndexedColors.PINK) //
 					.save();
 		}
-		println("书写完毕：%s".formatted(outfile));
+		println("书写完毕：%s".formatted(file));
 	}
 
 	/**

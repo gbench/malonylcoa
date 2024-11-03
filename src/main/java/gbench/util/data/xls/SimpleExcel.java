@@ -1969,45 +1969,61 @@ public class SimpleExcel implements AutoCloseable {
 				switch (border) {
 				case L, LEFT: {
 					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setRightBorderColor(color.getIndex());
 					break;
 				}
 				case T, TOP: {
 					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setTopBorderColor(color.getIndex());
 					break;
 				}
 				case R, RIGHT: {
 					cellstyle.setBorderRight(borderstyle);
+					cellstyle.setRightBorderColor(color.getIndex());
 					break;
 				}
 				case B, BOTTOM: {
 					cellstyle.setBorderBottom(borderstyle);
+					cellstyle.setBottomBorderColor(color.getIndex());
 					break;
 				}
 				case LT, LEFT_TOP: {
 					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setLeftBorderColor(color.getIndex());
 					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setTopBorderColor(color.getIndex());
 					break;
 				}
 				case LB, LEFT_BOTTOM: {
 					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setLeftBorderColor(color.getIndex());
 					cellstyle.setBorderBottom(borderstyle);
+					cellstyle.setBottomBorderColor(color.getIndex());
 					break;
 				}
 				case TR, TOP_RIGHT: {
 					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setTopBorderColor(color.getIndex());
 					cellstyle.setBorderRight(borderstyle);
+					cellstyle.setRightBorderColor(color.getIndex());
 					break;
 				}
 				case RB, RIGHT_BOTTOM: {
 					cellstyle.setBorderRight(borderstyle);
+					cellstyle.setRightBorderColor(color.getIndex());
 					cellstyle.setBorderBottom(borderstyle);
+					cellstyle.setBottomBorderColor(color.getIndex());
 					break;
 				}
 				case ALL: {
 					cellstyle.setBorderLeft(borderstyle);
+					cellstyle.setLeftBorderColor(color.getIndex());
 					cellstyle.setBorderTop(borderstyle);
+					cellstyle.setTopBorderColor(color.getIndex());
 					cellstyle.setBorderRight(borderstyle);
+					cellstyle.setRightBorderColor(color.getIndex());
 					cellstyle.setBorderBottom(borderstyle);
+					cellstyle.setBottomBorderColor(color.getIndex());
 					break;
 				}
 				case NONE: {
@@ -2017,7 +2033,6 @@ public class SimpleExcel implements AutoCloseable {
 					// nothing
 				}
 				} // switch
-				cellstyle.setBottomBorderColor(color.getIndex());
 			};
 
 	/**
