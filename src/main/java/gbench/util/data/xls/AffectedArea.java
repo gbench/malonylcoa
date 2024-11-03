@@ -538,7 +538,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paint(final CellStyle newstyle) {
-		excel.packCellStyle(null).valueOpt().ifPresent(s -> { // 创建一个新的式样
+		excel.packWKCellStyle(null).valueOpt().ifPresent(s -> { // 创建一个新的式样
 			s.cloneStyleFrom(newstyle);
 			this.forEach(cell -> {
 				cell.setCellStyle(s);
@@ -576,7 +576,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paint(final Consumer<CellStyle> prepare) {
-		return this.paint(excel.packCellStyle(this.origin()).peek(prepare));
+		return this.paint(excel.packWKCellStyle(this.origin()).peek(prepare));
 	}
 
 	/**
@@ -585,7 +585,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paintHead(final IndexedColors color) {
-		return excel.packCellStyle(this.origin()).valueOpt().map(s -> {
+		return excel.packWKCellStyle(this.origin()).valueOpt().map(s -> {
 			s.setBorderTop(BorderStyle.THIN);
 			s.setBottomBorderColor(color.getIndex());
 			s.setBorderBottom(BorderStyle.THICK);
@@ -600,7 +600,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paintLast(final IndexedColors color) {
-		return excel.packCellStyle(this.origin()).valueOpt().map(s -> {
+		return excel.packWKCellStyle(this.origin()).valueOpt().map(s -> {
 			s.setBorderBottom(BorderStyle.THIN);
 			s.setBottomBorderColor(color.getIndex());
 			return this.paint(s);
@@ -732,7 +732,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea color(final IndexedColors color) {
-		excel.packFont(this.ltCell).peek(font -> font.setColor(color.getIndex()))
+		excel.packWKFont(this.ltCell).peek(font -> font.setColor(color.getIndex()))
 				.flatMap(font -> this.pcs(e -> e.setFont(font))).peek(this::paint);
 		return this;
 	}
@@ -744,7 +744,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea bold(final boolean bold) {
-		excel.packFont(this.origin()).peek(font -> font.setBold(bold)).flatMap(font -> this.pcs(e -> e.setFont(font)))
+		excel.packWKFont(this.origin()).peek(font -> font.setBold(bold)).flatMap(font -> this.pcs(e -> e.setFont(font)))
 				.peek(this::paint);
 		return this;
 	}
@@ -765,7 +765,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea italic(final boolean italic) {
-		excel.packFont(this.origin()).peek(font -> font.setItalic(italic))
+		excel.packWKFont(this.origin()).peek(font -> font.setItalic(italic))
 				.flatMap(font -> this.pcs(e -> e.setFont(font))).peek(this::paint);
 		return this;
 	}
@@ -1078,7 +1078,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return Pack CellStyle
 	 */
 	public synchronized Pack<CellStyle> pcs() {
-		return this.pcs == null ? this.pcs = excel.packCellStyle(this.origin()) : this.pcs;
+		return this.pcs == null ? this.pcs = excel.packWKCellStyle(this.origin()) : this.pcs;
 	}
 
 	/**

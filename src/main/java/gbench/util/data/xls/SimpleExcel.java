@@ -1136,7 +1136,7 @@ public class SimpleExcel implements AutoCloseable {
 					if (ldt != null) {
 						cell.setCellValue(ldt);
 						final short fmt = workbook.createDataFormat().getFormat("yyyy-MM-dd HH:mm:ss");
-						final CellStyle cellStyle = this.createCellStyle();
+						final CellStyle cellStyle = this.createWKCellStyle();
 						cellStyle.setDataFormat(fmt);
 						cell.setCellStyle(cellStyle);
 						continue;
@@ -1465,43 +1465,53 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
-	 * 创建单元格式样
+	 * 默认式样 <br>
+	 * 创建/注册Workbook级别的单元格式样 !! 需要注意 Excell 为了避免荣誉，Cell的式样是无法进行修改的，<br>
+	 * 而只能从workook创建一个式样style，让后将cell.setCellStyle(style)去引用。 <br>
 	 * 
 	 * @return CellStyle
 	 */
-	public CellStyle createCellStyle() {
-		return this.createCellStyle(null);
+	public CellStyle createWKCellStyle() {
+		return this.createWKCellStyle(null);
 	}
 
 	/**
-	 * 创建单元格式样
+	 * 创建/注册Workbook级别的单元格式样 !! 需要注意 Excell 为了避免荣誉，Cell的式样是无法进行修改的，<br>
+	 * 而只能从workook创建一个式样style，让后将cell.setCellStyle(style)去引用。 <br>
 	 * 
+	 * @param 参照式样的Cell,新创建的式样一Cell式样为基础。cell 为null表示默认式样
 	 * @return CellStyle
 	 */
-	public CellStyle createCellStyle(final Cell cell) {
-		final var style = this.workbook.createCellStyle();
-		if (!Objects.isNull(cell)) {
+	public CellStyle createWKCellStyle(final Cell cell) {
+		final var style = this.workbook.createCellStyle(); // 创建默认式样
+		if (!Objects.isNull(cell)) { // 存在惨遭cell 拷贝参照cell的式样
 			style.cloneStyleFrom(cell.getCellStyle());
 		}
 		return style;
 	}
 
 	/**
-	 * 创建单元格式样
+	 * 创建单元格式样<br>
+	 * !! 需要注意 Excell 为了避免荣誉，Cell的式样是无法进行修改的，<br>
+	 * 而只能从workook创建一个式样style，让后将cell.setCellStyle(style)去引用。 <br>
 	 * 
+	 * @param 参照式样的Cell,新创建的式样一Cell式样为基础。cell 为null表示默认式样
 	 * @return Pack&lt;CellStyle&gt;
 	 */
-	public Pack<CellStyle> packCellStyle(final Cell cell) {
-		return Pack.of(this.createCellStyle(cell));
+	public Pack<CellStyle> packWKCellStyle(final Cell cell) {
+		return Pack.of(this.createWKCellStyle(cell));
 
 	}
 
 	/**
-	 * 创建字体
+	 * 创建字体 <br>
+	 * !! 需要注意 Excell 为了避免荣誉，Cell的式样是无法进行修改的，<br>
+	 * 而只能从workook创建一个式样style，让后将cell.setCellStyle(style)去引用。 <br>
 	 * 
+	 * @param 参照式样的Cell,新创建的式样一Cell式样为基础。cell 为null表示默认式样
 	 * @return Pack&lt;Font&gt;
 	 */
-	public Pack<Font> packFont(final Cell cell) {
+	public Pack<Font> packWKFont(final Cell cell) {
 		return Optional.ofNullable(cell).map(c -> c.getCellStyle().getFontIndex()).map(this.workbook::getFontAt)
 				.map(Pack::of).orElseGet(() -> Pack.of(this.workbook.createFont()));
 
