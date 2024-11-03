@@ -7,6 +7,7 @@ import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.RPTA;
 import static org.apache.poi.ss.usermodel.IndexedColors.BLUE;
 import static org.apache.poi.ss.usermodel.IndexedColors.RED;
+import static org.apache.poi.ss.usermodel.IndexedColors.YELLOW;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -113,11 +114,21 @@ public class WriteFileTest {
 					.paint(style -> { // 绘制数据表式样
 						style.setBorderBottom(BorderStyle.DASH_DOT);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
-					}).withTransaction(aa -> aa.ptitle(RED).pbottom(RED)) // 式样绘制
-					.writeLine((p, i) -> { // 公式写入
+					}).ptitle(RED).pbottom(RED).withTransaction(aa -> { // 右侧margin公式写入
+						aa.right().rowS().skip(1) // 剔除第一行的表头
+								.map(e -> e.hshift(1).background(YELLOW)) // 向右移动一个单元个位置
+								.forEach(subtotal -> { // 水平方向上的小计
+									final var line = subtotal.hshe(-5, 4); // 水平行(向左移动5个位置,扩展4个位置)
+									final var formula = "sum(%s)".formatted(line); // 水平的求和公式
+									subtotal.setCellFormula(formula).paintBottom(RED, BorderStyle.DASH_DOT);
+									println(subtotal, subtotal.hshe(-5, 4), formula);
+								});
+						aa.right().originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
+					}) // 式样绘制
+					.writeLine((p, i) -> { // 下侧margin公式写入
 						final var formula = "sum(%s)".formatted(p.vsve(-5, 4));
 						p.setCellFormula(formula);
-					}, 5).paint(background_color.apply(IndexedColors.YELLOW)) // 汇总和
+					}, 6).paint(background_color.apply(IndexedColors.YELLOW)).pbottom(RED) // 汇总和
 					.writeLine((p, i) -> { // 写入区域名称
 						p.set("%s".formatted(p.vsve(-6, 4)));
 					}, 5).pcolor(BLUE).writeLine("author:%s,time:%s" // 数据签名
