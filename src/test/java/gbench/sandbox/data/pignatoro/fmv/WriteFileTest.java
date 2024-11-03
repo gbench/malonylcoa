@@ -105,13 +105,12 @@ public class WriteFileTest {
 					.paint(style -> { // 绘制数据表式样
 						style.setBorderBottom(BorderStyle.DASH_DOT);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
-					})
-					.withTransaction(aa -> {
+					}).withTransaction(aa -> {
 						aa.firstRow().paintHead(IndexedColors.RED);
 						aa.lastRow().paintLast(IndexedColors.RED);
 						println(aa.firstRow().equals(aa.firstRow()));
-					})
-					.save();
+						println(aa.getName(), aa.firstRow(), aa.lastRow());
+					}).save();
 		}
 		println("书写完毕：%s".formatted(outfile));
 	}

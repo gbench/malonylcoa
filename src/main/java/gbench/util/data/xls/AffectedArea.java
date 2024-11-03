@@ -1,5 +1,7 @@
 package gbench.util.data.xls;
 
+import static gbench.util.data.xls.DataMatrix.xlsn;
+
 import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;
@@ -156,6 +158,35 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public void setShape(final Tuple2<Integer, Integer> shape) {
 		this.shape = shape;
+	}
+
+	/**
+	 * 获取区域名称
+	 * 
+	 * @return
+	 */
+	public String getName() {
+		return this.getName(false);
+	}
+
+	/**
+	 * 获取区域名称（比如:Sheet1!A1:B2)
+	 *
+	 * @param flag 是否显示sheet名称,true:显示,false:不显示
+	 * @return
+	 */
+	public String getName(final boolean flag) {
+		return Optional.ofNullable(this.ltCell).map(cell -> {
+			final var sheetName = cell.getSheet().getSheetName();
+			final var x0 = cell.getRowIndex();
+			final var y0 = cell.getColumnIndex();
+			final var x1 = x0 + (this.nrows() - 1);
+			final var y1 = y0 + (this.ncols() - 1);
+
+			return "%s%s%s:%s%s".formatted(
+					Optional.ofNullable(flag ? sheetName : null).map("%s!"::formatted).orElse(""), // sheet前缀
+					xlsn(y0), x0, xlsn(y1), x1);
+		}).orElse(null);
 	}
 
 	/**
@@ -1025,12 +1056,6 @@ public class AffectedArea implements Iterable<Cell> {
 		return this.cellS().iterator();
 	}
 
-	@Override
-	public String toString() {
-		return "AffectedArea [startCell=%s(%d,%d), shape=(rows:%s,cols:%s)]".formatted(ltCell, ltCell.getRowIndex(),
-				ltCell.getColumnIndex(), this.nrows(), this.ncols());
-	}
-
 	/**
 	 * 详情罗列
 	 * 
@@ -1102,6 +1127,11 @@ public class AffectedArea implements Iterable<Cell> {
 		}
 
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return this.getName(true);
 	}
 
 	private Pack<CellStyle> pcs;
