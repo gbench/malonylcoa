@@ -495,7 +495,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *
 	 * @param step 大于等一1的整数，滑动步长
 	 * @param size 窗口大小
-	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的费不满足大小的小窗口。
+	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的不满足大小的小窗口。
 	 * @return 滑动窗口元素流
 	 */
 	default Stream<INdarray<V>> slidingS(final int step, final int size, final boolean flag) {
@@ -542,7 +542,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 *
 	 * @param step 大于等一1的整数，滑动步长
 	 * @param size 窗口大小
-	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的费不满足大小的小窗口。
+	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的不满足大小的小窗口。
 	 * @return 滑动窗口集合
 	 */
 	default INdarray<INdarray<V>> slidings(final int step, final int size, final boolean flag) {
@@ -591,7 +591,7 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * step 滑动步长 默认为1
 	 *
 	 * @param n    移动步长 与 窗口大小 , 大于等于1的整数
-	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的费不满足大小的小窗口。
+	 * @param flag 窗口大小是否齐次,true:大小都是size，去除小窗口,false:保留尾部的不满足大小的小窗口。
 	 * @return 滑动窗口集合
 	 */
 	default INdarray<INdarray<V>> cuts(final int n, final boolean flag) {
