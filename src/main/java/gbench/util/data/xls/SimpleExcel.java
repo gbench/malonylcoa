@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
@@ -1469,7 +1470,20 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return CellStyle
 	 */
 	public CellStyle createCellStyle() {
-		return this.workbook.createCellStyle();
+		return this.createCellStyle(null);
+	}
+
+	/**
+	 * 创建单元格式样
+	 * 
+	 * @return CellStyle
+	 */
+	public CellStyle createCellStyle(final Cell cell) {
+		final var style = this.workbook.createCellStyle();
+		if (!Objects.isNull(cell)) {
+			style.cloneStyleFrom(cell.getCellStyle());
+		}
+		return style;
 	}
 
 	/**
@@ -1478,8 +1492,7 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return Pack&lt;CellStyle&gt;
 	 */
 	public Pack<CellStyle> packCellStyle(final Cell cell) {
-		return Optional.ofNullable(cell).map(c -> Pack.of(c.getCellStyle()))
-				.orElseGet(() -> Pack.of(this.createCellStyle()));
+		return Pack.of(this.createCellStyle(cell));
 
 	}
 

@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -520,27 +519,14 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 格式喷涂
 	 * 
-	 * @param style 单元格式样
-	 * @return
-	 */
-	public AffectedArea paint(final BiConsumer<Cell, CellStyle> action) {
-		this.forEach(cell -> {
-			action.accept(cell, cell.getCellStyle());
-		});
-		return this;
-	}
-
-	/**
-	 * 格式喷涂
-	 * 
 	 * @param newstyle 单元格式样
 	 * @return
 	 */
 	public AffectedArea paint(final CellStyle newstyle) {
-		return this.paint((cell, oldstyle) -> {
-			System.out.println("%s".formatted(oldstyle.equals(newstyle)));
+		this.forEach(cell -> {
 			cell.setCellStyle(newstyle);
 		});
+		return this;
 	}
 
 	/**
@@ -580,11 +566,13 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paintHead(final IndexedColors color) {
-		this.paint(style -> {
-			style.setBorderTop(BorderStyle.THIN);
-			style.setBottomBorderColor(color.getIndex());
-			style.setBorderBottom(BorderStyle.THICK);
-			style.setBottomBorderColor(color.getIndex());
+		final var s = excel.packCellStyle(null).value();
+		s.setBorderTop(BorderStyle.THIN);
+		s.setBottomBorderColor(color.getIndex());
+		s.setBorderBottom(BorderStyle.THICK);
+		s.setBottomBorderColor(color.getIndex());
+		this.forEach(cell -> {
+			cell.setCellStyle(s);
 		});
 		return this;
 	}
@@ -595,9 +583,11 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paintLast(final IndexedColors color) {
-		this.paint(style -> {
-			style.setBorderBottom(BorderStyle.THIN);
-			style.setBottomBorderColor(color.getIndex());
+		final var s = excel.packCellStyle(null).value();
+		s.setBorderBottom(BorderStyle.THIN);
+		s.setBottomBorderColor(color.getIndex());
+		this.forEach(cell -> {
+			cell.setCellStyle(s);
 		});
 		return this;
 	}
