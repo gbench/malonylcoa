@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.RichTextString;
 
@@ -611,35 +612,94 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 头部行 <br>
+	 * 喷绘制标题 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea ptitle(final IndexedColors color) {
+		return this.paintTitle(color);
+	}
+
+	/**
+	 * 喷绘制标题 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea paintTitle(final IndexedColors color) {
+		final var cell = this.origin();
+		excel.packWKCellStyle(cell).valueOpt().map(s -> {
+			s.setBorderTop(BorderStyle.THIN);
+			s.setTopBorderColor(color.getIndex());
+			s.setFont(excel.packWKFont(cell).evaluate(font -> {
+				font.setBold(true);
+			}));
+			s.setBorderBottom(BorderStyle.THICK);
+			s.setBottomBorderColor(color.getIndex());
+			s.setAlignment(HorizontalAlignment.CENTER);
+			return this.top().paint(s);
+		}).orElse(null);
+		return this;
+	}
+
+	/**
+	 * 喷绘制顶部 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea ptop(final IndexedColors color) {
+		return this.paintTop(color);
+	}
+
+	/**
+	 * 喷绘制顶部 <br>
 	 * 
 	 * @return
 	 */
 	public AffectedArea paintTop(final IndexedColors color) {
-		return excel.packWKCellStyle(this.origin()).valueOpt().map(s -> {
+		final var top = this.top();
+		excel.packWKCellStyle(top.origin()).valueOpt().map(s -> {
 			s.setBorderTop(BorderStyle.THIN);
 			s.setTopBorderColor(color.getIndex());
-			s.setBorderBottom(BorderStyle.THICK);
-			s.setBottomBorderColor(color.getIndex());
-			return this.top().paint(s);
+			return top.paint(s);
 		}).orElse(null);
+		return this;
 	}
 
 	/**
-	 * 尾部行 <br>
+	 * 喷绘制顶部 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea pbottom(final IndexedColors color) {
+		return this.paintBottom(color);
+	}
+
+	/**
+	 * 喷绘制顶部 <br>
 	 * 
 	 * @return
 	 */
 	public AffectedArea paintBottom(final IndexedColors color) {
-		return excel.packWKCellStyle(this.bottom().origin()).valueOpt().map(s -> {
+		final var bottom = this.bottom();
+		excel.packWKCellStyle(this.bottom().origin()).valueOpt().map(s -> {
 			s.setBorderBottom(BorderStyle.THIN);
 			s.setBottomBorderColor(color.getIndex());
-			return this.bottom().paint(s);
+			return bottom.paint(s);
 		}).orElse(null);
+		return this;
 	}
 
 	/**
-	 * 尾部行 <br>
+	 * 喷绘制左侧 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea pleft(final IndexedColors color) {
+		return this.paintLeft(color);
+	}
+
+	/**
+	 * 喷绘制左侧 <br>
 	 * 
 	 * @return
 	 */
@@ -654,7 +714,16 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 尾部行 <br>
+	 * 喷绘制左侧 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea pright(final IndexedColors color) {
+		return this.paintRight(color);
+	}
+
+	/**
+	 * 喷绘制右侧 <br>
 	 * 
 	 * @return
 	 */
@@ -666,6 +735,28 @@ public class AffectedArea implements Iterable<Cell> {
 			}).evaluate(cell::setCellStyle);
 		});
 		return this;
+	}
+
+	/**
+	 * 喷涂边框 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea poutline(final IndexedColors color) {
+		return this.paintOutline(color);
+	}
+
+	/**
+	 * 喷涂边框 <br>
+	 * 
+	 * @return
+	 */
+	public AffectedArea paintOutline(final IndexedColors color) {
+		this.paintTop(color);
+		this.paintBottom(color);
+		this.paintLeft(color);
+		this.paintBottom(color);
+		return this.paintRight(color);
 	}
 
 	/**
