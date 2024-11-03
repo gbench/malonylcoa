@@ -2,10 +2,13 @@ package gbench.sandbox.data.pignatoro.fmv;
 
 import static gbench.global.Globals.WS_HOME;
 import static gbench.util.array.INdarray.nats;
+import static gbench.util.data.xls.SimpleExcel.background_color;
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.Lisp.RPTA;
+import static org.apache.poi.ss.usermodel.IndexedColors.BLUE;
 import static org.apache.poi.ss.usermodel.IndexedColors.RED;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -110,9 +113,13 @@ public class WriteFileTest {
 					.writeLine((p, i) -> { // 公式写入
 						final var formula = "sum(%s)".formatted(p.vsve(-5, 4));
 						p.setCellFormula(formula);
-					}, 10).writeLine((p, i) -> { // 写入区域名称
-						p.set("=%s".formatted(p.vsve(-6, 4)));
-					}, 10).save();
+					}, 5).paint(background_color.apply(IndexedColors.YELLOW)) // 汇总和
+					.writeLine((p, i) -> { // 写入区域名称
+						p.set("%s".formatted(p.vsve(-6, 4)));
+					}, 5).pcolor(BLUE).writeLine("author:%s,time:%s" // 数据签名
+							.formatted("gbench", LocalDateTime.now()).split(","))
+					.pcolor(IndexedColors.PINK) //
+					.save();
 		}
 		println("书写完毕：%s".formatted(outfile));
 	}

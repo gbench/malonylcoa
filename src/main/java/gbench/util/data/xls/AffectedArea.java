@@ -521,7 +521,7 @@ public class AffectedArea implements Iterable<Cell> {
 			final var p = point.hshift(i); // 水平平移
 			action.accept(p, i);
 		}
-		return this.writePoint().extend(0, n);
+		return this.writePoint().extend(0, n - 1); // n-1 表示包含写入点在内的n个点
 	}
 
 	/**
@@ -748,6 +748,20 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 设置字体颜色
+	 * 
+	 * @param prepare 喷涂式样转呗
+	 * @return
+	 */
+	public AffectedArea pcolor(final IndexedColors color) {
+		excel.packWKFont(null).wrap(font -> font.setColor(color.getIndex()))
+				.flatMap(font -> excel.packWKCellStyle(ltCell) //
+						.wrap(s -> s.setFont(font)))
+				.evaluate(this::paint);
+		return this;
+	}
+
+	/**
 	 * 喷绘制标题 <br>
 	 * 
 	 * @return
@@ -767,7 +781,7 @@ public class AffectedArea implements Iterable<Cell> {
 		excel.packWKCellStyle(cell).valueOpt().map(s -> {
 			s.setBorderTop(BorderStyle.THIN);
 			s.setTopBorderColor(color.getIndex());
-			s.setFont(excel.packWKFont(cell).evaluate(font -> {
+			s.setFont(excel.packWKFont(null).evaluate(font -> {
 				font.setBold(true);
 			}));
 			s.setBorderBottom(BorderStyle.THICK);
