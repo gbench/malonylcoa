@@ -511,17 +511,14 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 写入excel (不带有表头的书写格式) <br>
 	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
 	 * 
-	 * @param <T>     元素类型
-	 * @param address 起始位置地址(全SHEET绝对地址)
-	 * @param line    数据内容
-	 * @return SimpleExcel 对象本身 以实现链式编程
+	 * @param action 书写回调,(point:AffectedArea)->{}
+	 * @param n      书写行长度
+	 * @return AffectedArea
 	 */
 	public final <T> AffectedArea writeLine(final BiConsumer<AffectedArea, Integer> action, final int n) {
 		final var point = this.writePoint();
-		System.out.println("=========>%s".formatted(point));
 		for (var i = 0; i < n; i++) {
-			final var p = point.shift(0, i);
-			System.out.println("%s-->%s".formatted(point, p));
+			final var p = point.hshift(i); // 水平平移
 			action.accept(p, i);
 		}
 		return this.writePoint().extend(0, n);
@@ -609,9 +606,9 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 垂直平移
+	 * 水平平移
 	 * 
-	 * @param ncols
+	 * @param ncols 水平平移列数量
 	 * @return
 	 */
 	public AffectedArea hshift(int ncols) {
@@ -621,8 +618,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 平移
 	 * 
-	 * @param nrows
-	 * @param ncols
+	 * @param nrows 垂直平移行数量
+	 * @param ncols 水平平移列数量
 	 * @return
 	 */
 	public AffectedArea shift(int nrows, int ncols) {
@@ -765,7 +762,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea paintTitle(final IndexedColors color) {
-		final var cell = this.origin();
+		final var top = this.top();
+		final var cell = top.origin();
 		excel.packWKCellStyle(cell).valueOpt().map(s -> {
 			s.setBorderTop(BorderStyle.THIN);
 			s.setTopBorderColor(color.getIndex());
@@ -775,7 +773,7 @@ public class AffectedArea implements Iterable<Cell> {
 			s.setBorderBottom(BorderStyle.THICK);
 			s.setBottomBorderColor(color.getIndex());
 			s.setAlignment(HorizontalAlignment.CENTER);
-			return this.top().paint(s);
+			return top().paint(s);
 		}).orElse(null);
 		return this;
 	}
