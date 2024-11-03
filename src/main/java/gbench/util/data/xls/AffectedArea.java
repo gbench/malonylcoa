@@ -192,21 +192,39 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 右下角的 偏移位置。 <br>
-	 * offset(0,0) 为 区域的右下角的cell
+	 * 行索引左上（INDEX OF TOP ）
 	 * 
-	 * @param offset_x 行偏移
-	 * @param offset_y 列偏移
-	 * @return 右下角的 偏移位置
+	 * @return
 	 */
-	public Optional<Cell> offsetOpt(final int offset_x, final int offset_y) {
-		return Optional.ofNullable(this.ltCell).map(cell -> {
-			final int origin_x = cell.getRowIndex(); // 行索引
-			final int origin_y = cell.getColumnIndex(); // 列索引
-			final int _x = origin_x + this.shape._1 - 1 + offset_x;
-			final int _y = origin_y + this.shape._2 - 1 + offset_y;
-			return this.excel.getOrCreateCell(cell.getSheet(), _x, _y); //
-		}); // Optional
+	public Integer itop() {
+		return Optional.ofNullable(this.ltCell).map(cell -> cell.getRowIndex()).orElse(null);
+	}
+
+	/**
+	 * 行索引左上（INDEX OF LEFT ）
+	 * 
+	 * @return
+	 */
+	public Integer ileft() {
+		return Optional.ofNullable(this.ltCell).map(cell -> cell.getColumnIndex()).orElse(null);
+	}
+
+	/**
+	 * 行索引左上（INDEX OF BOTTOM ）
+	 * 
+	 * @return
+	 */
+	public Integer ibottom() {
+		return Optional.ofNullable(this.ltCell).map(cell -> cell.getRowIndex() + this.nrows() - 1).orElse(null);
+	}
+
+	/**
+	 * 行索引左上（INDEX OF RIGHT ）
+	 * 
+	 * @return
+	 */
+	public Integer iright() {
+		return Optional.ofNullable(this.ltCell).map(cell -> cell.getColumnIndex() + this.ncols() - 1).orElse(null);
 	}
 
 	/**
@@ -310,6 +328,22 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public int ncols() {
 		return this.shape._2;
+	}
+
+	/**
+	 * 右下角的 偏移位置。 <br>
+	 * offset(0,0) 为 区域的右下角的cell
+	 * 
+	 * @param nrows 行偏移数量
+	 * @param ncols 列偏移数量
+	 * @return 右下角的 偏移位置
+	 */
+	public Optional<Cell> offsetOpt(final int nrows, final int ncols) {
+		return Optional.ofNullable(this.ltCell).map(cell -> {
+			final int irow = this.ibottom() + nrows; // 目标行索引
+			final int icol = this.iright() + ncols; // 目标列索引
+			return this.excel.getOrCreateCell(cell.getSheet(), irow, icol); //
+		}); // Optional
 	}
 
 	/**
@@ -561,7 +595,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea startPoint() {
-		return this.singleton(this.origin());
+		return this.create(this.origin());
 	}
 
 	/**
@@ -570,17 +604,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea writePoint() {
-		return this.singleton(this.activeCell());
-	}
-
-	/**
-	 * 单点
-	 * 
-	 * @param cell
-	 * @return
-	 */
-	public AffectedArea singleton(final Cell cell) {
-		return create(cell, 1, 1);
+		return this.create(this.activeCell());
 	}
 
 	/**
@@ -660,6 +684,25 @@ public class AffectedArea implements Iterable<Cell> {
 		final var y0 = this.ltCell.getColumnIndex();
 		final var newcell = excel.getOrCreateCell(x0 + nrows, y0 + ncols);
 		return create(newcell, this.nrows(), this.ncols());
+	}
+
+	/**
+	 * 把起始点转换为影响区
+	 * 
+	 * @return
+	 */
+	public AffectedArea originAa() {
+		return create(this.origin());
+	}
+
+	/**
+	 * 单点
+	 * 
+	 * @param cell
+	 * @return
+	 */
+	public AffectedArea create(final Cell cell) {
+		return create(cell, 1, 1);
 	}
 
 	/**
