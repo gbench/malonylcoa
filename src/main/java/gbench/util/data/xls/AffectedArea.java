@@ -22,6 +22,7 @@ import gbench.util.data.xls.SimpleExcel.BorderName;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.Tuple2;
 import gbench.util.type.Pack;
+import gbench.util.type.Types;
 
 /**
  * AffectedArea被设计为记录一次书写完成以后的数据区域（受影响区域），但实际的使用却未必如此，他可以用于选区和改写
@@ -440,6 +441,20 @@ public class AffectedArea implements Iterable<Cell> {
 	@SafeVarargs
 	public final <T> AffectedArea writeRow(final String address, T... line) {
 		return this.writeLine(line);
+	}
+
+	/**
+	 * 书写一行 <br>
+	 * 写入excel (不带有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 
+	 * @param <T>     元素类型
+	 * @param address 起始位置地址(全SHEET绝对地址)
+	 * @param line    数据内容
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public final <T> AffectedArea writeLine(final String address, Iterable<T> line) {
+		return this.writeLine(address, Types.itr2array(line));
 	}
 
 	/**
@@ -901,6 +916,29 @@ public class AffectedArea implements Iterable<Cell> {
 	@SuppressWarnings("unchecked")
 	public <T> AffectedArea update(final T... ts) {
 		return this.updateLine(true, ts);
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T> 数据类型
+	 * @param ts  吸入的数据行
+	 * @return
+	 */
+	public <T> AffectedArea update(final Iterable<T> ts) {
+		return this.updateLine(true, ts);
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T>  数据类型
+	 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
+	 * @param ts   书写的数据内容
+	 * @return
+	 */
+	public <T> AffectedArea updateLine(final boolean flag, final Iterable<T> ts) {
+		return this.updateLine(flag, Types.itr2array(ts));
 	}
 
 	/**
