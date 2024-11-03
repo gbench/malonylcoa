@@ -1082,7 +1082,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public AffectedArea bold(final boolean bold) {
-		excel.packWKFont(null).wrap(font -> font.setBold(bold)).flatMap(font -> this.pcs(e -> e.setFont(font)))
+		excel.packWKFont(this.origin()).wrap(font -> font.setBold(bold)).flatMap(font -> this.pcs(e -> e.setFont(font)))
 				.evaluate(this::paint);
 		return this;
 	}
