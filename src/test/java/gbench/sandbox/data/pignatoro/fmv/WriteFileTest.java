@@ -160,7 +160,7 @@ public class WriteFileTest {
 							subtotal.setCellFormula("sum(%s)".formatted(subtotal.vsve(-3, 2)));
 						});
 						// 左侧margin
-						pointAa.rangeAa("C1").ptitle(RED); // 以pointAa为基准选择头前的1x3区域作为表头
+						pointAa.rangeAa("C1").ptitle(RED); // 以pointAa为基准选择头前的1x3区域作为表头,注意这里的‘C1’等价于‘A1:C1’它会自动补充头前确实的A1
 						final var subtotalAa = pointAa.rangeAa("C1:C4"); // 右侧的margin区域
 						subtotalAa.head().set("H-SUBTOTAL"); // 写入表头信息-水平(Horizontal)的小计
 						subtotalAa.tail().background(YELLOW).pbottom(RED).rowS().forEach(subtotal -> { // 水平

@@ -566,7 +566,9 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 以当前AA为基准进行区域AffectedArea构建
 	 * 
-	 * @param nameline EXCEL的Range的描述字符串如
+	 * @param nameline EXCEL的Range的描述字符串，如:"A1:C1",<br>
+	 *                 注意单个cell比如‘C1’等价于‘A1:C1’它会自动补充头前缺失的A1,<br>
+	 *                 所以如果只想标注一个Cell请请使用 "A1:A1"这样的完整语法
 	 * @return AffectedArea
 	 */
 	public AffectedArea rangeAa(final String nameline) {
