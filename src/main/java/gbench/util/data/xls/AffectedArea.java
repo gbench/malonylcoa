@@ -324,6 +324,33 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 把起始点转换为影响区
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea ltAa() {
+		return create(this.ltCell);
+	}
+
+	/**
+	 * 基点单元格
+	 * 
+	 * @return Cell
+	 */
+	public Cell ltCell() {
+		return this.ltCell;
+	}
+
+	/**
+	 * Optional ltCell
+	 * 
+	 * @return Optional ltCell
+	 */
+	public Optional<Cell> ltOpt() {
+		return Optional.ofNullable(this.ltCell);
+	}
+
+	/**
 	 * 基点位置
 	 * 
 	 * @return
@@ -333,54 +360,45 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 把起始点转换为影响区(ltAa的别名)
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea originAa() {
+		return this.ltAa();
+	}
+
+	/**
+	 * Optional ltCell
+	 * 
+	 * @return Optional ltCell
+	 */
+	public Optional<Cell> originOpt() {
+		return this.ltOpt();
+	}
+
+	/**
 	 * originAddress
 	 * 
-	 * @return
+	 * @return originAddress
 	 */
 	public String originAddress() {
 		return Optional.of(this.origin()).map(e -> e.getAddress()).map(String::valueOf).orElse(null);
 	}
 
 	/**
-	 * nrows 别名
+	 * 把起始点转换为影响区
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
-	public int height() {
-		return this.nrows();
-	}
-
-	/**
-	 * 行数量(shape的1号位置)
-	 * 
-	 * @return
-	 */
-	public int nrows() {
-		return this.shape._1;
-	}
-
-	/**
-	 * ncols别名
-	 * 
-	 * @return
-	 */
-	public int width() {
-		return this.ncols();
-	}
-
-	/**
-	 * 列数量(shape的2号位置)
-	 * 
-	 * @return
-	 */
-	public int ncols() {
-		return this.shape._2;
+	public AffectedArea rbAa() {
+		return create(this.rbCell());
 	}
 
 	/**
 	 * 右下角单元格
 	 * 
-	 * @return
+	 * @return Cell 单元格
 	 */
 	public Cell rbCell() {
 		return this.rbCellOpt().orElse(null);
@@ -389,10 +407,46 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 右下角单元格
 	 * 
-	 * @return
+	 * @return Optional Cell
 	 */
 	public Optional<Cell> rbCellOpt() {
 		return Optional.ofNullable(this.cell(this.nrows() - 1, this.ncols() - 1));
+	}
+
+	/**
+	 * nrows 别名
+	 * 
+	 * @return 高度
+	 */
+	public int height() {
+		return this.nrows();
+	}
+
+	/**
+	 * 行数量(shape的1号位置)
+	 * 
+	 * @return 高度
+	 */
+	public int nrows() {
+		return this.shape._1;
+	}
+
+	/**
+	 * ncols别名
+	 * 
+	 * @return 宽度
+	 */
+	public int width() {
+		return this.ncols();
+	}
+
+	/**
+	 * 列数量(shape的2号位置)
+	 * 
+	 * @return 宽度
+	 */
+	public int ncols() {
+		return this.shape._2;
 	}
 
 	/**
@@ -758,24 +812,6 @@ public class AffectedArea implements Iterable<Cell> {
 		final var new_icol = Math.max(origin_icol + ncols, 0);
 		final var newcell = excel.getOrCreateCell(this.ltCell.getSheet(), new_irow, new_icol);
 		return create(newcell, this.nrows(), this.ncols());
-	}
-
-	/**
-	 * 把起始点转换为影响区(ltAa的别名)
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea originAa() {
-		return this.ltAa();
-	}
-
-	/**
-	 * 把起始点转换为影响区
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea ltAa() {
-		return create(this.ltCell);
 	}
 
 	/**
@@ -1640,6 +1676,15 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 单元格流序列（行顺序）
+	 * 
+	 * @return Cell 列表
+	 */
+	public List<Cell> cells() {
+		return this.cellS().toList();
+	}
+
+	/**
 	 * 行顺序的一维数组 <br>
 	 * 
 	 * @return Cell一维数组
@@ -1656,30 +1701,6 @@ public class AffectedArea implements Iterable<Cell> {
 	public Cell[][] toArray2() {
 		return this.rowS().map(AffectedArea::toArray).toArray(Cell[][]::new);
 
-	}
-
-	/**
-	 * 单元格流序列（行顺序）
-	 * 
-	 * @return Cell 列表
-	 */
-	public List<Cell> cells() {
-		return this.cellS().toList();
-	}
-
-	/**
-	 * 数据保存（excel.save)的别名
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea save() {
-		this.excel.save();
-		return this;
-	}
-
-	@Override
-	public Iterator<Cell> iterator() {
-		return this.cellS().iterator();
 	}
 
 	/**
@@ -1714,6 +1735,16 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 数据保存（excel.save)的别名
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea save() {
+		this.excel.save();
+		return this;
+	}
+
+	/**
 	 * 获取 Pack CellStyle
 	 * 
 	 * @param cs 式样如处理器
@@ -1730,6 +1761,11 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public synchronized Pack<CellStyle> pcs() {
 		return this.pcs == null ? this.pcs = excel.packWKCellStyle(this.origin()) : this.pcs;
+	}
+
+	@Override
+	public Iterator<Cell> iterator() {
+		return this.cellS().iterator();
 	}
 
 	/**

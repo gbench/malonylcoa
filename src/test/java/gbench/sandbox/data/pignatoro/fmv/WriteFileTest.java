@@ -138,8 +138,7 @@ public class WriteFileTest {
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
 					}).ptitle(RED).pbottom(RED).withTransaction(aa -> { // 右侧margin公式写入,aa:AffectedArea的缩写
 						final var right = aa.right(); // 提取右侧
-
-						right.ltAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
+						right.originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
 						// 表体数据:subtotal的公式写入:剔除第一行的表头（其余涂成黄色）
 						right.hshift(1).skipRows(1).background(YELLOW).rowS().forEach(subtotal -> { // 水平方向上的小计
 							final var line = subtotal.hshe(-5, 4); // 水平行(向左移动5个位置,扩展4个位置)
