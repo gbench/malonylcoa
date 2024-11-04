@@ -136,7 +136,7 @@ public class AffectedArea implements Iterable<Cell> {
 
 	/**
 	 * 
-	 * 调整LtCell(左上角Cell)
+	 * 根据nrows,ncols的正负情况,调整LtCell(左上角Cell)
 	 * 
 	 * @param cell  待调整的ltCell
 	 * @param nrows 行偏移
@@ -144,27 +144,32 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public Cell adjustLtCell(final Cell cell, final int nrows, final int ncols) {
-		final var origin_irow = cell.getRowIndex(); // 原来行索引
-		final var origin_icol = cell.getColumnIndex(); // 原来列索引
-		var irow = origin_irow; // 调整后行索引：初始化origin_irow
-		var icol = origin_icol; // 调整后的列索引：初始化为 origin_icol
+		if (null == cell) { // 无效cell返回null
+			return null;
+		} else { // cell 不为空
+			final var origin_irow = cell.getRowIndex(); // 原来行索引
+			final var origin_icol = cell.getColumnIndex(); // 原来列索引
+			var irow = origin_irow; // 调整后行索引：初始化origin_irow
+			var icol = origin_icol; // 调整后的列索引：初始化为 origin_icol
 
-		if (nrows < 0) { // 行数量小于0:调整移动行索引
-			irow = Math.max(irow + nrows, 0); // 更新行索引(向上运动）
-		} else {
-			// do nothing
-		}
-		if (ncols < 0) { // 列数量小于0:调整移动列索引
-			icol = Math.max(icol + ncols, 0); // 更新列索引（向左运动
-		} else {
-			// do nothing
-		}
+			if (nrows < 0) { // 行数量小于0:调整移动行索引
+				irow = Math.max(irow + nrows, 0); // 更新行索引(向上运动）
+			} else {
+				// do nothing
+			}
+			if (ncols < 0) { // 列数量小于0:调整移动列索引
+				icol = Math.max(icol + ncols, 0); // 更新列索引（向左运动
+			} else {
+				// do nothing
+			}
 
-		final var ltcell = excel.getOrCreateCell(cell.getSheet(), //
-				Math.min(origin_irow, irow), // 选择左上端的行索引
-				Math.min(origin_icol, icol) // 选择左边的列索引
-		); // 移动后的ltCell
-		return ltcell;
+			final var ltcell = excel.getOrCreateCell(cell.getSheet(), //
+					Math.min(origin_irow, irow), // 选择左上端的行索引
+					Math.min(origin_icol, icol) // 选择左边的列索引
+			); // 移动后的ltCell
+
+			return ltcell;
+		} // if
 	}
 
 	/**
@@ -202,7 +207,7 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 获取区域名称
+	 * 获取区域名称（例如：A1:B2）
 	 * 
 	 * @return
 	 */
@@ -579,7 +584,7 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 缩放：采用指定的nrows与ncols数量
+	 * 保持origin(ltCell)不变，重新设置区域的行数(height)与列数(width)
 	 * 
 	 * @param nrows 缩放后的行数量
 	 * @param ncols 缩放后的列数量
@@ -592,7 +597,7 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 缩放：采用指定的nrows与ncols数量
+	 * 缩放：采用指定的nrows与ncols数量（reshape的别名)
 	 * 
 	 * @param nrows 缩放后的行数量
 	 * @param ncols 缩放后的列数量
@@ -1653,11 +1658,18 @@ public class AffectedArea implements Iterable<Cell> {
 		return false;
 	}
 
+	/**
+	 * 采用与excel的range相同的命名方式，以保证的可以直接用aa与字符串连接去生成EXCEL公式 <br>
+	 * 比如:"sum(%s)".format(aa) 就可以生成对整个aa中的所有cell进行求和的公式
+	 */
 	@Override
 	public String toString() {
 		return this.getName(true);
 	}
 
+	/**
+	 * 当前缓存的单元格式样
+	 */
 	private Pack<CellStyle> pcs;
 
 	/**
