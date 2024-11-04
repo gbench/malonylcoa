@@ -49,13 +49,12 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public AffectedArea(final SimpleExcel excel, final Cell ltCell, final Tuple2<Integer, Integer> shape,
 			final Pack<CellStyle> pcs) {
-		this.excel = excel;
-
-		final var nrows = shape._1;
-		final var ncols = shape._2;
-		this.ltCell = this.adjustLtCell(ltCell, nrows, ncols);
-		this.shape = Tuple2.of(Math.abs(nrows), Math.abs(ncols));
-		this.pcs = pcs;
+		this.excel = excel; // excel
+		final var nrows = shape._1; // 高度
+		final var ncols = shape._2; // 宽度
+		this.ltCell = this.adjustLtCell(ltCell, nrows, ncols); // 节点对象
+		this.shape = Tuple2.of(Math.abs(nrows), Math.abs(ncols)); // 对象尺寸:nrows,ncols
+		this.pcs = pcs; // 式样信息
 	}
 
 	/**
@@ -127,11 +126,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param excel  excel对象
 	 */
 	public AffectedArea(final SimpleExcel excel, final RangeDef rdf, final int startx, int starty) {
-		this.excel = excel;
-		final var ltCell = this.excel.cell(rdf.x0() + startx, rdf.y0() + starty);
-		final var shape = Tuple2.of(rdf.width(), rdf.height());
-		this.ltCell = ltCell;
-		this.shape = shape;
+		this(excel, excel.cell(rdf.sheetName(),rdf.x0() + startx, rdf.y0() + starty), Tuple2.of(rdf.width(), rdf.height()));
 	}
 
 	/**
@@ -762,8 +757,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 单点
 	 * 
-	 * @param cell
-	 * @return
+	 * @param cell 起始origin
+	 * @return AffectedArea
 	 */
 	public AffectedArea create(final Cell cell) {
 		return create(cell, 1, 1);
@@ -775,7 +770,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param cell   基点位置
 	 * @param height 高度
 	 * @param width  宽度
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea create(final Cell cell, int height, int width) {
 		return new AffectedArea(this.excel, cell, height, width);

@@ -1039,38 +1039,6 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
-	 * 创建一个单元格
-	 * 
-	 * @param sht 表单对象
-	 * @param i   行索引 从0开始
-	 * @param j   列索引 从0开始
-	 * @return 单元格对象
-	 */
-	public Cell getOrCreateCell(final Sheet sht, final int i, final int j) {
-		Row row = sht.getRow(i);
-		if (row == null) {
-			row = sht.createRow(i);
-		}
-		Cell c = row.getCell(j);
-		if (c == null) {
-			c = row.createCell(j);
-		}
-		return c;
-	}
-
-	/**
-	 * 创建一个单元格
-	 * 
-	 * @param sht 表单对象
-	 * @param i   行索引 从0开始
-	 * @param j   列索引 从0开始
-	 * @return 单元格对象
-	 */
-	public Cell getOrCreateCell(final int i, final int j) {
-		return this.getOrCreateCell(this.activesht, i, j);
-	}
-
-	/**
 	 * 创建一个单元格(getOrCreateCell 的别名)
 	 * 
 	 * @param sht 表单对象
@@ -1083,14 +1051,62 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
+	 * 创建一个单元格(getOrCreateCell 的别名)
+	 * 
+	 * @param sheetName 表单名称
+	 * @param i         行索引 从0开始
+	 * @param j         列索引 从0开始
+	 * @return 单元格对象
+	 */
+	public Cell cell(final String sheetName, final int i, final int j) {
+		final Sheet sheet = Optional.ofNullable(sheetName).map(this::getOrCreateSheet).orElse(activesht);
+		return this.getOrCreateCell(sheet, i, j);
+	}
+
+	/**
+	 * 创建一个单元格
+	 * 
+	 * @param sht 表单对象
+	 * @param i   行索引 从0开始
+	 * @param j   列索引 从0开始
+	 * @return 单元格对象
+	 */
+	public Cell getOrCreateCell(final Sheet sheet, final int i, final int j) {
+		return Optional.ofNullable(sheet).map(Optional::of) //
+				.orElseGet(() -> Optional.ofNullable(this.activesht)) //
+				.map(sht -> {
+					Row row = sht.getRow(i);
+					if (row == null) {
+						row = sht.createRow(i);
+					}
+					Cell c = row.getCell(j);
+					if (c == null) {
+						c = row.createCell(j);
+					}
+					return c;
+				}).orElse(null);
+	}
+
+	/**
+	 * 创建一个单元格
+	 * 
+	 * @param i 行索引 从0开始
+	 * @param j 列索引 从0开始
+	 * @return 单元格对象
+	 */
+	public Cell getOrCreateCell(final int i, final int j) {
+		return this.getOrCreateCell(this.activesht, i, j);
+	}
+
+	/**
 	 * 根据sheet 名称获取或创建sheet
 	 * 
 	 * @param shtname exceel表单名称
 	 * @return excel 表单
 	 */
 	public Sheet getOrCreateSheet(final String shtname) {
-		Integer shtid = this.shtname2shtid(shtname);
-		Sheet sht = shtid < 0 ? this.workbook.createSheet(shtname) : sheet(shtid);
+		final Integer shtid = this.shtname2shtid(shtname);
+		final Sheet sht = shtid < 0 ? this.workbook.createSheet(shtname) : sheet(shtid);
 		return sht;
 	}
 
