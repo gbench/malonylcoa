@@ -156,17 +156,18 @@ public class WriteFileTest {
 						final var addrAa = right.hshift(3); // 写入 I2位置
 
 						// 相对nameline的使用（A4:B4是相对于addrAa的，实际为I5:J5）, 采用相对区间选区rangeAa 的小计公式写入:下册margin
-						addrAa.rangeAa("A4:B4").pbottom(RED).background(YELLOW).colS().forEach(subtotal -> {
+						addrAa.rangeAa("A4:B4").pbottom(RED).background(YELLOW).colS().forEach(subtotal -> { // 垂直
 							subtotal.setCellFormula("sum(%s)".formatted(subtotal.vsve(-3, 2)));
 						});
 						// 左侧margin
-						addrAa.rangeAa("C1:C4").top().set("H-SUBTOTAL").ptitle(RED);
-						addrAa.rangeAa("C1:C4").skipRows(1).background(YELLOW).pbottom(RED).rowS().forEach(subtotal -> {
+						addrAa.rangeAa("C1:C4").top(1).set("H-SUBTOTAL"); // 写入表头
+						addrAa.rangeAa("A1:C1").ptitle(RED); // 表头式样
+						addrAa.rangeAa("C1:C4").skipRows(1).background(YELLOW).pbottom(RED).rowS().forEach(subtotal -> { // 水平
 							subtotal.setCellFormula("sum(%s)".formatted(subtotal.hshe(-3, 2)));
 						});
 
+						// 打印数据位置
 						println("addrAa", addrAa, "cliplines", cliplines); // 打印操作信息
-
 						// 把该块选区写入右侧第三个位置,并用红框标注
 						aa.writeLines(addrAa, cliplines).poutline(RED);
 					}) // 式样绘制
