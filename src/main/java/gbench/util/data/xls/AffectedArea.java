@@ -1458,7 +1458,7 @@ public class AffectedArea implements Iterable<Cell> {
 
 	/**
 	 * 过滤掉指定头前的行数<br>
-	 * 注意 skip(0,0) equals this 对象
+	 * 注意 skipRows(0) equals this 对象
 	 * 
 	 * @param m 过滤的头前行数，大于等于0的整数
 	 * @return AffectedArea
@@ -1469,7 +1469,7 @@ public class AffectedArea implements Iterable<Cell> {
 
 	/**
 	 * 过滤掉指定头前的列数<br>
-	 * 注意 skip(0,0) equals this 对象
+	 * 注意 skipCols(0) equals this 对象
 	 * 
 	 * @param n 过滤的头前列数，大于等于0的整数
 	 * @return AffectedArea
