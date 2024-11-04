@@ -1097,6 +1097,15 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 区域最后一行（顶部的别名）
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea firstRow() {
+		return this.row(0);
+	}
+
+	/**
 	 * 第一列
 	 * 
 	 * @return AffectedArea
@@ -1112,6 +1121,85 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public AffectedArea lastCol() {
 		return this.col(this.ncols() - 1);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度(列数量）
+	 * @return AffectedArea
+	 */
+	public AffectedArea lastCols(final int n) {
+		final var i = Math.max(0, this.nrows() - 1 - n);
+		return this.create(this.cell(i, 0), n, this.ncols());
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea last() {
+		return lastRows(1);
+	}
+
+	/**
+	 * 区域最后一行（底部的别名）
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea lastRow() {
+		return this.row(this.nrows() - 1);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea lastRows(final int n) {
+		final var i = Math.max(0, this.nrows() - 1 - n);
+		return this.create(this.cell(i, 0), n, this.ncols());
+	}
+
+	/**
+	 * 区域顶部
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea top() {
+		return this.row(0);
+	}
+
+	/**
+	 * 区域前n项目长度
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea top(final int n) {
+		return this.head(n);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea bottom(final int n) {
+		return this.lastRows(n);
+	}
+
+	/**
+	 * 区域底部
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea bottom() {
+		return this.row(this.nrows() - 1);
 	}
 
 	/**
@@ -1159,8 +1247,128 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param n 区域长度
 	 * @return AffectedArea
 	 */
-	public AffectedArea top(final int n) {
-		return this.head(n);
+	public AffectedArea head() {
+		return this.head(1);
+	}
+
+	/**
+	 * 区域前n项目长度
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea head(final int n) {
+		return this.headRows(n);
+	}
+
+	/**
+	 * 头前n行
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea headRows(final int n) {
+		return this.nrows(n);
+	}
+
+	/**
+	 * 头前的n列
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea headCols(final int n) {
+		return this.ncols(n);
+	}
+
+	/**
+	 * 去除第一行（head)的剩余部分
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea tail() {
+		return this.tailRows(1);
+	}
+
+	/**
+	 * 剔除头前n行（头部）的剩余部分
+	 * 
+	 * @param 剔除
+	 * @return AffectedArea
+	 */
+	public AffectedArea tailRows(final int n) {
+		return this.skipRows(n);
+	}
+
+	/**
+	 * 剔除头前的n列的剩余
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea tailCols(final int n) {
+		return this.skipCols(n);
+	}
+
+	/**
+	 * 第n行
+	 * 
+	 * @param n 行索引从0开始
+	 * @return AffectedArea
+	 */
+	public AffectedArea row(final int n) {
+		return this.rowOpt(n).orElse(null);
+	}
+
+	/**
+	 * 第n行
+	 * 
+	 * @param n 行索引从0开始
+	 * @return 数据行AffectedArea
+	 */
+	public Optional<AffectedArea> rowOpt(final int n) {
+		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
+				.map(i -> this.create(this.cell(i, 0), 1, this.ncols()));
+	}
+
+	/**
+	 * 数据行
+	 * 
+	 * @return 数据行列表
+	 */
+	public List<AffectedArea> rows() {
+		return this.rowS().toList();
+	}
+
+	/**
+	 * 数据行
+	 * 
+	 * @return 数据行流
+	 */
+	public Stream<AffectedArea> rowS() {
+		return Stream.iterate(0, i -> i + 1).limit(this.height()).map(this::row); // 行高度为1
+	}
+
+	/**
+	 * 数据行(rowS的别名)
+	 * 
+	 * @return 数据行流
+	 */
+	public Stream<AffectedArea> lineS() {
+		return this.rowS();
+	}
+
+	/**
+	 * 过滤掉指定头前的行数与列数<br>
+	 * 注意 skip(0,0) equals this 对象
+	 * 
+	 * @param m 过滤的头前行数，大于等于0的整数
+	 * @param n 过滤的头前列数，大于等于0的整数
+	 * @return AffectedArea
+	 */
+	public AffectedArea rest(final int m, final int n) {
+		return this.skip(m, n);
 	}
 
 	/**
@@ -1198,35 +1406,32 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 区域前n项目长度
+	 * 一分为二
 	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
+	 * @return 头前head行
 	 */
-	public AffectedArea head(final int n) {
-		return this.nrows(n);
+	public Tuple2<AffectedArea, AffectedArea> split(final int i) {
+		return Tuple2.of(this.head(i), this.rest(i, 0));
+	}
+	
+	/**
+	 * 一分为二
+	 * 
+	 * @return 头前head行
+	 */
+	public Tuple2<AffectedArea, AffectedArea> splitRows(final int i) {
+		return Tuple2.of(this.head(i), this.skipCols(i));
+	}
+	
+	/**
+	 * 一分为二
+	 * 
+	 * @return 头前head行
+	 */
+	public Tuple2<AffectedArea, AffectedArea> splitCols(final int i) {
+		return Tuple2.of(this.left(i), this.skipCols(i));
 	}
 
-	/**
-	 * 区域最后n项目
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea last(final int n) {
-		final var i = Math.max(0, this.nrows() - 1 - n);
-		return this.create(this.cell(i, 0), n, this.ncols());
-	}
-
-	/**
-	 * 区域最后n项目
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea bottom(final int n) {
-		return this.last(n);
-	}
 
 	/**
 	 * 提取数据流
@@ -1279,87 +1484,32 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 数据行(rowS的别名)
+	 * 获取 Pack CellStyle
 	 * 
-	 * @return 数据行流
+	 * @return Pack CellStyle
 	 */
-	public Stream<AffectedArea> lineS() {
-		return this.rowS();
+	public synchronized Pack<CellStyle> pcs() {
+		return this.pcs == null ? this.pcs = excel.packWKCellStyle(this.origin()) : this.pcs;
 	}
 
 	/**
-	 * 数据行
+	 * 获取 Pack CellStyle
 	 * 
-	 * @return 数据行流
+	 * @param cs 式样如处理器
+	 * @return Pack CellStyle
 	 */
-	public Stream<AffectedArea> rowS() {
-		return Stream.iterate(0, i -> i + 1).limit(this.height()).map(this::row); // 行高度为1
+	public Pack<CellStyle> pcs(final Consumer<CellStyle> cs) {
+		return this.pcs().wrap(cs);
 	}
 
 	/**
-	 * 数据行
-	 * 
-	 * @return 数据行列表
-	 */
-	public List<AffectedArea> rows() {
-		return this.rowS().toList();
-	}
-
-	/**
-	 * 第n行
-	 * 
-	 * @param n 行索引从0开始
-	 * @return 数据行AffectedArea
-	 */
-	public Optional<AffectedArea> rowOpt(final int n) {
-		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
-				.map(i -> this.create(this.cell(i, 0), 1, this.ncols()));
-	}
-
-	/**
-	 * 第n行
-	 * 
-	 * @param n 行索引从0开始
-	 * @return AffectedArea
-	 */
-	public AffectedArea row(final int n) {
-		return this.rowOpt(n).orElse(null);
-	}
-
-	/**
-	 * 区域最后一行（顶部的别名）
+	 * 属性清空
 	 * 
 	 * @return AffectedArea
 	 */
-	public AffectedArea firstRow() {
-		return this.row(0);
-	}
-
-	/**
-	 * 区域最后一行（底部的别名）
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea lastRow() {
-		return this.row(this.nrows() - 1);
-	}
-
-	/**
-	 * 区域顶部
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea top() {
-		return this.row(0);
-	}
-
-	/**
-	 * 区域底部
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea bottom() {
-		return this.row(this.nrows() - 1);
+	public synchronized AffectedArea clear() {
+		this.pcs = null;
+		return this;
 	}
 
 	/**
@@ -1380,25 +1530,6 @@ public class AffectedArea implements Iterable<Cell> {
 	public String dump() {
 		return "{%s:%s}".formatted(this.toString(), this.rowS().map(e -> "[%s]".formatted(e.cellS().map(String::valueOf) //
 				.collect(Collectors.joining(",")))).collect(Collectors.joining("\n")));
-	}
-
-	/**
-	 * 获取 Pack CellStyle
-	 * 
-	 * @return Pack CellStyle
-	 */
-	public synchronized Pack<CellStyle> pcs() {
-		return this.pcs == null ? this.pcs = excel.packWKCellStyle(this.origin()) : this.pcs;
-	}
-
-	/**
-	 * 获取 Pack CellStyle
-	 * 
-	 * @param cs 式样如处理器
-	 * @return Pack CellStyle
-	 */
-	public Pack<CellStyle> pcs(final Consumer<CellStyle> cs) {
-		return this.pcs().wrap(cs);
 	}
 
 	@Override
@@ -1438,16 +1569,6 @@ public class AffectedArea implements Iterable<Cell> {
 	@Override
 	public String toString() {
 		return this.getName(true);
-	}
-
-	/**
-	 * 属性清空
-	 * 
-	 * @return AffectedArea
-	 */
-	public synchronized AffectedArea clear() {
-		this.pcs = null;
-		return this;
 	}
 
 	/**

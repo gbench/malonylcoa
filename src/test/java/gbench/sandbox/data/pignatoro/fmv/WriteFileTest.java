@@ -152,24 +152,25 @@ public class WriteFileTest {
 						// 选区的水平复制:right（列）E：hshift(-2) 变为：C列(-2步即向左经过(E,D)->C) right:变为C列
 						// hextend(-2):变为A列（-2步即向左经过(C,B)->A)），right:变为从A到C列的aa,该aa的base为A2宽度为3
 						// reshape把aa变形为成3行2列（A1:B3）最后形成最终的cliplines.
-						final var cliplines = right.hshift(-2).hextend(-2).reshape(3, 2); // 一块选区，剪切一段数据行
-						final var addrAa = right.hshift(3); // 写入 I2位置
+						final var dataAa = right.hshift(-2).hextend(-2).reshape(3, 2); // 一块选区:剪切出一段作为数据行
+						final var pointAa = right.hshift(3); // 右侧水平平移3列：I2:书写点
 
-						// 相对nameline的使用（A4:B4是相对于addrAa的，实际为I5:J5）, 采用相对区间选区rangeAa 的小计公式写入:下册margin
-						addrAa.rangeAa("A4:B4").pbottom(RED).background(YELLOW).colS().forEach(subtotal -> { // 垂直
+						// 相对nameline的使用（A4:B4是相对于addrAa的，实际为I5:J5）, 采用相对区间选区rangeAa的小计公式写入:下侧margin
+						pointAa.rangeAa("A4:B4").pbottom(RED).background(YELLOW).colS().forEach(subtotal -> { // 垂直
 							subtotal.setCellFormula("sum(%s)".formatted(subtotal.vsve(-3, 2)));
 						});
 						// 左侧margin
-						addrAa.rangeAa("C1:C4").top(1).set("H-SUBTOTAL"); // 写入表头
-						addrAa.rangeAa("A1:C1").ptitle(RED); // 表头式样
-						addrAa.rangeAa("C1:C4").skipRows(1).background(YELLOW).pbottom(RED).rowS().forEach(subtotal -> { // 水平
+						pointAa.rangeAa("A1:C1").ptitle(RED); // 以pointAa为基准选择头前的1x3区域作为表头
+						final var subtotalAa = pointAa.rangeAa("C1:C4"); // 右侧的margin区域
+						subtotalAa.head().set("H-SUBTOTAL"); // 写入表头信息-水平(Horizontal)的小计
+						subtotalAa.tail().background(YELLOW).pbottom(RED).rowS().forEach(subtotal -> { // 水平
 							subtotal.setCellFormula("sum(%s)".formatted(subtotal.hshe(-3, 2)));
 						});
 
 						// 打印数据位置
-						println("addrAa", addrAa, "cliplines", cliplines); // 打印操作信息
+						println("书写点（address)", pointAa, "剪切(clip)数据行区域", dataAa); // 打印操作信息
 						// 把该块选区写入右侧第三个位置,并用红框标注
-						aa.writeLines(addrAa, cliplines).poutline(RED);
+						aa.writeLines(pointAa, dataAa).poutline(RED); // 书写数据并绘制边框
 					}) // 式样绘制
 					.writeLine((p, i) -> { // 下侧margin公式写入
 						final var formula = "sum(%s)".formatted(p.vsve(-5, 4));
