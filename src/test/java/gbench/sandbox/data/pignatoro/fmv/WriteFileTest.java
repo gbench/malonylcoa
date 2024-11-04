@@ -155,11 +155,13 @@ public class WriteFileTest {
 						final var cliplines = right.hshift(-2).hextend(-2).reshape(3, 2); // 一块选区，剪切一段数据行
 						final var addrAa = right.hshift(3); // 写入 I2位置
 
-						// 相对nameline的使用（A4:B4是相对于addrAa的，实际为I5:J5）, 采用相对区间选区rangeAa 的小计公式写入
+						// 相对nameline的使用（A4:B4是相对于addrAa的，实际为I5:J5）, 采用相对区间选区rangeAa 的小计公式写入:下册margin
 						addrAa.rangeAa("A4:B4").pbottom(RED).background(YELLOW).colS().forEach(subtotal -> {
 							subtotal.setCellFormula("sum(%s)".formatted(subtotal.vsve(-3, 2)));
 						});
-						addrAa.rangeAa("C1:C4").skipRows(1).background(YELLOW).rowS().forEach(subtotal -> {
+						// 左侧margin
+						addrAa.rangeAa("C1:C4").top().set("H-SUBTOTAL").ptitle(RED);
+						addrAa.rangeAa("C1:C4").skipRows(1).background(YELLOW).pbottom(RED).rowS().forEach(subtotal -> {
 							subtotal.setCellFormula("sum(%s)".formatted(subtotal.hshe(-3, 2)));
 						});
 
