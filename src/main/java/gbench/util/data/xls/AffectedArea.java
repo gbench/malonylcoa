@@ -21,6 +21,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.RichTextString;
+import org.apache.poi.ss.usermodel.Sheet;
 
 import gbench.util.data.xls.SimpleExcel.BorderName;
 import gbench.util.lisp.DFrame;
@@ -201,6 +202,33 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public void setShape(final Tuple2<Integer, Integer> shape) {
 		this.shape = shape;
+	}
+
+	/**
+	 * getSheetOpt 区域所在表单对象
+	 * 
+	 * @return
+	 */
+	public Optional<Sheet> getSheetOpt() {
+		return this.originOpt().map(e -> e.getSheet());
+	}
+
+	/**
+	 * getSheet 区域所在表单对象
+	 * 
+	 * @return
+	 */
+	public Sheet getSheet() {
+		return this.getSheetOpt().orElse(null);
+	}
+
+	/**
+	 * getSheetName 区域所在表单对象名称
+	 * 
+	 * @return
+	 */
+	public String getSheetName() {
+		return this.getSheetOpt().map(e -> e.getSheetName()).orElse(null);
 	}
 
 	/**
@@ -517,14 +545,21 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 以当前AA为基准进行区域AffectedArea构建
 	 * 
-	 * @param nameline EXCEL的Range的描述字符串如
+	 * @param nameline EXCEL的Range的描述字符串如 A1:B2 <br>
+	 *                 如果 nameline 只含有一个cell没有":"给予补充A1作为左上cell. <br>
+	 *                 即nameline如果只有B2将会补充A1作为头前ltCell
 	 * @return AffectedArea
 	 */
 	public AffectedArea relativeCreate(final String nameline) {
-		// 如果 nameline 只含有一个cell没有":"给予补充A1作为左上cell
-		return Optional.ofNullable(nameline).map(e -> "%s:%s".formatted(e.indexOf(":") < 0 ? "A1" : "", e)) //
-				.map(DataMatrix::name2rdf).flatMap(rdf -> this.cellOpt(rdf.x0(), rdf.y0())
-						.map(cell -> this.create(cell, rdf.nrows(), rdf.ncols())))
+		return Optional.ofNullable(nameline) //
+				.map(e -> e.matches("\s*") ? "A1" : e) // 空白视为A1
+				.map(e -> e.indexOf("!") < 0 ? "%s!%s".formatted(this.getSheetName(), e) : e) // 补充表单名
+				.map(e -> e.indexOf(":") < 0 // nameline补充，是否缺少ltCell
+						? e.replace("!", "!A1:") // 补充A1作为ltCell
+						: e // 不缺少保持不变
+				).map(DataMatrix::name2rdf) // 解析成RangeDef
+				.flatMap(rdf -> this.cellOpt(rdf.x0(), rdf.y0()) // 解析成ltCell
+						.map(ltCell -> this.create(ltCell, rdf.nrows(), rdf.ncols())))
 				.orElse(null);
 	}
 
