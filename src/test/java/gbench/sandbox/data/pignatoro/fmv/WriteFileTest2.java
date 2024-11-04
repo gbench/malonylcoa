@@ -21,9 +21,8 @@ public class WriteFileTest2 {
 
 		try (final var excel = SimpleExcel.of(file)) {
 			final var rname = "%s!F1:B10".formatted("foo");
-			final var aa = excel.select(rname).border();
-			println(aa.segment(2, 5, null).background(IndexedColors.YELLOW));
-
+			final var aa = excel.select(rname).poutline(IndexedColors.BLACK);
+			println(aa.segment(2, 5).background(IndexedColors.YELLOW));
 			excel.save();
 		}
 		println("completed:%s".formatted(file));
@@ -39,15 +38,10 @@ public class WriteFileTest2 {
 		try (final var excel = SimpleExcel.of(file)) {
 			final var aa = excel.select("BAR!B1:F7");
 			int i = 0;
-			final var cs = new IndexedColors[] {
-					IndexedColors.GREEN,
-					IndexedColors.RED,
-					IndexedColors.BLUE,
-					IndexedColors.YELLOW,
-					IndexedColors.CORAL 
-			};
-			
-			for (var s : aa.splits(false, 2,4)) {
+			final var cs = new IndexedColors[] { IndexedColors.GREEN, IndexedColors.RED, IndexedColors.BLUE,
+					IndexedColors.YELLOW, IndexedColors.CORAL };
+
+			for (var s : aa.splits(false, 2, 4)) {
 				s.set(i).background(cs[i]);
 				i++;
 			}
