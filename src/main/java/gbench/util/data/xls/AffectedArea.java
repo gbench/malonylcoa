@@ -1483,16 +1483,6 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 位点切割 <br>
-	 * 
-	 * @param i 切分分割点,前包含后不包含,如：[0,1,2,3,4,5],在2号位置切分,会产生[0,1,2],[3,4,5]两个区域。
-	 * @return
-	 */
-	public Tuple2<AffectedArea, AffectedArea> splitCols(final int i) {
-		return Tuple2.of(this.left(i), this.skipCols(i));
-	}
-
-	/**
 	 * 判断索引位置是否谓语区域内部
 	 * 
 	 * @param i 行索引从0开始
