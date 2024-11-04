@@ -153,6 +153,7 @@ public class AffectedArea implements Iterable<Cell> {
 			} else {
 				// do nothing
 			}
+
 			if (ncols < 0) { // 列数量小于0:调整移动列索引
 				icol = Math.max(icol + ncols, 0); // 更新列索引（向左运动
 			} else {
@@ -333,7 +334,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 基点位置
 	 * 
-	 * @return
+	 * @return Cell
 	 */
 	public Cell origin() {
 		return this.ltCell;
@@ -572,6 +573,258 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 返回一个高度为nrows的宽度不变的AffectedArea
+	 * 
+	 * @param nrows 缩放后的行数量
+	 * @return AffectedArea
+	 */
+	public AffectedArea nrows(final int nrows) {
+		return this.reshape(nrows, null);
+	}
+
+	/**
+	 * 返回一个宽度为ncols的高度不变的AffectedArea
+	 * 
+	 * @param ncols 缩放后的列数量
+	 * @return AffectedArea
+	 */
+	public AffectedArea ncols(final int ncols) {
+		return reshape(null, ncols);
+	}
+
+	/**
+	 * 区间拉伸（增长） <br>
+	 * nrows,ncols的绝对值表示拉伸程度，正负号表示拉伸方向 <br>
+	 * 也就是 无论 nrows，ncols 是正是负，返回的AffectedArea的尺寸shape都至少是原来的尺寸，<br>
+	 * 也就是 不肯能出现 extend 以后 shape变小的情况是不存在的。
+	 * 
+	 * @param nrows: 大于0 表示向右扩展,小于0表示向左扩展
+	 * @param ncols: 大于0 表示向下扩展,小于0表示向上扩展
+	 * @return AffectedArea
+	 */
+	public AffectedArea extend(int nrows, int ncols) {
+		final var cell = this.adjustLtCell(this.origin(), nrows, ncols);
+		return this.create(cell, Math.abs(nrows) + this.nrows(), Math.abs(ncols) + this.ncols());
+	}
+
+	/**
+	 * 区间拉伸
+	 * 
+	 * @param ncols 水平拉伸列宽
+	 * @return
+	 */
+	public AffectedArea hextend(int ncols) {
+		return this.extend(0, ncols);
+	}
+
+	/**
+	 * 区间拉伸
+	 * 
+	 * @param ncols 垂直拉伸行高
+	 * @return
+	 */
+	public AffectedArea vextend(int nrows) {
+		return this.extend(nrows, 0);
+	}
+
+	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_nrows 平移行数
+	 * @param e_nrows 扩展行数
+	 * @return
+	 */
+	public AffectedArea vsve(int s_nrows, int e_nrows) {
+		return this.vshift(s_nrows).vextend(e_nrows);
+	}
+
+	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_nrows 平移行数
+	 * @param e_nrows 扩展行数
+	 * @return
+	 */
+	public AffectedArea vshe(int s_nrows, int e_ncols) {
+		return this.vshift(s_nrows).hextend(e_ncols);
+	}
+
+	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_cols 平移行数
+	 * @param e_rows 扩展行数
+	 * @return AffectedArea
+	 */
+	public AffectedArea hsve(int s_cols, int e_rows) {
+		return this.hshift(s_cols).vextend(e_rows);
+	}
+
+	/**
+	 * 垂直平移，然后垂直扩展
+	 * 
+	 * @param s_ncols 平移行数
+	 * @param e_ncols 扩展行数
+	 * @return AffectedArea
+	 */
+	public AffectedArea hshe(int s_ncols, int e_ncols) {
+		return this.hshift(s_ncols).hextend(e_ncols);
+	}
+
+	/**
+	 * 水平平移(rows正数下移动,负数上移动)
+	 * 
+	 * @param nrows 垂直平移行数量:小于0表示向上移动,大于0表示向下移动，等于0不移动
+	 * @return AffectedArea
+	 */
+	public AffectedArea vshift(int nrows) {
+		return this.shift(nrows, 0);
+	}
+
+	/**
+	 * 水平平移（ncols正数右移动,负数左移动）
+	 * 
+	 * @param ncols 水平平移列数量:小于0表示向左移动,大于0表示向右移动，等于0不移动
+	 * @return AffectedArea
+	 */
+	public AffectedArea hshift(int ncols) {
+		return this.shift(0, ncols);
+	}
+
+	/**
+	 * 平移（nrows正数下移动,负数上移动;ncols正数右移动,负数左移动）
+	 * 
+	 * @param nrows 垂直平移行数量:小于0表示向上移动,大于0表示向下移动，等于0不移动
+	 * @param ncols 水平平移列数量:小于0表示向左移动,大于0表示向右移动，等于0不移动
+	 * @return AffectedArea
+	 */
+	public AffectedArea shift(int nrows, int ncols) {
+		final var origin_irow = this.ltCell.getRowIndex();
+		final var origin_icol = this.ltCell.getColumnIndex();
+		final var new_irow = Math.max(origin_irow + nrows, 0);
+		final var new_icol = Math.max(origin_icol + ncols, 0);
+		final var newcell = excel.getOrCreateCell(this.ltCell.getSheet(), new_irow, new_icol);
+		return create(newcell, this.nrows(), this.ncols());
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T> 数据类型
+	 * @param ts  吸入的数据行
+	 * @return AffectedArea
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> AffectedArea set(final T... ts) {
+		return this.update(ts);
+	}
+
+	/**
+	 * 公式写入书写（选区内数据写入）
+	 * 
+	 * @param <T>      数据类型
+	 * @param formulas 单元格公式
+	 * @return AffectedArea
+	 */
+	public <T> AffectedArea setCellFormula(final String... formulas) {
+		Optional.ofNullable(formulas).ifPresent(fs -> {
+			var i = 0;
+			final var n = fs.length;
+			for (final var cell : this) {
+				final var formula = fs[i % n];
+				cell.setCellFormula(formula);
+			} // for
+		}); // ifPresent
+
+		return this;
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T> 数据类型
+	 * @param ts  吸入的数据行
+	 * @return AffectedArea
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> AffectedArea update(final T... ts) {
+		return this.updateLine(true, ts);
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T> 数据类型
+	 * @param ts  吸入的数据行
+	 * @return AffectedArea
+	 */
+	public <T> AffectedArea update(final Iterable<T> ts) {
+		return this.updateLine(true, ts);
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T>  数据类型
+	 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
+	 * @param ts   书写的数据内容
+	 * @return AffectedArea
+	 */
+	public <T> AffectedArea updateLine(final boolean flag, final Iterable<T> ts) {
+		return this.updateLine(flag, Types.itr2array(ts));
+	}
+
+	/**
+	 * 数据书写（选区内数据写入）
+	 * 
+	 * @param <T>  数据类型
+	 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
+	 * @param ts   书写的数据内容
+	 * @return AffectedArea
+	 */
+	public <T> AffectedArea updateLine(final boolean flag, final T[] ts) {
+		Optional.ofNullable(ts).map(e -> e.length > 0 ? e : null).ifPresent(data -> {
+			var i = 0; // 写入索引
+			final var n = ts.length; // 数据长度
+
+			for (final var e : this.cells()) {
+				if (flag && i >= n) { // 信息书写完毕
+					break;
+				}
+				final var value = data[(i++) % n];
+				if (value instanceof Number num) {
+					e.setCellValue(num.doubleValue());
+				} else if (value instanceof Date dt) {
+					e.setCellValue(dt);
+				} else if (value instanceof Boolean bool) {
+					e.setCellValue(bool);
+				} else if (value instanceof LocalDate ldt) {
+					e.setCellValue(ldt);
+				} else if (value instanceof RichTextString rts) {
+					e.setCellValue(rts);
+				} else if (value instanceof Calendar calendar) {
+					e.setCellValue(calendar);
+				} else { //
+					e.setCellValue(String.valueOf(value));
+				}
+
+			}
+		});
+		return this;
+	}
+
+	/**
+	 * 单位会话处理
+	 * 
+	 * @param action 单位会话
+	 * @return
+	 */
+	public AffectedArea withTransaction(final Consumer<AffectedArea> action) {
+		action.accept(this);
+		return this;
+	}
+
+	/**
 	 * 书写一行 <br>
 	 * 写入excel (不带有表头的书写格式) <br>
 	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
@@ -722,141 +975,6 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 返回一个高度为nrows的宽度不变的AffectedArea
-	 * 
-	 * @param nrows 缩放后的行数量
-	 * @return AffectedArea
-	 */
-	public AffectedArea nrows(final int nrows) {
-		return this.reshape(nrows, null);
-	}
-
-	/**
-	 * 返回一个宽度为ncols的高度不变的AffectedArea
-	 * 
-	 * @param ncols 缩放后的列数量
-	 * @return AffectedArea
-	 */
-	public AffectedArea ncols(final int ncols) {
-		return reshape(null, ncols);
-	}
-
-	/**
-	 * 区间拉伸（增长） <br>
-	 * nrows,ncols的绝对值表示拉伸程度，正负号表示拉伸方向 <br>
-	 * 也就是 无论 nrows，ncols 是正是负，返回的AffectedArea的尺寸shape都至少是原来的尺寸，<br>
-	 * 也就是 不肯能出现 extend 以后 shape变小的情况是不存在的。
-	 * 
-	 * @param nrows: 大于0 表示向右扩展,小于0表示向左扩展
-	 * @param ncols: 大于0 表示向下扩展,小于0表示向上扩展
-	 * @return AffectedArea
-	 */
-	public AffectedArea extend(int nrows, int ncols) {
-		final var cell = this.adjustLtCell(this.origin(), nrows, ncols);
-		return this.create(cell, Math.abs(nrows) + this.nrows(), Math.abs(ncols) + this.ncols());
-	}
-
-	/**
-	 * 区间拉伸
-	 * 
-	 * @param ncols 水平拉伸列宽
-	 * @return
-	 */
-	public AffectedArea hextend(int ncols) {
-		return this.extend(0, ncols);
-	}
-
-	/**
-	 * 区间拉伸
-	 * 
-	 * @param ncols 垂直拉伸行高
-	 * @return
-	 */
-	public AffectedArea vextend(int nrows) {
-		return this.extend(nrows, 0);
-	}
-
-	/**
-	 * 垂直平移，然后垂直扩展
-	 * 
-	 * @param s_nrows 平移行数
-	 * @param e_nrows 扩展行数
-	 * @return
-	 */
-	public AffectedArea vsve(int s_nrows, int e_nrows) {
-		return this.vshift(s_nrows).vextend(e_nrows);
-	}
-
-	/**
-	 * 垂直平移，然后垂直扩展
-	 * 
-	 * @param s_nrows 平移行数
-	 * @param e_nrows 扩展行数
-	 * @return
-	 */
-	public AffectedArea vshe(int s_nrows, int e_ncols) {
-		return this.vshift(s_nrows).hextend(e_ncols);
-	}
-
-	/**
-	 * 垂直平移，然后垂直扩展
-	 * 
-	 * @param s_cols 平移行数
-	 * @param e_rows 扩展行数
-	 * @return AffectedArea
-	 */
-	public AffectedArea hsve(int s_cols, int e_rows) {
-		return this.hshift(s_cols).vextend(e_rows);
-	}
-
-	/**
-	 * 垂直平移，然后垂直扩展
-	 * 
-	 * @param s_ncols 平移行数
-	 * @param e_ncols 扩展行数
-	 * @return AffectedArea
-	 */
-	public AffectedArea hshe(int s_ncols, int e_ncols) {
-		return this.hshift(s_ncols).hextend(e_ncols);
-	}
-
-	/**
-	 * 水平平移(rows正数下移动,负数上移动)
-	 * 
-	 * @param nrows 垂直平移行数量:小于0表示向上移动,大于0表示向下移动，等于0不移动
-	 * @return AffectedArea
-	 */
-	public AffectedArea vshift(int nrows) {
-		return this.shift(nrows, 0);
-	}
-
-	/**
-	 * 水平平移（ncols正数右移动,负数左移动）
-	 * 
-	 * @param ncols 水平平移列数量:小于0表示向左移动,大于0表示向右移动，等于0不移动
-	 * @return AffectedArea
-	 */
-	public AffectedArea hshift(int ncols) {
-		return this.shift(0, ncols);
-	}
-
-	/**
-	 * 平移（nrows正数下移动,负数上移动;ncols正数右移动,负数左移动）
-	 * 
-	 * @param nrows 垂直平移行数量:小于0表示向上移动,大于0表示向下移动，等于0不移动
-	 * @param ncols 水平平移列数量:小于0表示向左移动,大于0表示向右移动，等于0不移动
-	 * @return AffectedArea
-	 */
-	public AffectedArea shift(int nrows, int ncols) {
-		final var origin_irow = this.ltCell.getRowIndex();
-		final var origin_icol = this.ltCell.getColumnIndex();
-		final var new_irow = Math.max(origin_irow + nrows, 0);
-		final var new_icol = Math.max(origin_icol + ncols, 0);
-		final var newcell = excel.getOrCreateCell(this.ltCell.getSheet(), new_irow, new_icol);
-		return create(newcell, this.nrows(), this.ncols());
-	}
-
-	/**
 	 * 写入excel (不带有表头的书写格式) <br>
 	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
 	 * 
@@ -936,6 +1054,410 @@ public class AffectedArea implements Iterable<Cell> {
 	public <T> AffectedArea writeTable(final String address, final DFrame datas) {
 		this.excel.write(address, datas);
 		return this.excel.getAffectedArea();
+	}
+
+	/**
+	 * 数据列
+	 * 
+	 * @return AffectedArea
+	 */
+	public Stream<AffectedArea> colS() {
+		return Stream.iterate(0, i -> i + 1).limit(this.width())
+				.map(i -> new AffectedArea(this.excel, this.cell(0, i), this.height(), 1)); // 列宽度为1
+	}
+
+	/**
+	 * 数据列
+	 * 
+	 * @return AffectedArea
+	 */
+	public List<AffectedArea> cols() {
+		return this.colS().toList();
+	}
+
+	/**
+	 * 第n列
+	 * 
+	 * @param n 列索引从0开始
+	 * @return AffectedArea
+	 */
+	public Optional<AffectedArea> colOpt(final int n) {
+		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
+				.map(i -> new AffectedArea(this.excel, this.cell(0, i), this.height(), 1));
+	}
+
+	/**
+	 * 第n列
+	 * 
+	 * @param n 列索引从0开始
+	 * @return AffectedArea
+	 */
+	public AffectedArea col(final int n) {
+		return this.colOpt(n).orElse(null);
+	}
+
+	/**
+	 * 第一列
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea firstCol() {
+		return this.col(0);
+	}
+
+	/**
+	 * 最后一列
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea lastCol() {
+		return this.col(this.ncols() - 1);
+	}
+
+	/**
+	 * 区域左侧
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea left() {
+		return this.col(0);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea left(final int n) {
+		return this.ncols(n);
+	}
+
+	/**
+	 * 区域右侧
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea right() {
+		return this.col(this.ncols() - 1);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea right(final int n) {
+		final var i = Math.max(0, this.ncols() - 1 - n);
+		return this.create(this.cell(0, i), this.nrows(), n);
+	}
+
+	/**
+	 * 区域前n项目长度
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea top(final int n) {
+		return this.head(n);
+	}
+
+	/**
+	 * 过滤掉指定头前的行数与列数<br>
+	 * 注意 skip(0,0) equals this 对象
+	 * 
+	 * @param m 过滤的头前行数，大于等于0的整数
+	 * @param n 过滤的头前列数，大于等于0的整数
+	 * @return AffectedArea
+	 */
+	public AffectedArea skip(final int m, final int n) {
+		return this.create(this.cell(m, n), this.nrows() - m, this.ncols() - n);
+	}
+
+	/**
+	 * 过滤掉指定头前的行数<br>
+	 * 注意 skipRows(0) equals this 对象
+	 * 
+	 * @param m 过滤的头前行数，大于等于0的整数
+	 * @return AffectedArea
+	 */
+	public AffectedArea skipRows(final int m) {
+		return this.skip(m, 0);
+	}
+
+	/**
+	 * 过滤掉指定头前的列数<br>
+	 * 注意 skipCols(0) equals this 对象
+	 * 
+	 * @param n 过滤的头前列数，大于等于0的整数
+	 * @return AffectedArea
+	 */
+	public AffectedArea skipCols(final int n) {
+		return this.skip(0, n);
+	}
+
+	/**
+	 * 区域前n项目长度
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea head(final int n) {
+		return this.nrows(n);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea last(final int n) {
+		final var i = Math.max(0, this.nrows() - 1 - n);
+		return this.create(this.cell(i, 0), n, this.ncols());
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea bottom(final int n) {
+		return this.last(n);
+	}
+
+	/**
+	 * 提取数据流
+	 * 
+	 * @param <T>
+	 * @param mapper 单元格变换对象 cell-&gt;T
+	 * @return 流对象
+	 */
+	public <T> Stream<T> stream(final Function<? super Cell, T> mapper) {
+		return this.cellS().map(mapper);
+	}
+
+	/**
+	 * 单元格流序列（行顺序）
+	 * 
+	 * @return AffectedArea
+	 */
+	public Stream<Cell> cellS() {
+		return Stream.iterate(0, i -> i + 1).limit(this.nrows())
+				.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(this.ncols()).map(j -> this.cell(i, j)));
+
+	}
+
+	/**
+	 * 单元格流序列（行顺序）
+	 * 
+	 * @return Cell 列表
+	 */
+	public List<Cell> cells() {
+		return this.cellS().toList();
+	}
+
+	/**
+	 * 行顺序的一维数组 <br>
+	 * 
+	 * @return Cell一维数组
+	 */
+	public Cell[] toArray() {
+		return this.cellS().toArray(Cell[]::new);
+	}
+
+	/**
+	 * 行顺序的二维数组<br>
+	 * 
+	 * @return Cell二维数组
+	 */
+	public Cell[][] toArray2() {
+		return this.rowS().map(AffectedArea::toArray).toArray(Cell[][]::new);
+
+	}
+
+	/**
+	 * 数据行(rowS的别名)
+	 * 
+	 * @return 数据行流
+	 */
+	public Stream<AffectedArea> lineS() {
+		return this.rowS();
+	}
+
+	/**
+	 * 数据行
+	 * 
+	 * @return 数据行流
+	 */
+	public Stream<AffectedArea> rowS() {
+		return Stream.iterate(0, i -> i + 1).limit(this.height()).map(this::row); // 行高度为1
+	}
+
+	/**
+	 * 数据行
+	 * 
+	 * @return 数据行列表
+	 */
+	public List<AffectedArea> rows() {
+		return this.rowS().toList();
+	}
+
+	/**
+	 * 第n行
+	 * 
+	 * @param n 行索引从0开始
+	 * @return 数据行AffectedArea
+	 */
+	public Optional<AffectedArea> rowOpt(final int n) {
+		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
+				.map(i -> this.create(this.cell(i, 0), 1, this.ncols()));
+	}
+
+	/**
+	 * 第n行
+	 * 
+	 * @param n 行索引从0开始
+	 * @return AffectedArea
+	 */
+	public AffectedArea row(final int n) {
+		return this.rowOpt(n).orElse(null);
+	}
+
+	/**
+	 * 区域最后一行（顶部的别名）
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea firstRow() {
+		return this.row(0);
+	}
+
+	/**
+	 * 区域最后一行（底部的别名）
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea lastRow() {
+		return this.row(this.nrows() - 1);
+	}
+
+	/**
+	 * 区域顶部
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea top() {
+		return this.row(0);
+	}
+
+	/**
+	 * 区域底部
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea bottom() {
+		return this.row(this.nrows() - 1);
+	}
+
+	/**
+	 * 设置选区
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea focus() {
+		this.excel.setAffectedArea(this);
+		return this;
+	}
+
+	/**
+	 * 详情罗列
+	 * 
+	 * @return 详情罗列
+	 */
+	public String dump() {
+		return "{%s:%s}".formatted(this.toString(), this.rowS().map(e -> "[%s]".formatted(e.cellS().map(String::valueOf) //
+				.collect(Collectors.joining(",")))).collect(Collectors.joining("\n")));
+	}
+
+	/**
+	 * 获取 Pack CellStyle
+	 * 
+	 * @return Pack CellStyle
+	 */
+	public synchronized Pack<CellStyle> pcs() {
+		return this.pcs == null ? this.pcs = excel.packWKCellStyle(this.origin()) : this.pcs;
+	}
+
+	/**
+	 * 获取 Pack CellStyle
+	 * 
+	 * @param cs 式样如处理器
+	 * @return Pack CellStyle
+	 */
+	public Pack<CellStyle> pcs(final Consumer<CellStyle> cs) {
+		return this.pcs().wrap(cs);
+	}
+
+	@Override
+	public Iterator<Cell> iterator() {
+		return this.cellS().iterator();
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public int hashCode() {
+		return Objects.hash(pcs, ltCell, shape, excel);
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj == this) {
+			return true;
+		}
+
+		if (obj instanceof AffectedArea aa) {
+			return Objects.equals(this.pcs, aa.pcs) && Objects.equals(this.pcs, aa.pcs)
+					&& Objects.equals(this.shape, aa.shape) && Objects.equals(this.excel, aa.excel);
+		}
+
+		return false;
+	}
+
+	/**
+	 * 采用与excel的range相同的命名方式，以保证的可以直接用aa与字符串连接去生成EXCEL公式 <br>
+	 * 比如:"sum(%s)".format(aa) 就可以生成对整个aa中的所有cell进行求和的公式
+	 */
+	@Override
+	public String toString() {
+		return this.getName(true);
+	}
+
+	/**
+	 * 属性清空
+	 * 
+	 * @return AffectedArea
+	 */
+	public synchronized AffectedArea clear() {
+		this.pcs = null;
+		return this;
+	}
+
+	/**
+	 * 数据保存（excel.save)的别名
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea save() {
+		this.excel.save();
+		return this;
 	}
 
 	/**
@@ -1163,26 +1685,6 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea border() {
-		return this.border(null, null, null);
-	}
-
-	/**
-	 * 设置背景色
-	 * 
-	 * @param borderName 边框名
-	 * @param color      颜色
-	 * @return AffectedArea
-	 */
-	public AffectedArea border(final BorderName borderName, final IndexedColors color) {
-		return this.border(borderName, null, color);
-	}
-
-	/**
-	 * 设置背景色
-	 * 
 	 * @param color 颜色
 	 * @return AffectedArea
 	 */
@@ -1245,6 +1747,26 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea border() {
+		return this.border(null, null, null);
+	}
+
+	/**
+	 * 设置背景色
+	 * 
+	 * @param borderName 边框名
+	 * @param color      颜色
+	 * @return AffectedArea
+	 */
+	public AffectedArea border(final BorderName borderName, final IndexedColors color) {
+		return this.border(borderName, null, color);
+	}
+
+	/**
+	 * 设置背景色
+	 * 
 	 * @param borderName  边框名
 	 * @param borderStyle 边框式样
 	 * @param color       杨色
@@ -1299,527 +1821,6 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public AffectedArea italic() {
 		return this.italic(true);
-	}
-
-	/**
-	 * 数据行(rowS的别名)
-	 * 
-	 * @return 数据行流
-	 */
-	public Stream<AffectedArea> lineS() {
-		return this.rowS();
-	}
-
-	/**
-	 * 数据行
-	 * 
-	 * @return 数据行流
-	 */
-	public Stream<AffectedArea> rowS() {
-		return Stream.iterate(0, i -> i + 1).limit(this.height()).map(this::row); // 行高度为1
-	}
-
-	/**
-	 * 数据行
-	 * 
-	 * @return 数据行列表
-	 */
-	public List<AffectedArea> rows() {
-		return this.rowS().toList();
-	}
-
-	/**
-	 * 第n行
-	 * 
-	 * @param n 行索引从0开始
-	 * @return 数据行AffectedArea
-	 */
-	public Optional<AffectedArea> rowOpt(final int n) {
-		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
-				.map(i -> this.create(this.cell(i, 0), 1, this.ncols()));
-	}
-
-	/**
-	 * 第n行
-	 * 
-	 * @param n 行索引从0开始
-	 * @return AffectedArea
-	 */
-	public AffectedArea row(final int n) {
-		return this.rowOpt(n).orElse(null);
-	}
-
-	/**
-	 * 区域最后一行（顶部的别名）
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea firstRow() {
-		return this.row(0);
-	}
-
-	/**
-	 * 区域最后一行（底部的别名）
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea lastRow() {
-		return this.row(this.nrows() - 1);
-	}
-
-	/**
-	 * 区域顶部
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea top() {
-		return this.row(0);
-	}
-
-	/**
-	 * 区域底部
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea bottom() {
-		return this.row(this.nrows() - 1);
-	}
-
-	/**
-	 * 数据列
-	 * 
-	 * @return AffectedArea
-	 */
-	public Stream<AffectedArea> colS() {
-		return Stream.iterate(0, i -> i + 1).limit(this.width())
-				.map(i -> new AffectedArea(this.excel, this.cell(0, i), this.height(), 1)); // 列宽度为1
-	}
-
-	/**
-	 * 数据列
-	 * 
-	 * @return AffectedArea
-	 */
-	public List<AffectedArea> cols() {
-		return this.colS().toList();
-	}
-
-	/**
-	 * 第n列
-	 * 
-	 * @param n 列索引从0开始
-	 * @return AffectedArea
-	 */
-	public Optional<AffectedArea> colOpt(final int n) {
-		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
-				.map(i -> new AffectedArea(this.excel, this.cell(0, i), this.height(), 1));
-	}
-
-	/**
-	 * 第n列
-	 * 
-	 * @param n 列索引从0开始
-	 * @return AffectedArea
-	 */
-	public AffectedArea col(final int n) {
-		return this.colOpt(n).orElse(null);
-	}
-
-	/**
-	 * 第一列
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea firstCol() {
-		return this.col(0);
-	}
-
-	/**
-	 * 最后一列
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea lastCol() {
-		return this.col(this.ncols() - 1);
-	}
-
-	/**
-	 * 区域左侧
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea left() {
-		return this.col(0);
-	}
-
-	/**
-	 * 区域最后n项目
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea left(final int n) {
-		return this.ncols(n);
-	}
-
-	/**
-	 * 区域右侧
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea right() {
-		return this.col(this.ncols() - 1);
-	}
-
-	/**
-	 * 区域最后n项目
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea right(final int n) {
-		final var i = Math.max(0, this.ncols() - 1 - n);
-		return this.create(this.cell(0, i), this.nrows(), n);
-	}
-
-	/**
-	 * 区域前n项目长度
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea top(final int n) {
-		return this.head(n);
-	}
-
-	/**
-	 * 过滤掉指定头前的行数与列数<br>
-	 * 注意 skip(0,0) equals this 对象
-	 * 
-	 * @param m 过滤的头前行数，大于等于0的整数
-	 * @param n 过滤的头前列数，大于等于0的整数
-	 * @return AffectedArea
-	 */
-	public AffectedArea skip(final int m, final int n) {
-		return this.create(this.cell(m, n), this.nrows() - m, this.ncols() - n);
-	}
-
-	/**
-	 * 过滤掉指定头前的行数<br>
-	 * 注意 skipRows(0) equals this 对象
-	 * 
-	 * @param m 过滤的头前行数，大于等于0的整数
-	 * @return AffectedArea
-	 */
-	public AffectedArea skipRows(final int m) {
-		return this.skip(m, 0);
-	}
-
-	/**
-	 * 过滤掉指定头前的列数<br>
-	 * 注意 skipCols(0) equals this 对象
-	 * 
-	 * @param n 过滤的头前列数，大于等于0的整数
-	 * @return AffectedArea
-	 */
-	public AffectedArea skipCols(final int n) {
-		return this.skip(0, n);
-	}
-
-	/**
-	 * 区域前n项目长度
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea head(final int n) {
-		return this.nrows(n);
-	}
-
-	/**
-	 * 区域最后n项目
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea last(final int n) {
-		final var i = Math.max(0, this.nrows() - 1 - n);
-		return this.create(this.cell(i, 0), n, this.ncols());
-	}
-
-	/**
-	 * 区域最后n项目
-	 * 
-	 * @param n 区域长度
-	 * @return AffectedArea
-	 */
-	public AffectedArea bottom(final int n) {
-		return this.last(n);
-	}
-
-	/**
-	 * 设置选区
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea focus() {
-		this.excel.setAffectedArea(this);
-		return this;
-	}
-
-	/**
-	 * 公式写入书写（选区内数据写入）
-	 * 
-	 * @param <T>      数据类型
-	 * @param formulas 单元格公式
-	 * @return AffectedArea
-	 */
-	public <T> AffectedArea setCellFormula(final String... formulas) {
-		Optional.ofNullable(formulas).ifPresent(fs -> {
-			var i = 0;
-			final var n = fs.length;
-			for (final var cell : this) {
-				final var formula = fs[i % n];
-				cell.setCellFormula(formula);
-			} // for
-		}); // ifPresent
-
-		return this;
-	}
-
-	/**
-	 * 数据书写（选区内数据写入）
-	 * 
-	 * @param <T> 数据类型
-	 * @param ts  吸入的数据行
-	 * @return AffectedArea
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> AffectedArea set(final T... ts) {
-		return this.update(ts);
-	}
-
-	/**
-	 * 数据书写（选区内数据写入）
-	 * 
-	 * @param <T> 数据类型
-	 * @param ts  吸入的数据行
-	 * @return AffectedArea
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> AffectedArea update(final T... ts) {
-		return this.updateLine(true, ts);
-	}
-
-	/**
-	 * 数据书写（选区内数据写入）
-	 * 
-	 * @param <T> 数据类型
-	 * @param ts  吸入的数据行
-	 * @return AffectedArea
-	 */
-	public <T> AffectedArea update(final Iterable<T> ts) {
-		return this.updateLine(true, ts);
-	}
-
-	/**
-	 * 数据书写（选区内数据写入）
-	 * 
-	 * @param <T>  数据类型
-	 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
-	 * @param ts   书写的数据内容
-	 * @return AffectedArea
-	 */
-	public <T> AffectedArea updateLine(final boolean flag, final Iterable<T> ts) {
-		return this.updateLine(flag, Types.itr2array(ts));
-	}
-
-	/**
-	 * 数据书写（选区内数据写入）
-	 * 
-	 * @param <T>  数据类型
-	 * @param flag ts 书写完毕后是否结束写入, true:结束写入,false:继续写入,采用ts的循环写入
-	 * @param ts   书写的数据内容
-	 * @return AffectedArea
-	 */
-	public <T> AffectedArea updateLine(final boolean flag, final T[] ts) {
-		Optional.ofNullable(ts).map(e -> e.length > 0 ? e : null).ifPresent(data -> {
-			var i = 0; // 写入索引
-			final var n = ts.length; // 数据长度
-
-			for (final var e : this.cells()) {
-				if (flag && i >= n) { // 信息书写完毕
-					break;
-				}
-				final var value = data[(i++) % n];
-				if (value instanceof Number num) {
-					e.setCellValue(num.doubleValue());
-				} else if (value instanceof Date dt) {
-					e.setCellValue(dt);
-				} else if (value instanceof Boolean bool) {
-					e.setCellValue(bool);
-				} else if (value instanceof LocalDate ldt) {
-					e.setCellValue(ldt);
-				} else if (value instanceof RichTextString rts) {
-					e.setCellValue(rts);
-				} else if (value instanceof Calendar calendar) {
-					e.setCellValue(calendar);
-				} else { //
-					e.setCellValue(String.valueOf(value));
-				}
-
-			}
-		});
-		return this;
-	}
-
-	/**
-	 * 提取数据流
-	 * 
-	 * @param <T>
-	 * @param mapper 单元格变换对象 cell-&gt;T
-	 * @return 流对象
-	 */
-	public <T> Stream<T> stream(final Function<? super Cell, T> mapper) {
-		return this.cellS().map(mapper);
-	}
-
-	/**
-	 * 单元格流序列（行顺序）
-	 * 
-	 * @return AffectedArea
-	 */
-	public Stream<Cell> cellS() {
-		return Stream.iterate(0, i -> i + 1).limit(this.nrows())
-				.flatMap(i -> Stream.iterate(0, j -> j + 1).limit(this.ncols()).map(j -> this.cell(i, j)));
-
-	}
-
-	/**
-	 * 单元格流序列（行顺序）
-	 * 
-	 * @return Cell 列表
-	 */
-	public List<Cell> cells() {
-		return this.cellS().toList();
-	}
-
-	/**
-	 * 行顺序的一维数组 <br>
-	 * 
-	 * @return Cell一维数组
-	 */
-	public Cell[] toArray() {
-		return this.cellS().toArray(Cell[]::new);
-	}
-
-	/**
-	 * 行顺序的二维数组<br>
-	 * 
-	 * @return Cell二维数组
-	 */
-	public Cell[][] toArray2() {
-		return this.rowS().map(AffectedArea::toArray).toArray(Cell[][]::new);
-
-	}
-
-	/**
-	 * 详情罗列
-	 * 
-	 * @return 详情罗列
-	 */
-	public String dump() {
-		return "{%s:%s}".formatted(this.toString(), this.rowS().map(e -> "[%s]".formatted(e.cellS().map(String::valueOf) //
-				.collect(Collectors.joining(",")))).collect(Collectors.joining("\n")));
-	}
-
-	/**
-	 * 单位会话处理
-	 * 
-	 * @param action 单位会话
-	 * @return
-	 */
-	public AffectedArea withTransaction(final Consumer<AffectedArea> action) {
-		action.accept(this);
-		return this;
-	}
-
-	/**
-	 * 属性清空
-	 * 
-	 * @return AffectedArea
-	 */
-	public synchronized AffectedArea clear() {
-		this.pcs = null;
-		return this;
-	}
-
-	/**
-	 * 数据保存（excel.save)的别名
-	 * 
-	 * @return AffectedArea
-	 */
-	public AffectedArea save() {
-		this.excel.save();
-		return this;
-	}
-
-	/**
-	 * 获取 Pack CellStyle
-	 * 
-	 * @param cs 式样如处理器
-	 * @return Pack CellStyle
-	 */
-	public Pack<CellStyle> pcs(final Consumer<CellStyle> cs) {
-		return this.pcs().wrap(cs);
-	}
-
-	/**
-	 * 获取 Pack CellStyle
-	 * 
-	 * @return Pack CellStyle
-	 */
-	public synchronized Pack<CellStyle> pcs() {
-		return this.pcs == null ? this.pcs = excel.packWKCellStyle(this.origin()) : this.pcs;
-	}
-
-	@Override
-	public Iterator<Cell> iterator() {
-		return this.cellS().iterator();
-	}
-
-	/**
-	 * 
-	 */
-	@Override
-	public int hashCode() {
-		return Objects.hash(pcs, ltCell, shape, excel);
-	}
-
-	/**
-	 * 
-	 */
-	@Override
-	public boolean equals(final Object obj) {
-		if (obj == this) {
-			return true;
-		}
-
-		if (obj instanceof AffectedArea aa) {
-			return Objects.equals(this.pcs, aa.pcs) && Objects.equals(this.pcs, aa.pcs)
-					&& Objects.equals(this.shape, aa.shape) && Objects.equals(this.excel, aa.excel);
-		}
-
-		return false;
-	}
-
-	/**
-	 * 采用与excel的range相同的命名方式，以保证的可以直接用aa与字符串连接去生成EXCEL公式 <br>
-	 * 比如:"sum(%s)".format(aa) 就可以生成对整个aa中的所有cell进行求和的公式
-	 */
-	@Override
-	public String toString() {
-		return this.getName(true);
 	}
 
 	/**
