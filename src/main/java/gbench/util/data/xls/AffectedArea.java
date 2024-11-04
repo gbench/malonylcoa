@@ -1494,17 +1494,47 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 提取分段（行方向）
+	 * 
+	 * @param start 开始行索引包含,inclusive,0 based
+	 * @param end   结束行索引不包含,exclusive,0 based
+	 * @return 片段
+	 */
+	public AffectedArea segment(final Integer start) {
+		return this.segment(start, this.nrows(), true);
+	}
+
+	/**
+	 * 提取分段（行方向）
+	 * 
+	 * @param start 开始行索引包含,inclusive,0 based
+	 * @param end   结束行索引不包含,exclusive,0 based
+	 * @return 片段
+	 */
+	public AffectedArea segment(final Integer start, final Integer end) {
+		return this.segment(start, end, true);
+	}
+
+	/**
 	 * 提取分段
 	 * 
-	 * @param i    开始行索引,inclusive,0 based
-	 * @param j    结束行索引,exclusive,0 based
-	 * @param flag 切分方向，true 行方向,false 列方向
-	 * @return
+	 * @param start 开始行索引包含,inclusive,0 based
+	 * @param end   结束行索引不包含,exclusive,0 based
+	 * @param flag  切分方向，true 行方向,false 列方向
+	 * @return 片段
 	 */
-	public AffectedArea segment(final Integer i, final Integer j, final Boolean flag) {
-		var size = j - i;
-		if (flag) { // 按照行切分
-			if (i >= this.nrows()) {
+	public AffectedArea segment(final Integer start, final Integer end, final Boolean flag) {
+		final var i = Math.min(start, end); // 开始索引
+		final var j = Math.max(start, end); // 结束索引
+
+		if (i < 0 || j < 0) { // 起止索引无效
+			return null;
+		}
+
+		var size = j - i; // 片段尺寸
+
+		if (Optional.ofNullable(flag).orElse(false)) { // 按照行切分
+			if (i >= this.nrows()) { // 行索引无效
 				return null;
 			}
 			if (i + size > this.nrows()) {
@@ -1512,14 +1542,14 @@ public class AffectedArea implements Iterable<Cell> {
 			}
 			return this.create(this.cell(i, 0), size, this.ncols());
 		} else { // 按照列进行分割
-			if (i >= this.ncols()) {
+			if (i >= this.ncols()) { // 列索引无效
 				return null;
 			}
 			if (i + size > this.ncols()) {
 				size = this.ncols() - i;
 			}
 			return this.create(this.cell(0, i), this.nrows(), size);
-		}
+		} // if
 	}
 
 	/**
