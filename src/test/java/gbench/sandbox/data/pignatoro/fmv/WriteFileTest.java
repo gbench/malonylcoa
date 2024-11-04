@@ -142,7 +142,7 @@ public class WriteFileTest {
 								.forEach(subtotal -> { // 水平方向上的小计
 									final var line = subtotal.hshe(-5, 4); // 水平行(向左移动5个位置,扩展4个位置)
 									final var formula = "sum(%s)".formatted(line); // 水平的求和公式
-									subtotal.setCellFormula(formula).paintBottom(RED, BorderStyle.DASH_DOT);
+									subtotal.setCellFormula(formula).paintBottom(RED, BorderStyle.DASH_DOT).pleft(RED);
 									println(subtotal, subtotal.hshe(-5, 4), formula);
 								});
 						right.originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
