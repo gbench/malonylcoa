@@ -514,7 +514,7 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 相对创建
+	 * 以当前AA为基准进行区域AffectedArea构建
 	 * 
 	 * @param nameline EXCEL的Range的描述字符串如
 	 * @return AffectedArea
@@ -523,6 +523,16 @@ public class AffectedArea implements Iterable<Cell> {
 		return Optional.ofNullable(DataMatrix.name2rdf(nameline)).flatMap(
 				rdf -> this.cellOpt(rdf.x0(), rdf.y0()).map(cell -> this.create(cell, rdf.nrows(), rdf.ncols())))
 				.orElse(null);
+	}
+
+	/**
+	 * 以当前AA为基准进行区域AffectedArea构建
+	 * 
+	 * @param nameline EXCEL的Range的描述字符串如
+	 * @return AffectedArea
+	 */
+	public AffectedArea rangeAa(final String nameline) {
+		return this.relativeCreate(nameline);
 	}
 
 	/**

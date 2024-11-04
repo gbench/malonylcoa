@@ -138,6 +138,7 @@ public class WriteFileTest {
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
 					}).ptitle(RED).pbottom(RED).withTransaction(aa -> { // 右侧margin公式写入,aa:AffectedArea的缩写
 						final var right = aa.right(); // 提取右侧
+
 						right.originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
 						// 表体数据:subtotal的公式写入:剔除第一行的表头（其余涂成黄色）
 						right.hshift(1).skipRows(1).background(YELLOW).rowS().forEach(subtotal -> { // 水平方向上的小计
@@ -153,6 +154,14 @@ public class WriteFileTest {
 						// reshape把aa变形为成3行2列（A1:B3）最后形成最终的cliplines.
 						final var cliplines = right.hshift(-2).hextend(-2).reshape(3, 2); // 一块选区，剪切一段数据行
 						final var addrAa = right.hshift(3); // 写入 I2位置
+
+						// 相对nameline的使用（A4:B4是相对于addrAa的，实际为I5:J5）, 采用相对区间选区rangeAa 的小计公式写入
+						addrAa.rangeAa("A4:B4").pbottom(RED).background(YELLOW).colS().forEach(subtotal -> {
+							subtotal.setCellFormula("sum(%s)".formatted(subtotal.vsve(-3, 2)));
+						});
+						addrAa.rangeAa("C1:C4").skipRows(1).background(YELLOW).rowS().forEach(subtotal -> {
+							subtotal.setCellFormula("sum(%s)".formatted(subtotal.hshe(-3, 2)));
+						});
 
 						println("addrAa", addrAa, "cliplines", cliplines); // 打印操作信息
 

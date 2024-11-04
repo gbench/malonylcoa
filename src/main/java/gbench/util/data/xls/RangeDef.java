@@ -199,6 +199,15 @@ public class RangeDef {
 	}
 
 	/**
+	 * 行数量
+	 * 
+	 * @return
+	 */
+	public int nrows() {
+		return Math.abs(this.x1 - this.x0) + 1;
+	}
+
+	/**
 	 * 高度（nrows的别名）
 	 * 
 	 * @return
@@ -208,11 +217,11 @@ public class RangeDef {
 	}
 
 	/**
-	 * 行数量
+	 * 列数量
 	 * 
 	 * @return
 	 */
-	public int nrows() {
+	public int ncols() {
 		return Math.abs(this.y1 - this.y0) + 1;
 	}
 
@@ -223,15 +232,6 @@ public class RangeDef {
 	 */
 	public int width() {
 		return this.ncols();
-	}
-
-	/**
-	 * 列数量
-	 * 
-	 * @return
-	 */
-	public int ncols() {
-		return Math.abs(this.x1 - this.x0) + 1;
 	}
 
 	/**
