@@ -215,7 +215,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 获取区域名称（比如:Sheet1!A1:B2)
 	 *
 	 * @param flag 是否显示sheet名称,true:显示,false:不显示
-	 * @return
+	 * @return 区域名称类似于EXCEL的RANGE名称,ltCell为null时返回null
 	 */
 	public String getName(final boolean flag) {
 		return Optional.ofNullable(this.ltCell).map(cell -> { // cell 有效
@@ -448,7 +448,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	@SafeVarargs
-	public final <T> AffectedArea writeLine(T... line) {
+	public final <T> AffectedArea writeLine(final T... line) {
 		return this.writeLine(this.activeAddress(), line);
 	}
 
@@ -460,7 +460,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param lines 数据内容
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
-	public <T> AffectedArea writeLines(T lines[][]) {
+	public <T> AffectedArea writeLines(final T lines[][]) {
 		return this.writeLines(this.activeAddress(), lines);
 	}
 
@@ -474,10 +474,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	@SafeVarargs
-	public final <T> AffectedArea writeColumn(T... line) {
-		final String[][] lines = DataMatrix
-				.of(Stream.of(line).map(e -> e instanceof String ? (String) e : e + "").collect(Collectors.toList()))
-				.transpose().data(); // 转置
+	public final <T> AffectedArea writeColumn(final T... line) {
+		final Object[][] lines = DataMatrix.of(Stream.of(line).collect(Collectors.toList())).transpose().data(); // 转置
 		return this.writeLines(this.activeAddress(), lines);
 	}
 
