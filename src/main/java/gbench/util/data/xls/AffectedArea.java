@@ -304,26 +304,6 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 下一个区域
-	 * 
-	 * @param width
-	 * @param height
-	 */
-	public AffectedArea next(final int width, final int height) {
-		return new AffectedArea(this.excel, this.activeCell(), width, height);
-	}
-
-	/**
-	 * 下一个区域
-	 * 
-	 * @param width
-	 * @param height
-	 */
-	public AffectedArea next() {
-		return this.next(1, 1);
-	}
-
-	/**
 	 * 把起始点转换为影响区
 	 * 
 	 * @return AffectedArea
@@ -414,39 +394,41 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * nrows 别名
+	 * 起点(区域起始位置）
 	 * 
-	 * @return 高度
+	 * @return
 	 */
-	public int height() {
-		return this.nrows();
+	public AffectedArea startPoint() {
+		return this.create(this.origin());
 	}
 
 	/**
-	 * 行数量(shape的1号位置)
+	 * 下一个区域
 	 * 
-	 * @return 高度
+	 * @param width
+	 * @param height
 	 */
-	public int nrows() {
-		return this.shape._1;
+	public AffectedArea next(final int width, final int height) {
+		return new AffectedArea(this.excel, this.activeCell(), width, height);
 	}
 
 	/**
-	 * ncols别名
+	 * 下一个区域
 	 * 
-	 * @return 宽度
+	 * @param width
+	 * @param height
 	 */
-	public int width() {
-		return this.ncols();
+	public AffectedArea next() {
+		return this.next(1, 1);
 	}
 
 	/**
-	 * 列数量(shape的2号位置)
+	 * 写入点
 	 * 
-	 * @return 宽度
+	 * @return
 	 */
-	public int ncols() {
-		return this.shape._2;
+	public AffectedArea writePoint() {
+		return this.create(this.activeCell());
 	}
 
 	/**
@@ -496,8 +478,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 当前活动Cell
 	 */
 	public Cell activeCell() {
-		// 下一行 相同列。
-		return this.offsetOpt(1, -this.width() + 1).orElse(null);
+		return this.offsetOpt(1, -this.width() + 1).orElse(null); // ltCell的直接正下（下一行相同列）。
 	}
 
 	/**
@@ -507,8 +488,77 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 当前活动Cell的地址
 	 */
 	public String activeAddress() {
-		return Optional.ofNullable(this.activeCell()).map(e -> e.getAddress().toString()) //
-				.orElse("A1"); // 默认地址为A1
+		return Optional.ofNullable(this.activeCell()).map(e -> e.getAddress().toString()).orElse("A1"); // 默认地址为A1
+	}
+
+	/**
+	 * 单点(ltCell:1x1的AffectedArea)
+	 * 
+	 * @param ltCell 基点,左上角的单元格的位置
+	 * @return AffectedArea
+	 */
+	public AffectedArea create(final Cell ltCell) {
+		return create(ltCell, 1, 1);
+	}
+
+	/**
+	 * 创建一个 AffectedArea
+	 * 
+	 * @param ltCell 基点,左上角的单元格的位置
+	 * @param nrows  行数量即高度大于等于1的正数
+	 * @param ncols  列数量即宽度大于等于1的正数
+	 * @return AffectedArea
+	 */
+	public AffectedArea create(final Cell ltCell, int nrows, int ncols) {
+		return new AffectedArea(this.excel, ltCell, nrows, ncols);
+	}
+
+	/**
+	 * 相对创建
+	 * 
+	 * @param nameline EXCEL的Range的描述字符串如
+	 * @return AffectedArea
+	 */
+	public AffectedArea relativeCreate(final String nameline) {
+		return Optional.ofNullable(DataMatrix.name2rdf(nameline)).flatMap(
+				rdf -> this.cellOpt(rdf.x0(), rdf.y0()).map(cell -> this.create(cell, rdf.nrows(), rdf.ncols())))
+				.orElse(null);
+	}
+
+	/**
+	 * nrows 别名
+	 * 
+	 * @return 高度
+	 */
+	public int height() {
+		return this.nrows();
+	}
+
+	/**
+	 * 行数量(shape的1号位置)
+	 * 
+	 * @return 高度
+	 */
+	public int nrows() {
+		return this.shape._1;
+	}
+
+	/**
+	 * ncols别名
+	 * 
+	 * @return 宽度
+	 */
+	public int width() {
+		return this.ncols();
+	}
+
+	/**
+	 * 列数量(shape的2号位置)
+	 * 
+	 * @return 宽度
+	 */
+	public int ncols() {
+		return this.shape._2;
 	}
 
 	/**
@@ -717,24 +767,6 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 起点(区域起始位置）
-	 * 
-	 * @return
-	 */
-	public AffectedArea startPoint() {
-		return this.create(this.origin());
-	}
-
-	/**
-	 * 写入点
-	 * 
-	 * @return
-	 */
-	public AffectedArea writePoint() {
-		return this.create(this.activeCell());
-	}
-
-	/**
 	 * 垂直平移，然后垂直扩展
 	 * 
 	 * @param s_nrows 平移行数
@@ -812,28 +844,6 @@ public class AffectedArea implements Iterable<Cell> {
 		final var new_icol = Math.max(origin_icol + ncols, 0);
 		final var newcell = excel.getOrCreateCell(this.ltCell.getSheet(), new_irow, new_icol);
 		return create(newcell, this.nrows(), this.ncols());
-	}
-
-	/**
-	 * 单点(ltCell:1x1的AffectedArea)
-	 * 
-	 * @param ltCell 单点ltCell
-	 * @return AffectedArea
-	 */
-	public AffectedArea create(final Cell ltCell) {
-		return create(ltCell, 1, 1);
-	}
-
-	/**
-	 * 创建一个 AffectedArea
-	 * 
-	 * @param cell   基点位置
-	 * @param height 高度
-	 * @param width  宽度
-	 * @return AffectedArea
-	 */
-	public AffectedArea create(final Cell cell, int height, int width) {
-		return new AffectedArea(this.excel, cell, height, width);
 	}
 
 	/**

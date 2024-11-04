@@ -199,20 +199,38 @@ public class RangeDef {
 	}
 
 	/**
-	 * 高度
+	 * 高度（nrows的别名）
 	 * 
 	 * @return
 	 */
 	public int height() {
+		return this.nrows();
+	}
+
+	/**
+	 * 行数量
+	 * 
+	 * @return
+	 */
+	public int nrows() {
 		return Math.abs(this.y1 - this.y0) + 1;
 	}
 
 	/**
-	 * 宽度
+	 * 宽度（ncols的别名）
 	 * 
 	 * @return
 	 */
 	public int width() {
+		return this.ncols();
+	}
+
+	/**
+	 * 列数量
+	 * 
+	 * @return
+	 */
+	public int ncols() {
 		return Math.abs(this.x1 - this.x0) + 1;
 	}
 
