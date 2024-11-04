@@ -1066,6 +1066,17 @@ public class SimpleExcel implements AutoCloseable {
 	/**
 	 * 创建一个单元格
 	 * 
+	 * @param i 行索引 从0开始
+	 * @param j 列索引 从0开始
+	 * @return 单元格对象
+	 */
+	public Cell getOrCreateCell(final int i, final int j) {
+		return this.getOrCreateCell(this.activesht, i, j);
+	}
+
+	/**
+	 * 创建一个单元格
+	 * 
 	 * @param sht 表单对象
 	 * @param i   行索引 从0开始
 	 * @param j   列索引 从0开始
@@ -1085,17 +1096,6 @@ public class SimpleExcel implements AutoCloseable {
 					}
 					return c;
 				}).orElse(null);
-	}
-
-	/**
-	 * 创建一个单元格
-	 * 
-	 * @param i 行索引 从0开始
-	 * @param j 列索引 从0开始
-	 * @return 单元格对象
-	 */
-	public Cell getOrCreateCell(final int i, final int j) {
-		return this.getOrCreateCell(this.activesht, i, j);
 	}
 
 	/**

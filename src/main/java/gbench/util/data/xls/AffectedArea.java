@@ -126,7 +126,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param excel  excel对象
 	 */
 	public AffectedArea(final SimpleExcel excel, final RangeDef rdf, final int startx, int starty) {
-		this(excel, excel.cell(rdf.sheetName(),rdf.x0() + startx, rdf.y0() + starty), Tuple2.of(rdf.width(), rdf.height()));
+		this(excel, excel.cell(rdf.sheetName(), rdf.x0() + startx, rdf.y0() + starty),
+				Tuple2.of(rdf.width(), rdf.height()));
 	}
 
 	/**
@@ -217,16 +218,14 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public String getName(final boolean flag) {
-		return Optional.ofNullable(this.ltCell).map(cell -> {
-			final var sheetName = cell.getSheet().getSheetName();
-			final var x0 = cell.getRowIndex();
-			final var y0 = cell.getColumnIndex();
-			final var x1 = x0 + (this.nrows() - 1);
-			final var y1 = y0 + (this.ncols() - 1);
-
-			return "%s%s%s:%s%s".formatted(
-					Optional.ofNullable(flag ? sheetName : null).map("%s!"::formatted).orElse(""), // sheet前缀
-					xlsn(y0), x0 + 1, xlsn(y1), x1 + 1); // x0+1, x1+1是吧0based索引号转换成行号
+		return Optional.ofNullable(this.ltCell).map(cell -> { // cell 有效
+			final var sheetName = cell.getSheet().getSheetName(); // 表单名称
+			final var x0 = cell.getRowIndex(); // LT行索引
+			final var y0 = cell.getColumnIndex(); // LT列索引
+			final var x1 = x0 + (this.nrows() - 1); // RB 行索引
+			final var y1 = y0 + (this.ncols() - 1); // RB 列索引
+			final var prefix = Optional.ofNullable(flag ? sheetName : null).map("%s!"::formatted).orElse(""); // 前缀
+			return "%s%s%s:%s%s".formatted(prefix, xlsn(y0), x0 + 1, xlsn(y1), x1 + 1); // x0+1, x1+1是把0based索引号转换成行号
 		}).orElse(null);
 	}
 
