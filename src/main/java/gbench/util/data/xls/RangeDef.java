@@ -245,7 +245,8 @@ public class RangeDef {
 
 	@Override
 	public String toString() {
-		return "Range [sheetName=" + sheetName + ",x0=" + x0 + ", y0=" + y0 + ", x1=" + x1 + ", y1=" + y1 + "]";
+		return "Range [sheetName=%s,x0=%s, y0=%s, x1=%s, y1=%s, nrows:%s, ncols:%s]" //
+				.formatted(sheetName, x0, y0, x1, y1, this.nrows(), this.ncols());
 	}
 
 	@Override

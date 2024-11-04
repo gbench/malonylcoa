@@ -128,7 +128,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public AffectedArea(final SimpleExcel excel, final RangeDef rdf, final int startx, int starty) {
 		this(excel, excel.cell(rdf.sheetName(), rdf.x0() + startx, rdf.y0() + starty),
-				Tuple2.of(rdf.width(), rdf.height()));
+				Tuple2.of(rdf.nrows(), rdf.ncols()));
 	}
 
 	/**
@@ -1121,7 +1121,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return AffectedArea
 	 */
 	public Optional<AffectedArea> colOpt(final int n) {
-		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
+		return Optional.ofNullable(0 <= n && n < this.ncols() ? n : null)
 				.map(i -> new AffectedArea(this.excel, this.cell(0, i), this.height(), 1));
 	}
 
@@ -1450,7 +1450,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 头前head行
 	 */
 	public Tuple2<AffectedArea, AffectedArea> split(final int i) {
-		return Tuple2.of(this.head(i), this.rest(i, 0));
+		return Tuple2.of(this.head(i - 1), this.rest(i, 0));
 	}
 
 	/**

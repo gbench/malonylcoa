@@ -1720,16 +1720,18 @@ public class SimpleExcel implements AutoCloseable {
 	 */
 	public AffectedArea select(final String rangeName) {
 		final var rdf = DataMatrix.name2rdf(rangeName);
-		if (rdf.isBlankName()) {
+
+		if (rdf.isBlankName()) { // 区域中没有有效的表单名称，打开默认表单
 			this.selectSheetOpt(0).orElseGet(() -> {
-				final var shtname = this.getDefaultSheet();
+				final var shtname = this.getDefaultSheet(); // 默认表单名称
 				println("使用默认“%s”代替".formatted(shtname));
 				return this.selectSheet(shtname); // 打开默认Sheet1
 			});
-		} else {
+		} else { // 表单名称有效
 			this.selectSheet(rdf.sheetName());
-
 		}
+
+		// 构建0偏移
 		return new AffectedArea(this, rdf, 0, 0).focus();
 	}
 
