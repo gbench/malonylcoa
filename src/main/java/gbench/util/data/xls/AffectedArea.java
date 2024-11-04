@@ -588,7 +588,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param nrows 缩放后的行数量
 	 * @param ncols 缩放后的列数量
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea reshape(final Integer nrows, final Integer ncols) {
 		final var new_nrows = Optional.ofNullable(nrows == null || nrows < 1 ? null : nrows).orElse(this.nrows());
@@ -597,34 +597,23 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 缩放：采用指定的nrows与ncols数量（reshape的别名)
+	 * 返回一个高度为nrows的宽度不变的AffectedArea
 	 * 
 	 * @param nrows 缩放后的行数量
-	 * @param ncols 缩放后的列数量
-	 * @return
+	 * @return AffectedArea
 	 */
-	public AffectedArea scale(final Integer nrows, final Integer ncols) {
-		return this.reshape(nrows, ncols);
+	public AffectedArea nrows(final int nrows) {
+		return this.reshape(nrows, null);
 	}
 
 	/**
-	 * 缩放：采用指定的nrows与ncols数量
-	 * 
-	 * @param nrows 缩放后的行数量
-	 * @return
-	 */
-	public AffectedArea rscale(final int nrows) {
-		return this.scale(nrows, null);
-	}
-
-	/**
-	 * 缩放：采用指定的nrows与ncols数量
+	 * 返回一个宽度为ncols的高度不变的AffectedArea
 	 * 
 	 * @param ncols 缩放后的列数量
-	 * @return
+	 * @return AffectedArea
 	 */
-	public AffectedArea cscale(final int ncols) {
-		return scale(null, ncols);
+	public AffectedArea ncols(final int ncols) {
+		return reshape(null, ncols);
 	}
 
 	/**
@@ -1247,7 +1236,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 数据行(rowS的别名)
 	 * 
-	 * @return
+	 * @return 数据行流
 	 */
 	public Stream<AffectedArea> lineS() {
 		return this.rowS();
@@ -1256,11 +1245,10 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 数据行
 	 * 
-	 * @return
+	 * @return 数据行流
 	 */
 	public Stream<AffectedArea> rowS() {
-		return Stream.iterate(0, i -> i + 1).limit(this.height())
-				.map(i -> new AffectedArea(this.excel, this.cell(i, 0), 1, this.width())); // 行高度为1
+		return Stream.iterate(0, i -> i + 1).limit(this.height()).map(this::row); // 行高度为1
 	}
 
 	/**
@@ -1276,11 +1264,11 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 第n行
 	 * 
 	 * @param n 行索引从0开始
-	 * @return
+	 * @return 数据行
 	 */
 	public Optional<AffectedArea> rowOpt(final int n) {
 		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
-				.map(i -> new AffectedArea(this.excel, this.cell(i, 0), 1, this.width()));
+				.map(i -> this.create(this.cell(i, 0), 1, this.ncols()));
 	}
 
 	/**

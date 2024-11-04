@@ -147,11 +147,11 @@ public class WriteFileTest {
 								});
 						right.originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
 
-						// 演示一个较为复杂的数据选区的擦做：：right为第五列J列：（此处行列坐标采用的是AffectedArea内部的坐标定位）而非绝对的sheet中的坐标。
+						// 演示一个较为复杂的数据选区的擦做：：right为第五列E列：（此处行列坐标采用的是AffectedArea内部的坐标定位）而非绝对的sheet中的坐标。
 						// 选区的水平复制:right（列）E：hshift(-2) 变为：C列(-2步即向左经过(E,D)->C) right:变为C列
-						// hextend(-2):变为A列（-2步即向左经过(C,B)->A)），right:变为从A到C列的aa,该噶aa的base为A2宽度为3
-						// cscale(2)表吧宽度修改为2即A到B的两列的aa1,rscale(2)又把aa1的高度设置为3行，最后形成最终的cliplines:以A1为基点的2x3区域
-						final var cliplines = right.hshift(-2).hextend(-2).cscale(2).rscale(3); // 一块选区，剪切一段数据行
+						// hextend(-2):变为A列（-2步即向左经过(C,B)->A)），right:变为从A到C列的aa,该aa的base为A2宽度为3
+						// cscale(2)表示把宽度修改为2即A到B的两列的aa1,reshape成3行2列最后形成最终的cliplines:以A1为基点的2x3区域
+						final var cliplines = right.hshift(-2).hextend(-2).reshape(4, 2); // 一块选区，剪切一段数据行
 						final var addrAa = right.hshift(3); // 写入 I2位置
 
 						println("addrAa", addrAa, "cliplines", cliplines); // 打印操作信息
