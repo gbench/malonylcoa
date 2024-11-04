@@ -521,8 +521,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return AffectedArea
 	 */
 	public AffectedArea relativeCreate(final String nameline) {
-		return Optional.ofNullable(DataMatrix.name2rdf(nameline)).flatMap(
-				rdf -> this.cellOpt(rdf.x0(), rdf.y0()).map(cell -> this.create(cell, rdf.nrows(), rdf.ncols())))
+		// 如果 nameline 只含有一个cell没有":"给予补充A1作为左上cell
+		return Optional.ofNullable(nameline).map(e -> "%s:%s".formatted(e.indexOf(":") < 0 ? "A1" : "", e)) //
+				.map(DataMatrix::name2rdf).flatMap(rdf -> this.cellOpt(rdf.x0(), rdf.y0())
+						.map(cell -> this.create(cell, rdf.nrows(), rdf.ncols())))
 				.orElse(null);
 	}
 
@@ -1413,7 +1415,7 @@ public class AffectedArea implements Iterable<Cell> {
 	public Tuple2<AffectedArea, AffectedArea> split(final int i) {
 		return Tuple2.of(this.head(i), this.rest(i, 0));
 	}
-	
+
 	/**
 	 * 一分为二
 	 * 
@@ -1422,7 +1424,7 @@ public class AffectedArea implements Iterable<Cell> {
 	public Tuple2<AffectedArea, AffectedArea> splitRows(final int i) {
 		return Tuple2.of(this.head(i), this.skipCols(i));
 	}
-	
+
 	/**
 	 * 一分为二
 	 * 
@@ -1431,7 +1433,6 @@ public class AffectedArea implements Iterable<Cell> {
 	public Tuple2<AffectedArea, AffectedArea> splitCols(final int i) {
 		return Tuple2.of(this.left(i), this.skipCols(i));
 	}
-
 
 	/**
 	 * 提取数据流
