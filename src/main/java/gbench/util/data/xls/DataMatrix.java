@@ -1456,7 +1456,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 
 	 * @param nameline 名称行‘Sheet1!C2:D3’ 或是 ‘C2:D3’ 这样的字符串;<br>
 	 *                 需要注意对于nameline为:'A1'这样的名称长会被视为'A1:A1'的单个单元格进行处理
-	 * @return 名称转rangedef
+	 * @return 名称转rdf, 回结果会保证 LT，小于 RB； F1:B10, 会被解释为 B1:F10。 
 	 */
 	public static RangeDef name2rdf(final String nameline) {
 		final String pattern = "(([A-Z]+)\\s*(\\d+))(\\s*:\\s*(([A-Z]+)\\s*(\\d+)))?";
@@ -1482,7 +1482,10 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			final Integer ix1 = DataMatrix.xlsn2id(x1);
 			final Integer iy1 = DataMatrix.xlsn2id(y1);
 
-			rdf = new RangeDef(sheetName, ix0, iy0, ix1, iy1);
+			rdf = new RangeDef(sheetName, // 表单名称
+					Math.min(ix0, ix1), Math.min(iy0, iy1), // LT 的索引值较小
+					Math.max(ix0, ix1), Math.max(iy0, iy1) // RB 的索引较大
+			);
 		} else { // if
 			rdf = null;
 		}

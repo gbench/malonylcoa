@@ -3,6 +3,9 @@ package gbench.sandbox.data.pignatoro.fmv;
 import static gbench.global.Globals.WS_HOME;
 import static gbench.util.io.Output.println;
 
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
 
@@ -19,12 +22,15 @@ public class WriteFileTest2 {
 	@Test
 	public void foo() {
 		final var file = outhome.formatted("foo.xlsx");
+
 		try (final var excel = SimpleExcel.of(file)) {
-			final var aa = excel.select("B1:F10");
-			aa.poutline(IndexedColors.RED);
-//			final var a = excel.select("B1:F100").split(3);
-//			a._1.background(IndexedColors.RED);
-//			a._2.background(IndexedColors.GREEN);
+			final BiConsumer<String, Integer> cs = (name, i) -> {
+				final var rname = "%s!F1:B10".formatted(name);
+				final var aa = excel.select(rname).border();
+				println(aa.segment(2, 5).background(IndexedColors.YELLOW));
+			};
+
+			cs.accept("A", 1);
 			excel.save();
 		}
 		println("completed:%s".formatted(file));

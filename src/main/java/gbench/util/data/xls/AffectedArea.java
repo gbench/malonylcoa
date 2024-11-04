@@ -1445,27 +1445,42 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 一分为二
+	 * 位点切割 <br>
 	 * 
-	 * @return 头前head行
+	 * @param i 切分分割点 大于1小于等于length<br>
+	 *          前包含后不包含,如：[1,2,3,4,5],在2号位置切分,会产生[1,2],[3,4,5]两个区域。
+	 * @return
 	 */
 	public Tuple2<AffectedArea, AffectedArea> split(final int i) {
-		return Tuple2.of(this.head(i - 1), this.rest(i, 0));
+		return this.splitRows(i);
 	}
 
 	/**
-	 * 一分为二
+	 * 位点切割 <br>
 	 * 
-	 * @return 头前head行
+	 * @param i 切分分割点,前包含后不包含,如：[0,1,2,3,4,5],在2号位置切分,会产生[0,1,2],[3,4,5]两个区域。
+	 * @return
 	 */
 	public Tuple2<AffectedArea, AffectedArea> splitRows(final int i) {
-		return Tuple2.of(this.head(i), this.skipCols(i));
+		return Tuple2.of(this.head(i), this.skipRows(i));
 	}
 
 	/**
-	 * 一分为二
+	 * 提取分段
 	 * 
-	 * @return 头前head行
+	 * @param i 开始行索引,inclusive,0 based
+	 * @param j 结束行索引,exclusive,0 based
+	 * @return
+	 */
+	public AffectedArea segment(final int i, final int j) {
+		return this.create(this.cell(i, 0), j - i, this.ncols());
+	}
+
+	/**
+	 * 位点切割 <br>
+	 * 
+	 * @param i 切分分割点,前包含后不包含,如：[0,1,2,3,4,5],在2号位置切分,会产生[0,1,2],[3,4,5]两个区域。
+	 * @return
 	 */
 	public Tuple2<AffectedArea, AffectedArea> splitCols(final int i) {
 		return Tuple2.of(this.left(i), this.skipCols(i));
