@@ -3,9 +3,12 @@ package gbench.util.data.xls;
 import static gbench.util.data.xls.DataMatrix.xlsn;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -1445,35 +1448,38 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 位点切割 <br>
+	 * 空间切割
 	 * 
-	 * @param i 切分分割点 大于1小于等于length<br>
-	 *          前包含后不包含,如：[1,2,3,4,5],在2号位置切分,会产生[1,2],[3,4,5]两个区域。
+	 * @param points 切分点, p0,p1,p2, ... <br>
+	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
 	 * @return
 	 */
-	public Tuple2<AffectedArea, AffectedArea> split(final int i) {
-		return this.splitRows(i);
-	}
+	public List<AffectedArea> splits(final Boolean flag, final Integer... points) {
+		if (points.length < 1) {
+			return Arrays.asList();
+		} else {
+			final var ps = new ArrayList<>(Arrays.asList(points));
+			if (ps.get(0) != 0) {
+				ps.addFirst(0);
+			}
 
-	/**
-	 * 位点切割 <br>
-	 * 
-	 * @param i 切分分割点,前包含后不包含,如：[0,1,2,3,4,5],在2号位置切分,会产生[0,1,2],[3,4,5]两个区域。
-	 * @return
-	 */
-	public Tuple2<AffectedArea, AffectedArea> splitRows(final int i) {
-		return Tuple2.of(this.head(i), this.skipRows(i));
-	}
+			final var nrows = this.nrows();
+			if (ps.getLast() != nrows) {
+				ps.addLast(nrows);
+			}
 
-	/**
-	 * 提取分段
-	 * 
-	 * @param i 开始行索引,inclusive,0 based
-	 * @param j 结束行索引,exclusive,0 based
-	 * @return
-	 */
-	public AffectedArea segment(final int i, final int j) {
-		return this.create(this.cell(i, 0), j - i, this.ncols());
+			final var pp = ps.toArray(Integer[]::new);
+			final List<AffectedArea> list = new LinkedList<AffectedArea>();
+			for (int i = 0; i < pp.length - 1; i++) { // 数据分割
+				final var seg = this.segment(pp[i], pp[i + 1], flag);
+				if (seg == null) {
+					break;
+				}
+				list.add(seg);
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -1484,6 +1490,46 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public Tuple2<AffectedArea, AffectedArea> splitCols(final int i) {
 		return Tuple2.of(this.left(i), this.skipCols(i));
+	}
+
+	/**
+	 * 判断索引位置是否谓语区域内部
+	 * 
+	 * @param i 行索引从0开始
+	 * @param j 列索引从0开始
+	 * @return
+	 */
+	public boolean contains(final int i, final int j) {
+		return i < this.nrows() && j < this.nrows();
+	}
+
+	/**
+	 * 提取分段
+	 * 
+	 * @param i    开始行索引,inclusive,0 based
+	 * @param j    结束行索引,exclusive,0 based
+	 * @param flag 切分方向，true 行方向,false 列方向
+	 * @return
+	 */
+	public AffectedArea segment(final Integer i, final Integer j, final Boolean flag) {
+		var size = j - i;
+		if (flag) { // 按照行切分
+			if (i >= this.nrows()) {
+				return null;
+			}
+			if (i + size > this.nrows()) {
+				size = this.nrows() - i;
+			}
+			return this.create(this.cell(i, 0), size, this.ncols());
+		} else { // 按照列进行分割
+			if (i >= this.ncols()) {
+				return null;
+			}
+			if (i + size > this.ncols()) {
+				size = this.ncols() - i;
+			}
+			return this.create(this.cell(0, i), this.nrows(), size);
+		}
 	}
 
 	/**
