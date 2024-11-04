@@ -585,10 +585,21 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param ncols 缩放后的列数量
 	 * @return
 	 */
-	public AffectedArea scale(final Integer nrows, final Integer ncols) {
+	public AffectedArea reshape(final Integer nrows, final Integer ncols) {
 		final var new_nrows = Optional.ofNullable(nrows == null || nrows < 1 ? null : nrows).orElse(this.nrows());
 		final var new_ncols = Optional.ofNullable(ncols == null || ncols < 1 ? null : ncols).orElse(this.ncols());
 		return this.create(this.origin(), new_nrows, new_ncols);
+	}
+
+	/**
+	 * 缩放：采用指定的nrows与ncols数量
+	 * 
+	 * @param nrows 缩放后的行数量
+	 * @param ncols 缩放后的列数量
+	 * @return
+	 */
+	public AffectedArea scale(final Integer nrows, final Integer ncols) {
+		return this.reshape(nrows, ncols);
 	}
 
 	/**
