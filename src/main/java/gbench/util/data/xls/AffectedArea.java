@@ -53,7 +53,7 @@ public class AffectedArea implements Iterable<Cell> {
 
 		final var nrows = shape._1;
 		final var ncols = shape._2;
-		this.ltCell = this.ajustLtCell(ltCell, nrows, ncols);
+		this.ltCell = this.adjustLtCell(ltCell, nrows, ncols);
 		this.shape = Tuple2.of(Math.abs(nrows), Math.abs(ncols));
 		this.pcs = pcs;
 	}
@@ -143,7 +143,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param ncols 列偏移
 	 * @return
 	 */
-	public Cell ajustLtCell(final Cell cell, final int nrows, final int ncols) {
+	public Cell adjustLtCell(final Cell cell, final int nrows, final int ncols) {
 		final var origin_irow = cell.getRowIndex(); // 原来行索引
 		final var origin_icol = cell.getColumnIndex(); // 原来列索引
 		var irow = origin_irow; // 调整后行索引：初始化origin_irow
@@ -622,7 +622,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return AffectedArea
 	 */
 	public AffectedArea extend(int nrows, int ncols) {
-		final var cell = this.ajustLtCell(this.origin(), nrows, ncols);
+		final var cell = this.adjustLtCell(this.origin(), nrows, ncols);
 		return this.create(cell, Math.abs(nrows) + this.nrows(), Math.abs(ncols) + this.ncols());
 	}
 
