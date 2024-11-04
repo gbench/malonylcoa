@@ -1448,6 +1448,28 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 过滤掉指定头前的行数<br>
+	 * 注意 skip(0,0) equals this 对象
+	 * 
+	 * @param m 过滤的头前行数，大于等于0的整数
+	 * @return AffectedArea
+	 */
+	public AffectedArea skipRows(final int m) {
+		return this.skip(m, 0);
+	}
+
+	/**
+	 * 过滤掉指定头前的列数<br>
+	 * 注意 skip(0,0) equals this 对象
+	 * 
+	 * @param n 过滤的头前列数，大于等于0的整数
+	 * @return AffectedArea
+	 */
+	public AffectedArea skipCols(final int n) {
+		return this.skip(0, n);
+	}
+
+	/**
 	 * 区域前n项目长度
 	 * 
 	 * @param n 区域长度

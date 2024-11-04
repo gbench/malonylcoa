@@ -140,7 +140,7 @@ public class WriteFileTest {
 						final var right = aa.right(); // 提取右侧
 
 						// subtotal 的公式写入
-						right.hshift(1).background(YELLOW).rowS().skip(1) // 剔除第一行的表头
+						right.hshift(1).skipRows(1).background(YELLOW).rowS() // 剔除第一行的表头
 								.forEach(subtotal -> { // 水平方向上的小计
 									final var line = subtotal.hshe(-5, 4); // 水平行(向左移动5个位置,扩展4个位置)
 									final var formula = "sum(%s)".formatted(line); // 水平的求和公式
