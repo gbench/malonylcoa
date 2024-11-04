@@ -105,23 +105,25 @@ public class WriteFileTest {
 
 	/**
 	 * 典型的EXCEL数据表格写入： <br>
-	 * AffectedArea 简称 aa,一种数据选取,《br> AffectedArea
-	 * 是一个由origin基点cell即ltCell左上叫单元格,height:nrows行数量,width:ncols列数量的excel表单的数据区域的对象。<br>
-	 * 提供一些列操作excel表单单元格的批量处理的工具方法<br>
-	 * 保证write操作不会写入其中的数据(write写入的是aa区域的正对于origin单元格ltCell的像同列但是正下间隔为aa.height的行中，<br>
-	 * 要修改其中的内容使用set或updateLine <br>
+	 * AffectedArea简称aa,是一种数据选取的工具类。<br>
+	 * AffectedArea是一个由origin基点cell即ltCell左上角单元格. <br>
+	 * height:nrows行数量,width:ncols列数量的excel表单的数据区域的对象。<br>
+	 * 提供一系列操作excel表单单元格的批量处理的工具方法 <br>
+	 * 保证write操作不会写入其中的数据: <br>
+	 * write写入的是aa区域的正对于origin单元格ltCell的同列但是正下间隔为aa.height的行中（ltCell同列），<br>
+	 * 要修改其中的内容使用set或updateLine<br>
 	 * 1）数据表写入与格式化 <br>
 	 * 2）加入margin累计公式 <br>
 	 * 3）指定位置的多行数据写入（带有平移hshift,拉伸hextend操作 <br>
 	 * 3）hsve:是 hshift与vextend的缩写, h表示horizonal,v表示vertical <br>
-	 * 于是有: hsve:水平平移垂直拉伸,hshe：水平平移水平拉伸, <br>
-	 * vshe：垂直平移水平拉伸,vsve：垂直平移垂直拉伸 <br>
-	 * 4) 对于平移shift,拉伸 extend, 与缩放scale的说明 <br>
-	 * shift:表示 将AffectedArea的基点origin即左上叫的单元格ltCell，水平或是上下移动,高度与宽度保持不变:aa
-	 * 面积不变,origin坐标改变 <br>
-	 * extend: 表示将 AffectedArea左右边界进行向外扩展,正数表示向下或向右，负数表示向上或向左。
+	 * 于是有: hsve:水平平移垂直拉伸,hshe：水平平移水平拉伸, vshe：垂直平移水平拉伸,vsve：垂直平移垂直拉伸 <br>
+	 * 4) 对于平移：shift,拉伸：extend,与变形/缩放：reshape的说明：<br>
+	 * 4.1)shift:表示将AffectedArea的基点origin即左上角的单元格ltCell，做水平或是上下移动,<br>
+	 * 高度与宽度保持不变:aa 面积不变,origin坐标改变 <br>
+	 * 4.2)extend: 表示将 AffectedArea左右边界进行向外扩展,正数表示向下或向右，负数表示向上或向左。
 	 * 改变aa面积,负向extend可以会改变origin<br>
-	 * scale: 表示保持origin不变,更改aa的height即nrows,或是ncols列数量。改变的是面积而不是origin坐标 <br>
+	 * 4.3)reshape:
+	 * 表示保持origin不变,更改aa的height即nrows,或是width即ncols列数量。改变的是面积而不是origin坐标 <br>
 	 */
 	@Test
 	public void quz() {
