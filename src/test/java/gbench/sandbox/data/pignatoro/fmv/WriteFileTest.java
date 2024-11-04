@@ -137,11 +137,11 @@ public class WriteFileTest {
 						style.setBorderBottom(BorderStyle.DASH_DOT);
 						style.setBottomBorderColor(IndexedColors.RED.getIndex());
 					}).ptitle(RED).pbottom(RED).withTransaction(aa -> { // 右侧margin公式写入,aa:AffectedArea的缩写
-						final var right = aa.right(); // 提取右侧
+						final var rightAa = aa.right(); // 提取右侧
 
-						right.originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
+						rightAa.originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
 						// 表体数据:subtotal的公式写入:剔除第一行的表头（其余涂成黄色）
-						right.hshift(1).skipRows(1).background(YELLOW).rowS().forEach(subtotal -> { // 水平方向上的小计
+						rightAa.hshift(1).skipRows(1).background(YELLOW).rowS().forEach(subtotal -> { // 水平方向上的小计
 							final var line = subtotal.hshe(-5, 4); // 水平行(向左移动5个位置,扩展4个位置)
 							final var formula = "sum(%s)".formatted(line); // 水平的求和公式
 							subtotal.setCellFormula(formula).paintBottom(RED, BorderStyle.DASH_DOT).pleft(RED);
@@ -152,8 +152,8 @@ public class WriteFileTest {
 						// 选区的水平复制:right（列）E：hshift(-2) 变为：C列(-2步即向左经过(E,D)->C) right:变为C列
 						// hextend(-2):变为A列（-2步即向左经过(C,B)->A)），right:变为从A到C列的aa,该aa的base为A2宽度为3
 						// reshape把aa变形为成3行2列（A1:B3）最后形成最终的cliplines.
-						final var dataAa = right.hshift(-2).hextend(-2).reshape(3, 2); // 一块选区:剪切出一段作为数据行
-						final var pointAa = right.hshift(3); // 右侧水平平移3列：I2:书写点
+						final var dataAa = rightAa.hshift(-2).hextend(-2).reshape(3, 2); // 一块选区:剪切出一段作为数据行
+						final var pointAa = rightAa.hshift(3); // 右侧水平平移3列：I2:书写点
 
 						// 相对nameline的使用（A4:B4是相对于addrAa的，实际为I5:J5）, 采用相对区间选区rangeAa的小计公式写入:下侧margin
 						pointAa.rangeAa("A4:B4").pbottom(RED).background(YELLOW).colS().forEach(subtotal -> { // 垂直
