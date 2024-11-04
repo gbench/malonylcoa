@@ -147,7 +147,7 @@ public class WriteFileTest {
 									subtotal.setCellFormula(formula).paintBottom(RED, BorderStyle.DASH_DOT).pleft(RED);
 									println(subtotal, subtotal.hshe(-5, 4), formula);
 								});
-						right.originAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
+						right.ltAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
 
 						// 演示一个较为复杂的数据选区的操作：right为第五列E列：（此处行列坐标采用的是AffectedArea内部的坐标定位）而非绝对的sheet中的坐标。
 						// 选区的水平复制:right（列）E：hshift(-2) 变为：C列(-2步即向左经过(E,D)->C) right:变为C列

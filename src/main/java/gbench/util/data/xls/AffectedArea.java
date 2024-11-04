@@ -762,12 +762,21 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 把起始点转换为影响区
+	 * 把起始点转换为影响区(ltAa的别名)
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea originAa() {
-		return create(this.origin());
+		return this.ltAa();
+	}
+
+	/**
+	 * 把起始点转换为影响区
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea ltAa() {
+		return create(this.ltCell);
 	}
 
 	/**
