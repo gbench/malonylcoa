@@ -707,7 +707,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param s_cols 平移行数
 	 * @param e_rows 扩展行数
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea hsve(int s_cols, int e_rows) {
 		return this.hshift(s_cols).vextend(e_rows);
@@ -718,39 +718,38 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param s_ncols 平移行数
 	 * @param e_ncols 扩展行数
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea hshe(int s_ncols, int e_ncols) {
 		return this.hshift(s_ncols).hextend(e_ncols);
 	}
 
 	/**
-	 * 水平平移
+	 * 水平平移(rows正数下移动,负数上移动)
 	 * 
-	 * @param nrows
-	 * @param ncols
-	 * @return
+	 * @param nrows 垂直平移行数量:小于0表示向上移动,大于0表示向下移动，等于0不移动
+	 * @return AffectedArea
 	 */
 	public AffectedArea vshift(int nrows) {
 		return this.shift(nrows, 0);
 	}
 
 	/**
-	 * 水平平移
+	 * 水平平移（ncols正数右移动,负数左移动）
 	 * 
-	 * @param ncols 水平平移列数量
-	 * @return
+	 * @param ncols 水平平移列数量:小于0表示向左移动,大于0表示向右移动，等于0不移动
+	 * @return AffectedArea
 	 */
 	public AffectedArea hshift(int ncols) {
 		return this.shift(0, ncols);
 	}
 
 	/**
-	 * 平移
+	 * 平移（nrows正数下移动,负数上移动;ncols正数右移动,负数左移动）
 	 * 
 	 * @param nrows 垂直平移行数量:小于0表示向上移动,大于0表示向下移动，等于0不移动
 	 * @param ncols 水平平移列数量:小于0表示向左移动,大于0表示向右移动，等于0不移动
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea shift(int nrows, int ncols) {
 		final var origin_irow = this.ltCell.getRowIndex();
@@ -780,13 +779,13 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 单点
+	 * 单点(ltCell:1x1的AffectedArea)
 	 * 
-	 * @param cell 起始origin
+	 * @param ltCell 单点ltCell
 	 * @return AffectedArea
 	 */
-	public AffectedArea create(final Cell cell) {
-		return create(cell, 1, 1);
+	public AffectedArea create(final Cell ltCell) {
+		return create(ltCell, 1, 1);
 	}
 
 	/**
@@ -807,7 +806,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param <T>    元素类型
 	 * @param addrAa 起始位置地址(全SHEET绝对地址:默认为originAddress)
-	 * @return SimpleExcel 对象本身 以实现链式编程
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea writeLines(final AffectedArea addrAa, final T lines[][]) {
 		return this.writeLines(addrAa.originAddress(), lines);
@@ -819,7 +818,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 
 	 * @param <T>    元素类型
 	 * @param addrAa 起始位置地址(全SHEET绝对地址:默认为originAddress)
-	 * @return SimpleExcel 对象本身 以实现链式编程
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea writeLines(final AffectedArea addrAa, final AffectedArea lines) {
 		return this.writeLines(addrAa.originAddress(), lines.toArray2());
@@ -832,7 +831,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param <T>     元素类型
 	 * @param address 起始位置地址(全SHEET绝对地址)
 	 * @param lines   数据内容
-	 * @return SimpleExcel 对象本身 以实现链式编程
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea writeLines(final String address, final T lines[][]) {
 		this.excel.write(address, lines);
@@ -847,7 +846,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param <T>     元素类型
 	 * @param address 起始位置地址(全SHEET绝对地址)
 	 * @param line    数据内容
-	 * @return SimpleExcel 对象本身 以实现链式编程
+	 * @return AffectedArea
 	 */
 	@SafeVarargs
 	public final <T> AffectedArea writeColumn(final String address, final T... line) {
@@ -862,7 +861,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param <T>     元素类型
 	 * @param address 起始位置地址(全SHEET绝对地址
 	 * @param datas   数据内容
-	 * @return SimpleExcel 对象本身 以实现链式编程
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea writeTable(final String address, final DataMatrix<T> datas) {
 		this.excel.write(address, datas);
@@ -876,7 +875,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param <T>     元素类型
 	 * @param address 起始位置地址(全SHEET绝对地址
 	 * @param datas   数据内容
-	 * @return SimpleExcel 对象本身 以实现链式编程
+	 * @return AffectedArea
 	 */
 	public <T> AffectedArea writeTable(final String address, final DFrame datas) {
 		this.excel.write(address, datas);
@@ -887,7 +886,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 格式喷涂
 	 * 
 	 * @param newstyle 单元格式样
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paint(final CellStyle newstyle) {
 		excel.packWKCellStyle(null).valueOpt().ifPresent(s -> { // 创建一个新的式样
@@ -904,7 +903,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 格式喷涂
 	 * 
 	 * @param pcs 单元格式样
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paint(final Pack<CellStyle> pcs) {
 		Optional.ofNullable(pcs).ifPresent(p -> p.evaluate(this::paint));
@@ -915,7 +914,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 格式喷涂
 	 * 
 	 * @param pstyle 单元格式样
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paint() {
 		return this.paint(this.pcs);
@@ -925,7 +924,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 设置区域喷涂
 	 * 
 	 * @param prepare 喷涂式样转呗
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paint(final Consumer<CellStyle> prepare) {
 		return this.paint(excel.packWKCellStyle(this.origin()).evaluate(prepare));
@@ -935,7 +934,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 设置字体颜色
 	 * 
 	 * @param prepare 喷涂式样转呗
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea pcolor(final IndexedColors color) {
 		excel.packWKFont(null).wrap(font -> font.setColor(color.getIndex()))
@@ -948,7 +947,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制标题 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea ptitle(final IndexedColors color) {
 		return this.paintTitle(color);
@@ -957,7 +956,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制标题 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paintTitle(final IndexedColors color) {
 		final var top = this.top();
@@ -979,7 +978,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制顶部 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea ptop(final IndexedColors color) {
 		return this.paintTop(color, null);
@@ -988,7 +987,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制顶部 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paintTop(final IndexedColors color, final BorderStyle bs) {
 		final var top = this.top();
@@ -1003,7 +1002,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制顶部 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea pbottom(final IndexedColors color) {
 		return this.paintBottom(color, null);
@@ -1012,7 +1011,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制顶部 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paintBottom(final IndexedColors color, final BorderStyle bs) {
 		final var bottom = this.bottom();
@@ -1027,7 +1026,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制左侧 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea pleft(final IndexedColors color) {
 		return this.paintLeft(color, null);
@@ -1036,7 +1035,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制左侧 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paintLeft(final IndexedColors color, final BorderStyle bs) {
 		this.left().forEach(cell -> {
@@ -1051,7 +1050,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制左侧 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea pright(final IndexedColors color) {
 		return this.paintRight(color, null);
@@ -1060,7 +1059,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制右侧 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paintRight(final IndexedColors color, final BorderStyle bs) {
 		this.right().forEach(cell -> {
@@ -1075,7 +1074,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷涂边框 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea poutline(final IndexedColors color) {
 		return this.paintOutline(color, null);
@@ -1084,7 +1083,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷涂边框 <br>
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea paintOutline(final IndexedColors color, final BorderStyle bs) {
 		this.paintTop(color, null);
@@ -1097,8 +1096,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param color
-	 * @return
+	 * @param color 颜色
+	 * @return AffectedArea
 	 */
 	public AffectedArea background(final IndexedColors color) {
 		this.pcs(SimpleExcel.background_color.apply(color)).evaluate(this::paint);
@@ -1108,9 +1107,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea border() {
 		return this.border(null, null, null);
@@ -1119,9 +1116,9 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param borderName 边框名
+	 * @param color      颜色
+	 * @return AffectedArea
 	 */
 	public AffectedArea border(final BorderName borderName, final IndexedColors color) {
 		return this.border(borderName, null, color);
@@ -1130,9 +1127,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param color 颜色
+	 * @return AffectedArea
 	 */
 	public AffectedArea bottomThick(final IndexedColors color) {
 		return this.border(BorderName.BOTTOM, BorderStyle.THICK,
@@ -1142,9 +1138,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param color 颜色
+	 * @return AffectedArea
 	 */
 	public AffectedArea bottomThin(final IndexedColors color) {
 		return this.border(BorderName.BOTTOM, BorderStyle.THIN, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
@@ -1153,9 +1148,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param color 颜色
+	 * @return AffectedArea
 	 */
 	public AffectedArea bottomDouble(final IndexedColors color) {
 		return this.border(BorderName.BOTTOM, BorderStyle.DOUBLE,
@@ -1165,9 +1159,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param color 颜色
+	 * @return AffectedArea
 	 */
 	public AffectedArea topThick(final IndexedColors color) {
 		return this.border(BorderName.TOP, BorderStyle.THICK, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
@@ -1176,9 +1169,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param color 颜色
+	 * @return AffectedArea
 	 */
 	public AffectedArea topThin(final IndexedColors color) {
 		return this.border(BorderName.TOP, BorderStyle.THIN, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
@@ -1187,9 +1179,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param color 杨色
+	 * @return AffectedArea
 	 */
 	public AffectedArea topDouble(final IndexedColors color) {
 		return this.border(BorderName.TOP, BorderStyle.DOUBLE, Optional.ofNullable(color).orElse(IndexedColors.BLACK));
@@ -1198,9 +1189,10 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置背景色
 	 * 
-	 * @param borderName
-	 * @param color
-	 * @return
+	 * @param borderName  边框名
+	 * @param borderStyle 边框式样
+	 * @param color       杨色
+	 * @return AffectedArea
 	 */
 	public AffectedArea border(final BorderName borderName, BorderStyle borderStyle, final IndexedColors color) {
 		final var bn = Optional.ofNullable(borderName).orElse(BorderName.ALL);
@@ -1215,7 +1207,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 设置或是取消字体加黑
 	 * 
 	 * @param bold 是否字体加黑
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea bold(final boolean bold) {
 		excel.packWKFont(this.origin()).wrap(font -> font.setBold(bold)).flatMap(font -> this.pcs(e -> e.setFont(font)))
@@ -1226,7 +1218,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 字体加黑
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea bold() {
 		return bold(true);
@@ -1236,7 +1228,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 设置或是取消字体倾斜
 	 * 
 	 * @param italic 是否字体倾斜
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea italic(final boolean italic) {
 		excel.packWKFont(null).wrap(font -> font.setItalic(italic)).flatMap(font -> this.pcs(e -> e.setFont(font)))
@@ -1247,7 +1239,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 设置或是取消字体倾斜
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea italic() {
 		return this.italic(true);
@@ -1274,7 +1266,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 数据行
 	 * 
-	 * @return
+	 * @return 数据行列表
 	 */
 	public List<AffectedArea> rows() {
 		return this.rowS().toList();
@@ -1284,7 +1276,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 第n行
 	 * 
 	 * @param n 行索引从0开始
-	 * @return 数据行
+	 * @return 数据行AffectedArea
 	 */
 	public Optional<AffectedArea> rowOpt(final int n) {
 		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
@@ -1295,7 +1287,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 第n行
 	 * 
 	 * @param n 行索引从0开始
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea row(final int n) {
 		return this.rowOpt(n).orElse(null);
@@ -1304,7 +1296,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 区域最后一行（顶部的别名）
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea firstRow() {
 		return this.row(0);
@@ -1313,7 +1305,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 区域最后一行（底部的别名）
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea lastRow() {
 		return this.row(this.nrows() - 1);
@@ -1322,7 +1314,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 区域顶部
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea top() {
 		return this.row(0);
@@ -1331,7 +1323,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 区域底部
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea bottom() {
 		return this.row(this.nrows() - 1);
@@ -1340,7 +1332,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 数据列
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public Stream<AffectedArea> colS() {
 		return Stream.iterate(0, i -> i + 1).limit(this.width())
@@ -1350,7 +1342,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 数据列
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public List<AffectedArea> cols() {
 		return this.colS().toList();
@@ -1360,7 +1352,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 第n列
 	 * 
 	 * @param n 列索引从0开始
-	 * @return
+	 * @return AffectedArea
 	 */
 	public Optional<AffectedArea> colOpt(final int n) {
 		return Optional.ofNullable(0 <= n && n < this.nrows() ? n : null)
@@ -1371,7 +1363,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 第n列
 	 * 
 	 * @param n 列索引从0开始
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea col(final int n) {
 		return this.colOpt(n).orElse(null);
@@ -1408,7 +1400,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 区域最后n项目
 	 * 
 	 * @param n 区域长度
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea left(final int n) {
 		return this.ncols(n);
@@ -1427,7 +1419,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 区域最后n项目
 	 * 
 	 * @param n 区域长度
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea right(final int n) {
 		final var i = Math.max(0, this.ncols() - 1 - n);
@@ -1492,7 +1484,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 区域最后n项目
 	 * 
 	 * @param n 区域长度
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea last(final int n) {
 		final var i = Math.max(0, this.nrows() - 1 - n);
@@ -1503,7 +1495,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * 区域最后n项目
 	 * 
 	 * @param n 区域长度
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea bottom(final int n) {
 		return this.last(n);
@@ -1639,7 +1631,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 单元格流序列（行顺序）
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public Stream<Cell> cellS() {
 		return Stream.iterate(0, i -> i + 1).limit(this.nrows())
@@ -1650,7 +1642,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 行顺序的一维数组 <br>
 	 * 
-	 * @return
+	 * @return Cell一维数组
 	 */
 	public Cell[] toArray() {
 		return this.cellS().toArray(Cell[]::new);
@@ -1659,7 +1651,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 行顺序的二维数组<br>
 	 * 
-	 * @return
+	 * @return Cell二维数组
 	 */
 	public Cell[][] toArray2() {
 		return this.rowS().map(AffectedArea::toArray).toArray(Cell[][]::new);
@@ -1669,15 +1661,16 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 单元格流序列（行顺序）
 	 * 
-	 * @return
+	 * @return Cell 列表
 	 */
 	public List<Cell> cells() {
 		return this.cellS().toList();
 	}
 
 	/**
+	 * 数据保存（excel.save)的别名
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public AffectedArea save() {
 		this.excel.save();
@@ -1713,7 +1706,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 属性清空
 	 * 
-	 * @return
+	 * @return AffectedArea
 	 */
 	public synchronized AffectedArea clear() {
 		this.pcs = null;
