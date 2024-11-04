@@ -139,15 +139,14 @@ public class WriteFileTest {
 					}).ptitle(RED).pbottom(RED).withTransaction(aa -> { // 右侧margin公式写入,aa:AffectedArea的缩写
 						final var right = aa.right(); // 提取右侧
 
-						// subtotal 的公式写入
-						right.hshift(1).skipRows(1).background(YELLOW).rowS() // 剔除第一行的表头
-								.forEach(subtotal -> { // 水平方向上的小计
-									final var line = subtotal.hshe(-5, 4); // 水平行(向左移动5个位置,扩展4个位置)
-									final var formula = "sum(%s)".formatted(line); // 水平的求和公式
-									subtotal.setCellFormula(formula).paintBottom(RED, BorderStyle.DASH_DOT).pleft(RED);
-									println(subtotal, subtotal.hshe(-5, 4), formula);
-								});
 						right.ltAa().hshift(1).set("H-SUBTOTAL").ptitle(RED); // 写入表头h-subtotal
+						// 表体数据:subtotal的公式写入:剔除第一行的表头（其余涂成黄色）
+						right.hshift(1).skipRows(1).background(YELLOW).rowS().forEach(subtotal -> { // 水平方向上的小计
+							final var line = subtotal.hshe(-5, 4); // 水平行(向左移动5个位置,扩展4个位置)
+							final var formula = "sum(%s)".formatted(line); // 水平的求和公式
+							subtotal.setCellFormula(formula).paintBottom(RED, BorderStyle.DASH_DOT).pleft(RED);
+							println(subtotal, subtotal.hshe(-5, 4), formula);
+						}); // forEach
 
 						// 演示一个较为复杂的数据选区的操作：right为第五列E列：（此处行列坐标采用的是AffectedArea内部的坐标定位）而非绝对的sheet中的坐标。
 						// 选区的水平复制:right（列）E：hshift(-2) 变为：C列(-2步即向左经过(E,D)->C) right:变为C列
