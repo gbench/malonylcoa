@@ -268,7 +268,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 相对向定位<br>
 	 * 
-	 * this.cell(0,0)表示AA的基点单元格 <br>
+	 * this.cell(0,0)表示AA的基点单元格(ltCell) <br>
 	 * this.cell(0,1)表示AA的基点单元格的右侧第一个单元格 <br>
 	 * this.cell(1,0)表示AA的基点单元格的下侧第一个单元格 <br>
 	 * this.cell(1,1)表示AA的基点单元格的右下第一个单元格 <br>
@@ -378,27 +378,46 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 右下角的 偏移位置。 <br>
+	 * 右下角单元格
+	 * 
+	 * @return
+	 */
+	public Cell rbCell() {
+		return this.rbCellOpt().orElse(null);
+	}
+
+	/**
+	 * 右下角单元格
+	 * 
+	 * @return
+	 */
+	public Optional<Cell> rbCellOpt() {
+		return Optional.ofNullable(this.cell(this.nrows() - 1, this.ncols() - 1));
+	}
+
+	/**
+	 * 右下角(RB)的 偏移位置。 <br>
 	 * offset(0,0) 为 区域的右下角的cell
 	 * 
-	 * @param nrows 行偏移数量
-	 * @param ncols 列偏移数量
-	 * @return 右下角的 偏移位置
+	 * @param nrows 行偏移数量大于等于0的整数
+	 * @param ncols 列偏移数量大于等于0的整数
+	 * @return 右下角RB的偏移位置
 	 */
 	public Optional<Cell> offsetOpt(final int nrows, final int ncols) {
-		return Optional.ofNullable(this.ltCell).map(cell -> {
-			final int irow = this.ibottom() + nrows; // 目标行索引
-			final int icol = this.iright() + ncols; // 目标列索引
-			return this.excel.getOrCreateCell(cell.getSheet(), irow, icol); //
+		return this.rbCellOpt().map(cell -> {
+			final var irow = cell.getRowIndex() + nrows; // 目标行索引
+			final var icol = cell.getColumnIndex() + ncols; // 目标列索引
+			final var sheet = cell.getSheet(); // 单元格所在sheet
+			return this.excel.getOrCreateCell(sheet, irow, icol); // 提取单元格
 		}); // Optional
 	}
 
 	/**
-	 * 右下角的 偏移位置
+	 * 右下角(RB)的 偏移位置
 	 * 
-	 * @param offset_x 行偏移
-	 * @param offset_y 列偏移
-	 * @return 右下角的 偏移位置
+	 * @param offset_x 行偏移,从0开始
+	 * @param offset_y 列偏移,从0开始
+	 * @return 右下角的偏移位置
 	 */
 	public Cell offset(final int offset_x, final int offset_y) {
 		return this.offsetOpt(offset_x, offset_y).orElse(null);
@@ -1377,12 +1396,86 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return
+	 */
+	public AffectedArea left(final int n) {
+		return this.ncols(n);
+	}
+
+	/**
 	 * 区域右侧
 	 * 
 	 * @return AffectedArea
 	 */
 	public AffectedArea right() {
 		return this.col(this.ncols() - 1);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return
+	 */
+	public AffectedArea right(final int n) {
+		final var i = Math.max(0, this.ncols() - 1 - n);
+		return this.create(this.cell(0, i), this.nrows(), n);
+	}
+
+	/**
+	 * 区域前n项目长度
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea top(final int n) {
+		return this.head(n);
+	}
+
+	/**
+	 * 过滤掉指定头前的行数与列数<br>
+	 * 注意 skip(0,0) equals this 对象
+	 * 
+	 * @param m 过滤的头前行数，大于等于0的整数
+	 * @param n 过滤的头前列数，大于等于0的整数
+	 * @return AffectedArea
+	 */
+	public AffectedArea skip(final int m, final int n) {
+		return this.create(this.cell(m, n), this.nrows() - m, this.ncols() - n);
+	}
+
+	/**
+	 * 区域前n项目长度
+	 * 
+	 * @param n 区域长度
+	 * @return AffectedArea
+	 */
+	public AffectedArea head(final int n) {
+		return this.nrows(n);
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return
+	 */
+	public AffectedArea last(final int n) {
+		final var i = Math.max(0, this.nrows() - 1 - n);
+		return this.create(this.cell(i, 0), n, this.ncols());
+	}
+
+	/**
+	 * 区域最后n项目
+	 * 
+	 * @param n 区域长度
+	 * @return
+	 */
+	public AffectedArea bottom(final int n) {
+		return this.last(n);
 	}
 
 	/**
@@ -1628,8 +1721,10 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	@Override
 	public boolean equals(final Object obj) {
-		if (obj == this)
+		if (obj == this) {
 			return true;
+		}
+
 		if (obj instanceof AffectedArea aa) {
 			return Objects.equals(this.pcs, aa.pcs) && Objects.equals(this.pcs, aa.pcs)
 					&& Objects.equals(this.shape, aa.shape) && Objects.equals(this.excel, aa.excel);
