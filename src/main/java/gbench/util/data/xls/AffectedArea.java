@@ -1458,7 +1458,7 @@ public class AffectedArea implements Iterable<Cell> {
 			return Collections.emptyList();
 		} else {
 			final var n = flag ? this.nrows() : this.ncols();
-			final var ps = Stream.of(points).distinct().filter(e -> e <= n).toList();
+			final var ps = Stream.of(points).filter(e -> e <= n).distinct().sorted().collect(Collectors.toList());
 
 			if (ps.get(0) != 0) { // 加入首项0
 				ps.addFirst(0);

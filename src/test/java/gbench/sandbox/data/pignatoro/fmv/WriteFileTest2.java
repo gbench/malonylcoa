@@ -41,7 +41,7 @@ public class WriteFileTest2 {
 			final var cs = new IndexedColors[] { IndexedColors.GREEN, IndexedColors.RED, IndexedColors.BLUE,
 					IndexedColors.YELLOW, IndexedColors.CORAL };
 
-			for (var s : aa.splits(false, 2, 4)) {
+			for (var s : aa.splits(true, 4,2,8, 4)) {
 				s.set(i).background(cs[i]);
 				i++;
 			}
