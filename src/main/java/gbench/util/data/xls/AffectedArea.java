@@ -3,8 +3,8 @@ package gbench.util.data.xls;
 import static gbench.util.data.xls.DataMatrix.xlsn;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -27,6 +27,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 
 import gbench.util.data.xls.SimpleExcel.BorderName;
 import gbench.util.lisp.DFrame;
+import gbench.util.lisp.IRecord;
 import gbench.util.lisp.Tuple2;
 import gbench.util.type.Pack;
 import gbench.util.type.Types;
@@ -1453,9 +1454,20 @@ public class AffectedArea implements Iterable<Cell> {
 	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
 	 * @return
 	 */
+	public Stream<AffectedArea> splitS(final Boolean flag, final Integer... points) {
+		return this.splits(flag, points).stream();
+	}
+
+	/**
+	 * 空间切割
+	 * 
+	 * @param points 切分点, p0,p1,p2, ... <br>
+	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
+	 * @return
+	 */
 	public List<AffectedArea> splits(final Boolean flag, final Integer... points) {
 		if (points.length < 1) {
-			return Collections.emptyList();
+			return Arrays.asList(this);
 		} else {
 			final var n = flag ? this.nrows() : this.ncols();
 			final var ps = Stream.of(points).filter(e -> e <= n).distinct().sorted().collect(Collectors.toList());
@@ -1523,16 +1535,19 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 片段
 	 */
 	public AffectedArea segment(final Integer start, final Integer end, final Boolean flag) {
+		if (null == start || null == end) {
+			return null;
+		}
+
 		final var nrows = this.nrows(); // 行数
 		final var ncols = this.ncols(); // 列数
 		final var i = Math.min(start, end); // 开始索引
 		final var j = Math.max(start, end); // 结束索引
+		var size = j - i; // 片段尺寸
 
-		if (i < 0 || j < 0) { // 起止索引无效
+		if (i < 0 || j < 0 || size <= 0) { // 起止索引无效
 			return null;
 		}
-
-		var size = j - i; // 片段尺寸
 
 		if (Optional.ofNullable(flag).orElse(false)) { // 按照行切分
 
@@ -1568,6 +1583,28 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public <T> Stream<T> stream(final Function<? super Cell, T> mapper) {
 		return this.cellS().map(mapper);
+	}
+
+	/**
+	 * 数据矩阵
+	 * 
+	 * @param <T>    元素类型
+	 * @param mapper 值变换函数 cell-&gt;
+	 * @return 数据值
+	 */
+	public <T> DataMatrix<T> dmx(final Function<? super Cell, T> mapper) {
+		return this.stream(mapper).collect(DataMatrix.dmxclc(this.ncols()));
+	}
+
+	/**
+	 * 数据矩阵
+	 * 
+	 * @param <T>    元素类型
+	 * @param mapper 值变换函数 cell-&gt;
+	 * @return 数据值
+	 */
+	public <T> DFrame dfm(final Function<Cell[], IRecord> mapper) {
+		return this.rowS().map(e -> mapper.apply(e.toArray())).collect(DFrame.dfmclc);
 	}
 
 	/**
