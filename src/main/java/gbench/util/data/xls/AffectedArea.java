@@ -578,6 +578,15 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * ncols别名
+	 * 
+	 * @return 宽度
+	 */
+	public int width() {
+		return this.ncols();
+	}
+
+	/**
 	 * nrows 别名
 	 * 
 	 * @return 高度
@@ -596,12 +605,13 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * ncols别名
+	 * 返回一个高度为nrows的宽度不变的AffectedArea
 	 * 
-	 * @return 宽度
+	 * @param nrows 缩放后的行数量
+	 * @return AffectedArea
 	 */
-	public int width() {
-		return this.ncols();
+	public AffectedArea nrows(final int nrows) {
+		return this.reshape(nrows, null);
 	}
 
 	/**
@@ -611,16 +621,6 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public int ncols() {
 		return this.shape._2;
-	}
-
-	/**
-	 * 返回一个高度为nrows的宽度不变的AffectedArea
-	 * 
-	 * @param nrows 缩放后的行数量
-	 * @return AffectedArea
-	 */
-	public AffectedArea nrows(final int nrows) {
-		return this.reshape(nrows, null);
 	}
 
 	/**
@@ -940,6 +940,34 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 写入excel (有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 
+	 * @param <T>     元素类型
+	 * @param address 起始位置地址(全SHEET绝对地址
+	 * @param datas   数据内容
+	 * @return AffectedArea
+	 */
+	public <T> AffectedArea writeTable(final String address, final DataMatrix<T> datas) {
+		this.excel.write(address, datas);
+		return this.excel.getAffectedArea();
+	}
+
+	/**
+	 * 写入excel (有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 
+	 * @param <T>     元素类型
+	 * @param address 起始位置地址(全SHEET绝对地址
+	 * @param datas   数据内容
+	 * @return AffectedArea
+	 */
+	public <T> AffectedArea writeTable(final String address, final DFrame datas) {
+		this.excel.write(address, datas);
+		return this.excel.getAffectedArea();
+	}
+
+	/**
 	 * 书写一行(writeLine的别名) <br>
 	 * 写入excel (不带有表头的书写格式) <br>
 	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
@@ -964,7 +992,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param line    数据内容
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
-	public final <T> AffectedArea writeLine(final String address, Iterable<T> line) {
+	public <T> AffectedArea writeLine(final String address, Iterable<T> line) {
 		return this.writeLine(address, Types.itr2array(line));
 	}
 
@@ -993,26 +1021,13 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @param n      书写行长度
 	 * @return AffectedArea
 	 */
-	public final <T> AffectedArea writeLine(final BiConsumer<AffectedArea, Integer> action, final int n) {
+	public <T> AffectedArea writeLine(final BiConsumer<AffectedArea, Integer> action, final int n) {
 		final var point = this.writePoint();
 		for (var i = 0; i < n; i++) {
 			final var p = point.hshift(i); // 水平平移
 			action.accept(p, i);
 		}
 		return this.writePoint().extend(0, n - 1); // n-1 表示包含写入点在内的n个点
-	}
-
-	/**
-	 * 保持origin(ltCell)不变，重新设置区域的行数(height)与列数(width)
-	 * 
-	 * @param nrows 缩放后的行数量
-	 * @param ncols 缩放后的列数量
-	 * @return AffectedArea
-	 */
-	public AffectedArea reshape(final Integer nrows, final Integer ncols) {
-		final var new_nrows = Optional.ofNullable(nrows == null || nrows < 1 ? null : nrows).orElse(this.nrows());
-		final var new_ncols = Optional.ofNullable(ncols == null || ncols < 1 ? null : ncols).orElse(this.ncols());
-		return this.create(this.origin(), new_nrows, new_ncols);
 	}
 
 	/**
@@ -1070,31 +1085,16 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
-	 * 写入excel (有表头的书写格式) <br>
-	 * 公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 保持origin(ltCell)不变，重新设置区域的行数(height)与列数(width)
 	 * 
-	 * @param <T>     元素类型
-	 * @param address 起始位置地址(全SHEET绝对地址
-	 * @param datas   数据内容
+	 * @param nrows 缩放后的行数量
+	 * @param ncols 缩放后的列数量
 	 * @return AffectedArea
 	 */
-	public <T> AffectedArea writeTable(final String address, final DataMatrix<T> datas) {
-		this.excel.write(address, datas);
-		return this.excel.getAffectedArea();
-	}
-
-	/**
-	 * 写入excel (有表头的书写格式) <br>
-	 * 公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
-	 * 
-	 * @param <T>     元素类型
-	 * @param address 起始位置地址(全SHEET绝对地址
-	 * @param datas   数据内容
-	 * @return AffectedArea
-	 */
-	public <T> AffectedArea writeTable(final String address, final DFrame datas) {
-		this.excel.write(address, datas);
-		return this.excel.getAffectedArea();
+	public AffectedArea reshape(final Integer nrows, final Integer ncols) {
+		final var new_nrows = Optional.ofNullable(nrows == null || nrows < 1 ? null : nrows).orElse(this.nrows());
+		final var new_ncols = Optional.ofNullable(ncols == null || ncols < 1 ? null : ncols).orElse(this.ncols());
+		return this.create(this.origin(), new_nrows, new_ncols);
 	}
 
 	/**
