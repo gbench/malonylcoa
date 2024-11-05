@@ -3,9 +3,8 @@ package gbench.util.data.xls;
 import static gbench.util.data.xls.DataMatrix.xlsn;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -1456,22 +1455,22 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public List<AffectedArea> splits(final Boolean flag, final Integer... points) {
 		if (points.length < 1) {
-			return Arrays.asList();
+			return Collections.emptyList();
 		} else {
-			final var ps = new ArrayList<>(Arrays.asList(points));
-			if (ps.get(0) != 0) {
+			final var n = flag ? this.nrows() : this.ncols();
+			final var ps = Stream.of(points).distinct().filter(e -> e <= n).toList();
+
+			if (ps.get(0) != 0) { // 加入首项0
 				ps.addFirst(0);
 			}
 
-			final var nrows = this.nrows();
-			if (ps.getLast() != nrows) {
-				ps.addLast(nrows);
+			if (ps.getLast() != n) { // 加入尾项n
+				ps.addLast(n);
 			}
 
-			final var pp = ps.toArray(Integer[]::new);
 			final List<AffectedArea> list = new LinkedList<AffectedArea>();
-			for (int i = 0; i < pp.length - 1; i++) { // 数据分割
-				final var seg = this.segment(pp[i], pp[i + 1], flag);
+			for (int i = 0; i < ps.size() - 1; i++) { // 数据分割
+				final var seg = this.segment(ps.get(i), ps.get(i + 1), flag);
 				if (seg == null) {
 					break;
 				}
@@ -1490,7 +1489,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return
 	 */
 	public boolean contains(final int i, final int j) {
-		return i < this.nrows() && j < this.nrows();
+		return i < this.nrows() && j < this.ncols();
 	}
 
 	/**
@@ -1524,6 +1523,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 片段
 	 */
 	public AffectedArea segment(final Integer start, final Integer end, final Boolean flag) {
+		final var nrows = this.nrows(); // 行数
+		final var ncols = this.ncols(); // 列数
 		final var i = Math.min(start, end); // 开始索引
 		final var j = Math.max(start, end); // 结束索引
 
@@ -1534,21 +1535,27 @@ public class AffectedArea implements Iterable<Cell> {
 		var size = j - i; // 片段尺寸
 
 		if (Optional.ofNullable(flag).orElse(false)) { // 按照行切分
-			if (i >= this.nrows()) { // 行索引无效
+
+			if (i >= nrows) { // 行索引无效
 				return null;
 			}
-			if (i + size > this.nrows()) {
-				size = this.nrows() - i;
+
+			if (i + size > nrows) {
+				size = nrows - i;
 			}
-			return this.create(this.cell(i, 0), size, this.ncols());
+
+			return this.create(this.cell(i, 0), size, ncols);
 		} else { // 按照列进行分割
-			if (i >= this.ncols()) { // 列索引无效
+
+			if (i >= ncols) { // 列索引无效
 				return null;
 			}
-			if (i + size > this.ncols()) {
-				size = this.ncols() - i;
+
+			if (i + size > ncols) {
+				size = ncols - i;
 			}
-			return this.create(this.cell(0, i), this.nrows(), size);
+
+			return this.create(this.cell(0, i), nrows, size);
 		} // if
 	}
 
