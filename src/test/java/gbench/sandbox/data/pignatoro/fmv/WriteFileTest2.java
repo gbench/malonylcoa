@@ -59,7 +59,7 @@ public class WriteFileTest2 {
 		final var excel = SimpleExcel.of(datafile);
 		println(excel.select("INCOME_STATEMENT3!B14:E41").dmx());
 		println("---------------------------------------------------------");
-		println(excel.select("INCOME_STATEMENT3!B14:E41").dfm());
+		println(excel.select("INCOME_STATEMENT3!B14:E41").dfm(null, e -> "'%s:%s'".formatted(e.getCellType(), e)));
 	}
 
 	/**

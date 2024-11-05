@@ -1456,7 +1456,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 
 	 * @param nameline 名称行‘Sheet1!C2:D3’ 或是 ‘C2:D3’ 这样的字符串;<br>
 	 *                 需要注意对于nameline为:'A1'这样的名称长会被视为'A1:A1'的单个单元格进行处理
-	 * @return 名称转rdf, 回结果会保证 LT，小于 RB； F1:B10, 会被解释为 B1:F10。 
+	 * @return 名称转rdf, 回结果会保证 LT，小于 RB； F1:B10, 会被解释为 B1:F10。
 	 */
 	public static RangeDef name2rdf(final String nameline) {
 		final String pattern = "(([A-Z]+)\\s*(\\d+))(\\s*:\\s*(([A-Z]+)\\s*(\\d+)))?";
@@ -2124,6 +2124,22 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			} // for
 			return lines.stream();
 		}); // of
+	}
+
+	/**
+	 * 生成一个默认的键名蓄力
+	 * 
+	 * @param n 键名序列长度，大于等于1的正数,1:[A],2:[A,B];3:[A,B,C]
+	 * @return 指定长度的XLS的命名序列
+	 */
+	public static String[] xlsns(final int n) {
+		if (n < 0) { // 无效长度
+			return null;
+		} else { // 键名序列长度
+			final var keys = Stream.iterate(0, i -> i + 1).limit(n) // 提取指定长度序列
+					.map(DataMatrix::xlsn).toArray(String[]::new);
+			return keys;
+		} // if
 	}
 
 	/**

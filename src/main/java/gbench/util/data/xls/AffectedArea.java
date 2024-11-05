@@ -1624,9 +1624,8 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> DFrame dfm(final Function<Cell[], IRecord> rowrb, final Function<Cell, Object> mapper) {
-		final var keys = Stream.iterate(0, i -> i + 1).limit(this.ncols()).map(DataMatrix::xlsn).toArray();
 		final Function<Cell[], IRecord> rb = Optional.ofNullable(rowrb)
-				.orElse((Function<Cell[], IRecord>) IRecord.rb(keys)::get);
+				.orElse((Function<Cell[], IRecord>) IRecord.rb(DataMatrix.xlsns(this.ncols()))::get);
 		final var dfm = this.rowS().map(e -> e.toArray()).map(rb).collect(DFrame.dfmclc);
 		return Optional.ofNullable(mapper).map(e -> dfm.fmap(r -> r.fmap(Function.class.cast(e)))).orElse(dfm);
 
