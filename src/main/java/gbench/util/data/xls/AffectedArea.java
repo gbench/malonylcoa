@@ -1588,6 +1588,15 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 数据矩阵
 	 * 
+	 * @return 数据值
+	 */
+	public <T> DataMatrix<Cell> dmx() {
+		return this.stream(e -> e).collect(DataMatrix.dmxclc(this.ncols()));
+	}
+
+	/**
+	 * 数据矩阵
+	 * 
 	 * @param <T>    元素类型
 	 * @param mapper 值变换函数 cell-&gt;
 	 * @return 数据值
@@ -1599,12 +1608,25 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 数据矩阵
 	 * 
+	 * @param <T> 元素类型
+	 * @return 数据值
+	 */
+	public <T> DFrame dfm() {
+		return this.dfm(null);
+	}
+
+	/**
+	 * 数据矩阵
+	 * 
 	 * @param <T>    元素类型
 	 * @param mapper 值变换函数 cell-&gt;
 	 * @return 数据值
 	 */
 	public <T> DFrame dfm(final Function<Cell[], IRecord> mapper) {
-		return this.rowS().map(e -> mapper.apply(e.toArray())).collect(DFrame.dfmclc);
+		final var keys = Stream.iterate(0, i -> i + 1).limit(this.ncols()).map(DataMatrix::xlsn).toArray();
+		final Function<Cell[], IRecord> rb = Optional.ofNullable(mapper)
+				.orElse((Function<Cell[], IRecord>) IRecord.rb(keys)::get);
+		return this.rowS().map(e -> e.toArray()).map(rb).collect(DFrame.dfmclc);
 	}
 
 	/**

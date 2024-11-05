@@ -52,6 +52,17 @@ public class WriteFileTest2 {
 	}
 
 	/**
+	 * quz
+	 */
+	@Test
+	public void quz() {
+		final var excel = SimpleExcel.of(datafile);
+		println(excel.select("INCOME_STATEMENT3!B14:E41").dmx());
+		println("---------------------------------------------------------");
+		println(excel.select("INCOME_STATEMENT3!B14:E41").dfm());
+	}
+
+	/**
 	 * 数据源文件
 	 */
 	final String outhome = "E:/slicee/temp/malonylcoa/test/data/excel/%s"; // 输出文件路径
