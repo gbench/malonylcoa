@@ -1710,6 +1710,16 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 格式喷涂
 	 * 
+	 * @param pstyle 单元格式样
+	 * @return AffectedArea
+	 */
+	public AffectedArea paint() {
+		return this.paint(this.pcs);
+	}
+
+	/**
+	 * 格式喷涂
+	 * 
 	 * @param newstyle 单元格式样
 	 * @return AffectedArea
 	 */
@@ -1733,16 +1743,6 @@ public class AffectedArea implements Iterable<Cell> {
 	public AffectedArea paint(final Pack<CellStyle> pcs) {
 		Optional.ofNullable(pcs).ifPresent(p -> p.evaluate(this::paint));
 		return this;
-	}
-
-	/**
-	 * 格式喷涂
-	 * 
-	 * @param pstyle 单元格式样
-	 * @return AffectedArea
-	 */
-	public AffectedArea paint() {
-		return this.paint(this.pcs);
 	}
 
 	/**
