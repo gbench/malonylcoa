@@ -2,6 +2,11 @@ package gbench.sandbox.data.pignatoro.fmv;
 
 import static gbench.global.Globals.WS_HOME;
 import static gbench.util.io.Output.println;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.jupiter.api.Test;
 
@@ -52,14 +57,39 @@ public class WriteFileTest2 {
 	}
 
 	/**
-	 * quz
+	 * 数据读取测试
 	 */
 	@Test
 	public void quz() {
-		final var excel = SimpleExcel.of(datafile);
-		println(excel.select("INCOME_STATEMENT3!B14:E41").dmx());
-		println("---------------------------------------------------------");
-		println(excel.select("INCOME_STATEMENT3!B14:E41").dfm(null, e -> "'%s:%s'".formatted(e.getCellType(), e)));
+		final var draftfile = outhome.formatted("wft2-quz.xlsx"); // 底稿文件
+		final var stmtname = "INCOME_STATEMENT3!B14:E41"; // 利润表名位置
+		final var exists_flag = Files.exists(Path.of(draftfile)); // 底稿是否已将存在
+		final var dataexcel = SimpleExcel.of(exists_flag ? draftfile : datafile); // 数据源表
+
+		try (final var draftexcel = SimpleExcel.of(draftfile)) { // 写出excel
+			if (!exists_flag) { // 如果outfile不存在则从dataexcel中拷贝数据
+				draftexcel.select("INCOME_STATEMENT3!B13") // 注意这里的的选取指定B13比stmtname的B14提前一行
+						.writeLines(dataexcel.select(stmtname).rows()); // 拷贝datafile数据数据到out
+			} // if
+			final var datadmx = dataexcel.select(stmtname).dmx(); // 读取数据表-利润表
+			final var draftdmx = draftexcel.select(stmtname).dmx(); // 写入表
+
+			println("DMX", datadmx.mutate(mx -> { // 数据处理
+				final var ai = new AtomicInteger(0);
+				mx.col(0).forEach(cell -> { // 提取第一列
+					final var value = "*%s*".formatted(cell); // 首列加入提醒标记
+					draftdmx.get(ai.getAndIncrement(), 0).setCellValue(value);
+				});
+				return mx;
+			}));
+
+			println("---------------------------------------------------------");
+
+			println("DFM", dataexcel.select("INCOME_STATEMENT3!B14:E41").dfm(null, //
+					e -> "'%s:%s'".formatted(e.getCellType(), e)));
+
+			draftexcel.save(); // 底稿保存
+		}
 	}
 
 	/**

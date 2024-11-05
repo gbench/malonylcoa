@@ -118,6 +118,30 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 数值
+	 * 
+	 * @param i 行索引从0开始
+	 * @param j 列索引从0开始
+	 * @return T值
+	 */
+	public T get(final int i, final int j) {
+		return cells[i][j];
+	}
+
+	/**
+	 * 数值
+	 * 
+	 * @param i     行索引从0开始
+	 * @param j     列索引从0开始
+	 * @param value 数值对象
+	 * @return T值
+	 */
+	public DataMatrix<T> set(final int i, final int j, final T value) {
+		cells[i][j] = value;
+		return this;
+	}
+
+	/**
 	 * 矩阵的宽度 ，列数
 	 *
 	 * @return 矩阵的宽度 ，列数
@@ -437,6 +461,22 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 设置单元格
+	 *
+	 * @param i     行索引
+	 * @param j     列索引
+	 * @param value 数据值
+	 * @return 矩阵对象本身
+	 */
+	public DataMatrix<T> setCell(final int i, final int j, final T value) {
+		final Tuple2<Integer, Integer> shape = this.shape();
+		if (i < shape._1 && j < shape._2) {
+			this.cells[i][j] = value;
+		}
+		return this;
+	}
+
+	/**
 	 * 设置行
 	 *
 	 * @param idx 行索引 从 0开始
@@ -459,6 +499,36 @@ public class DataMatrix<T> implements Iterable<T[]> {
 				} // for
 			} // if
 		} // if
+		return this;
+	}
+
+	/**
+	 * 行操作
+	 *
+	 * @param i      行索引从 0开始
+	 * @param mapper 行操作 ([i:元素索引从0开始,t])->[t]
+	 * @return 矩阵对象本身
+	 */
+	public DataMatrix<T> withRowS(final int i, final Function<Stream<Tuple2<Integer, T>>, Stream<T>> mapper) {
+		this.rowOpt(i).ifPresent(e -> {
+			final List<T> _e = mapper.apply(e.stream().map(Tuple2.snb(0))).collect(Collectors.toList());
+			this.setRow(i, _e);
+		});
+		return this;
+	}
+
+	/**
+	 * 行操作
+	 *
+	 * @param i      行索引从 0开始
+	 * @param action 行操作 [t]->{}
+	 * @return 矩阵对象本身
+	 */
+	public DataMatrix<T> withRow(final int i, final Consumer<List<T>> action) {
+		this.rowOpt(i).ifPresent(e -> {
+			action.accept(e);
+			this.setRow(i, e);
+		});
 		return this;
 	}
 
@@ -497,52 +567,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public DataMatrix<T> setColumn(final String key, final Iterable<T> col) {
 		return this.setColumn(this.indexOf(key), col);
-	}
-
-	/**
-	 * 设置单元格
-	 *
-	 * @param i     行索引
-	 * @param j     列索引
-	 * @param value 数据值
-	 * @return 矩阵对象本身
-	 */
-	public DataMatrix<T> setCell(final int i, final int j, final T value) {
-		final Tuple2<Integer, Integer> shape = this.shape();
-		if (i < shape._1 && j < shape._2) {
-			this.cells[i][j] = value;
-		}
-		return this;
-	}
-
-	/**
-	 * 行操作
-	 *
-	 * @param i      行索引从 0开始
-	 * @param mapper 行操作 ([i:元素索引从0开始,t])->[t]
-	 * @return 矩阵对象本身
-	 */
-	public DataMatrix<T> withRowS(final int i, final Function<Stream<Tuple2<Integer, T>>, Stream<T>> mapper) {
-		this.rowOpt(i).ifPresent(e -> {
-			final List<T> _e = mapper.apply(e.stream().map(Tuple2.snb(0))).collect(Collectors.toList());
-			this.setRow(i, _e);
-		});
-		return this;
-	}
-
-	/**
-	 * 行操作
-	 *
-	 * @param i      行索引从 0开始
-	 * @param action 行操作 [t]->{}
-	 * @return 矩阵对象本身
-	 */
-	public DataMatrix<T> withRow(final int i, final Consumer<List<T>> action) {
-		this.rowOpt(i).ifPresent(e -> {
-			action.accept(e);
-			this.setRow(i, e);
-		});
-		return this;
 	}
 
 	/**
@@ -609,18 +633,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 格式化输出<br>
-	 * <br>
-	 * 垂直方向:第一维度 i 增长方向 从上到下 <br>
-	 * 水平方向:第二维度 j 增长方向 从左到右 <br>
-	 *
-	 * @return 格式化输出
-	 */
-	public String toString() {
-		return toString("\t", "\n", null);
-	}
-
-	/**
 	 * 矩阵转置
 	 *
 	 * @return 矩阵转置
@@ -639,62 +651,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		final Integer n = shape(dd)._2();
 		final List<String> keys = intS(n).map(DataMatrix::index_to_excel_name).collect(Collectors.toList());
 		return new DataMatrix<T>(dd, keys);
-	}
-
-	/**
-	 * 格式化输出<br>
-	 * <br>
-	 * 垂直方向:第一维度 i 增长方向 从上到下 <br>
-	 * 水平方向:第二维度 j 增长方向 从左到右 <br>
-	 * 
-	 * @param cell_formatter 单元格格式化
-	 * @return 格式化输出
-	 */
-	public String toString(final Function<Object, String> cell_formatter) {
-		return toString("\t", "\n", cell_formatter);
-	}
-
-	/**
-	 * 矩阵格式化 <br>
-	 * <br>
-	 * 垂直方向:第一维度 i 增长方向 从上到下 <br>
-	 * 水平方向:第二维度 j 增长方向 从左到右 <br>
-	 *
-	 * @param ident          行内间隔
-	 * @param ln             行间间隔
-	 * @param cell_formatter 元素格式化
-	 * @return 格式化输出的字符串
-	 */
-	public String toString(final String ident, final String ln, final Function<Object, String> cell_formatter) {
-
-		final Function<Object, String> final_cell_formatter = cell_formatter == null ? e -> {
-			String line = "{0}";// 数据格式字符串
-			if (e instanceof Number)
-				line = (e instanceof Integer || e instanceof Long) ? "{0,number,#}" : "{0,number,0.##}";
-			else if (e instanceof Date) {
-				line = "{0,Date,yyy-MM-dd HH:mm:ss}";
-			}
-			return MessageFormat.format(line, e);
-		}// 默认的格式化
-				: cell_formatter;
-
-		if (cells == null || cells.length < 1 || cells[0] == null || cells[0].length < 1)
-			return "";
-		final StringBuilder buffer = new StringBuilder();
-		final String headline = String.join(ident, this.keys());
-		if (!headline.matches("\\s*"))
-			buffer.append(headline).append(ln);
-
-		// 按照维度自然顺序（从小打到):i->j给与展开格式化
-		for (T[] cell : cells) { // 第一维度
-			final int n = (cell != null && cell.length > 0) ? cell.length : 0;
-			for (int j = 0; j < n; j++) { // 第二维度
-				buffer.append(final_cell_formatter.apply(cell[j])).append(ident);
-			} // for j 水平方向
-			buffer.append(ln);
-		} // for i 垂直方向
-
-		return buffer.toString(); // 返回格式化数据
 	}
 
 	/**
@@ -741,20 +697,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		for (int i = 0; i < this.height(); i++)
 			handler.accept(cells[i]);
 		return this;
-	}
-
-	/**
-	 * 矩阵乘法
-	 *
-	 * @param <U> 右矩阵元素类型
-	 * @param uu  右矩阵类型
-	 * @return [[dbl]]
-	 */
-	public <U> DataMatrix<Double> mmult(final DataMatrix<U> uu) {
-		return DataMatrix.mmult(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl),
-				(Double a, Double b) -> Optional.ofNullable(a)
-						.map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null),
-				Collectors.summingDouble(e -> e));
 	}
 
 	/**
@@ -860,6 +802,31 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 数据矩阵变换
+	 *
+	 * @param <U>    结果类型
+	 * @param mapper dmx->u
+	 * @return U类型
+	 */
+	public <U> U mutate(final Function<? super DataMatrix<T>, U> mapper) {
+		return mapper.apply(this);
+	}
+
+	/**
+	 * 矩阵乘法
+	 *
+	 * @param <U> 右矩阵元素类型
+	 * @param uu  右矩阵类型
+	 * @return [[dbl]]
+	 */
+	public <U> DataMatrix<Double> mmult(final DataMatrix<U> uu) {
+		return DataMatrix.mmult(this.corece(DataMatrix::todbl), uu.corece(DataMatrix::todbl),
+				(Double a, Double b) -> Optional.ofNullable(a)
+						.map(_a -> Optional.ofNullable(b).map(_b -> _a * _b).orElse(null)).orElse(null),
+				Collectors.summingDouble(e -> e));
+	}
+
+	/**
 	 * 复制当前对象
 	 *
 	 * @param <U>    结果类型
@@ -922,17 +889,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 数据矩阵变换
 	 *
 	 * @param <U>    结果类型
-	 * @param mapper dmx->u
-	 * @return U类型
-	 */
-	public <U> U mutate(final Function<? super DataMatrix<T>, U> mapper) {
-		return mapper.apply(this);
-	}
-
-	/**
-	 * 数据矩阵变换
-	 *
-	 * @param <U>    结果类型
 	 * @param mapper (kk,tt)->u
 	 * @return U类型
 	 */
@@ -949,6 +905,15 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public <U> U arrayOf(final Function<T[][], U> mapper) {
 		return this.arrayOf((kk, tt) -> mapper.apply(tt));
+	}
+
+	/**
+	 * 数组
+	 *
+	 * @return T[][] 数组
+	 */
+	public T[][] toArray() {
+		return this.data();
 	}
 
 	/**
@@ -1067,15 +1032,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 数组
-	 *
-	 * @return T[][] 数组
-	 */
-	public T[][] toArray() {
-		return this.data();
-	}
-
-	/**
 	 * 复制当前对象
 	 *
 	 * @return 矩阵对象[[t]]
@@ -1088,6 +1044,85 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	@Override
 	public Iterator<T[]> iterator() {
 		return Arrays.asList(this.cells).iterator();
+	}
+
+	/**
+	 * 一个维度的数据流化
+	 * 
+	 * @param <U>    结果类型
+	 * @param mapper t-&gt;u
+	 * @return U 类型的数据流
+	 */
+	public <U> Stream<U> stream(final Function<T, U> mapper) {
+		return StreamSupport.stream(this.spliterator(), false).flatMap(Arrays::stream).map(mapper);
+	}
+
+	/**
+	 * 格式化输出<br>
+	 * <br>
+	 * 垂直方向:第一维度 i 增长方向 从上到下 <br>
+	 * 水平方向:第二维度 j 增长方向 从左到右 <br>
+	 *
+	 * @return 格式化输出
+	 */
+	public String toString() {
+		return toString("\t", "\n", null);
+	}
+
+	/**
+	 * 格式化输出<br>
+	 * <br>
+	 * 垂直方向:第一维度 i 增长方向 从上到下 <br>
+	 * 水平方向:第二维度 j 增长方向 从左到右 <br>
+	 * 
+	 * @param cell_formatter 单元格格式化
+	 * @return 格式化输出
+	 */
+	public String toString(final Function<Object, String> cell_formatter) {
+		return toString("\t", "\n", cell_formatter);
+	}
+
+	/**
+	 * 矩阵格式化 <br>
+	 * <br>
+	 * 垂直方向:第一维度 i 增长方向 从上到下 <br>
+	 * 水平方向:第二维度 j 增长方向 从左到右 <br>
+	 *
+	 * @param ident          行内间隔
+	 * @param ln             行间间隔
+	 * @param cell_formatter 元素格式化
+	 * @return 格式化输出的字符串
+	 */
+	public String toString(final String ident, final String ln, final Function<Object, String> cell_formatter) {
+
+		final Function<Object, String> final_cell_formatter = cell_formatter == null ? e -> {
+			String line = "{0}";// 数据格式字符串
+			if (e instanceof Number)
+				line = (e instanceof Integer || e instanceof Long) ? "{0,number,#}" : "{0,number,0.##}";
+			else if (e instanceof Date) {
+				line = "{0,Date,yyy-MM-dd HH:mm:ss}";
+			}
+			return MessageFormat.format(line, e);
+		}// 默认的格式化
+				: cell_formatter;
+
+		if (cells == null || cells.length < 1 || cells[0] == null || cells[0].length < 1)
+			return "";
+		final StringBuilder buffer = new StringBuilder();
+		final String headline = String.join(ident, this.keys());
+		if (!headline.matches("\\s*"))
+			buffer.append(headline).append(ln);
+
+		// 按照维度自然顺序（从小打到):i->j给与展开格式化
+		for (T[] cell : cells) { // 第一维度
+			final int n = (cell != null && cell.length > 0) ? cell.length : 0;
+			for (int j = 0; j < n; j++) { // 第二维度
+				buffer.append(final_cell_formatter.apply(cell[j])).append(ident);
+			} // for j 水平方向
+			buffer.append(ln);
+		} // for i 垂直方向
+
+		return buffer.toString(); // 返回格式化数据
 	}
 
 	/**
@@ -1855,11 +1890,11 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 行数据转数组
 	 * 
 	 * @param <T>  行元素
-	 * @param <H>  行类型
+	 * @param <R>  行类型
 	 * @param rows 行数据
 	 * @return T类型的数组
 	 */
-	public static <T, H extends Iterable<T>> T[][] rows2aa(final Iterable<H> rows) {
+	public static <T, R extends Iterable<T>> T[][] rows2aa(final Iterable<R> rows) {
 		final T t = StreamSupport.stream(rows.spliterator(), false)
 				.flatMap(e -> StreamSupport.stream(e.spliterator(), false)).filter(Objects::nonNull).findFirst()
 				.orElse(null);

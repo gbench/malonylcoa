@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -890,6 +891,21 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public <T> AffectedArea writeLines(final T lines[][]) {
 		return this.writeLines(this.activeAddress(), lines);
+	}
+
+	/**
+	 * 写入excel (不带有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 
+	 * @param <T>   元素类型
+	 * @param lines 数据内容
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public <T> AffectedArea writeLines(final Iterable<? extends Iterable<?>> lines) {
+		final var _lines = StreamSupport.stream(lines.spliterator(), false) //
+				.map(line -> StreamSupport.stream(line.spliterator(), false).toArray()) //
+				.toArray(Object[][]::new);
+		return this.writeLines(this.activeAddress(), _lines);
 	}
 
 	/**
