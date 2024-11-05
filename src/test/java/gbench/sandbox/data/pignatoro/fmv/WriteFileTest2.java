@@ -57,31 +57,31 @@ public class WriteFileTest2 {
 	}
 
 	/**
-	 * 数据读取测试
+	 * 数据读取与书写测试
 	 */
 	@Test
 	public void quz() {
+		final var dataname = "INCOME_STATEMENT3!B14:E41"; // 利润表数据位置
 		final var draftfile = outhome.formatted("wft2-quz.xlsx"); // 底稿文件
-		final var stmtname = "INCOME_STATEMENT3!B14:E41"; // 利润表名位置
-		final var exists_flag = Files.exists(Path.of(draftfile)); // 底稿是否已将存在
-		final var dataexcel = SimpleExcel.of(exists_flag ? draftfile : datafile); // 数据源表
+		final var draft_exists = Files.exists(Path.of(draftfile)); // 底稿是否已将存在(初次创建还是再次改写）
+		final var dataexcel = SimpleExcel.of(draft_exists ? draftfile : datafile); // 数据源表
 
 		try (final var draftexcel = SimpleExcel.of(draftfile)) { // 写出excel
-			if (!exists_flag) { // 如果outfile不存在则从dataexcel中拷贝数据
+			if (!draft_exists) { // 如果outfile不存在则从dataexcel中拷贝数据
 				draftexcel.select("INCOME_STATEMENT3!B13") // 注意这里的的选取指定B13比stmtname的B14提前一行
-						.writeLines(dataexcel.select(stmtname)); // 拷贝datafile数据数据到out
+						.writeLines(dataexcel.select(dataname)); // 拷贝datafile数据数据到out
 			} // if
-			final var datadmx = dataexcel.dmx(stmtname); // 读取数据表-利润表
-			final var draftdmx = draftexcel.dmx(stmtname); // 写入表
+			final var datadmx = dataexcel.dmx(dataname); // 读取数据表-利润表
+			final var draftdmx = draftexcel.dmx(dataname); // 写入表
 
 			println("DMX", datadmx.mutate(mx -> { // 数据处理
 				final var ai = new AtomicInteger(0);
 				mx.col(0).forEach(cell -> { // 提取第一列
 					final var value = "*%s*".formatted(cell); // 首列加入提醒标记
 					draftdmx.get(ai.getAndIncrement(), 0).setCellValue(value);
-				});
+				}); // forEach
 				return mx;
-			}));
+			})); // println
 
 			println("---------------------------------------------------------");
 
