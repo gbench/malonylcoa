@@ -1612,21 +1612,24 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 数据值
 	 */
 	public <T> DFrame dfm() {
-		return this.dfm(null);
+		return this.dfm(null, null);
 	}
 
 	/**
 	 * 数据矩阵
 	 * 
-	 * @param <T>    元素类型
-	 * @param mapper 值变换函数 cell-&gt;
+	 * @param <T>   元素类型
+	 * @param rowrb 值变换函数 cell-&gt;
 	 * @return 数据值
 	 */
-	public <T> DFrame dfm(final Function<Cell[], IRecord> mapper) {
+	@SuppressWarnings("unchecked")
+	public <T> DFrame dfm(final Function<Cell[], IRecord> rowrb, final Function<Cell, Object> mapper) {
 		final var keys = Stream.iterate(0, i -> i + 1).limit(this.ncols()).map(DataMatrix::xlsn).toArray();
-		final Function<Cell[], IRecord> rb = Optional.ofNullable(mapper)
+		final Function<Cell[], IRecord> rb = Optional.ofNullable(rowrb)
 				.orElse((Function<Cell[], IRecord>) IRecord.rb(keys)::get);
-		return this.rowS().map(e -> e.toArray()).map(rb).collect(DFrame.dfmclc);
+		final var dfm = this.rowS().map(e -> e.toArray()).map(rb).collect(DFrame.dfmclc);
+		return Optional.ofNullable(mapper).map(e -> dfm.fmap(r -> r.fmap(Function.class.cast(e)))).orElse(dfm);
+
 	}
 
 	/**
