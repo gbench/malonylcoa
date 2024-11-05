@@ -902,10 +902,23 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public <T> AffectedArea writeLines(final Iterable<? extends Iterable<?>> lines) {
-		final var _lines = StreamSupport.stream(lines.spliterator(), false) //
-				.map(line -> StreamSupport.stream(line.spliterator(), false).toArray()) //
-				.toArray(Object[][]::new);
-		return this.writeLines(this.activeAddress(), _lines);
+		return Optional.ofNullable(lines).map(lns -> StreamSupport.stream(lns.spliterator(), false)
+				.map(line -> Optional.ofNullable(line)
+						.map(ln -> StreamSupport.stream(ln.spliterator(), false).toArray()).orElse(new Object[0]))
+				.toArray(Object[][]::new)).map(lns -> this.writeLines(this.activeAddress(), lns)).orElse(null);
+
+	}
+
+	/**
+	 * 写入excel (不带有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
+	 * 
+	 * @param <T>     元素类型
+	 * @param linesAa 数据内容行
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public <T> AffectedArea writeLines(final AffectedArea linesAa) {
+		return Optional.ofNullable(linesAa).map(aa -> this.writeLines(aa.rows())).orElse(null);
 	}
 
 	/**

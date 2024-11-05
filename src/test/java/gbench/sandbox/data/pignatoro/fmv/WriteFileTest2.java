@@ -69,10 +69,10 @@ public class WriteFileTest2 {
 		try (final var draftexcel = SimpleExcel.of(draftfile)) { // 写出excel
 			if (!exists_flag) { // 如果outfile不存在则从dataexcel中拷贝数据
 				draftexcel.select("INCOME_STATEMENT3!B13") // 注意这里的的选取指定B13比stmtname的B14提前一行
-						.writeLines(dataexcel.select(stmtname).rows()); // 拷贝datafile数据数据到out
+						.writeLines(dataexcel.select(stmtname)); // 拷贝datafile数据数据到out
 			} // if
-			final var datadmx = dataexcel.select(stmtname).dmx(); // 读取数据表-利润表
-			final var draftdmx = draftexcel.select(stmtname).dmx(); // 写入表
+			final var datadmx = dataexcel.dmx(stmtname); // 读取数据表-利润表
+			final var draftdmx = draftexcel.dmx(stmtname); // 写入表
 
 			println("DMX", datadmx.mutate(mx -> { // 数据处理
 				final var ai = new AtomicInteger(0);
@@ -85,6 +85,7 @@ public class WriteFileTest2 {
 
 			println("---------------------------------------------------------");
 
+			// 变换数据内容 加入引号与数据类型
 			println("DFM", dataexcel.select("INCOME_STATEMENT3!B14:E41").dfm(null, //
 					e -> "'%s:%s'".formatted(e.getCellType(), e)));
 
