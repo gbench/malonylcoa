@@ -1775,7 +1775,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 				continue;
 			} else {
 				final var lh = line.length;
-				for (int j = j0; j <= Math.min(lh, j1); j++) {
+				for (int j = j0; j <= Math.min(lh - 1, j1); j++) {
 					cc[i - i0][j - j0] = line[j % shape._2];
 				} // for j
 			}
