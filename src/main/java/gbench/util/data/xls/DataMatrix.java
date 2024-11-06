@@ -1764,8 +1764,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return 子矩阵
 	 */
 	public static <U> U[][] submx(final U[][] cells, final int i0, final int j0, final int i1, final int j1) {
-		final int h = i1 - i0;
-		final int w = j1 - j0;
+		final int h = i1 - i0 + 1;
+		final int w = j1 - j0 + 1;
 		final Tuple2<Integer, Integer> shape = DataMatrix.shape(cells);
 		@SuppressWarnings("unchecked")
 		final U[][] cc = (U[][]) Array.newInstance(getGenericClass(cells), h, w);
