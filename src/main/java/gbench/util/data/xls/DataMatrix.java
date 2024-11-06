@@ -1047,6 +1047,15 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 一个维度的数据流化(行顺序）
+	 * 
+	 * @return T 类型的数据流
+	 */
+	public Stream<T> cellS() {
+		return this.stream(e -> e);
+	}
+
+	/**
 	 * 一个维度的数据流化
 	 * 
 	 * @param <U>    结果类型
@@ -1551,6 +1560,22 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 生成一个默认的键名蓄力
+	 * 
+	 * @param n 键名序列长度，大于等于1的正数,1:[A],2:[A,B];3:[A,B,C]
+	 * @return 指定长度的XLS的命名序列
+	 */
+	public static String[] xlsns(final int n) {
+		if (n < 0) { // 无效长度
+			return null;
+		} else { // 键名序列长度
+			final var keys = Stream.iterate(0, i -> i + 1).limit(n) // 提取指定长度序列
+					.map(DataMatrix::xlsn).toArray(String[]::new);
+			return keys;
+		} // if
+	}
+
+	/**
 	 * 列名称： 从0开始 0->A,1->B;2->C;....,25->Z,26->AA
 	 *
 	 * @param index 数字 从0开始映射
@@ -1731,6 +1756,20 @@ public class DataMatrix<T> implements Iterable<T[]> {
 								.collect(Collectors.toList())
 						: StreamSupport.stream(keys.spliterator(), false).collect(Collectors.toList()));
 		return dm;
+	}
+
+	/**
+	 * 生成函数（默认的excel风格表头）
+	 *
+	 * @param <T>   元素类型
+	 * @param datas 数据数组
+	 * @return 数据矩阵
+	 */
+	public static <T> DataMatrix<T> of(final T[][] datas) {
+		final var title = Optional.ofNullable(datas).map(e -> Stream.of(e).map(p -> p.length) //
+				.collect(Collectors.maxBy(Comparator.comparing(x -> x))).orElse(null)).map(DataMatrix::xlsns)
+				.map(Arrays::asList).orElse(null);
+		return Optional.ofNullable(datas).map(e -> new DataMatrix<T>(datas, title)).orElse(null);
 	}
 
 	/**
@@ -2159,22 +2198,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			} // for
 			return lines.stream();
 		}); // of
-	}
-
-	/**
-	 * 生成一个默认的键名蓄力
-	 * 
-	 * @param n 键名序列长度，大于等于1的正数,1:[A],2:[A,B];3:[A,B,C]
-	 * @return 指定长度的XLS的命名序列
-	 */
-	public static String[] xlsns(final int n) {
-		if (n < 0) { // 无效长度
-			return null;
-		} else { // 键名序列长度
-			final var keys = Stream.iterate(0, i -> i + 1).limit(n) // 提取指定长度序列
-					.map(DataMatrix::xlsn).toArray(String[]::new);
-			return keys;
-		} // if
 	}
 
 	/**

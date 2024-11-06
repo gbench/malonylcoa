@@ -1503,12 +1503,13 @@ public class AffectedArea implements Iterable<Cell> {
 	public DataMatrix<AffectedArea> splitX(final Integer[] ps, final Integer[] qs) {
 		final var aas = this.splitS(true, ps).map(row -> row.splits(false, qs).toArray(AffectedArea[]::new))
 				.toArray(AffectedArea[][]::new);
-		return new DataMatrix<>(aas);
+		return DataMatrix.of(aas);
 	}
 
 	/**
 	 * 空间切割
 	 * 
+	 * @param flag   切分方向，true：按照行方向进行切分, false:按照列方向进行切分
 	 * @param points 切分点, p0,p1,p2, ... <br>
 	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
 	 * @return
@@ -1520,6 +1521,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 空间切割
 	 * 
+	 * @param flag   切分方向，true：按照行方向进行切分, false:按照列方向进行切分
 	 * @param points 切分点, p0,p1,p2, ... <br>
 	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
 	 * @return
@@ -1531,6 +1533,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 空间切割
 	 * 
+	 * @param flag   切分方向，true：按照行方向进行切分, false:按照列方向进行切分
 	 * @param points 切分点, p0,p1,p2, ... <br>
 	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
 	 * @return

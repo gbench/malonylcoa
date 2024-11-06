@@ -5,6 +5,7 @@ import static gbench.util.io.Output.println;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -91,6 +92,29 @@ public class WriteFileTest2 {
 
 			draftexcel.save(); // 底稿保存
 		}
+	}
+
+	/**
+	 * 切分矩阵的演示
+	 */
+	@Test
+	public void qux() {
+		final var outfile = outhome.formatted("wft2-qux.xlsx");
+		try (final var excel = SimpleExcel.of(outfile)) {
+			final var mx = excel.select("A1:H20").splitX(Arrays.asList(2, 4), Arrays.asList(2, 4));
+			final var cs = new IndexedColors[] { IndexedColors.GREEN, IndexedColors.RED, IndexedColors.BLUE,
+					IndexedColors.YELLOW, IndexedColors.CORAL };
+			final var ai = new AtomicInteger();
+			mx.cellS().forEach(aa -> {
+				final var i = ai.getAndIncrement();
+				aa.background(cs[i % cs.length]);
+				aa.updateLine(false, Arrays.asList(i, aa));
+			});
+			println(mx.keys(),mx.shape());
+
+			excel.save();
+		}
+		println(outfile);
 	}
 
 	/**
