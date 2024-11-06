@@ -286,6 +286,16 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
+	 * 读取数据内容
+	 * 
+	 * @param nameline Excel 的 Range 名称,比如 'Sheet1!A1:B2'
+	 * @return 数据内容矩阵
+	 */
+	public DFrame dfm(final String nameline) {
+		return this.select(nameline).dfm();
+	}
+
+	/**
 	 * 自动定位数据位置 <br>
 	 * 读取指定sht 的最大可用状态
 	 * 

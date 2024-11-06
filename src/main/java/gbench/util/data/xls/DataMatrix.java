@@ -97,6 +97,30 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * MatrixBuilder 纠正构建器
+	 * 
+	 * @param 数据
+	 * @return
+	 */
+	public DataMatrix<T> mb(final T[][] data) {
+		return DataMatrix.of(data, this.keys());
+	}
+
+	/**
+	 * MatrixBuilder 纠正构建器
+	 * 
+	 * @param 数据
+	 * @return
+	 */
+	public DataMatrix<T> mb(final T[] data) {
+		return Optional.ofNullable(data).map(d -> {
+			@SuppressWarnings("unchecked")
+			final var dd = (T[][]) Array.newInstance(data.getClass().getComponentType(), 1, d.length);
+			return DataMatrix.of(dd, this.keys());
+		}).orElse(null);
+	}
+
+	/**
 	 * 初始化一个空矩阵（元素内容均为null)
 	 *
 	 * @param m         行数
@@ -238,6 +262,142 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 去掉最后一行元素的剩余部分
+	 * 
+	 * @return
+	 */
+	public T[][] initial() {
+		return this.initialOpt().orElse(null);
+	}
+
+	/**
+	 * 去掉最后一行元素的剩余部分
+	 * 
+	 * @return
+	 */
+	public DataMatrix<T> initialmx() {
+		return this.initialOpt().map(this::mb).orElse(null);
+	}
+
+	/**
+	 * 去掉最后一行元素的剩余部分
+	 * 
+	 * @return
+	 */
+	public Optional<T[][]> initialOpt() {
+		return Optional.ofNullable(this.cells)
+				.map(cs -> cs.length > 1 ? Arrays.copyOfRange(this.cells, 0, this.cells.length - 1) : null);
+	}
+
+	/**
+	 * 去掉首行元素的剩余部分
+	 * 
+	 * @return
+	 */
+	public T[][] tail() {
+		return this.tailOpt().orElse(null);
+	}
+
+	/**
+	 * 去掉首行元素的剩余部分
+	 * 
+	 * @return
+	 */
+	public DataMatrix<T> tailmx() {
+		return this.tailOpt().map(this::mb).orElse(null);
+	}
+
+	/**
+	 * 去掉首行元素的剩余部分
+	 * 
+	 * @return
+	 */
+	public Optional<T[][]> tailOpt() {
+		return Optional.ofNullable(this.cells)
+				.map(cs -> cs.length > 1 ? Arrays.copyOfRange(this.cells, 1, this.cells.length) : null);
+	}
+
+	/**
+	 * 首行元素
+	 * 
+	 * @return
+	 */
+	public T[] head() {
+		return this.headOpt().orElse(null);
+	}
+
+	/**
+	 * 首行元素
+	 * 
+	 * @return
+	 */
+	public DataMatrix<T> headmx() {
+		return this.headOpt().map(this::mb).orElse(null);
+	}
+
+	/**
+	 * 首行数据元素
+	 * 
+	 * @return
+	 */
+	public Optional<T[]> headOpt() {
+		return Optional.ofNullable(this.cells).map(cs -> cs.length > 0 ? cs[0] : null);
+	}
+
+	/**
+	 * 尾行数据元素
+	 * 
+	 * @return
+	 */
+	public T[] last() {
+		return this.lastOpt().orElse(null);
+	}
+
+	/**
+	 * 尾行数据元素
+	 * 
+	 * @return
+	 */
+	public DataMatrix<T> lastmx() {
+		return this.lastOpt().map(this::mb).orElse(null);
+	}
+
+	/**
+	 * 尾行元素
+	 * 
+	 * @return
+	 */
+	public Optional<T[]> lastOpt() {
+		return Optional.ofNullable(this.cells).map(cs -> cs.length > 0 ? cs[cs.length - 1] : null);
+	}
+
+	/**
+	 * 获得一个子矩阵
+	 * 
+	 * @param i 行开始坐标从0开始
+	 * @param j 列开始坐标从0开始
+	 * @param m 子矩阵的行长度
+	 * @param n 子矩阵的列长度
+	 * @return 子矩阵
+	 */
+	public DataMatrix<T> submx(final int i, final int j, final int m, final int n) {
+		final var h = this.height(); // 矩阵行数
+		final var w = this.width(); // 矩阵列数
+		@SuppressWarnings("unchecked")
+		final T[][] data = (T[][]) Array.newInstance(DataMatrix.getGenericClass(this.cells), m, n);
+
+		for (int r = 0, p = i; p < h; p++, r++) {
+			for (int c = 0, q = j; q < w; q++, c++) {
+				if (r < m && c < n) {
+					data[r][c] = this.cells[p][q];
+				} // if
+			} // q
+		} // p
+
+		return DataMatrix.of(data, this.keys());
+	}
+
+	/**
 	 * 行列表
 	 *
 	 * @param<U> 变换的结果类型
@@ -268,13 +428,23 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 行列表
+	 * 行数据
 	 *
 	 * @param i 行索引 从0开始
 	 * @return 行元素
 	 */
 	public List<T> row(final int i) {
 		return this.rowOpt(i).orElse(null);
+	}
+
+	/**
+	 * 行列表
+	 *
+	 * @param i 行索引 从0开始
+	 * @return 行元素
+	 */
+	public <U> U row(final int i, final Function<? super Iterable<T>, U> mapper) {
+		return this.rowOpt(i).map(mapper).orElse(null);
 	}
 
 	/**
@@ -359,6 +529,26 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 行列表
+	 *
+	 * @param j 列索引 从0开始
+	 * @return 行元素
+	 */
+	public List<T> col(final int j) {
+		return this.colOpt(j).orElse(null);
+	}
+
+	/**
+	 * 列数据
+	 *
+	 * @param j 列索引 从0开始
+	 * @return 行元素
+	 */
+	public <U> U col(final int j, final Function<? super Iterable<T>, U> mapper) {
+		return this.colOpt(j).map(mapper).orElse(null);
+	}
+
+	/**
 	 * 列列表
 	 *
 	 * @param j 列索引 从0开始
@@ -377,16 +567,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public Optional<List<T>> colOpt(final String key) {
 		return this.colOpt(this.indexOf(key));
-	}
-
-	/**
-	 * 行列表
-	 *
-	 * @param j 列索引 从0开始
-	 * @return 行元素
-	 */
-	public List<T> col(final int j) {
-		return this.colOpt(j).orElse(null);
 	}
 
 	/**
@@ -1053,6 +1233,26 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public Stream<T> cellS() {
 		return this.stream(e -> e);
+	}
+
+	/**
+	 * 矩阵数据的二维数组
+	 *
+	 * @return 矩阵数据的二维数组
+	 */
+	public T[][] data() {
+		return this.cells;
+	}
+
+	/**
+	 * 矩阵数据的二维数组, 一般用于向外暴露cells数据。
+	 *
+	 * @param <U>    结果类型
+	 * @param mapper 变换函数 data->u
+	 * @return 矩阵数据的二维数组
+	 */
+	public <U> U dataOf(final Function<T[][], U> mapper) {
+		return mapper.apply(this.cells);
 	}
 
 	/**
@@ -1766,9 +1966,23 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return 数据矩阵
 	 */
 	public static <T> DataMatrix<T> of(final T[][] datas) {
-		final var title = Optional.ofNullable(datas).map(e -> Stream.of(e).map(p -> p.length) //
-				.collect(Collectors.maxBy(Comparator.comparing(x -> x))).orElse(null)).map(DataMatrix::xlsns)
-				.map(Arrays::asList).orElse(null);
+		return DataMatrix.of(datas, (Iterable<String>) null);
+	}
+
+	/**
+	 * 生成函数（默认的excel风格表头）
+	 *
+	 * @param <T>   元素类型
+	 * @param keys  表头数据
+	 * @param datas 数据数组
+	 * @return 数据矩阵
+	 */
+	public static <T> DataMatrix<T> of(final T[][] datas, final Iterable<String> keys) {
+		final var title = Optional.ofNullable(keys)
+				.orElseGet(() -> Optional.ofNullable(datas)
+						.map(e -> Stream.of(e).map(p -> p.length)
+								.collect(Collectors.maxBy(Comparator.comparing(x -> x))).orElse(null))
+						.map(DataMatrix::xlsns).map(Arrays::asList).orElse(null));
 		return Optional.ofNullable(datas).map(e -> new DataMatrix<T>(datas, title)).orElse(null);
 	}
 
@@ -2222,26 +2436,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	@SafeVarargs
 	public static <T> T[] A(final T... ts) {
 		return ts;
-	}
-
-	/**
-	 * 矩阵数据的二维数组
-	 *
-	 * @return 矩阵数据的二维数组
-	 */
-	public T[][] data() {
-		return this.cells;
-	}
-
-	/**
-	 * 矩阵数据的二维数组, 一般用于向外暴露cells数据。
-	 *
-	 * @param <U>    结果类型
-	 * @param mapper 变换函数 data->u
-	 * @return 矩阵数据的二维数组
-	 */
-	public <U> U dataOf(final Function<T[][], U> mapper) {
-		return mapper.apply(this.cells);
 	}
 
 	private T[][] cells; // 单元格数据
