@@ -370,7 +370,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 获得一个子矩阵
+	 * 获得一个mxn的子矩阵
 	 * 
 	 * @param i 行开始坐标从0开始
 	 * @param j 列开始坐标从0开始
@@ -378,7 +378,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param n 子矩阵的列长度
 	 * @return 返回mxn的子矩阵（对于m,n超出矩阵索引范围，元素位置为null）
 	 */
-	public DataMatrix<T> submx(final int i, final int j, final int m, final int n) {
+	public DataMatrix<T> submxn(final int i, final int j, final int m, final int n) {
 		final var h = this.height(); // 矩阵行数
 		final var w = this.width(); // 矩阵列数
 		@SuppressWarnings("unchecked")
