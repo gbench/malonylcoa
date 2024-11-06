@@ -1477,6 +1477,36 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 空间切割(数据矩阵)
+	 * 
+	 * 切分点：points 是一个整数序列, p0,p1,p2, ... <br>
+	 * 比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
+	 * 
+	 * @param ps 行切分点
+	 * @param qs 列切分点
+	 * @return
+	 */
+	public DataMatrix<AffectedArea> splitX(final Iterable<Integer> ps, final Iterable<Integer> qs) {
+		return this.splitX(Types.itr2array(ps), Types.itr2array(qs));
+	}
+
+	/**
+	 * 空间切割(数据矩阵)
+	 * 
+	 * 切分点：points 是一个整数序列, p0,p1,p2, ... <br>
+	 * 比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
+	 * 
+	 * @param ps 行切分点
+	 * @param qs 列切分点
+	 * @return
+	 */
+	public DataMatrix<AffectedArea> splitX(final Integer[] ps, final Integer[] qs) {
+		final var aas = this.splitS(true, ps).map(row -> row.splits(false, qs).toArray(AffectedArea[]::new))
+				.toArray(AffectedArea[][]::new);
+		return new DataMatrix<>(aas);
+	}
+
+	/**
 	 * 空间切割
 	 * 
 	 * @param points 切分点, p0,p1,p2, ... <br>
