@@ -370,32 +370,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 获得一个mxn的子矩阵
-	 * 
-	 * @param i 行开始坐标从0开始
-	 * @param j 列开始坐标从0开始
-	 * @param m 子矩阵的行长度
-	 * @param n 子矩阵的列长度
-	 * @return 返回mxn的子矩阵（对于m,n超出矩阵索引范围，元素位置为null）
-	 */
-	public DataMatrix<T> submxn(final int i, final int j, final int m, final int n) {
-		final var h = this.height(); // 矩阵行数
-		final var w = this.width(); // 矩阵列数
-		@SuppressWarnings("unchecked")
-		final T[][] data = (T[][]) Array.newInstance(DataMatrix.getGenericClass(this.cells), m, n);
-
-		for (int r = 0, p = i; p < h; p++, r++) {
-			for (int c = 0, q = j; q < w; q++, c++) {
-				if (r < m && c < n) {
-					data[r][c] = this.cells[p][q];
-				} // if
-			} // q
-		} // p
-
-		return DataMatrix.of(data, this.keys());
-	}
-
-	/**
 	 * 行列表
 	 *
 	 * @param<U> 变换的结果类型
@@ -1064,6 +1038,59 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 创建子矩阵
+	 * 
+	 * @param <U>   cells数组中的元素的数据类型。
+	 * @param cells 对象二维数组
+	 * @param i0    起点行索引 从0开始 行坐标
+	 * @param j0    起点行索引 从0开始 列坐标
+	 * @param i1    终点行索引 包含 对于超过最大范文的边界节点采用 循环取模的办法给与填充
+	 * @param j1    终点行索引 包含 对于超过最大范文的边界节点采用 循环取模的办法给与填充
+	 * @return 子矩阵
+	 */
+	public DataMatrix<T> submx(final int x0, int y0, int x1, int y1) {
+		final T[][] tt = DataMatrix.submx(this.cells, x0, y0, x1, y1);
+		return DataMatrix.of((Iterable<String>) null, tt);
+	}
+
+	/**
+	 * 获得一个mxn的子矩阵
+	 * 
+	 * @param rangeName 区域名称,比如, A1:C10
+	 * @return 返回mxn的子矩阵（对于m,n超出矩阵索引范围，元素位置为null）
+	 */
+	public DataMatrix<T> submxn(final String nameline) {
+		final RangeDef rangeDef = DataMatrix.name2rdf(nameline);
+		return this.submxn(rangeDef.x0(), rangeDef.y0(), rangeDef.nrows(), rangeDef.ncols());
+	}
+
+	/**
+	 * 获得一个mxn的子矩阵
+	 * 
+	 * @param i 行开始坐标从0开始
+	 * @param j 列开始坐标从0开始
+	 * @param m 子矩阵的行长度
+	 * @param n 子矩阵的列长度
+	 * @return 返回mxn的子矩阵（对于m,n超出矩阵索引范围，元素位置为null）
+	 */
+	public DataMatrix<T> submxn(final int i, final int j, final int m, final int n) {
+		final var h = this.height(); // 矩阵行数
+		final var w = this.width(); // 矩阵列数
+		@SuppressWarnings("unchecked")
+		final T[][] data = (T[][]) Array.newInstance(DataMatrix.getGenericClass(this.cells), m, n);
+
+		for (int r = 0, p = i; p < h; p++, r++) {
+			for (int c = 0, q = j; q < w; q++, c++) {
+				if (r < m && c < n) {
+					data[r][c] = this.cells[p][q];
+				} // if
+			} // q
+		} // p
+
+		return DataMatrix.of(data, this.keys());
+	}
+
+	/**
 	 * 数据矩阵变换
 	 *
 	 * @param <U>    结果类型
@@ -1718,8 +1745,8 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return 子矩阵
 	 */
 	public static <U> U[][] submx(final U[][] cells, final int i0, final int j0, final int i1, final int j1) {
-		final int h = i1 - i0 + 1;
-		final int w = j1 - j0 + 1;
+		final int h = i1 - i0;
+		final int w = j1 - j0;
 		final Tuple2<Integer, Integer> shape = DataMatrix.shape(cells);
 		@SuppressWarnings("unchecked")
 		final U[][] cc = (U[][]) Array.newInstance(getGenericClass(cells), h, w);
