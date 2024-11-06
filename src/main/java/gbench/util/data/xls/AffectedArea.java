@@ -1513,6 +1513,17 @@ public class AffectedArea implements Iterable<Cell> {
 	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
 	 * @return
 	 */
+	public Stream<AffectedArea> splitS(final Boolean flag, final Iterable<Integer> points) {
+		return this.splits(flag, Types.itr2array(points)).stream();
+	}
+
+	/**
+	 * 空间切割
+	 * 
+	 * @param points 切分点, p0,p1,p2, ... <br>
+	 *               比如 [0,1,2,3,4,5,6],在[2,4]的points下会被分成[0,1],[2,3],[4,5,6]
+	 * @return
+	 */
 	public Stream<AffectedArea> splitS(final Boolean flag, final Integer... points) {
 		return this.splits(flag, points).stream();
 	}
