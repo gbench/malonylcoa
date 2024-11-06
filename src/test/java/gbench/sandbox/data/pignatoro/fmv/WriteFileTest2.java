@@ -100,21 +100,26 @@ public class WriteFileTest2 {
 	@Test
 	public void qux() {
 		final var outfile = outhome.formatted("wft2-qux.xlsx");
-		try (final var excel = SimpleExcel.of(outfile)) {
-			final var mx = excel.select("A1:H20").splitX(Arrays.asList(2, 4), Arrays.asList(2, 4));
-			final var cs = new IndexedColors[] { IndexedColors.GREEN, IndexedColors.RED, IndexedColors.BLUE,
-					IndexedColors.YELLOW, IndexedColors.CORAL };
-			final var ai = new AtomicInteger();
-			mx.cellS().forEach(aa -> {
-				final var i = ai.getAndIncrement();
-				aa.background(cs[i % cs.length]);
-				aa.updateLine(false, Arrays.asList(i, aa));
-			});
-			println(mx.keys(),mx.shape());
 
-			excel.save();
-		}
-		println(outfile);
+		try (final var excel = SimpleExcel.of(outfile)) {
+			for (var nameline : "Sheet1!A1:H10, Sheet2!B2:H10".split("[\s,]+")) {
+				final var dmx = excel.select(nameline).splitX(Arrays.asList(2, 4), Arrays.asList(2, 4));
+				final var colors = new IndexedColors[] { IndexedColors.GREEN, IndexedColors.RED, IndexedColors.BLUE,
+						IndexedColors.YELLOW, IndexedColors.CORAL };
+				final var ai = new AtomicInteger();
+
+				dmx.cellS().forEach(aa -> { // 矩阵遍历
+					final var i = ai.getAndIncrement(); // 连续序列索引
+					aa.background(colors[i % colors.length]); // 颜色喷涂
+					aa.updateLine(false, Arrays.asList(i, aa)); // 数据写入
+				}); // forEach
+
+				println("nameline:%s,keys:%s,shape:%s".formatted(nameline, dmx.keys(), dmx.shape()));
+			} // for
+			excel.save(); // 数据保存
+		} // try
+
+		println("编写完成:%s!".formatted(outfile));
 	}
 
 	/**
