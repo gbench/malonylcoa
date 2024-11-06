@@ -1033,8 +1033,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public DataMatrix<T> submx(final String rangeName) {
 		final RangeDef rangeDef = DataMatrix.name2rdf(rangeName);
-		final T[][] tt = DataMatrix.submx(this.cells, rangeDef.x0(), rangeDef.y0(), rangeDef.x1(), rangeDef.y1());
-		return DataMatrix.of((Iterable<String>) null, tt);
+		return this.submx(rangeDef.x0(), rangeDef.y0(), rangeDef.x1(), rangeDef.y1());
 	}
 
 	/**
@@ -1042,15 +1041,27 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * 
 	 * @param <U>   cells数组中的元素的数据类型。
 	 * @param cells 对象二维数组
-	 * @param i0    起点行索引 从0开始 行坐标
-	 * @param j0    起点行索引 从0开始 列坐标
-	 * @param i1    终点行索引 包含 对于超过最大范文的边界节点采用 循环取模的办法给与填充
-	 * @param j1    终点行索引 包含 对于超过最大范文的边界节点采用 循环取模的办法给与填充
+	 * @param x0    起点行索引 从0开始 行坐标,x0超过或等于最大值数量height，返回null
+	 * @param y0    起点列索引 从0开始 列坐标,x0超过或等于最大值数量height，返回null
+	 * @param x1    终点行索引 包含，超过最大行数量采用最大行数量
+	 * @param y1    终点列索引 包含，超过最大列数量采用最大列数量
 	 * @return 子矩阵
 	 */
 	public DataMatrix<T> submx(final int x0, int y0, int x1, int y1) {
-		final T[][] tt = DataMatrix.submx(this.cells, x0, y0, x1, y1);
-		return DataMatrix.of((Iterable<String>) null, tt);
+		final var h = this.height();
+		final var w = this.width();
+
+		if (h < 1 || w < 1 || x0 >= h || y0 >= w || x0 < 0 || y0 < 0) { // 非法索引
+			return null;
+		} else {
+			final var _x0 = x0;
+			final var _y0 = y0;
+			final var _x1 = Math.min(h - 1, x1);
+			final var _y1 = Math.min(w - 1, y1);
+
+			final T[][] tt = DataMatrix.submx(this.cells, _x0, _y0, _x1, _y1);
+			return DataMatrix.of((Iterable<String>) null, tt);
+		}
 	}
 
 	/**
@@ -1759,9 +1770,15 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		@SuppressWarnings("unchecked")
 		final U[][] cc = (U[][]) Array.newInstance(getGenericClass(cells), h, w);
 		for (int i = i0; i <= i1; i++) {
-			for (int j = j0; j <= j1; j++) {
-				cc[i - i0][j - j0] = cells[i % shape._1][j % shape._2];
-			} // for j
+			final var line = cells[i % shape._1]; // 读取数据行
+			if (line == null) {
+				continue;
+			} else {
+				final var lh = line.length;
+				for (int j = j0; j <= Math.min(lh, j1); j++) {
+					cc[i - i0][j - j0] = line[j % shape._2];
+				} // for j
+			}
 		} // for i
 		return cc;
 	}
