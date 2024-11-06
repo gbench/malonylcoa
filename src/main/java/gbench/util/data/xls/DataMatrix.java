@@ -1333,6 +1333,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 二元组
 	 * 
 	 * @param <T>
 	 * @param <U>
@@ -1359,6 +1360,28 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		}
 
 		/**
+		 * 1#位置 元素变换
+		 *
+		 * @param <X>    mapper 的结果类型
+		 * @param mapper 元素变化函数 t-&gt;x
+		 * @return 变换后的 元素 (x,u)
+		 */
+		public <X> Tuple2<X, U> fmap1(final Function<T, X> mapper) {
+			return Tuple2.of(mapper.apply(this._1), this._2);
+		}
+
+		/**
+		 * 2#位置 元素变换
+		 *
+		 * @param <X>    mapper 的结果类型
+		 * @param mapper 元素变化函数 u-&gt;x
+		 * @return 变换后的 元素 (t,x)
+		 */
+		public <X> Tuple2<T, X> fmap2(final Function<U, X> mapper) {
+			return Tuple2.of(this._1, mapper.apply(this._2));
+		}
+
+		/**
 		 * 
 		 * @param <T>
 		 * @param <U>
@@ -1381,28 +1404,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		public static <T> Function<T, Tuple2<Integer, T>> snb(final int start) {
 			final AtomicInteger sn = new AtomicInteger(start);
 			return t -> Tuple2.of(sn.getAndIncrement(), t);
-		}
-
-		/**
-		 * 1#位置 元素变换
-		 *
-		 * @param <X>    mapper 的结果类型
-		 * @param mapper 元素变化函数 t-&gt;x
-		 * @return 变换后的 元素 (x,u)
-		 */
-		public <X> Tuple2<X, U> fmap1(final Function<T, X> mapper) {
-			return Tuple2.of(mapper.apply(this._1), this._2);
-		}
-
-		/**
-		 * 2#位置 元素变换
-		 *
-		 * @param <X>    mapper 的结果类型
-		 * @param mapper 元素变化函数 u-&gt;x
-		 * @return 变换后的 元素 (t,x)
-		 */
-		public <X> Tuple2<T, X> fmap2(final Function<U, X> mapper) {
-			return Tuple2.of(this._1, mapper.apply(this._2));
 		}
 
 		final T _1;
