@@ -1409,6 +1409,14 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		}
 
 		/**
+		 * 数据格式化
+		 */
+		@Override
+		public String toString() {
+			return "(%s, %s)".formatted(this._1, this._2);
+		}
+
+		/**
 		 * 
 		 * @param <T>
 		 * @param <U>
