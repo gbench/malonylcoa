@@ -30,8 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import gbench.util.lisp.Tuple2;
-
 /**
  * DataMatrix(数据矩阵/二维对象数组)
  * 
@@ -378,7 +376,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @param j 列开始坐标从0开始
 	 * @param m 子矩阵的行长度
 	 * @param n 子矩阵的列长度
-	 * @return 子矩阵
+	 * @return 返回mxn的子矩阵（对于m,n超出矩阵索引范围，元素位置为null）
 	 */
 	public DataMatrix<T> submx(final int i, final int j, final int m, final int n) {
 		final var h = this.height(); // 矩阵行数
@@ -605,7 +603,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 * @return U 类型的流
 	 */
 	public Stream<T[]> col2S() {
-		return this.colS(e -> e._2());
+		return this.colS(e -> e._2);
 	}
 
 	/**
@@ -828,7 +826,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public DataMatrix<T> transpose() {
 		final T[][] dd = DataMatrix.transpose(this.data());
-		final Integer n = shape(dd)._2();
+		final Integer n = shape(dd)._2;
 		final List<String> keys = intS(n).map(DataMatrix::index_to_excel_name).collect(Collectors.toList());
 		return new DataMatrix<T>(dd, keys);
 	}
@@ -1332,6 +1330,83 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		} // for i 垂直方向
 
 		return buffer.toString(); // 返回格式化数据
+	}
+
+	/**
+	 * 
+	 * @param <T>
+	 * @param <U>
+	 */
+	public static class Tuple2<T, U> {
+
+		/**
+		 * 
+		 * @param t
+		 * @param u
+		 */
+		public Tuple2(final T t, final U u) {
+			this._1 = t;
+			this._2 = u;
+		}
+
+		/**
+		 * 元素位置互换
+		 *
+		 * @return (u, t)
+		 */
+		public Tuple2<U, T> swap() {
+			return Tuple2.of(this._2, this._1);
+		}
+
+		/**
+		 * 
+		 * @param <T>
+		 * @param <U>
+		 * @param t
+		 * @param u
+		 * @return
+		 */
+		public static <T, U> Tuple2<T, U> of(final T t, final U u) {
+			return new Tuple2<>(t, u);
+		}
+
+		/**
+		 * 序列号生成器 <br>
+		 * Serial Number Builder
+		 *
+		 * @param <T>   元素
+		 * @param start 开始号码
+		 * @return t-&gt;(int,t) 的标记函数
+		 */
+		public static <T> Function<T, Tuple2<Integer, T>> snb(final int start) {
+			final AtomicInteger sn = new AtomicInteger(start);
+			return t -> Tuple2.of(sn.getAndIncrement(), t);
+		}
+
+		/**
+		 * 1#位置 元素变换
+		 *
+		 * @param <X>    mapper 的结果类型
+		 * @param mapper 元素变化函数 t-&gt;x
+		 * @return 变换后的 元素 (x,u)
+		 */
+		public <X> Tuple2<X, U> fmap1(final Function<T, X> mapper) {
+			return Tuple2.of(mapper.apply(this._1), this._2);
+		}
+
+		/**
+		 * 2#位置 元素变换
+		 *
+		 * @param <X>    mapper 的结果类型
+		 * @param mapper 元素变化函数 u-&gt;x
+		 * @return 变换后的 元素 (t,x)
+		 */
+		public <X> Tuple2<T, X> fmap2(final Function<U, X> mapper) {
+			return Tuple2.of(this._1, mapper.apply(this._2));
+		}
+
+		final T _1;
+		final U _2;
 	}
 
 	/**
@@ -2250,7 +2325,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public static <T, V extends Iterable<T>> Collector<Tuple2<String, V>, ?, DataMatrix<T>> dmxclc2(
 			final Class<T> tclass) {
-		return Collector.of(() -> new LinkedHashMap<String, V>(), (aa, a) -> aa.put(a._1, a._2()), (aa, bb) -> {
+		return Collector.of(() -> new LinkedHashMap<String, V>(), (aa, a) -> aa.put(a._1, a._2), (aa, bb) -> {
 			aa.putAll(bb);
 			return aa;
 		}, e -> {

@@ -1188,8 +1188,8 @@ public class SimpleExcel implements AutoCloseable {
 						final String formula = _value.substring(k - 1).trim(); // 数据公式
 						if (formula.length() > 0) { // if
 							final int row_offset = this.isWriteKeysFlag() ? 1 : 0; // 若是写入表头则偏移增加1
-							final String adjusted_formula = DataMatrix.adjust_formula(formula,
-									Tuple2.of(firstCell.getRowIndex() + row_offset, firstCell.getColumnIndex())); // 公式偏移位置调整
+							final String adjusted_formula = DataMatrix.adjust_formula(formula, DataMatrix.Tuple2
+									.of(firstCell.getRowIndex() + row_offset, firstCell.getColumnIndex())); // 公式偏移位置调整
 							cell.setCellFormula(adjusted_formula);
 							continue;
 						} // if
