@@ -1801,15 +1801,42 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		}
 
 		if (uclass == null) { // 这段代码被封存了
-			final List<Class<?>> ll = Arrays.stream(cells).flatMap(Arrays::stream).filter(Objects::nonNull)
-					.map((Function<U, ? extends Class<?>>) U::getClass).distinct().collect(Collectors.toList());
-			if (ll.size() == 1) {
-				uclass = (Class<U>) ll.get(0);
-			} else {
-				uclass = (Class<U>) Object.class;
-			} // if
+			uclass = DataMatrix.getGenericClass(Arrays.stream(cells).flatMap(Arrays::stream), defaultClass);
 		} // if
 
+		return uclass;
+	}
+
+	/**
+	 * 获得cells数组中的元素的数据类型。 如果cells中的所有元素都是null,返回Object.class;
+	 *
+	 * @param <U>          cells数组中的元素的数据类型。
+	 * @param us           数据矩阵
+	 * @param defaultClass 当cells 全为空返回的默认类型。
+	 * @return cells 元素类型
+	 */
+	public static <U> Class<U> getGenericClass(final Iterable<U> us, final Class<U> defaultClass) {
+		return DataMatrix.getGenericClass(StreamSupport.stream(us.spliterator(), false), defaultClass);
+	}
+
+	/**
+	 * 获得cells数组中的元素的数据类型。 如果cells中的所有元素都是null,返回Object.class;
+	 *
+	 * @param <U>          cells数组中的元素的数据类型。
+	 * @param cells        数据矩阵
+	 * @param defaultClass 当cells 全为空返回的默认类型。
+	 * @return cells 元素类型
+	 */
+	@SuppressWarnings("unchecked")
+	public static <U> Class<U> getGenericClass(final Stream<U> us, final Class<U> defaultClass) {
+		final Class<U> uclass;
+		final List<Class<?>> ll = us.filter(Objects::nonNull).map((Function<U, ? extends Class<?>>) U::getClass)
+				.distinct().collect(Collectors.toList());
+		if (ll.size() == 1) {
+			uclass = (Class<U>) ll.get(0);
+		} else {
+			uclass = (Class<U>) defaultClass;
+		} // if
 		return uclass;
 	}
 
@@ -2492,23 +2519,17 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			aa.addAll(bb);
 			return aa;
 		}, tt -> {
-			final T t = tt.stream().flatMap(e -> StreamSupport.stream(e.spliterator(), false)).filter(Objects::nonNull)
-					.findFirst().orElse(null);
-			if (t == null) {
-				return null;
-			} else {
-				final Class<T> tclass = (Class<T>) t.getClass();
-				final AtomicInteger ai = new AtomicInteger(0); // 数组长度
-				final T[][] _tt = tt.stream().filter(Objects::nonNull)
-						.map(e -> StreamSupport.stream(e.spliterator(), false) //
-								.toArray(n -> (T[]) Array.newInstance(tclass, n)))
-						.peek(e -> { // 计算元素(数组)长度
-							if (e.length > ai.get()) { // 保持长度为最长元素（数组）的长度
-								ai.set(e.length); // 更新数组长度
-							} // if
-						}).toArray(n -> (T[][]) Array.newInstance(tclass, n, ai.get()));
-				return DataMatrix.of(keys, _tt);
-			} // if
+			final Class<T> tclass = (Class<T>) DataMatrix.getGenericClass(
+					tt.stream().flatMap(e -> StreamSupport.stream(e.spliterator(), false)), Object.class);
+			final AtomicInteger ai = new AtomicInteger(0); // 数组长度
+			final T[][] _tt = tt.stream().filter(Objects::nonNull).map(e -> StreamSupport.stream(e.spliterator(), false) //
+					.toArray(n -> (T[]) Array.newInstance(tclass, n))).peek(e -> { // 计算元素(数组)长度
+						if (e.length > ai.get()) { // 保持长度为最长元素（数组）的长度
+							ai.set(e.length); // 更新数组长度
+						} // if
+					}).toArray(n -> (T[][]) Array.newInstance(tclass, n, ai.get()));
+			return DataMatrix.of(keys, _tt);
+
 		}); // Collector.of
 	}
 
