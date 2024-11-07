@@ -200,6 +200,75 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
+	 * 表头，列名字段序列(keys别名）
+	 *
+	 * @return 返回 数据 的表头，列名序列
+	 */
+	public List<String> title() {
+		return this.keys();
+	}
+
+	/**
+	 * 表头，列名字段序列(keys别名）
+	 *
+	 * @param keys 列名字段序列，用逗号分隔
+	 * @return 当前对象this
+	 */
+	public DataMatrix<T> title(final String keys) {
+		return this.keys(keys);
+	}
+
+	/**
+	 * 表头，列名字段序列(keys别名）
+	 *
+	 * @param keys 列名字段序列
+	 * @return 当前对象this
+	 */
+	public DataMatrix<T> title(final String[] keys) {
+		return this.keys(keys);
+	}
+
+	/**
+	 * 表头，列名字段序列(keys别名）
+	 *
+	 * @param keys 列名字段序列
+	 * @return 当前对象this
+	 */
+	public DataMatrix<T> title(final Iterable<String> keys) {
+		return this.keys(keys);
+	}
+
+	/**
+	 * 获取并设置健名（列名）索引
+	 *
+	 * @param keys 列名字段序列，用逗号分隔
+	 * @return 当前对象this
+	 */
+	public DataMatrix<T> keys(final String keys) {
+		return this.setKeys(keys);
+	}
+
+	/**
+	 * 获取并设置健名（列名）索引(setKeys别名）
+	 *
+	 * @param keys 列名字段序列，用逗号分隔
+	 * @return 当前对象this
+	 */
+	public DataMatrix<T> keys(final String[] keys) {
+		return this.setKeys(keys);
+	}
+
+	/**
+	 * 获取并设置健名（列名）索引(setKeys别名）
+	 *
+	 * @param keys 列名字段序列，用逗号分隔
+	 * @return 当前对象this
+	 */
+	public DataMatrix<T> keys(final Iterable<String> keys) {
+		return this.setKeys(keys);
+	}
+
+	/**
 	 * 获取并设置健名（列名）索引
 	 *
 	 * @param keys 列名字段序列，用逗号分隔
@@ -1834,35 +1903,36 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		final String pattern = "(([A-Z]+)\\s*(\\d+))(\\s*:\\s*(([A-Z]+)\\s*(\\d+)))?";
 		if (nameline == null) {
 			return null;
-		}
+		} else { // nameline 有效
+			final int i = nameline.indexOf("!");
+			final String name = nameline.toUpperCase(); // 转换成大写形式
+			final String line = (i < 0 ? name : name.substring(i + 1)).strip();
+			final String sheetName = i >= 0 ? nameline.substring(0, i).strip() : null;
+			final Matcher matcher = Pattern.compile(pattern).matcher(line);
+			final Function<Integer, String> reader = id -> Optional.ofNullable(matcher.group(id)) //
+					.map(String::strip).orElse(null);
+			final RangeDef rdf;// 数值区域
 
-		final var i = nameline.indexOf("!");
-		final String name = nameline.toUpperCase(); // 转换成大写形式
-		final var line = (i < 0 ? name : name.substring(i + 1)).strip();
-		final var sheetName = i >= 0 ? nameline.substring(0, i).strip() : null;
-		final Matcher matcher = Pattern.compile(pattern).matcher(line);
-		final Function<Integer, String> reader = id -> Optional.ofNullable(matcher.group(id)) //
-				.map(String::strip).orElse(null);
-		final RangeDef rdf;// 数值区域
-		if (matcher.find()) {
-			final String y0 = reader.apply(2); // 左上列号
-			final String x0 = reader.apply(3); // 左上行号
-			final String y1 = Optional.ofNullable(reader.apply(6)).orElse(y0); // 右下列号:默认为y0
-			final String x1 = Optional.ofNullable(reader.apply(7)).orElse(x0); // 右下行号:默认为x0
-			final Integer ix0 = DataMatrix.xlsn2id(x0);
-			final Integer iy0 = DataMatrix.xlsn2id(y0);
-			final Integer ix1 = DataMatrix.xlsn2id(x1);
-			final Integer iy1 = DataMatrix.xlsn2id(y1);
+			if (matcher.find()) {
+				final String y0 = reader.apply(2); // 左上列号
+				final String x0 = reader.apply(3); // 左上行号
+				final String y1 = Optional.ofNullable(reader.apply(6)).orElse(y0); // 右下列号:默认为y0
+				final String x1 = Optional.ofNullable(reader.apply(7)).orElse(x0); // 右下行号:默认为x0
+				final Integer ix0 = DataMatrix.xlsn2id(x0);
+				final Integer iy0 = DataMatrix.xlsn2id(y0);
+				final Integer ix1 = DataMatrix.xlsn2id(x1);
+				final Integer iy1 = DataMatrix.xlsn2id(y1);
 
-			rdf = new RangeDef(sheetName, // 表单名称
-					Math.min(ix0, ix1), Math.min(iy0, iy1), // LT 的索引值较小
-					Math.max(ix0, ix1), Math.max(iy0, iy1) // RB 的索引较大
-			);
-		} else { // if
-			rdf = null;
-		}
+				rdf = new RangeDef(sheetName, // 表单名称
+						Math.min(ix0, ix1), Math.min(iy0, iy1), // LT 的索引值较小
+						Math.max(ix0, ix1), Math.max(iy0, iy1) // RB 的索引较大
+				); // RangeDef
+			} else { // if
+				rdf = null;
+			} // if
 
-		return rdf; // 数据区域内容
+			return rdf; // 数据区域内容
+		} // if
 	}
 
 	/**

@@ -2418,12 +2418,35 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	 * 脱离data类的方法:连接两个 ndarray <br>
 	 * 将可视区间中的数据进行连接 [this.mydata,nd.mydata]
 	 *
-	 * @param ts 另一个ndarray
+	 * @param vs 另一个ndarray
 	 * @return 连接以后的ndarray,新生成的nd对象
 	 */
 	@SuppressWarnings("unchecked")
-	default INdarray<V> concat(final V... ts) {
-		return INdarray.of(INdarray.concat(this.mydata(), ts));
+	default INdarray<V> concat(final V... vs) {
+		return INdarray.of(INdarray.concat(this.mydata(), vs));
+	}
+
+	/**
+	 * 脱离data类的方法:前置元素追加 <br>
+	 * 将可视区间中的数据进行连接 [v,nd.mydata]
+	 *
+	 * @param vs 首部元素序列
+	 * @return 连接以后的ndarray,新生成的nd对象
+	 */
+	default INdarray<V> prepend(final Iterable<V> vs) {
+		return INdarray.of(vs).concat(this);
+	}
+
+	/**
+	 * 脱离data类的方法:前置元素追加 <br>
+	 * 将可视区间中的数据进行连接 [v,nd.mydata]
+	 *
+	 * @param vs 首部元素序列
+	 * @return 连接以后的ndarray,新生成的nd对象
+	 */
+	@SuppressWarnings("unchecked")
+	default INdarray<V> prepend(final V... vs) {
+		return INdarray.of(vs).concat(this);
 	}
 
 	/**
@@ -2456,6 +2479,29 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 		System.arraycopy(this.data(), 0, data, 0, n);
 		data[n] = v;
 		return INdarray.of(data);
+	}
+
+	/**
+	 * 脱离data类的方法:后置元素追加: <br>
+	 * 将可视区间中的数据进行连接 [this.mydata,v]
+	 *
+	 * @param vs 尾部元素序列
+	 * @return 连接以后的ndarray,新生成的nd对象
+	 */
+	@SuppressWarnings("unchecked")
+	default INdarray<V> append(final V... vs) {
+		return this.concat(INdarray.of(vs));
+	}
+
+	/**
+	 * 脱离data类的方法:后置元素追加: <br>
+	 * 将可视区间中的数据进行连接 [this.mydata,v]
+	 *
+	 * @param vs 尾部元素序列
+	 * @return 连接以后的ndarray,新生成的nd对象
+	 */
+	default INdarray<V> append(final Iterable<V> vs) {
+		return this.concat(INdarray.of(vs));
 	}
 
 	/**
