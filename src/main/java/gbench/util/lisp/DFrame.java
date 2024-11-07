@@ -855,7 +855,7 @@ public class DFrame implements Iterable<IRecord> {
 	public <K, V, M extends Map<K, V>> M toMap(final Function<? super IRecord, K> keyMapper,
 			final Function<? super IRecord, V> valueMapper, final BinaryOperator<V> mergeFunction,
 			Supplier<M> mapFactory) {
-		return this.rowS().collect(Collectors.toMap(keyMapper, valueMapper, mergeFunction, mapFactory));
+		return this.collect(Collectors.toMap(keyMapper, valueMapper, mergeFunction, mapFactory));
 	}
 
 	/**
@@ -869,7 +869,7 @@ public class DFrame implements Iterable<IRecord> {
 	 */
 	public <K, V> LinkedHashMap<K, V> toMap(final Function<? super IRecord, K> keyMapper,
 			final Function<? super IRecord, V> valueMapper) {
-		return this.rowS().collect(Collectors.toMap(keyMapper, valueMapper, (a, b) -> b, LinkedHashMap::new));
+		return this.collect(Collectors.toMap(keyMapper, valueMapper, (a, b) -> b, LinkedHashMap::new));
 	}
 
 	/**
@@ -882,7 +882,36 @@ public class DFrame implements Iterable<IRecord> {
 	 * @return
 	 */
 	public <K, V> LinkedHashMap<K, IRecord> toMap(final Function<? super IRecord, K> keyMapper) {
-		return this.rowS().collect(Collectors.toMap(keyMapper, e -> e, (a, b) -> b, LinkedHashMap::new));
+		return this.collect(Collectors.toMap(keyMapper, e -> e, (a, b) -> b, LinkedHashMap::new));
+	}
+
+	/**
+	 * 转换成映射 结构(依据指定键名）
+	 * 
+	 * @param key 键名
+	 * @return
+	 */
+	public <K, V> LinkedHashMap<Object, IRecord> toMap(final String key) {
+		return this.toMap(e -> e.get(key));
+	}
+
+	/**
+	 * 转换成映射 结构（根据指定键名索引）
+	 *
+	 * @param idx 键名索引从开始
+	 * @return
+	 */
+	public <K, V> LinkedHashMap<Object, IRecord> toMap(final Integer idx) {
+		return this.toMap(e -> e.get(idx));
+	}
+
+	/**
+	 * 转换成映射 结构（根据第一列）
+	 *
+	 * @return
+	 */
+	public <K, V> LinkedHashMap<Object, IRecord> toMap() {
+		return this.toMap(e -> e.get(0));
 	}
 
 	/**
