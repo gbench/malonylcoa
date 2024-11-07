@@ -1659,11 +1659,20 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 数据矩阵(进行单元格计算后的数据）
+	 * 
+	 * @return 数据值
+	 */
+	public DataMatrix<Object> evalmx() {
+		return this.dmx(this::evaluate);
+	}
+
+	/**
 	 * 数据矩阵
 	 * 
 	 * @return 数据值
 	 */
-	public <T> DataMatrix<Cell> dmx() {
+	public DataMatrix<Cell> dmx() {
 		return this.stream(e -> e).collect(DataMatrix.dmxclc(this.ncols()));
 	}
 
@@ -1780,6 +1789,26 @@ public class AffectedArea implements Iterable<Cell> {
 	public AffectedArea focus() {
 		this.excel.setAffectedArea(this);
 		return this;
+	}
+
+	/**
+	 * 计算单元格的值
+	 * 
+	 * @param cell 单元格
+	 * @return 计算值
+	 */
+	public Optional<Object> evaluateOpt(final Cell cell) {
+		return Optional.ofNullable(cell).map(excel::evaluate);
+	}
+
+	/**
+	 * 计算单元格的值
+	 * 
+	 * @param cell 单元格
+	 * @return 计算值
+	 */
+	public Object evaluate(final Cell cell) {
+		return this.evaluateOpt(cell).orElse(null);
 	}
 
 	/**
