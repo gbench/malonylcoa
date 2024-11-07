@@ -182,24 +182,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * 表头，列名字段序列:
-	 *
-	 * @return 返回 数据 的表头，列名序列
-	 */
-	public Stream<String> keyS() {
-		return this.keymetas.entrySet().stream().sorted(Comparator.comparingInt(Entry::getValue)).map(Entry::getKey);
-	}
-
-	/**
-	 * 表头，列名字段序列:
-	 *
-	 * @return 返回 数据 的表头，列名序列
-	 */
-	public List<String> keys() {
-		return this.keyS().collect(Collectors.toList());
-	}
-
-	/**
 	 * 表头，列名字段序列(keys别名）
 	 *
 	 * @return 返回 数据 的表头，列名序列
@@ -236,6 +218,24 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public DataMatrix<T> title(final Iterable<String> keys) {
 		return this.keys(keys);
+	}
+
+	/**
+	 * 表头，列名字段序列:
+	 *
+	 * @return 返回 数据 的表头，列名序列
+	 */
+	public Stream<String> keyS() {
+		return this.keymetas.entrySet().stream().sorted(Comparator.comparingInt(Entry::getValue)).map(Entry::getKey);
+	}
+
+	/**
+	 * 表头，列名字段序列:
+	 *
+	 * @return 返回 数据 的表头，列名序列
+	 */
+	public List<String> keys() {
+		return this.keyS().collect(Collectors.toList());
 	}
 
 	/**
@@ -289,17 +289,6 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	}
 
 	/**
-	 * map
-	 * 
-	 * @param <U>    U
-	 * @param mapper mapper [t]-&gt;u
-	 * @return U 类型的类型的流
-	 */
-	public <U> Stream<U> map(final Function<T[], U> mapper) {
-		return Arrays.stream(this.data()).map(mapper);
-	}
-
-	/**
 	 * 获取并设置健名（列名）索引
 	 *
 	 * @param keys 列名字段序列
@@ -324,8 +313,19 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			}
 			this.setKeymetas(keysMap);
 		} // if
-
+	
 		return this;
+	}
+
+	/**
+	 * map
+	 * 
+	 * @param <U>    U
+	 * @param mapper mapper [t]-&gt;u
+	 * @return U 类型的类型的流
+	 */
+	public <U> Stream<U> map(final Function<T[], U> mapper) {
+		return Arrays.stream(this.data()).map(mapper);
 	}
 
 	/**

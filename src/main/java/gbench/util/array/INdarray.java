@@ -1649,6 +1649,18 @@ public interface INdarray<V> extends Comparable<INdarray<V>>, Iterable<V>, IStre
 	}
 
 	/**
+	 * 字符串向量
+	 *
+	 * @return 字符串向量
+	 */
+	@SuppressWarnings("unchecked")
+	default INdarray<String> strs() {
+		final INdarray<String> nd = this.fmap(String::valueOf); // 尝试转换
+		// 转换后的数据内容相同则返回本身，即尽量使用对象本身进行返回
+		return Arrays.equals(nd.data(), this.data()) ? (INdarray<String>) this : nd;
+	}
+
+	/**
 	 * 数字向量
 	 *
 	 * @param <N>    数据类型
