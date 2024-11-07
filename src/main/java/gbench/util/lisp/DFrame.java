@@ -804,6 +804,88 @@ public class DFrame implements Iterable<IRecord> {
 	}
 
 	/**
+	 * 数据分组
+	 * 
+	 * @param <K>        the type of the keys
+	 * @param <A>        the intermediate accumulation type of the downstream
+	 *                   collector
+	 * @param <M>        the type of the resulting Map
+	 * @param <D>        the result type of the downstream reduction
+	 * @param classifier a classifier function mapping input elements to keys
+	 * @param mapFactory a supplier providing a new empty Mapinto which the results
+	 *                   will be inserted
+	 * @param downstream a Collector implementing the downstream reduction
+	 * @return M
+	 */
+	public <K, A, M extends Map<K, D>, D> M groupBy(Function<? super IRecord, ? extends K> classifier,
+			final Supplier<M> mapFactory, final Collector<? super IRecord, A, D> downstream) {
+		return this.collect(Collectors.groupingBy(classifier, mapFactory, downstream));
+	}
+
+	/**
+	 * 
+	 * 数据分组
+	 * 
+	 * @param <K>        the type of the keys
+	 * @param classifier a classifier function mapping input elements to keys
+	 * @param mapFactory a supplier providing a new empty Mapinto which the results
+	 *                   will be inserted
+	 * @param downstream a Collector implementing the downstream reduction
+	 * @return LinkedHashMap
+	 */
+	public <K> LinkedHashMap<K, List<IRecord>> groupBy(Function<? super IRecord, ? extends K> classifier) {
+		return this.groupBy(classifier, LinkedHashMap::new, Collectors.toList());
+	}
+
+	/**
+	 * 转换成映射 结构
+	 * 
+	 * @param <K>           the type of the keys
+	 * @param <V>           the output type of the value mapping function
+	 * @param <M>           the type of the resulting Map
+	 * @param keyMapper     a mapping function to produce keys
+	 * @param valueMapper   a mapping function to produce values
+	 * @param mergeFunction a merge function, used to resolve collisions
+	 *                      betweenvalues associated with the same key, as
+	 *                      suppliedto Map.merge(Object, Object, BiFunction)
+	 * @param mapFactory    a supplier providing a new empty Mapinto which the
+	 *                      results will be inserted
+	 * @return M
+	 */
+	public <K, V, M extends Map<K, V>> M toMap(final Function<? super IRecord, K> keyMapper,
+			final Function<? super IRecord, V> valueMapper, final BinaryOperator<V> mergeFunction,
+			Supplier<M> mapFactory) {
+		return this.rowS().collect(Collectors.toMap(keyMapper, valueMapper, mergeFunction, mapFactory));
+	}
+
+	/**
+	 * 转换成映射 结构
+	 * 
+	 * @param <K>         the type of the keys
+	 * @param <V>         the output type of the value mapping function
+	 * @param keyMapper   a mapping function to produce keys
+	 * @param valueMapper a mapping function to produce values
+	 * @return LinkedHashMap
+	 */
+	public <K, V> LinkedHashMap<K, V> toMap(final Function<? super IRecord, K> keyMapper,
+			final Function<? super IRecord, V> valueMapper) {
+		return this.rowS().collect(Collectors.toMap(keyMapper, valueMapper, (a, b) -> b, LinkedHashMap::new));
+	}
+
+	/**
+	 * 转换成映射 结构
+	 * 
+	 * @param <K>         the type of the keys
+	 * @param <V>         the output type of the value mapping function
+	 * @param keyMapper   a mapping function to produce keys
+	 * @param valueMapper a mapping function to produce values
+	 * @return
+	 */
+	public <K, V> LinkedHashMap<K, IRecord> toMap(final Function<? super IRecord, K> keyMapper) {
+		return this.rowS().collect(Collectors.toMap(keyMapper, e -> e, (a, b) -> b, LinkedHashMap::new));
+	}
+
+	/**
 	 * iterator
 	 */
 	@Override

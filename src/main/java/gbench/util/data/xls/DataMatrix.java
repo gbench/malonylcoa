@@ -296,19 +296,24 @@ public class DataMatrix<T> implements Iterable<T[]> {
 	 */
 	public DataMatrix<T> setKeys(final Iterable<?> keys) {
 		final Map<String, Integer> keysMap = new HashMap<>();
+		final var n = this.width(); // 列数量
 		if (keys == null) {
 			final List<String> _keys = this.keys();
-			for (int i = 0; i < _keys.size(); i++) {
+			for (int i = 0; i < Math.min(_keys.size(), n); i++) {
 				keysMap.put(_keys.get(i), i);
 			} // for
 		} else {
 			int i = 0;
 			for (final Object key : keys) {
-				keysMap.put(key + "", i++);
+				if (i >= n) { // 剔除掉多余的键名
+					break;
+				} else { // 加入键名
+					keysMap.put(String.valueOf(key), i++);
+				} // if
 			} // for
-			if (keysMap.size() < this.width()) { // 补充长度
-				for (; i < this.width(); i++) {
-					keysMap.put("_" + DataMatrix.index_to_excel_name(i), i);
+			if (keysMap.size() < n) { // 补充长度
+				for (; i < n; i++) {
+					keysMap.put("_" + DataMatrix.xlsn(i), i);
 				}
 			}
 			this.setKeymetas(keysMap);
