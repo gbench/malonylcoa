@@ -89,7 +89,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 		} // for i
 
 		// 设置键名列表
-		this.setKeys(final_keys);// 设置表头，表头与键名列表同义
+		this.setKeys(final_keys.subList(0, n));// 设置表头，表头与键名列表同义
 
 		return this;
 	}
@@ -313,7 +313,7 @@ public class DataMatrix<T> implements Iterable<T[]> {
 			}
 			this.setKeymetas(keysMap);
 		} // if
-	
+
 		return this;
 	}
 
