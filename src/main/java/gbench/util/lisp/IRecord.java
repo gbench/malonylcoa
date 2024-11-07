@@ -2062,12 +2062,36 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 使用this作为初始规约值result进行iterate的迭代规约
 	 * 
 	 * @param<T> 元素类型
-	 * @param quantizer 量化器: t-&gt;num
-	 * @param recs      归集集合
+	 * @param nums 归集集合
 	 * @return 规约结果
 	 */
-	default <T> IRecord max(final Function<T, Number> quantizer, final IRecord... recs) {
-		return this.reduce(IRecord.max(quantizer), recs);
+	default <T> IRecord max(final Number... nums) {
+		return this.max(null, nums);
+	}
+
+	/**
+	 * 加法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param recs 归集集合
+	 * @return 规约结果
+	 */
+	default <T> IRecord max(final IRecord... recs) {
+		return this.max(null, recs);
+	}
+
+	/**
+	 * 提取最大的值<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param quantizer 量化器: t-&gt;num
+	 * @param nums      数值集合
+	 * @return 规约结果
+	 */
+	default <T> IRecord max(final Function<T, Number> quantizer, final Number... nums) {
+		return this.max(quantizer, Stream.of(nums).map(this.rb()::get).toArray(IRecord[]::new));
 	}
 
 	/**
@@ -2079,8 +2103,69 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param recs      归集集合
 	 * @return 规约结果
 	 */
+	default <T> IRecord max(final Function<T, Number> quantizer, final IRecord... recs) {
+		return this.reduce(IRecord.max(quantizer), recs);
+	}
+
+	/**
+	 * 提取最小的值<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param nums 数值集合
+	 * @return 规约结果
+	 */
+	default <T> IRecord min(final Number... nums) {
+		return this.min(null, nums);
+	}
+
+	/**
+	 * 提取最小的值<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param nums 数值集合
+	 * @return 规约结果
+	 */
+	default <T> IRecord min(final IRecord... recs) {
+		return this.min(null, recs);
+	}
+
+	/**
+	 * 提取最小的值<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param quantizer 量化器: t-&gt;num
+	 * @param nums      数值集合
+	 * @return 规约结果
+	 */
+	default <T> IRecord min(final Function<T, Number> quantizer, final Number... nums) {
+		return this.min(quantizer, Stream.of(nums).map(this.rb()::get).toArray(IRecord[]::new));
+	}
+
+	/**
+	 * 提取最小的值<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param<T> 元素类型
+	 * @param quantizer 量化器: t-&gt;num
+	 * @param recs      归集集合
+	 * @return 规约结果
+	 */
 	default <T> IRecord min(final Function<T, Number> quantizer, final IRecord... recs) {
 		return this.reduce(IRecord.min(quantizer), recs);
+	}
+
+	/**
+	 * 加法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param nums 加数集合
+	 * @return 规约结果
+	 */
+	default IRecord plus(final Number... nums) {
+		return this.plus(Stream.of(nums).map(this.rb()::get).toArray(IRecord[]::new));
 	}
 
 	/**
@@ -2099,12 +2184,33 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 减法<br>
 	 * 使用this作为初始规约值result进行iterate的迭代规约
 	 * 
-	 * @param accumulator (result,e)-&gt;result
-	 * @param recs        归集集合
+	 * @param nums 减数集合
+	 * @return 规约结果
+	 */
+	default IRecord subtract(final Number... nums) {
+		return this.subtract(Stream.of(nums).map(this.rb()::get).toArray(IRecord[]::new));
+	}
+
+	/**
+	 * 减法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param recs 归集集合
 	 * @return 规约结果
 	 */
 	default IRecord subtract(final IRecord... recs) {
 		return this.reduce(IRecord.subtract(), recs);
+	}
+
+	/**
+	 * 乘法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param nums 乘数集合
+	 * @return 规约结果
+	 */
+	default IRecord multiply(final Number... nums) {
+		return this.multiply(Stream.of(nums).map(this.rb()::get).toArray(IRecord[]::new));
 	}
 
 	/**
@@ -2116,6 +2222,17 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	default IRecord multiply(final IRecord... recs) {
 		return this.reduce(IRecord.multiply(), recs);
+	}
+
+	/**
+	 * 除法<br>
+	 * 使用this作为初始规约值result进行iterate的迭代规约
+	 * 
+	 * @param nums 除数集合
+	 * @return 规约结果
+	 */
+	default IRecord divide(final Number... nums) {
+		return this.divide(Stream.of(nums).map(this.rb()::get).toArray(IRecord[]::new));
 	}
 
 	/**
@@ -2812,16 +2929,17 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * 生成一个 IRecord的二元运算法。 最大值
 	 *
 	 * @param <T>       度量器的数据类型
-	 * @param quantizer 度量器 t->number
-	 * @return (record0, record1)->record2
+	 * @param quantizer 度量器 t-&gt;number
+	 * @return (record0, record1)-&gt;record2
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> BinaryOperator<IRecord> max(final Function<T, Number> quantizer) {
+		final Function<T, Number> quant = Optional.ofNullable(quantizer)
+				.orElseGet(() -> x -> IRecord.REC("x", x).dblOpt("x").orElse(0d));
+
 		return IRecord.combine2((k, tup) -> {
-			final double a = Optional.ofNullable(tup._1).map(e -> (T) e).map(quantizer).map(Number::doubleValue)
-					.orElse(0d);
-			final double b = Optional.ofNullable(tup._2).map(e -> (T) e).map(quantizer).map(Number::doubleValue)
-					.orElse(0d);
+			final double a = Optional.ofNullable(tup._1).map(e -> (T) e).map(quant).map(Number::doubleValue).orElse(0d);
+			final double b = Optional.ofNullable(tup._2).map(e -> (T) e).map(quant).map(Number::doubleValue).orElse(0d);
 			return a > b ? tup._1 : tup._2;
 		});
 	}
@@ -2835,9 +2953,12 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> BinaryOperator<IRecord> min(final Function<T, Number> quantizer) {
+		final Function<T, Number> quant = Optional.ofNullable(quantizer)
+				.orElseGet(() -> x -> IRecord.REC("x", x).dblOpt("x").orElse(0d));
+
 		return IRecord.combine2((k, tup) -> {
-			final double a = quantizer.apply((T) tup._1).doubleValue();
-			final double b = quantizer.apply((T) tup._2).doubleValue();
+			final double a = quant.apply((T) tup._1).doubleValue();
+			final double b = quant.apply((T) tup._2).doubleValue();
 			return a < b ? tup._1 : tup._2;
 		});
 	}

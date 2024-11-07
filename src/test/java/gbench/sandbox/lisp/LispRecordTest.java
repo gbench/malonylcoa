@@ -33,6 +33,12 @@ public class LispRecordTest {
 		final var a = rb.get(1, 2, 3);
 		final var b = rb.get(5, 9, 4);
 		final var c = rb.get(8, 0, 7);
+
+		println("a", a);
+		println("a+1", a.plus(1));
+		println("a-1", a.subtract(1));
+		println("a*2*-1", a.multiply(2, -1));
+		println("a/2/-1", a.divide(2));
 		println("a+b", a.plus(b));
 		println("a+b+c", a.plus(b, c));
 		println("a-b", a.subtract(b));
@@ -42,7 +48,11 @@ public class LispRecordTest {
 		println("a/b", a.divide(b));
 		println("a/b/c", a.divide(b, c));
 		println("a.max(c)", a.max(Integer.class::cast, c));
+		println("a.max(2)", a.max(Integer.class::cast, 2));
+		println("a.max(2)", a.max(2));
 		println("a.min(c)", a.min(Integer.class::cast, c));
+		println("a.min(2)", a.min(Integer.class::cast, 2));
+		println("a.min(2)", a.min(2));
 		println(a.reduce(null, b, c));
 		println(a.reduce(IRecord.combine("%s/%s"::formatted), b, c));
 		println(a.reduce(IRecord.combine(Arrays::asList), b, c));
