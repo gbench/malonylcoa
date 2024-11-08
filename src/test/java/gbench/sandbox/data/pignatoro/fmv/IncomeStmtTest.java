@@ -5,10 +5,12 @@ import static gbench.util.lisp.Lisp.CONS;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -18,6 +20,7 @@ import gbench.util.lisp.DFrame;
 import gbench.util.data.xls.SimpleExcel;
 import gbench.util.io.Output;
 import gbench.util.lisp.IRecord;
+import gbench.util.lisp.Lisp;
 
 /**
  * 利润表的数据核算
@@ -105,7 +108,7 @@ public class IncomeStmtTest {
 		final var rb = lines.values().iterator().next().rb(); // IRecord Builder 表项构建器
 		final var growth_suffix = "Growth"; // 增长率后缀
 		final Function<String, IRecord> calculate_growth = key -> Optional.ofNullable(key) // 增长率指标计算器
-				.map(k -> k.replaceAll("\s+%s$".formatted(growth_suffix), "")) // 去除掉指标名称尾部的Growth后缀,以获取到该比率指标的基础数据数据名
+				.map(k -> k.replaceFirst("\s+%s$".formatted(growth_suffix), "")) // 去除掉指标名称尾部的Growth后缀,以获取到该比率指标的基础数据数据名
 				.map(lines::get).map(e -> e.filterNot(0).valueS() // 剔除首项键名列
 						.collect(IRecord.slidingclc(IRecord.rb("previous,current")::get, 2, 1, true)) // 齐次的宽度2步长1的连续窗口滑动
 						.map(entry -> entry.dbl("current") / entry.dbl("previous") - 1).toArray(Object[]::new)) // 计算增长率:注意,需要返回对象数组以保证可以CONS
@@ -123,6 +126,76 @@ public class IncomeStmtTest {
 
 		// 结果输出
 		println("%s\n%s".formatted("-".repeat(100), reportdfm));
+	}
+
+	/**
+	 * 简单四则混合运算的的实现
+	 */
+	@Test
+	public void bar() {
+		final Function<Map<String, IRecord>, Function<String[], IRecord>> calculate_flat = lines -> defination -> { // 扁平计算
+			final var item = defination[0].strip(); // 指标名:左边变量去
+			final var expression = defination[1].strip(); // 指标计算表达式：右边表达式区域
+			final var opattern = "\s+[-\\+\\*/]+\s+"; // 运算符的结构模式：注意前后各有空白\s,以便将连字符'-'与减号' - '进行区分
+			final var terms = expression.split(opattern); // 通过算数运算符把运算项目分开
+			final var matcher = Pattern.compile(opattern).matcher(expression); // 算符提取器
+			final var ops = new CopyOnWriteArrayList<String>(); // 运算符收集器
+			final var ai = new AtomicInteger(); // 算符位置索引（计算次序的序号）
+
+			while (matcher.find()) { // 记录算符索引：计算位置
+				ops.add(matcher.group());
+			}
+
+			return ops.size() < 1 // 没有发现算符
+					? lines.computeIfAbsent(item, k -> Optional.ofNullable(lines.get(expression)) //
+							.map(e -> e.duplicate().set(0, item)).orElse(null)) // 字段改名
+					: Stream.of(terms).map(String::strip).map(lines::get) // 提取行项目并给予运算标示进行计算
+							.reduce((a, b) -> switch (ops.get(ai.getAndIncrement()).strip()) { // 根据算符索引依次进行数据计算
+							case "+" -> a.plus(b); // 加法
+							case "-" -> a.subtract(b); // 减法
+							case "*" -> a.multiply(b); // 乘法
+							case "/" -> a.divide(b); // 除法
+							default -> null; // 其他
+							}) // reduce 规约计算
+							.map(e -> e.set(0, item)) // 结果键值为key的数据记录
+							.map(e -> lines.computeIfAbsent(item, k -> e)) // 数据写入缓存表lines
+							.orElse(null); // 默认返回null
+		}; // calculate_flat
+
+		final Function<Map<String, String>, Function<String, String>> analyzer = symboldefs -> Lisp
+				.yCombinator(f -> line -> { // 把字符串列行转换成分词结构
+					final var parents_pattern = "\\(\s*([^()]+)\s*\\)"; // 识别括号模式
+					final var matcher = Pattern.compile(parents_pattern).matcher(line);
+					final var key = "#%s".formatted(symboldefs.size()); // 生成符号定义名：符号键名
+					final boolean flag;
+					final var expression = (flag = matcher.find()) ? matcher.group(1) : line; // 定义表达式
+					symboldefs.put(key, expression);
+					return flag ? f.apply(line.replaceFirst(parents_pattern, key)) : line;
+				}); // 分词器
+
+		final BiFunction<String, Map<String, IRecord>, IRecord> formula_eval = (formula, lines) -> {
+			final var symboldefs = new LinkedHashMap<String, String>(); // 符号定义表
+			final var formula_analyzer = analyzer.apply(symboldefs); // 公式分析器
+			final var analyzed_formula = formula_analyzer.apply(formula);
+			println("\nformula:%s,\t analyzed_formula:%s".formatted(formula, analyzed_formula)); // 生成符号记录表
+			final var localscope = new LinkedHashMap<String, IRecord>(lines); // 制作一个本地拷贝本地变量集合
+			final var calculate_symboldef = calculate_flat.apply(localscope); // 符号计算
+			final var result = symboldefs.entrySet().stream().map(e -> new String[] { e.getKey(), e.getValue() })
+					.map(calculate_symboldef).toList().getLast();
+			println("symboldefs:%s,\t localscope:%s".formatted(symboldefs, localscope));
+			return result;
+		};
+
+		final var rb = IRecord.rb("item,x"); // 行项目构建器
+		final Map<String, IRecord> lines = Stream.of( // 符号定义
+				rb.get("a", 1), rb.get("b", 2), rb.get("c", 3), rb.get("d", 4), //
+				rb.get("e", 5), rb.get("f", 6), rb.get("g", 7) //
+		).collect(DFrame.dfmclc).toMap(); // 基础要素定义定义行
+
+		// 公式计算
+		Stream.of("a + (b * (c + (d * (e - f))) - g),a + b + c".split("[,]+")) //
+				.map(e -> formula_eval.apply(e, lines)).forEach(Output::println);
+
 	}
 
 	private final String datahome = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/pignatoro/files/%s";
