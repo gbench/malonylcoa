@@ -113,8 +113,9 @@ public class Lisp {
 	 * Y组合子：一种令 lambda表达式提供递归 调用技巧<br>
 	 * 使用方法:
 	 * 
-	 * Function<Integer,List<Integer>> factorial = <br>
-	 * yCombinator(f->n->if(n<1) n*1d else f.apply(n-1)*n)
+	 * Function<Integer,Integer> factorial = <br>
+	 * yCombinator(f->n->if(n<1) n*1d else f.apply(n-1)*n) <br>
+	 * factorial.apply(10)
 	 * 
 	 * @param <T> 参数类型
 	 * @param <R> 结果类型
