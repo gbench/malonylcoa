@@ -888,29 +888,32 @@ public class DFrame implements Iterable<IRecord> {
 	/**
 	 * 转换成映射 结构(依据指定键名）
 	 * 
+	 * @param <K> 键名类型
 	 * @param key 键名
 	 * @return
 	 */
-	public <K, V> LinkedHashMap<Object, IRecord> toMap(final String key) {
+	public <K> LinkedHashMap<K, IRecord> toMap(final String key) {
 		return this.toMap(e -> e.get(key));
 	}
 
 	/**
 	 * 转换成映射 结构（根据指定键名索引）
 	 *
+	 * @param <K> 键名类型
 	 * @param idx 键名索引从开始
 	 * @return
 	 */
-	public <K, V> LinkedHashMap<Object, IRecord> toMap(final Integer idx) {
+	public <K> LinkedHashMap<K, IRecord> toMap(final Integer idx) {
 		return this.toMap(e -> e.get(idx));
 	}
 
 	/**
 	 * 转换成映射 结构（根据第一列）
-	 *
+	 * 
+	 * @param <K> 键名类型
 	 * @return
 	 */
-	public <K, V> LinkedHashMap<Object, IRecord> toMap() {
+	public <K> LinkedHashMap<K, IRecord> toMap() {
 		return this.toMap(e -> e.get(0));
 	}
 

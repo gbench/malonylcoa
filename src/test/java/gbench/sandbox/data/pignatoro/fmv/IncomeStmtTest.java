@@ -5,6 +5,7 @@ import static gbench.util.lisp.Lisp.CONS;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,16 +37,16 @@ public class IncomeStmtTest {
 		println(titlemx, titlemx.shape()); // 打印表头
 
 		final var keyname = "item"; // 首项的键名
-		final var lines = stmtdmx.keys(titlemx.row(0, INdarray::nd) // 设置矩阵标题
+		final Map<String, IRecord> lines = stmtdmx.keys(titlemx.row(0, INdarray::nd) // 设置矩阵标题
 				.fmap(e -> "%d".formatted(((Double) e).intValue())).prepend(keyname)) // 增加item项目
-				.mutate(SimpleExcel::dmx2dfm).toMap(e -> e.str(keyname)); // 转换成 数据矩阵转换成DFrame,并进行 键值 映射
+				.mutate(SimpleExcel::dmx2dfm).toMap(); // 转换成 数据矩阵转换成DFrame,并进行 键值 映射
 
 		final Function<String[], IRecord> calculate_item = defination -> { // 财务指标计算
 			final var item = defination[0].strip(); // 指标名:左边变量去
 			final var expression = defination[1].strip(); // 指标计算表达式：右边表达式区域
-			final var op = "\s+[-\\+\\*/]+\s+"; // 算符运算符：注意前后各有空白\s,以便将连字符'-'与减号' - '进行区分
-			final var terms = expression.split(op); // 通过算数运算符把运算项目分开
-			final var matcher = Pattern.compile(op).matcher(expression); // 算符提取器
+			final var opattern = "\s+[-\\+\\*/]+\s+"; // 运算符的结构模式：注意前后各有空白\s,以便将连字符'-'与减号' - '进行区分
+			final var terms = expression.split(opattern); // 通过算数运算符把运算项目分开
+			final var matcher = Pattern.compile(opattern).matcher(expression); // 算符提取器
 			final var ops = new CopyOnWriteArrayList<String>(); // 运算符收集器
 			final var ai = new AtomicInteger(); // 算符位置索引（计算次序的序号）
 
@@ -54,7 +55,8 @@ public class IncomeStmtTest {
 			}
 
 			return ops.size() < 1 // 没有发现算符
-					? lines.computeIfAbsent(item, k -> lines.get(expression).duplicate().set(0, item)) // 字段改名
+					? lines.computeIfAbsent(item, k -> Optional.ofNullable(lines.get(expression)) //
+							.map(e -> e.duplicate().set(0, item)).orElse(null)) // 字段改名
 					: Stream.of(terms).map(String::strip).map(lines::get) // 提取行项目并给予运算标示进行计算
 							.reduce((a, b) -> switch (ops.get(ai.getAndIncrement()).strip()) { // 根据算符索引依次进行数据计算
 							case "+" -> a.plus(b); // 加法
@@ -71,10 +73,11 @@ public class IncomeStmtTest {
 
 		println("-".repeat(100)); // 打印分割行
 
-		// 财务报表的相关概念的逻辑关系:变量定义式， 注意 算术符号的+-*x需要使用前后至少留有一个空格
+		// 财务报表的相关概念的逻辑关系:变量定义式,注意:算术符号的'+','-','*','/'需要前后至少留有一个空格,否则会被视为连接符
 		final var definations = """
 					Total Net Sales = Net product sales + Net service sales
 					Gross Profit = Total Net Sales - Cost of sales
+					Gross Profit Margin = Gross Profit / Total Net Sales
 					Operating expenses = Cost of sales + Fulfillment + Technology and content + Marketing + General and administrative + Other operating expense (income), net
 					Operating income = Total Net Sales - Operating expenses
 					Total non-operating income (expense) = Interest income + Interest expense + Other income (expense), net
@@ -101,8 +104,9 @@ public class IncomeStmtTest {
 		Stream.of(definations).map(e -> e.split("=")).map(calculate_item).forEach(Output::println);
 
 		final var rb = lines.values().iterator().next().rb(); // IRecord Builder 表项构建器
+		final var growth_suffix = "Growth"; // 增长率后缀
 		final Function<String, IRecord> calculate_growth = key -> Optional.ofNullable(key) // 增长率指标计算器
-				.map(k -> k.replaceAll("\s+Margin$", "")) // 去除掉指标名称尾部的Margin后缀,以获取到该比率指标的基础数据数据名
+				.map(k -> k.replaceAll("\s+%s$".formatted(growth_suffix), "")) // 去除掉指标名称尾部的Margin后缀,以获取到该比率指标的基础数据数据名
 				.map(lines::get).map(e -> e.filterNot(0).valueS() // 剔除首项键名列
 						.collect(IRecord.slidingclc(IRecord.rb("previous,current")::get, 2, 1, true)) // 齐次的宽度2步长1的连续窗口滑动
 						.map(entry -> entry.dbl("current") / entry.dbl("previous") - 1).toArray(Object[]::new)) // 计算增长率:注意,需要返回对象数组以保证可以CONS
@@ -111,7 +115,8 @@ public class IncomeStmtTest {
 		println("-".repeat(100)); // 打印分割行
 
 		// 计算增长率指标
-		Stream.of(growth_ratio_prefixes).map(key -> lines.computeIfAbsent("%s Margin".formatted(key), calculate_growth))
+		Stream.of(growth_ratio_prefixes)
+				.map(key -> lines.computeIfAbsent("%s %s".formatted(key, growth_suffix), calculate_growth))
 				.forEach(Output::println);
 
 		// 分析结果
