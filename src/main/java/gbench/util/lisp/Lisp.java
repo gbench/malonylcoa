@@ -110,6 +110,39 @@ public class Lisp {
 	}
 
 	/**
+	 * Y组合子：一种令 lambda表达式提供递归 调用技巧<br>
+	 * 使用方法:
+	 * 
+	 * Function<Integer,List<Integer>> factorial = <br>
+	 * yCombinator(f->n->if(n<1) n*1d else f.apply(n-1)*n)
+	 * 
+	 * @param <T> 参数类型
+	 * @param <R> 结果类型
+	 * @param g   二级lambda表达式: 是一个 f->n->...的结构。 注意这里用f封装了n->...的lambda包装 <br>
+	 *            其中 n->...就是我们 需要进行递归的lambda表达式: 目标lamda。<br>
+	 *            通过 yCombinator的 目标lamda 会被赋值给f，即f就代表了目标lamda，具体使用实例如下：<br>
+	 *            f->n->if(n<1) n*1d else f.apply(n-1)*n <br>
+	 *            f 就是 “n->if(n<1) n*1d else f.apply(n-1)*n” 的命名名引用：<br>
+	 *            那么f 是 如何 被复制的呢？答案就是参数调用 即g.apply(目标lamda)<br>
+	 *            那么 目标lamda 又如何提取的方法就是构造一个与 目标lamda
+	 *            一样功能的匿名函数。然后在这个匿名函数之中使用this进行引用。<br>
+	 *            需要明白：yCombinator 的功能 构造一个 目标lamda 具有一模一样功能的函数 这个函数《br>
+	 *            用匿名类的this医用; 于是 g.apply(this)(需要明白这里的apply(this)就是把this复值给了f） ,其实
+	 *            就是返回了目标lamda。然后 通过 g.apply(this).apply(t) 就是模拟了 目标lambda功能。
+	 *            就是返回了目标lamda 这里的鹅巧妙之处就在于 g.apply(this).apply(t); 的这一句：
+	 *            g.apply(this) 是一个新编写的功能
+	 * @return 生成函数
+	 */
+	public static <T, R> Function<T, R> yCombinator(final Function<Function<T, R>, Function<T, R>> g) {
+		return new Function<T, R>() {
+			@Override
+			public R apply(final T t) {
+				return g.apply(this).apply(t);
+			}
+		};
+	}
+
+	/**
 	 * list ComPreHend
 	 *
 	 * @param <T> 元素类型
