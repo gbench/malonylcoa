@@ -68,7 +68,6 @@ public class IncomeStmtTest {
 							.map(e -> e.set(0, item)) // 结果键值为key的数据记录
 							.map(e -> lines.computeIfAbsent(item, k -> e)) // 数据写入缓存表lines
 							.orElse(null); // 默认返回null
-
 		};
 
 		println("-".repeat(100)); // 打印分割行
