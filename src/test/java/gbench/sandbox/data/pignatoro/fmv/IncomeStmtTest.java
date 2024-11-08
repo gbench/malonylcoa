@@ -106,7 +106,7 @@ public class IncomeStmtTest {
 		final var rb = lines.values().iterator().next().rb(); // IRecord Builder 表项构建器
 		final var growth_suffix = "Growth"; // 增长率后缀
 		final Function<String, IRecord> calculate_growth = key -> Optional.ofNullable(key) // 增长率指标计算器
-				.map(k -> k.replaceAll("\s+%s$".formatted(growth_suffix), "")) // 去除掉指标名称尾部的Margin后缀,以获取到该比率指标的基础数据数据名
+				.map(k -> k.replaceAll("\s+%s$".formatted(growth_suffix), "")) // 去除掉指标名称尾部的Growth后缀,以获取到该比率指标的基础数据数据名
 				.map(lines::get).map(e -> e.filterNot(0).valueS() // 剔除首项键名列
 						.collect(IRecord.slidingclc(IRecord.rb("previous,current")::get, 2, 1, true)) // 齐次的宽度2步长1的连续窗口滑动
 						.map(entry -> entry.dbl("current") / entry.dbl("previous") - 1).toArray(Object[]::new)) // 计算增长率:注意,需要返回对象数组以保证可以CONS
