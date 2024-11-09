@@ -182,17 +182,17 @@ public class IncomeStmtTest2 {
 	 */
 	final Function<Map<String, String>, Function<String, String>> analyzer = // 把字符串列行转换成分词结构
 			symboldefs -> Lisp.yCombinator(analyzer_f -> formula -> { // analyzer_f:analyzer自身引用, dataline:数据行
-				final Predicate<String> predicate_mixed = ln -> { // 是否是混合运算
-					final var b0 = ln.indexOf(" * ") >= 0 || ln.indexOf(" / ") >= 0; // 是否含有乘除符号
-					final var b1 = ln.indexOf(" + ") >= 0 || ln.indexOf(" - ") >= 0; // 是否含有加减符号
+				final Predicate<String> predicate_mixed = line -> { // 是否是混合运算
+					final var b0 = line.indexOf(" * ") >= 0 || line.indexOf(" / ") >= 0; // 是否含有乘除符号
+					final var b1 = line.indexOf(" + ") >= 0 || line.indexOf(" - ") >= 0; // 是否含有加减符号
 					return b0 && b1;
 				}; // predicate_mixed 是否是混合运算
 				final Supplier<String> keyer = () -> "#%s".formatted(symboldefs.size()); // 生成符号定义名：符号键名
 				final Function<String, Function<String, String>> flattened_analyzer = //
 						Lisp.yCombinator(flattened_f -> pattern -> line -> { // flattened_f:flatten_analyzer自身引用,line:数据行
 							final var matcher = Pattern.compile(pattern).matcher(line);
-							final boolean parentheses_flag; // 是否包含有括号
-							final var expression = (parentheses_flag = matcher.find()) ? matcher.group(1) : line; // 定义表达式
+							final boolean flag; // 是否包含有括号
+							final var expression = (flag = matcher.find()) ? matcher.group(1) : line; // 定义表达式
 							final BiFunction<String, String, String> flattened_handler = (flattened_line, key) -> { // flatten_line:不带括号的表达式,key:符号名
 								if (predicate_mixed.test(flattened_line)) { // 混合运算，进行乘除法分析
 									return flattened_f.apply("(([^/*+\\-]+)\s+([*/]+)\s+([^/*+\\-]+))")
@@ -203,7 +203,7 @@ public class IncomeStmtTest2 {
 								} // if
 							}; // flatten_handler
 							final var key = keyer.get(); // 符号定义名:键名
-							if (parentheses_flag) {// 包含有括号
+							if (flag) {// 包含有括号
 								flattened_handler.apply(expression, key); // 写入括号子表达式，增加了一个符号key保证了exprkeyopt非空
 								// flattened_handler会把expression的符号定义(表达式)写在符号表symboldefs的最后一项（key）,这里就是通过
 								// reduce((a, b) -> b)逐一遍历（(a, b)->b表示只是简单遍历而不做别的）的迭代到最后一项（key)即expression的符号key
