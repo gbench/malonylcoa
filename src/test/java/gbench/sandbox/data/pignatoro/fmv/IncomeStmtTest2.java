@@ -170,7 +170,7 @@ public class IncomeStmtTest2 {
 						.map(e -> e.set(0, item)) // 结果键值为key的数据记录
 						.map(e -> lines.computeIfAbsent(item, k -> e)) // 数据写入缓存表lines
 						.orElse(null); // 默认返回null
-	}; // calculate_flatten
+	}; // calculate_flattened
 
 	/**
 	 * 公式分解-函数<br>
