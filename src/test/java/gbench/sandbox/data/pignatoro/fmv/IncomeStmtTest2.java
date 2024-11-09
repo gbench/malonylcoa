@@ -189,19 +189,19 @@ public class IncomeStmtTest2 {
 				}; // predicate_mixed 是否是混合运算
 				final Supplier<String> keyer = () -> "#%s".formatted(symboldefs.size()); // 生成符号定义名：符号键名
 				final Function<String, Function<String, String>> flattened_analyzer = //
-						Lisp.yCombinator(flattened_f -> pattern -> line -> { // flattened_f:flatten_analyzer自身引用,line:数据行
+						Lisp.yCombinator(flattened_analyzer_f -> pattern -> line -> { // flattened_analyzer_f:flatten_analyzer自身引用,line:数据行
 							final var matcher = Pattern.compile(pattern).matcher(line);
 							final boolean flag; // 是否包含有括号
 							final var expression = (flag = matcher.find()) ? matcher.group(1) : line; // 定义表达式
-							final BiFunction<String, String, String> flattened_handler = (flattened_line, key) -> { // flatten_line:不带括号的表达式,key:符号名
+							final BiFunction<String, String, String> flattened_handler = (flattened_line, key) -> { // flattened_line:不带括号的表达式,key:符号名
 								if (predicate_mixed.test(flattened_line)) { // 混合运算，进行乘除法分析
-									return flattened_f.apply("(([^/*+\\-]+)\s+([*/]+)\s+([^/*+\\-]+))")
+									return flattened_analyzer_f.apply("(([^/*+\\-]+)\s+([*/]+)\s+([^/*+\\-]+))")
 											.apply(flattened_line); // 乘除结构数据分析
-								} else { // flatten表达式,直接写入符号key
+								} else { // flattened_line表达式,直接写入符号key
 									symboldefs.put(key, flattened_line.strip());
 									return flattened_line; // 扁平行
 								} // if
-							}; // flatten_handler
+							}; // flattened_handler
 							final var key = keyer.get(); // 符号定义名:键名
 							if (flag) {// 包含有括号
 								flattened_handler.apply(expression, key); // 写入括号子表达式，增加了一个符号key保证了exprkeyopt非空
@@ -216,10 +216,10 @@ public class IncomeStmtTest2 {
 								final String flattened_line = expression; // 不包含有括号的数据行，被称为平整过的行住是flattened的平整过还不一定是绝对的flat，需要进一步的flattened_handler
 								return flattened_handler.apply(flattened_line, key);
 							} // if
-						}); // parents_analyzer 括号分析
-				final var flatten_line = flattened_analyzer.apply("\\(\s*([^()]+)\s*\\)").apply(formula); // 将括号变成扁平
+						}); // flattened_analyzer 括号分析
+				final var flattened_line = flattened_analyzer.apply("\\(\s*([^()]+)\s*\\)").apply(formula); // 将括号变成扁平
 
-				return flatten_line;
+				return flattened_line;
 			}); // 分词器
 
 	/**
