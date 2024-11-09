@@ -12,6 +12,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -133,8 +135,11 @@ public class IncomeStmtTest {
 	 */
 	@Test
 	public void bar() {
-		final Function<Map<String, IRecord>, Function<String[], IRecord>> calculate_flat = lines -> defination -> { // 扁平计算
-			final var item = defination[0].strip(); // 指标名:左边变量去
+		/**
+		 * 扁平计算：calculate_flattened
+		 */
+		final Function<Map<String, IRecord>, Function<String[], IRecord>> calculate_flattened = lines -> defination -> { // 扁平计算
+			final var item = defination[0].strip(); // 指标名:左边变量区域
 			final var expression = defination[1].strip(); // 指标计算表达式：右边表达式区域
 			final var opattern = "\s+[-\\+\\*/]+\s+"; // 运算符的结构模式：注意前后各有空白\s,以便将连字符'-'与减号' - '进行区分
 			final var terms = expression.split(opattern); // 通过算数运算符把运算项目分开
@@ -146,10 +151,15 @@ public class IncomeStmtTest {
 				ops.add(matcher.group());
 			}
 
+			final var rbopt = lines.values().stream().findFirst().map(e -> e.rb()); // 行记录构建器
+			final Function<String, Optional<IRecord>> readlineopt = key -> Optional.ofNullable(lines.get(key))
+					.map(Optional::of).orElseGet(() -> rbopt.map(e -> e.get(key))); // 行记录读取函数opt版本
+			final Function<String, IRecord> readline = key -> readlineopt.apply(key).orElse(null); // 行记录读取
+
 			return ops.size() < 1 // 没有发现算符
-					? lines.computeIfAbsent(item, k -> Optional.ofNullable(lines.get(expression)) //
+					? lines.computeIfAbsent(item, k -> Optional.ofNullable(readline.apply(expression)) //
 							.map(e -> e.duplicate().set(0, item)).orElse(null)) // 字段改名
-					: Stream.of(terms).map(String::strip).map(lines::get) // 提取行项目并给予运算标示进行计算
+					: Stream.of(terms).map(String::strip).map(readline) // 提取行项目并给予运算标示进行计算
 							.reduce((a, b) -> switch (ops.get(ai.getAndIncrement()).strip()) { // 根据算符索引依次进行数据计算
 							case "+" -> a.plus(b); // 加法
 							case "-" -> a.subtract(b); // 减法
@@ -160,29 +170,75 @@ public class IncomeStmtTest {
 							.map(e -> e.set(0, item)) // 结果键值为key的数据记录
 							.map(e -> lines.computeIfAbsent(item, k -> e)) // 数据写入缓存表lines
 							.orElse(null); // 默认返回null
-		}; // calculate_flat
+		}; // calculate_flatten
 
-		final Function<Map<String, String>, Function<String, String>> analyzer = symboldefs -> Lisp
-				.yCombinator(f -> line -> { // 把字符串列行转换成分词结构
-					final var parents_pattern = "\\(\s*([^()]+)\s*\\)"; // 识别括号模式
-					final var matcher = Pattern.compile(parents_pattern).matcher(line);
-					final var key = "#%s".formatted(symboldefs.size()); // 生成符号定义名：符号键名
-					final boolean flag;
-					final var expression = (flag = matcher.find()) ? matcher.group(1) : line; // 定义表达式
-					symboldefs.put(key, expression);
-					return flag ? f.apply(line.replaceFirst(parents_pattern, key)) : line;
+		/**
+		 * 公式分解-函数<br>
+		 * 输入formula: a + b * (c + d * (e - f)) - g * 4 <br>
+		 * 分解（扁平）公式:analyzed_formula: a + #3 - #4 <br>
+		 * 符号表: {#0=e - f, #1=d * #0, #2=c + #1, #3=b * #2, #4=g * 4, #5=a + #3 - #4}
+		 * <br>
+		 * 把字符串列行转换成分词结构 analyzer
+		 */
+		final Function<Map<String, String>, Function<String, String>> analyzer = // 把字符串列行转换成分词结构
+				symboldefs -> Lisp.yCombinator(analyzer_f -> formula -> { // analyzer_f:analyzer自身引用, dataline:数据行
+					final Predicate<String> predicate_mixed = line -> { // 是否是混合运算
+						final var b0 = line.indexOf(" * ") >= 0 || line.indexOf(" / ") >= 0; // 是否含有乘除符号
+						final var b1 = line.indexOf(" + ") >= 0 || line.indexOf(" - ") >= 0; // 是否含有加减符号
+						return b0 && b1;
+					}; // predicate_mixed 是否是混合运算
+					final Supplier<String> keyer = () -> "#%s".formatted(symboldefs.size()); // 生成符号定义名：符号键名
+					final Function<String, Function<String, String>> flattened_analyzer = //
+							Lisp.yCombinator(flattened_analyzer_f -> pattern -> line -> { // flattened_analyzer_f:flatten_analyzer自身引用,line:数据行
+								final var matcher = Pattern.compile(pattern).matcher(line);
+								final boolean flag; // 是否包含有括号
+								final var expression = (flag = matcher.find()) ? matcher.group(1) : line; // 定义表达式
+								final BiFunction<String, String, String> flattened_handler = (flattened_line, key) -> { // flattened_line:不带括号的表达式,key:符号名
+									if (predicate_mixed.test(flattened_line)) { // 混合运算，进行乘除法分析
+										return flattened_analyzer_f.apply("(([^/*+\\-]+)\s+([*/]+)\s+([^/*+\\-]+))")
+												.apply(flattened_line); // 乘除结构数据分析
+									} else { // flattened_line表达式,直接写入符号key
+										symboldefs.put(key, flattened_line.strip());
+										return flattened_line; // 扁平行
+									} // if
+								}; // flattened_handler
+								final var key = keyer.get(); // 符号定义名:键名
+								if (flag) {// 包含有括号
+									flattened_handler.apply(expression, key); // 写入括号子表达式，增加了一个符号key保证了exprkeyopt非空
+									// flattened_handler会把expression的符号定义(表达式)写在符号表symboldefs的最后一项（key）,这里就是通过
+									// reduce((a, b) -> b)逐一遍历（(a, b)->b表示只是简单遍历而不做别的）的迭代到最后一项（key)即expression的符号key
+									final var exprkeyopt = symboldefs.entrySet().stream() //
+											.reduce((a, b) -> b).map(Map.Entry::getKey); // expression的符号key
+									return exprkeyopt.map(exprkey -> analyzer_f.apply(line.replaceFirst(pattern, //
+											"\s%s\s".formatted(exprkey.strip())))// 需要注意key的两边的空格
+									).get(); // symboldefs不可能为没有没有数据，所以这里就不使用orElse(null)来返回了
+								} else {
+									final String flattened_line = expression; // 不包含有括号的数据行，被称为平整过的行住是flattened的平整过还不一定是绝对的flat，需要进一步的flattened_handler
+									return flattened_handler.apply(flattened_line, key);
+								} // if
+							}); // flattened_analyzer 括号分析
+					final var flattened_line = flattened_analyzer.apply("\\(\s*([^()]+)\s*\\)").apply(formula); // 将括号变成扁平
+
+					return flattened_line;
 				}); // 分词器
 
-		final BiFunction<String, Map<String, IRecord>, IRecord> formula_eval = (formula, lines) -> {
+		/**
+		 * 公式计算器 formula_eval
+		 */
+		final Function<Map<String, IRecord>, Function<String, IRecord>> formula_eval = lines -> formula -> {
 			final var symboldefs = new LinkedHashMap<String, String>(); // 符号定义表
 			final var formula_analyzer = analyzer.apply(symboldefs); // 公式分析器
-			final var analyzed_formula = formula_analyzer.apply(formula);
-			println("\nformula:%s,\t analyzed_formula:%s".formatted(formula, analyzed_formula)); // 生成符号记录表
+			final var analyzed_formula = formula_analyzer.apply(formula); // 分析公式结构
+			if (debug) { // 打印调试信息-公式的的最终分析结果，语法树根节点样貌:极简式子
+				println("\nformula:%s,\t analyzed_formula:%s".formatted(formula, analyzed_formula)); // 生成符号记录表
+			}
 			final var localscope = new LinkedHashMap<String, IRecord>(lines); // 制作一个本地拷贝本地变量集合
-			final var calculate_symboldef = calculate_flat.apply(localscope); // 符号计算
+			final var calculate_symboldef = calculate_flattened.apply(localscope); // 符号计算
 			final var result = symboldefs.entrySet().stream().map(e -> new String[] { e.getKey(), e.getValue() })
-					.map(calculate_symboldef).toList().getLast();
-			println("symboldefs:%s,\t localscope:%s".formatted(symboldefs, localscope));
+					.map(calculate_symboldef).reduce((a, b) -> b).orElse(null); // reduce保证可以计算到最后一个符号定义以获取最终的计算的结果
+			if (debug) { // 打印调试信息-符号定义与本地计算环境信息
+				println("symboldefs:%s,\t localscope:%s".formatted(symboldefs, localscope));
+			}
 			return result;
 		};
 
@@ -193,10 +249,14 @@ public class IncomeStmtTest {
 		).collect(DFrame.dfmclc).toMap(); // 基础要素定义定义行
 
 		// 公式计算
-		Stream.of("a + (b * (c + (d * (e - f))) - g),a + b + c".split("[,]+")) //
-				.map(e -> formula_eval.apply(e, lines)).forEach(Output::println);
+		Stream.of("""
+				a + (b * (c + (d * (e - f))) - g)
+				a + b + c
+				""".split("[,\n]+")).peek(Output::println).map(formula_eval.apply(lines)).forEach(Output::println);
 
 	}
+
+	private static boolean debug = false; // 调试标志
 
 	private final String datahome = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/sandbox/data/pignatoro/files/%s";
 

@@ -136,7 +136,7 @@ public class IncomeStmtTest2 {
 	}
 
 	/**
-	 * 扁平计算：calculate_flatten
+	 * 扁平计算：calculate_flattened
 	 */
 	final Function<Map<String, IRecord>, Function<String[], IRecord>> calculate_flattened = lines -> defination -> { // 扁平计算
 		final var item = defination[0].strip(); // 指标名:左边变量区域
