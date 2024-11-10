@@ -215,7 +215,7 @@ public class IncomeStmtTest2 {
 								return flattened_line;
 							} // if
 						}); // flattened_analyzer 括号分析
-				final var pattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // 把一元的正负号如a+b
+				final var pattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // 一元算符模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
 				String biopline, formula_line = formula; // 对正负号进行处理
 
 				do { // 依次把正负号转换成二元算符
