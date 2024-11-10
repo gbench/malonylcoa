@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.function.Function;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -187,37 +186,33 @@ public class IncomeStmtTest2 {
 					final var b1 = line.indexOf(" + ") >= 0 || line.indexOf(" - ") >= 0; // 是否含有加减符号
 					return b0 && b1;
 				}; // predicate_mixed 是否是混合运算
-				final Supplier<String> keyer = () -> "#%s".formatted(symboldefs.size()); // 生成符号定义名：符号键名
-				final Function<String, Function<String, String>> flattened_analyzer = //
+				final Function<Integer, String> keygen = id -> "#%s" // 生成符号定义名：符号键名（默认使用symboldefs的数量长度作为键名id
+						.formatted(Optional.ofNullable(id).orElse(symboldefs.size())); // 键名函数
+				final var p0 = Pattern.compile("\\(\s*([^()]+)\s*\\)"); // 括号模式
+				final var p1 = Pattern.compile("(([^/*+\\-]+)\s+([*/]+)\s+([^/*+\\-]+))"); // 乘除法模式
+				final Function<Pattern, Function<String, String>> flattened_analyzer = // flattened表示再次/反复的找平/扁平处理：去括号或是从混合运算中去乘除直至获得纯加减或是纯乘除
 						Lisp.yCombinator(flattened_analyzer_f -> pattern -> line -> { // flattened_analyzer_f:flatten_analyzer自身引用,line:数据行
-							final var matcher = Pattern.compile(pattern).matcher(line);
 							final boolean flag; // 是否包含有括号
-							final var expression = (flag = matcher.find()) ? matcher.group(1) : line; // 定义表达式
-							final BiFunction<String, String, String> flattened_handler = (flattened_line, key) -> { // flattened_line:不带括号的表达式,key:符号名
-								if (predicate_mixed.test(flattened_line)) { // 混合运算，进行乘除法分析
-									return flattened_analyzer_f.apply("(([^/*+\\-]+)\s+([*/]+)\s+([^/*+\\-]+))")
-											.apply(flattened_line); // 乘除结构数据分析
-								} else { // flattened_line表达式,直接写入符号key
-									symboldefs.put(key, flattened_line.strip());
+							final var matcher = pattern.matcher(line);
+							final var expression = (flag = matcher.find()) ? matcher.group(1) : line; // 符号定义表达式：经过扁平处理即提取的括号或是乘除数据内容行
+							final BiFunction<String, String, String> flattened_handler = (flattened_line, key) -> { // flattened_line:经过初次扁平的表达式,key:符号id名
+								if (predicate_mixed.test(flattened_line)) { // 混合运算，进行乘除法分析，flattened_line是找过平,但不一定是绝对的平，mixed就是需要继续的扁平
+									return flattened_analyzer_f.apply(p1).apply(flattened_line); // 乘除结构数据分析
+								} else { // flattened_line表达式,直接写入符号key,不需要继续找平了，已经是真的平了。
+									symboldefs.put(key, flattened_line.strip()); // 写入符号表
 									return flattened_line; // 扁平行
 								} // if
 							}; // flattened_handler
-							final var key = keyer.get(); // 符号定义名:键名
-							if (flag) {// 包含有括号
-								flattened_handler.apply(expression, key); // 写入括号子表达式，增加了一个符号key保证了exprkeyopt非空
-								// flattened_handler会把expression的符号定义(表达式)写在符号表symboldefs的最后一项（key）,这里就是通过
-								// reduce((a, b) -> b)逐一遍历（(a, b)->b表示只是简单遍历而不做别的）的迭代到最后一项（key)即expression的符号key
-								final var exprkeyopt = symboldefs.entrySet().stream() //
-										.reduce((a, b) -> b).map(Map.Entry::getKey); // expression的符号key
-								return exprkeyopt.map(exprkey -> analyzer_f.apply(line.replaceFirst(pattern, //
-										"\s%s\s".formatted(exprkey.strip())))// 需要注意key的两边的空格
-								).get(); // symboldefs不可能为没有没有数据，所以这里就不使用orElse(null)来返回了
-							} else {
-								final String flattened_line = expression; // 不包含有括号的数据行，被称为平整过的行住是flattened的平整过还不一定是绝对的flat，需要进一步的flattened_handler
-								return flattened_handler.apply(flattened_line, key);
+							final var flattened_line = flattened_handler.apply(expression, keygen.apply(null)); // 二次加工，符号定义名:默认键名以symboldefs的长度为id号
+							if (flag) {// 包含有括号需要进行flatten
+								return Optional.ofNullable(symboldefs.size()).map(i -> i - 1).map(keygen) // 分析结果key:flattened_handler会把分析结果写在symboldefs最后
+										.map("\s%s\s"::formatted).map(matcher::replaceFirst)// 把分析结果key写入原数据行,注意key的两边的空格，以保证不会破坏运算法的格式
+										.map(analyzer_f).orElse(null);
+							} else { // 没有括号
+								return flattened_line;
 							} // if
 						}); // flattened_analyzer 括号分析
-				final var flattened_line = flattened_analyzer.apply("\\(\s*([^()]+)\s*\\)").apply(formula); // 将括号变成扁平
+				final var flattened_line = flattened_analyzer.apply(p0).apply(formula); // 将括号变成扁平
 
 				return flattened_line;
 			}); // 分词器

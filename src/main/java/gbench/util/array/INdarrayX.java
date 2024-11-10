@@ -346,6 +346,9 @@ public interface INdarrayX<T> extends INdarray<T> {
 			assert Objects.nonNull(pivot) : String.format("pivot 出现空值！@ %d", k);
 			px.swap(k, pivot._2); // 调整行，记录pivot行位于k
 			mx.swap(k, pivot._2); // 调整行，k行为pivot行
+			if (Objects.equals(mx.get(k, k), 0d)) { // continue是因为mx[k,k]天然为0就不必再继续调整了同时又保证mx[k,k]不为0的除法有意义
+				continue;
+			} // m[k,k]非零检测与保证
 			for (int i = k + 1; i < n; i++) { // 逐行处理, 从 k+1 开始, mik 元素为pivot元素。
 				mx.set(i, k, mx.get(i, k) / mx.get(k, k)); // 乘数 mik,k 行就是 pivot 行
 				for (int j = k + 1; j < n; j++) { // 书写列
