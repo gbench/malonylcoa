@@ -206,7 +206,7 @@ public class IncomeStmtTest2 {
 							final var flattened_line = flattened_handler.apply(expression, keygen.apply(null)); // 二次加工，符号定义名:默认键名以symboldefs的长度为id号
 							if (flag) {// 包含有括号需要进行flatten
 								return Optional.ofNullable(symboldefs.size()).map(i -> i - 1).map(keygen) // 分析结果key:flattened_handler会把分析结果写在symboldefs最后
-										.map("\s%s\s"::formatted).map(matcher::replaceFirst)// 把分析结果key写入原数据行,注意key的两边的空格，以保证不会破坏运算法的格式
+										.map("\s%s\s"::formatted).map(matcher::replaceFirst)// 把分析结果key写入原数据行,注意key的两边的空格，以保证不会破坏运算符号的格式
 										.map(analyzer_f).orElse(null);
 							} else { // 没有括号
 								return flattened_line;
