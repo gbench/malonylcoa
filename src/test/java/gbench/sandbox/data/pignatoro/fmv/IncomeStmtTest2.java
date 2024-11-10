@@ -215,15 +215,15 @@ public class IncomeStmtTest2 {
 								return flattened_line;
 							} // if
 						}); // flattened_analyzer 括号分析
-				final var pattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // // 把一元的正负号如a+b
-				String line, formula_line = formula; // 对正负号进行处理
+				final var pattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // 把一元的正负号如a+b
+				String biopline, formula_line = formula; // 对正负号进行处理
 
 				do { // 依次把正负号转换成二元算符
-					line = pattern.matcher(formula_line).replaceAll(mr -> "(0  %s)".formatted(mr.group(1))); // 补充0使正负号称为二元运算
-				} while (!Objects.equals(line, formula_line) && Objects.nonNull(formula_line = line));
+					biopline = pattern.matcher(formula_line).replaceAll(mr -> "(0  %s)".formatted(mr.group(1))); // 补充0使正负号称为二元运算
+				} while (!Objects.equals(formula_line, biopline) && Objects.nonNull(formula_line = biopline)); // 二元算符化公式行
 
-				return flattened_analyzer.apply(p0).apply(formula_line); // 将括号变成扁平
-			}); // 分词器
+				return flattened_analyzer.apply(p0).apply(formula_line); // 对完全二元算符化公式行行进行处理
+			}); // analyzer 分词器
 
 	/**
 	 * 公式计算器 formula_eval
