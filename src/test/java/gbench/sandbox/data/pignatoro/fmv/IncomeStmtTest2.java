@@ -153,20 +153,20 @@ public class IncomeStmtTest2 {
 		final var rbopt = lines.values().stream().findFirst().map(e -> e.rb()); // 行记录构建器
 		final Function<String, Optional<IRecord>> readlineopt = key -> Optional.ofNullable(lines.get(key))
 				.map(Optional::of).orElseGet(() -> rbopt.map(e -> e.get(key))); // 行记录读取函数opt版本
-		final Function<String, IRecord> readline = key -> readlineopt.apply(key).orElse(null); // 行记录读取
 
 		return ops.size() < 1 // 没有发现算符
-				? lines.computeIfAbsent(item, k -> Optional.ofNullable(readline.apply(expression)) //
+				? lines.computeIfAbsent(item, k -> readlineopt.apply(expression) //
 						.map(e -> e.duplicate().set(0, item)).orElse(null)) // 字段改名
-				: Stream.of(terms).map(String::strip).map(readline) // 提取行项目并给予运算标示进行计算
-						.reduce((a, b) -> switch (ops.get(ai.getAndIncrement()).strip()) { // 根据算符索引依次进行数据计算
-						case "+" -> a.plus(b); // 加法
-						case "-" -> a.subtract(b); // 减法
-						case "*" -> a.multiply(b); // 乘法
-						case "/" -> a.divide(b); // 除法
-						default -> null; // 其他
-						}) // reduce 规约计算
-						.map(e -> e.set(0, item)) // 结果键值为key的数据记录
+				: Stream.of(terms).map(String::strip).map(readlineopt) // 提取行项目并给予运算标示进行计算
+						.reduce((aopt, bopt) -> aopt
+								.flatMap(a -> bopt.map(b -> switch (ops.get(ai.getAndIncrement()).strip()) { // 根据算符索引依次进行数据计算
+								case "+" -> a.plus(b); // 加法
+								case "-" -> a.subtract(b); // 减法
+								case "*" -> a.multiply(b); // 乘法
+								case "/" -> a.divide(b); // 除法
+								default -> null; // 其他
+								}))) // reduce 规约计算
+						.map(e -> e.map(r -> r.set(0, item)).orElse(null)) // 结果键值为key的数据记录
 						.map(e -> lines.computeIfAbsent(item, k -> e)) // 数据写入缓存表lines
 						.orElse(null); // 默认返回null
 	}; // calculate_flattened
