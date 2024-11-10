@@ -6,6 +6,7 @@ import static gbench.util.lisp.Lisp.CONS;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -130,7 +131,9 @@ public class IncomeStmtTest2 {
 				a + b + c
 				a * b / c
 				a + b * c / d
-				(a + b) * c / 4 """.split("[,\n]+") // 需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
+				(a + b) * c / 4
+				a + - b / c + d
+				- - - - a""".split("[,\n]+") // 需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
 		).map(formula_eval.apply(lines)).forEach(Output::println);
 	}
 
@@ -189,7 +192,7 @@ public class IncomeStmtTest2 {
 				final Function<Integer, String> keygen = id -> "#%s" // 生成符号定义名：符号键名（默认使用symboldefs的数量长度作为键名id
 						.formatted(Optional.ofNullable(id).orElse(symboldefs.size())); // 键名函数
 				final var p0 = Pattern.compile("\\(\s*([^()]+)\s*\\)"); // 括号模式
-				final var p1 = Pattern.compile("(([^/*+\\-]+)\s+([*/]+)\s+([^/*+\\-]+))"); // 乘除法模式
+				final var p1 = Pattern.compile("(([^-+*/]+)\s+([*/]+)\s+([^-+*/]+))"); // 乘除法模式
 				final Function<Pattern, Function<String, String>> flattened_analyzer = // flattened表示再次/反复的找平/扁平处理：去括号或是从混合运算中去乘除直至获得纯加减或是纯乘除
 						Lisp.yCombinator(flattened_analyzer_f -> pattern -> line -> { // flattened_analyzer_f:flatten_analyzer自身引用,line:数据行
 							final boolean flag; // 是否包含有括号
@@ -212,7 +215,12 @@ public class IncomeStmtTest2 {
 								return flattened_line;
 							} // if
 						}); // flattened_analyzer 括号分析
-				final var flattened_line = flattened_analyzer.apply(p0).apply(formula); // 将括号变成扁平
+				final var pattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // // 把一元的正负号如a+b
+				String line, formula_line = formula; // 对正负号进行处理
+				do {
+					line = pattern.matcher(formula_line).replaceFirst(mr -> "(0  %s)".formatted(mr.group(1)));
+				} while (!Objects.equals(line, formula_line) && Objects.nonNull(formula_line = line));
+				final var flattened_line = flattened_analyzer.apply(p0).apply(formula_line); // 将括号变成扁平
 
 				return flattened_line;
 			}); // 分词器
