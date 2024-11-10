@@ -133,7 +133,7 @@ public class IncomeStmtTest2 {
 				a + b * c / d
 				(a + b) * c / 4
 				a + - b / c + d
-				- - - - a""".split("[,\n]+") // 需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
+				- + + - - + - a""".split("[,\n]+") // 需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
 		).map(formula_eval.apply(lines)).forEach(Output::println);
 	}
 
@@ -217,12 +217,12 @@ public class IncomeStmtTest2 {
 						}); // flattened_analyzer 括号分析
 				final var pattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // // 把一元的正负号如a+b
 				String line, formula_line = formula; // 对正负号进行处理
-				do {
-					line = pattern.matcher(formula_line).replaceFirst(mr -> "(0  %s)".formatted(mr.group(1)));
-				} while (!Objects.equals(line, formula_line) && Objects.nonNull(formula_line = line));
-				final var flattened_line = flattened_analyzer.apply(p0).apply(formula_line); // 将括号变成扁平
 
-				return flattened_line;
+				do { // 依次把正负号转换成二元算符
+					line = pattern.matcher(formula_line).replaceAll(mr -> "(0  %s)".formatted(mr.group(1))); // 补充0使正负号称为二元运算
+				} while (!Objects.equals(line, formula_line) && Objects.nonNull(formula_line = line));
+
+				return flattened_analyzer.apply(p0).apply(formula_line); // 将括号变成扁平
 			}); // 分词器
 
 	/**
