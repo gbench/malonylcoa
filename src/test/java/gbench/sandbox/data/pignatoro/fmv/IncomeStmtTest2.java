@@ -226,7 +226,7 @@ public class IncomeStmtTest2 {
 				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+(\\(.+\\)|[^-+*/()]+))"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
 				final var formula_line = Stream // 依次把正负号转换成二元算符
 						.iterate(formula, line -> Optional.ofNullable(line).map(uopattern::matcher) // 对正负号进行模式识别
-								.map(matcher -> matcher.replaceAll(result -> " (0  %s) ".formatted(result.group(1)))) // 补充0使正负号成为二元运算
+								.map(matcher -> matcher.replaceAll(result -> "\s(0  %s)\s".formatted(result.group(1)))) // 补充0使正负号成为二元运算
 								.map(e -> Objects.equals(line, e) ? null : e).orElse(null)) // 直至出现结果不再变化为止，即本次结果e与上次结果line相同
 						.takeWhile(Objects::nonNull).limit((int) 1e5).reduce((a, b) -> b).map(String::strip) // 最多规约1万项保证不会死循环
 						.orElse(null); // 二元算符化的公式行
