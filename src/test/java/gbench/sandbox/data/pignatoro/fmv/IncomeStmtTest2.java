@@ -149,20 +149,20 @@ public class IncomeStmtTest2 {
 		final var ops = new CopyOnWriteArrayList<String>(); // 运算符收集器
 		final var ai = new AtomicInteger(); // 算符位置索引（计算次序的序号）
 
-		while (matcher.find()) { // 记录算符索引：计算位置
-			ops.add(matcher.group());
-		}
+		while (matcher.find()) { // 依次查找算符并进行登记
+			ops.add(matcher.group()); // 登记算符
+		} // while
 
 		final var rbopt = lines.values().stream().findFirst().map(e -> e.rb()); // 行记录构建器
 		final Function<String, Optional<IRecord>> readlineopt = key -> Optional.ofNullable(lines.get(key))
-				.map(Optional::of).orElseGet(() -> rbopt.map(e -> e.get(key))); // 行记录读取函数opt版本
+				.map(Optional::of).orElseGet(() -> rbopt.map(rb -> rb.get(key))); // 行记录读取函数opt版本
 
 		return ops.size() < 1 // 没有发现算符
 				? lines.computeIfAbsent(item, k -> readlineopt.apply(expression) //
 						.map(e -> e.duplicate().set(0, item)).orElse(null)) // 字段改名
 				: Stream.of(terms).map(String::strip).map(readlineopt) // 提取行项目并给予运算标示进行计算
 						.reduce((aopt, bopt) -> aopt
-								.flatMap(a -> bopt.map(b -> switch (ops.get(ai.getAndIncrement()).strip()) { // 根据算符索引依次进行数据计算
+								.flatMap(a -> bopt.map(b -> switch (ops.get(ai.getAndIncrement()).strip()) { // 根据算符索引依次进行计算,注意op仅在非空下进行递增可能会导致错乱但纠错无意义
 								case "+" -> a.plus(b); // 加法
 								case "-" -> a.subtract(b); // 减法
 								case "*" -> a.multiply(b); // 乘法
@@ -209,17 +209,17 @@ public class IncomeStmtTest2 {
 							final var flattened_line = flattened_handler.apply(expression, keygen.apply(null)); // 二次加工，符号定义名:默认键名以symboldefs的长度为id号
 							if (flag) {// 包含有括号需要进行flatten
 								return Optional.ofNullable(symboldefs.size()).map(i -> i - 1).map(keygen) // 分析结果key:flattened_handler会把分析结果写在symboldefs最后
-										.map("\s%s\s"::formatted).map(matcher::replaceFirst)// 把分析结果key写入原数据行,注意key的两边的空格，以保证不会破坏运算符号的格式
+										.map("\s%s\s"::formatted).map(matcher::replaceFirst) // 把分析结果key写入原数据行,注意key的两边的空格，以保证不会破坏运算符号的格式
 										.map(analyzer_f).orElse(null);
-							} else { // 没有括号
-								return flattened_line;
+							} else { // 没有括号，直接返回
+								return flattened_line; // 直接返回结果
 							} // if
 						}); // flattened_analyzer 括号分析
-				final var pattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // 一元算符模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
-				String biopline, formula_line = formula; // 对正负号进行处理
+				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
+				String biopline, formula_line = formula; // 对正负号进行处理：biopline 二元算符化的行,formula_line公式数据行
 
 				do { // 依次把正负号转换成二元算符
-					biopline = pattern.matcher(formula_line).replaceAll(mr -> "(0  %s)".formatted(mr.group(1))); // 补充0使正负号称为二元运算
+					biopline = uopattern.matcher(formula_line).replaceAll(mr -> "(0  %s)".formatted(mr.group(1))); // 补充0使正负号成为二元运算
 				} while (!Objects.equals(formula_line, biopline) && Objects.nonNull(formula_line = biopline)); // 二元算符化公式行
 
 				return flattened_analyzer.apply(p0).apply(formula_line); // 对完全二元算符化公式行行进行处理
