@@ -123,7 +123,7 @@ public class IncomeStmtTest2 {
 				rb.get("e", 5), rb.get("f", 6), rb.get("g", 7) //
 		).collect(DFrame.dfmclc).toMap(); // 基础要素定义定义行
 
-		// 公式计算,
+		// 公式计算,需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
 		Stream.of("""
 				a + (b * (c + (d * (e - f))) - g)
 				a + b * (c + d * (e - f)) - g
@@ -134,7 +134,12 @@ public class IncomeStmtTest2 {
 				(a + b) * c / 4
 				a + - b / c + d
 				- + + - - + - a
-				- a - - + + - - + - b * c """.split("[,\n]+") // 需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
+				- a - - + + - - + - b * c
+				a + - (b / c + d)
+				a + - (b / - c + d)
+				a + - (b / - (c + d))
+				a + - ( (b / - (c + d)) ) + 1 / - (e + f) """.split("[,\n]+") // 注意：最后一项是错误，
+		// 一元算符会把 “( (b / - (c + d)) ) + 1 / - (e + f)”当成一整个项目了,这里也不打算再继续修正了
 		).map(formula_eval.apply(lines)).forEach(Output::println);
 	}
 
@@ -206,7 +211,7 @@ public class IncomeStmtTest2 {
 									symboldefs.put(key, flattened_line.strip()); // 写入符号表
 									return flattened_line; // 扁平行
 								} // if
-							}; // flattened_handler
+							}; // flattened_handler 扁平处理器
 							final var flattened_line = flattened_handler.apply(expression, keygen.apply(null)); // 二次加工，符号定义名:默认键名以symboldefs的长度为id号
 							if (flag) {// 包含有括号需要进行flatten
 								return Optional.ofNullable(symboldefs.size()).map(i -> i - 1).map(keygen) // 分析结果key:flattened_handler会把分析结果写在symboldefs最后
@@ -215,13 +220,13 @@ public class IncomeStmtTest2 {
 							} else { // 没有括号，直接返回
 								return flattened_line; // 直接返回结果
 							} // if
-						}); // flattened_analyzer 括号分析
-				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
+						}); // flattened_analyzer
+				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+(\\(.+\\)|[^-+*/()]+))"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
 				final var formula_line = Stream // 依次把正负号转换成二元算符
 						.iterate(formula, line -> Optional.ofNullable(line).map(uopattern::matcher) // 对正负号进行模式识别
-								.map(matcher -> matcher.replaceAll(result -> "(0  %s)".formatted(result.group(1)))) // 补充0使正负号成为二元运算
+								.map(matcher -> matcher.replaceAll(result -> " (0  %s) ".formatted(result.group(1)))) // 补充0使正负号成为二元运算
 								.map(e -> Objects.equals(line, e) ? null : e).orElse(null)) // 直至出现结果不在变化为止，即本次结果e与上次结果line相同
-						.takeWhile(Objects::nonNull).reduce((a, b) -> b).orElse(null); // formula_line 二元算符化的公式行
+						.takeWhile(Objects::nonNull).limit((int) 1e5).reduce((a, b) -> b).orElse(null); // 二元算符化的公式行最多1万项
 
 				return flattened_analyzer.apply(p0).apply(formula_line); // 对完全二元算符化公式行行进行处理
 			}); // analyzer 分词器
