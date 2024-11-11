@@ -227,7 +227,6 @@ public class IncomeStmtTest2 {
 								return flattened_line; // 直接返回结果
 							} // if
 						}); // flattened_analyzer
-				// bug:uopattern会把'- (a + b) + (c - d) * e '处理成'(0 - (a + b) + (e - f) ) * e'
 				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+(?:\\([^()]+?\\)|[^-+*/()]+))"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
 				final var formula_line = Stream // 依次把正负号转换成二元算符
 						.iterate(formula, line -> Optional.ofNullable(line).map(uopattern::matcher) // 对正负号进行模式识别
