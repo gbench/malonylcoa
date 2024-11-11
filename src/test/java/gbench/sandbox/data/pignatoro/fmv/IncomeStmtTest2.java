@@ -138,7 +138,8 @@ public class IncomeStmtTest2 {
 				a + - (b / c + d)
 				a + - (b / - c + d)
 				a + - (b / - (c + d))
-				a + - ( (b / - (c + d)) ) + 1 / - (e + f) """.split("[,\n]+") // 注意：最后一项是错误，
+				a + - ( (b / - (c + d)) ) + 1 / - (e + f)
+				- (a + b) + (c - d) * e """.split("[,\n]+") // 注意：最后两项的计算结果有错误：这是formula_eval的bug
 		// 一元算符会把 “( (b / - (c + d)) ) + 1 / - (e + f)”当成一整个项目了,这里也不打算再继续修正了
 		).map(formula_eval.apply(lines)).forEach(Output::println);
 	}
@@ -221,13 +222,17 @@ public class IncomeStmtTest2 {
 								return flattened_line; // 直接返回结果
 							} // if
 						}); // flattened_analyzer
+				// bug:uopattern会把'- (a + b) + (c - d) * e '处理成'(0 - (a + b) + (e - f) ) * e'
 				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+(\\(.+\\)|[^-+*/()]+))"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
 				final var formula_line = Stream // 依次把正负号转换成二元算符
 						.iterate(formula, line -> Optional.ofNullable(line).map(uopattern::matcher) // 对正负号进行模式识别
 								.map(matcher -> matcher.replaceAll(result -> " (0  %s) ".formatted(result.group(1)))) // 补充0使正负号成为二元运算
-								.map(e -> Objects.equals(line, e) ? null : e).orElse(null)) // 直至出现结果不在变化为止，即本次结果e与上次结果line相同
-						.takeWhile(Objects::nonNull).limit((int) 1e5).reduce((a, b) -> b).orElse(null); // 二元算符化的公式行最多1万项
-
+								.map(e -> Objects.equals(line, e) ? null : e).orElse(null)) // 直至出现结果不再变化为止，即本次结果e与上次结果line相同
+						.takeWhile(Objects::nonNull).limit((int) 1e5).reduce((a, b) -> b).map(String::strip) // 最多规约1万项保证不会死循环
+						.orElse(null); // 二元算符化的公式行
+				if (debug) {
+					println("formula_line:%s".formatted(formula_line));
+				}
 				return flattened_analyzer.apply(p0).apply(formula_line); // 对完全二元算符化公式行行进行处理
 			}); // analyzer 分词器
 
