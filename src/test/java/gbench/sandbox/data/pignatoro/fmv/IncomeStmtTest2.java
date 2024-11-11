@@ -133,7 +133,8 @@ public class IncomeStmtTest2 {
 				a + b * c / d
 				(a + b) * c / 4
 				a + - b / c + d
-				- + + - - + - a""".split("[,\n]+") // 需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
+				- + + - - + - a
+				- a - - + + - - + - b * c """.split("[,\n]+") // 需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
 		).map(formula_eval.apply(lines)).forEach(Output::println);
 	}
 
@@ -216,11 +217,11 @@ public class IncomeStmtTest2 {
 							} // if
 						}); // flattened_analyzer 括号分析
 				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+[^-+*/]+)"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
-				String biopline, formula_line = formula; // 对正负号进行处理：biopline 二元算符化的行,formula_line公式数据行
-
-				do { // 依次把正负号转换成二元算符
-					biopline = uopattern.matcher(formula_line).replaceAll(mr -> "(0  %s)".formatted(mr.group(1))); // 补充0使正负号成为二元运算
-				} while (!Objects.equals(formula_line, biopline) && Objects.nonNull(formula_line = biopline)); // 二元算符化公式行
+				final var formula_line = Stream // 依次把正负号转换成二元算符
+						.iterate(formula, line -> Optional.ofNullable(line).map(uopattern::matcher) // 对正负号进行模式识别
+								.map(matcher -> matcher.replaceAll(result -> "(0  %s)".formatted(result.group(1)))) // 补充0使正负号成为二元运算
+								.map(e -> Objects.equals(line, e) ? null : e).orElse(null)) // 直至出现结果不在变化为止，即本次结果e与上次结果line相同
+						.takeWhile(Objects::nonNull).reduce((a, b) -> b).orElse(null); // formula_line 二元算符化的公式行
 
 				return flattened_analyzer.apply(p0).apply(formula_line); // 对完全二元算符化公式行行进行处理
 			}); // analyzer 分词器
