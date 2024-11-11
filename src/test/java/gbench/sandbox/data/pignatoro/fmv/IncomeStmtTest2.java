@@ -123,6 +123,10 @@ public class IncomeStmtTest2 {
 				rb.get("e", 5), rb.get("f", 6), rb.get("g", 7) //
 		).collect(DFrame.dfmclc).toMap(); // 基础要素定义定义行
 
+		lines.forEach((k, v) -> { // 但因参数值：可以输入python中进行验证
+			println("%s=%s".formatted(k, v.str(1)));
+		});
+
 		// 公式计算,需要注意 运算符号 +-*/的连边必须包含有至少一个空格，否则不会被视为运算符号
 		Stream.of("""
 				a + (b * (c + (d * (e - f))) - g)
@@ -139,9 +143,8 @@ public class IncomeStmtTest2 {
 				a + - (b / - c + d)
 				a + - (b / - (c + d))
 				a + - ( (b / - (c + d)) ) + 1 / - (e + f)
-				- (a + b) + (c - d) * e """.split("[,\n]+") // 注意：最后两项的计算结果有错误：这是formula_eval的bug
-		// 一元算符会把 “( (b / - (c + d)) ) + 1 / - (e + f)”当成一整个项目了,这里也不打算再继续修正了
-		).peek(e -> println("\n%s\nformula:%s\n".formatted("-".repeat(100), e))) // 打印待计算的公式
+				- (a + b) + (c - d) * e """.split("[,\n]+"))
+				.peek(e -> println("\n%s\nformula:%s\n".formatted("-".repeat(100), e))) // 打印待计算的公式
 				.map(formula_eval.apply(lines)) // 进行公式计算
 				.forEach(e -> println("\nresult:%s".formatted(e))); // 打印计算结果
 	}
@@ -225,7 +228,7 @@ public class IncomeStmtTest2 {
 							} // if
 						}); // flattened_analyzer
 				// bug:uopattern会把'- (a + b) + (c - d) * e '处理成'(0 - (a + b) + (e - f) ) * e'
-				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+(\\(.+\\)|[^-+*/()]+))"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
+				final var uopattern = Pattern.compile("(?<=^|[-+*/]+)\s*([-+]\s+(?:\\([^()]+?\\)|[^-+*/()]+))"); // 一元算符unaryop模式:注意第二个\s不能写成\s*否则匹配不到一元算符操作数，即\s*会非贪婪
 				final var formula_line = Stream // 依次把正负号转换成二元算符
 						.iterate(formula, line -> Optional.ofNullable(line).map(uopattern::matcher) // 对正负号进行模式识别
 								.map(matcher -> matcher.replaceAll(result -> "\s(0\s%s)\s".formatted(result.group(1)))) // 补充0使正负号成为二元运算
