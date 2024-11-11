@@ -141,7 +141,9 @@ public class IncomeStmtTest2 {
 				a + - ( (b / - (c + d)) ) + 1 / - (e + f)
 				- (a + b) + (c - d) * e """.split("[,\n]+") // 注意：最后两项的计算结果有错误：这是formula_eval的bug
 		// 一元算符会把 “( (b / - (c + d)) ) + 1 / - (e + f)”当成一整个项目了,这里也不打算再继续修正了
-		).map(formula_eval.apply(lines)).forEach(Output::println);
+		).peek(e -> println("\n%s\nformula:%s\n".formatted("-".repeat(100), e))) // 打印待计算的公式
+				.map(formula_eval.apply(lines)) // 进行公式计算
+				.forEach(e -> println("\nresult:%s".formatted(e))); // 打印计算结果
 	}
 
 	/**
