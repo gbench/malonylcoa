@@ -172,7 +172,18 @@ public class DataApp {
 	 * @return true 存在,false 不存在。
 	 */
 	public Boolean tblExists(final String tbl) {
-		return (Boolean) this.withTransaction(sess -> sess.setData(sess.isTablePresent(tbl)));
+		return (Boolean) this.tblExists(tbl, null);
+	}
+
+	/**
+	 * 表是否存在
+	 *
+	 * @param tbl     数据表名
+	 * @param catalog 数据库名
+	 * @return true 存在,false 不存在。
+	 */
+	public Boolean tblExists(final String tbl, String catalog) {
+		return this.tblExists(tbl, null, catalog);
 	}
 
 	/**
