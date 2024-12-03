@@ -3699,8 +3699,11 @@ public class DataApp {
 					} // for
 					lines.add(rb.get(values));
 				} // while
-					// println("tableName:%s,schema:%s,catalog:%s,lines:%s".formatted(tableName,
-					// schema, catalog, lines));
+
+				@SuppressWarnings("unused")
+				final var debugline = "tableName:%s,schema:%s,catalog:%s,lines:%s" //
+						.formatted(tableName, schema, catalog, lines); // 数据debug信息行
+				// println(debugline);
 				flag = lines.size() > 0;
 			} catch (final Exception e) {
 				e.printStackTrace();
