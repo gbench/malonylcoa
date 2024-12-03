@@ -728,7 +728,7 @@ public class SQL {
 				if ("INT".equals(typename) || "BIGINT".equals(typename)) {// 对于 int key 是否 auto_increment
 					flag = true;
 					fldDefs.computeIfPresent(tup._1(), (fldname, def) -> Jdbcs.format("{0} {1} {2}", def,
-							int_pk_autocrement ? "auto_increment" : "", "primary key"));
+							int_pk_autocrement ? "primary key auto_increment" : "", "primary key"));
 				} // if
 			} // if
 			if (!flag) {

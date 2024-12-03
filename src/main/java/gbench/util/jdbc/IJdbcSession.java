@@ -1698,7 +1698,7 @@ public interface IJdbcSession<T, D> extends IManagedStreams {
 				_rs = _pstmt.executeQuery();
 			}
 		} catch (SQLException e) {
-			System.out.println(String.format("error sql:" + sql));
+			System.out.println("error sql:%s".formatted(sql));
 			throw e;
 		}
 

@@ -237,7 +237,17 @@ public class DFrame extends LinkedRecord {
 	 */
 	public IRecord head() {
 
-		return this.rowS().findAny().orElse(null);
+		return this.headOpt().orElse(null);
+	}
+
+	/**
+	 * 提取头前n个元素
+	 * 
+	 * @return 提取头前n个元素
+	 */
+	public Optional<IRecord> headOpt() {
+
+		return this.rowS().findAny();
 	}
 
 	/**

@@ -2685,6 +2685,20 @@ public class Jdbcs {
 	public static ExceptionalConsumer<IJdbcSession<UUID, Object>> imports(final Function<String, DFrame> shtmx,
 			final String... tblnames) {
 
+		return imports2(shtmx, false, tblnames);
+	}
+
+	/**
+	 * 导入数据表格
+	 * 
+	 * @param shtmx            表单读取器
+	 * @param remove_insert_id insert语句是否把id字段去除以使用自增长字段
+	 * @param tblnames         表名列表
+	 * @return 数据表
+	 */
+	public static ExceptionalConsumer<IJdbcSession<UUID, Object>> imports2(final Function<String, DFrame> shtmx,
+			final boolean remove_insert_id, final String... tblnames) {
+
 		return (sess) -> {
 			for (final String tblname : tblnames) { // 遍历数据表
 				final var data = shtmx.apply(tblname);
@@ -2698,8 +2712,19 @@ public class Jdbcs {
 				final var ctsql = ctsql(tblname, line);
 				sess.sql2execute(String.format("drop table if exists %s", tblname)); // 删除数据表
 				sess.sql2execute(ctsql); // 创建数据表
+
+				final boolean flag;
+				if (remove_insert_id) { // 移除首项id列
+					flag = data.headOpt().map(e -> e.keyOfIndex(0)).map("id"::equalsIgnoreCase).orElse(false);
+				} else {
+					flag = true;
+				} // if
+
 				for (final var row : data.rows()) {
-					sess.sql2execute(insql(tblname, row));
+					final var r = flag //
+							? row.remove(0) // 去除首项id,因为这是自增长数据表
+							: row;
+					sess.sql2execute(insql(tblname, r));
 				}
 			} // for
 		};
