@@ -165,13 +165,26 @@ public class DataApp {
 	}
 
 	/**
-	 * 表是否存在
+	 * 表是否存在（需要注意，此处没有指定catalog，也就是默认tblname是哦正式数据库服务器中唯一，若是需要查询特定服务事情使用,带有catalog的版本）
+	 * 该API会出现在A数据库中不存在而补B数据库中存在的table被误认为A数据库存在的情况，所以catalog必要时还需要给予指定
 	 *
 	 * @param tbl 数据表名
 	 * @return true 存在,false 不存在。
 	 */
 	public Boolean tblExists(final String tbl) {
 		return (Boolean) this.withTransaction(sess -> sess.setData(sess.isTablePresent(tbl)));
+	}
+
+	/**
+	 * 表是否存在
+	 *
+	 * @param tbl     数据表名
+	 * @param schema  表模式在数据库catalog只下的一个table分组,mysql一般为null,postgresql需要设置
+	 * @param catalog 数据库名
+	 * @return true 存在,false 不存在。
+	 */
+	public Boolean tblExists(final String tbl, String schema, String catalog) {
+		return (Boolean) this.withTransaction(sess -> sess.setData(sess.isTablePresent(tbl, schema, catalog)));
 	}
 
 	/**
@@ -1030,6 +1043,16 @@ public class DataApp {
 		 */
 		default <T, U> List<U> gets(final int idx, final Function<T, U> mapper) {
 			return this.gets(this.keyOf(idx), mapper);
+		}
+
+		/**
+		 * 除掉键 idx 的值
+		 *
+		 * @param idx 键名索引从0开始
+		 * @return 对象本身(移除了key)
+		 */
+		default IRecord remove(final int idx) {
+			return this.remove(this.keyOf(idx));
 		}
 
 		/**
@@ -3623,6 +3646,9 @@ public class DataApp {
 
 		/**
 		 * 判断数据库表是否存在 <br>
+		 * 表是否存在（需要注意，此处没有指定catalog，也就是默认tblname是哦正式数据库服务器中唯一，若是需要查询特定服务事情使用,带有catalog的版本）
+		 * 该API会出现在A数据库中不存在而补B数据库中存在的table被误认为A数据库存在的情况，所以catalog必要时还需要给予指定
+		 * 
 		 * <p>
 		 * 对于 返回数据库所有表 的异常情况的处理 <br>
 		 * mysql8.0的驱动，在5.5之前nullCatalogMeansCurrent属性默认为true,8.0中默认为false， <br>
@@ -3658,7 +3684,24 @@ public class DataApp {
 				final DatabaseMetaData databaseMetaData = conn.getMetaData();
 				final String[] JDBC_METADATA_TABLE_TYPES = { "TABLE" };
 				tables = databaseMetaData.getTables(catalog, schema, tableName, JDBC_METADATA_TABLE_TYPES);
-				flag = tables.next();
+				final var metadata = tables.getMetaData();
+				final var ncol = metadata.getColumnCount();
+				final var keys = new ArrayList<String>();
+				for (var j = 0; j < ncol; j++) {
+					keys.add(metadata.getColumnName(j + 1));
+				}
+				final var rb = IRecord.rb(keys);
+				final var lines = new ArrayList<IRecord>(10);
+				while (tables.next()) {
+					Object[] values = new Object[ncol];
+					for (var j = 0; j < ncol; j++) {
+						values[j] = tables.getObject(j + 1);
+					} // for
+					lines.add(rb.get(values));
+				} // while
+					// println("tableName:%s,schema:%s,catalog:%s,lines:%s".formatted(tableName,
+					// schema, catalog, lines));
+				flag = lines.size() > 0;
 			} catch (final Exception e) {
 				e.printStackTrace();
 			} finally {
