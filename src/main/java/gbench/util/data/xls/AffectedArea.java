@@ -521,9 +521,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 当前活动Cell的地址
 	 */
 	public String activeAddress() {
-		return Optional.ofNullable(this.activeCell()).map(cell -> //
-		"%s!%s".formatted(cell.getSheet().getSheetName(), cell.getAddress().formatAsString())) //
-				.orElse("A1"); // 默认地址为A1
+		return Optional.ofNullable(this.activeCell()).map(AffectedArea::fullAddress).orElse("Sheet1!A1"); // 默认地址为A1
 	}
 
 	/**
@@ -1009,7 +1007,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public <T> AffectedArea writelt(final DFrame dfm) {
-		final var address = this.ltCell.getAddress().formatAsString();
+		final var address = fullAddress(ltCell);
 		this.writeTable(address, dfm);
 		return this;
 	}
@@ -2315,6 +2313,17 @@ public class AffectedArea implements Iterable<Cell> {
 	 */
 	public AffectedArea italic() {
 		return this.italic(true);
+	}
+
+	/**
+	 * 获得一个单元格的绝地地址带有Sheet名称的那种(eg,Sheet1!A1)
+	 * 
+	 * @param cell 单元格对象
+	 * @return 单元格的绝地地址
+	 */
+	public static String fullAddress(final Cell cell) {
+		return Optional.ofNullable(cell)
+				.map(c -> "%s!%s".formatted(c.getSheet().getSheetName(), c.getAddress().formatAsString())).orElse(null);
 	}
 
 	/**
