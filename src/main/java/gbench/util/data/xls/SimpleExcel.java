@@ -1682,6 +1682,24 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
+	 * 设置为write行为：数据为字符串模式
+	 * 
+	 * @return
+	 */
+	public SimpleExcel strfmt() {
+		return this.setDataFormat(DataFormat.STR_FORMAT);
+	}
+
+	/**
+	 * 设置为write行为：自动探测串模式
+	 * 
+	 * @return
+	 */
+	public SimpleExcel autofmt() {
+		return this.setDataFormat(DataFormat.AUTO_FORMAT);
+	}
+
+	/**
 	 * 写入表头 标记
 	 * 
 	 * @return
