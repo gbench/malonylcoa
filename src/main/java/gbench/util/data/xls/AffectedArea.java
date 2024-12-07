@@ -2003,6 +2003,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制标题 <br>
 	 * 
+	 * @param color 边框颜色
 	 * @return AffectedArea
 	 */
 	public AffectedArea ptitle(final IndexedColors color) {
@@ -2012,6 +2013,16 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制标题 <br>
 	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea ptitle() {
+		return this.paintTitle(IndexedColors.BLACK);
+	}
+
+	/**
+	 * 喷绘制标题 <br>
+	 * 
+	 * @param color 边框颜色
 	 * @return AffectedArea
 	 */
 	public AffectedArea paintTitle(final IndexedColors color) {
@@ -2034,6 +2045,7 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制顶部 <br>
 	 * 
+	 * @param color 边框颜色
 	 * @return AffectedArea
 	 */
 	public AffectedArea ptop(final IndexedColors color) {
@@ -2043,6 +2055,8 @@ public class AffectedArea implements Iterable<Cell> {
 	/**
 	 * 喷绘制顶部 <br>
 	 * 
+	 * @param color 边框颜色
+	 * @param bs    边框式样
 	 * @return AffectedArea
 	 */
 	public AffectedArea paintTop(final IndexedColors color, final BorderStyle bs) {
