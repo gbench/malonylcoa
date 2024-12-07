@@ -1930,6 +1930,15 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * this.excel.save().close() 的简写
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea sclose() {
+		return this.saveAndClose();
+	}
+
+	/**
 	 * 格式喷涂
 	 * 
 	 * @param pstyle 单元格式样
