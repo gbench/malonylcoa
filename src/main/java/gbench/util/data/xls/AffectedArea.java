@@ -1906,6 +1906,27 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 数据保存（excel.save)的别名
+	 * 
+	 * @param append 是否是追加模式, null 通过判断 文件是否存在作为依据,存在追加,否则不追加
+	 * @return AffectedArea
+	 */
+	public AffectedArea save(final Boolean append) {
+		this.excel.save(append);
+		return this;
+	}
+
+	/**
+	 * 数据保存（excel.save(true))的别名
+	 * 
+	 * @param append 是否是追加模式, null 通过判断 文件是否存在作为依据,存在追加,否则不追加
+	 * @return AffectedArea
+	 */
+	public AffectedArea apdsave() {
+		return this.save(true);
+	}
+
+	/**
 	 * 数据保存（excel.close)的别名
 	 * 
 	 * @return AffectedArea

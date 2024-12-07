@@ -1648,12 +1648,24 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public SimpleExcel saveAs(final File file) {
-		final File parentFile = file.getParentFile();
-		if (parentFile != null && !parentFile.exists()) {
-			parentFile.mkdirs();
+		return this.saveAs(file, null);
+	}
+
+	/**
+	 * 保存成文件
+	 * 
+	 * @param file   excel文件对象,如果file业已存在则给与添加
+	 * @param append 是否是追加模式, null 通过判断 文件是否存在作为依据,存在追加,否则不追加
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public SimpleExcel saveAs(final File file, final Boolean append) {
+		final File parentDir = file.getParentFile(); // 上级目录
+		if (parentDir != null && !parentDir.exists()) {
+			parentDir.mkdirs();
 		}
 
-		try (final FileOutputStream fos = new FileOutputStream(file, file.exists())) {
+		final boolean appendFlag = Optional.ofNullable(append).orElse(file.isDirectory());
+		try (final FileOutputStream fos = new FileOutputStream(file, appendFlag)) {
 			this.workbook.write(fos);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -1667,7 +1679,17 @@ public class SimpleExcel implements AutoCloseable {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public SimpleExcel save() {
-		return this.saveAs(this.xlsfile);
+		return this.save(null);
+	}
+
+	/**
+	 * excel 文件保存
+	 * 
+	 * @param append 是否是追加模式, null 通过判断 文件是否存在作为依据,存在追加,否则不追加
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public SimpleExcel save(final Boolean append) {
+		return this.saveAs(this.xlsfile, append);
 	}
 
 	/**
@@ -1802,6 +1824,26 @@ public class SimpleExcel implements AutoCloseable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} // try
+	}
+
+	/**
+	 * 文件关闭
+	 * 
+	 * @param 是否保存文件
+	 */
+	public void close(final boolean saveflag) {
+		if (saveflag) {
+			this.save();
+		}
+		this.close();
+	}
+
+	/**
+	 * 文件保存与关闭 <br>
+	 * this.close(true) 的别名
+	 */
+	public void sclose() {
+		this.close(true);
 	}
 
 	/**
