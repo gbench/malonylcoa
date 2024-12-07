@@ -1007,9 +1007,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public <T> AffectedArea writelt(final DFrame dfm) {
-		final var address = fullAddress(ltCell);
-		this.writeTable(address, dfm);
-		return this;
+		return this.writeTable(fullAddress(ltCell), dfm);
 	}
 
 	/**
@@ -1022,9 +1020,7 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return SimpleExcel 对象本身 以实现链式编程
 	 */
 	public <T> AffectedArea writelt(final DataMatrix<?> dmx) {
-		final var address = this.ltCell.getAddress().formatAsString();
-		this.writeTable(address, dmx);
-		return this;
+		return this.writeTable(fullAddress(ltCell), dmx);
 	}
 
 	/**
