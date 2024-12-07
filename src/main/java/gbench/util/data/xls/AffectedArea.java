@@ -521,7 +521,9 @@ public class AffectedArea implements Iterable<Cell> {
 	 * @return 当前活动Cell的地址
 	 */
 	public String activeAddress() {
-		return Optional.ofNullable(this.activeCell()).map(e -> e.getAddress().toString()).orElse("A1"); // 默认地址为A1
+		return Optional.ofNullable(this.activeCell()).map(cell -> //
+		"%s!%s".formatted(cell.getSheet().getSheetName(), cell.getAddress().formatAsString())) //
+				.orElse("A1"); // 默认地址为A1
 	}
 
 	/**
