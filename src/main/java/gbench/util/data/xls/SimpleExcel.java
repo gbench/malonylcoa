@@ -1673,12 +1673,22 @@ public class SimpleExcel implements AutoCloseable {
 	/**
 	 * 设置数据格式
 	 * 
-	 * @param datafmt
+	 * @param datafmt 设置为write行为的数据模式
 	 * @return
 	 */
-	public SimpleExcel setDataFormat(DataFormat datafmt) {
+	public SimpleExcel setDataFormat(final DataFormat datafmt) {
 		this.datafmt = datafmt;
 		return this;
+	}
+
+	/**
+	 * 设置数据格式
+	 * 
+	 * @param datafmt 设置为write行为的数据模式
+	 * @return
+	 */
+	public SimpleExcel datafmt(final DataFormat datafmt) {
+		return this.setDataFormat(datafmt);
 	}
 
 	/**

@@ -998,6 +998,36 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 写在lt位置<br>
+	 * 写入excel (有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 
+	 * @param <T>   元素类型
+	 * @param datas 数据内容
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public <T> AffectedArea writelt(final DFrame dfm) {
+		final var address = this.ltCell.getAddress().formatAsString();
+		this.writeTable(address, dfm);
+		return this;
+	}
+
+	/**
+	 * 写在lt位置<br>
+	 * 写入excel (有表头的书写格式) <br>
+	 * 公式中的单元格的引用：行数 从1开始,eg: A1 对应第一行第一列, A2对应第二行第一列，B1 对应第一行第二列。
+	 * 
+	 * @param <T>   元素类型
+	 * @param datas 数据内容
+	 * @return SimpleExcel 对象本身 以实现链式编程
+	 */
+	public <T> AffectedArea writelt(final DataMatrix<?> dmx) {
+		final var address = this.ltCell.getAddress().formatAsString();
+		this.writeTable(address, dmx);
+		return this;
+	}
+
+	/**
 	 * 书写一行(writeLine的别名) <br>
 	 * 写入excel (不带有表头的书写格式) <br>
 	 * 公式中的单元格的引用：行数 从0开始,eg: A0 对应第一行第一列, A1对应第二行第一列，B0 对应第一行第二列。
@@ -1861,12 +1891,41 @@ public class AffectedArea implements Iterable<Cell> {
 	}
 
 	/**
+	 * 返回excel对象
+	 * 
+	 * @return SimpleExcel
+	 */
+	public SimpleExcel excel() {
+		return this.excel;
+	}
+
+	/**
 	 * 数据保存（excel.save)的别名
 	 * 
 	 * @return AffectedArea
 	 */
 	public AffectedArea save() {
 		this.excel.save();
+		return this;
+	}
+
+	/**
+	 * 数据保存（excel.close)的别名
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea close() {
+		this.excel.close();
+		return this;
+	}
+
+	/**
+	 * this.excel.save().close() 的简写
+	 * 
+	 * @return AffectedArea
+	 */
+	public AffectedArea saveAndClose() {
+		this.excel.save().close();
 		return this;
 	}
 
