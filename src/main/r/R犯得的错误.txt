@@ -1,0 +1,8 @@
+1、使用read.table读取excel,从clipboard里读取含有日期时间（比如2024-12-06 11:15:00）的列会出现串列，
+原因就是 read.table 默认的分割sep=" " 是空格，需要指定为sep='\t'.
+例如：
+# 这是一个tickdata的数据，第一列是id, 最后一列 是时间戳：2024-12-06 08:57:24.564536
+require(xts)
+require(tidyverse)
+xs <- read.table('clipboard', sep='\t', header=T)  |> tibble()
+with(xs, UpdateTime<-paste('2024-12-06', UpdateTime) |> as.POSIXlt()); xs
