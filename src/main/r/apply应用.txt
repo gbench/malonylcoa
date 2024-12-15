@@ -2,7 +2,7 @@
 local({
 	x<-1:10 # 数据
 	seq(0,5) |> lapply(\(i) if(i<1) x else append(x[-seq(i)],rep(NA,i))) |> # 求取lead
-		do.call('cbind',args=_) |> # 组装成行向量
+		do.call('cbind',args=_) |> # 组装成行向量, 结果class 为： "matrix" "array"
 		na.omit() |> # 去除NA向量
 		apply(1,\(e) paste0(e,collapse="-")) # 显示数据
 })
