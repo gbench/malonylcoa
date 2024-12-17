@@ -55,3 +55,23 @@ plots <- function(...) { # 带有还原绘图环境的绘图，即不会破坏�
       ma0.8 =  \() ma(xs,c(1, 0.8, 0.6, 0.4, 0.2)) |> plot(type='b', main='ma0.8')
   ) # 函数序列
 ) () |> do.call(plots, args=_)
+
+# 生成一个时间向量
+local({
+	from <- strptime('2025-01-01 00:00:00', '%Y-%m-%d %H:%M:%S') # 开始时间
+	tms <- \(init, interval, n=10) seq(init, by=interval, length.out=n) # 时间向量
+	data.frame ( # 生成时间向量的数据框
+		sec1=tms(from,"1 sec"), 
+		sec5=tms(from,"5 sec"), 
+		min1=tms(from,"1 min"),
+		min5=tms(from,"5 min"),
+		day1=tms(from,"1 day"),
+		day5=tms(from,"5 day"),
+		week1=tms(from,"1 week"),
+		week5=tms(from,"5 week"),
+		month1=tms(from,"1 month"),
+		month5=tms(from,"5 month"),
+		year1=tms(from,"1 year"),
+		year5=tms(from,"5 year")
+	)
+})
