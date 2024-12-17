@@ -1,0 +1,19 @@
+# 指数平均
+ema <- \(x, n=2) Reduce(\(acc,a) if(is.null(acc)) a else substitute( sum( c(acc, a)*c(n-1,2)/(n+1) ), 
+	list(acc=acc,a=a,n=n) ) |> eval(), x, NULL, accumulate=T) |> append(rep(NULL,n-2),0) 
+
+# 滞后算子
+lagn <- \(x, n=1) if(n<1) x else append(rep(NA,n),x[seq(n)-1-length(x)])
+
+# 偏函数
+partial <- \(f, ...) { args<-list(...); \(...) do.call(f,c(args,list(...))) }
+
+# sma 函数
+sma <- \(x, n=2) seq(0,n-1) |> sapply(partial(lagn,x)) |> na.omit() |> apply(1,mean) |> append(rep(NA,n-1),0)
+
+# 函数测试
+sma(1:10,5)
+# 函数测试
+ema(1:10,5)
+
+
