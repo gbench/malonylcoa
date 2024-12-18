@@ -23,6 +23,9 @@ lagn <- \(x, n=1) if(n<1) x else append(rep(NA,n),x[seq(n)-1-length(x)])
 # 偏函数
 partial <- \(f, ...) { args<-list(...); \(...) do.call(f,c(args,list(...))) }
 
+# lambda 风格
+partial <- \(f, ...) list(...) |> (\(args) \(...) do.call(f, c(args, list(...)))) ()
+
 # sma 函数
 sma <- \(x, n=2) seq(0,n-1) |> sapply(partial(lagn,x)) |> na.omit() |> apply(1,mean) |> append(rep(NA,n-1),0)
 
