@@ -29,6 +29,9 @@ partial <- \(f, ...) list(...) |> (\(args) \(...) do.call(f, c(args, list(...)))
 # sma 函数
 sma <- \(x, n=2) seq(0,n-1) |> sapply(partial(lagn,x)) |> na.omit() |> apply(1,mean) |> append(rep(NA,n-1),0)
 
+# sma 函数 Reduce 版本
+sma <- \(x, n=2) Reduce(\(acc,a) cbind(acc,lagn(x,a)), seq(n-1), x) |> na.omit() |> apply(1,mean) |> append(rep(NA,n-1),0)
+
 # 函数测试
 sma(1:10, 5)
 
