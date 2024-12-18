@@ -75,3 +75,12 @@ local({
 		year5=tms(from,"5 year")
 	)
 })
+
+# 生成一个随机序列：序列变量a,b需要通过structure 的 dimnames来进行设置
+rnorm(20)|>matrix(ncol=2)|>structure(dimnames=list(NULL,list("a","b"))) |> xts(order.by=as.Date(1:10,origin=Sys.Date()))
+
+# 时间序列的分组统计
+rnorm(20)|>matrix(ncol=2)|>structure(dimnames=list(NULL,list("a","b"))) |> xts(order.by=as.Date(1:10,origin=Sys.Date()))|>aggregate(by=partial(substr,start=10
+
+# 区间分组
+period.apply(1:10,c(0,4,10),paste0,collapse="-")
