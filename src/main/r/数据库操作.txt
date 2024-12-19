@@ -1,0 +1,38 @@
+library(RMySQL) # MySQL 数据库驱动
+library(dplyr) # coalesce
+library(purrr) # partial
+
+# 数据库函数
+dbfun <- function(f, ...) {
+  params <- list(...) # 数据库参数
+  defaults <- list(host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认参数
+  read <- \(key) coalesce(params[[key]], defaults[[key]]) # 参数读取
+  
+  # 执行SQL语句 
+  function (sql) {
+    # 数据库连接
+    try({
+      keys <- "host,user,password,port,dbname" |> strsplit(",") |> getElement(1) # 参数keys
+      conn <- keys |> lapply(read) |> structure(names=keys) |> 
+        append(MySQL(), after=0) |> # 把 数据库驱动 MySQL() 至于列表keys首位
+        do.call( dbConnect, args=_ )
+      data <- f(conn) # 执行sql
+      dbDisconnect(conn) # 关闭数据库连接
+      data # 返回执行结果
+    }) # 数据库连接
+  }
+}
+
+# 执行SQL语句
+sqlquery <- function(sql, host="localhost") {
+  # 连接使用函数
+  dbfun(function (con) {
+    rs <- dbSendQuery(con, sql) # 数据查询
+    data <- fetch(rs, n=-1) # 获取所有结果行
+    dbClearResult(rs) # 关闭结果集
+    data
+  }, host=host)(sql)
+}
+
+# 参看数据库中的数据表
+sqlquery("show tables")
