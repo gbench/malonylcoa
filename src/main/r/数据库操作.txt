@@ -14,7 +14,7 @@ dbfun <- function(f, ...) {
       keys <- "host,user,password,port,dbname" |> strsplit(",") |> getElement(1) # 参数keys
       conn <- keys |> lapply(read) |> structure(names=keys) |> # 读取连接参数&指定各个列表参数的名称
         append(MySQL(), after=0) |> # 把 数据库驱动 MySQL() 至于列表keys首位
-        do.call( dbConnect, args=_ )
+        do.call( dbConnect, args=_ ) # 获得数据库连接
       data <- f(conn) # 执行sql
       dbDisconnect(conn) # 关闭数据库连接
       data # 返回执行结果
