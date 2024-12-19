@@ -1,6 +1,5 @@
-library(RMySQL) # MySQL 数据库驱动
-library(dplyr) # coalesce
-library(purrr) # partial
+library(RMySQL) # MySQL 数据库驱动所在库
+library(dplyr) # coalesce 函数所在库
 
 # 数据库函数
 dbfun <- function(f, ...) {
@@ -13,7 +12,7 @@ dbfun <- function(f, ...) {
     # 数据库连接
     try({
       keys <- "host,user,password,port,dbname" |> strsplit(",") |> getElement(1) # 参数keys
-      conn <- keys |> lapply(read) |> structure(names=keys) |> 
+      conn <- keys |> lapply(read) |> structure(names=keys) |> # 读取连接参数&指定各个列表参数的名称
         append(MySQL(), after=0) |> # 把 数据库驱动 MySQL() 至于列表keys首位
         do.call( dbConnect, args=_ )
       data <- f(conn) # 执行sql
@@ -30,7 +29,7 @@ sqlquery <- function(sql, host="localhost") {
     rs <- dbSendQuery(con, sql) # 数据查询
     data <- fetch(rs, n=-1) # 获取所有结果行
     dbClearResult(rs) # 关闭结果集
-    data
+    data # 返回结果数据
   }, host=host)(sql)
 }
 
