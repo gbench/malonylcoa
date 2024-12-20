@@ -12,6 +12,8 @@ library(dplyr) # coalesce 函数所在库
 library(reshape2) # melt 函数所在库
 library(ggplot2) # melt 函数所在库
 library(jsonlite) # toJSON() 函数所在库
+library(purrr) # partial 函数所在库
+library(quantmod) # chartSeries 函数所在库
 
 # 数据库函数
 dbfun <- function(f, ...) {
