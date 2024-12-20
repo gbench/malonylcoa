@@ -104,8 +104,12 @@ klinedata_of <- function(symbol, datepat="\\d{8}") {
   lapply(seq(tickdata), \(i) compute_kline(tickdata[[i]], tdates[[i]])) |> structure(names=tdatestamp) # 计算K线
 }
 
-# 生成K线数据, 结果为tibble列表
-klinedata_of("ma501","202412(1[5-9])")
+# 生成K线数据, 结果为tibble的列表
+klinedata <- klinedata_of("ma501", "202412(1[5-9])")
+
+# 绘制K线图
+with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume), Period)) |> # 获取时间序列的数据
+  head(100) |> chartSeries(theme="white", name="ma501-2024-12-19") # 编写K线图
 
 # 读取数据库数据
 "select Id,LastPrice,OpenInterest,Volume from t_rb2505_20241219" |> # sql 语句
