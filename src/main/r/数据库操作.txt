@@ -55,10 +55,10 @@ sqlquery <- function(sql, host="localhost") {
 sqlquery("show tables")
 
 # 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
-sqlquery("show tables") |> with(Tables_in_ctp2) |> partial(\(x, i=grep("ru2505",x)) x[i])() 
+sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ru2505",x)) x[i])() 
 
 # 于是，可以把 形参列表作为语句的执行区域：编写以下的 读取tickdata数据 的函数
-tickdatas.ma505 <- sqlquery("show tables") |> with(Tables_in_ctp2) |> partial(\(x, i=grep("ma505",x)) x[i]) () |>  # 提取橡胶ru2505合约
+tickdatas.ma505 <- sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ma505", x)) x[i]) () |>  # 提取橡胶ru2505合约
   partial( \( # 定义一个函数把交易数据tickdata全部都给读出来
       tbls,  # 各个交易数据的数据表名, t_{合约代码的小写}_{日期时间戳}
       sqls=sprintf("select * from %s", tbls),  # 读取各个交易日的成交数据的sql 语句
@@ -70,9 +70,9 @@ tickdatas.ma505 <- sqlquery("show tables") |> with(Tables_in_ctp2) |> partial(\(
 tibble.ma505 <- tickdatas.ma505 |> partial( \( # 数据合并函数
     x, # tickdatas.ma505 交易数据
     dates=names(x) |> gsub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_ ) # 解析成年月日的日期形式
-  ) Reduce( x=seq(x), \(acc,i) rbind(acc, x[[i]] |> mutate ( # 修改数据列UpdateTime补充数据日期
+  ) Reduce(x=seq(x), \(acc,i) rbind(acc, x[[i]] |> mutate ( # 修改数据列UpdateTime补充数据日期
     UpdateTime=paste(dates[i], UpdateTime) |> strptime(format="%Y-%M-%d %H:%M:%S") ) # 修改更新时间
-  ), init=data.frame()) ) () |> partial(\(x) x |> mutate(Id=seq(nrow(x))) ) () ; tibble.ma505 # 数据合并函数(统一整个Id) 
+  ), init=data.frame()) ) () |> partial( \(x) x |> mutate(Id=seq(nrow(x))) ) () ; tibble.ma505 # 数据合并函数(统一整个Id) 
 write.csv(tibble.ma505, "tibble.ma505.csv") # 写入数据文件
 
 # ----------------------------------------------------------------------------------------------------------------
