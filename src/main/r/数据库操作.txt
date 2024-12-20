@@ -1,7 +1,17 @@
+# ----------------------------------------------------------------------------------------------------------------
+# 数据库操作的使用示例
+# 示例数据库为:  CTP 交易的TickData , 以 数据表 t_{合约代码的小写}_{日期时间戳} 的形式 存储于数据库
+# 如 t_ma505_20241219, t_rb2505_20241219. 需要注意表名的合约代码采用小写表示，对于甲醇25年5月合约的代码是其实是M505而非ma505
+# 表数据结构：t_ma505_20241219 数据结构示例：
+# > sqlquery("select * from t_ma505_20241219 limit 1") |> toJSON()
+# [{"Id":1,"Instrument":"MA505","LastPrice":2601,"AskPrice":2601,"BidPrice":2600,"AskVolume":17,"BidVolume":667,"UpdateTime":"10:44:45","UpdateMillisec":500,"Volume":400590,"OpenInterest":744350,"AveragePrice":2609,"UpperLimitPrice":2785,"LowerLimitPrice":2419,"PreOpenInterest":709864,"PyctpCreateTime":"2024-12-19 10:44:45.767639"}] 
+# 
+# ----------------------------------------------------------------------------------------------------------------
 library(RMySQL) # MySQL 数据库驱动所在库
 library(dplyr) # coalesce 函数所在库
 library(reshape2) # melt 函数所在库
 library(ggplot2) # melt 函数所在库
+library(jsonlite) # toJSON() 函数所在库
 
 # 数据库函数
 dbfun <- function(f, ...) {
@@ -34,6 +44,10 @@ sqlquery <- function(sql, host="localhost") {
     data # 返回结果数据
   }, host=host)(sql) |> tibble()
 }
+
+# ----------------------------------------------------------------------------------------------------------------
+# 基本使用示例
+# ----------------------------------------------------------------------------------------------------------------
 
 # 参看数据库中的数据表
 sqlquery("show tables")
@@ -86,10 +100,11 @@ klinedata_of <- function(symbol, datepat="\\d{8}") {
   datatbls <- names(tickdata) # tickdata的数据表名
   # 提取表名尾部的日期时间戳后缀用以标记tickdata所在日期时间
   tdates <- datatbls |> lapply(\(x) gsub(pattern=".+_(\\d{8})$", replacement="\\1",  x=x)  |> as.Date(format="%Y%m%d")) # K线日期
-  lapply(seq(tickdata), \(i) compute_kline(tickdata[[i]], tdates[[i]])) |> structure(names=tdates) # 计算K线
+  tdatestamp <- tdates|>lapply(partial(strftime,format="%Y-%m-%d")) # 日期标记
+  lapply(seq(tickdata), \(i) compute_kline(tickdata[[i]], tdates[[i]])) |> structure(names=tdatestamp) # 计算K线
 }
 
-# 生成K线数据
+# 生成K线数据, 结果为tibble列表
 klinedata_of("ma501","202412(1[5-9])")
 
 # 读取数据库数据
