@@ -3,7 +3,6 @@ library(dplyr) # coalesce 函数所在库
 library(reshape2) # melt 函数所在库
 library(ggplot2) # melt 函数所在库
 
-
 # 数据库函数
 dbfun <- function(f, ...) {
   params <- list(...) # 数据库参数
@@ -38,6 +37,26 @@ sqlquery <- function(sql, host="localhost") {
 
 # 参看数据库中的数据表
 sqlquery("show tables")
+
+#读取指定合约 tickdata table of 
+# symbol 合约符号
+# datepat 日期模式，如20241219
+tdtbls_of <- \(symbol, datepat="\\d{8}") sqlquery("show tables") |> getElement(1) |> (\(x) x[grep(sprintf("^t_%s_%s", symbol, datepat), x)])()
+# 读取指定合约的数据表列表-所有
+tdtbls_of("ma501")
+# 读取指定合约的数据表列表-指定日期
+tdtbls_of("ma501", "20241219")
+
+# 读取所有合约数据
+tickdata_of <- \(symbol, datepat="\\d{8}") { 
+	tdtbls <- tdtbls_of(symbol, datepat); # 交易数据表
+	tdtbls |> sprintf(fmt="select * from %s") |> lapply(sqlquery) |> structure(names=tdtbls) 
+}
+# 读取合约数据-所有
+tickdata_of("ma501")
+# 读取合约数据-指定范围
+tickdata_of("ma501","202412(09|1[1-9])")
+
 
 # 读取数据库数据
 "select Id,LastPrice,OpenInterest,Volume from t_rb2505_20241219" |> # sql 语句
