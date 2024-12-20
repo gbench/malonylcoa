@@ -54,8 +54,8 @@ sqlquery <- function(sql, host="localhost") {
 # 参看数据库中的数据表
 sqlquery("show tables")
 
-#  提取执行数据合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
-sqlquery("show tables") |> with(Tables_in_ctp2) |> partial(\(x, i=grep("ru",x)) x[i])() 
+# 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
+sqlquery("show tables") |> with(Tables_in_ctp2) |> partial(\(x, i=grep("ru2505",x)) x[i])() 
 
 # ----------------------------------------------------------------------------------------------------------------
 
