@@ -103,8 +103,8 @@ compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
   ) |> ungroup() |> filter(ranking==1)  # 选择每个周期的最后一行作为kline数据数据线
   # Step 3: 计算成交量和开仓量的变化 
   kd <- klinedata |> mutate( # 计算分钟成交量和分钟持仓量变化
-    Vol1m = Volume-lag(Volume, default=Volume[1]), # 成交量-分钟增量
-    OpenInt1m = OpenInterest-lag(OpenInterest, default=OpenInterest[1]) # 持仓量-分钟增量
+    Vol1m=Volume-lag(Volume, default=Volume[1]), # 成交量-分钟增量
+    OpenInt1m=OpenInterest-lag(OpenInterest, default=OpenInterest[1]) # 持仓量-分钟增量
   ) # 带有OHLCV数据klinedata 
   # Step4: 包装成Period,OHLCV,OI的格式
   kd |> select(Period, Open, High, Low, Close, Volume=Vol1m, OpenInt1m, AccVol=Volume, AccOpenInt=OpenInterest) # 返回K线结果
