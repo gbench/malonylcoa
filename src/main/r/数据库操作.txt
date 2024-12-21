@@ -73,7 +73,7 @@ sqlquery(c("select database()","show tables"), dbname="ctp")
 local({ # data.table 的数据读取测试
   library(data.table) # 加载库文件
   datafile <- "data.ma505.csv" # 数据文件名称
-  sqlquery("show tables") |> getElement(1) |> (\(x, i=grep("ma505", x)) x[i]) () |>sprintf(fmt="select * from %s") |> sqlquery() |> rbindlist() |> fwrite(datafile)
+  sqlquery("show tables") |> getElement(1) |> (\(x, i=grep("ma505", x)) x[i]) () |> sprintf(fmt="select * from %s") |> sqlquery() |> rbindlist() |> fwrite(datafile)
   # 查看数据文件
   list.files() |> grep(pattern=datafile, value=T) |> print() # 查看数据文件
   # 读取数据文件
