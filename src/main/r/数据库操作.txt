@@ -58,7 +58,6 @@ sqlquery("show tables")
 ( \( x, dbnames=x |> strsplit(",") |> getElement(1) ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname,sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
-
 # 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
 sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ru2505",x)) x[i] ) () 
 # 等价于一下代码 ，从实际效果上看 写不写  partial 作用是一样的 都是 在 管道后面构造一个 带有一个首位参数是x,随后跟着一些依赖于x的默认参数的call对象,
