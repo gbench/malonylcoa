@@ -190,6 +190,6 @@ with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume)
 
 # 读取数据库数据
 "select Id,LastPrice,OpenInterest,Volume from t_rb2505_20241219" |> # sql 语句
-  sqlquery() |> melt(id.vars="Id") |> group_by(variable) |> mutate(avg=mean(value), # 分组计算波动值
+  sqlquery() |> reshape2::melt(id.vars="Id") |> group_by(variable) |> mutate(avg=mean(value), # 分组计算波动值
     hi=max(value), lo=min(value), v=(value-avg)/(hi-lo)) |> ungroup() |> # 分组计算波动值volatile
   ggplot() + facet_grid(variable~.) + geom_line(aes(Id, v))
