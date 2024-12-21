@@ -17,16 +17,16 @@ library(quantmod) # chartSeries 函数所在库
 
 # 数据库函数
 dbfun <- function(f, ...) {
-  params <- list(...) # 数据库参数
-  defaults <- list(host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认参数
-  read <- \(key) coalesce(params[[key]], defaults[[key]]) # 参数读取
+  dbcfg <- list(...) # 数据库连接参数配置
+  defaultcfg <- list(host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认参数
+  readcfg <- \(key) coalesce(dbcfg[[key]], defaultcfg[[key]]) #  带有默认值的配置参数key的值读取
   
   # 执行SQL语句 
   function (sql) {
     # 数据库连接
     try({
       keys <- "host,user,password,port,dbname" |> strsplit(",") |> getElement(1) # 参数keys
-      conn <- keys |> lapply(read) |> structure(names=keys) |> # 读取连接参数&指定各个列表参数的名称
+      conn <- keys |> lapply(readcfg) |> structure(names=keys) |> # 读取连接参数&指定各个列表参数的名称
         append(MySQL(), after=0) |> # 把 数据库驱动 MySQL() 至于列表keys首位
         do.call( dbConnect, args=_ ) # 获得数据库连接
       data <- f(conn) # 执行sql
@@ -37,14 +37,14 @@ dbfun <- function(f, ...) {
 }
 
 # 执行SQL语句
-sqlquery <- function(sql, host="localhost") {
+sqlquery <- function(sql, ...) {
   # 连接使用函数
   dbfun(function (con) {
     rs <- dbSendQuery(con, sql) # 数据查询
     data <- fetch(rs, n=-1) # 获取所有结果行
     dbClearResult(rs) # 关闭结果集
     data # 返回结果数据
-  }, host=host)(sql) |> tibble()
+  }, ...)(sql) |> tibble()
 }
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -54,11 +54,19 @@ sqlquery <- function(sql, host="localhost") {
 # 参看数据库中的数据表
 sqlquery("show tables")
 
-# 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
-sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ru2505",x)) x[i])() 
+# 查看指定数据库名称下面的数据表
+( \( x, dbnames=x |> strsplit(",") |> getElement(1) ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
+  dbnames |> lapply( \(dbname,sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
-# 于是，可以把 形参列表作为语句的执行区域：编写以下的 读取tickdata数据 的函数
-tickdatas.ma505 <- sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ma505", x)) x[i]) () |>  # 提取橡胶ru2505合约
+
+# 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
+sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ru2505",x)) x[i] ) () 
+# 等价于一下代码 ，从实际效果上看 写不写  partial 作用是一样的 都是 在 管道后面构造一个 带有一个首位参数是x,随后跟着一些依赖于x的默认参数的call对象,
+# 但是partial ( \(x, i=grep("ru2505",x)) x[i] ) ()  会比单纯的 ( \(x, i=grep("ru2505",x) ) x[i]) ()  清晰一点，提醒了这里有一个partial 调用，这也是为何写partial的原因
+sqlquery("show tables") |> with(Tables_in_ctp2) |> ( \(x, i=grep("ru2505",x) ) x[i]) () 
+
+# 于是，可以把 形参列表作为语句的执行区域：编写以下的 读取tickdata数据 的函数,  之所以使用partial而不是直接lamda 是为了 便于识别
+tickdatas.ma505 <- sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ma505", x)) x[i] ) () |>  # 提取橡胶ru2505合约
   partial( \( # 定义一个函数把交易数据tickdata全部都给读出来
       tbls,  # 各个交易数据的数据表名, t_{合约代码的小写}_{日期时间戳}
       sqls=sprintf("select * from %s", tbls),  # 读取各个交易日的成交数据的sql 语句
@@ -80,7 +88,7 @@ write.csv(tibble.ma505, "tibble.ma505.csv") # 写入数据文件
 #读取指定合约 tickdata table of 
 # symbol 合约符号
 # datepat 日期模式，如20241219
-tdtbls_of <- \(symbol, datepat="\\d{8}") sqlquery("show tables") |> getElement(1) |> (\(x) x[grep(sprintf("^t_%s_%s", symbol, datepat), x)])()
+tdtbls_of <- \(symbol, datepat="\\d{8}") sqlquery("show tables") |> getElement(1) |> (\(x) x[grep(sprintf("^t_%s_%s", symbol, datepat), x)]) ()
 # 读取指定合约的数据表列表-所有
 tdtbls_of("ma501")
 # 读取指定合约的数据表列表-指定日期
