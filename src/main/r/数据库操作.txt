@@ -69,6 +69,17 @@ sqlquery(c("select database()","show tables"), dbname="ctp")
 ( \( x, dbnames=x |> strsplit(",") |> getElement(1) ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
+# 查询期货合约并合并成一个tibble数据对象 & 写入一个data.ma505.csv的数据文件
+local({ # data.table 的数据读取测试
+  library(data.table) # 加载库文件
+  datafile <- "data.ma505.csv" # 数据文件名称
+  sqlquery("show tables") |> getElement(1) |> (\(x, i=grep("ma505", x)) x[i]) () |>sprintf(fmt="select * from %s") |> sqlquery() |> rbindlist() |> fwrite(datafile)
+  # 查看数据文件
+  list.files() |> grep(pattern=datafile, value=T) |> print() # 查看数据文件
+  # 读取数据文件
+  fread(datafile ,head=T) 
+}) # local 数据读取
+
 # 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
 sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ru2505",x)) x[i] ) () 
 # 等价于一下代码 ，从实际效果上看 写不写  partial 作用是一样的 都是 在 管道后面构造一个 带有一个首位参数是x,随后跟着一些依赖于x的默认参数的call对象,
