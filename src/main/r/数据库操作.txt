@@ -73,7 +73,21 @@ sqlquery(c("select database()","show tables"), dbname="ctp")
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
 # 读取时间序列
-sqlquery("select * from t_ma505_20241211") |> with(PyctpCreateTime |>as.POSIXct() |> xts(order.by=_, data.frame(LastPrice, Volume, OpenInterest)))
+sqlquery("select * from t_ma505_20241219") |> with(PyctpCreateTime |>as.POSIXct() |> xts(order.by=_, data.frame(LastPrice, Volume, OpenInterest)))
+
+# 提取时间间隔超过误差精度的时段
+local({
+  # 读取时间序列
+  sql <- "select * from t_ma505_20241219" # sql 语句
+  x <- sqlquery(sql) |> with(PyctpCreateTime |> as.POSIXct() |> xts(order.by=_, data.frame(LastPrice, Volume, OpenInterest))) # tickdata 的时间序列
+  gaps <- index(x) |> diff(units="mins") |> (\(ds) { # 计算时间间隔单位分钟
+    # print(ds|>as.difftime(units = "secs") |> head()) # 转换成秒
+    eps <- 1 # 时间间隔的区分精度单位分钟
+    seq_along(ds)[ds > eps] |> (\(i, pre=x[i], cur=x[i+1]) list(pre=pre, cur=cur)) () # 超过限定间隔的时段
+  }) () |> with(list(pre, cur) |> lapply(index) |> data.frame() |> structure(names=c("pre","cur"))) # 空白时间区段
+  print(gaps)
+  rng <- range(index(x)) # 时间范围
+}) |> print()
 
 # 查询期货合约并合并，使之成为一个tibble数据对象 ，然后 写入一个data.ma505.csv的数据文件
 local({ # data.table 的数据读取测试，以 local的方式限定 datafile，data 变量 的外部暴露
