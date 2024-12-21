@@ -14,6 +14,7 @@ library(ggplot2) # ggplot 函数所在库
 library(jsonlite) # toJSON() 函数所在库
 library(purrr) # partial 函数所在库
 library(quantmod) # chartSeries 函数所在库
+# library(data.table) # rbindlist,fwrite,fread 函数所在库
 
 # 数据库函数
 dbfun <- function(f, ...) {
@@ -36,8 +37,9 @@ dbfun <- function(f, ...) {
   }
 }
 
-# 执行SQL语句
+# 执行SQL语句查询数据结果
 # sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+# simplify 是否对返回结果进行简化处理，T:对于元素列表直接返回列表元素，F：返回结果列表不论结果是否是单元素列表
 sqlquery <- function(sql, simplify=T, ...) {
   # 连接使用函数
   dbfun(function (con) { # 使用数据库连接进行查询结果数据集
@@ -69,15 +71,18 @@ sqlquery(c("select database()","show tables"), dbname="ctp")
 ( \( x, dbnames=x |> strsplit(",") |> getElement(1) ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
-# 查询期货合约并合并成一个tibble数据对象 & 写入一个data.ma505.csv的数据文件
-local({ # data.table 的数据读取测试
+# 查询期货合约并合并，使之成为一个tibble数据对象 ，然后 写入一个data.ma505.csv的数据文件
+local({ # data.table 的数据读取测试，以 local的方式限定 datafile，data 变量 的外部暴露
   library(data.table) # 加载库文件
-  datafile <- "data.ma505.csv" # 数据文件名称
-  sqlquery("show tables") |> getElement(1) |> (\(x, i=grep("ma505", x)) x[i]) () |> sprintf(fmt="select * from %s") |> sqlquery() |> rbindlist() |> fwrite(datafile)
-  # 查看数据文件
-  list.files() |> grep(pattern=datafile, value=T) |> print() # 查看数据文件
-  # 读取数据文件
-  fread(datafile ,head=T) 
+  system.time({ # 统计程序运行时间
+    datafile <- "data.ma505.csv" # 数据文件名称
+    sqlquery("show tables") |> getElement(1) |> (\(x, i=grep("ma505", x)) x[i]) () |> sprintf(fmt="select * from %s") |> sqlquery() |> rbindlist() |> fwrite(datafile)
+    # 查看数据文件
+    list.files() |> grep(pattern=datafile, value=T) |> print() # 查看数据文件
+    # 读取数据文件
+    data <- fread(datafile, head=T) # 读取数据文件并返回结果，注意data是可以外部system.time访问的，但是无法在local以外进行访问
+  }) |> print() # 打印程序运行时间
+  data # 返回结果
 }) # local 数据读取
 
 # 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
