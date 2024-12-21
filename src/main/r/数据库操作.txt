@@ -37,26 +37,37 @@ dbfun <- function(f, ...) {
 }
 
 # 执行SQL语句
-sqlquery <- function(sql, ...) {
+# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+sqlquery <- function(sql, simplify=T, ...) {
   # 连接使用函数
-  dbfun(function (con) {
-    rs <- dbSendQuery(con, sql) # 数据查询
-    data <- fetch(rs, n=-1) # 获取所有结果行
-    dbClearResult(rs) # 关闭结果集
-    data # 返回结果数据
-  }, ...)(sql) |> tibble()
+  dbfun(function (con) { # 使用数据库连接进行查询结果数据集
+    sqls <- c(list(), sql) #  拼装成sql语句集合
+    dataset <- lapply(sqls, \(s) { # SQL语句执行
+      rs <- dbSendQuery(con, s) # 数据查询
+      entries <- fetch(rs, n=-1) # 获取所有结果行
+      dbClearResult(rs) # 关闭结果集
+      tibble(entries) # 结果转换成 tibble对象
+    }) # 数据查询
+    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  }, ...)(sql) 
 }
 
 # ----------------------------------------------------------------------------------------------------------------
 # 基本使用示例
 # ----------------------------------------------------------------------------------------------------------------
 
-# 参看默认数据库（ctp2）中的数据表
+# 查看默认数据库（ctp2）中的数据表
 sqlquery("show tables")
+
+# 查看数据库名称与该数据库中的数据表
+sqlquery(c("select database()", "show tables"))
+
+# 查看数据库名称与该数据库中的数据表, 指定数据库
+sqlquery(c("select database()","show tables"), dbname="ctp")
 
 # 查看指定数据库名称下面的数据表
 ( \( x, dbnames=x |> strsplit(",") |> getElement(1) ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
-  dbnames |> lapply( \(dbname,sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
+  dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
 # 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
 sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ru2505",x)) x[i] ) () 
