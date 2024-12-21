@@ -14,6 +14,7 @@ library(ggplot2) # ggplot 函数所在库
 library(jsonlite) # toJSON() 函数所在库
 library(purrr) # partial 函数所在库
 library(quantmod) # chartSeries 函数所在库
+library(xts) # xts 函数所在库
 # library(data.table) # rbindlist,fwrite,fread 函数所在库
 
 # 数据库函数
@@ -70,6 +71,9 @@ sqlquery(c("select database()","show tables"), dbname="ctp")
 # 查看指定数据库名称下面的数据表
 ( \( x, dbnames=x |> strsplit(",") |> getElement(1) ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
+
+# 读取时间序列
+sqlquery("select * from t_ma505_20241211") |> with(PyctpCreateTime |>as.POSIXct() |> xts(order.by=_, data.frame(LastPrice, Volume, OpenInterest)))
 
 # 查询期货合约并合并，使之成为一个tibble数据对象 ，然后 写入一个data.ma505.csv的数据文件
 local({ # data.table 的数据读取测试，以 local的方式限定 datafile，data 变量 的外部暴露
