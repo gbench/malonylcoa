@@ -81,7 +81,7 @@ tickdatas.ma505 <- sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \
       tbls,  # 各个交易数据的数据表名, t_{合约代码的小写}_{日期时间戳}
       sqls=sprintf("select * from %s", tbls),  # 读取各个交易日的成交数据的sql 语句
       tdates=sapply(tbls, \(tbl) gsub(".+_(\\d+{8})$", "\\1", tbl)) # 日期时间戳
-    ) sqls |> lapply(sqlquery) |> structure(names=tdates) # 执行SQL查询语句并将结果组装成list列表
+    ) sqls |> sqlquery() |> structure(names=tdates) # 执行SQL查询语句并将结果组装成list列表
   ) (); tickdatas.ma505  #  获取所有tickdata数据
 
 # 把各个数据表的数据合并成一个列表tibble
@@ -107,12 +107,12 @@ tdtbls_of("ma501", "20241219")
 # 读取所有合约数据
 tickdata_of <- \(symbol, datepat="\\d{8}") { 
   tdtbls <- tdtbls_of(symbol, datepat); # 交易数据表
-  tdtbls |> sprintf(fmt="select * from %s") |> lapply(sqlquery) |> structure(names=tdtbls) 
+  tdtbls |> sprintf(fmt="select * from %s") |> sqlquery() |> structure(names=tdtbls) 
 }
 # 读取合约数据-所有
 tickdata_of("ma501")
 # 读取合约数据-指定范围
-tickdata_of("ma501","202412(09|1[1-9])")
+tickdata_of("ma501", "202412(09|1[1-9])")
 
 # 计算K线
 # 将tickdata的dataframe  即 tdfm 转换成分钟线 
@@ -139,11 +139,11 @@ compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
 
 # 读取合约数据-指定范围 并且 转换成 K线
 klinedata_of <- function(symbol, datepat="\\d{8}") {
-  tickdata <- tickdata_of(symbol,datepat) # 获取交易数据
+  tickdata <- tickdata_of(symbol, datepat) # 获取交易数据
   datatbls <- names(tickdata) # tickdata的数据表名
   # 提取表名尾部的日期时间戳后缀用以标记tickdata所在日期时间
   tdates <- datatbls |> lapply(\(x) gsub(pattern=".+_(\\d{8})$", replacement="\\1",  x=x)  |> as.Date(format="%Y%m%d")) # K线日期
-  tdatestamp <- tdates|>lapply(partial(strftime,format="%Y-%m-%d")) # 日期标记
+  tdatestamp <- tdates |> lapply(partial(strftime,format="%Y-%m-%d")) # 日期标记
   lapply(seq(tickdata), \(i) compute_kline(tickdata[[i]], tdates[[i]])) |> structure(names=tdatestamp) # 计算K线
 }
 
