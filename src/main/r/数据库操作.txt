@@ -223,25 +223,34 @@ system.time({ #  并行计算的测试
     sapply(pkgs,\(p) substitute(require(p),list(p=p)) |> eval()) # 重新加载
   } # if
   
-  #卡其集群 
-  ncores <- detectCores() - 1 # 集群核数量
-  cl <- makeCluster(ncores) # 创建一个多核集群
-  registerDoParallel(cl) # 注册集群
-  print(sprintf("cluster ncores:%s", ncores)) # 打印集群核数量
+  # 定义集群运算函数
+  execute <- function(f, vars, ...) { # 集群运算
+    #创建集群 
+    ncores <- detectCores() - 1 # 集群核数量
+    cl <- makeCluster(ncores) # 创建一个多核集群
+    registerDoParallel(cl) # 注册集群
+    varlist <- vars |> strsplit(",") |> getElement(1) # 需要导出到集群节点的object的名称
+    clusterExport(cl, varlist) # 导出到集群节点
+    print(sprintf("cluster ncores:%s", ncores)) # 打印集群核数量
+    #函数调用
+    results <- f(...)  
+    # 关闭集群
+    stopImplicitCluster() # 在计算结束后别忘记关闭集群
+    stopCluster(cl) # 关闭
+    results # 返回结果
+  } # execute
 
-  # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
-  sqlquery("show tables")|> getElement(1) |> ( \(x, i=grep("ma",x)) x[i] ) ()  |> 
-    foreach( tbl=_,  .packages=pkgs[seq(2)-1-length(pkgs)] ) %dopar%  { # 并行计算
-      sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
-      startime<-Sys.time() # 开始时间
-      result <- sqlquery(sql) # SQL查询
-      endtime <- Sys.time() # 结束时间
-      list(tbl=tbl, sql=sql, result=result, startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
-    } |> ( \(results) { # 结果集合的处理
-      print(results)
-    } ) () # results
-  
-  # 关闭集群
-  stopImplicitCluster() # 在计算结束后别忘记关闭集群
-  stopCluster(cl) # 关闭
+  execute(\() { # 集群运算
+    # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
+    sqlquery("show tables")|> getElement(1) |> ( \(x, i=grep("ma",x)) x[i] ) ()  |> 
+      foreach( tbl=_,  .packages=pkgs[seq(2)-1-length(pkgs)] ) %dopar%  { # 并行计算
+        sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
+        startime<-Sys.time() # 开始时间
+        result <- sqlquery(sql) # SQL查询
+        endtime <- Sys.time() # 结束时间
+        list(tbl=tbl, sql=sql, result=result, startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
+      } #  foreach dopar
+   } , "sqlquery,dbfun") |> ( \(results) { # 结果集合的处理
+        print(results)
+      } ) () # results
 }) # 并行计算的测试
