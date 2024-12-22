@@ -223,14 +223,20 @@ system.time({ #  并行计算的测试
     sapply(pkgs,\(p) substitute(require(p),list(p=p)) |>eval()) # 重新加载
   } # if
   
-  #卡其集群
-  cl <- makeCluster(4) # 创建一个4核集群(我的电脑只有4个核，悲催）
+  #卡其集群 
+  ncores <- detectCores() - 1 # 集群核数量
+  cl <- makeCluster(ncores) # 创建一个多核集群
   registerDoParallel(cl) # 注册集群
+  print(sprintf("cluster ncores:%s", ncores)) # 打印集群核数量
 
-  # 数据运算
-  sqlquery("show tables")|> getElement(1) |> (\(x, i=grep("ma505",x)) x[i]) () |> sprintf(fmt="select * from %s")  |> # 生成查询SQL语句
-    foreach( sql=_,  .packages=pkgs[seq(2)-1-length(pkgs)] ) %dopar%  { # 并行计算
-      list(sql=sql, result=sqlquery(sql)) # 从数据库中查询出SQL结果并记录结果
+  # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
+  sqlquery("show tables")|> getElement(1) |> ( \(x, i=grep("ma",x)) x[i] ) ()  |> 
+    foreach( tbl=_,  .packages=pkgs[seq(2)-1-length(pkgs)] ) %dopar%  { # 并行计算
+      sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
+      startime<-Sys.time() # 开始时间
+      result <- sqlquery(sql) # SQL查询
+      endtime <- Sys.time() # 结束时间
+      list(tbl=tbl, sql=sql, result=result, startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
     } |> ( \(results) { # 结果集合的处理
       print(results)
     } ) () # results
