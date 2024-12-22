@@ -21,7 +21,7 @@ library(xts) # xts 函数所在库
 dbfun <- function(f, ...) {
   dbcfg <- list(...) # 数据库连接参数配置
   defaultcfg <- list(drv=MySQL(), host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认连接参数
-  readcfg <- \(key) ( \(x=dbcfg[[key]]) if (!is.null(x)) x else defaultcfg[[key]] ) () #  带有默认值的配置参数key的值读取
+  readcfg <- \(key) (\(x=dbcfg[[key]]) if (!is.null(x)) x else defaultcfg[[key]]) () #  带有默认值的配置参数key的值读取
   
   # 执行SQL语句 
   function (sql) {
@@ -36,18 +36,19 @@ dbfun <- function(f, ...) {
   } # function (sql)
 } # dbfun
 
-# 执行SQL语句查询数据结果
+# 执行SQL语句查询数据结果（操作结果集模式)
 # sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
 # simplify 是否对查询结果做简化处理后再返回，
 #   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
 #   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
-sqlquery <- function(sql, simplify=T, ...) {
+# n 查询结果的返回最大数量
+sqlquery <- function(sql, simplify=T, n=-1, ...) {
   # 连接使用函数
   dbfun(function (con) { # 使用数据库连接进行查询结果数据集
     sqls <- c(list(), sql) #  拼装成sql语句集合
     dataset <- lapply(sqls, \(s) { # SQL语句执行
       rs <- dbSendQuery(con, s) # 数据查询
-      entries <- fetch(rs, n=-1) # 获取所有结果行
+      entries <- fetch(rs, n) # 获取所有结果行
       dbClearResult(rs) # 关闭结果集
       tibble(entries) # 结果转换成 tibble对象
     }) # 数据查询
@@ -55,15 +56,16 @@ sqlquery <- function(sql, simplify=T, ...) {
   }, ...)(sql) # 连接使用函数
 }
 
-# 执行SQL语句查询数据结果
+# 执行SQL语句查询数据结果（dbGetQuery模式)
 # sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
 # simplify 是否对查询结果做简化处理后再返回，
 #   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
 #   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
-sqlquery <- function(sql, simplify=T, ...) {
+# n 查询结果的返回最大数量
+sqlquery <- function(sql, simplify=T, n=-1, ...) {
   # 连接使用函数
   dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(partial(dbGetQuery, con=con)) # 执行数据查询
+    dataset <- c(list(), sql) |> lapply(partial(dbGetQuery, con=con, n=n)) # 执行数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
