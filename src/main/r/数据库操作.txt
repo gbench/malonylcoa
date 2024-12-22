@@ -208,3 +208,31 @@ with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume)
   sqlquery() |> reshape2::melt(id.vars="Id") |> group_by(variable) |> mutate(avg=mean(value), # 分组计算波动值
     hi=max(value), lo=min(value), v=(value-avg)/(hi-lo)) |> ungroup() |> # 分组计算波动值volatile
   ggplot() + facet_grid(variable~.) + geom_line(aes(Id, v))
+
+# ----------------------------------------------------------------------------------------------------------------
+# 集群与并行计算
+# ---------------------------------------------------------------------------------------------------------------
+system.time({ #  并行计算的测试
+  pkgs <- "RMySQL,purrr,tidyverse,foreach,doParallel" |> strsplit(",") |> getElement(1) # 并行计算需要程序包
+  flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |>eval()) # 生成加载标志
+  if(!all(flags)) { # 存在没有安装的程序包
+    pkgs[!flags] |> install.packages() # 安装没有安装的程序包
+    sapply(pkgs,\(p) substitute(require(p),list(p=p)) |>eval()) # 重新加载
+  } # if
+  
+  #卡其集群
+  cl <- makeCluster(4) # 创建一个4核子集群(我的电脑只有4个核，悲催）
+  registerDoParallel(cl) # 注册集群
+
+  # 数据运算
+  sqlquery("show tables")|> getElement(1) |> (\(x, i=grep("ma505",x)) x[i]) () |> sprintf(fmt="select * from %s")  |> # 生成查询SQL语句
+    foreach( sql=_,  .packages=pkgs[seq(2)-1-length(pkgs)] ) %dopar%  { # 并行计算
+      list(sql=sql, result=sqlquery(sql)) # 计算并返回结果
+    } |> ( \(results) { # 结果集合
+      print(results)
+    } ) ()
+  
+  # 关闭集群
+  stopImplicitCluster() # 在计算结束后别忘记关闭集群
+  stopCluster(cl) # 关闭
+}) # 并行计算的测试
