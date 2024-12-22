@@ -1,0 +1,21 @@
+# 创建文件夹
+"a/b/c"|>strsplit("/")|>unlist()|>Reduce(x=_,\(acc,a)paste0(acc,"/",a),accumulate=T)|>lapply(dir.create)
+
+# 查看工作区中的文件
+list.files()
+
+# 写入文件
+file.3rd <- "a/b/c/data3rd.csv" # 文件名称
+(\(n=3,x=rep(seq(n),n))x|>split(rep(seq(n),rep(n,n)))|>expand.grid()|>structure(names=paste0("x",seq(n))))()|>write.csv(file.3rd,row.names=F) # 写入3级阵列数据
+
+# 读取文件
+data.3rd <- read.csv(file.3rd,header=T);data.3rd # 读取并打印
+
+# 单开文件对话框选择文件
+file <- file.choose();file
+
+# 删除文件夹&文件
+unlink("a",recursive=T) # 递归删除
+
+# 查看工作区中的文件
+list.files()
