@@ -40,7 +40,9 @@ dbfun <- function(f, ...) {
 
 # 执行SQL语句查询数据结果
 # sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
-# simplify 是否对返回结果进行简化处理，T:对于元素列表直接返回列表元素，F：返回结果列表不论结果是否是单元素列表
+# simplify 是否对查询结果做简化处理后再返回，
+#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
 sqlquery <- function(sql, simplify=T, ...) {
   # 连接使用函数
   dbfun(function (con) { # 使用数据库连接进行查询结果数据集
@@ -52,7 +54,20 @@ sqlquery <- function(sql, simplify=T, ...) {
       tibble(entries) # 结果转换成 tibble对象
     }) # 数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
-  }, ...)(sql) 
+  }, ...)(sql) # 连接使用函数
+}
+
+# 执行SQL语句查询数据结果
+# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+# simplify 是否对查询结果做简化处理后再返回，
+#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+sqlquery <- function(sql, simplify=T, ...) {
+  # 连接使用函数
+  dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+    dataset <- c(list(), sql) |> lapply(partial(dbGetQuery, con=con)) # 执行数据查询
+    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  }, ...)(sql) # 连接使用函数
 }
 
 # ----------------------------------------------------------------------------------------------------------------
