@@ -4,7 +4,7 @@
 # 编辑 %R_HOME%/etc/Rprofile.site
 # 比如：D:\sliced\develop\r\R-4.4.2\etc
 # 在文件最后添加一下代码：
-# 设置R的每日工作空间的代码：增加变量 rws_home:R项目工作空间, R日工作空间 dailywork_home
+# 设置R的每日工作空间的代码（增加变量：rws_home:R语言-项目工作空间; dailywork_home:R语言-日工作/历史底稿空间）：
 rws_home <- "F:/slicef/ws/rws"
 dailywork_home <- sprintf("%s/%s", rws_home, Sys.Date()) 
 if ( !dir.exists(dailywork_home) )  dir.create(dailywork_home)
