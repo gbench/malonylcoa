@@ -216,41 +216,46 @@ with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume)
 # 参考： https://zhuanlan.zhihu.com/p/353329988
 # ---------------------------------------------------------------------------------------------------------------
 system.time({ #  并行计算的测试
-  pkgs <- "RMySQL,purrr,tidyverse,foreach,doParallel" |> strsplit(",") |> getElement(1) # 并行计算需要程序包
+  pkgs <- "RMySQL,purrr,tidyverse,foreach,doParallel" |> strsplit(",") |> getElement(1) # 并行计算需要各个程序包
   flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 生成加载标志
+  
   if(!all(flags)) { # 存在没有安装的程序包
     pkgs[!flags] |> install.packages() # 安装没有安装的程序包
     sapply(pkgs,\(p) substitute(require(p),list(p=p)) |> eval()) # 重新加载
   } # if
   
   # 定义集群运算函数
-  execute <- function(f, vars, ...) { # 集群运算
-    #创建集群 
+  # f 集群运算函数
+  # vars2exports 待导出到集群节点上的变量名称字符串用逗号分割
+  execute <- function(f, vars2exports, ...) { # 集群运算
     ncores <- detectCores() - 1 # 集群核数量
     cl <- makeCluster(ncores) # 创建一个多核集群
-    registerDoParallel(cl) # 注册集群
-    varlist <- vars |> strsplit(",") |> getElement(1) # 需要导出到集群节点的object的名称
-    clusterExport(cl, varlist) # 导出到集群节点
+    registerDoParallel(cl) # 注册集群，register the parallel backend with the foreach package. doParallel 是进程级别的并行
+    varlist <- vars2exports |> strsplit(",") |> getElement(1) # 需要导出到集群节点的object的名称
+    clusterExport(cl, varlist) # 导出变量到各个集群节点
     print(sprintf("cluster ncores:%s", ncores)) # 打印集群核数量
-    #函数调用
-    results <- f(...)  
+    # 函数调用
+    results <- f(...)  # 运行集群运算
     # 关闭集群
-    stopImplicitCluster() # 在计算结束后别忘记关闭集群
+    stopImplicitCluster() #  explicitly close the implicitly created cluster.
     stopCluster(cl) # 关闭
     results # 返回结果
   } # execute
 
-  execute(\() { # 集群运算
+  execute(\(...) { # 集群运算
     # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
-    sqlquery("show tables")|> getElement(1) |> ( \(x, i=grep("ma",x)) x[i] ) ()  |> 
-      foreach( tbl=_,  .packages=pkgs[seq(2)-1-length(pkgs)] ) %dopar%  { # 并行计算
+    sqlquery("show tables") |> getElement(1) |> ( \(x, i=grep("ma",x)) x[i] ) ()  |> 
+      foreach( tbl=_,  .packages=pkgs ) %dopar%  { # 并行计算
         sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
         startime<-Sys.time() # 开始时间
         result <- sqlquery(sql) # SQL查询
         endtime <- Sys.time() # 结束时间
-        list(tbl=tbl, sql=sql, result=result, startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
-      } #  foreach dopar
+        # 结果返回
+        list(tbl=tbl, sql=sql, result=result, # 节点程序运行结果
+          startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
+      } #  并行计算 foreach %dopar% 
    } , "sqlquery,dbfun") |> ( \(results) { # 结果集合的处理
-        print(results)
-      } ) () # results
+        print(results) # 打印运算结果
+   }) () # results
+
 }) # 并行计算的测试
