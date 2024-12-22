@@ -7,6 +7,7 @@
 # [{"Id":1,"Instrument":"MA505","LastPrice":2601,"AskPrice":2601,"BidPrice":2600,"AskVolume":17,"BidVolume":667,"UpdateTime":"10:44:45","UpdateMillisec":500,"Volume":400590,"OpenInterest":744350,"AveragePrice":2609,"UpperLimitPrice":2785,"LowerLimitPrice":2419,"PreOpenInterest":709864,"PyctpCreateTime":"2024-12-19 10:44:45.767639"}] 
 # 
 # ----------------------------------------------------------------------------------------------------------------
+
 library(RMySQL) # MySQL 数据库驱动所在库
 library(dplyr) # coalesce 函数所在库
 library(reshape2) # melt 函数所在库
@@ -140,11 +141,12 @@ tibble.ma505 <- tickdatas.ma505 |> partial( \( # 数据合并函数
   ) Reduce(x=seq(x), \(acc,i) rbind(acc, x[[i]] |> mutate ( # 修改数据列UpdateTime补充数据日期
     UpdateTime=paste(dates[i], UpdateTime) |> strptime(format="%Y-%M-%d %H:%M:%S") ) # 修改更新时间
   ), init=data.frame()) ) () |> partial( \(x) x |> mutate(Id=seq(nrow(x))) ) () ; tibble.ma505 # 数据合并函数(统一整个Id) 
+# 数据写出
 write.csv(tibble.ma505, "tibble.ma505.csv") # 写入数据文件
 
 # ----------------------------------------------------------------------------------------------------------------
 
-#读取指定合约 tickdata table of 
+# 读取指定合约 tickdata table of 
 # symbol 合约符号
 # datepat 日期模式，如20241219
 tdtbls_of <- \(symbol, datepat="\\d{8}") sqlquery("show tables") |> getElement(1) |> (\(x) x[grep(sprintf("^t_%s_%s", symbol, datepat), x)]) ()
@@ -211,6 +213,7 @@ with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume)
 
 # ----------------------------------------------------------------------------------------------------------------
 # 集群与并行计算
+# 参考： https://zhuanlan.zhihu.com/p/353329988
 # ---------------------------------------------------------------------------------------------------------------
 system.time({ #  并行计算的测试
   pkgs <- "RMySQL,purrr,tidyverse,foreach,doParallel" |> strsplit(",") |> getElement(1) # 并行计算需要程序包
@@ -221,16 +224,16 @@ system.time({ #  并行计算的测试
   } # if
   
   #卡其集群
-  cl <- makeCluster(4) # 创建一个4核子集群(我的电脑只有4个核，悲催）
+  cl <- makeCluster(4) # 创建一个4核集群(我的电脑只有4个核，悲催）
   registerDoParallel(cl) # 注册集群
 
   # 数据运算
   sqlquery("show tables")|> getElement(1) |> (\(x, i=grep("ma505",x)) x[i]) () |> sprintf(fmt="select * from %s")  |> # 生成查询SQL语句
     foreach( sql=_,  .packages=pkgs[seq(2)-1-length(pkgs)] ) %dopar%  { # 并行计算
-      list(sql=sql, result=sqlquery(sql)) # 计算并返回结果
-    } |> ( \(results) { # 结果集合
+      list(sql=sql, result=sqlquery(sql)) # 从数据库中查询出SQL结果并记录结果
+    } |> ( \(results) { # 结果集合的处理
       print(results)
-    } ) ()
+    } ) () # results
   
   # 关闭集群
   stopImplicitCluster() # 在计算结束后别忘记关闭集群
