@@ -20,12 +20,14 @@ getwd()
 file.choose()|>sub("[^/\\]+$","",x=_)|>setwd()
 
 # 查看工作区域中变量内容
-> ls()|>(\(x)lapply(x,\(s) substitute(get(s),list(s=s))|>eval())|>structure(names=x))()
-$dailywork_home
-[1] "F:/slicef/ws/rws/2024-12-23"
+ls()|>(\(x)lapply(x,\(v) substitute(get(v),list(v=v))|>eval())|>structure(names=x))()
 
-$rws_home
-[1] "F:/slicef/ws/rws"
+#内容示例
+#$dailywork_home
+#[1] "F:/slicef/ws/rws/2024-12-23"
+#
+#$rws_home
+#[1] "F:/slicef/ws/rws"
 
 # -------------------------------------------------------------------------------------------------------------
 # 数据文件
