@@ -217,10 +217,10 @@ with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume)
 # ---------------------------------------------------------------------------------------------------------------
 system.time({ #  并行计算的测试
   pkgs <- "RMySQL,purrr,tidyverse,foreach,doParallel" |> strsplit(",") |> getElement(1) # 并行计算需要程序包
-  flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |>eval()) # 生成加载标志
+  flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 生成加载标志
   if(!all(flags)) { # 存在没有安装的程序包
     pkgs[!flags] |> install.packages() # 安装没有安装的程序包
-    sapply(pkgs,\(p) substitute(require(p),list(p=p)) |>eval()) # 重新加载
+    sapply(pkgs,\(p) substitute(require(p),list(p=p)) |> eval()) # 重新加载
   } # if
   
   #卡其集群 
