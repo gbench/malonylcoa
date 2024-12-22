@@ -259,3 +259,31 @@ system.time({ #  并行计算的测试
    }) () # results 结果处理
 
 }) # 并行计算的测试
+
+# 耗费时间
+>
+ user  system elapsed 
+   3.75    0.56   12.52 
+
+# ---------------------------------------------------------------------------------------------------------------
+# 单线程计算
+# ---------------------------------------------------------------------------------------------------------------
+system.time({ # 单线程
+    # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
+    sqlquery("show tables") |> getElement(1) |> ( \(x, i=grep("ma",x)) x[i] ) ()  |> lapply ( \(tbl) {  # 提取合约tickdata数据表名
+        sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
+        startime<-Sys.time() # 开始时间
+        result <- sqlquery(sql) # SQL查询
+        endtime <- Sys.time() # 结束时间
+        # 结果返回
+        list(tbl=tbl, sql=sql, result=result, # 节点程序运行结果
+          startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
+      }) |> ( \(results) { # 结果集合的处理
+        print(results) # 打印运算结果
+      }) () # results 结果处理
+}) # 单线程
+
+# 耗费时间
+>
+user  system elapsed 
+   4.72    0.38    6.80 
