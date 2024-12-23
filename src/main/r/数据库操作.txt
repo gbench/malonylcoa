@@ -28,7 +28,7 @@ dbfun <- function(f, ...) {
   function (sql) {
     # 数据库连接
     try({
-      keys <- "drv,host,user,password,port,dbname" |> strsplit(",") |> getElement(1) # 配置参数keys向量
+      keys <- "drv,host,user,password,port,dbname" |> strsplit(",") |> unlist() # 配置参数keys向量
       conn <- structure(keys, names=keys) |> lapply(readcfg)  |> do.call(dbConnect, args=_ ) # 读取配置并获得数据库连接
       data <- f(conn) # 执行sql
       dbDisconnect(conn) # 关闭数据库连接
