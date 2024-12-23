@@ -262,7 +262,7 @@ $frm0
 # 数据排序(默认倒序), 根据输入的键名列表来进行数据排序，用substitute把'...'中输入的参数替换（联想C语言的宏）成具体的符号：列名key
 descend0 <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) |> eval(envir=data)
 
-# 倒序 descend0(, X1, X2) ，相当于 descend0(F, X1, X2)  因为 \(data, decreasing=T, ...)  中 decreasing 默认值为T
+# DEMO-A: 倒序 descend0(, X1, X2) ，相当于 descend0(F, X1, X2)  因为 \(data, decreasing=T, ...)  中 decreasing 默认值为T
 (\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() ) (2) |> descend0(, X1, X2)
 
 #  注意：上面的写的descend0有问题，由于eval函数计算的参数是lazy延迟计算，并且是在 envir=data 环境中进行的，于是对于
@@ -278,11 +278,16 @@ descend0_uneval <- \(data, decreasing=T, ...) substitute(data[order(..., decreas
 expand.grid(data.frame(matrix(rep(1:n, n), ncol = n)))[order(X1, 
     X2, decreasing = F), ]
 
-# 也就是说，下面的写法是错误的
+# DEMO-B：（由于参数data的lazy,promise求值而引发的错误)
+# 注意DEMO-B 与 DEMO-A的区别，DEMO-B 的descend0是动态计算的
+# 而DEMO-A大data是在计算descend0的时候就已经计算的。
+# DEMO-B 的 call参数(2) 是写在descend0后边，计算descend0的时候data并未计算,是lazy求值
+# DEMO-A 的 call参数(2) 是写在descend0前面，计算descend0的时候data已经计算过了
 (\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend0(F, X1, X2) ) (2)
 
 # 它会提示找不到变量n。这个因为不在eval(envir=data)中的data里面，需要把parent.frame()调用环境加入到
 # eval的运算环境 list2env(data, parent=parent.frame())
+# R 版本是：R version 4.4.1 (2024-06-14 ucrt) ， 当 升级成4.4.2 的时候 ，它就报错：Error in 1:n : NA/NaN argument 了，更加难懂了
 >
 Error in eval(substitute(data[order(..., decreasing = decreasing), ]),  : 
   object 'n' not found
