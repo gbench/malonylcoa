@@ -85,11 +85,17 @@ sqlquery(c("select database()", "show tables"))
 sqlquery(c("select database()","show tables"), dbname="ctp")
 
 # 查看指定数据库名称下面的数据表
-( \( x, dbnames=x |> strsplit(",") |> getElement(1) ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
+( \( x, dbnames=x |> strsplit(",") |> unlist() ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
 # 读取时间序列
 sqlquery("select * from t_ma505_20241219") |> with(PyctpCreateTime |>as.POSIXct() |> xts(order.by=_, data.frame(LastPrice, Volume, OpenInterest)))
+
+# 自定义主机与数据库
+sqlquery.h10ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp") # 自定义SQL函数
+# 可以用 unlist() 把只有一行数据数据的的结果变成一个单值向量，这个对于利用SQL函数比database()这样的结果是很方便的，但是对于多行多列的情况
+# 结果就可能有点混乱（不同行相同里列的名称会添加一个数字序号），所以需要根据情况适当使用
+sqlquery.h10ctp("select database()") |> unlist()
 
 # 提取时间间隔超过误差精度的时段
 local({
@@ -217,7 +223,7 @@ with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume)
 # ---------------------------------------------------------------------------------------------------------------
 system.time({ #  集群与并行计算
   print("集群与并行计算")
-  pkgs <- strsplit("RMySQL,purrr,tidyverse,foreach,doParallel",  ",")[[1]] # 并行计算需要各个程序包
+  pkgs <- strsplit("RMySQL,purrr,tidyverse,foreach,doParallel",  ",") |> unlist() # 并行计算需要各个程序包
   flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 生成加载标志
   
   if(!all(flags)) { # 存在没有安装的程序包
