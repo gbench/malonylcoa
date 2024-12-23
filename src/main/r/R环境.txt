@@ -14,19 +14,19 @@
 #
 # ------------------------------------------------------------------------------
 # 自定义函数
-fun<-function(a,b){
-	list(
-		nframe=sys.nframe(), # 当前运行evaluation environment的调用层级，也就是frames列表长度
-		nfrmlen=c(sys.nframe(),length(sys.frames())), # nframe与调用堆栈长度
-		call=sys.call(),# 当前的函数调用，也就是现在正在运行什么命令
-		calls=sys.calls(), #  命令的调用层级，也就是调用栈，frames, frames 索引最大表示越是最近调用。
-		pfs=sys.parents(), # 运行环境的上级环境的frame索引。
-		pf=parent.frame(1), # 当前运行上级运行环境。
-		frm=sys.frame(sys.nframe()), # 当前运行的运行环境
-		evalenv=environment(),# 当前运行的运行环境
-		newenv=new.env(), # 创建一个新环境
-		frms=sys.frames() # 运行栈列表，与 sys.calls() 向对应
-	)
+fun <- function(a,b){
+  list(
+    nframe=sys.nframe(), # 当前运行evaluation environment的调用层级，也就是frames列表长度
+    nfrmlen=c(sys.nframe(),length(sys.frames())), # nframe与调用堆栈长度
+    call=sys.call(),# 当前的函数调用，也就是现在正在运行什么命令
+    calls=sys.calls(), #  命令的调用层级，也就是调用栈，frames, frames 索引最大表示越是最近调用。
+    pfs=sys.parents(), # 运行环境的上级环境的frame索引。
+    pf=parent.frame(1), # 当前运行上级运行环境。
+    frm=sys.frame(sys.nframe()), # 当前运行的运行环境
+    evalenv=environment(),# 当前运行的运行环境
+    newenv=new.env(), # 创建一个新环境
+    frms=sys.frames() # 运行栈列表，与 sys.calls() 向对应
+  )
 }
 
 # 
@@ -187,3 +187,155 @@ $fun1$fun$frms[[2]]
 $fun1$fun$frms[[3]]
 <environment: 0x0000024981924eb8>
 
+#  环境闭包
+> envclos <- \(x=sys.frame(sys.nframe()),ret=list()) if (identical(emptyenv(),x)) ret else append(ret,parent.env(x)) |> (\(.ret,.x=.ret[[length(.ret)]]) envclos(.x,.ret))();envclos();
+[[1]]
+<environment: R_GlobalEnv>
+
+[[2]]
+<environment: package:graphics>
+attr(,"name")
+[1] "package:graphics"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/graphics"
+
+[[3]]
+<environment: package:grDevices>
+attr(,"name")
+[1] "package:grDevices"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/grDevices"
+
+[[4]]
+<environment: package:utils>
+attr(,"name")
+[1] "package:utils"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/utils"
+
+[[5]]
+<environment: package:datasets>
+attr(,"name")
+[1] "package:datasets"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/datasets"
+
+[[6]]
+<environment: package:quantmod>
+attr(,"name")
+[1] "package:quantmod"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/quantmod"
+
+[[7]]
+<environment: package:TTR>
+attr(,"name")
+[1] "package:TTR"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/TTR"
+
+[[8]]
+<environment: package:xts>
+attr(,"name")
+[1] "package:xts"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/xts"
+
+[[9]]
+<environment: package:zoo>
+attr(,"name")
+[1] "package:zoo"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/zoo"
+
+[[10]]
+<environment: package:stats>
+attr(,"name")
+[1] "package:stats"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/stats"
+
+[[11]]
+<environment: package:purrr>
+attr(,"name")
+[1] "package:purrr"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/purrr"
+
+[[12]]
+<environment: package:jsonlite>
+attr(,"name")
+[1] "package:jsonlite"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/jsonlite"
+
+[[13]]
+<environment: package:ggplot2>
+attr(,"name")
+[1] "package:ggplot2"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/ggplot2"
+
+[[14]]
+<environment: package:reshape2>
+attr(,"name")
+[1] "package:reshape2"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/reshape2"
+
+[[15]]
+<environment: package:dplyr>
+attr(,"name")
+[1] "package:dplyr"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/dplyr"
+
+[[16]]
+<environment: package:RMySQL>
+attr(,"name")
+[1] "package:RMySQL"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"
+
+[[17]]
+<environment: package:DBI>
+attr(,"name")
+[1] "package:DBI"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/DBI"
+
+[[18]]
+<environment: package:methods>
+attr(,"name")
+[1] "package:methods"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/methods"
+
+[[19]]
+<environment: 0x000001b9337284c8>
+attr(,"name")
+[1] "Autoloads"
+
+[[20]]
+<environment: base>
+
+[[21]]
+<environment: R_EmptyEnv>
+
+# Gives a list of attached packages （加载的包环境 namespace 环境），这就是查找变量符号的 搜索路径，根节点就是 <environment: R_EmptyEnv> 
+# 注意与上面的envclos向对应
+> search()
+ [1] ".GlobalEnv"        "package:graphics"  "package:grDevices" "package:utils"     "package:datasets"  "package:quantmod"  "package:TTR"      
+ [8] "package:xts"       "package:zoo"       "package:stats"     "package:purrr"     "package:jsonlite"  "package:ggplot2"   "package:reshape2" 
+[15] "package:dplyr"     "package:RMySQL"    "package:DBI"       "package:methods"   "Autoloads"         "package:base"
+
+# 查抄路径
+> searchpaths()
+ [1] ".GlobalEnv"                                    "D:/sliced/develop/r/R-4.4.2/library/graphics"  "D:/sliced/develop/r/R-4.4.2/library/grDevices"
+ [4] "D:/sliced/develop/r/R-4.4.2/library/utils"     "D:/sliced/develop/r/R-4.4.2/library/datasets"  "D:/sliced/develop/r/R-4.4.2/library/quantmod" 
+ [7] "D:/sliced/develop/r/R-4.4.2/library/TTR"       "D:/sliced/develop/r/R-4.4.2/library/xts"       "D:/sliced/develop/r/R-4.4.2/library/zoo"      
+[10] "D:/sliced/develop/r/R-4.4.2/library/stats"     "D:/sliced/develop/r/R-4.4.2/library/purrr"     "D:/sliced/develop/r/R-4.4.2/library/jsonlite" 
+[13] "D:/sliced/develop/r/R-4.4.2/library/ggplot2"   "D:/sliced/develop/r/R-4.4.2/library/reshape2"  "D:/sliced/develop/r/R-4.4.2/library/dplyr"    
+[16] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"    "D:/sliced/develop/r/R-4.4.2/library/DBI"       "D:/sliced/develop/r/R-4.4.2/library/methods"  
+[19] "Autoloads"                                     "D:/sliced/develop/r/R-4.4.2/library/base"     
+> 
