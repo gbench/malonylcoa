@@ -278,7 +278,7 @@ descend0_uneval <- \(data, decreasing=T, ...) substitute(data[order(..., decreas
 expand.grid(data.frame(matrix(rep(1:n, n), ncol = n)))[order(X1, 
     X2, decreasing = F), ]
 
-# 也就是说下面的写法是错误的
+# 也就是说，下面的写法是错误的
 (\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend0(F, X1, X2) ) (2)
 
 # 它会提示找不到变量n。这个因为不在eval(envir=data)中的data里面，需要把parent.frame()调用环境加入到
