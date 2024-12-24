@@ -108,7 +108,21 @@ local({
   ) betweens |> paste0(collapse=" | ") |> str2lang()    # 组装成语句并解析成表达式对象
   # 数据读取
   # sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition())) # 提取指定时段内的数据
-  sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition("09:00,09:03"))) # 提取指定时段内的数据
+  sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition("09:00,09:03;09:05,09:07"))) # 提取指定时段内的数据
+})
+
+# 指定时段，动态过滤数据2
+local({
+  library(rlang) # eval_tidy 的所在的库
+  condition <- \( # 条件过滤函数
+    text="09:00,10:15;10:30,11:30;13:00,15:00;21:00,23:00", # 时间区间
+    points=text |> strsplit("[,;]+") |> unlist(), # 时点序列
+    periods=points  |> ( \(x, n=length(x)/2) x |> split( rep( seq(n), rep(2,n) ) ) )(), # 把时点序列，组装成时段序列
+    betweens=periods |> lapply(\(p) expr( between(UpdateTime, !!p[1], !!p[2]) )) |> Reduce(\(acc,a) expr(!!acc | !!a), x=_) # 拼装成区间表达式
+  )  betweens  # 组装成语句并解析成表达式对象
+  # 数据读取
+  # sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition())) # 提取指定时段内的数据
+  sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition("09:00,09:03;09:05,09:07"))) # 提取指定时段内的数据
 })
 
 # 提取时间间隔超过误差精度的时段
