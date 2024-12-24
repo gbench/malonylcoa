@@ -187,6 +187,13 @@ $fun1$fun$frms[[2]]
 $fun1$fun$frms[[3]]
 <environment: 0x0000024981924eb8>
 
+#  环境闭包的罗列
+# 从当前 到 base
+envclos0 <- \(x=sys.frame(sys.nframe()),ret=list()) if(identical(emptyenv(),x)) ret else parent.env(x)|>envclos0(append(ret,x)); envclos0()
+
+# 从 base 到 当前
+envclos1 <- \(x=sys.frame(sys.nframe()),ret=list()) if(identical(emptyenv(),x)) ret else parent.env(x)|>envclos1(append(x,ret)); envclos1()
+
 #  环境闭包
 > envclos <- \(x=sys.frame(sys.nframe()),ret=list()) if (identical(emptyenv(),x)) ret else append(ret,parent.env(x)) |> (\(.ret,.x=.ret[[length(.ret)]]) envclos(.x,.ret))();envclos();
 [[1]]
