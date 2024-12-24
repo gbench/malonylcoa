@@ -97,6 +97,20 @@ sqlquery.h10ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp") # 自定
 # 结果就可能有点混乱（不同行相同里列的名称会添加一个数字序号），所以需要根据情况适当使用
 sqlquery.h10ctp("select database()") |> unlist()
 
+# 指定时段，动态过滤数据
+local({
+  library(rlang) # eval_tidy 的所在的库
+  condition <- \( # 条件过滤函数
+    text="09:00,10:15;10:30,11:30;13:00,15:00;21:00,23:00", # 时间区间
+    points=text |> strsplit("[,;]+") |> unlist(), # 时点序列
+    periods=points  |> ( \(x, n=length(x)/2) x |> split( rep( seq(n), rep(2,n) ) ) )(), # 把时点序列，组装成时段序列
+    betweens=periods |>lapply(\(e) sprintf("between(UpdateTime, '%s:00', '%s:60')",e[1],e[2])) # 区间范围
+  ) betweens |> paste0(collapse=" | ") |> str2lang()    # 组装成语句并解析成表达式对象
+  # 数据读取
+  # sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition())) # 提取指定时段内的数据
+  sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition("09:00,09:03"))) # 提取指定时段内的数据
+})
+
 # 提取时间间隔超过误差精度的时段
 local({
   # 读取时间序列
