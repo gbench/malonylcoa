@@ -180,6 +180,74 @@ write.csv(tibble.ma505, "tibble.ma505.csv") # 写入数据文件
 
 # ----------------------------------------------------------------------------------------------------------------
 
+# TickData 的交易行情辨别
+local({ # 本地测试
+  library(jsonlite) # fromJSON 所在库
+  tdfm <- sqlquery("select * from t_ma505_20241219") # 检索出TickData数据
+
+  # 标记逻辑的规则枚举
+  # 1) 确定持仓状态:持仓量上涨就是开仓,持仓量不变就是换手,持仓量降低就是平仓
+  # 2) 在特定的持仓状态下,依据价格变化推断,多空方向：
+  # 2.1) 开仓时，价格上涨为多开, 价格下跌为空开，价格不变为双开
+  # 2.2) 平仓时，价格上涨为空平, 价格下跌为多平，价格不变为双平
+  # 2.3)换手时, 价格上涨为多换，价格下跌为空换，价格不变为双换，多方边变空方，空方变多方
+  # 3) 符号与数字意义：
+  # 3.1) 键名字段, PChg:价格增长, VChg:现手成交, OChg:开仓数量, Name:规则名称, Description:规则说明
+  # 3.2) 数字含义, 1:增长, 0:不变, -1:下降
+  pvo_rules <- # Json 格式的规则定义
+    '[
+       {"PChg":1,"VChg":1,"OChg":1,"Name":"多开+","Description":"价格上涨，成交量上涨，持仓量上涨"},
+       {"PChg":0,"VChg":1,"OChg":1,"Name":"双开+","Description":"价格不变，成交量上涨，持仓量上涨"},
+       {"PChg":-1,"VChg":1,"OChg":1,"Name":"空开+","Description":"价格下降，成交量不变，持仓量上涨"},
+       {"PChg":1,"VChg":0,"OChg":1,"Name":"多开0","Description":"价格上涨，成交量不变，持仓量上涨"},
+       {"PChg":0,"VChg":0,"OChg":1,"Name":"双开0","Description":"价格不变，成交量不变，持仓量上涨"},
+       {"PChg":-1,"VChg":0,"OChg":1,"Name":"空开0","Description":"价格下降，成交量不变，持仓量上涨"},
+       {"PChg":1,"VChg":-1,"OChg":1,"Name":"多开-","Description":"价格上涨，成交量下降，持仓量上涨"},
+       {"PChg":0,"VChg":-1,"OChg":1,"Name":"双开-","Description":"价格不变，成交量下降，持仓量上涨"},
+       {"PChg":-1,"VChg":-1,"OChg":1,"Name":"空开-","Description":"价格下降，成交量下降，持仓量上涨"},
+       {"PChg":1,"VChg":1,"OChg":0,"Name":"多换+","Description":"价格上涨，成交量上涨，持仓量不变"},
+       {"PChg":0,"VChg":1,"OChg":0,"Name":"双换+","Description":"价格不变，成交量上涨，持仓量不变"},
+       {"PChg":-1,"VChg":1,"OChg":0,"Name":"空换+","Description":"价格下降，成交量上涨，持仓量不变，一部分空方加仓，一部分空方平仓，空方加仓导致价格下跌"},
+       {"PChg":1,"VChg":0,"OChg":0,"Name":"多换0","Description":"价格上涨，成交量不变，持仓量不变，一部分多方加仓，一部分多方平仓，多方加仓导致价格上涨"},
+       {"PChg":0,"VChg":0,"OChg":0,"Name":"换手0","Description":"价格不变，成交量不变，持仓量不变"},
+       {"PChg":-1,"VChg":0,"OChg":0,"Name":"多换0","Description":"价格下降，成交量不变，持仓量不变"},
+       {"PChg":1,"VChg":-1,"OChg":0,"Name":"多换-","Description":"价格上涨，成交量下降，持仓量不变"},
+       {"PChg":0,"VChg":-1,"OChg":0,"Name":"换手-","Description":"价格不变，成交量下降，持仓量不变"},
+       {"PChg":-1,"VChg":-1,"OChg":0,"Name":"多换-","Description":"价格下降，成交量下降，持仓量不变"},
+       {"PChg":1,"VChg":1,"OChg":-1,"Name":"空平+","Description":"价格上涨，成交量上涨，持仓量下降"},
+       {"PChg":0,"VChg":1,"OChg":-1,"Name":"双平+","Description":"价格不变，成交量上涨，持仓量下降"},
+       {"PChg":-1,"VChg":1,"OChg":-1,"Name":"多平+","Description":"价格下降，成交量上涨，持仓量下降"},
+       {"PChg":1,"VChg":0,"OChg":-1,"Name":"空平0","Description":"价格上涨，成交量不变，持仓量下降"},
+       {"PChg":0,"VChg":0,"OChg":-1,"Name":"双平0","Description":"价格不变，成交量不变，持仓量下降"},
+       {"PChg":-1,"VChg":0,"OChg":-1,"Name":"多平0","Description":"价格下降，成交量不变，持仓量下降"},
+       {"PChg":1,"VChg":-1,"OChg":-1,"Name":"空平-","Description":"价格上涨，成交量下降，持仓量下降"},
+       {"PChg":0,"VChg":-1,"OChg":-1,"Name":"双平-","Description":"价格不变，成交量下降，持仓量下降"},
+       {"PChg":-1,"VChg":-1,"OChg":-1,"Name":"多平-","Description":"价格下降，成交量下降，持仓量下降"}
+    ]' |> fromJSON() |> as.data.frame() # 转换成 
+  write.csv(pvo_rules,"pvo_rules.csv",row.names = T) # 写入规则文件
+  pvo_rules <- read.csv("pvo_rules.csv", head=T) # 读取规则文件
+
+  # 标识辨析
+  identify <- function(PChg, VChg, OChg, pvo_rules=pvo_rules) {
+    if(c(PChg,VChg,OChg) |> sapply(is.na) |> any()){ # 存在无效数据的情况
+      list(PChg=PChg, VChg=VChg, OChg=VChg, Name="无效", Description="无效") # 起始数据无效
+    } else {# 数据有效
+      pvo_rules[ pvo_rules$PChg==sign(PChg) & pvo_rules$VChg==sign(VChg) & pvo_rules$OChg==sign(OChg), ,drop=T ] # 检索相应位置条目
+    }
+  } # identify
+
+  # 数据分类
+  tdfm |> tail(20) |> mutate (
+    PChg = c(NA, diff(LastPrice)),
+    VChg = c(NA, diff(Volume)),
+    OChg = c(NA, diff(OpenInterest)),
+    Name = pmap_chr(list(PChg, VChg, OChg), ~ identify (..1, ..2, ..3, pvo_rules)$Name),
+    Description = pmap_chr(list(PChg, VChg, OChg), ~ identify (..1, ..2, ..3, pvo_rules)$Description)
+  ) |> select(Id, UpdateTime, LastPrice, PChg, VChg, OChg, Name, Description) |> arrange(-Id)
+}) # local 本地测试
+
+# ----------------------------------------------------------------------------------------------------------------
+
 # 读取指定合约 tickdata table of 
 # symbol 合约符号
 # datepat 日期模式，如20241219
