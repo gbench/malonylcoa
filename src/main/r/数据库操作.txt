@@ -198,7 +198,7 @@ local({ # 本地测试
     '[
        {"PChg":1,"VChg":1,"OChg":1,"Name":"多开+","Description":"价格上涨，成交量上涨，持仓量上涨"},
        {"PChg":0,"VChg":1,"OChg":1,"Name":"双开+","Description":"价格不变，成交量上涨，持仓量上涨"},
-       {"PChg":-1,"VChg":1,"OChg":1,"Name":"空开+","Description":"价格下降，成交量不变，持仓量上涨"},
+       {"PChg":-1,"VChg":1,"OChg":1,"Name":"空开+","Description":"价格下降，成交量上涨，持仓量上涨"},
        {"PChg":1,"VChg":0,"OChg":1,"Name":"多开0","Description":"价格上涨，成交量不变，持仓量上涨"},
        {"PChg":0,"VChg":0,"OChg":1,"Name":"双开0","Description":"价格不变，成交量不变，持仓量上涨"},
        {"PChg":-1,"VChg":0,"OChg":1,"Name":"空开0","Description":"价格下降，成交量不变，持仓量上涨"},
