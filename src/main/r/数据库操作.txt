@@ -223,7 +223,7 @@ local({ # 本地测试
        {"PChg":1,"VChg":-1,"OChg":-1,"Name":"空平-","Description":"价格上涨，成交量下降，持仓量下降"},
        {"PChg":0,"VChg":-1,"OChg":-1,"Name":"双平-","Description":"价格不变，成交量下降，持仓量下降"},
        {"PChg":-1,"VChg":-1,"OChg":-1,"Name":"多平-","Description":"价格下降，成交量下降，持仓量下降"}
-    ]' |> fromJSON() |> as.data.frame() # 转换成 
+    ]' |> fromJSON() # 转换成data.frame
   write.csv(pvo_rules,"pvo_rules.csv",row.names = T) # 写入规则文件
   pvo_rules <- read.csv("pvo_rules.csv", head=T) # 读取规则文件
 
