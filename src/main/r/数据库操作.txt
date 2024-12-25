@@ -71,6 +71,26 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
   }, ...)(sql) # 连接使用函数
 }
 
+# 执行SQL语句（dbExecute模式)
+# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+# simplify 是否对查询结果做简化处理后再返回，
+#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+sqlexecute <- function(sql, simplify=T, ...) {
+    # 连接使用函数
+    dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+      dbBegin(con) # 开启事务
+      dataset <- c(list(), sql) |> lapply(\(.sql){
+        affected_rows <- dbExecute(con, .sql); # 影响数据行数
+        last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
+        list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
+      }) |> do.call(rbind, args=_) |> tibble() # 执行数据查询
+      ret <- if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+      dbCommit(con) # 提交事务
+      ret
+    }, ...)(sql) # 连接使用函数
+}
+
 # ----------------------------------------------------------------------------------------------------------------
 # 基本使用示例
 # ----------------------------------------------------------------------------------------------------------------
@@ -96,6 +116,40 @@ sqlquery.h10ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp") # 自定
 # 可以用 unlist() 把只有一行数据数据的的结果变成一个单值向量，这个对于利用SQL函数比database()这样的结果是很方便的，但是对于多行多列的情况
 # 结果就可能有点混乱（不同行相同里列的名称会添加一个数字序号），所以需要根据情况适当使用
 sqlquery.h10ctp("select database()") |> unlist()
+
+# 本地测试
+local({ # 数据库写入测试
+  # ctp 数据库查询函数
+  sqlquery.ctp <- partial(sqlquery, dbname="ctp")
+ 
+  # ctp 数据库执行函数
+  sqlexecute.ctp <- partial(sqlexecute, dbname="ctp")
+  
+  # 删除数据表
+  "t_user" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="drop table if exists  %s") |> sqlexecute.ctp()
+  
+  # 查看数据表
+  "show tables" |> sqlquery.ctp()
+  
+  # 创建用户数据
+  "create table t_user ( 
+     id int primary key auto_increment comment '主键', 
+     account varchar(64) comment '账户', 
+     name varchar(64) comment '姓名', 
+     password varchar(16) comment '密码', 
+     sex varchar(10) comment '性别', 
+     phone varchar(32) comment '电话', 
+     weixin varchar(64) comment '微信', 
+     description varchar(126) comment '说明'
+   )" |> sqlexecute.ctp() # 创建数据表
+  
+  # 插入用户数据
+  "zhangsan,lisi,wangwu,zhaoliu" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="insert into t_user(name) values('%s')") |> sqlexecute.ctp() |> print()
+   sqlquery.ctp("insert into t_user(name,password) values('chenqi','123456'),('zhouba','123456'),('yangjiu','123456'),('lushi','123456')") |> print()
+  
+ # 查看数据
+ sqlquery.ctp("select * from t_user")
+})
 
 # 指定时段，动态过滤数据
 local({
