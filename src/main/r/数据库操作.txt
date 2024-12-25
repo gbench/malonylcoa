@@ -76,6 +76,11 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
 # simplify 是否对查询结果做简化处理后再返回，
 #   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
 #   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+# 返回结果是 affected_rows, last_insert_id 两列的数据框，对于
+# insert into t_user(name) values('name_1'),('name_2'),...,('name_n') 一条语句插入多条数据
+# 的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
+# 其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
+# 返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
 sqlexecute <- function(sql, simplify=T, ...) {
     # 连接使用函数
     dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
@@ -145,7 +150,7 @@ local({ # 数据库写入测试
   
   # 插入用户数据
   "zhangsan,lisi,wangwu,zhaoliu" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="insert into t_user(name) values('%s')") |> sqlexecute.ctp() |> print()
-   sqlquery.ctp("insert into t_user(name,password) values('chenqi','123456'),('zhouba','123456'),('yangjiu','123456'),('lushi','123456')") |> print()
+   sqlexecute.ctp("insert into t_user(name,password) values('chenqi','123456'),('zhouba','123456'),('yangjiu','123456'),('lushi','123456')") |> print()
   
  # 查看数据
  sqlquery.ctp("select * from t_user")
