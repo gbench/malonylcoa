@@ -109,6 +109,9 @@ sqlquery(c("select database()", "show tables"))
 # 查看数据库名称与该数据库中的数据表, 指定数据库
 sqlquery(c("select database()","show tables"), dbname="ctp")
 
+# 读取指定名称模式的数据表
+sqlquery("show tables") |> unlist() |> grep("ma",x=_,value=T) |> compose(sqlquery,partial(sprintf,fmt="select * from %s"))()
+
 # 查看指定数据库名称下面的数据表
 ( \( x, dbnames=x |> strsplit(",") |> unlist() ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
