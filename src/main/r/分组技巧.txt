@@ -24,11 +24,11 @@ tail(data,100) |> split(rep(1:10,rep(10,10))) |> lapply(\(p) \() plot(p[['c']]))
 # ps : points 基础点集向量
 # gn : groups numer 分组数量
 # rep(ps, gn) 构建线性点集序列；rep( seq(gn), rep(length(ps), gn) ) ：构建分组序列，seq(gn) 分组标号序列；length(ps) 各个分组的数据长度,
-pgn <- function(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( paste0("x", rep(seq(gn), rep(length(ps), gn))) ) |> expand.grid()
-# 默认
-pgn();
-# 二阶
-pgn(ps="-1,0,1"|>strsplit(",")|>unlist(), gn=2)
-
+# 数据全排列， ps: points点集合 gn: group numer 分组阶数 
+pgn <- function(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( rep(paste0("x", seq(gn)), rep(length(ps), gn)) ) |> expand.grid()
+# 三叉树模式:-1下跌,0不变,1增长
+pgn(ps=-1:1)
+#  三叉树模式：2阶
+pgn(ps=-1:1, gn=2)
 
 
