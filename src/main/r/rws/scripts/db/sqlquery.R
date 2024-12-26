@@ -56,7 +56,7 @@ dbfun <- function(f, ...) {
 sqlquery <- function(sql, simplify=T, n=-1, ...) {
   # 连接使用函数
   dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) # 执行数据查询
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql)# 执行数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
