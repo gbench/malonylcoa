@@ -52,7 +52,7 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
       entries <- fetch(rs, n) # 获取所有结果行
       dbClearResult(rs) # 关闭结果集
       tibble(entries) # 结果转换成 tibble对象
-    }) # 数据查询
+    }) |> structure(names=sql) # 数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
@@ -66,7 +66,7 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
 sqlquery <- function(sql, simplify=T, n=-1, ...) {
   # 连接使用函数
   dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) # 执行数据查询
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
