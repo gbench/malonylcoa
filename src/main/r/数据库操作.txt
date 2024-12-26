@@ -218,10 +218,10 @@ local({
     line="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00", # 开盘收盘的时点序列
     keys=c('早盘1','早盘2','下午盘','夜盘') # 交易时段名称
   ) ( \( # 依据交易时段，生成一个定义生成以时点标签key的定义函数
-    timespans # 交易时段列表:一个 [(开始时间, 阶数时间)] 的记录序列， 用矩阵结构表达
+    tradesessions # 交易时段列表:一个 [(开始时间, 阶数时间)] 的记录序列， 用矩阵结构表达
   ) \( timex, # 时间向量
-      startime=timespans[,1], # 交易时段开始
-      endtime=timespans[,2] # 交易时段阶数
+      startime=tradesessions[,1], # 交易时段开始
+      endtime=tradesessions[,2] # 交易时段阶数
   ) { # x时点定义
     sapply(timex, \(x){ # 时点值
       key <- keys[( x>=startime & x<=endtime ), drop=T] # 判断时点x位于哪个交易时段
@@ -230,10 +230,10 @@ local({
  } ) (line |> strsplit("[,;]+") |> unlist() |> matrix(ncol=2, byrow=T)) # 解释时点序列为时段矩阵
   
   sqlquery("select * from t_ma505_20241219") |> # 读取合约数据
-    mutate(TimeSpan=market_trading_times()(substr(UpdateTime,1,5))) |> # 分析交易时段
+    mutate(TradeSession=market_trading_times()(substr(UpdateTime,1,5))) |> # 分析交易时段
     mutate(UpdateTime=as.POSIXct(paste(substr(PyctpCreateTime,1,10), UpdateTime), format="%Y-%m-%d %H:%M:%S")) |> # 时间分解 
-    select(TimeSpan, UpdateTime, LastPrice, Volume, OpenInterest) |> # 选择字段
-    ggplot(aes(UpdateTime)) + facet_wrap(.~TimeSpan) + # 依据时段来分区
+    select(TradeSession, UpdateTime, LastPrice, Volume, OpenInterest) |> # 选择字段
+    ggplot(aes(UpdateTime)) + facet_wrap(. ~ TradeSession) + # 依据时段来分区
     	geom_line(aes(y=LastPrice))
 })
 
