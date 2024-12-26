@@ -228,13 +228,21 @@ local({
       if(length(key) >= 1) key else '非交易时段'
     }) # 时间向量的处理
  } ) (line |> strsplit("[,;]+") |> unlist() |> matrix(ncol=2, byrow=T)) # 解释时点序列为时段矩阵
-  
-  sqlquery("select * from t_ma505_20241219") |> # 读取合约数据
+
+ as.percent <- function (x) { # 转换成百分比
+   low <- min(x)
+   max <- max(x)
+   (x-low) / ( max - low)
+ } # 转换成百分比
+
+ sqlquery("select * from t_ma505_20241218") |> # 读取合约数据
     mutate(TradeSession=market_trading_times()(substr(UpdateTime,1,5))) |> # 分析交易时段
     mutate(UpdateTime=as.POSIXct(paste(substr(PyctpCreateTime,1,10), UpdateTime), format="%Y-%m-%d %H:%M:%S")) |> # 时间分解 
     select(TradeSession, UpdateTime, LastPrice, Volume, OpenInterest) |> # 选择字段
+    dplyr::filter(TradeSession=="早盘1" | TradeSession=="早盘2") |> # 指定具体的交易时段
     ggplot(aes(UpdateTime)) + facet_wrap(. ~ TradeSession) + # 依据时段来分区
-    	geom_line(aes(y=LastPrice))
+    	geom_line( aes(y=LastPrice |> as.percent() ) ) + # 价格百分比
+                geom_bar( aes(y=c(0, diff(Volume) |> as.percent() ) ), col="red", stat="identity" ) # 成交量
 })
 
 # 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
