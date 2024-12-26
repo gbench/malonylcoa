@@ -45,6 +45,7 @@ pgn(-1:1, 5) |> (\(x) transform(x, sum=apply(x, 1, sum))) () |> (\(x) split(x, x
   plot(x, y, type="b", # 绘制点线图
         xlab="收益情况", ylab="分布频数",
         main="三叉树模型-收益分布", sub="投资5期收益分布") # 绘图
-  text(x, y, labels=paste(x, y, sep=","))  # 绘制坐标值：收益与频数
+  percent <- (\(a=unlist(y), v=a/sum(a)) paste0(round(v*100, 2), "%")) () # 百分比
+  text(x, y, labels=paste(x, y, percent, sep=" , "))  # 绘制坐标值：收益与频数
 }) ()
 
