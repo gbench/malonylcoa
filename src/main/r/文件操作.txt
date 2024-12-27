@@ -38,6 +38,9 @@ ls()|>(\(x)lapply(x,\(v) substitute(get(v),list(v=v))|>eval())|>structure(names=
 # 查看工作区中的文件
 list.files()
 
+# 查看工作区中的csv数据文件
+paste(getwd(),"/",list.files(recursive=T,pattern="\\.csv$"),sep="")
+
 # 写入文件
 file.3rd <- "a/b/c/data3rd.csv" # 文件名称
 (\(n=3,x=rep(seq(n),n))x|>split(rep(seq(n),rep(n,n)))|>expand.grid()|>structure(names=paste0("x",seq(n))))()|>write.csv(file.3rd,row.names=F) # 写入3级阵列数据
