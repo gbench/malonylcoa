@@ -20,11 +20,11 @@ plots <- function(...) {
 # 收盘价格绘图
 tail(data,100) |> split(rep(1:10,rep(10,10))) |> lapply(\(p) \() plot(p[['c']])) |> tail(2) |> do.call(plots,args=_)
 
-# Points GroupNumbers 计算一个点序列ps的gn阶全排列
+# Points GroupNumbers 计算一个点序列ps的gn阶descartes product
 # ps : points 基础点集向量
 # gn : groups numer 分组数量
 # rep(ps, gn) 构建线性点集序列；rep( seq(gn), rep(length(ps), gn) ) ：构建分组序列，seq(gn) 分组标号序列；length(ps) 各个分组的数据长度,
-# 数据全排列， ps: points点集合 gn: group numer 分组阶数 
+# 数据笛卡尔积， ps: points点集合 gn: group numer 分组阶数 
 pgn <- function(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( rep(paste0("x", seq(gn)), rep(length(ps), gn)) ) |> expand.grid()
 # 三叉树模式:-1下跌,0不变,1增长
 pgn(ps=-1:1)

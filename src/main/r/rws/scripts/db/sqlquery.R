@@ -39,10 +39,9 @@ dbfun <- function(f, ...) {
     # 数据库连接
     try({
       keys <- "drv,host,user,password,port,dbname" |> strsplit(",") |> unlist() # 配置参数keys向量
-      conn <- structure(keys, names=keys) |> lapply(readcfg) |> do.call(dbConnect, args=_ ) # 读取配置并获得数据库连接
-      data <- f(conn) # 执行sql
-      dbDisconnect(conn) # 关闭数据库连接
-      data # 返回执行结果
+      con <- structure(keys, names=keys) |> lapply(readcfg)  |> do.call(dbConnect, args=_ ) # 读取配置并获得数据库连接
+      on.exit(dbDisconnect(con), add=TRUE) # 注册函数运行结束时关闭调该数据库连接con
+      f(con) # 执行sql
     }) # 数据库连接
   } # function (sql)
 } # dbfun
@@ -74,15 +73,19 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
 sqlexecute <- function(sql, simplify=T, ...) {
     # 连接使用函数
     dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-      dbBegin(con) # 开启事务
-      dataset <- c(list(), sql) |> lapply(\(.sql){
-        affected_rows <- dbExecute(con, .sql); # 影响数据行数
-        last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
-        list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
-      }) |> do.call(rbind, args=_) |> tibble() # 执行数据查询
-      ret <- if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
-      dbCommit(con) # 提交事务
-      ret
+      tryCatch({ # try 运行结果
+        dbBegin(con) # 开启事务
+        dataset <- c(list(), sql) |> lapply(\(.sql){
+          affected_rows <- dbExecute(con, .sql); # 影响数据行数
+          last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
+          list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
+        }) |> do.call(rbind, args=_) |> tibble() # 执行数据查询
+        dbCommit(con) # 提交事务
+        if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+      }, error=\(error) { # 错误处理
+        dbRollback(con) # 回滚错误
+        stop(e) # 重新抛出错误
+      }) # try 运行结果
     }, ...)(sql) # 连接使用函数
 }
 

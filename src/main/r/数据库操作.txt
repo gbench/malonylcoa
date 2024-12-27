@@ -159,8 +159,10 @@ local({ # 数据库写入测试
   
   # 插入用户数据
   "zhangsan,lisi,wangwu,zhaoliu" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="insert into t_user(name) values('%s')") |> sqlexecute.ctp() |> print()
-   sqlexecute.ctp("insert into t_user(name,password) values('chenqi','123456'),('zhouba','123456'),('yangjiu','123456'),('lushi','123456')") |> print()
-  
+   sqlexecute.ctp( c( # SQL 插入语句
+     "insert into t_user(name,password) values('chenqi','123456'),('zhouba','123456'),('yangjiu','123456'),('lushi','123456')",
+     "insert into t_user(name,password) values('tom','123456'),('jerry','123456'),('katty','123456'),('lucy','123456')"
+   ) ) |> print()
  # 查看数据
  sqlquery.ctp("select * from t_user")
 })
