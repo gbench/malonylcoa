@@ -110,7 +110,7 @@ sqlquery(c("select database()", "show tables"))
 sqlquery(c("select database()","show tables"), dbname="ctp")
 
 # 读取指定名称模式的数据表
-sqlquery("show tables") |> unlist() |> grep("ma",x=_,value=T) |> compose(sqlquery,partial(sprintf,fmt="select * from %s"))()
+sqlquery("show tables") |> compose(sqlquery,partial(sprintf,fmt="select * from %s"),partial(grep,pattern="ma",value=T),unlist)()
 
 # 查看指定数据库名称下面的数据表
 ( \( x, dbnames=x |> strsplit(",") |> unlist() ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
