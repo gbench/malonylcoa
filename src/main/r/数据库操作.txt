@@ -112,6 +112,9 @@ sqlquery(c("select database()","show tables"), dbname="ctp")
 # 读取指定名称模式的数据表
 sqlquery("show tables") |> compose(sqlquery,partial(sprintf,fmt="select * from %s"),partial(grep,pattern="ma",value=T),unlist)()
 
+# 查看价格分布
+sqlquery('select * from t_ma501_20241218') |> with(boxplot(LastPrice~substr(UpdateTime,1,2)))
+
 # 查看指定数据库名称下面的数据表
 ( \( x, dbnames=x |> strsplit(",") |> unlist() ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
