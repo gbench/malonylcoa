@@ -82,9 +82,9 @@ sqlexecute <- function(sql, simplify=T, ...) {
         }) |> do.call(rbind, args=_) |> tibble() # 执行数据查询
         dbCommit(con) # 提交事务
         if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
-      }, error=\(error) { # 错误处理
+      }, error=\(err) { # 错误处理
         dbRollback(con) # 回滚错误
-        stop(e) # 重新抛出错误
+        stop(err) # 重新抛出错误
       }) # try 运行结果
     }, ...)(sql) # 连接使用函数
 }
