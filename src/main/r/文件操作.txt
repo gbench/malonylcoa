@@ -56,3 +56,21 @@ unlink("a",recursive=T) # 递归删除
 
 # 查看工作区中的文件
 list.files()
+
+# -------------------------------------------------------------------------------------------------------------
+# 元编程
+# -------------------------------------------------------------------------------------------------------------
+# 表达式计算
+local({
+  # f偏函数表达式，x初始表达式参数
+  evaluate <- \(exprs, x0) { # 元计算
+    Reduce(\(f, x) { #  f偏函数表达式, x 表达式参数
+      keys <- names(formals(get(f[[1]]))) # 提取call对象的参数列表
+      key <- keys[-match(names(f)[-1], keys)][1] # 补充第一个缺失的参数
+      f[[key]] <- x # 补充缺失的参数
+      f |> eval() # 计算
+    }, x=exprs, init=x0, right=T )
+  } # evaluate
+  # 表达式计算
+  expression(lapply(FUN=fread), grep(pattern="ma.csv", value=T) ) |> evaluate(x0=list.files())
+})
