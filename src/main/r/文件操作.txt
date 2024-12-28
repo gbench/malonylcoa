@@ -60,13 +60,13 @@ list.files()
 # -------------------------------------------------------------------------------------------------------------
 # 元编程
 # -------------------------------------------------------------------------------------------------------------
-# 表达式计算
+# 偏函数表达式pf的逆向管道计算（函数复合f.g.h）的演示示例
 local({
   library(data.table) # fread 所在的库
 
-  # 向 lapply(FUN=fread) 这样的表达式被称为偏函数表达式pf, 因为它缺少一个参数X
+  # 像lapply(FUN=fread) 这样的表达式被称为偏函数表达式pf, 因为它缺少一个参数X
   # 这个参数需要在eval_pfs的时候进行动态添加,于是这里提供一个使用偏函数表达式实现函数curry化的简单的计算方式
-  # pfs:偏函数表达式，x0初始参数, default 
+  # pfs:偏函数表达式，x0初始参数, default没有参数时后的默认参数的名称
   eval_pfs <- \(pfs, x0, default='x') { # 元计算
     Reduce(\(pf, x) { #  pf偏函数表达式, value表达式参数
       (function (keys) { # 初始函数
@@ -75,10 +75,10 @@ local({
             (\(key) pf[[key]] <<- x) () # 为偏函数表达式补充参数key的值为x
         eval(pf) # 计算
       }) (names(formals(get(pf[[1]])))) # 
-    }, x=pfs, init=x0, right=T )
+    }, x=pfs, init=x0, right=T ) # 使用Reduce模拟逆向管道（函数复合f.g.h）计算
   } # 计算偏函数表达式
   
   # 偏函数表达式的计算， lapply(FUN=fread) 被称为偏函数表达式, 因为缺少一个参数 这个参数 需要在 eval_pfs 的时候进行动态添加
-  expression( lapply(FUN=fread), head(n=5), grep(pattern="ma",value=T) ) |> eval_pfs(list.files(pattern="\\.csv$"))
+  expression( lapply(FUN=fread), head(n=5), grep(pattern="ma",value=T) ) |> eval_pfs( list.files(pattern="\\.csv$") ) # 读取前5个甲醛ma期货合约的数据
 })
 
