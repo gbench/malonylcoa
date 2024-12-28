@@ -1,0 +1,26 @@
+# 数据矩阵
+xs <- matrix(c(1,0,2,1,-1,2,1,3,1,2,5,5,2,-2,1,-2), byrow=T, ncol=4)
+
+# 行操作
+Eij <- function(xs, j=1) lapply(1:nrow(xs), \(i) if(i<=j & xs[j,j] !=0) xs[i,] else xs[i,] - xs[j,]*xs[i,j]/xs[j,j] ) |> do.call(rbind, args=_)
+
+# 化简
+Eij(xs, 1)
+
+# 高阶操作
+Reduce(x=1:2, f=\(acc,i) Eij(acc, i), init=xs)
+
+# 设置函数
+set <- \(x) { e<-substitute(x)[[2]]; force(x); eval(e[[2]]) }
+set(xs[,1] <- 1)
+
+# 修改
+xsi <- \(xs, i) rep(0, i) |> c( xs[-(1:i)])
+# 高斯消元法
+diag(xsi(-xs[1,1]/xs[,1], 1)) |> (\(x){x[,1]<-1; x})() %*% xs
+
+#
+\(xs) Reduce(2:dim(xs), \(i) )
+
+
+

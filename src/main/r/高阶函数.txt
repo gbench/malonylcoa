@@ -1,0 +1,60 @@
+# 指数平均1
+ema <- \(x, n=2) Reduce( \(acc,a) if(is.na(acc)) a else substitute ( # EMA的计算表达式,n大于等于1
+		sum( c(acc, a)*c(n-1,2)/(n+1) ), # 计算公式
+		list(acc=acc,a=a,n=n) # 参数列表
+	) |> eval(), x, NA, accumulate=T ) |> (\(x) { # 后续处理
+		if (n>1) { # 长度大于1
+			x[seq(n)] <- NA; # 对于前面n-1个元素设置为NA
+		} 
+		x[-1] # 删除第一个NA元素
+	})() # ema 指数平均
+
+# 指数平均2
+ema <- \(x, n) Reduce(\(acc,a) if(is.na(acc)) a else sum(c(acc,a)*c(n-1,2)/(n+1)), x, accumulate=T) |> (\(x) { # 后续处理
+		if (n>1) { # 长度大于1
+			x[seq(n-1)] <- NA; # 对于前面n-1个元素设置为NA
+		} 
+		x
+	})() # ema 指数平均
+
+# 滞后算子
+lagn <- \(x, n=1) if(n<1) x else append(rep(NA,n),x[seq(n)-1-length(x)])
+
+# 偏函数
+partial <- \(f, ...) { args<-list(...); \(...) do.call(f,c(args,list(...))) }
+
+# lambda 风格
+partial <- \(f, ...) list(...) |> (\(args) \(...) do.call(f, c(args, list(...)))) ()
+
+# sma 函数
+sma <- \(x, n=2) seq(0,n-1) |> sapply(partial(lagn,x)) |> na.omit() |> apply(1,mean) |> append(rep(NA,n-1),0)
+
+# sma 函数 Reduce 版本
+sma <- \(x, n=2) Reduce(\(acc,a) cbind(acc,lagn(x,a)), seq(n-1), x) |> na.omit() |> apply(1,mean) |> append(rep(NA,n-1),0)
+
+# 函数测试
+sma(1:10, 5)
+
+# 函数测试
+ema(1:10, 5)
+
+# 获取交易时间所在的交易时段
+library(purrr)
+# market_trading_times 交易时段定义
+tradesession_of <- \(x, market_trading_times="09:00,10:15;10:30,11:30;13:00,15:00;21:00,23:00") {
+   mktms <- compose(partial(matrix, nrow=2), unlist, partial(strsplit, split="[,;]+")) (market_trading_times);
+   snames <-   mktms  |> apply(2, partial(paste0, collapse="-")) # 交易时段名称
+   mktms |> compose (  # 交易会话
+      partial(structure, dimnames=list(x, snames)), # 坐标维度
+      partial(apply, MARGIN=2, FUN=\(period) x>=period[1] & x<=period[2]) # 生成交易区间路径
+  ) ()  # 交易时间的时点判断
+} # tradesession_of
+tradesession_of(c('07:01','09:13','10:20','10:35','11:15','13:13','22:12')) |> ( \(x) {
+  ids <- seq(ncol(x)) # 列序号
+  sessionIds <- compose(unlist, partial(apply, MARGIN=1, FUN=\(i) {
+      j <- ids[i]
+      if( length(j) >=1 ) j else -1
+   })) (x) # 交易时段id
+   cbind(x, sessionIds) # 添加交易时段id, 将x类型转换成double矩阵
+}) ()
+

@@ -1,0 +1,501 @@
+# ----------------------------------------------------------------------------------------------------------------
+# 数据库操作的使用示例
+# 示例数据库为:  CTP 交易的TickData , 以 数据表 t_{合约代码的小写}_{日期时间戳} 的形式 存储于数据库
+# 如 t_ma505_20241219, t_rb2505_20241219. 需要注意表名的合约代码采用小写表示，对于甲醇25年5月合约的代码是其实是M505而非ma505
+# 表数据结构：t_ma505_20241219 数据结构示例：
+# > sqlquery("select * from t_ma505_20241219 limit 1") |> toJSON()
+# [{"Id":1,"Instrument":"MA505","LastPrice":2601,"AskPrice":2601,"BidPrice":2600,"AskVolume":17,"BidVolume":667,"UpdateTime":"10:44:45","UpdateMillisec":500,"Volume":400590,"OpenInterest":744350,"AveragePrice":2609,"UpperLimitPrice":2785,"LowerLimitPrice":2419,"PreOpenInterest":709864,"PyctpCreateTime":"2024-12-19 10:44:45.767639"}] 
+# 
+# ----------------------------------------------------------------------------------------------------------------
+
+library(RMySQL) # MySQL 数据库驱动所在库
+library(dplyr) # coalesce 函数所在库
+library(reshape2) # melt 函数所在库
+library(ggplot2) # ggplot 函数所在库
+library(jsonlite) # toJSON() 函数所在库
+library(purrr) # partial 函数所在库
+library(quantmod) # chartSeries 函数所在库
+library(xts) # xts 函数所在库
+# library(data.table) # rbindlist,fwrite,fread 函数所在库
+
+# 数据库函数
+dbfun <- function(f, ...) {
+  dbcfg <- list(...) # 数据库连接参数配置
+  defaultcfg <- list(drv=MySQL(), host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认连接参数
+  readcfg <- \(key) dbcfg[[key]] %||% defaultcfg[[key]] #  带有默认值的配置参数key的值读取
+  
+  # 执行SQL语句 
+  function (sql) {
+    # 数据库连接
+    try({
+      keys <- "drv,host,user,password,port,dbname" |> strsplit(",") |> unlist() # 配置参数keys向量
+      con <- structure(keys, names=keys) |> lapply(readcfg)  |> do.call(dbConnect, args=_ ) # 读取配置并获得数据库连接
+      on.exit(dbDisconnect(con), add=TRUE) # 注册函数运行结束时关闭调该数据库连接con
+      f(con) # 执行sql
+    }) # 数据库连接
+  } # function (sql)
+} # dbfun
+
+# 执行SQL语句查询数据结果（操作结果集模式)
+# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+# simplify 是否对查询结果做简化处理后再返回，
+#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+# n 查询结果的返回最大数量
+sqlquery <- function(sql, simplify=T, n=-1, ...) {
+  # 连接使用函数
+  dbfun(function (con) { # 使用数据库连接进行查询结果数据集
+    sqls <- c(list(), sql) #  拼装成sql语句集合
+    dataset <- lapply(sqls, \(s) { # SQL语句执行
+      rs <- dbSendQuery(con, s) # 数据查询
+      entries <- fetch(rs, n) # 获取所有结果行
+      dbClearResult(rs) # 关闭结果集
+      tibble(entries) # 结果转换成 tibble对象
+    }) |> structure(names=sql) # 数据查询
+    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  }, ...)(sql) # 连接使用函数
+}
+
+# 执行SQL语句查询数据结果（dbGetQuery模式)
+# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+# simplify 是否对查询结果做简化处理后再返回，
+#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+# n 查询结果的返回最大数量
+sqlquery <- function(sql, simplify=T, n=-1, ...) {
+  # 连接使用函数
+  dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 数据查询
+    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  }, ...)(sql) # 连接使用函数
+}
+
+# 执行SQL语句（dbExecute模式)
+# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+# simplify 是否对查询结果做简化处理后再返回，
+#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+# 返回结果是 affected_rows, last_insert_id 两列的数据框，对于
+# insert into t_user(name) values('name_1'),('name_2'),...,('name_n') 一条语句插入多条数据
+# 的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
+# 其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
+# 返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
+sqlexecute <- function(sql, simplify=T, ...) {
+    # 连接使用函数
+    dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+      tryCatch({ # try 运行结果
+        dbBegin(con) # 开启事务
+        dataset <- c(list(), sql) |> lapply(\(.sql){
+          affected_rows <- dbExecute(con, .sql); # 影响数据行数
+          last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
+          list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
+        }) |> do.call(rbind, args=_) |> tibble() # 执行数据查询
+        dbCommit(con) # 提交事务
+        if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+      }, error=\(err) { # 错误处理
+        dbRollback(con) # 回滚错误
+        stop(err) # 重新抛出错误
+      }) # try 运行结果
+    }, ...)(sql) # 连接使用函数
+}
+
+# ----------------------------------------------------------------------------------------------------------------
+# 基本使用示例
+# ----------------------------------------------------------------------------------------------------------------
+
+# 查看默认数据库（ctp2）中的数据表
+sqlquery("show tables")
+
+# 查看数据库名称与该数据库中的数据表
+sqlquery(c("select database()", "show tables"))
+
+# 查看数据库名称与该数据库中的数据表, 指定数据库
+sqlquery(c("select database()","show tables"), dbname="ctp")
+
+# 读取指定名称模式的数据表
+sqlquery("show tables") |> compose(sqlquery,partial(sprintf,fmt="select * from %s"),partial(grep,pattern="ma",value=T),unlist)()
+
+# 查看价格分布
+sqlquery('select * from t_ma501_20241218') |> with(boxplot(LastPrice~substr(UpdateTime,1,2)))
+
+# 查看指定数据库名称下面的数据表
+( \( x, dbnames=x |> strsplit(",") |> unlist() ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
+  dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
+
+# 读取时间序列
+sqlquery("select * from t_ma505_20241219") |> with(PyctpCreateTime |>as.POSIXct() |> xts(order.by=_, data.frame(LastPrice, Volume, OpenInterest)))
+
+# 自定义主机与数据库
+sqlquery.h10ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp") # 自定义SQL函数
+# 可以用 unlist() 把只有一行数据数据的的结果变成一个单值向量，这个对于利用SQL函数比database()这样的结果是很方便的，但是对于多行多列的情况
+# 结果就可能有点混乱（不同行相同里列的名称会添加一个数字序号），所以需要根据情况适当使用
+sqlquery.h10ctp("select database()") |> unlist()
+
+# 本地测试
+local({ # 数据库写入测试
+  # ctp 数据库查询函数
+  sqlquery.ctp <- partial(sqlquery, dbname="ctp")
+ 
+  # ctp 数据库执行函数
+  sqlexecute.ctp <- partial(sqlexecute, dbname="ctp")
+  
+  # 删除数据表
+  "t_user" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="drop table if exists  %s") |> sqlexecute.ctp()
+  
+  # 查看数据表
+  "show tables" |> sqlquery.ctp()
+  
+  # 创建用户数据
+  "create table t_user ( 
+     id int primary key auto_increment comment '主键', 
+     account varchar(64) comment '账户', 
+     name varchar(64) comment '姓名', 
+     password varchar(16) comment '密码', 
+     sex varchar(10) comment '性别', 
+     phone varchar(32) comment '电话', 
+     weixin varchar(64) comment '微信', 
+     description varchar(126) comment '说明'
+   )" |> sqlexecute.ctp() # 创建数据表
+  
+  # 插入用户数据
+  "zhangsan,lisi,wangwu,zhaoliu" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="insert into t_user(name) values('%s')") |> sqlexecute.ctp() |> print()
+   sqlexecute.ctp( c( # SQL 插入语句
+     "insert into t_user(name,password) values('chenqi','123456'),('zhouba','123456'),('yangjiu','123456'),('lushi','123456')",
+     "insert into t_user(name,password) values('tom','123456'),('jerry','123456'),('katty','123456'),('lucy','123456')"
+   ) ) |> print()
+ # 查看数据
+ sqlquery.ctp("select * from t_user")
+})
+
+# 指定时段，动态过滤数据
+local({
+  library(rlang) # eval_tidy 的所在的库
+  condition <- \( # 条件过滤函数
+    text="09:00,10:15;10:30,11:30;13:00,15:00;21:00,23:00", # 时间区间
+    points=text |> strsplit("[,;]+") |> unlist(), # 时点序列
+    periods=points  |> ( \(x, n=length(x)/2) x |> split( rep( seq(n), rep(2,n) ) ) )(), # 把时点序列，组装成时段序列
+    betweens=periods |>lapply(\(e) sprintf("between(UpdateTime, '%s:00', '%s:60')",e[1],e[2])) # 区间范围
+  ) betweens |> paste0(collapse=" | ") |> str2lang()    # 组装成语句并解析成表达式对象
+  # 数据读取
+  # sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition())) # 提取指定时段内的数据
+  sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition("09:00,09:03;09:05,09:07"))) # 提取指定时段内的数据
+})
+
+# 指定时段，动态过滤数据2
+local({
+  library(rlang) # eval_tidy 的所在的库
+  condition <- \( # 条件过滤函数
+    text="09:00,10:15;10:30,11:30;13:00,15:00;21:00,23:00", # 时间区间
+    points=text |> strsplit("[,;]+") |> unlist(), # 时点序列
+    periods=points  |> ( \(x, n=length(x)/2) x |> split( rep( seq(n), rep(2,n) ) ) )(), # 把时点序列，组装成时段序列
+    betweens=periods |> lapply(\(p) expr( between(UpdateTime, !!p[1], !!p[2]) )) |> Reduce(\(acc,a) expr(!!acc | !!a), x=_) # 拼装成区间表达式
+  )  betweens  # 组装成语句并解析成表达式对象
+  # 数据读取
+  # sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition())) # 提取指定时段内的数据
+  sqlquery('select * from t_ma505_20241209') |> dplyr::filter(eval_tidy(condition("09:00,09:03;09:05,09:07"))) # 提取指定时段内的数据
+})
+
+# 提取时间间隔超过误差精度的时段
+local({
+  # 读取时间序列
+  sql <- "select * from t_ma505_20241219" # sql 语句
+  x <- sqlquery(sql) |> with(PyctpCreateTime |> as.POSIXct() |> xts(order.by=_, data.frame(LastPrice, Volume, OpenInterest))) # tickdata 的时间序列
+  gaps <- index(x) |> diff(units="mins") |> (\(ds) { # 计算时间间隔单位分钟
+    # print(ds|>as.difftime(units = "secs") |> head()) # 转换成秒
+    eps <- 1 # 时间间隔的区分精度单位分钟
+    seq_along(ds)[ds > eps] |> (\(i, pre=x[i], cur=x[i+1]) list(pre=pre, cur=cur)) () # 超过限定间隔的时段
+  }) () |> with(list(pre=pre, cur=cur) |> lapply(index) |> data.frame() ) # 空白时间区段
+  print(gaps)
+  rng <- range(index(x)) # 时间范围
+}) |> print()
+
+# 查询期货合约并合并，使之成为一个tibble数据对象 ，然后 写入一个data.ma505.csv的数据文件
+local({ # data.table 的数据读取测试，以 local的方式限定 datafile，data 变量 的外部暴露
+  library(data.table) # 加载库文件
+  system.time({ # 统计程序运行时间
+    datafile <- "data.ma505.csv" # 数据文件名称
+    sqlquery("show tables") |> unlist() |> (\(x, i=grep("ma505", x)) x[i]) () |> sprintf(fmt="select * from %s") |> sqlquery() |> rbindlist() |> fwrite(datafile)
+    # 查看数据文件
+    list.files() |> grep(pattern=datafile, value=T) |> print() # 查看数据文件
+    # 读取数据文件
+    data <- fread(datafile, head=T) # 读取数据文件并返回结果，注意data是可以外部system.time访问的，但是无法在local以外进行访问
+  }) |> print() # 打印程序运行时间
+  data # 返回结果
+}) # local 数据读取
+
+# 交易时段的处理
+local({
+  market_trading_times <- function ( # 市场交易时间表
+    line="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00", # 开盘收盘的时点序列
+    keys=c('早盘1','早盘2','下午盘','夜盘') # 交易时段名称
+  ) ( \( # 依据交易时段，生成一个定义生成以时点标签key的定义函数
+    tradesessions # 交易时段列表:一个 [(开始时间, 阶数时间)] 的记录序列， 用矩阵结构表达
+  ) \( timex, # 时间向量
+      startime=tradesessions[,1], # 交易时段开始
+      endtime=tradesessions[,2] # 交易时段阶数
+  ) { # x时点定义
+    sapply(timex, \(x){ # 时点值
+      key <- keys[( x>=startime & x<=endtime ), drop=T] # 判断时点x位于哪个交易时段
+      if(length(key) >= 1) key else '非交易时段'
+    }) # 时间向量的处理
+ } ) (line |> strsplit("[,;]+") |> unlist() |> matrix(ncol=2, byrow=T)) # 解释时点序列为时段矩阵
+
+ as.percent <- function (x) { # 转换成百分比
+   low <- min(x)
+   max <- max(x)
+   (x - low) / ( max - low)
+ } # 转换成百分比
+
+ sqlquery("select * from t_ma505_20241219") |> # 读取合约数据
+   mutate(TradeSession=market_trading_times()(substr(UpdateTime,1,5))) |> # 分析交易时段
+   mutate(UpdateTime=as.POSIXct(paste(substr(PyctpCreateTime,1,10), UpdateTime), format="%Y-%m-%d %H:%M:%S")) |> # 时间分解 
+   select(TradeSession, UpdateTime, LastPrice, Volume, OpenInterest) |> # 选择字段
+   dplyr::filter(TradeSession=="早盘1" | TradeSession=="早盘2") |> # 指定具体的交易时段
+   ggplot(aes(UpdateTime)) + facet_wrap(. ~ TradeSession, scales="free") + # 依据时段来分区
+     geom_line( aes(y=LastPrice |> as.percent() ) ) + # 价格百分比
+     geom_bar( aes(y=c(0, diff(Volume) |> as.percent() ) ), col="red", stat="identity" ) # 成交量
+})
+
+# 提取指定期货合约，使用 partial 函数，将参数列表 做一系列常量赋值语句 进而 省略了大括号的赋值操作，起到了精简代码的作用
+sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ru2505", x)) x[i] ) () 
+# 等价于一下代码 ，从实际效果上看 写不写  partial 作用是一样的 都是 在 管道后面构造一个 带有一个首位参数是x,随后跟着一些依赖于x的默认参数的call对象,
+# 但是partial ( \(x, i=grep("ru2505", x)) x[i] ) ()  会比单纯的 ( \(x, i=grep("ru2505", x) ) x[i]) ()  清晰一点，提醒了这里有一个partial 调用，这也是为何写partial的原因
+sqlquery("show tables") |> with(Tables_in_ctp2) |> ( \(x, i=grep("ru2505", x) ) x[i]) () 
+
+# 于是，可以把 形参列表作为语句的执行区域：编写以下的 读取tickdata数据 的函数,  之所以使用partial而不是直接lamda 是为了 便于识别
+tickdatas.ma505 <- sqlquery("show tables") |> with(Tables_in_ctp2) |> partial( \(x, i=grep("ma505", x)) x[i] ) () |>  # 提取橡胶ru2505合约
+  partial( \( # 定义一个函数把交易数据tickdata全部都给读出来
+      tbls,  # 各个交易数据的数据表名, t_{合约代码的小写}_{日期时间戳}
+      sqls=sprintf("select * from %s", tbls),  # 读取各个交易日的成交数据的sql 语句
+      tdates=sapply(tbls, \(tbl) gsub(".+_(\\d+{8})$", "\\1", tbl)) # 日期时间戳
+    ) sqls |> sqlquery() |> structure(names=tdates) # 执行SQL查询语句并将结果组装成list列表
+  ) (); tickdatas.ma505  #  获取所有tickdata数据
+
+# 把各个数据表的数据合并成一个列表tibble
+tibble.ma505 <- tickdatas.ma505 |> partial( \( # 数据合并函数
+    x, # tickdatas.ma505 交易数据
+    dates=names(x) |> gsub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_ ) # 解析成年月日的日期形式
+  ) Reduce(x=seq(x), \(acc,i) rbind(acc, x[[i]] |> mutate ( # 修改数据列UpdateTime补充数据日期
+    UpdateTime=paste(dates[i], UpdateTime) |> strptime(format="%Y-%M-%d %H:%M:%S") ) # 修改更新时间
+  ), init=data.frame()) ) () |> partial( \(x) x |> mutate(Id=seq(nrow(x))) ) () ; tibble.ma505 # 数据合并函数(统一整个Id) 
+# 数据写出
+write.csv(tibble.ma505, "tibble.ma505.csv") # 写入数据文件
+
+# ----------------------------------------------------------------------------------------------------------------
+
+# TickData 的交易行情辨别
+local({ # 本地测试
+  library(jsonlite) # fromJSON 所在库
+  tdfm <- sqlquery("select * from t_ma505_20241219") # 检索出TickData数据
+
+  # 标记逻辑的规则枚举
+  # 1) 确定持仓状态:持仓量上涨就是开仓,持仓量不变就是换手,持仓量降低就是平仓
+  # 2) 在特定的持仓状态下,依据价格变化推断,多空方向：
+  # 2.1) 开仓时，价格上涨为多开, 价格下跌为空开，价格不变为双开
+  # 2.2) 平仓时，价格上涨为空平, 价格下跌为多平，价格不变为双平
+  # 2.3)换手时, 价格上涨为多换，价格下跌为空换，价格不变为双换，多方边变空方，空方变多方
+  # 3) 符号与数字意义：
+  # 3.1) 键名字段, PChg:价格增长, VChg:现手成交, OChg:开仓数量, Name:规则名称, Description:规则说明
+  # 3.2) 数字含义, 1:增长, 0:不变, -1:下降
+  pvo_rules <- # Json 格式的规则定义
+    '[
+       {"PChg":1,"VChg":1,"OChg":1,"Name":"多开+","Description":"价格上涨，成交量上涨，持仓量上涨"},
+       {"PChg":0,"VChg":1,"OChg":1,"Name":"双开+","Description":"价格不变，成交量上涨，持仓量上涨"},
+       {"PChg":-1,"VChg":1,"OChg":1,"Name":"空开+","Description":"价格下降，成交量上涨，持仓量上涨"},
+       {"PChg":1,"VChg":0,"OChg":1,"Name":"多开0","Description":"价格上涨，成交量不变，持仓量上涨"},
+       {"PChg":0,"VChg":0,"OChg":1,"Name":"双开0","Description":"价格不变，成交量不变，持仓量上涨"},
+       {"PChg":-1,"VChg":0,"OChg":1,"Name":"空开0","Description":"价格下降，成交量不变，持仓量上涨"},
+       {"PChg":1,"VChg":-1,"OChg":1,"Name":"多开-","Description":"价格上涨，成交量下降，持仓量上涨"},
+       {"PChg":0,"VChg":-1,"OChg":1,"Name":"双开-","Description":"价格不变，成交量下降，持仓量上涨"},
+       {"PChg":-1,"VChg":-1,"OChg":1,"Name":"空开-","Description":"价格下降，成交量下降，持仓量上涨"},
+       {"PChg":1,"VChg":1,"OChg":0,"Name":"多换+","Description":"价格上涨，成交量上涨，持仓量不变"},
+       {"PChg":0,"VChg":1,"OChg":0,"Name":"双换+","Description":"价格不变，成交量上涨，持仓量不变"},
+       {"PChg":-1,"VChg":1,"OChg":0,"Name":"空换+","Description":"价格下降，成交量上涨，持仓量不变，一部分空方加仓，一部分空方平仓，空方加仓导致价格下跌"},
+       {"PChg":1,"VChg":0,"OChg":0,"Name":"多换0","Description":"价格上涨，成交量不变，持仓量不变，一部分多方加仓，一部分多方平仓，多方加仓导致价格上涨"},
+       {"PChg":0,"VChg":0,"OChg":0,"Name":"换手0","Description":"价格不变，成交量不变，持仓量不变"},
+       {"PChg":-1,"VChg":0,"OChg":0,"Name":"多换0","Description":"价格下降，成交量不变，持仓量不变"},
+       {"PChg":1,"VChg":-1,"OChg":0,"Name":"多换-","Description":"价格上涨，成交量下降，持仓量不变"},
+       {"PChg":0,"VChg":-1,"OChg":0,"Name":"换手-","Description":"价格不变，成交量下降，持仓量不变"},
+       {"PChg":-1,"VChg":-1,"OChg":0,"Name":"多换-","Description":"价格下降，成交量下降，持仓量不变"},
+       {"PChg":1,"VChg":1,"OChg":-1,"Name":"空平+","Description":"价格上涨，成交量上涨，持仓量下降"},
+       {"PChg":0,"VChg":1,"OChg":-1,"Name":"双平+","Description":"价格不变，成交量上涨，持仓量下降"},
+       {"PChg":-1,"VChg":1,"OChg":-1,"Name":"多平+","Description":"价格下降，成交量上涨，持仓量下降"},
+       {"PChg":1,"VChg":0,"OChg":-1,"Name":"空平0","Description":"价格上涨，成交量不变，持仓量下降"},
+       {"PChg":0,"VChg":0,"OChg":-1,"Name":"双平0","Description":"价格不变，成交量不变，持仓量下降"},
+       {"PChg":-1,"VChg":0,"OChg":-1,"Name":"多平0","Description":"价格下降，成交量不变，持仓量下降"},
+       {"PChg":1,"VChg":-1,"OChg":-1,"Name":"空平-","Description":"价格上涨，成交量下降，持仓量下降"},
+       {"PChg":0,"VChg":-1,"OChg":-1,"Name":"双平-","Description":"价格不变，成交量下降，持仓量下降"},
+       {"PChg":-1,"VChg":-1,"OChg":-1,"Name":"多平-","Description":"价格下降，成交量下降，持仓量下降"}
+    ]' |> fromJSON() # 转换成data.frame
+  write.csv(pvo_rules,"pvo_rules.csv",row.names = T) # 写入规则文件
+  pvo_rules <- read.csv("pvo_rules.csv", head=T) # 读取规则文件
+
+  # 标识辨析
+  identify <- function(PChg, VChg, OChg, pvo_rules=pvo_rules) {
+    if(c(PChg,VChg,OChg) |> sapply(is.na) |> any()){ # 存在无效数据的情况
+      list(PChg=PChg, VChg=VChg, OChg=VChg, Name="无效", Description="无效") # 起始数据无效
+    } else {# 数据有效
+      pvo_rules[ pvo_rules$PChg==sign(PChg) & pvo_rules$VChg==sign(VChg) & pvo_rules$OChg==sign(OChg), ,drop=T ] # 检索相应位置条目
+    }
+  } # identify
+
+  # 数据分类
+  tdfm |> tail(20) |> mutate (
+    PChg = c(NA, diff(LastPrice)),
+    VChg = c(NA, diff(Volume)),
+    OChg = c(NA, diff(OpenInterest)),
+    Name = pmap_chr(list(PChg, VChg, OChg), ~ identify (..1, ..2, ..3, pvo_rules)$Name),
+    Description = pmap_chr(list(PChg, VChg, OChg), ~ identify (..1, ..2, ..3, pvo_rules)$Description)
+  ) |> select(Id, UpdateTime, LastPrice, PChg, VChg, OChg, Name, Description) |> arrange(-Id)
+}) # local 本地测试
+
+# ----------------------------------------------------------------------------------------------------------------
+
+# 读取指定合约 tickdata table of 
+# symbol 合约符号
+# datepat 日期模式，如20241219
+tdtbls_of <- \(symbol, datepat="\\d{8}") sqlquery("show tables") |> unlist() |> (\(x) x[grep(sprintf("^t_%s_%s", symbol, datepat), x)]) ()
+# 读取指定合约的数据表列表-所有
+tdtbls_of("ma501")
+# 读取指定合约的数据表列表-指定日期
+tdtbls_of("ma501", "20241219")
+
+# 读取所有合约数据
+tickdata_of <- \(symbol, datepat="\\d{8}") { 
+  tdtbls <- tdtbls_of(symbol, datepat); # 交易数据表
+  tdtbls |> sprintf(fmt="select * from %s") |> sqlquery() |> structure(names=tdtbls) 
+}
+# 读取合约数据-所有
+tickdata_of("ma501")
+# 读取合约数据-指定范围
+tickdata_of("ma501", "202412(09|1[1-9])")
+
+# 计算K线
+# 将tickdata的dataframe  即 tdfm 转换成分钟线 
+# tdfm tickdata 的数据
+# tdate tickdata 所在的交易日期
+compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
+  # Step 1: 创建 TickData  (依据更新时间进行数据排序）
+  tickdata <- tdfm |> mutate(Period=substr(UpdateTime, 1, 5)) |> arrange(UpdateTime, UpdateMillisec) # 交易数据
+  # Step 2: 创建 KlineData 
+  pattern <- "%Y-%m-%d %H:%M" # 时间模式
+  klinedata <- tickdata |> group_by(Period) |> mutate( # OHLC 数据生成
+    Period=strptime(sprintf('%s %s', tdate, Period), pattern), # 日期时间
+    Open=first(LastPrice), High=max(LastPrice), Low=min(LastPrice), Close=last(LastPrice), 
+    ranking=row_number(desc(Id))  # 确保最后成交的tickdata排序为1，以便作为分钟线进行提取
+  ) |> ungroup() |> filter(ranking==1)  # 选择每个周期的最后一行作为kline数据数据线
+  # Step 3: 计算成交量和开仓量的变化 
+  kd <- klinedata |> mutate( # 计算分钟成交量和分钟持仓量变化
+    Vol1m=Volume-lag(Volume, default=Volume[1]), # 成交量-分钟增量
+    OpenInt1m=OpenInterest-lag(OpenInterest, default=OpenInterest[1]) # 持仓量-分钟增量
+  ) # 带有OHLCV数据klinedata 
+  # Step4: 包装成Period,OHLCV,OI的格式
+  kd |> select(Period, Open, High, Low, Close, Volume=Vol1m, OpenInt1m, AccVol=Volume, AccOpenInt=OpenInterest) # 返回K线结果
+} # compute_kline 
+
+# 读取合约数据-指定范围 并且 转换成 K线
+klinedata_of <- function(symbol, datepat="\\d{8}") {
+  tickdata <- tickdata_of(symbol, datepat) # 获取交易数据
+  datatbls <- names(tickdata) # tickdata的数据表名
+  # 提取表名尾部的日期时间戳后缀用以标记tickdata所在日期时间
+  tdates <- datatbls |> lapply(\(x) gsub(pattern=".+_(\\d{8})$", replacement="\\1",  x=x)  |> as.Date(format="%Y%m%d")) # K线日期
+  tdatestamp <- tdates |> lapply(partial(strftime,format="%Y-%m-%d")) # 日期标记
+  lapply(seq(tickdata), \(i) compute_kline(tickdata[[i]], tdates[[i]])) |> structure(names=tdatestamp) # 计算K线
+}
+
+# 生成K线数据, 结果为tibble的列表
+klinedata <- klinedata_of("ma501", "202412(1[5-9])")
+
+# 绘制K线图
+with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume), Period)) |> # 获取时间序列的数据
+  head(100) |> chartSeries(theme="white", name="ma501-2024-12-19") # 编写K线图
+
+# 读取数据库数据
+"select Id,LastPrice,OpenInterest,Volume from t_rb2505_20241219" |> # sql 语句
+  sqlquery() |> reshape2::melt(id.vars="Id") |> group_by(variable) |> mutate(avg=mean(value), # 分组计算波动值
+    hi=max(value), lo=min(value), v=(value-avg)/(hi-lo)) |> ungroup() |> # 分组计算波动值volatile
+  ggplot() + facet_grid(variable~.) + geom_line(aes(Id, v))
+
+# ----------------------------------------------------------------------------------------------------------------
+# 集群与并行计算
+#
+# 参考：vignette("gettingstartedParallel")
+# doParallel介绍 ：
+# The doParallel package provides a parallel backend for the foreach/%dopar% function using the parallel package of R 2.14.0 and later.
+# To register doParallel to be used with foreach, you must call the registerDoParallel function.
+# ---------------------------------------------------------------------------------------------------------------
+system.time({ #  集群与并行计算
+  print("集群与并行计算")
+  pkgs <- strsplit("RMySQL,purrr,tidyverse,doParallel",  ",") |> unlist() # 并行计算需要各个程序包(doParallel)
+  flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 生成加载标志
+  
+  if(!all(flags)) { # 存在没有安装的程序包
+    pkgs[!flags] |> install.packages() # 安装没有安装的程序包
+    sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 重新加载
+  } # if
+  
+  # 定义集群运算函数
+  # f 集群运算函数
+  # vars2exports 待导出到集群节点上的变量名称字符串用逗号分割 或是一个 名称字符串向量
+  execute <- function(f, vars2exports, ...) { # 集群运算
+    ncores <- detectCores() - 1 # 集群核数量
+    cl <- makeCluster(ncores) # 创建一个多核集群
+    registerDoParallel(cl) # register doParallel to be used with foreach 将doParallel作为foreach的后端
+    on.exit({ # 关闭集群
+      stopImplicitCluster() #  explicitly close the implicitly created cluster. 对应于registerDoParallel(cl)
+      stopCluster(cl) # 关闭
+      print(sprintf("关闭集群, time: %s",Sys.time()))
+    }) # 关闭集群
+    varlist <- if(length(vars2exports)>1) vars2exports else strsplit(vars2exports, ",")[[1]]  # 需要导出到集群节点的object的名称
+    clusterExport(cl, varlist) # 导出变量到各个集群节点
+    print(sprintf("启动/运行集群:%s, cluster ncores:%s, time: %s", getDoParName(), getDoParWorkers(), Sys.time())) # 打印集群核数量
+    
+    f(...)  # 运行 集群运算 & 返回结果
+  } # execute
+
+  execute(\(...) { # 集群运算
+    # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
+    sqlquery("show tables") |> compose(partial(grep, pattern="ma", value=T), unlist) ()  |> # 提取合约tickdata数据表名
+      foreach( tbl=_,  .packages=pkgs ) %dopar%  { # 并行计算
+        sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
+        startime <-Sys.time() # 开始时间
+        result <- sqlquery(sql) # SQL查询
+        endtime <- Sys.time() # 结束时间
+        # 结果返回
+        list(tbl=tbl, sql=sql, result=result, # 节点程序运行结果
+          startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
+      } #  并行计算 foreach %dopar% 
+   } , "sqlquery,dbfun") |> ( \(results) { # 结果集合的处理
+        print(results) # 打印运算结果
+   }) () # results 结果处理
+
+}) # 集群与并行计算
+
+# 耗费时间
+#>
+# user  system elapsed 
+#   3.75    0.56   12.52 
+
+# ---------------------------------------------------------------------------------------------------------------
+# 单机非并发计算
+# ---------------------------------------------------------------------------------------------------------------
+system.time({ # 单机非并发计算
+  print("单机非并发计算")
+  # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
+  sqlquery("show tables") |> compose(partial(grep, pattern="ma", value=T), unlist) ()  |> lapply ( \(tbl) {  # 提取合约tickdata数据表名
+      sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
+      startime <-Sys.time() # 开始时间
+      result <- sqlquery(sql) # SQL查询
+      endtime <- Sys.time() # 结束时间
+      # 结果返回
+      list(tbl=tbl, sql=sql, result=result, # 节点程序运行结果
+        startime=startime, endtime=endtime, duration=endtime-startime) # 结果返回
+  }) |> ( \(results) { # 结果集合的处理
+      print(results) # 打印运算结果
+  }) () # results 结果处理
+}) # 单机非并发计算
+
+# 耗费时间
+#>
+#user  system elapsed 
+#   4.72    0.38    6.80 

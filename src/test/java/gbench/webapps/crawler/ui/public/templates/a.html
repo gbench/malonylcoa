@@ -1,0 +1,23 @@
+<div>
+  <div class="highlight">{{component}} AgentId:{{agentId}},SessionId:{{sessId}}</div>
+  <hr />
+  <div>
+    <div>
+      <data-table :data="articles" style="width:100%;" />
+    </div>
+    <hr>
+    <div>
+      检索：<input type="text" v-model="keyword" @blur="on_srch_click($event)"> &nbsp;
+      <button @click="on_srch_click($event)">字段检索</button> &nbsp;
+      <button @click="on_srch_click2($event)">布尔检索</button> &nbsp; 资料目录：&nbsp;
+      <input type="text" v-model="fileHome" /> &nbsp;
+      <button @click="on_index_click($event)">重建索引</button> &nbsp; 语料目录： &nbsp;
+      <input type="text" v-model="corpusHome" /> &nbsp;
+      <button @click="on_refresh_click($event)">刷新语料</button> &nbsp;
+      <button @click="on_clear_lookup2_click($event)">重置查询</button> &nbsp;
+      <div v-if="lines.length>0" style="height:265px; overflow: auto;margin:2px; border:solid 1px red;">
+        <data-table style="width:100%" :data="lines" :tdrender="max_render(40)" />
+      </div>
+    </div>
+  </div>
+</div>

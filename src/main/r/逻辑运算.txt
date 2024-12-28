@@ -1,0 +1,128 @@
+# 自定义逻辑函数
+# --------------------------------------------------------------------------
+# 工具定义
+# --------------------------------------------------------------------------
+ops <- list( # 逻辑运算符
+  # 蕴含运算，定义为p且不q是不可能的，即~(p&!q) <=>!p|q 
+  `%=>%`=function(p,q) !p|q,
+
+  # 充分必要，等价运算
+  `%<=>%`=function(p,q) p==q
+) |> list2env()
+
+# 真值表
+truths <- function(expr, xs=list(p=c(T, F), q=c(T, F))) { 
+  # 逻辑表达式
+  .expr <- names(xs)|> (\(ns) paste0(ns, "=", ns, collapse=",") |> # 提取元素名并给以拼接
+    sprintf(fmt="c(%s, expr=expr)") |> str2lang())() # 定义结果行的结构模式（依xs而定的动态结构）
+  # 由于substitute will not evaluate its first argument：所以这里采用两次代换来完成动态结构的生成
+  # 一次代换即内层的substitute(.expr) 提取出.expr的表达式内容并传入外层的substitute
+  # 二次代换把.expr中的expr参数给带换成函数调用的输入表达式
+  ..expr <- substitute(substitute(.expr)) |> eval() # 生成动态结构
+  
+  # 罗列各种可能性
+  expand.grid(xs) |> apply(1, \(params) # 计算
+    eval(..expr, c(as.list(params)) |> list2env(parent=ops)) # 在指定函数定义环境了运算
+  ) |> t() # 结果转置
+}
+
+# --------------------------------------------------------------------------
+
+# 否定(negation)真值表
+truths( !p )
+
+# 合取(conjunction)真值表
+truths( p&q )
+
+# 析取(disjunction)真值表
+truths( p|q )
+
+# 条件式(conditional)真值表
+truths( p %=>% q )
+
+# 双条件式(biconditional)真值表
+truths( p %<=>% q )
+
+# 数量金融导论-数学工具箱 Robert R. Reitano 的课后习题
+# 定义验证1
+truths( (p%=>%q) %<=>% (!(p&!q)) )
+
+# 定义验证2
+truths( p|q|(p%=>%q) %<=>% (p&q) )
+
+# 定义验证3
+truths( (p%=>%(q|r)) & (q%=>%(p|r)) %<=>% r, 
+  xs=list(p=c(T, F), q=c(T, F), r=c(T, F)))
+
+# --------------------------------------------------------------------------
+
+> # 否定(negation)真值表
+> truths( !p )
+         p     q  expr
+[1,]  TRUE  TRUE FALSE
+[2,] FALSE  TRUE  TRUE
+[3,]  TRUE FALSE FALSE
+[4,] FALSE FALSE  TRUE
+> 
+> # 合取(conjunction)真值表
+> truths( p&q )
+         p     q  expr
+[1,]  TRUE  TRUE  TRUE
+[2,] FALSE  TRUE FALSE
+[3,]  TRUE FALSE FALSE
+[4,] FALSE FALSE FALSE
+> 
+> # 析取(disjunction)真值表
+> truths( p|q )
+         p     q  expr
+[1,]  TRUE  TRUE  TRUE
+[2,] FALSE  TRUE  TRUE
+[3,]  TRUE FALSE  TRUE
+[4,] FALSE FALSE FALSE
+> 
+> # 条件式(conditional)真值表
+> truths( p %=>% q )
+         p     q  expr
+[1,]  TRUE  TRUE  TRUE
+[2,] FALSE  TRUE  TRUE
+[3,]  TRUE FALSE FALSE
+[4,] FALSE FALSE  TRUE
+> 
+> # 双条件式(biconditional)真值表
+> truths( p %<=>% q )
+         p     q  expr
+[1,]  TRUE  TRUE  TRUE
+[2,] FALSE  TRUE FALSE
+[3,]  TRUE FALSE FALSE
+[4,] FALSE FALSE  TRUE
+> 
+> # 数量金融导论-数学工具箱 Robert R. Reitano 的课后习题
+> # 定义验证1
+> truths( (p%=>%q) %<=>% (!(p&!q)) )
+         p     q expr
+[1,]  TRUE  TRUE TRUE
+[2,] FALSE  TRUE TRUE
+[3,]  TRUE FALSE TRUE
+[4,] FALSE FALSE TRUE
+> 
+> # 定义验证2
+> truths( p|q|(p%=>%q) %<=>% (p&q) )
+         p     q  expr
+[1,]  TRUE  TRUE  TRUE
+[2,] FALSE  TRUE  TRUE
+[3,]  TRUE FALSE  TRUE
+[4,] FALSE FALSE FALSE
+> 
+> # 定义验证3
+> truths( (p%=>%(q|r)) & (q%=>%(p|r)) %<=>% r, 
++   xs=list(p=c(T, F), q=c(T, F), r=c(T, F)))
+         p     q     r  expr
+[1,]  TRUE  TRUE  TRUE  TRUE
+[2,] FALSE  TRUE  TRUE  TRUE
+[3,]  TRUE FALSE  TRUE  TRUE
+[4,] FALSE FALSE  TRUE  TRUE
+[5,]  TRUE  TRUE FALSE FALSE
+[6,] FALSE  TRUE FALSE  TRUE
+[7,]  TRUE FALSE FALSE FALSE
+[8,] FALSE FALSE FALSE FALSE
+>

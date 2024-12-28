@@ -1,0 +1,19 @@
+# 迭代函数
+iterate <- function (init, f, n=10) if(n<1) c() else c(init, iterate(f(init), f, n-1))
+
+# 任意次绘图
+plots <- function(...) {
+  fs <- list(...) # 提取参数
+  op <- par(mfrow=c(length(fs), 1), mar=rep(2, 4)) # 缓存原有的图形参数
+  lapply(fs, \(f) f()) # 批量调用绘图
+  par(op) # 恢复图形参数
+}
+
+#绘图函数
+f = \(n=2) \() iterate(1,\(x) 2*x, 20) |> plot(type="b",main=n,sub=n)
+
+# 批量绘图
+(c(2,3,4,5) |> lapply(f)) |> do.call(plots , args=_)
+
+#自定义, 绘制一个圆圈
+plots(\() c(cos,sin) |> lapply(\(f) f(seq(-pi, pi, len=100))) |> do.call(plot, args=_))

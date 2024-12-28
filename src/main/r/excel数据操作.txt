@@ -1,0 +1,105 @@
+# 批量函数
+batch <- function(cmd,pkgs) pkgs |> strsplit(",") |> `[[`(_,1) |> sapply(\(pkg) eval(substitute(f(p),list(f=cmd,p=pkg))))
+# 批量安装包
+batch(install.packages,"readxl,purrr,dplyr")
+# 批量加载包
+batch(require,"readxl,purrr,dplyr") 
+
+# 设置工作区
+file.choose() |> gsub("[^\\]+$","",x=_) |> setwd()
+
+# 设置工作空间
+home <- "F:/slicef/home/gbench/dwk/diary/2024-04-13/data"
+#  设置数据文件目录
+setwd(home)
+
+# 列出文件excel文件
+> list.files(path=home,pattern="xlsx",recursive=T,full.names = TRUE) -> files; files;
+[1] "F:/slicef/home/gbench/dwk/diary/2024-04-13/data/a.xlsx"     
+[2] "F:/slicef/home/gbench/dwk/diary/2024-04-13/data/b.xlsx"     
+[3] "F:/slicef/home/gbench/dwk/diary/2024-04-13/data/set1/c.xlsx"
+
+# 读取数据文件
+> df <- map_dfr(files, read_xlsx); df
+# A tibble: 15 × 3
+      id name    vlaue
+   <dbl> <chr>   <dbl>
+ 1     1 a.1   0.964  
+ 2     2 a.2   0.428  
+ 3     3 a.3   0.00177
+ 4     4 a.4   0.869  
+ 5     5 a.5   0.0931 
+ 6     1 b.1   0.218  
+ 7     2 b.2   0.985  
+ 8     3 b.3   0.909  
+ 9     4 b.4   0.376  
+10     5 b.5   0.735  
+11     1 c.1   0.537  
+12     2 c.2   0.971  
+13     3 c.3   0.132  
+14     4 c.4   0.356  
+15     5 c.5   0.535
+
+# 求和
+> df |> select(id,value) |> map(sum)
+$id
+[1] 45
+
+$value
+[1] 6.281929
+
+# 加载tidyverse
+install.packages("tidyverse")
+require(tidyverse)
+# diamonds 数据演示与绘图
+long_f <- function(dfm,value,...) { # 转换成长格式数据
+	ensyms(...) |> # 参数符号化,把...输入的内容统统都转换为符号
+	lapply(\(key) substitute( # 元编程
+		df |> select(v,k) |> mutate(name=as.character(quote(k))) |> rename(var=k), # 表达式模板, 用name记录k的名称
+		list(df=dfm,k=key,v=ensym(value)) # 根据key提取数据,ensym(value) 表示把参数输入的内容是作为符号而不是去计算变量值
+	) |> eval()) |> # 选择列数据
+	do.call(rbind,args=_) |> #合并结果数据(x,y,z) 合并成长结构格式的数据框
+	ggplot(aes(var,{{value}})) + # 映射var到x,value到y,!!ensym(value)表示提取符号的表达式内容，相当于嵌入{{value}}
+	geom_point() + # 散点图
+	facet_grid(~name) #  分组
+}
+long_f(diamonds,price,x,y,z)
+
+# long_f 相当于 pivot_longer
+pivot_longer(diamonds,cols=c(x,y,z),values_to="var") |> ggplot(aes(var,price))+geom_point()+facet_wrap(~name)
+
+# -----------------------------------------------------------------------------------------------------------------------
+# nest 嵌入式函数
+(model_summary<-diamonds |> group_by(cut) |> nest() |> mutate(
+	model=map(data,~lm(price~carat,data=.)),
+	model_summaries = map(model, broom::glance),
+	model_coef = map(model, broom::tidy))
+)
+
+>
+# A tibble: 5 × 5
+# Groups:   cut [5]
+  cut       data                  model  model_summaries   model_coef      
+  <ord>     <list>                <list> <list>            <list>          
+1 Ideal     <tibble [21,551 × 9]> <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+2 Premium   <tibble [13,791 × 9]> <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+3 Good      <tibble [4,906 × 9]>  <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+4 Very Good <tibble [12,082 × 9]> <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+5 Fair      <tibble [1,610 × 9]>  <lm>   <tibble [1 × 12]> <tibble [2 × 5]>
+
+# -----------------------------------------------------------------------------------------------------------------------
+# 模型的摘要
+model_summary %>% unnest(model_summaries)
+
+>
+# A tibble: 5 × 16
+# Groups:   cut [5]
+  cut      data     model r.squared adj.r.squared sigma statistic p.value    df  logLik    AIC
+  <ord>    <list>   <lis>     <dbl>         <dbl> <dbl>     <dbl>   <dbl> <dbl>   <dbl>  <dbl>
+1 Ideal    <tibble> <lm>      0.867         0.867 1388.   140582.       0     1 -1.87e5 3.73e5
+2 Premium  <tibble> <lm>      0.856         0.856 1653.    81725.       0     1 -1.22e5 2.44e5
+3 Good     <tibble> <lm>      0.851         0.851 1421.    27999.       0     1 -4.26e4 8.52e4
+4 Very Go… <tibble> <lm>      0.858         0.858 1482.    73088.       0     1 -1.05e5 2.11e5
+5 Fair     <tibble> <lm>      0.738         0.738 1822.     4539.       0     1 -1.44e4 2.87e4
+# ℹ 5 more variables: BIC <dbl>, deviance <dbl>, df.residual <int>, nobs <int>,
+#   model_coef <list>

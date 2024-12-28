@@ -1,0 +1,50 @@
+data <- read.csv(file.choose())
+
+# 提取最新的价格数据，10天一个分组
+tail(data,100)|>split((\(x) (x-1)%/%10+1)(1:100))
+
+# 提取最新的价格数据，10天一个分组
+tail(data,100) |> split(rep(1:10, rep(10,10)))
+
+# 提取收盘价格
+tail(data,100) |> split(rep(1:10,rep(10,10))) |> sapply(\(p) p['c']) 
+
+# 任意次绘图
+plots <- function(...) {
+  fs <- list(...) # 提取参数
+  op <- par(mfrow=c(length(fs), 1), mar=rep(2, 4)) # 缓存原有的图形参数
+  lapply(fs, \(f) f()) # 批量调用绘图
+  par(op) # 恢复图形参数
+}
+
+# 收盘价格绘图
+tail(data,100) |> split(rep(1:10,rep(10,10))) |> lapply(\(p) \() plot(p[['c']])) |> tail(2) |> do.call(plots,args=_)
+
+# Points GroupNumbers 计算一个点序列ps的gn阶descartes product
+# ps : points 基础点集向量
+# gn : groups numer 分组数量
+# rep(ps, gn) 构建线性点集序列；rep( seq(gn), rep(length(ps), gn) ) ：构建分组序列，seq(gn) 分组标号序列；length(ps) 各个分组的数据长度,
+# 数据笛卡尔积， ps: points点集合 gn: group numer 分组阶数 
+pgn <- function(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( rep(paste0("x", seq(gn)), rep(length(ps), gn)) ) |> expand.grid()
+# 三叉树模式:-1下跌,0不变,1增长
+pgn(ps=-1:1)
+#  三叉树模式：2阶
+pgn(ps=-1:1, gn=2)
+
+# 应用实例-投资5期的3叉树的收益情况收益分布：pmap_dbl(.,sum) 计算收益， group_by(sum 收益分组， summarise(n())  统计收益频数
+library(tidyverse) # 导入数据处理框架 tidyverse，即 pmap, %>%, group_by, summarise, n() 等函数所在的包环境
+pgn(-1:1, 5) %>% mutate(sum=pmap_dbl(.,sum)) |> group_by(sum) |> summarise(n()) %>% { # 注意, 对象是一个tibble : 'sum', 'n()'
+  plot( ., type="b", # 绘制点线图
+        xlab="收益情况", ylab="分布频数",
+        main="三叉树模型-收益分布", sub="投资5期收益分布") # 绘图
+  apply( ., 1, \(e) text(e[1], e[2], labels= paste0(e, collapse=" , ")) ) # 绘制坐标值：收益与频数
+}
+
+# 纯R语言实现
+pgn(-1:1, 5) |> (\(x) transform(x, sum=apply(x, 1, sum))) () |> (\(x) split(x, x$sum)) () |> lapply(nrow) |>( \(y, x=names(y)) { # 数量频数统计, y是list
+  plot(x, y, type="b", # 绘制点线图
+        xlab="收益情况", ylab="分布频数",
+        main="三叉树模型-收益分布", sub="投资5期收益分布") # 绘图
+  p <- (\(nums=unlist(y), v=nums/sum(nums)) paste0(round(v*100, 2), "%")) () # percent 百分比
+  text(x, y, labels=paste(x, y, p, sep=" , "))  # 绘制坐标值：收益与频数
+}) ()

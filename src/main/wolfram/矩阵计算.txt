@@ -1,0 +1,11 @@
+(*计算矩阵特征值*）
+；
+A := {{5, -1, -1}, {3, 1, -1}, {4, -2, 1}}
+LBD := {a, a, a} // DiagonalMatrix
+EQ := Det[A - LBD] // Factor
+EQ
+ROOT := Solve[CP == 0, a] (*特征值*)
+ROOT
+EQS := (A - LBD) /. # & /@ ROOT
+EQS[[1]] // MatrixForm
+LinearSolve[EQS[[1]], {0, 0, 0}]

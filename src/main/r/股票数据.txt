@@ -1,0 +1,91 @@
+# 免费接口
+https://www.mairui.club/
+# 股票列表
+http://api.mairui.club/hslt/list/e56089405bb2317c8
+# 历史交易数据: 600207
+http://api.mairui.club/hszbl/fsjy/600207/dn/e56089405bb2317c8
+
+# -------------------------------------------------------------------
+# 数据写入
+# -------------------------------------------------------------------
+# 导入数据库包文件
+library(httr)
+
+# 设置工作区
+freadme <-file.choose()
+freadme |> gsub("[^\\]+$","",x=_) |> setwd()
+#获取当前工作目录
+getwd()
+#列示工作目录中的数据
+list.files()
+
+
+# 指定股票代码
+code <- 600719 #大连热电
+
+# 读取股票数据函数
+get_stock_data <- function(code){
+  license <- 'e56089405bb2317c8' #API接口证书
+  url = sprintf('http://api.mairui.club/hszbl/fsjy/%s/dn/%s',code, license)
+  response <- GET(url) # GET数据请求
+  result <- content(response, "text") #读取请求内容
+}
+
+# 根据代码读取股票数据
+get_stock_data(code) -> lines
+
+#写入股票数据文件，code 股票代码, lines 股票数据
+write_stockdata <- function(code, lines){
+  filename <- sprintf('%s/日交易数据-%s.json', getwd(), code)
+  write(lines, filename)
+}
+
+# 写入股票交易数据
+write_stockdata(code, lines)
+
+# -------------------------------------------------------------------
+# 数据读取
+# -------------------------------------------------------------------
+
+
+# json文件读取包
+install.packages("jsonlite")
+install.packages("tidyverse")
+install.packages("lubridate")
+
+#安装接口数据包
+library(tidyverse)
+library(lubridate)
+library("jsonlite")
+
+# 设置工作区
+freadme <-file.choose()
+freadme |> gsub("[^\\]+$","",x=_) |> setwd()
+
+#获取当前工作目录
+getwd()
+#列示工作目录中的数据
+list.files()
+
+# 读取股票代码,fjson json数据文件的名称
+read_stockcode <- function(fjson, code) {
+  #从文件名中提取股票代码
+  code <- ifelse(missing(code), gsub('.+[^0-9]([0-9]+)\\.json', '\\1', fjson,), code)
+  #读取数据
+  jsdata <- fromJSON(fjson)
+  #csv file
+  fcsv <- sprintf("%s.csv", code)
+
+  #转换数据
+  write.csv(jsdata, fcsv, row.names=F)
+
+  #再次读取数据
+  data <- read_csv(fcsv, 
+    col_types=cols(.default=col_double(),
+    d=col_date(format='%Y-%m-%d')))
+}
+
+# 选择json文件
+read_stockcode(file.choose()) -> dstock; head(dstock);
+#  sort by c
+dstock |> arrange(c)

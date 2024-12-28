@@ -1,0 +1,127 @@
+<div>
+  <div class="highlight" style="padding:2px;">{{name}} |
+    <span v-if="!current.company">
+      username <input type="text" v-model="current.user.name" /> &nbsp;
+      password <input type="password" v-model="current.user.password" /> &nbsp;
+      <button @click="on_login_click($event)">login</button>
+    </span>
+    <span v-else>
+      <span>{{current.user.name}}#{{current.user.id}}</span> @
+      <a :href="current.company.website">{{current.company.name}} [ {{current.company.id}} ]</a> &nbsp;
+      <select v-model="current.default_warehouse_id">
+        <option v-for="wh in warehouses" :value="wh.id">{{wh.name}}</option>
+      </select> &nbsp;
+      <button @click="on_logout_click($event)">logout</button> &nbsp;
+      <button @click="on_reset_click">reset</button>
+    </span>
+  </div>
+  <hr />
+  <div>
+    <div style="font-weight:bold;margin-bottom:8px;">{{component}}</div>
+    <div>
+      <!--数据表-->
+      <div style="float:left;width:220px;height:453px;overflow:auto;border:solid 1px red;">
+        <data-table style="width:100%" :data="tables" :trclass="(line,i)=>current.tbl_index==i?'highlight':'tdclass'"
+          @trclick="on_tables_trclick" />
+      </div>
+      <div style="float:left;width:679px;overflow:auto;margin-left:2px;">
+        <!--表数据-->
+        <div style="height:263px;overflow:auto;border:solid 1px red;">
+          <data-table style="width:100%" :data="tbldata"
+            :trclass="(line,i)=>is_tbldata_selected(i)?current.tbldata_index==i?'highlight2':'highlight':'tdclass'"
+            :tdrender="tbldata_td_render" @trclick="on_tbldata_trclick" />
+        </div>
+        <div style="height:21px;border:solid 1px red;margin-top:1px;padding:0px;vertical-align: middle;">
+          <select v-if="current_tbl=='t_order'" v-model="btype" @change="on_btype_change($event)">
+            <option v-for="bt in btypes" :value="bt">{{bt}}</option>
+          </select> &nbsp;
+          <!--全选和清空-->
+          <span v-if="lines.length>0">
+            <button @click="()=>current.lines_selected=lines.map((e,i)=>i)">all</button>
+            &nbsp;
+          </span><span v-if="lines.length>0">
+            <button @click="()=>current.lines_selected=[]">clear</button> &nbsp;
+          </span>
+          <!--功能按钮-->
+          <span v-if="is_invoice_btn_enabled()">
+            <button @click="on_invoice_btn_click($event)">invoice</button>
+            &nbsp;
+          </span><span v-if="is_receipt_btn_enabled()">
+            <button @click="on_receipt_btn_click($event)">receipt</button>
+            &nbsp;
+          </span><span v-if="is_freight_btn_enabled()">
+            <button @click="on_freight_btn_click($event)">freight</button>
+            &nbsp;
+          </span><span v-if="is_pmt_btn_enabled()">
+            <button @click="on_payment_btn_click($event)">payment</button>&nbsp;
+          </span>
+          <!--刷新试算平衡表-->
+          <span v-if="current_tbl=='t_order'">
+            <button v-if="is_logined" @click="()=>refresh_trial_balance(company_id)">trialbal</button>&nbsp;
+            &nbsp;
+          </span>
+          <span style='color:red;font-weight:bold;' v-if="this.current.lines_selected.length>0">[{{
+            this.current.lines_selected.map(i=>`${i}#${lines&&lines[i]?lines[i]["id"]:"-"}`).join(",")
+            }}]</span>
+        </div>
+        <div style="height:163px;overflow:auto;border:solid 1px red;margin-top:1px;">
+          <div>
+            <data-table style="width:100%" :data="datalines" :tdrender="tbldata_td_render"
+              :trclass="(line,i)=>is_line_selected(i)?current.line_index==i?'highlight2':'highlight':'tdclass'"
+              @trclick="on_lines_trclick" />
+          </div>
+        </div>
+      </div>
+      <!--行项目-->
+      <div style="height:455px;width:348px;border:solid 0px blue ;float:left;margin-left:2px;overflow:auto">
+        <div>
+          <data-table v-if="1!=1" style="width:100%" :data="warehouses"
+            :trclass="(line,i)=>is_warehouse_selected(i)?current.warehouse_index==i?'highlight2':'highlight':'tdclass'"
+            @trclick="on_warehouse_trclick" />
+        </div>
+        <div style="height:30%;border:solid 1px red;overflow: auto;">
+          <data-table style="width:100%" :data="accts"></data-table>
+        </div>
+        <div style="border:solid 1px red;height:21px;margin-top:1px;margin-bottom:1px;">
+          <input v-if="is_logined" style="width:98%;margin:2px;border:none" v-model="pvtkeys" />
+        </div>
+        <div style="height:63.6%;border:solid 1px red;overflow:auto;">
+          <div v-if="is_logined" id="ztree" class="ztree left"></div>
+        </div>
+      </div>
+      <div style="clear:both"></div>
+      <div>
+        <hr>
+        <div v-if="current_tbl=='t_order' && is_logined" style="border:solid 1px red;height:60px;width:99%">
+          <div
+            style="float:left;width:220px;height:60px;text-align:center;background-color:red;color:white;overflow:hidden;">
+            <a style='font-size:45px;font-weight:bold;color:white;' :href="this.current.counterpart.website">
+              {{this.current.counterpart.name}}
+            </a>
+          </div>
+          <div style="float:left;margin:2px;">
+            <!--客户操作-->
+            <div>
+              <!--交易头寸-->
+              <select v-model="order_position">
+                <option value="1">LONG</option>
+                <option value="-1">SHORT</option>
+              </select> &nbsp;
+              <!--交易对手方-->
+              <select v-model="counterpart_id" @change="on_counterpart_change($event)">
+                <option v-for="part in counterparts" :value="part.id">{{part.id}}#{{part.name}}</option>
+              </select> &nbsp;
+              <select v-model="current.counterpart.default_warehouse_id">
+                <option v-for="wh in current.counterpart.warehouses" :value="wh.id">{{wh.name}}</option>
+              </select> &nbsp;
+            </div>
+            <!--订单操作-->
+            <div style="margin-top:2px;">
+              <button @click="on_order_btn_click($event)">order</button> &nbsp;
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

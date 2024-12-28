@@ -1,0 +1,32 @@
+# Things you might want to change
+
+# options(papersize="a4")
+# options(editor="notepad")
+# options(pager="internal")
+
+# set the default help type
+# options(help_type="text")
+  options(help_type="html")
+
+# set a site library
+# .Library.site <- file.path(chartr("\\", "/", R.home()), "site-library")
+
+# set a CRAN mirror
+# local({r <- getOption("repos")
+#       r["CRAN"] <- "http://my.local.cran"
+#       options(repos=r)})
+
+# Give a fortune cookie, but only to interactive sessions
+# (This would need the fortunes package to be installed.)
+#  if (interactive()) 
+#    fortunes::fortune()
+
+rws_home <- "F:/slicef/ws/rws"
+dailywork_home <- sprintf("%s/dwk/%s", rws_home, Sys.Date()) 
+if ( !dir.exists(dailywork_home) )  dir.create(dailywork_home)
+setwd(dailywork_home)
+
+# 自定义的预先加载的自定义函数文件列表
+myfiles <- "db/sqlquery.R;utils/envs.R" |> strsplit("[,;]+") |> unlist()
+scriptlog <- sprintf(fmt="%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) 
+

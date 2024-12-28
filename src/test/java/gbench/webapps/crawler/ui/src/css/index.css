@@ -1,0 +1,30 @@
+th {
+    color: white;
+    background-color: red;
+    border: solid 1px red;
+}
+
+td {
+    border: solid 1px red;
+}
+
+tr:hover {
+    color: black;
+    background-color: lightyellow;
+    cursor: pointer;
+}
+
+.highlight {
+    color: black;
+    background-color: bisque;
+    cursor: pointer;
+}
+
+ul,
+li {
+    overflow: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: solid 1px red;
+}

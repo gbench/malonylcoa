@@ -1,0 +1,300 @@
+# 函数对象
+# 
+# 基本概念：
+# 1) environment ：是（frame，enclosing）二元结构。
+#  Environments can be thought of as consisting of two things. A frame, consisting of a set of symbol-value pairs, 
+#  and an enclosure, a pointer to an enclosing environment.
+# 1.1）frame 是 一个{name1=value1,name2=value2,...,} 结构的变量集合。
+# 1.2）enclosing 是指向包被环境enclosing environment 的指针构成.
+# 
+# 2) Promise objects：Promise 对象.（promise objects are almost only seen implicitly，几乎没有办法去判断一个对象是否是promise）
+#   2.1) Promise objects are part of R's lazy evaluation mechanism. Promise是一种R lazy evaluation 的实现机制。
+#     Promise是一三元组 (expression,value,environment) 。They contain three slots: a value,an expression, and an environment. 
+#    2.2) when function is called the arguments are matched（match 的标志就是为每个 formal argument 创建出相应的 promise）
+#     2.2.1）each of the formal arguments is bound to a promise. The expression that was given for that formal argument ,
+#     2.2.2）a pointer to the environment the function was called from are stored in the promise.
+#     2.2.3）When the argument is accessed, the stored expression is evaluated in the stored environment。
+#       2.2.3.1) argument（stored expression）只有在真正被使用的时候，才会进行计算，计算后的结果会被保存在Promise的环境里面。
+#       2.2.3.2) substitute拥有操作Promise的expression slot 中的内容能力。这样就可以以程序的方式去控制，
+#         到底是去 使用Promise里面expression 还是去 计算&获得 该expression中的数值。也就是 动态编辑 expression语法树
+#         元编程能力：在运行中去自动的修改代码，运行过程中的编译（暂停），然后去结合具体数据，继续运行。
+#        
+# 3) 函数: 在R中函数是被定义为一种被称为闭包closure的结构。
+#    3.1) Functions (or more precisely, function closures) have three basic components: 
+#      3.1.1) a formal argument list,函数形式参数列表。
+#      3.1.2) a body: 函数的定义体，usually a collection of statements in braces but
+#        it can be a single statement, a symbol or even a constant.
+#      3.1.3) 定义环境：environment: 每个closure 都会包含一个environment指针，可以通过environment(fun) 来获得这个定义&声明环境。
+#        我们可以 访问或是更改这个函数的 定义&声明环境，以 获得，设置，改变 函数的性质 或 行为。
+#        定义环境：function's environment is the environment that was active at the time that the function was created.
+#        Any symbols bound in that environment are captured and available to the function. 定义环境中的符号function可以进行访问
+#        This combination of the code of the function and the bindings in its environment is called a'function closure', 
+#        a term from functional programming theory. 闭包其实就是 代码与环境的绑定组合，这是一种functional programming理论的术语。
+#        the term 'function', but use 'closure' to emphasize the importance of the attached environment。
+#        用closure去强调:这是一种附加在environment上的计算功能。
+#   3.2)closures的成分是可修改的。 It is possible to extract and manipulate the three parts of a closure object using formals, body, and environment constructs 
+#     3.2.1) formals 操作函数的形式参数
+#     3.2.2) body 操作函数的语句序列
+#     3.2.3) environment 操作函数的定义环境
+#   3.3 计算环境：when a function is called, a new environment (called the evaluation environment) is created, 
+#     whose enclosure  is the environment from the function closure 。在函数子被调用时,会创建一个相应的 计算环境evaluation environment
+#     This new environment is initially populated with the unevaluated arguments to the function; 计算环境 最初只包含 unevaluated arguments
+#     as evaluation proceeds, local variables are created within it。随着函数执行 local variables 也会在evaluation environment给予创建。
+#  3.4 There is also a facility for converting functions to and from list structures using as.list and as.function。
+#    3.4.1) as.list 会把函数对象转成一个列表
+#    3.4.2) as.function 会把列表转成一个函数
+#
+# closure 闭包
+closure <- function(i) function(x) x^i
+#创建闭包函数
+c4 <- closure(4)
+#执行函数
+c4(1:10)
+# 读取c4定义环境中的i变量的值
+get("i",environment(c4))
+# 修改c4定义环境中的变量的值
+assign("i",-4,environment(c4))
+# c4结构变成x^-4的函数了
+c4(1:10)
+
+# 调用堆栈的结构
+# The parent frame of a function evaluation is the environment in which the function was called. 
+# 运行环境的parent frame上级frame就是那个调用该函数的运行环境。
+# 注意 这个环境不一定是当前运行环境的帧号-1的那frame环境，也不是那个定义该函数的环境。
+# It is not necessarily numbered one less than the frame number of the current evaluation, 
+# nor is it the environment within which the function was defined. 
+# 上级环境需要使用sys.parent来进行获得，n默认为1,表示直接上级，父亲，n=2,  就是父亲的父亲，依次类推
+# sys.parent returns the number of the parent frame if n is 1 (the default), the grandparent if n is 2, and so on. 
+#
+# 从严格意义上说，所谓的 sys.parent and parent.frame 里面的上级parent，指的一个是interpreted function的函数的环境。
+# Strictly, sys.parent and parent.frame refer to the context of the parent interpreted function. 
+# 所以  internal functions 也就是那些不一定通过 set contexts 即建立运行环境的方式去执行的函数，
+# 就是时有时无的出现在调用堆栈call stack)，结果就是 internal functions 可能会被sys.*族的函数所统计不到
+# 同样 S3方法也会做成一些令人吃惊的事情。 
+# So internal functions (which may or may not set contexts and so may or may not appear on
+# the call stack) may not be counted, and S3 methods can also do surprising things.
+
+# 从 lazy evaluation 的执行结果上来看，出现在call stack上的函数是仅当他们处于运行的时候/状态，而不是在他们被调用call的时候/状态
+As an effect of lazy evaluation, these functions look at the call stack at the time they are evaluated, not at the time they are called. 
+#将一个调用call 采用函数参数的形式进行传递不是一个看起来令人满意的想法。
+Passing calls to them as function arguments is unlikely to be a good idea, 
+# 不过，这些函数仍然会在 call stack（从他们被调用call的时候的那些计算环境） 上看到并且占有相应数量frames：
+but these functions still look at the call stack and count frames
+from the frame of the function evaluation from which they were called.
+# 
+# 由此，当以默认值参数的方式把一个函数提供给另一个函数的时候。他们是在被调用函数的执行环境中进行运行的。
+# 他们的frame计数也是从这个时候（lazy计算的时候）开始的。
+# Hence, when these functions are called to provide default values for function arguments, 
+# they are evaluated in the evaluation of the called function and 
+# they count frames accordingly (see e.g. the envir argument of eval).
+
+# --------------------------------------------------------------------------------------
+#  函数调用堆栈的说明
+inner_f<-function(x) list(
+    call=sys.call(), # 函数调用
+    calls=sys.calls(), # 调用堆栈
+    nframe=sys.nframe(), # 数据帧号 从1开始
+    frms=sys.frames(), # 系统调用堆栈只有一层，也就是调用参数2的那一层
+    flag=identical(sys.frame(sys.nframe()),environment()), # 当前运行环境与sys.frames()的最后一项相同
+    ge=sys.frame(), # 工作空间全局环境，相当于sys.frame(0)
+    frm0=sys.frame(0), # 工作空间全局环境。全局环境是是所有
+    pfs=sys.parents(), # frame 的上级环境帧号索引。
+    fs=sapply(1:sys.nframe(),\(i) parent.env(sys.frame(i))) # 运行环境的eclosure 都是全局环境
+  );
+outer_f<-function(x) inner_f(x);
+outer_f(x);
+
+# --------------------------------------------------------------------------------------
+$call
+function(x) inner_f(x)
+
+$calls
+$calls[[1]]
+outer_f(x)
+
+$calls[[2]]
+function(x) inner_f(x)
+
+
+$nframe
+[1] 2
+
+$frms
+$frms[[1]]
+<environment: 0x0000016dcb7eed00>
+
+$frms[[2]]
+<environment: 0x0000016dcb7eee18>
+
+
+$flag
+[1] TRUE
+
+$ge
+<environment: R_GlobalEnv>
+
+$frm0
+<environment: R_GlobalEnv>
+
+$pfs
+[1] 0 1
+
+$fs
+$fs[[1]]
+<environment: R_GlobalEnv>
+
+$fs[[2]]
+<environment: R_GlobalEnv>
+
+# --------------------------------------------------------------------------------------
+# 外层x:1,内层x:2, f的运行环境 构成了 sys.function()即f(1) 的定义环境。
+# 运行环境列表，就是函数调用堆栈,sys.frames.  列表最后一项就是当前运行函数的evaluation environment
+f<-function(x) function(x) list(
+    outer_x = get("x",sys.function()|>environment()), # 外层x
+    inner_x = get("x",sys.frame(sys.nframe())), # 内层x
+    frms=sys.frames(), # 系统调用堆栈只有一层，也就是调用参数2的那一层
+    flag=identical(sys.frame(sys.nframe()),environment()), # 当前运行环境与sys.frames()的最后一项相同
+    ge=sys.frame(), # 工作空间全局环境，相当于sys.frame(0)
+    frm0=sys.frame(0) # 工作空间全局环境。
+  );f(1)(2);
+
+# --------------------------------------------------------------------------------------
+$outer_x
+[1] 1
+
+$inner_x
+[1] 2
+
+$frms
+$frms[[1]]
+<environment: 0x0000016dcbf8b510>
+
+
+$flag
+[1] TRUE
+
+$ge
+<environment: R_GlobalEnv>
+
+$frm0
+<environment: R_GlobalEnv>
+
+# --------------------------------------------------------------------------------------
+
+# 构造函数结构，do.call(what=f,args=list(x=1,y=2)) 等价于 f(x=1,y=2). do.call 拆分函数与参数
+> sapply(1:10,\(i) \(x) x^i) |> lapply(do.call,args=list(x=1:10)) |> do.call(rbind,args=_)
+      [,1] [,2]  [,3]    [,4]    [,5]     [,6]      [,7]       [,8]       [,9] [,10]
+ [1,]    1    2     3       4       5        6         7          8          9 1e+01
+ [2,]    1    4     9      16      25       36        49         64         81 1e+02
+ [3,]    1    8    27      64     125      216       343        512        729 1e+03
+ [4,]    1   16    81     256     625     1296      2401       4096       6561 1e+04
+ [5,]    1   32   243    1024    3125     7776     16807      32768      59049 1e+05
+ [6,]    1   64   729    4096   15625    46656    117649     262144     531441 1e+06
+ [7,]    1  128  2187   16384   78125   279936    823543    2097152    4782969 1e+07
+ [8,]    1  256  6561   65536  390625  1679616   5764801   16777216   43046721 1e+08
+ [9,]    1  512 19683  262144 1953125 10077696  40353607  134217728  387420489 1e+09
+[10,]    1 1024 59049 1048576 9765625 60466176 282475249 1073741824 3486784401 1e+10
+> sapply(1:10,\(i) \(x) x^i) |> lapply(do.call,args=list(x=1:10)) |> do.call(cbind,args=_)
+      [,1] [,2] [,3]  [,4]   [,5]    [,6]     [,7]      [,8]       [,9]       [,10]
+ [1,]    1    1    1     1      1       1        1         1          1           1
+ [2,]    2    4    8    16     32      64      128       256        512        1024
+ [3,]    3    9   27    81    243     729     2187      6561      19683       59049
+ [4,]    4   16   64   256   1024    4096    16384     65536     262144     1048576
+ [5,]    5   25  125   625   3125   15625    78125    390625    1953125     9765625
+ [6,]    6   36  216  1296   7776   46656   279936   1679616   10077696    60466176
+ [7,]    7   49  343  2401  16807  117649   823543   5764801   40353607   282475249
+ [8,]    8   64  512  4096  32768  262144  2097152  16777216  134217728  1073741824
+ [9,]    9   81  729  6561  59049  531441  4782969  43046721  387420489  3486784401
+[10,]   10  100 1000 10000 100000 1000000 10000000 100000000 1000000000 10000000000
+
+# promise lazy 计算的实例
+> f<-function(i) function(x) x^i # 定义函数：i是位于定义f的环境的（），注意这里的i,是共享的,是lazy计算的。
+> environment(f) # f 的定义函数
+<environment: R_GlobalEnv>
+# 注意,由于i是lazy计算的promise,这里调用f(i) 其实并没有指定i值，只记录下f的形参数i指向R_GlobalEnv的i而已。 f.i->R_GlobalEnv.i
+> fs<-list();for(i in 1:5)fs[[i]]<-f(i) 
+# 直到lapply的调用fs中函数的时候，也就是计算 x^i 的时候，由于需要获得i的具体值，
+# 又由于i 是promise是他是不会函数调用的时候分配空间的，所以是lapply的调用给i分配变量空间。
+# 根据promise的也就是f的closure的关系, promise.i 是引用R_GlobalEnv.i 的，而此时R_GlobalEnv.i 是5
+# lapply的调用就把fs中的各个元素promise.i 都给同意的实例化成了5，这也是为何f[[i]] 计算的结构都都一样的原因。
+> lapply(fs,do.call,args=list(1:10)) |> do.call(cbind,args=_) 
+         [,1]   [,2]   [,3]   [,4]   [,5]
+ [1,]      1      1      1      1      1
+ [2,]     32     32     32     32     32
+ [3,]    243    243    243    243    243
+ [4,]   1024   1024   1024   1024   1024
+ [5,]   3125   3125   3125   3125   3125
+ [6,]   7776   7776   7776   7776   7776
+ [7,]  16807  16807  16807  16807  16807
+ [8,]  32768  32768  32768  32768  32768
+ [9,]  59049  59049  59049  59049  59049
+[10,] 100000 100000 100000 100000 100000
+> sapply(fs,\(f.i) get("i",envir=environment(f.i))) #查看f.i函数中的运行环境中的i的变量
+[1] 5 5 5 5 5
+
+# promise lazy 计算的实例
+> f2<-function(i) {force(i);function(x) x^i} # 定义函数，这里使用force(i)保证每次调用f2都立即计算i. 而不必等待真正x^i的时候才计算。
+> fs2<-list();for(i in 1:5)fs2[[i]]<-f2(i) #生成函数
+> lapply(fs2,do.call,args=list(1:10)) |> do.call(cbind,args=_)
+      [,1] [,2] [,3]  [,4]   [,5]
+ [1,]    1    1    1     1      1
+ [2,]    2    4    8    16     32
+ [3,]    3    9   27    81    243
+ [4,]    4   16   64   256   1024
+ [5,]    5   25  125   625   3125
+ [6,]    6   36  216  1296   7776
+ [7,]    7   49  343  2401  16807
+ [8,]    8   64  512  4096  32768
+ [9,]    9   81  729  6561  59049
+[10,]   10  100 1000 10000 100000
+> sapply(fs2,\(f.i2) get("i",envir=environment(f.i2))) #查看f.i2函数中的运行环境中的i的变量
+[1] 1 2 3 4 5
+
+# ------------------------------------------------------------------------------------------------------------------------------------------
+# 函数的符号计算(evalq)的原理
+# ------------------------------------------------------------------------------------------------------------------------------------------
+# 函数(closure)相当于符号计算的evalq , 也就是创建一个带有x=1的frame环境而后在此frame里进行计算表达式:1+x
+(\(x) 1+x)(1) == evalq(1+x,list(x=1) |> list2env())
+
+#--------------------------------------------------------------------------------------
+# lazy 计算的一个设计实例（排序初探）
+#--------------------------------------------------------------------------------------
+# 数据排序(默认倒序), 根据输入的键名列表来进行数据排序，用substitute把'...'中输入的参数替换（联想C语言的宏）成具体的符号：列名key
+descend0 <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) |> eval(envir=data)
+
+# DEMO-A: 倒序 descend0(, X1, X2) ，相当于 descend0(F, X1, X2)  因为 \(data, decreasing=T, ...)  中 decreasing 默认值为T
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() ) (2) |> descend0(, X1, X2)
+
+#  注意：上面的写的descend0有问题，由于eval函数计算的参数是lazy延迟计算，并且是在 envir=data 环境中进行的，于是对于
+#  data 是动态生成的数据（data是一个表达式）的情况，会出现data表达式无法计算的情况,获取不到data表达式结构中的变量符号
+descend0_uneval <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) 
+
+# 演示运算过程, descend0_uneval 中的data是layzy计算的：这里返回descend0_uneval实际计算的表达即动态data,data表达式
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend0_uneval(F, X1, X2) ) (2)
+
+# 显示，实际eval的数据data表达式，这里需要注意data被替换成了'expand.grid(data.frame(matrix(rep(1:n, n), ncol = n)))'
+# substitute 类似于 C++的inline或者C的宏替换
+>
+expand.grid(data.frame(matrix(rep(1:n, n), ncol = n)))[order(X1, 
+    X2, decreasing = F), ]
+
+# DEMO-B：（由于参数data的lazy,promise求值而引发的错误)
+# 注意DEMO-B 与 DEMO-A的区别，DEMO-B 的descend0是动态计算的
+# 而DEMO-A大data是在计算descend0的时候就已经计算的。
+# DEMO-B 的 call参数(2) 是写在descend0后边，计算descend0的时候data并未计算,是lazy求值
+# DEMO-A 的 call参数(2) 是写在descend0前面，计算descend0的时候data已经计算过了
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend0(F, X1, X2) ) (2)
+
+# 它会提示找不到变量n。这个因为不在eval(envir=data)中的data里面，需要把parent.frame()调用环境加入到
+# eval的运算环境 list2env(data, parent=parent.frame())
+# R 版本是：R version 4.4.1 (2024-06-14 ucrt) ， 当 升级成4.4.2 的时候 ，它就报错：Error in 1:n : NA/NaN argument 了，更加难懂了
+>
+Error in eval(substitute(data[order(..., decreasing = decreasing), ]),  : 
+  object 'n' not found
+
+#--------------------------------------------------------------------------------------
+# 所以eval的时候需要用 envir=list2env(data, parent=parent.frame()) 的形式进行eval
+#--------------------------------------------------------------------------------------
+descend <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) |> eval(envir=list2env(data, parent=parent.frame()))
+# 正序排序
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend(F, X1, X2) ) (2)

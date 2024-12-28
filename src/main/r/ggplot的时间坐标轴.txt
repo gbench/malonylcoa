@@ -1,0 +1,81 @@
+我有一段时间序列xts格式的交易数据prices，prices的元素是每个交易日具体到每分钟成交价格，由于交易时间的开盘时间的连续，
+prices 的时间索引是不连续的，首先，价格数据只在工作日才存在，其次，每个工作日，只在:
+9:00-10:15，10:30-11:30, 13:00-15:00, 21:00-23:00 才进行交易。
+请编写使用ggplot绘制出该prices的分时图。需要把各个价格时间进行连续显示，
+也就是10:15的下一刻是10:30，11:30的下一刻是13:00，15:00 下一刻21:00，23:00的下一刻是次日的9:00。如果
+今日是周一，次日就是本周周二，如果今日是周五，次日是下周一，其余依次类推。
+
+# 加载必要的库
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(xts)
+library(zoo)
+
+# 示例数据（假设 prices 是一个 xts 对象）
+prices <- local (\(n) {
+	library(xts)
+	init <- strptime('2025-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+	tms <- seq( init, by="1 min", length.out=n )  # 时间序列
+	xts(data.frame(Close=rnorm(n), Open=rnorm(n)), order.by=tms) # 时间序列
+})(1000)
+# 这里你需要用你自己的 prices 数据替换上面的示例数据
+
+# 定义一个函数，将交易时间映射到连续的时间索引
+map_trading_time <- function(time) {
+  hour <- hour(time)
+  minute <- minute(time)
+  
+  # 映射交易时间到连续时间
+  if (hour == 9 && minute == 0) {
+    return(0)  # 9:00 AM
+  } else if (hour == 10 && minute == 15) {
+    return(75)  # 10:15 AM
+  } else if (hour == 10 && minute == 30) {
+    return(90)  # 10:30 AM
+  } else if (hour == 11 && minute == 30) {
+    return(150)  # 11:30 AM
+  } else if (hour == 13 && minute == 0) {
+    return(240)  # 1:00 PM
+  } else if (hour == 15 && minute == 0) {
+    return(420)  # 3:00 PM
+  } else if (hour == 21 && minute == 0) {
+    return(780)  # 9:00 PM
+  } else if (hour == 23 && minute == 0) {
+    return(900)  # 11:00 PM
+  } else {
+    # 对于交易时间内的其他分钟，我们可以根据需要进行细分，这里简单处理为返回 NA
+    return(NA)
+  }
+}
+
+# 应用映射函数，并过滤掉 NA 值
+prices_df <- as.data.frame(prices)
+prices_df$continuous_time <- sapply(index(prices), map_trading_time)
+prices_df <- na.omit(prices_df)
+
+# 处理跨日连续性
+prices_df$day_index <- as.numeric(factor(as.Date(index(prices_df)), levels = sort(unique(as.Date(index(prices_df))))))
+prices_df$overall_index <- prices_df$day_index * 900 + prices_df$continuous_time
+
+# 绘制分时图
+ggplot(prices_df, aes(x = overall_index, y = Close)) +  # 假设 prices.Close 是价格列，根据实际情况调整
+  geom_line() +
+  scale_x_continuous(breaks = seq(0, max(prices_df$overall_index), by = 30),
+                     labels = function(x) {
+                       # 自定义 x 轴标签，以显示实际交易时间
+                       minute_labels <- c("9:00", "10:15", "10:30", "11:30", "13:00", "15:00", "21:00", "23:00")
+                       day_labels <- c("Mon", "Tue", "Wed", "Thu", "Fri")
+                       day_index <- floor(x / 900)
+                       minute_index <- x %/% 30  # 每30分钟一个刻度
+                       minute_label <- minute_labels[ceiling(minute_index / 30)]
+                       if (minute_index == 0 || minute_index == 25 || minute_index == 50 || 
+		minute_index == 75 || minute_index == 150 || minute_index == 210 || 
+		minute_index == 330 || minute_index == 450) {
+                         return(paste0(day_labels[day_index %% 5 + 1], " ", minute_label))
+                       } else {
+                         return("")
+                       }
+                     }) +
+  labs(title = "分时图", x = "时间", y = "价格") +
+  theme_minimal()

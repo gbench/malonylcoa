@@ -1,0 +1,200 @@
+# 用符号化的方法表达与记录就是语言。
+# 结构：是一种对部分与整体之间的关系的描述。
+# 典型结构就是：
+# 1) 序列：整体的各个部分的枚举集合。x1<-list(1,2,3,4)
+# 2) 排序：调整序列中各个元素比邻关系。x2<-list(1,3,2,4)
+# 3) 分组：是一种对 序列 进行分区&分段的 结构划分 或者说是 组织。x3<-list(list(1,3),list(2,4))
+# 3.1) 递归的进行的分组，即分组里再次分组就产生了层级。层级的出现就构成了条理与逻辑，可以说分组就意味着，甚至就是逻辑。
+# 3.1.1) x4<-list(list(list(1),list(3)),list(list(2),list(4))) , 索引结构 x4[[2]][[2]][[1]]
+# 3.1.2) x5<-list(odds=list(st=list(1),nd=list(3)),even=list(st=list(2),nd=list(4))) , 
+# 3.2) 访问：从整体中提取部分的方法：通过类似于化学分子式的方式去 组织与编写记号 去 表达&对应整体中的各个部分&细节。
+# 3.2.1） 索引访问：以命名编码的记号形式去表达部分。例如: 4 可以用 x4[[2]][[2]][[1]]
+# 3.2.2） 命名访问 ：用属性名称的记号形式去表达部分。例如: 4 可以用 x5$even$nd[[1]]
+
+# 索引属性
+> x4<-list(list(list(1),list(3)),list(list(2),list(4)));x4
+[[1]]
+[[1]][[1]]
+[[1]][[1]][[1]]
+[1] 1
+
+
+[[1]][[2]]
+[[1]][[2]][[1]]
+[1] 3
+
+
+
+[[2]]
+[[2]][[1]]
+[[2]][[1]][[1]]
+[1] 2
+
+
+[[2]][[2]]
+[[2]][[2]][[1]]
+[1] 4
+
+# 命名属性
+> x5<-list(odds=list(st=list(1),nd=list(3)),even=list(st=list(2),nd=list(4))) ;x5
+$odds
+$odds$st
+$odds$st[[1]]
+[1] 1
+
+
+$odds$nd
+$odds$nd[[1]]
+[1] 3
+
+
+
+$even
+$even$st
+$even$st[[1]]
+[1] 2
+
+
+$even$nd
+$even$nd[[1]]
+[1] 4
+
+# 索引空间，对整体的各种可行性的划分&组织，或者说部分的定义方式。
+# 一个由n阶每阶n元素:n^n的整体的索引空间:ids
+> ids<-function(n) structure(rep(1:n,n),dim=c(n,n))|> data.frame() |> expand.grid(); 
+> ids(3) # 注意索引是从X3,X2,X1的属性进行读取的，比如：10 的索引 是 2.1.1
+   X1 X2 X3
+1   1  1  1
+2   2  1  1
+3   3  1  1
+4   1  2  1
+5   2  2  1
+6   3  2  1
+7   1  3  1
+8   2  3  1
+9   3  3  1
+10  1  1  2
+11  2  1  2
+12  3  1  2
+13  1  2  2
+14  2  2  2
+15  3  2  2
+16  1  3  2
+17  2  3  2
+18  3  3  2
+19  1  1  3
+20  2  1  3
+21  3  1  3
+22  1  2  3
+23  2  2  3
+24  3  2  3
+25  1  3  3
+26  2  3  3
+27  3  3  3
+
+# 一个阶层结构为c(2,3,4)：3阶且各阶元素数量依次为2,3,4,即2*3*4个元素构成的整体的索引空间。
+> expand.grid(lapply(c(2,3,4),seq))
+   Var1 Var2 Var3
+1     1    1    1
+2     2    1    1
+3     1    2    1
+4     2    2    1
+5     1    3    1
+6     2    3    1
+7     1    1    2
+8     2    1    2
+9     1    2    2
+10    2    2    2
+11    1    3    2
+12    2    3    2
+13    1    1    3
+14    2    1    3
+15    1    2    3
+16    2    2    3
+17    1    3    3
+18    2    3    3
+19    1    1    4
+20    2    1    4
+21    1    2    4
+22    2    2    4
+23    1    3    4
+24    2    3    4
+
+# 排序 按照Var1,Var2进行排序
+> c(2,3,4) |> lapply(seq) |> expand.grid() |> (\(x) with(x,x[order(Var1,Var2),]))()
+   Var1 Var2 Var3
+1     1    1    1
+7     1    1    2
+13    1    1    3
+19    1    1    4
+3     1    2    1
+9     1    2    2
+15    1    2    3
+21    1    2    4
+5     1    3    1
+11    1    3    2
+17    1    3    3
+23    1    3    4
+2     2    1    1
+8     2    1    2
+14    2    1    3
+20    2    1    4
+4     2    2    1
+10    2    2    2
+16    2    2    3
+22    2    2    4
+6     2    3    1
+12    2    3    2
+18    2    3    3
+24    2    3    4
+
+# 投掷两个色子出现10点的机会集合
+> rep(6,2) |> lapply(seq) |> expand.grid() |> (\(x,n=10) x[apply(x,1,sum)==n,])()
+   Var1 Var2
+24    6    4
+29    5    5
+34    4    6
+
+# 投掷两个色子出现4点的机会集合
+> rep(6,2) |> lapply(seq) |> expand.grid() |> (\(x,n=10) x[apply(x,1,sum)==n,])(4)
+   Var1 Var2
+24    6    4
+29    5    5
+34    4    6
+
+# 设置并排序：substitute(x$key) 表示模版替换,生成表达式语句:指定对象名的字段提取，倒序按照Var1进行排序
+> rep(2,2) |> lapply(seq) |> expand.grid() |> (\(x,key=Var1) x[order(eval(substitute(x$key)),decreasing = T),])()
+  Var1 Var2
+2    2    1
+4    2    2
+1    1    1
+3    1    2
+# 制定排序字段，倒序按照Var2进行排序
+> rep(2,2) |> lapply(seq) |> expand.grid() |> (\(x,key=Var1) x[order(eval(substitute(x$key)),decreasing = T),])(Var2)
+  Var1 Var2
+3    1    2
+4    2    2
+1    1    1
+2    2    1
+
+# 生成模拟数据：SQL语句: drop table if exists t_data; create table t_data(id int primary key auto_increment,a int,b int,c int);
+> rep(2,3) |> lapply(seq) |> expand.grid()|> apply(1,(\(x) cat("insert into t_data(a,b,c) values(",paste0(x,collapse=","),");\n")))
+insert into t_data(a,b,c) values( 1,1,1 );
+insert into t_data(a,b,c) values( 2,1,1 );
+insert into t_data(a,b,c) values( 1,2,1 );
+insert into t_data(a,b,c) values( 2,2,1 );
+insert into t_data(a,b,c) values( 1,1,2 );
+insert into t_data(a,b,c) values( 2,1,2 );
+insert into t_data(a,b,c) values( 1,2,2 );
+insert into t_data(a,b,c) values( 2,2,2 );
+NULL
+
+# 模板字符串的拼接
+> strsplit("insert into %1 values (%2)","%\\d")[[1]] |> append("t_data(a,b,c)",1) |> append("1,2,3",3) |> paste0(collapse="")
+[1] "insert into t_data(a,b,c) values (1,2,3)"
+
+# 字符串的模板替换
+> "insert into %tbl values (%vs)" |> gsub(x=_,"%tbl","t_data(a,b,c)") |> gsub(x=_,"%vs","1,2,3")
+[1] "insert into t_data values (1,2,3)"
+
+

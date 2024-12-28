@@ -1,0 +1,32 @@
+# apply 的使用示例
+
+# 测试1 - lead
+local({
+	x <-1:10 # 数据
+	seq(0,5) |> lapply(\(i) append(if(i<1) x else x[-seq(i)], rep(NA,i))) |> # 求取lead
+		do.call('cbind',args=_) |> # 组装成行向量, 结果class 为： "matrix" "array"
+		na.omit() |> # 去除NA向量
+		apply(1,\(e) paste0(e,collapse="-")) # 显示数据
+})
+
+# 测试2 - lag
+local({
+	library(purrr) # 引入函数操作函数
+	lagn <- \(x,n) if(n<1) x else append(rep(NA,n),x[seq(n)-length(x)-1]) # 后续函数
+	x <-1:10 # 数据
+	seq(0,5) |> lapply(partial(lagn,x=x)) |> do.call('cbind',args=_) |> na.omit() |>
+		apply(1,\(e) paste0(e,collapse="-")) # 显示数据
+})
+
+# 测试3 - lag
+local({
+	partial <- function (f,...) { # 将f  curry 化
+		args<-list(...); # 参数
+		function(...) do.call(f, c(args, list(...))) #  curry 化后的函数
+	}
+	lagn <- function (x,n) if(n<1) x else append(rep(NA,n),x[seq(n)-length(x)-1]) # 后续函数
+	x <-1:10 # 数据
+	seq(0,5) |> lapply(partial(lagn,x=x)) |> do.call('cbind',args=_) |> na.omit() |>
+		apply(1,\(e) paste0(e,collapse="-")) # 显示数据
+})
+

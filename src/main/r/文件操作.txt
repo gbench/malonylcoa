@@ -1,0 +1,83 @@
+# -------------------------------------------------------------------------------------------------------------
+# R 环境设置
+# -------------------------------------------------------------------------------------------------------------
+# 编辑 %R_HOME%/etc/Rprofile.site
+# 比如：D:\sliced\develop\r\R-4.4.2\etc
+# 在文件最后添加一下代码：
+# 设置R的每日工作空间的代码（增加变量：rws_home:R语言-项目工作空间; dailywork_home:R语言-日工作/历史底稿空间）：
+rws_home <- "F:/slicef/ws/rws"
+dailywork_home <- sprintf("%s/%s", rws_home, Sys.Date()) 
+if ( !dir.exists(dailywork_home) )  dir.create(dailywork_home)
+setwd(dailywork_home)
+
+# -------------------------------------------------------------------------------------------------------------
+# 工作区位置
+# -------------------------------------------------------------------------------------------------------------
+# 查看工作区位置
+getwd()
+
+# 修改工作区位置:设置为文件所在的目录为工作空间
+file.choose()|>sub("[^/\\]+$","",x=_)|>setwd()
+
+# 查看工作区域中变量内容
+ls()|>(\(x)lapply(x,\(v) substitute(get(v),list(v=v))|>eval())|>structure(names=x))()
+
+#内容示例
+#$dailywork_home
+#[1] "F:/slicef/ws/rws/2024-12-23"
+#
+#$rws_home
+#[1] "F:/slicef/ws/rws"
+
+# -------------------------------------------------------------------------------------------------------------
+# 数据文件
+# -------------------------------------------------------------------------------------------------------------
+# 创建文件夹
+"a/b/c"|>strsplit("/")|>unlist()|>Reduce(x=_,\(acc,a)paste0(acc,"/",a),accumulate=T)|>lapply(dir.create)
+
+# 查看工作区中的文件
+list.files()
+
+# 查看工作区中的csv数据文件
+paste(getwd(),"/",list.files(recursive=T,pattern="\\.csv$"),sep="")
+
+# 写入文件
+file.3rd <- "a/b/c/data3rd.csv" # 文件名称
+(\(n=3,x=rep(seq(n),n))x|>split(rep(seq(n),rep(n,n)))|>expand.grid()|>structure(names=paste0("x",seq(n))))()|>write.csv(file.3rd,row.names=F) # 写入3级阵列数据
+
+# 读取文件
+data.3rd <- read.csv(file.3rd,header=T);data.3rd # 读取并打印
+
+# 单开文件对话框选择文件
+file <- file.choose();file
+
+# 删除文件夹&文件
+unlink("a",recursive=T) # 递归删除
+
+# 查看工作区中的文件
+list.files()
+
+# -------------------------------------------------------------------------------------------------------------
+# 元编程
+# -------------------------------------------------------------------------------------------------------------
+# 偏函数表达式pf的逆向管道计算（函数复合f.g.h）的演示示例
+local({
+  library(data.table) # fread 所在的库
+  
+  # 像lapply(FUN=fread) 这样的表达式被称为偏函数表达式pf, 因为它缺少一个参数X
+  # 这个参数需要在eval_pfs的时候进行动态添加,于是这里提供一个使用偏函数表达式实现函数curry化的简单的计算方式
+  # pfs：偏函数表达式向量或列表，x0：初始参数, default：没有参数时候，默认参数的参数名称
+  eval_pfs <- \(pfs, x0, default='x') { # 元计算
+    Reduce(\(pf, x) { #  pf偏函数表达式, value表达式参数
+      (\ (keys, j=match(names(pf)[-1], keys) ) { # 初始函数, j为pf提供的参数向量
+        (if( length(j) < 1 ) keys[1] else keys[-j][1]) |> # -j 表示pf没有提供的参数向量, 选区第一个做诶空缺的参数名key
+          (\ (key) if(is.null(key) | is.na(key)) default else key) () |> # 使用默认default 替代空缺的参数key
+          (\ (key) pf[[key]] <<- x) () # 为偏函数表达式补充参数key的值为x
+        eval(pf) # 计算
+      }) (names(formals(get(pf[[1]])))) # 
+    }, x=pfs, init=x0, right=T ) # 使用Reduce模拟逆向管道（函数复合f.g.h）计算
+  } # 计算偏函数表达式
+  
+  # 偏函数表达式的计算(以逗号表达式构造表达式列表作为管道)，lapply(FUN=fread) 被称为偏函数表达式(缺少一个参数X,会在eval_pfs运算的时逐次传递的动态添加)
+  expression( rbindlist(), lapply(FUN=fread), head(n=5), grep(pattern="ma",value=T) ) |> eval_pfs( list.files(pattern="\\.csv$") ) # 读取前5个甲醛ma期货合约的数据
+})

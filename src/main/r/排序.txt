@@ -1,0 +1,9 @@
+#--------------------------------------------------------------------------------------
+# 排序初探
+#--------------------------------------------------------------------------------------
+# 数据排序(默认倒序), 根据输入的键名列表进行数据排序，用substitute把...中输入的参数做成具体的符号：列名key
+descend <- \(data, decreasing=T, ...) substitute(data[order(..., decreasing=decreasing), ]) |> eval(envir=list2env(data, parent=parent.frame()))
+# 正序排序
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend(F, X1, X2) ) (2)
+# 逆序排序
+(\(n) rep(1:n, n) |> matrix(ncol=n) |> data.frame() |> expand.grid() |> descend(, X1, X2) ) (2)

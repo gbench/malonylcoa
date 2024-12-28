@@ -1,0 +1,228 @@
+# 自定义函数 编写式例
+# 
+# 二分法 求值：过程方式。缓存fa, 减少一次调用。注意，不要小看这减少的一次调用，对性能影响是很大的，详见 后面的性能分析。
+bisect <- function (f, a=0, b=1, eps=1e-10) {
+	(\(fa) { # 缓存f(a)的计算结果
+		if (fa*f(b)>0) # 相同符号则放弃运算
+			NA # 结果不可用
+		else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
+			if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
+			((a+b)/2) |> (\(x) assign(ifelse(fa*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
+		}
+		(a+b)/2 
+	}) (f(a)) # 计算f(a) 并将结果缓存到fa
+}
+
+# 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
+npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
+# 使用管道的一种写法, 不过这样的写法，运行效率要比上一种低。管道增加了函数call的调用深度。
+# npv <- function (rate, pmts, price) seq_along(pmts) |> lapply(\(i) (1+rate)^-i*pmts[i]) |> append(price) |> do.call(sum,args=_)
+
+# 按揭贷款的支付周期的实际利率计算。
+pmts <- -rep((10000+30*0.5*12)/12,12) # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
+price <- 10000 # 1万元现金资产的当前价值
+rate <- bisect(\(r) npv(r, pmts, price)) # 二分法求实际利率，1万元，日利息0.5元的月利率
+
+# 支付的利率折现值
+pvs <- pmts*((1+rate)^-(1:length(pmts)))
+# 结果汇总
+vs <- data.frame(rate, pvs, pmts, interest=pvs-pmts); vs; # 打包列向量组成data.frame
+
+>
+          rate       pvs      pmts  interest
+1  0.002755332 -846.0023 -848.3333  2.331017
+2  0.002755332 -843.6777 -848.3333  4.655629
+3  0.002755332 -841.3595 -848.3333  6.973854
+4  0.002755332 -839.0476 -848.3333  9.285708
+5  0.002755332 -836.7421 -848.3333 11.591210
+6  0.002755332 -834.4430 -848.3333 13.890378
+7  0.002755332 -832.1501 -848.3333 16.183227
+8  0.002755332 -829.8636 -848.3333 18.469777
+9  0.002755332 -827.5833 -848.3333 20.750043
+10 0.002755332 -825.3093 -848.3333 23.024044
+11 0.002755332 -823.0415 -848.3333 25.291797
+12 0.002755332 -820.7800 -848.3333 27.553318
+
+# 对列向量组，按照列，进行累计汇总
+apply(vs, 2, sum)
+
+>
+         rate           pvs          pmts      interest 
+ 3.306398e-02 -1.000000e+04 -1.018000e+04  1.800000e+02 
+
+# ------------------------------------------------------------------------------------------
+# 性能统计: 递归的运行效率
+# ------------------------------------------------------------------------------------------
+
+# 二分法 求值：过程方式,  不换缓存fa
+bisect1 <- function (f, a=0, b=1, eps=1e-10) {
+	if (f(a)*f(b)>0) # 相同符号则放弃运算
+		NA
+	else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
+		if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
+		((a+b)/2) |> (\(x) assign(ifelse(f(a)*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
+	}
+	(a+b)/2
+}
+
+# 二分法 求值:  递归方式1
+bisect2 <- function (f, a=0, b=1, eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  (\(x) ifelse(abs(b-a)<eps, x,
+	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f, x, b, eps) ))) ((a+b)/2))) ()
+
+# 二分法 求值:  递归方式2
+# bisect2较bisect3来说,使用一层fa=f(a)的函数调用来减少一次f计算，bisect2 使用fa 参数来保留中间的计算结果
+bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse(f(a)*f(b)>0, NA,  (\(x) ifelse(abs(b-a)<eps, x,
+	ifelse(f(a)*f(x)<0, bisect3(f, a, x, eps), bisect3(f, x, b, eps) ))) ((a+b)/2)) 
+
+# 各个函数的计算统计
+(\(fs) { # 分别执行fs中指定的函数n次,并进行统计运算效率
+	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
+	sapply(fs, \(f) f( \(r) npv(r, pmts, price) ) ) |> structure(names=args)
+})(c(bisect, bisect1, bisect2, bisect3))
+
+>
+     bisect     bisect1     bisect2     bisect3 
+0.002755332 0.002755332 0.002755332 0.002755332
+
+# 所有值是否相等
+.Last.value==mean(.Last.value)
+
+>
+bisect bisect1 bisect2 bisect3 
+   TRUE    TRUE    TRUE    TRUE 
+
+# ------------------------------------------------------------------------------------------
+# bisect,bisect1,bisect2,bisect3的执行效率, 多一层函数调用就降低一层效率，bisect 的高效 来源于就是其中函数调用的次数比较少
+# bisect2较bisect3来说,使用一层fa=f(a)的函数调用来减少一次f计算，bisect2 使用fa参数缓存来保留中间的计算结果
+# 此外从执行时间：bisect1>bisect, bisect3>bisect2 可以看出，参数计算的数据缓存是非常影响效率的，于是可以的话请多使用参数缓存。
+# 
+(\(fs, n=1000) { # 分别执行fs中指定的函数n次,并进行统计运算效率
+	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
+	xs <- sapply(fs, \(f) lapply(1:n, \(i) f(\(r) npv(r, pmts, price))) |> system.time()) # 分别执行n次测试函数并统计函数执行时间。
+	dimnames(xs)[[2]] <- args # 修改数组维度名称
+	xs
+})(c(bisect, bisect1, bisect2, bisect3), 10000) # 批量运行1万次
+
+>
+           bisect bisect1 bisect2 bisect3
+user.self    6.14    8.02   15.28   16.70
+sys.self     0.00    0.04    0.07    0.07
+elapsed      6.17    8.08   15.36   16.86
+user.child     NA      NA      NA      NA
+sys.child      NA      NA      NA      NA
+
+# ------------------------------------------------------------------------------------------
+# 补充一点 fc: function call 函数调用的内容，这样我们就可以设计一个 my_mutate辅助工作。
+# 一个典型用途就是：把一个按揭mortgage贷款，给分解成一组 折扣债券。
+# 这样就可 做一些资产证券化或是金融工程上的应用。
+# 折扣债券模型(货币时间价值)是一切金融模型的基础。
+# ------------------------------------------------------------------------------------------
+# 函数调用call相当于lisp的S表达式，即 f(x,y,z) 相当于 lisp 的(f,x,y,z)
+# 可以像访问列表一样的去访问call对象。
+( f<-function(u,v) match.call() |> (\(x) list( call=x, mode=mode(x) , type=typeof(x), names=names(x) )) ()  ) (u=f(x),v=g(y)) -> fc; fc
+
+>
+$call
+(f <- function(u, v) (function(x) list(call = x, mode = mode(x), 
+    type = typeof(x), names = names(x)))(match.call()))(u = f(x), 
+    v = g(y))
+
+$mode
+[1] "call"
+
+$type
+[1] "language"
+
+$names
+[1] ""  "u" "v"
+
+# 读取 match.call() 中的数据
+# ------------------------------------------------------------------------------------------
+# 按照名称进行访问
+fc$names |> sapply(\(i) fc$call[[i]])
+
+>
+[[1]]
+NULL
+
+$u
+f(x)
+
+$v
+g(y)
+
+
+# 按照索引进行访问，
+(length(fc$call)) |> seq() |> sapply(\(i) fc$call[[i]])
+
+>
+[[1]]
+(f <- function(u, v) (function(x) list(call = x, mode = mode(x), 
+    type = typeof(x), names = names(x)))(match.call()))
+
+[[2]]
+f(x)
+
+[[3]]
+g(y)
+
+# 通过call的访问，我们可以实现一个类似于 tidyverse 的 mutate类似的函数功能
+my_mutate <- function (data, ...) { # 确保第一个参数为data, 其余为用户的指定。
+	call <- match.call() # 获取函数调用
+	exprs <- 2:length(call) |> lapply(\(i) call[[i]] ) # 提取函数调用的参数列表
+	names <- 2:length(call) |> lapply(\(i) names(call)[[i]] ) # 提取函数调用的参数列表
+	myenv <- list2env(data, parent=sys.frame()) # 把数据转换成运行环境并将当前运行环境作为新新建的data的环境的父亲环境。
+	vs <- seq_along(exprs) |> lapply(\(i) assign(names[[i]], eval(exprs[[i]], env=myenv), env=myenv)) # 执行函数调用计算结果值,并更新e中数据的状态
+	do.call(cbind,vs[-1]) |> structure(dimnames=list(NULL, names[-1])) # 把结果值拼装成向量,去除data参数
+}
+# 函数调用
+data.frame(x=1:5, y=6:10) |> my_mutate(x=x, y=y, u=x*2, v=x+y)
+
+>
+     x  y  u  v
+[1,] 1  6  2  7
+[2,] 2  7  4  9
+[3,] 3  8  6 11
+[4,] 4  9  8 13
+[5,] 5 10 10 15
+
+#  综合 上面消费贷款的例子，分解按揭贷款为一组折扣债券
+# 一个按揭贷款，可以分解为一组以折扣债券，折扣债券的数量为按揭贷款的期数。
+data.frame(rate, pvs, pmts) |> my_mutate(rate=rate, pvs=pvs, pmts=pmts, # 原来的变量
+	interest=pvs-pmts, # 利息
+	r=abs(interest/pvs), # 折扣利息，这个本质就是把一个按揭贷款，分解成一系列的 discount bond的折价利率
+	nrate=seq_along(rate)*rate, # n倍的rate
+	diff=r-nrate # 倍率差值， 折扣利率 与 nrate 之间的差，二者近乎相等，这也是为何 年利率=月利率*12的原因
+) 
+
+>
+             rate       pvs      pmts  interest           r       nrate          diff
+ [1,] 0.002755332 -846.0023 -848.3333  2.331017 0.002755332 0.002755332 -9.107298e-18
+ [2,] 0.002755332 -843.6777 -848.3333  4.655629 0.005518255 0.005510664  7.591853e-06
+ [3,] 0.002755332 -841.3595 -848.3333  6.973854 0.008288792 0.008265995  2.279648e-05
+ [4,] 0.002755332 -839.0476 -848.3333  9.285708 0.011066962 0.011021327  4.563485e-05
+ [5,] 0.002755332 -836.7421 -848.3333 11.591210 0.013852787 0.013776659  7.612800e-05
+ [6,] 0.002755332 -834.4430 -848.3333 13.890378 0.016646288 0.016531991  1.142970e-04
+ [7,] 0.002755332 -832.1501 -848.3333 16.183227 0.019447486 0.019287322  1.601631e-04
+ [8,] 0.002755332 -829.8636 -848.3333 18.469777 0.022256402 0.022042654  2.137473e-04
+ [9,] 0.002755332 -827.5833 -848.3333 20.750043 0.025073057 0.024797986  2.750711e-04
+[10,] 0.002755332 -825.3093 -848.3333 23.024044 0.027897473 0.027553318  3.441557e-04
+[11,] 0.002755332 -823.0415 -848.3333 25.291797 0.030729672 0.030308650  4.210225e-04
+[12,] 0.002755332 -820.7800 -848.3333 27.553318 0.033569674 0.033063981  5.056929e-04
+
+# ------------------------------------------------------------------------------------------
+# 迭代函数
+iterate <- function (init,f,n=10) if(n<1) c() else c(init, iterate(f(init), f, n-1))
+
+# 数据规模
+n <- 10
+# 等比(几何）级数的收敛序列
+(a <- iterate(1, \(x) x/2, 10) |> cumsum()) |> plot()
+
+# 等比(几何）级数的不收敛
+(b <- iterate(1, \(x) 2*x, 10) |> cumsum()) |> plot()
+
+# 数据绘图
+matplot(data.frame(a=seq(n), b=seq(n)+2*n), data.frame(a, b), pch="ab")
+
+
