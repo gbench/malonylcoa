@@ -451,7 +451,7 @@ system.time({ #  集群与并行计算
 
   execute(\(...) { # 集群运算
     # 数据运算-获得所有甲醇ma期货合约的日交易数据tickdata
-    sqlquery("show tables") |> getElement(1) |> ( \(x, i=grep("ma", x)) x[i] ) ()  |> # 提取合约tickdata数据表名
+    sqlquery("show tables") |> compose(partial(grep, pattern="ma", value=T), unlist) ()  |> # 提取合约tickdata数据表名
       foreach( tbl=_,  .packages=pkgs ) %dopar%  { # 并行计算
         sql <- sprintf(fmt="select * from %s", tbl) # 生成查询SQL语句
         startime <-Sys.time() # 开始时间
