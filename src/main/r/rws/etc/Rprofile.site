@@ -22,7 +22,7 @@
 #    fortunes::fortune()
 
 rws_home <- "F:/slicef/ws/rws"
-dailywork_home <- sprintf("%s/%s", rws_home, Sys.Date()) 
+dailywork_home <- sprintf("%s/dwk/%s", rws_home, Sys.Date()) 
 if ( !dir.exists(dailywork_home) )  dir.create(dailywork_home)
 setwd(dailywork_home)
 
