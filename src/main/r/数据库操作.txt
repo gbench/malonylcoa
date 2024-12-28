@@ -22,7 +22,7 @@ library(xts) # xts 函数所在库
 dbfun <- function(f, ...) {
   dbcfg <- list(...) # 数据库连接参数配置
   defaultcfg <- list(drv=MySQL(), host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认连接参数
-  readcfg <- \(key) (\(x=dbcfg[[key]]) if (!is.null(x)) x else defaultcfg[[key]]) () #  带有默认值的配置参数key的值读取
+  readcfg <- \(key) dbcfg[[key]] %||% defaultcfg[[key]] #  带有默认值的配置参数key的值读取
   
   # 执行SQL语句 
   function (sql) {
@@ -437,15 +437,16 @@ system.time({ #  集群与并行计算
     ncores <- detectCores() - 1 # 集群核数量
     cl <- makeCluster(ncores) # 创建一个多核集群
     registerDoParallel(cl) # 注册集群，register the parallel backend with the foreach package. doParallel 是进程级别的并行
+    on.exit({ # 关闭集群
+      stopImplicitCluster() #  explicitly close the implicitly created cluster. 对应于registerDoParallel(cl)
+      stopCluster(cl) # 关闭
+      print(sprintf("关闭集群, time: %s",Sys.time()))
+    }) # 关闭集群
     varlist <- if(length(vars2exports)>1) vars2exports else strsplit(vars2exports, ",")[[1]]  # 需要导出到集群节点的object的名称
     clusterExport(cl, varlist) # 导出变量到各个集群节点
-    print(sprintf("cluster ncores:%s", ncores)) # 打印集群核数量
-    # 函数调用
-    results <- f(...)  # 运行集群运算
-    # 关闭集群
-    stopImplicitCluster() #  explicitly close the implicitly created cluster.
-    stopCluster(cl) # 关闭
-    results # 返回结果
+    print(sprintf("启动/运行集群, cluster ncores:%s, time: %s", ncores, Sys.time())) # 打印集群核数量
+    
+    f(...)  # 运行 集群运算 & 返回结果
   } # execute
 
   execute(\(...) { # 集群运算
