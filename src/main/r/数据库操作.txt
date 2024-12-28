@@ -418,11 +418,15 @@ with(klinedata, `2024-12-19`) |> with(xts(data.frame(Open,High,Low,Close,Volume)
 
 # ----------------------------------------------------------------------------------------------------------------
 # 集群与并行计算
-# 参考： https://zhuanlan.zhihu.com/p/353329988
+#
+# 参考：vignette("gettingstartedParallel")
+# doParallel介绍 ：
+# The doParallel package provides a parallel backend for the foreach/%dopar% function using the parallel package of R 2.14.0 and later.
+# To register doParallel to be used with foreach, you must call the registerDoParallel function.
 # ---------------------------------------------------------------------------------------------------------------
 system.time({ #  集群与并行计算
   print("集群与并行计算")
-  pkgs <- strsplit("RMySQL,purrr,tidyverse,foreach,doParallel",  ",") |> unlist() # 并行计算需要各个程序包
+  pkgs <- strsplit("RMySQL,purrr,tidyverse,doParallel",  ",") |> unlist() # 并行计算需要各个程序包(doParallel)
   flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 生成加载标志
   
   if(!all(flags)) { # 存在没有安装的程序包
@@ -436,7 +440,7 @@ system.time({ #  集群与并行计算
   execute <- function(f, vars2exports, ...) { # 集群运算
     ncores <- detectCores() - 1 # 集群核数量
     cl <- makeCluster(ncores) # 创建一个多核集群
-    registerDoParallel(cl) # 注册集群，register the parallel backend with the foreach package. doParallel 是进程级别的并行
+    registerDoParallel(cl) # register doParallel to be used with foreach 将doParallel作为foreach的后端
     on.exit({ # 关闭集群
       stopImplicitCluster() #  explicitly close the implicitly created cluster. 对应于registerDoParallel(cl)
       stopCluster(cl) # 关闭
@@ -444,7 +448,7 @@ system.time({ #  集群与并行计算
     }) # 关闭集群
     varlist <- if(length(vars2exports)>1) vars2exports else strsplit(vars2exports, ",")[[1]]  # 需要导出到集群节点的object的名称
     clusterExport(cl, varlist) # 导出变量到各个集群节点
-    print(sprintf("启动/运行集群, cluster ncores:%s, time: %s", ncores, Sys.time())) # 打印集群核数量
+    print(sprintf("启动/运行集群:%s, cluster ncores:%s, time: %s", getDoParName(), getDoParWorkers(), Sys.time())) # 打印集群核数量
     
     f(...)  # 运行 集群运算 & 返回结果
   } # execute
