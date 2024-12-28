@@ -1,0 +1,13 @@
+# ‌元编程（Metaprogramming）‌是一种编程范式，允许程序在运行时生成或修改代码。
+# 元编程通过操作程序实体，在编译时生成运行时所需的常数、类型和代码。它通过利用编程语言提供的模板机制，
+# 在编译时生成程序，然后再进行编译，最终生成目标代码。‌
+
+# 加载库
+library(data.table)
+
+# 生成函数复合表达式,逆向管道
+expression( rbindlist(), lapply(FUN=read.csv), head(n=3), sort(decreasing=T), grep(pattern="\\.csv$", value=T) ) |> # 管道代码
+  Reduce(\(f, x, keys=names(formals(get(f[[1]]))), k=setdiff(keys, names(f[-1]))[1] ) {
+       f[[k]]<-x; print(f); f # 编辑表达式;生成程序代码;打印代码表达式&返回生成的表达式
+  } , x=_, init=quote(list.files()), right=T) |> # 生成表达式语句
+eval() # 运行程序生成的代码
