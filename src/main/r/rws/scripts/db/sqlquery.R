@@ -32,8 +32,8 @@ if(!all(flags)) { # 存在没有安装的程序包
 dbfun <- function(f, ...) {
   dbcfg <- list(...) # 数据库连接参数配置
   defaultcfg <- list(drv=MySQL(), host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认连接参数
-  readcfg <- \(key) (\(x=dbcfg[[key]]) if (!is.null(x)) x else defaultcfg[[key]]) () #  带有默认值的配置参数key的值读取
-  
+  readcfg <- \(key) dbcfg[[key]] %||% defaultcfg[[key]] #  带有默认值的配置参数key的值读取 
+
   # 执行SQL语句 
   function (sql) {
     # 数据库连接
