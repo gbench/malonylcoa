@@ -99,6 +99,26 @@ sqlexecute <- function(sql, simplify=T, ...) {
     }, ...)(sql) # 连接使用函数
 }
 
+# 创建sql表数据
+ctsql <- function( dfm ) {
+  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+  dfm |> lapply(typeof) |> (\(x) # 获取字段定义
+    sprintf("create table %s (\n  %s \n)\n", 
+      tbl, paste(names(x), x, collapse=",\n  ") 
+    ) # sprintf
+  ) () # SQL 创建语句
+}
+
+# 创建sql表数据
+insql <- function( dfm ) {
+  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+  keys <- names( dfm ) # 列名
+  sprintf( "insert into %s (%s) values \n  %s\n", tbl, # 插入数据
+    paste(keys, collapse=", "), # 列名
+    paste0( apply(dfm, 1, \(x) sprintf('(%s)', paste("'", x, "'", sep='', collapse=", "))), collapse=",\n  " ) # 数据值
+  ) # SQL 插入语句
+}
+
 # ----------------------------------------------------------------------------------------------------------------
 # 基本使用示例
 # ----------------------------------------------------------------------------------------------------------------
