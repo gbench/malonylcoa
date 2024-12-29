@@ -126,6 +126,9 @@ insql <- function( dfm ) {
 # 查看默认数据库（ctp2）中的数据表
 sqlquery("show tables")
 
+# 查看默认数据库（ctp2）中的数据表, 扁平化的方式一个不带有名称的字符串向量
+sqlquery("show tables") |> Reduce(x=_, c)
+
 # 查看数据库名称与该数据库中的数据表
 sqlquery(c("select database()", "show tables"))
 
