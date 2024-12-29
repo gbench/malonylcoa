@@ -17,3 +17,6 @@ f = \(n=2) \() iterate(1,\(x) 2*x, 20) |> plot(type="b",main=n,sub=n)
 
 #自定义, 绘制一个圆圈
 plots(\() c(cos,sin) |> lapply(\(f) f(seq(-pi, pi, len=100))) |> do.call(plot, args=_))
+
+# 线性回归散点图与回归线
+(\(mod=lm(mpg~wt, mtcars)) mtcars |> with({plot(wt, mpg); lines(wt, predict(mod, data.frame(wt)), type="b", col='red')})) ()
