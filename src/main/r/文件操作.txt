@@ -58,6 +58,23 @@ unlink("a",recursive=T) # 递归删除
 list.files()
 
 # -------------------------------------------------------------------------------------------------------------
+# RDS（R对象文件） 文件的读取
+# saveRDS and readRDS provide the means to save a single R object to a connection (typically a file) and to restore the object
+# -------------------------------------------------------------------------------------------------------------
+
+#  导出指定环境env中的数据变量到指定目标位置x，默认为环境为 .GlobalEnv
+(\(x='objects', env=sys.frame()) {
+  if(!dir.exists(x)) dir.create(x); 
+  lapply( ls(env), \(e, object=get(e), file=paste0(x, '/',e, '.rds')) saveRDS(object, file) ) # 对象保存
+}) ()
+
+# 导入指定目标位置x中的rds对象到指定的目标环境env，默认为环境为 .GlobalEnv
+(\(x='objects', env=sys.frame()) {
+  if(!dir.exists(x)) stop(sprintf('%s目录不存在!',x))
+  lapply( list.files(x, pattern="\\.rds$", full.names=T), \(file, name=sub(".+[/\\]([^/\\]+)\\.rds$", "\\1", file)) assign(name, readRDS(file), env) )
+}) ()
+
+# -------------------------------------------------------------------------------------------------------------
 # 元编程
 # -------------------------------------------------------------------------------------------------------------
 # 偏函数表达式pf的逆向管道计算（函数复合f.g.h）的演示示例
