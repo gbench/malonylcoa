@@ -77,14 +77,14 @@ compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
 } # compute_kline 
 
 # 交易数据母函数
-tickdata.genfun<- function(symbol=ma505, date=Sys.date(), tbl=paste0('t_', symbol, '_',strftime(date, '%Y%m%d')), n=20){
+tickdata.genfun <- function(symbol=ma505, date=Sys.Date(), tbl=paste0('t_', symbol, '_',strftime(date, '%Y%m%d')), n=20){
   symbol <- substitute(symbol) |> deparse()
-  sql <- sprintf('select * from %s where Id>(select max(Id)-%s from %s)', tbl, n, tbl)
-  \(f) f(sql)
+  sql <- sprintf('select * from %s where Id > ( select max(Id)-%s from %s )', tbl, n, tbl)
+  \(f) f( sql )
 }
 
-# 远程交易数据
-tickdata.h10ctp2 <- function(...) tickdata.genfun(...) (sqlquery.h10ctp2)
+# 远程交易数据,192.168.1.10
+tickdata.h10ctp2 <- function(...) tickdata.genfun(...) ( sqlquery.h10ctp2 )
 
-# 本地交易数据
-tickdata <- function(...) tickdata.genfun(...) (sqlquery)
+# 本地交易数据:localhost
+tickdata.lhctp2 <- function(...) tickdata.genfun(...) ( sqlquery )
