@@ -76,9 +76,15 @@ compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
     with(xts(order.by=Period, data.frame(Open,High,Low,Close,Volume)))
 } # compute_kline 
 
-# 交易数据
-tickdata.h10ctp2 <- function(symbol=ma505, tbl=paste0('t_', symbol, '_',strftime(Sys.Date(), '%Y%m%d')), n=20){
+# 交易数据母函数
+tickdata.genfun<- function(symbol=ma505, date=Sys.date(), tbl=paste0('t_', symbol, '_',strftime(date, '%Y%m%d')), n=20){
   symbol <- substitute(symbol) |> deparse()
   sql <- sprintf('select * from %s where Id>(select max(Id)-%s from %s)', tbl, n, tbl)
-  sqlquery.h10ctp2(sql)
+  \(f) f(sql)
 }
+
+# 远程交易数据
+tickdata.h10ctp2 <- function(...) tickdata.genfun(...) (sqlquery.h10ctp2)
+
+# 本地交易数据
+tickdata <- function(...) tickdata.genfun(...) (sqlquery)
