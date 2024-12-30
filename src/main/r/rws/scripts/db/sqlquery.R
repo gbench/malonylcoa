@@ -89,5 +89,44 @@ sqlexecute <- function(sql, simplify=T, ...) {
     }, ...)(sql) # 连接使用函数
 }
 
+# 创建数据表SQL
+# dfm 数据框数据
+ctsql <- function( dfm ) {
+  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+  dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
+    n=as.integer(Reduce(\(acc,a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
+    default_type=sprintf('varchar(%s)',n) # 默认类型
+  ) switch(t, # 类型判断
+    `logical`='bool', # 布尔类型
+    `integer`=if(cls=='factor') default_type else 'integer', # 列表类型
+    `double`='double', # 列表类型
+    `list`='json', # 列表类型
+    default_type # 默认类型 
+  )) |> (\(x) # 获取字段定义
+    sprintf("create table %s (\n  %s \n)\n", 
+      tbl, paste(names(x), x, collapse=",\n  ") 
+    ) # sprintf
+  ) () # SQL 创建语句
+}
+
+# 表数据插入SQL
+# dfm 数据框对象
+insql <- function( dfm ) {
+  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+  keys <- names( dfm ) # 列名
+  values <- dfm %>% lapply(\(e, t=typeof(e), cls=class(e)) # 列值处理
+    switch(t, # 元素类型判断
+    `logical`=e, # 逻辑类型，保持原值不变
+    `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
+    `double`=e, # 双精度，，保持原值不变
+    `list`=sprintf("'%s'",toJSON(e)), # 整数类型，保持原值不变
+    sprintf("'%s'",e) # 默认类型
+  )) |> pmap(\(...) paste(..., sep=',', collapse=',')) |> sprintf(fmt='(%s)')|>paste(collapse=',\n  ') # 值列表
+  sprintf( "insert into %s (%s) values \n  %s\n", tbl, # 插入数据
+    paste(keys, collapse=", "), # 列名列表
+    values # 值列表
+  ) # SQL 插入语句
+}
+
 # 自定义主机与数据库
 sqlquery.h10ctp2 <- partial(sqlquery, host="192.168.1.10", dbname="ctp2")
