@@ -1,0 +1,76 @@
+R的帮助文档
+
+基本概念：
+package包：A package is loaded from a library by the function library(). 由library所加载的对象叫做包
+library库：Thus a library is a directory containing installed packages; 存放package包资料信息的目录
+                the main library is R_HOME/library, 通常是指 R_HOME/library目录
+                but others can be used, 也可以被具体指定。比如设置环境变量R_LIBS，或是 使用 .libPaths(). 
+                for example by setting the environment variable R_LIBS or using the R function .libPaths().
+默认包文件：getOption("defaultPackages")
+
+
+
+R是以主题来进行组织起帮助文档。
+比如：
+？libraray 
+打开的 http://127.0.0.1:31846/library/base/html/library.html 页面中
+Description：library and require load and attach add-on packages.
+就时同时包含有library，require 两个API，而不是向一般程序语言那样的指一个函数，一个函数的写。
+
+另外R语言时函数式语言，所以理论上，R语言所有变量符号，都是概念，这些概念将以Arguments参数的形式
+去组合成函数策略进而去控制与处理数据。例如：
+Arguments: 
+package, help：the name of a package, given as a name or literal character string, or a character string, 
+                         depending on whether character.only is FALSE (default) or TRUE.
+由于R语言时非强类型语言，于是他的API文档会为每个参数都提供一组参数类型的说明。比如此处：就说明了
+package参数的意义 name of a package， 他的类型 可以是 name、字符串（literal character string）和与变量，
+并且由参数character.only来标注实际类型:F时为name, T为字符串常量
+于是：
+> lib <- "doParallel"
+> library(lib, character.only=T) # 此处加载的是doParallel
+> library(lib, character.only=F) # 此处加载的是lib
+
+将doParallel插入到search()列表的第10项
+>  library(doParallel, pos=10) 
+Loading required package: foreach
+
+Attaching package: ‘foreach’
+
+The following objects are masked from ‘package:purrr’:
+
+    accumulate, when
+
+Loading required package: iterators
+Loading required package: parallel
+> search()
+ [1] ".GlobalEnv"         "package:parallel"   "package:iterators" 
+ [4] "package:foreach"    "package:graphics"   "package:grDevices" 
+ [7] "package:utils"      "package:datasets"   "package:jsonlite"  
+[10] "package:doParallel" "package:quantmod"   "package:TTR"       
+[13] "package:xts"        "package:zoo"        "package:stats"     
+[16] "package:lubridate"  "package:forcats"    "package:stringr"   
+[19] "package:dplyr"      "package:purrr"      "package:readr"     
+[22] "package:tidyr"      "package:tibble"     "package:ggplot2"   
+[25] "package:tidyverse"  "package:RMySQL"     "package:DBI"       
+[28] "package:methods"    "Autoloads"          "package:base"     
+
+参数概念：R library trees 是一个文件位置
+> .libPaths()
+[1] "D:/sliced/develop/r/R-4.4.2/library"
+
+#库文件位置
+lib.loc： a character vector describing the location of R library trees to search through, or NULL. 
+             The default value of NULL corresponds to all libraries currently known to .libPaths(). 
+              Non-existent library trees are silently ignored.
+# 冲突告警，A conflict 即使 一个函数masking掩盖了另一个函数，或是一个非函数掩盖了一个非函数，即变量重名。
+# 默认是warn.conflict是TRUE，除非conflicts.policy被指定为F
+warn.conflicts：logical. If TRUE, warnings are printed about conflicts from attaching the new package. 
+                        A conflict is a function masking a function, or a non-function masking a non-function. 
+                        The default is TRUE unless specified as FALSE in the conflicts.policy option.
+# 是否将包的依赖项（required packages）进行加载的标记：依赖项 是指DESCRIPTION file 里 Depends clause 中标明的那些包名。
+attach.required：logical specifying whether required packages listed in the Depends clause of the DESCRIPTION file should be attached automatically.
+
+# 只能将 nstalled package的 进行，load/attach， 原理就是 通过 DESCRIPTION 文件里面的Built字段 
+library and require can only load/attach an installed package, and this is detected by having a ‘DESCRIPTION’ file containing a ‘Built:’ field.
+
+
