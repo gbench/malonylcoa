@@ -21,13 +21,22 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
            plotOutput("tickdata_chart"), # 交易数据图
            dataTableOutput("tickdata_ds")) # 交易数据源头
       ) # shinyApp 应用对象创建
-  ) ( # 系统设置
+  ) ( # 系统设置，需要注意这里是一个实际参数的初始列表，也就是各个参数是独立的，后面的参数是不能引用前面的参数内容，比如dates与symbols就是互而不见
      symbols=sqlquery('show tables') |> unlist() |> sub(pattern="t_(\\w+\\d+)_(\\d+)$", "\\1", x=_) |> unique(), # 合约代码
      dates=sqlquery('show tables') |> unlist() |> sub(pattern="t_(\\w+\\d+)_(\\d+)$", "\\2", x=_) |> unique() |>  
-       gsub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_), # 日期 
-     event_handler=\(input, output, sesssion) { # 事件处理
+       gsub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_), # 合约日期 
+     # -----------------------------------------------------------------------------
+     # 主要后台回调函数
+     # -----------------------------------------------------------------------------
+     event_handler=\(input, output, session) { # 事件处理
        observeEvent(input$symbol, { # 监听合约内容变化
-         print(input$symbol)
+         pattern <- sprintf('t_%s', input$symbol)
+         dates <- sqlquery("show tables") |> unlist() |> grep(pattern=pattern, value=T) |> sub("t_(\\w+\\d+)_(\\d+)$", "\\2", x=_) |> unique() |> 
+	   gsub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_)
+	 if(length(dates)>0) { # 更新日期选项
+	   print(dates)
+	   updateSelectizeInput(session, "date", choices=dates, selected=dates[1] )
+	 } # if
        }) # observeEvent symbol
      }, # event_handler
      render_handler=\(input, output, session) { # 页面渲染处理
