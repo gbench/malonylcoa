@@ -7,7 +7,7 @@ runApp(shinyApp( # 应用程序
     titlePanel="web应用", # 页面标题
     sidebarLayout ( # 边栏布局
       sidebarPanel ( # 侧边
-        selectizeInput("symbol", "选择期货合约", choices="ma505,rb2505,ao2505,cu2505,eb2505,fg505,hc505,i2505,j2505,jm2505,l2501" |> 
+        selectizeInput("symbol", "选择期货合约", choices="ma505,rb2505,ao2505,cu2505,eb2505,fg505,hc2505,i2505,j2505,jm2505,l2501" |> 
           strsplit("[,;]+") |> unlist())
       ), mainPanel ( # 内容
         plotOutput("tickdata_chart"), # 交易数据图
