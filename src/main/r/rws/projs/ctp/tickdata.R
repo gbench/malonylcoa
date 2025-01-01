@@ -21,22 +21,33 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
            plotOutput("tickdata_chart"), # 交易数据图
            dataTableOutput("tickdata_ds")) # 交易数据源头
       ) # shinyApp 应用对象创建
-  ) ( # 系统设置，需要注意这里是一个实际参数的初始列表，也就是各个参数是独立的，后面的参数是不能引用前面的参数内容，比如dates与symbols就是互而不见
-     symbols=sqlquery('show tables') |> unlist() |> sub(pattern="t_(\\w+\\d+)_(\\d+)$", "\\1", x=_) |> unique(), # 合约代码
-     dates=sqlquery('show tables') |> unlist() |> sub(pattern="t_(\\w+\\d+)_(\\d+)$", "\\2", x=_) |> unique() |>  
-       gsub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_), # 合约日期 
+  ) (# 系统设置，需要注意这里是一个实际参数的初始列表，也就是各个参数是独立的，后面的参数是不能引用前面的参数内容，比如dates与symbols就是互而不见
+     # ns:tickdata 空间-函数的定义
+     if(searchpaths()[2] != 'ns:tickdata') { # ns:tickdata
+       attach(NULL, name="ns:tickdata", pos=2) # 创建一个临时函数空间 tickdata
+     }, # ns:tickdata
+     if(is.null(get("extract_part",pos=2))) { # extract_part
+       # 提取数据部件：i 提取组件部分，symbol 合约编码, NULL 表格所有合约
+       assign('extract_part', \(i, symbol=NULL) { 
+         pattern <- sprintf("t_(%s)_(\\d+)$", if(is.null(symbol)) "\\w+\\d+" else symbol) # 表名式样
+         sqlquery('show tables') |> unlist() |> grep(pattern, value=T, x=_) |> sub(pattern, sprintf("\\%s", i), x=_) |> unique() # 去重
+       }, pos=2) # assign
+    }, # ns:tickdata 空间-函数的定义
+     
+     # 常量定义
+     symbols=extract_part(1), # 合约代码
+     dates=extract_part(2) |> sub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_), # 合约日期
+     
      # -----------------------------------------------------------------------------
      # 主要后台回调函数
      # -----------------------------------------------------------------------------
      event_handler=\(input, output, session) { # 事件处理
        observeEvent(input$symbol, { # 监听合约内容变化
-         pattern <- sprintf('t_%s', input$symbol)
-         dates <- sqlquery("show tables") |> unlist() |> grep(pattern=pattern, value=T) |> sub("t_(\\w+\\d+)_(\\d+)$", "\\2", x=_) |> unique() |> 
-	   gsub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_)
-	 if(length(dates)>0) { # 更新日期选项
-	   print(dates)
-	   updateSelectizeInput(session, "date", choices=dates, selected=dates[1] )
-	 } # if
+         symbol <- input$symbol # 合约编码
+         dates <- extract_part(2,symbol) |> sub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_) # 日期格式
+	       if(length(dates) > 0) { # 更新日期选项
+	         updateSelectizeInput(session, "date", choices=dates, selected=dates[1] )
+	        } # if
        }) # observeEvent symbol
      }, # event_handler
      render_handler=\(input, output, session) { # 页面渲染处理
