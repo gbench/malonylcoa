@@ -21,22 +21,28 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
            plotOutput("tickdata_chart"), # 交易数据图
            dataTableOutput("tickdata_ds")) # 交易数据源头
       ) # shinyApp 应用对象创建
-  ) (# 系统设置，需要注意这里是一个实际参数的初始列表，也就是各个参数是独立的，后面的参数是不能引用前面的参数内容，比如dates与symbols就是互而不见
+  ) (# 系统设置，需要注意这里是一个实际参数的初始列表，也就是各个参数是独立的，
+     # 后面的参数是不能引用前面的参数内容，比如dates与symbols就是互而不见
      # ns:tickdata 空间-函数的定义
-     if(searchpaths()[2] != 'ns:tickdata') { # ns:tickdata
+     if(searchpaths()[2] != 'ns:tickdata') { # ns:tickdata 安置位置为2#searchpath
        attach(NULL, name="ns:tickdata", pos=2) # 创建一个临时函数空间 tickdata
      }, # ns:tickdata
-     if(is.null(get("extract_part",pos=2))) { # extract_part
-       # 提取数据部件：i 提取组件部分，symbol 合约编码, NULL 表格所有合约
-       assign('extract_part', \(i, symbol=NULL) { 
+     if(is.null(tryCatch(get('extract_part', pos=2), error=\(e) NULL))) { # extract_part函数的位置注入
+       # 提取合约表名成的结构部件：i 提取组件部分，1：合约名，2：合约日期，symbol 合约编码, NULL 提取所有合约
+       assign('extract_part', \(i, symbol=NULL) { #  extract_part
          pattern <- sprintf("t_(%s)_(\\d+)$", if(is.null(symbol)) "\\w+\\d+" else symbol) # 表名式样
          sqlquery('show tables') |> unlist() |> grep(pattern, value=T, x=_) |> sub(pattern, sprintf("\\%s", i), x=_) |> unique() # 去重
-       }, pos=2) # assign
-    }, # ns:tickdata 空间-函数的定义
+       }, pos=2) # extract_part
+       
+       # 提取指定合约的日期列表，当symbol返回所有所有合约的各个日期集合
+       assign('extract_dates', \(symbol=NULL) { #  extract_dates
+         extract_part(2, symbol) |> sub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_) # 日期格式
+       }, pos=2) # extract_dates
+    }, # extract_part函数的位置注入
      
      # 常量定义
      symbols=extract_part(1), # 合约代码
-     dates=extract_part(2) |> sub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_), # 合约日期
+     dates=extract_dates(), # 合约日期
      
      # -----------------------------------------------------------------------------
      # 主要后台回调函数
@@ -44,7 +50,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
      event_handler=\(input, output, session) { # 事件处理
        observeEvent(input$symbol, { # 监听合约内容变化
          symbol <- input$symbol # 合约编码
-         dates <- extract_part(2,symbol) |> sub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_) # 日期格式
+         dates <- extract_dates(symbol) # 提取指定合约的日期
 	       if(length(dates) > 0) { # 更新日期选项
 	         updateSelectizeInput(session, "date", choices=dates, selected=dates[1] )
 	        } # if
