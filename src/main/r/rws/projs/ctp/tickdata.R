@@ -19,7 +19,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
     # 后端处理逻辑
     server=\(input, output, session) { # server 后台处理程序
       with(settings, { # 处理页面的各种事件相应与状态渲染
-	lapply(c(event_handler, render_handler), \(f) f(input,output,session)) # 事件处理
+        lapply(c(event_handler, render_handler), \(f) f(input,output,session)) # 事件处理
       })}) # shinyApp
     ) ( # shinyApp应用对象定制
          side_ctrls=list( # 侧边面板控件
