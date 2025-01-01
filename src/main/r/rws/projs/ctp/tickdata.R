@@ -1,3 +1,12 @@
+# ------------------------------------------------------------------------------------------------------------
+# 简单的交易数据的shinyApp的应用演示示例
+#
+# 加载说明:
+# 1）环境变量设置:export RWS_URL=https://gitee.com/gbench/malonylcoa/tree/master/src/main/r/rws;
+# 2）程序启动需要加载:$RWS_URL/scripts之下的函数到.GlobalEnv; 
+# 3）可采用:$RWS_URL/etc/Rprofile.site 作为启动R的环境配置。
+# ------------------------------------------------------------------------------------------------------------
+
 library(shiny)
 library(DT)
 
@@ -10,8 +19,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
     # 后端处理逻辑
     server=\(input, output, session) { # server 后台处理程序
       with(settings, { # 处理页面的各种事件相应与状态渲染
-        event_handler(input, output, session)	# 式样响应
-        render_handler(input, output, session)  # 状态渲染
+	lapply(c(event_handler, render_handler), \(f) f(input,output,session)) # 事件处理
       })}) # shinyApp
     ) ( # shinyApp应用对象定制
          side_ctrls=list( # 侧边面板控件
@@ -51,9 +59,9 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
        observeEvent(input$symbol, { # 监听合约内容变化
          symbol <- input$symbol # 合约编码
          dates <- extract_dates(symbol) # 提取指定合约的日期
-	       if(length(dates) > 0) { # 更新日期选项
-	         updateSelectizeInput(session, "date", choices=dates, selected=dates[1] )
-	        } # if
+         if(length(dates) > 0) { # 更新日期选项
+           updateSelectizeInput( session, "date", choices=dates, selected=dates[1] )
+         } # if
        }) # observeEvent symbol
      }, # event_handler
      render_handler=\(input, output, session) { # 页面渲染处理
