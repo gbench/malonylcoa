@@ -88,5 +88,5 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
          ds <- substitute(tickdata.lhctp2(symbol, date=date, n=input$fetch_size)) |> eval() |> tanalyze() # 交易分析
          output$tickdata_ds <- renderDT(ds) # 交易数据源
          ds |> with(substr(Name,1,2)) |> table() |> pie() }) 
-     } # render_handler
+     } |> bindEvent(input$update_time) # render_handler
   ), port=7070) # runApp
