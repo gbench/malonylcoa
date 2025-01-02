@@ -31,7 +31,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
             verbatimTextOutput("time", placeholder=T) # 文本输出
          ), main_ctrls=list( # 主面板控件
             plotOutput("tickdata_chart"), # 交易数据图
-            dataTableOutput("tickdata_ds")) # 交易数据源头
+            dataTableOutput("tickdata_dt")) # 交易数据表
       ) # shinyApp 应用对象创建
   ) (# 系统设置，需要注意这里是一个实际参数的初始列表，也就是各个参数是独立的，
      # 后面的参数是不能引用前面的参数内容，比如dates与symbols就是互而不见
@@ -55,7 +55,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
        assign('sliderInput.fetch_size', \(symbol, date, session=NULL) { # sliderInput.fetch_size
           sql <- sprintf("select count(*) cnt from t_%s_%s", symbol, gsub("-", "", date))
           size <- sqlquery(sql) |> unlist() |> getElement(1)
-          if (is.null(session))
+          if(is.null(session))
             sliderInput("fetch_size", "读取数据数量", min=0, max=size, value=min(100, size)) # 读取数据数量
          else 
             updateSliderInput(session, "fetch_size", min=0, max=size, value=min(100, size))  # 更新数据数量
@@ -71,26 +71,29 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
      # -----------------------------------------------------------------------------
      event_handler=\(input, output, session) { # 事件处理
        observeEvent(input$symbol, { # 监听合约内容变化
-         dates <- extract_dates(input$symbol) # 提取指定合约的日期
-         if(length(dates) > 0) { # 更新日期选项
+          dates <- extract_dates(input$symbol) # 提取指定合约的日期
+          if(length(dates) > 0) { # 更新日期选项
             date <- dates[1] # 日期
             updateSelectizeInput( session, "date", choices=dates, selected=date ) # 更新日期
             sliderInput.fetch_size(input$symbol, input$date, session) # 更新sliderInput.fetch_size组件
-         } # if
-       }) # observeEvent symbol
-       observeEvent(input$date, { # 监听合约内容变化
+          } # if
+        }) # observeEvent symbol
+        observeEvent(input$date, { # 监听合约内容变化
           sliderInput.fetch_size(input$symbol, input$date, session) # 更新sliderInput.fetch_size组件
-       }) # observeEvent symbol
-       output$time <- renderText({ format(Sys.time(), "%a %b %d %X %Y") }) |> bindEvent(input$update_time)
+        }) # observeEvent symbol
+        output$time <- renderText({ # 刷新时间
+          updateSliderInput(session, "fetch_size", value=input$fetch_size+100)  # 更新数据数量, 每一批增加100
+          format(Sys.time(), "%a %b %d %X %Y") 
+        }) |> bindEvent(input$update_time)
      }, # event_handler
      render_handler=\(input, output, session) { # 页面渲染处理
         tickdata_pie <- reactive({ # tickdata_pie
           try(print(input$cmdline)) # 命令行
           symbol <- as.name(input$symbol) # 转换成符号确保没有引号
           date <- input$date # 转换成符号确保没有引号
-          ds <- substitute(tickdata.lhctp2(symbol, date=date, n=input$fetch_size)) |> eval() |> tanalyze() # 交易分析
-          output$tickdata_ds <- renderDT(ds) # 交易数据源
-          ds |> with(substr(Name,1,2)) |> table() |> graphics::pie() # 绘制饼图
+          dt <- substitute(tickdata.lhctp2(symbol, date=date, n=input$fetch_size)) |> eval() |> tanalyze() # 交易分析
+          output$tickdata_dt <- renderDT(dt) # 交易数据源
+          dt |> with(substr(Name, 1, 2)) |> table() |> graphics::pie() # 绘制饼图
         }) # tickdata_pie
         output$tickdata_chart <- renderPlot(tickdata_pie()) 
         # output$tickdata_chart <- tdpie() |> bindEvent(input$update_time) # render_handler 
