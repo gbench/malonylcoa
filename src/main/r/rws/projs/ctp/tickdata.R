@@ -25,9 +25,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
          side_ctrls=list( # 侧边面板控件
            selectizeInput("symbol", "选择合约代码", choices=settings$symbols), # 期货合约列表
            selectizeInput("date", "选择数据日期", choices=settings$dates), # 期货合约列表
-           (\(sql=sprintf("select count(*) cnt from t_%s_%s", settings$symbols[1], gsub("-", "", settings$dates[1])),
-              size=sqlquery(sql) |> unlist() |> getElement(1)
-             ) sliderInput("fetch_size", "读取数据数量", min = 0, max = size, value = 100) ) (), # 读取数据数量
+           sliderInput.fetch_size(settings$symbols[1], settings$dates[1]), # 读取数据数量
            actionButton("update_time", "刷新时间"),textOutput("time")
          ), main_ctrls=list( # 主面板控件
            plotOutput("tickdata_chart"), # 交易数据图
@@ -50,6 +48,16 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
        assign('extract_dates', \(symbol=NULL) { #  extract_dates
          extract_part(2, symbol) |> sub("(\\d{4})(\\d{2})(\\d{2})", "\\1-\\2-\\3", x=_) # 日期格式
        }, pos=2) # extract_dates
+       
+       # symbol 合约代码, date 日期 , session 会话对象
+       assign('sliderInput.fetch_size', \(symbol, date, session=NULL) { # fetch_size_ctrl
+         sql <- sprintf("select count(*) cnt from t_%s_%s", symbol, gsub("-", "", date))
+         size <- sqlquery(sql) |> unlist() |> getElement(1)
+         if (is.null(session))
+           sliderInput("fetch_size", "读取数据数量", min=0, max=size, value=100) # 读取数据数量
+         else 
+           updateSliderInput(session, "fetch_size", min=0, max=size, value=100)  # 更新数据数量
+       } , pos=2)
     }, # extract_part函数的位置注入
      
      # 常量定义
@@ -64,11 +72,10 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
          symbol <- input$symbol # 合约编码
          dates <- extract_dates(symbol) # 提取指定合约的日期
          if(length(dates) > 0) { # 更新日期选项
-           updateSelectizeInput( session, "date", choices=dates, selected=dates[1] )
+           date <- dates[1]
+           updateSelectizeInput( session, "date", choices=dates, selected=date )
+           sliderInput.fetch_size(symbol, date, session) # 更新fetch_size组件
          } # if
-         (\(sql=sprintf("select count(*) cnt from t_%s_%s", symbol, gsub("-", "", input$date)),
-            size=sqlquery(sql) |> unlist() |> getElement(1)
-           ) updateSliderInput(session, "fetch_size", min = 0, max = size, value = 100) ) () # 读取数据数量
        }) # observeEvent symbol
        output$time <- renderText({ format(Sys.time(), "%a %b %d %X %Y") }) |> bindEvent(input$update_time)
      }, # event_handler
