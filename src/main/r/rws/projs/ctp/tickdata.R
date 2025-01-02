@@ -24,7 +24,11 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
     ) ( # shinyApp应用对象定制
          side_ctrls=list( # 侧边面板控件
            selectizeInput("symbol", "选择合约代码", choices=settings$symbols), # 期货合约列表
-           selectizeInput("date", "选择数据日期", choices=settings$dates) # 期货合约列表
+           selectizeInput("date", "选择数据日期", choices=settings$dates), # 期货合约列表
+           (\(sql=sprintf("select count(*) cnt from t_%s_%s", settings$symbols[1], gsub("-", "", settings$dates[1])),
+              size=sqlquery(sql) |> unlist() |> getElement(1)
+             ) sliderInput("fetch_size", "读取数据数量", min = 0, max = size, value = 100) ) (), # 读取数据数量
+           actionButton("update_time", "刷新时间"),textOutput("time")
          ), main_ctrls=list( # 主面板控件
            plotOutput("tickdata_chart"), # 交易数据图
            dataTableOutput("tickdata_ds")) # 交易数据源头
@@ -62,13 +66,17 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
          if(length(dates) > 0) { # 更新日期选项
            updateSelectizeInput( session, "date", choices=dates, selected=dates[1] )
          } # if
+         (\(sql=sprintf("select count(*) cnt from t_%s_%s", symbol, gsub("-", "", input$date)),
+            size=sqlquery(sql) |> unlist() |> getElement(1)
+           ) updateSliderInput(session, "fetch_size", min = 0, max = size, value = 100) ) () # 读取数据数量
        }) # observeEvent symbol
+       output$time <- renderText({ format(Sys.time(), "%a %b %d %X %Y") }) |> bindEvent(input$update_time)
      }, # event_handler
      render_handler=\(input, output, session) { # 页面渲染处理
        output$tickdata_chart <- renderPlot({
          symbol <- as.name(input$symbol) # 转换成符号确保没有引号
          date <- input$date # 转换成符号确保没有引号
-         ds <- substitute(tickdata.lhctp2(symbol, date=date, n=100)) |> eval() |> tanalyze() # 交易分析
+         ds <- substitute(tickdata.lhctp2(symbol, date=date, n=input$fetch_size)) |> eval() |> tanalyze() # 交易分析
          output$tickdata_ds <- renderDT(ds) # 交易数据源
          ds |> with(substr(Name,1,2)) |> table() |> pie() }) 
      } # render_handler
