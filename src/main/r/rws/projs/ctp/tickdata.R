@@ -50,7 +50,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
        }, pos=2) # extract_dates
        
        # symbol 合约代码, date 日期 , session 会话对象
-       assign('sliderInput.fetch_size', \(symbol, date, session=NULL) { # fetch_size_ctrl
+       assign('sliderInput.fetch_size', \(symbol, date, session=NULL) { # sliderInput.fetch_size
          sql <- sprintf("select count(*) cnt from t_%s_%s", symbol, gsub("-", "", date))
          size <- sqlquery(sql) |> unlist() |> getElement(1)
          if (is.null(session))
@@ -69,13 +69,15 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
      # -----------------------------------------------------------------------------
      event_handler=\(input, output, session) { # 事件处理
        observeEvent(input$symbol, { # 监听合约内容变化
-         symbol <- input$symbol # 合约编码
-         dates <- extract_dates(symbol) # 提取指定合约的日期
+         dates <- extract_dates(input$symbol) # 提取指定合约的日期
          if(length(dates) > 0) { # 更新日期选项
            date <- dates[1]
            updateSelectizeInput( session, "date", choices=dates, selected=date )
-           sliderInput.fetch_size(symbol, date, session) # 更新fetch_size组件
+           sliderInput.fetch_size(input$symbol, input$date, session) # 更新sliderInput.fetch_size组件
          } # if
+       }) # observeEvent symbol
+       observeEvent(input$date, { # 监听合约内容变化
+         sliderInput.fetch_size(input$symbol, input$date, session) # 更新sliderInput.fetch_size组件
        }) # observeEvent symbol
        output$time <- renderText({ format(Sys.time(), "%a %b %d %X %Y") }) |> bindEvent(input$update_time)
      }, # event_handler
