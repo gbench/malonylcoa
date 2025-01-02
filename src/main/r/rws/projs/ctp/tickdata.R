@@ -27,6 +27,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
             selectizeInput("date", "选择数据日期", choices=settings$dates), # 期货合约列表
             sliderInput.fetch_size(settings$symbols[1], settings$dates[1]), # 读取数据数量
             textInput("cmdline", "输入行:"), # 命令行
+            checkboxInput("direction", "是否递增", T), # 递增方向
             actionButton("update_time", "刷新时间"), # 时间按钮
             verbatimTextOutput("time", placeholder=T) # 文本输出
          ), main_ctrls=list( # 主面板控件
@@ -54,11 +55,13 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
        # symbol 合约代码, date 日期 , session 会话对象
        assign('sliderInput.fetch_size', \(symbol, date, session=NULL) { # sliderInput.fetch_size
           sql <- sprintf("select count(*) cnt from t_%s_%s", symbol, gsub("-", "", date))
-          size <- sqlquery(sql) |> unlist() |> getElement(1)
-          if(is.null(session))
-            sliderInput("fetch_size", "读取数据数量", min=0, max=size, value=min(100, size)) # 读取数据数量
-         else 
-            updateSliderInput(session, "fetch_size", min=0, max=size, value=min(100, size))  # 更新数据数量
+          fz_max <- sqlquery(sql) |> unlist() |> getElement(1) # 最大值
+          fz_min <- min(0, fz_max) # fetch_size 的最小值
+          value <- min(0, fz_max) # fetch_size 的值
+          if(is.null(session)) # 初始化
+            sliderInput("fetch_size", "读取数据数量", min=fz_min, max=fz_max, value=value) # 读取数据数量
+         else # 数据更新
+            updateSliderInput(session, "fetch_size", min=fz_min, max=fz_max, value=value)  # 更新数据数量
        } , pos=2)
     }, # extract_part函数的位置注入
      
@@ -82,7 +85,8 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
           sliderInput.fetch_size(input$symbol, input$date, session) # 更新sliderInput.fetch_size组件
         }) # observeEvent symbol
         output$time <- renderText({ # 刷新时间
-          updateSliderInput(session, "fetch_size", value=input$fetch_size+100)  # 更新数据数量, 每一批增加100
+          value <- input$fetch_size + 100*(if(input$direction) 1 else -1) # fetch_size 的处理
+          updateSliderInput(session, "fetch_size", value=max(1, value))  # 更新数据数量, 每一批增加100
           format(Sys.time(), "%a %b %d %X %Y") 
         }) |> bindEvent(input$update_time)
      }, # event_handler
