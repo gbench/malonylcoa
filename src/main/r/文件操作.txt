@@ -75,6 +75,27 @@ list.files()
 }) ()
 
 # -------------------------------------------------------------------------------------------------------------
+# DCF 文件的读取
+# DCF is a simple format for storing databases in plain text files that can easily be directly read and written by humans. 
+# DCF is used in various places to store R system information, like descriptions and contents of packages.
+# -------------------------------------------------------------------------------------------------------------
+#' read a dcf file
+#' NB: the DESCRIPTION  of a package is a dcf format(1*n matrix), so we could use it as the test case
+#' @param pkg package name
+#' @param file DCF file
+(\(pkg, file=paste0(.libPaths(), "/", pkg,"/DESCRIPTION" )) read.dcf(file) ) ('shiny') |> 
+#' 
+#'@param x is a matrix object,so it can use the colnames to extract its field
+(\(x) {
+  lapply(colnames(x),\(i) x[,i])
+}) ()
+
+# read pkg's authors
+pkgdesc <- (\(pkg, file=paste0(.libPaths(), "/", pkg,"/DESCRIPTION" )) read.dcf(file) ) ('shiny') 
+pkgdesc[,'Authors@R'] |> parse(text=_) |> eval()
+
+
+# -------------------------------------------------------------------------------------------------------------
 # 元编程
 # -------------------------------------------------------------------------------------------------------------
 # 偏函数表达式pf的逆向管道计算（函数复合f.g.h）的演示示例
