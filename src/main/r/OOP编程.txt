@@ -22,37 +22,44 @@ r6class <- \(clazzName, env=.GlobalEnv, ...) {
   env[[cname]] # 返回结果值
 }
 
-# 用户对象
+#' 用户对象
+#' 参考： https://zhuanlan.zhihu.com/p/359383772
 r6class(User, 
-  
-  # 用户对象的公共成员
-  public=list( 
+
+ #' 对象私有成员
+ private = list(
+    
     #' 用户名称
     name=NULL,
     #' 用户密码
-    password=123456,
+    password=123456
+ ),
+ 
+  #' 用户对象的公共成员
+  public = list( 
     
     #' 构造函数: 初始化数据成员
+    #' 在 R6 中公有成员的访问使用的是 self 对象来引用，而私有需要用 private 对象来引用
     #' @param name 用户姓名
     #' @param password 用户密码，默认为123456
     initialize = \(name=NULL, password=123456) {
-      self$name <- name
-      self$password <- password
+      private$name <- name
+      private$password <- password
    },
     
     #' 获得用户名称
-    getName=\() self$name,
+    getName=\() private$name,
     
     #' 设置用户名称
     #' @param name 用户姓名
-    setName=\(name) self$name <- name,
+    setName=\(name) private$name <- name,
 
     #' 获得用户名称
-    getPassword=\() self$password,
+    getPassword=\() private$password,
     
     #' 设置用户名称
     #' @param password 用户密码
-    setPassword=\(password) self$password <- password
+    setPassword=\(password) private$password <- password
 )) # User 用户对象
 
 User$new("zhangsan") -> u # 创建对象
