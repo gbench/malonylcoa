@@ -10,15 +10,16 @@ library(R6) # R6Class 的面向对象编程示例
 #' 模仿C++,java 风格的类定义
 #
 #' @param clazzName 类名
-#' @param envir类对象所在环境
+#' @param env 结果类对象所存放的目标环境（名称空间）, 默认为 .GlobalEnv 全局环境
 #' @param ... R6对象的定义属性列表
 #' @return 一个R6Class的对象
 #' @export
-r6class <- \(clazzName, envir=.GlobalEnv,  ...) {
+r6class <- \(clazzName, env=.GlobalEnv, ...) {
   cname <- substitute(clazzName) |> deparse() # 类名
-  clazz <- append( list(...), cname, 0 ) |> do.call(R6Class, args=_) # 创建目标类
-  assign(cname, clazz, envir=envir) # 将类对象写入目标环境
-  clazz # 返回结果值
+  # 创建目标类对象并写入目标环境
+  append( list(...), cname, 0 ) |> do.call(R6Class, args=_) |> 
+    assign(x=cname, value=_, envir=env) # 以cname名称写入目标环境
+  env[[cname]] # 返回结果值
 }
 
 # 用户对象
