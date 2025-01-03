@@ -1,0 +1,70 @@
+# ------------------------------------------------------------------------------------------
+#  面向对象编程的方法实践
+# ------------------------------------------------------------------------------------------
+
+# R6 面向对象编程
+library(R6) # R6Class 的面向对象编程示例
+
+#' 创建一个R6Class的类对象
+#'
+#' 模仿C++,java 风格的类定义
+#
+#' @param clazzName 类名
+#' @param envir类对象所在环境
+#' @param ... R6对象的定义属性列表
+#' @return 一个R6Class的对象
+#' @export
+r6class <- \(clazzName, envir=.GlobalEnv,  ...) {
+  cname <- substitute(clazzName) |> deparse() # 类名
+  clazz <- append( list(...), cname, 0 ) |> do.call(R6Class, args=_) # 创建目标类
+  assign(cname, clazz, envir=envir) # 将类对象写入目标环境
+  clazz # 返回结果值
+}
+
+# 用户对象
+r6class(User, 
+  
+  # 用户对象的公共成员
+  public=list( 
+    #' 用户名称
+    name=NULL,
+    #' 用户密码
+    password=123456,
+    
+    #' 构造函数: 初始化数据成员
+    #' @param name 用户姓名
+    #' @param password 用户密码，默认为123456
+    initialize = \(name=NULL, password=123456) {
+      self$name <- name
+      self$password <- password
+   },
+    
+    #' 获得用户名称
+    getName=\() self$name,
+    
+    #' 设置用户名称
+    #' @param name 用户姓名
+    setName=\(name) self$name <- name,
+
+    #' 获得用户名称
+    getPassword=\() self$password,
+    
+    #' 设置用户名称
+    #' @param password 用户密码
+    setPassword=\(password) self$password <- password
+)) # User 用户对象
+
+User$new("zhangsan") -> u # 创建对象
+u$getName()
+u$getPassword()
+
+# 修改名称
+u$setName('lisi')
+u$getName()
+u$getPassword()
+
+# 克隆
+u$clone() -> u2 # 克隆对象
+u2$setName('wangwu')
+u2$getName()
+u$getName()
