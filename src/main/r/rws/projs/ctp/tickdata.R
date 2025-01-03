@@ -57,7 +57,7 @@ runApp( (\(..., settings=list(...)) (\(side_ctrls, main_ctrls) shinyApp( # shiny
           sql <- sprintf("select count(*) cnt from t_%s_%s", symbol, gsub("-", "", date))
           fz_max <- sqlquery(sql) |> unlist() |> getElement(1) # 最大值
           fz_min <- min(0, fz_max) # fetch_size 的最小值
-          value <- min(0, fz_max) # fetch_size 的值
+          value <- min(100, fz_max) # fetch_size 的值
           if(is.null(session)) # 初始化
             sliderInput("fetch_size", "读取数据数量", min=fz_min, max=fz_max, value=value) # 读取数据数量
          else # 数据更新
