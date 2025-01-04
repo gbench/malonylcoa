@@ -346,3 +346,39 @@ attr(,"name")
 [16] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"    "D:/sliced/develop/r/R-4.4.2/library/DBI"       "D:/sliced/develop/r/R-4.4.2/library/methods"  
 [19] "Autoloads"                                     "D:/sliced/develop/r/R-4.4.2/library/base"     
 > 
+
+# ------------------------------------------------------------------------------
+# nsenv 命名空间的即函数的 enclosing environment 
+# pkgenv 包环境 采用library 加包加载到searchpaths中以便程序使用的环境
+# ------------------------------------------------------------------------------
+# 查看install.packages所在的定义环境enclosing environment
+> environment(install.packages)
+<environment: namespace:utils>
+# 定义环境中的名称数量
+> environment(install.packages) |> ls(all.names=T) |> length()
+[1] 639
+# 查看install.packages所在的包环境（exports 导出符号的)
+> envclos() %>% structure(., names=sapply(., attr, which='name')) |> lapply(ls.str, all.names=T) |> grep(pattern='install.packages', value=T) |> names()
+[1] "package:utils"
+# 注意 与 package:utils 与 namespace:utils 是不同的
+上一句使用进行取代
+> pryr::where('install.packages')
+<environment: package:utils>
+attr(,"name")
+[1] "package:utils"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/utils"
+
+# 证明连namespace环境与package环境的不同
+> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages')) identical(nsenv, pkgenv))()
+[1] FALSE
+
+# 变量数目由很大不同,namespace中要中的符号要远远多余package环境中的符号
+> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages'))  
++   structure(c(nsenv, pkgenv), names=c('nsenv','pkgenv')) |>lapply(length))  ()
+$nsenv
+[1] 639
+
+$pkgenv
+[1] 263
+# ------------------------------------------------------------------------------
