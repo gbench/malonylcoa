@@ -140,26 +140,26 @@ Formats :  Overview of the different kinds of R binary files that are available.
 # 清空目录
 list.files()|>lapply(unlink, recursive=T)
 
-( \(path='data-db') {
+path="data-db" # 目标目镜
+filebase=paste0(path,  "/my_lazyload_db") 
+
 # 把当前会话的对象全部存入一个新的环境
 my_lazy_env = as.list(environment()) |> list2env(parent=emptyenv())
-
+    
 # 创建数据文件目录
 if(!dir.exists(path)) dir.create(path)
-
+    
 # Save objects inside a LazyLoadDB： 把对象存入一个LazyLoadDB
 # Requires an environment and the name of a file. 需要一个环境以及一个文件名
-filebase <- paste0(path,  "/my_lazyload_db") # 目标路径名
 # 这里使用:::调用非公开导出的R库函数
 tools:::makeLazyLoadDB(my_lazy_env, filebase);
-
+    
+print(ls())
 # 清空当前会话环境
-rm(list = ls())
-
-# Load objects from disk：从新加载
-lazyLoad(paste0(path, "/my_lazyload_db"))
-
-}) () 
+rm(list = setdiff(ls(),c('path','filebase')))
+    
+# Load objects from disk：重新加载 
+lazyLoad(filebase)
 
 #查看当前空间中的数据对象
 ls()
