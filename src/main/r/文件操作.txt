@@ -99,6 +99,24 @@ list.files()
   lapply( list.files(x, pattern="\\.rds$", full.names=T), \(file, name=sub(".+[/\\]([^/\\]+)\\.rds$", "\\1", file)) assign(name, readRDS(file), env) )
 }) ()
 
+#' 导出指定函数符号到文件，以方便查看代码
+#' @param x  函数符号或是字符串名称
+export <- \(x) {
+  nm <- if(is.character(x)) x else substitute(x) |> deparse() # 符号名称
+  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(paste0(nm, '.R'), 'w')) {
+    on.exit(close(f)) # 退出时候关闭文件
+    cat(paste(x, collapse='\n'), file=f) # 把符号表达式写入文件
+  }) ()
+}
+
+# 导出符号
+export(library)
+# 导出字符串
+export('install.packages')
+
+library|>deparse()|>paste(collapse="\n")|>(\(x,f=file('library.R','w')){on.exit({close(f);print('close')}); cat(x,file=f)})()
+
+
 # -------------------------------------------------------------------------------------------------------------
 # DCF 文件的读取
 # DCF is a simple format for storing databases in plain text files that can easily be directly read and written by humans. 
