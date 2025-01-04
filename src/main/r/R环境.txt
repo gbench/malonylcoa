@@ -347,10 +347,28 @@ attr(,"name")
 [19] "Autoloads"                                     "D:/sliced/develop/r/R-4.4.2/library/base"     
 > 
 
+# searchpaths 就是搜索get符号定义的(确定符号所在的环境位置），环境即使将符号（变量）与值进行关联的一组空间或者说是一种对应关系associations
+# R的运行的原理就是不断的创建构建环境，来实现这种符号与值之间的关系绑定。
+# R批量的将 一组符号集合 加载到内存（运行时） 形成有用的（有绑定的功能意义）的操作叫做attach。
+# library() 就是将 package中的符号以 searchpaths 的节点元素的而形式attach添加到 运行环境(运行时）的方法。
+
 # ------------------------------------------------------------------------------
 # nsenv 命名空间的即函数的 enclosing environment 
 # pkgenv 包环境 采用library 加包加载到searchpaths中以便程序使用的环境
+# https://adv-r.hadley.nz/environments.html#search-path
 # ------------------------------------------------------------------------------
+
+# library: 的本质就是把
+# when you attach another package with library(), the parent environment of the global environment changes:
+
+# The package environment is the external interface to the package. 
+# It's how you, the R user, find a function in an attached package or with ::. Its parent is determined by search path, i.e. 
+# the order in which packages have been attached.
+
+# The namespace environment is the internal interface to the package. 
+# The package environment controls how we find the function; 
+#the namespace controls how the function finds its variables.
+
 # 查看install.packages所在的定义环境enclosing environment
 > environment(install.packages)
 <environment: namespace:utils>
