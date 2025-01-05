@@ -127,7 +127,7 @@ list.files()
 # -------------------------------------------------------------------------------------------------------------
 Formats :  Overview of the different kinds of R binary files that are available.
 
-.rda/.RData is “R Data”
+.rda/.RData is  "R Data"
   Description: Save and restore one or more named objects into an environment.
   Notes: Useful for storing workspaces and multiple R objects as-is. As an example, see the save.image() function called upon closing every R session.
 .rds is a “R Data Single”
@@ -135,17 +135,17 @@ Formats :  Overview of the different kinds of R binary files that are available.
   Notes: Great for exporting a single result and loading it into a new variable.
 .rdx and .rdb
   Description: .rdx contains the index while .rdb stores objects for an R Database used in Lazy Loading
-  Notes: Primarily for R’s internal usage. Though, benefits exist around delayed assignment by the use of promises for large data.
+  Notes: Primarily for R's internal usage. Though, benefits exist around delayed assignment by the use of promises for large data.
 
 # 清空目录
-list.files()|>lapply(unlink, recursive=T)
+list.files() |> lapply(unlink, recursive=T)
+
+# 把当前会话的对象全部存入一个新的环境
+my_lazy_env = as.list(environment()) |> list2env(parent=emptyenv())
 
 path="data-db" # 目标目镜
 filebase=paste0(path,  "/my_lazyload_db") 
 
-# 把当前会话的对象全部存入一个新的环境
-my_lazy_env = as.list(environment()) |> list2env(parent=emptyenv())
-    
 # 创建数据文件目录
 if(!dir.exists(path)) dir.create(path)
     
