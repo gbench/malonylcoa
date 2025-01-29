@@ -15,10 +15,11 @@ A
  |   | A21
  |   | A22
 
-在 Hakell 中 分类概念 用 被成为类型， Hakell 的 一大特色 就是他的 类型系统，
-也就是 它提供一种强大的 构造类型的 方法与工具。
-Haskell 把类型分为　静态数据（data）类型　与　动态方法类型（class）
-我们先来说data类型，定义data类型的语法是：
+在 Hakell 中 `分类概念` 用 被称为 `类型`， Hakell 的 一大特色 就是它的 `类型系统`，
+也就是: 它提供一种强大的 构造类型 的 方式&方法与工具。
+Haskell 把类型分为：`静态数据类型 data`　与　`动态方法类型 class`
+
+这里：我们先来说data类型，定义data类型的语法是：
 -- ----------------------------------------------------------------------------------------------------------
 -- 数据类型的定义
 -- ----------------------------------------------------------------------------------------------------------
@@ -28,7 +29,7 @@ data Color = Black | White deriving (Eq, Show, Enum)
 -- 大小：带有类型参数
 data Size = Big | Small deriving (Eq, Show, Enum)
 --  动物：　带有类型参数
-data Animal = 
+data Animal c s= -- 动物
  Pig {c::Color , s::Size} -- 猪
  | Dog {c::Color , s::Size} -- 狗
  | Cat {c::Color , s::Size} -- 猫
@@ -38,14 +39,14 @@ data Animal =
  deriving (Eq, Show)
 :}
 --  找出狗对象
-let as=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in [ x | x<-as, case x of (Dog _ _) -> True; _ -> False ]
+let anms=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in [ x | x<-anms, case x of (Dog _ _) -> True; _ -> False ]
 
 -- ----------------------------------------------------------------------------------------------------------
 -- 黑狗函数的定义
 -- ----------------------------------------------------------------------------------------------------------
 :{
---  是否是一致黑狗对象
-isBlackDog ::  Animal -> Bool
+--  是否是一只黑狗对象
+isBlackDog :: forall {c :: Color} {s :: Size}. Animal c s -> Bool
 isBlackDog a = case a of (Dog c s) -> c==Black; _ -> False
 :}
 
@@ -62,4 +63,4 @@ isBlackDog $ Dog Black Small
 c $ Dog Black Small
 
 --  获取对象颜色
-let as=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in map c as
+let anms=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in map c anms
