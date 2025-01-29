@@ -19,7 +19,95 @@ A
 也就是: 它提供一种强大的 构造类型 的 方式&方法与工具。
 Haskell 把类型分为：`静态数据类型 data`　与　`动态方法类型 class`
 
-这里：我们先来说data类型，定义data类型的语法是：
+这里：我们先来说data类型:
+
+``` r
+# 颜色类型
+color <- "Black,White" |> strsplit(",") |> unlist() ; color;
+# 大小类型
+size <- "Big,Small" |> strsplit(",") |> unlist() ; size;
+# 动物类型
+animal <- "Pig,Dog,Cat,Sheep,Cow,Horse" |> strsplit(",") |> unlist() ; animal;
+# 数据模型：客观存在：物质模型
+data <- list(animal=animal, color=color, size=size); data;
+# 数据结构: 树形结构
+tree <- function (hierachies)  data[match(hierachies, names(data))]  |> # 根据层级组织数据
+  expand.grid() %>% {structure(., names=hierachies)} |> # 修改列名
+  ftable(row.vars=hierachies); 
+# 层级结构: 认知层级1
+hierachies1 <- "animal,color,size" |> strsplit(",") |> unlist() ; tree(hierachies1)
+# 层级结构: 认知层级2
+hierachies2 <- "color,size,animal" |> strsplit(",") |> unlist() ; tree(hierachies2)
+```
+# 数据模型：客观存在：物质模型
+> data <- list(animal=animal, color=color, size=size); data;
+$animal
+[1] "Pig"   "Dog"   "Cat"   "Sheep" "Cow"   "Horse"
+
+$color
+[1] "Black" "White"
+
+$size
+[1] "Big"   "Small"
+
+
+# 认识发现，层级结构：hierachies2 <- "animal,color,size"
+animal color size    
+Pig    Black Big    1
+             Small  1
+       White Big    1
+             Small  1
+Dog    Black Big    1
+             Small  1
+       White Big    1
+             Small  1
+Cat    Black Big    1
+             Small  1
+       White Big    1
+             Small  1
+Sheep  Black Big    1
+             Small  1
+       White Big    1
+             Small  1
+Cow    Black Big    1
+             Small  1
+       White Big    1
+             Small  1
+Horse  Black Big    1
+             Small  1
+       White Big    1
+             Small  1
+
+# 认识发现，层级结构：hierachies2 <- "color,size,animal"
+color size  animal   
+Black Big   Pig     1
+            Dog     1
+            Cat     1
+            Sheep   1
+            Cow     1
+            Horse   1
+      Small Pig     1
+            Dog     1
+            Cat     1
+            Sheep   1
+            Cow     1
+            Horse   1
+White Big   Pig     1
+            Dog     1
+            Cat     1
+            Sheep   1
+            Cow     1
+            Horse   1
+      Small Pig     1
+            Dog     1
+            Cat     1
+            Sheep   1
+            Cow     1
+            Horse   1
+
+# 现在根据上述的 客观现象进行数据组织：以Haskell  的形式进行 逻辑化组织：认知发现，创建树形结构
+
+定义data类型的语法是：
 -- ----------------------------------------------------------------------------------------------------------
 -- 静态数据类型 data 的定义
 -- ----------------------------------------------------------------------------------------------------------
