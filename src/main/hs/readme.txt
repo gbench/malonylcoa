@@ -40,6 +40,7 @@ hierachies1 <- "animal,color,size" |> strsplit(",") |> unlist() ; tree(hierachie
 hierachies2 <- "color,size,animal" |> strsplit(",") |> unlist() ; tree(hierachies2)
 ```
 # 数据模型：客观存在：物质模型
+# animal, color, size 为客观存在的 树形特征
 > data <- list(animal=animal, color=color, size=size); data;
 $animal
 [1] "Pig"   "Dog"   "Cat"   "Sheep" "Cow"   "Horse"
@@ -51,7 +52,8 @@ $size
 [1] "Big"   "Small"
 
 
-# 认识发现，层级结构：hierachies2 <- "animal,color,size"
+# 认识发现，层级结构：hierachies1 <- "animal,color,size"，将数据特征data 按照hierachies2 进行组织&联系（物质联系）进而形成认知的意识概念体系（逻辑结构）
+> hierachies1 <- "animal,color,size" |> strsplit(",") |> unlist() ; tree(hierachies1)
 animal color size    
 Pig    Black Big    1
              Small  1
@@ -78,7 +80,8 @@ Horse  Black Big    1
        White Big    1
              Small  1
 
-# 认识发现，层级结构：hierachies2 <- "color,size,animal"
+# 认识发现，层级结构：hierachies2 <- "color,size,animal"，将数据特征 按照hierachies2 进行组织&联系（物质联系）进而形成认知的意识概念体系（逻辑结构）
+> hierachies2 <- "color,size,animal" |> strsplit(",") |> unlist() ; tree(hierachies2)
 color size  animal   
 Black Big   Pig     1
             Dog     1
@@ -105,7 +108,12 @@ White Big   Pig     1
             Cow     1
             Horse   1
 
-# 现在根据上述的 客观现象进行数据组织：以Haskell  的形式进行 逻辑化组织：认知发现，创建树形结构
+# 现在根据上述的 客观现象(data 数据模型)进行 概念化 ：
+# 所谓概念化 即 创建 ·意识概念&关系结构· 
+#
+# 创建树形结构（以Haskell  的形式进行 逻辑化组织 即 认知发现）
+# 按照hierachies1 <- "animal,color,size"进行 关联（Associate）、组织(Organize) 
+# 以 形成 认识（recognition) 的 意识概念逻辑(Knowledge) 即 树形结构化 的 分类层级 (Haskell的分类系统)
 
 定义data类型的语法是：
 -- ----------------------------------------------------------------------------------------------------------
