@@ -38,7 +38,7 @@ data Animal =
  deriving (Eq, Show)
 :}
 --  找出狗对象
-let as=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in [x | x<-as, case x of (Dog _ _) -> True; _ -> False ]
+let as=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in [ x | x<-as, case x of (Dog _ _) -> True; _ -> False ]
 
 -- ----------------------------------------------------------------------------------------------------------
 -- 黑狗函数的定义
