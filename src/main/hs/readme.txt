@@ -21,7 +21,7 @@ Haskell 把类型分为：`静态数据类型 data`　与　`动态方法类型 
 
 这里：我们先来说data类型，定义data类型的语法是：
 -- ----------------------------------------------------------------------------------------------------------
--- 数据类型的定义
+-- 静态数据类型 data 的定义
 -- ----------------------------------------------------------------------------------------------------------
 :{ 
 -- 颜色：不带有类型参数
@@ -64,3 +64,30 @@ c $ Dog Black Small
 
 --  获取对象颜色
 let anms=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in map c anms
+
+有了数据类型，接下来我们再来说一下 动态方法类型 class 的语法结构， 
+-- ----------------------------------------------------------------------------------------------------------
+-- 动态方法类型 class 的定义
+-- ----------------------------------------------------------------------------------------------------------
+:{
+--  a 类型的数据格式化
+class (Show a) => CString a where
+  -- 数据格式化
+  toString :: a -> String
+  toString = toLowerString . show where
+      -- 将字符串转换为小写的函数
+      toLowerString :: String -> String
+      toLowerString s = [toLowerChar c | c <- s]
+      -- 将单个字符转换为小写的函数
+      toLowerChar :: Char -> Char
+      toLowerChar c
+        | c >= 'A' && c <= 'Z' = toEnum (fromEnum c + 32) -- 大写字符形式
+        | otherwise = c -- 其他类型保持不变
+
+-- 实现转字符串格式化函数
+instance CString Color where toString = show
+instance CString Size
+:}
+
+toString $ Small
+toString $ Black
