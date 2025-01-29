@@ -88,8 +88,17 @@ class (Show a) => CString a where
 instance CString Color where toString = show
 -- Size 的 CString 方法格式化的默认实现
 instance CString Size
+-- 动物的格式化
 instance CString (Animal Color Size) where
-  toString anm = concat $ [ f anm | f <- [show . c, show . s] ] 
+  toString anm = (concat $ [ f anm | f <- [show . c, show . s] ]) ++ 
+    case anm of -- 分类执行
+      (Pig _ _) -> "Pig"
+      (Dog _ _) -> "Dog"
+      (Cat _ _) -> "Cat"
+      (Sheep _ _) -> "Sheep"
+      (Cow _ _) -> "Cow"
+      -- (Horse _ _) -> "Horse" -- 取消掉
+      _ -> "Horse" -- 其他类型
 :}
 
 toString $ Small
