@@ -44,16 +44,22 @@ let as=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, Whi
 -- 黑狗函数的定义
 -- ----------------------------------------------------------------------------------------------------------
 :{
---　是否是一致黑狗对象
+--  是否是一致黑狗对象
 isBlackDog ::  Animal -> Bool
 isBlackDog a = case a of (Dog c s) -> c==Black; _ -> False
 :}
 
 --  是否是一只黑狗
+isBlackDog (Dog (Black) (Small))
+--  注意此处  相当于：let b=Black; s=Small in isBlackDog (Dog b s)
+isBlackDog (Dog Black Small)
+--  用$代替括号
+let b=Black; s=Small in isBlackDog $ Dog b s
+--  用$代替括号
 isBlackDog $ Dog Black Small
 
--- 获取对象颜色
+--  获取对象颜色
 c $ Dog Black Small
 
--- 获取对象颜色
+--  获取对象颜色
 let as=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in map c as
