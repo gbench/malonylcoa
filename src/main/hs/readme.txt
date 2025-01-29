@@ -84,10 +84,17 @@ class (Show a) => CString a where
         | c >= 'A' && c <= 'Z' = toEnum (fromEnum c + 32) -- 大写字符形式
         | otherwise = c -- 其他类型保持不变
 
--- 实现转字符串格式化函数
+-- Color 的 CString 方法格式化的自定义实现
 instance CString Color where toString = show
+-- Size 的 CString 方法格式化的默认实现
 instance CString Size
+instance CString (Animal Color Size) where
+  toString anm = concat $ [ f anm | f <- [show . c, show . s] ] 
 :}
 
 toString $ Small
 toString $ Black
+-- 对于 animal 需要进行 强制类型转换 Animal Color Size
+toString $ (Pig Black Big  :: Animal Color Size)
+-- 打印 Animal Color Size 格式
+[toString $ (cons Black Big :: Animal Color Size) | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse]]
