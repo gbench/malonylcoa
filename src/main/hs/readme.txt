@@ -128,12 +128,12 @@ data Color = Black | White deriving (Eq, Show, Enum)
 data Size = Big | Small deriving (Eq, Show, Enum)
 --  动物：　带有类型参数
 data Animal c s= -- 动物
- Pig {c::Color , s::Size} -- 猪
- | Dog {c::Color , s::Size} -- 狗
- | Cat {c::Color , s::Size} -- 猫
- | Sheep {c::Color , s::Size} -- 羊
- | Cow {c::Color , s::Size} --  牛
- | Horse {c::Color , s::Size} -- 马
+ Pig {color::c , size::s} -- 猪
+ | Dog {color::c , size::s} -- 狗
+ | Cat {color::c , size::s} -- 猫
+ | Sheep {color::c , size::s} -- 羊
+ | Cow {color::c , size::s} --  牛
+ | Horse {color::c , size::s} -- 马
  deriving (Eq, Show)
 :}
 --  找出狗对象
@@ -144,7 +144,7 @@ let anms=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, W
 -- ----------------------------------------------------------------------------------------------------------
 :{
 --  是否是一只黑狗对象
-isBlackDog :: forall {c :: Color} {s :: Size}. Animal c s -> Bool
+isBlackDog :: Animal Color size -> Bool
 isBlackDog a = case a of (Dog c s) -> c==Black; _ -> False
 :}
 
@@ -158,10 +158,10 @@ let b=Black; s=Small in isBlackDog $ Dog b s
 isBlackDog $ Dog Black Small
 
 --  获取对象颜色
-c $ Dog Black Small
+color $ Dog Black Small
 
 --  获取对象颜色
-let anms=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in map c anms
+let anms=[ cons c s | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse], c <- [Black, White], s <- [Big, Small] ] in map color anms
 
 有了数据类型，接下来我们再来说一下 动态方法类型 class 的语法结构， 
 -- ----------------------------------------------------------------------------------------------------------
@@ -188,7 +188,7 @@ instance CString Color where toString = show
 instance CString Size
 -- 动物的格式化
 instance CString (Animal Color Size) where
-  toString anm = (concat $ [ f anm | f <- [show . c, show . s] ]) ++ 
+  toString anm = (concat $ [ f anm | f <- [show . color, show . size] ]) ++ 
     case anm of -- 分类执行
       (Pig _ _) -> "Pig"
       (Dog _ _) -> "Dog"
@@ -202,6 +202,6 @@ instance CString (Animal Color Size) where
 toString $ Small
 toString $ Black
 -- 对于 animal 需要进行 强制类型转换 Animal Color Size
-toString $ (Pig Black Big  :: Animal Color Size)
+toString $ (Pig Black Big)
 -- 打印 Animal Color Size 格式
-[toString $ (cons Black Big :: Animal Color Size) | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse]]
+[toString $ (cons Black Big) | cons <- [Pig, Dog, Cat, Sheep, Cow, Horse]]
