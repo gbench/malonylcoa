@@ -1,0 +1,70 @@
+-- 生成 n 个随机数
+randn :: Int -> IO [Float]
+randn n = if n == 1 then r else r <> randn (n-1) where r :: IO [Float] = (:[]) <$> randomIO
+
+-- reverse a string
+rev :: String -> String
+rev s = f [] s where
+  f ret [] = ret
+  f ret (x:xs) = f (x:ret) xs
+
+-- get the reversed first n character
+rfirst :: String -> Int -> String -> String 
+rfirst ret _ [] = ret -- the finish status
+rfirst ret n r@(x:xs)
+  | n <= 0 = ret
+  | otherwise = rfirst (x:ret) (n-1) xs
+
+-- get the first n character
+nfirst :: Int -> String -> String
+nfirst n s = rev (rfirst [] n s)
+
+-- get the last n character
+nlast :: Int -> String -> String
+nlast n s = rfirst [] n (rev s)
+
+-- 头前n个元素
+nhead n s= case s of 
+  (x:xs) -> if n>0 then [x] ++ nhead (n-1) xs else []
+  _ -> []
+
+-- 头前n个元素
+nhead n s 
+  | n <=0 = []
+  | otherwise = case s of 
+      (x:xs) -> [x] ++ nhead (n-1) xs
+      _ -> []
+    
+-- 尾部n个元素
+nlast n = reverse . (nhead n) . reverse
+
+-- 示例
+nlast 3 [1..10]
+
+-- split as string by char 
+split :: String -> Char -> [String]
+split s d = go [] [] s where
+  go :: [String] -> String -> String -> [String]
+  go ret current [] = if null current then ret else ret ++ [current] -- the finish status
+  go ret current (x:xs)
+    | x == d = go (ret ++ [current]) [] xs
+    | otherwise = go ret (current ++ [x]) xs
+
+-- split a string by string
+split2 :: String -> String -> [String]
+split2 s d = go [] [] s where
+  go :: [String] -> String -> String -> [String]
+  go ret current [] = if null current -- the finish status
+    then ret 
+    else (ret ++ [ if nlast (length d) current == d 
+      then nfirst (length current - length d) current 
+      else current ])
+  go ret current (x:xs)
+    | nlast (length d) current == d = go (ret ++ [(nfirst (length current - length d) current)]) [x] xs
+    | otherwise = go ret (current ++ [x]) xs
+
+-- 测试
+split "1,2,3,4" ','
+
+-- 测试2
+split2 "1, 2, 3, 4" ", "
