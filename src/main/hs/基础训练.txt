@@ -1,6 +1,12 @@
--- 生成 n 个随机数
+-- 生成 n 个随机数, IO [Float] 有点类似于 java 里面的 Future<Float] 概念
 randn :: Int -> IO [Float]
-randn n = if n == 1 then r else r <> randn (n-1) where r :: IO [Float] = (:[]) <$> randomIO
+randn n 
+ | n >0 = if n == 1 then r else r <> randn (n-1) -- 大于0
+ | otherwise = return [] :: IO [Float] -- 等于0
+ where r :: IO [Float] = (:[]) <$> randomIO -- 随机函数
+
+-- 结果测试
+randn 10
 
 -- reverse a string
 rev :: String -> String
