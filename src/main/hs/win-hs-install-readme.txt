@@ -14,6 +14,55 @@ chco upgrade ghc
 # 可以使用 cabal install --lib random 命令。--lib 标志会将库安装到一个可以被 GHC 环境识别的位置，让你在编写代码时能够直接导入和使用。
 cabal install --lib random
 
+# ghc-pkg describe base    描述包信息
+C:\Users\Administrator>ghc-pkg describe base
+name:                 base
+version:              4.19.1.0
+visibility:           public
+id:                   base-4.19.1.0-6554
+key:                  base-4.19.1.0-6554
+license:              BSD-3-Clause
+
+# ghc-pkg list 查看包信息
+C:\Users\Administrator>ghc-pkg list
+C:\tools\ghc-9.8.2\lib\package.conf.d
+    Cabal-3.10.2.0
+    Cabal-syntax-3.10.2.0
+    Win32-2.13.4.0
+    array-0.5.6.0
+    base-4.19.1.0
+    binary-0.8.9.1
+    bytestring-0.12.1.0
+    containers-0.6.8
+    deepseq-1.5.0.0
+    directory-1.3.8.1
+    exceptions-0.10.7
+    filepath-1.4.200.1
+    (ghc-9.8.2)
+    ghc-bignum-1.3
+    ghc-boot-9.8.2
+    ghc-boot-th-9.8.2
+    ghc-compact-0.1.0.0
+    ghc-heap-9.8.2
+    ghc-prim-0.11.0
+    ghci-9.8.2
+    haskeline-0.8.2.1
+    hpc-0.7.0.0
+    integer-gmp-1.1
+    mtl-2.3.1
+    parsec-3.1.17.0
+    pretty-1.1.3.6
+    process-1.6.18.0
+    rts-1.0.2
+    semaphore-compat-1.0.0
+    stm-2.5.2.1
+    system-cxx-std-lib-1.0
+    template-haskell-2.21.0.0
+    text-2.1.1
+    time-1.12.2
+    transformers-0.6.1.0
+    xhtml-3000.2.2.1
+
 # 查看ghci 安装位置
 C:\Users\Administrator>where ghci
 C:\tools\ghc-9.8.2\bin\ghci.exe
@@ -33,6 +82,10 @@ Package list of hackage.haskell.org has been updated.
 The index-state is set to 2025-02-01T18:31:52Z.
 To revert to previous state run:
     cabal v2-update 'hackage.haskell.org,2025-02-01T17:41:47Z'
+
+
+# Package list 更新位置
+C:\Users\Administrator\AppData\Local\cabal\packages\hackage.haskell.org
 
 
 # %appdata%\cabal\config位置中 remote-repo-cache 配置本地包缓存的存放位置
