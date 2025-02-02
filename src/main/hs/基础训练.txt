@@ -50,6 +50,22 @@ cph xx = go [[]] xx where
 -- 展示示例 [ComPreHension] 相当于数学中的集合论里的descartes积
 let x = [1..3] in cph [x, x, x]
 
+:m Data.Map -- Map 函数
+:m Data.List -- nub 去重函数
+-- 去重
+let x = [-1,0,1] in nub $ cph [x, x, x] >>= return . sum
+
+-- 计算频率
+-- 开启containers包 以便 可以导入 Data.Map
+:set -package containers
+:m Data.Map
+:m Data.List
+
+-- 统计频率函数
+freq= foldl (\m x -> Data.Map.insertWith (+) x 1 m) Data.Map.empty
+-- 统计元素频率
+let x = [-1,0,1]; in freq $ cph [x, x, x] >>= return . sum
+
 -- reverse a string
 rev :: String -> String
 rev s = f [] s where
