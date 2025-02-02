@@ -1,7 +1,7 @@
 -- 生成 n 个随机数, IO [Float] 有点类似于 java 里面的 Future<Float] 概念：
 -- 都是用一个黑盒方式对某个值进行封装，区别是Future表达异步概念, 而IO表达了某种底层机制（IO控制，超出语言抽象层面的实现机制）
 
-: System.Random
+:m System.Random
 :{
 randn :: Int -> IO [Float]
 randn n 
@@ -14,7 +14,7 @@ randn 10
 
 -- IO 文件读取训练
 -- 导入 IO　输入输出　文件操作模块
-: System.IO 
+:m System.IO 
 :{
 -- 尝试读取文件
 tryRead h = check h >>= readLines [] where 
