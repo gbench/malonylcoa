@@ -38,6 +38,18 @@ tryRead h = check h >>= readLines [] where
 -- 尝试读取文件
 openFile "a.hs" ReadMode >>= tryRead
 
+-- 全排列测试
+:{
+-- 生成一个元素集合全排列：集合论里的descartes积
+cph :: [[a]] -> [[a]]
+cph xx = go [[]] xx where
+  go :: [[a]] -> [[a]] -> [[a]]
+  go ret [] = ret
+  go ret (x:xs) = go [ x':r' | x' <- x, r' <- ret] xs -- 每次从xx中提取一个x对ret进行树形展开
+:}
+-- 展示示例 [ComPreHension] 相当于数学中的集合论里的descartes积
+let x = [1..3] in cph [x, x, x]
+
 -- reverse a string
 rev :: String -> String
 rev s = f [] s where
