@@ -19,9 +19,9 @@ randn 10
 -- 尝试读取文件
 tryRead :: Handle -> IO [String]
 tryRead h = check h >>= readLines [] where 
-  -- 检测 文件状态
+  -- 检测 文件状态 : 返回结果为IO的2元组(文件句柄, 文件读取状态:True已经到达文件末尾,False仍旧存在未读数据）
   check :: Handle -> IO (Handle, Bool)
-  check h = (h,) <$> (hIsEOF h)
+  check h = (h,) <$> hIsEOF h -- (文件句柄, 文件读取状态:True已经到达文件末尾,False仍旧存在未读数据）
   -- 读取文件数据行
   readLines :: [String] -> (Handle, Bool) -> IO [String]
   readLines ret x = case x of
