@@ -23,8 +23,9 @@ tryRead h = check h >>= readLines [] where
   check h = (h,) <$> (hIsEOF h)
   -- 读取文件数据行
   readLines :: [String] -> (Handle, Bool) -> IO [String]
-  readLines ret x = case x of 
-    (h, False) ->  ((ret ++ ) . (:[])) <$> (hGetLine h) >>= (\ret' -> (check h) >>=  readLines ret'  )
+  readLines ret x = case x of
+    --  注意  '.' infixl 9 比 '>>=' infixr 1,故 '.' 优先级高， 所以 (check h >>=) . readLines  优先计算
+    (h, False) ->  ((ret ++ ) . (:[])) <$> (hGetLine h) >>= (check h >>=) . readLines 
     _  -> hClose h >> return ret -- 关闭文件并返回结果
 :}
 -- 尝试读取文件
