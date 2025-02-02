@@ -63,8 +63,14 @@ let x = [-1,0,1] in nub $ cph [x, x, x] >>= return . sum
 
 -- 统计频率函数
 freq= foldl (\m x -> Data.Map.insertWith (+) x 1 m) Data.Map.empty
--- 统计元素频率
-let x = [-1,0,1]; in freq $ cph [x, x, x] >>= return . sum
+-- 统计元素频率, 这里重新定义了 cph , :m Data.Map 清空当前会话
+let x = [-1,0,1]; cph xx = case xx of {(x:xs) -> [p:q | p <- x, q <- cph xs]; _ -> [[]]}; in freq $ cph [x, x, x] >>= return . sum
+
+-- 复制一个指定x对象,n次
+rep :: (Ord t1, Num t1) => t1 -> t2 -> [t2]
+rep n x = if n <1 then [] else x : rep (n-1) x
+-- 结果测试
+let x = [-1,0,1]; cph xx = case xx of {(x:xs) -> [p:q | p <- x, q <- cph xs]; _ -> [[]]}; in freq $ (cph $ rep 3 x) >>= return . sum
 
 -- reverse a string
 rev :: String -> String
