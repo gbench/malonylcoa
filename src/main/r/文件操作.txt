@@ -30,6 +30,31 @@ ls()|>(\(x)lapply(x,\(v) substitute(get(v),list(v=v))|>eval())|>structure(names=
 #[1] "F:/slicef/ws/rws"
 
 # -------------------------------------------------------------------------------------------------------------
+# 数据目录
+# -------------------------------------------------------------------------------------------------------------
+
+# 查看当前目录下的所有文件包括目录
+list.files(path='.', all.files=T, recursive=T, include.dirs=T)
+
+#' 创建目录
+#' @param x 目录集合
+mkdir <- \(x) x |> strsplit("[,/\\]+") |> structure(names=x) |> lapply( \(e) Reduce(x=e, \(acc, a) paste(acc, a, sep="/"), accumulate=T) |> lapply(dir.create) )
+# 一次创建多层级目录
+mkdir(c("a/b/c", "d/e/f"))
+
+# 递归删除中的所有文件，清空当前目录
+#' @param x 目录集合
+clear <- \(x=".") list.files(path=x , include.dirs=T, full.names=T) |> lapply(unlink, recursive=T)
+# 清空a,d目录中的数据文件
+clear(c('a', 'd'))
+
+# 查看当前目录下的所有文件包括目录
+list.files(path='.', all.files=T, recursive=T, include.dirs=T)
+
+# 删除当前目录下的所有文件（隐藏文件除外）
+clear()
+
+# -------------------------------------------------------------------------------------------------------------
 # 数据文件
 # -------------------------------------------------------------------------------------------------------------
 # 创建文件夹
@@ -56,6 +81,134 @@ unlink("a",recursive=T) # 递归删除
 
 # 查看工作区中的文件
 list.files()
+
+# -------------------------------------------------------------------------------------------------------------
+# RDS（R对象文件） 文件的读取
+# saveRDS and readRDS provide the means to save a single R object to a connection (typically a file) and to restore the object
+# -------------------------------------------------------------------------------------------------------------
+
+#  导出指定环境env中的数据变量到指定目标位置x，默认为环境为 .GlobalEnv
+(\(x='objects', env=sys.frame()) {
+  if(!dir.exists(x)) dir.create(x); 
+  lapply( ls(env), \(e, object=get(e), file=paste0(x, '/',e, '.rds')) saveRDS(object, file) ) # 对象保存
+}) ()
+
+# 导入指定目标位置x中的rds对象到指定的目标环境env，默认为环境为 .GlobalEnv
+(\(x='objects', env=sys.frame()) {
+  if(!dir.exists(x)) stop(sprintf('%s目录不存在!',x))
+  lapply( list.files(x, pattern="\\.rds$", full.names=T), \(file, name=sub(".+[/\\]([^/\\]+)\\.rds$", "\\1", file)) assign(name, readRDS(file), env) )
+}) ()
+
+# -------------------------------------------------------------------------------------------------------------
+# RDA文件的读取
+# -------------------------------------------------------------------------------------------------------------
+
+# 删除工作区中的数据文件
+list.files()|>lapply(unlink)
+
+# 把当前会话中的对象，导出到文件
+save(list=ls(), file="allinone.rda")
+
+# 清空当前工作会话
+rm(list=ls())
+
+# 在重新导入进来
+load(file="allinone.rda")
+
+# 查看会话中的对象
+ls()
+
+# 查看工作区中的文件
+list.files()
+
+# -------------------------------------------------------------------------------------------------------------
+# RDA文件的读取
+# https://www.thecoatlessprofessor.com/programming/r/saving-and-reading-r-objects/
+# -------------------------------------------------------------------------------------------------------------
+Formats :  Overview of the different kinds of R binary files that are available.
+
+.rda/.RData is  "R Data"
+  Description: Save and restore one or more named objects into an environment.
+  Notes: Useful for storing workspaces and multiple R objects as-is. As an example, see the save.image() function called upon closing every R session.
+.rds is a “R Data Single”
+  Description: Save and load a single R object to a binary file.
+  Notes: Great for exporting a single result and loading it into a new variable.
+.rdx and .rdb
+  Description: .rdx contains the index while .rdb stores objects for an R Database used in Lazy Loading
+  Notes: Primarily for R's internal usage. Though, benefits exist around delayed assignment by the use of promises for large data.
+
+# 清空目录
+list.files() |> lapply(unlink, recursive=T)
+
+# 把当前会话的对象全部存入一个新的环境
+my_lazy_env = as.list(environment()) |> list2env(parent=emptyenv())
+
+path="data-db" # 目标目镜
+filebase=paste0(path,  "/my_lazyload_db") 
+
+# 创建数据文件目录
+if(!dir.exists(path)) dir.create(path)
+    
+# Save objects inside a LazyLoadDB： 把对象存入一个LazyLoadDB
+# Requires an environment and the name of a file. 需要一个环境以及一个文件名
+# 这里使用:::调用非公开导出的R库函数
+tools:::makeLazyLoadDB(my_lazy_env, filebase);
+    
+print(ls())
+# 清空当前会话环境
+rm(list = setdiff(ls(),c('path','filebase')))
+    
+# Load objects from disk：重新加载 
+lazyLoad(filebase)
+
+#查看当前空间中的数据对象
+ls()
+
+# -------------------------------------------------------------------------------------------------------------
+# 导出函数源文件
+# -------------------------------------------------------------------------------------------------------------
+#' 导出指定函数符号到文件，以方便查看代码
+#' @param x  函数符号或是字符串名称
+export <- \(x) {
+  nm <- if(is.character(x)) x else substitute(x) |> deparse() # 符号名称
+  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(paste0(nm, '.R'), 'w')) {
+    on.exit(close(f)) # 退出时候关闭文件
+    cat(paste(x, collapse='\n'), file=f) # 把符号表达式写入文件
+  }) ()
+}
+
+# 导出符号
+export(library)
+# 导出字符串
+export('install.packages')
+
+# 一个library 函数的导出
+library|>deparse()|>paste(collapse="\n")|>(\(x,f=file('library.R','w')){on.exit({close(f);print('close')}); cat(x,file=f)})()
+
+# -------------------------------------------------------------------------------------------------------------
+# DCF 文件的读取
+# DCF is a simple format for storing databases in plain text files that can easily be directly read and written by humans. 
+# DCF is used in various places to store R system information, like descriptions and contents of packages.
+# -------------------------------------------------------------------------------------------------------------
+#' read a dcf file
+#' NB: the DESCRIPTION  of a package is a dcf format(1*n matrix), so we could use it as the test case
+#' @param pkg package name
+#' @param file DCF file
+(\(pkg, file=paste0(.libPaths(), "/", pkg,"/DESCRIPTION" )) read.dcf(file) ) ('shiny') |> 
+#' 
+#'@param x is a matrix object,so it can use the colnames to extract its field
+(\(x) {
+  lapply(colnames(x),\(i) x[,i])
+}) ()
+
+# read pkg's authors
+pkgdesc <- (\(pkg, file=paste0(.libPaths(), "/", pkg,"/DESCRIPTION" )) read.dcf(file) ) ('shiny') 
+pkgdesc[,'Authors@R'] |> parse(text=_) |> eval()
+
+#' 文件读写,把DESCRIPTION文件中的数据写入文件pkgdesc.data
+#' file("pkgdesc.data","w") 打开文件
+#' on.exit(close(f)) 退出时候关闭文件
+paste0(.libPaths(),'/ggplot2/DESCRIPTION') |> read.dcf() |> (\(pkgdesc, f=file("pkgdesc.ggplot2","w")) { on.exit(close(f)); cat(pkgdesc, file=f) }) ()
 
 # -------------------------------------------------------------------------------------------------------------
 # 元编程

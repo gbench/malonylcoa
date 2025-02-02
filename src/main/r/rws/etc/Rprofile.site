@@ -27,6 +27,6 @@ if ( !dir.exists(dailywork_home) )  dir.create(dailywork_home)
 setwd(dailywork_home)
 
 # 自定义的预先加载的自定义函数文件列表
-myfiles <- "db/sqlquery.R;utils/envs.R" |> strsplit("[,;]+") |> unlist()
+myfiles <- list.files(path=Sys.getenv('RSCRIPT_HOME'), pattern="\\.R$", recursive=T) 
 scriptlog <- sprintf(fmt="%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) 
 

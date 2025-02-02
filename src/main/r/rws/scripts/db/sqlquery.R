@@ -89,5 +89,41 @@ sqlexecute <- function(sql, simplify=T, ...) {
     }, ...)(sql) # 连接使用函数
 }
 
+# 创建数据表SQL
+# dfm 数据框数据
+ctsql <- function( dfm ) {
+  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+  dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
+      n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
+      default_type=sprintf('varchar(%s)', n) # 默认类型
+    ) switch(t, # 类型判断
+        `logical`='bool', # 布尔类型
+        `integer`=if(cls=='factor') default_type else 'integer', # 列表类型
+        `double`='double', # 列表类型
+        `list`='json', # 列表类型
+        default_type # 默认类型 
+    )) |> (\(x) # 获取字段定义
+      sprintf("create table %s (\n  %s \n)\n", tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
+    ) () # SQL 创建表语句
+}
+
+# 表数据插入SQL
+# dfm 数据框对象
+insql <- function( dfm ) {
+  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+  keys <- names( dfm ) |> paste(collapse=", ") # 列名列表
+  values <- dfm |> lapply(\(e, t=typeof(e), cls=class(e)) # 记录值列表的各个字段值处理：
+    switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
+      `logical`=e, # 逻辑类型，保持原值不变
+      `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
+      `double`=e, # 双精度，保持原值不变
+      `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
+      sprintf("'%s'", e) # 默认类型，使用单引号'给括起来
+    )) |> do.call(\(...) mapply(\(...) paste(..., sep=',', collapse=','), ...), args=_) |> # 单行映射,这里的\(...)符号具有层级差异，是两个不同变量
+    sprintf(fmt='( %s )') |> paste(collapse=',\n  ') # 值列表
+  sprintf( "insert into %s (%s) values \n  %s\n", tbl, keys, values ) # SQL 插入记录行数据（多行）语句
+}
+
 # 自定义主机与数据库
 sqlquery.h10ctp2 <- partial(sqlquery, host="192.168.1.10", dbname="ctp2")
+sqlquery.ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp")

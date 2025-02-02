@@ -1,0 +1,140 @@
+-- 生成 n 个随机数, IO [Float] 有点类似于 java 里面的 Future<Float] 概念：
+-- 都是用一个黑盒方式对某个值进行封装，区别是Future表达异步概念, 而IO表达了某种底层机制（IO控制，超出语言抽象层面的实现机制）
+
+:m System.Random
+:{
+randn :: Int -> IO [Float]
+randn n 
+ | n >0 = if n == 1 then r else r <> randn (n-1) -- 大于0
+ | otherwise = return [] :: IO [Float] -- 等于0
+ where r :: IO [Float] = (:[]) <$> randomIO -- 随机函数
+:}
+-- 结果测试
+randn 10
+
+-- IO 文件读取训练
+-- 导入 IO　输入输出　文件操作模块
+:m System.IO 
+:{
+-- 尝试读取文件
+tryRead :: Handle -> IO [String]
+tryRead h = check h >>= readLines [] where 
+  -- 检测 文件状态 : 返回结果为IO的2元组(文件句柄, 文件读取状态:True已经到达文件末尾,False仍旧存在未读数据）
+  check :: Handle -> IO (Handle, Bool)
+  check h = (h,) <$> hIsEOF h -- (文件句柄, 文件读取状态:True已经到达文件末尾,False仍旧存在未读数据）
+  -- 读取文件数据行
+  readLines :: [String] -> (Handle, Bool) -> IO [String]
+  readLines ret x = case x of
+    --  注意  '.' infixl 9 比 '>>=' infixr 1,故 '.' 优先级高， 所以 (check h >>=) . readLines  优先计算
+    -- 没有读到文件末尾，还有数据，则 hGetLine h 读取一行数据
+    -- 读取一行数据并将该结果追加到ret结果的最后 即 ((ret++) . (:[])) 
+    (h, False) ->  ((ret++) . (:[])) <$> hGetLine h >>= --  更新结果数据ret：
+       -- readLines接收更新后ret结果数据，并将生成的偏函数绑定>>=到check h的IO (Handle, Bool)文件状态之上
+       -- 进而实现了在更新了文件读取状态IO (Handle, Bool)的新一轮递归调用，即 连续读取
+       (check h >>=) . readLines  -- 一直读取，直到 没有数据为止的循环操作
+       -- 已经读到文件末尾了
+    _  -> hClose h >> return ret -- 关闭文件并返回结果
+:}
+-- 尝试读取文件
+openFile "a.hs" ReadMode >>= tryRead
+
+-- 全排列测试
+:{
+-- 生成一个元素集合全排列：集合论里的descartes积
+cph :: [[a]] -> [[a]]
+cph xx = go [[]] xx where
+  go :: [[a]] -> [[a]] -> [[a]]
+  go ret [] = ret
+  go ret (x:xs) = go [ x':r' | x' <- x, r' <- ret] xs -- 每次从xx中提取一个x对ret进行树形展开
+:}
+-- 展示示例 [ComPreHension] 相当于数学中的集合论里的descartes积
+let x = [1..3] in cph [x, x, x]
+
+:m Data.Map -- Map 函数
+:m Data.List -- nub 去重函数
+-- 去重
+let x = [-1,0,1] in nub $ cph [x, x, x] >>= return . sum
+
+-- 计算频率
+-- 开启containers包 以便 可以导入 Data.Map
+:set -package containers
+:m Data.Map
+:m Data.List
+
+-- 统计频率函数
+freq= foldl (\m x -> Data.Map.insertWith (+) x 1 m) Data.Map.empty
+-- 统计元素频率, 这里重新定义了 cph , :m Data.Map 清空当前会话
+let x = [-1,0,1]; cph xx = case xx of {(x:xs) -> [p:q | p <- x, q <- cph xs]; _ -> [[]]}; in freq $ cph [x, x, x] >>= return . sum
+
+-- 复制一个指定x对象,n次
+rep :: (Ord t1, Num t1) => t1 -> t2 -> [t2]
+rep n x = if n <1 then [] else x : rep (n-1) x
+-- 结果测试
+let x = [-1,0,1]; cph xx = case xx of {(x:xs) -> [p:q | p <- x, q <- cph xs]; _ -> [[]]}; in freq $ (cph $ rep 3 x) >>= return . sum
+
+-- reverse a string
+rev :: String -> String
+rev s = f [] s where
+  f ret [] = ret
+  f ret (x:xs) = f (x:ret) xs
+
+-- get the reversed first n character
+rfirst :: String -> Int -> String -> String 
+rfirst ret _ [] = ret -- the finish status
+rfirst ret n r@(x:xs)
+  | n <= 0 = ret
+  | otherwise = rfirst (x:ret) (n-1) xs
+
+-- get the first n character
+nfirst :: Int -> String -> String
+nfirst n s = rev (rfirst [] n s)
+
+-- get the last n character
+nlast :: Int -> String -> String
+nlast n s = rfirst [] n (rev s)
+
+-- 头前n个元素
+nhead n s= case s of 
+  (x:xs) -> if n>0 then [x] ++ nhead (n-1) xs else []
+  _ -> []
+
+-- 头前n个元素
+nhead n s 
+  | n <=0 = []
+  | otherwise = case s of 
+      (x:xs) -> [x] ++ nhead (n-1) xs
+      _ -> []
+    
+-- 尾部n个元素
+nlast n = reverse . (nhead n) . reverse
+
+-- 示例
+nlast 3 [1..10]
+
+-- split as string by char 
+split :: String -> Char -> [String]
+split s d = go [] [] s where
+  go :: [String] -> String -> String -> [String]
+  go ret current [] = if null current then ret else ret ++ [current] -- the finish status
+  go ret current (x:xs)
+    | x == d = go (ret ++ [current]) [] xs
+    | otherwise = go ret (current ++ [x]) xs
+
+-- split a string by string
+split2 :: String -> String -> [String]
+split2 s d = go [] [] s where
+  go :: [String] -> String -> String -> [String]
+  go ret current [] = if null current -- the finish status
+    then ret 
+    else (ret ++ [ if nlast (length d) current == d 
+      then nfirst (length current - length d) current 
+      else current ])
+  go ret current (x:xs)
+    | nlast (length d) current == d = go (ret ++ [(nfirst (length current - length d) current)]) [x] xs
+    | otherwise = go ret (current ++ [x]) xs
+
+-- 测试
+split "1,2,3,4" ','
+
+-- 测试2
+split2 "1, 2, 3, 4" ", "

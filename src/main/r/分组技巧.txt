@@ -17,6 +17,9 @@ plots <- function(...) {
   par(op) # 恢复图形参数
 }
 
+# melt 技巧, nrow(x) 行数目,length(x) 列数目,gl(nrow(x), 1, nrow(x)*length(x), labels=row.names(x)) 把x的行名称复制length(x)次数
+( \(x) gl(nrow(x), 1, nrow(x)*length(x), labels=row.names(x)) |> cbind(id=_, stack(mtcars)) ) (mtcars)
+
 # 收盘价格绘图
 tail(data,100) |> split(rep(1:10,rep(10,10))) |> lapply(\(p) \() plot(p[['c']])) |> tail(2) |> do.call(plots,args=_)
 

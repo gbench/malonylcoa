@@ -346,3 +346,75 @@ attr(,"name")
 [16] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"    "D:/sliced/develop/r/R-4.4.2/library/DBI"       "D:/sliced/develop/r/R-4.4.2/library/methods"  
 [19] "Autoloads"                                     "D:/sliced/develop/r/R-4.4.2/library/base"     
 > 
+
+# Package environments and the search path
+#  follow all the parents back, you see the order in which every package has been attached. 
+# This is known as the search path because all objects in these environments can be found from the top-level interactive workspace.
+# https://adv-r.hadley.nz/environments.html#search-path
+# You can see the names of these environments with base::search()
+# searchpaths 就是搜索get符号定义的(确定符号所在的环境位置），环境即使将符号（变量）与值进行关联的一组空间或者说是一种对应关系associations：R称其为bindings
+# R的运行的原理就是不断的创建构建环境，来实现这种符号与值之间的关系绑定。
+# R批量的将 一组符号集合 加载到内存（运行时） 形成有用的（有绑定的功能意义）的操作叫做attach。
+# library() 就是将 package中的符号以 searchpaths 的节点元素的而形式attach添加到 运行环境(运行时）的方法。
+
+# Every namespace environment has the same set of ancestors:
+
+# Each namespace has an imports environment that contains bindings to all the functions used by the package. 
+# The imports environment is controlled by the package developer with the NAMESPACE file.
+
+# Explicitly importing every base function would be tiresome, so the parent of the imports environment is the base namespace. 
+# The base namespace contains the same bindings as the base environment, but it has a different parent.
+
+# The parent of the base namespace is the global environment. 
+# This means that if a binding isn't defined in the imports environment the package will look for it in the usual way. 
+# This is usually a bad idea (because it makes code depend on other loaded packages), 
+# so R CMD check automatically warns about such code. It is needed primarily for historical reasons, particularly due to how S3 method dispatch works.
+
+# ------------------------------------------------------------------------------
+# nsenv 命名空间的即函数的 enclosing environment 
+# pkgenv 包环境 采用library 加包加载到searchpaths中以便程序使用的环境
+# https://adv-r.hadley.nz/environments.html#search-path
+# ------------------------------------------------------------------------------
+
+# library: 的本质就是把
+# when you attach another package with library(), the parent environment of the global environment changes:
+
+# The package environment is the external interface to the package. 
+# It's how you, the R user, find a function in an attached package or with ::. Its parent is determined by search path, i.e. 
+# the order in which packages have been attached.
+
+# The namespace environment is the internal interface to the package. 
+# The package environment controls how we find the function; 
+#the namespace controls how the function finds its variables.
+
+# 查看install.packages所在的定义环境enclosing environment
+> environment(install.packages)
+<environment: namespace:utils>
+# 定义环境中的名称数量
+> environment(install.packages) |> ls(all.names=T) |> length()
+[1] 639
+# 查看install.packages所在的包环境（exports 导出符号的)
+> envclos() %>% structure(., names=sapply(., attr, which='name')) |> lapply(ls.str, all.names=T) |> grep(pattern='install.packages', value=T) |> names()
+[1] "package:utils"
+# 注意 与 package:utils 与 namespace:utils 是不同的
+上一句使用进行取代
+> pryr::where('install.packages')
+<environment: package:utils>
+attr(,"name")
+[1] "package:utils"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.4.2/library/utils"
+
+# 证明连namespace环境与package环境的不同
+> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages')) identical(nsenv, pkgenv))()
+[1] FALSE
+
+# 变量数目由很大不同,namespace中要中的符号要远远多余package环境中的符号
+> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages'))  
++   structure(c(nsenv, pkgenv), names=c('nsenv','pkgenv')) |>lapply(length))  ()
+$nsenv
+[1] 639
+
+$pkgenv
+[1] 263
+# ------------------------------------------------------------------------------
