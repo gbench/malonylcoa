@@ -17,6 +17,7 @@ randn 10
 :m System.IO 
 :{
 -- 尝试读取文件
+tryRead :: Handle -> IO [String]
 tryRead h = check h >>= readLines [] where 
   -- 检测 文件状态
   check :: Handle -> IO (Handle, Bool)
