@@ -80,7 +80,7 @@ let
   nouns = words "cat fish" -- 名词
   verbs = words "eat like" -- 动词
   -- 句子成分：句子结构，就像 用 [头][颈][胸][躯干][四肢] 来描述 动物 一样 是一种 表单与描述方式 expression
-  -- 一个句子 就是一种意义单元 是一种都 句子成分的 组织凡是
+  -- 一个句子 就是一种意义单元 是一种都 句子成分的 组织方式：句子就是一种的的基本结构（意义信息单元的结构）
   subject = nouns -- 主语
   predicate = verbs -- 谓语
   object = nouns -- 宾语
