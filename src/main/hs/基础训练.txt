@@ -72,6 +72,25 @@ rep n x = if n <1 then [] else x : rep (n-1) x
 -- 结果测试
 let x = [-1,0,1]; cph xx = case xx of {(x:xs) -> [p:q | p <- x, q <- cph xs]; _ -> [[]]}; in freq $ (cph $ rep 3 x) >>= return . sum
 
+-- 语言原理
+:{
+let
+  -- 词典：将 客观存在 映射到 单词符号，
+  -- 可以是说 单词符号 是 客观存在物质对象的索引
+  nouns = words "cat fish" -- 名词
+  verbs = words "eat like" -- 动词
+  -- 句子成分：句子结构，就像 用 [头][颈][胸][躯干][四肢] 来描述 动物 一样 是一种 表单与描述方式 expression
+  -- 一个句子 就是一种意义单元 是一种都 句子成分的 组织凡是
+  subject = nouns -- 主语
+  predicate = verbs -- 谓语
+  object = nouns -- 宾语
+in 
+  -- 中文与英语方式
+  cph [subject, predicate, object] -- 使用一种语法结构 [subject][predicate][object] 构造一种 contigency table
+  --  日语方式
+  -- cph [subject, object, predicate] -- 使用一种语法结构 [subject][object][predicate]构造一种 contigency table
+:}
+
 -- reverse a string
 rev :: String -> String
 rev s = f [] s where
