@@ -84,6 +84,12 @@ let
   subject = nouns -- 主语
   predicate = verbs -- 谓语
   object = nouns -- 宾语
+  -- 语言就是根据规则集合（序列）按照层级的方式进行组织: [sentence:[subject:nouns][predicate:verbs][object:nouns]]
+  -- 这就是语言的形式逻辑性：即 树形结构的 1） 层级分明，1）条例清晰 的 形式即语法特点。
+  -- 语法 就是 用 形式逻辑 的方式 构造 句子（符号序列），去表达 意义 符号序列 反映出 的 现实世界的 情况：即 意义 就是从 意识到实际的 实践空间。
+  -- 词汇（单词：现实对象的符号索引） + 语法 （规则集合：层级化的树形结构，lhs -> rhs）
+  cph :: [[a]] -> [[a]]
+  cph xx = case xx of {(x:xs) -> [p:q | p <- x, q <- cph xs]; _ -> [[]]}
 in 
   -- 中文与英语方式
   cph [subject, predicate, object] -- 使用一种语法结构 [subject][predicate][object] 构造一种 contigency table
