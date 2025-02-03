@@ -88,13 +88,17 @@ let
   -- 这就是语言的形式逻辑性：即 树形结构的 1） 层级分明，1）条例清晰 的 形式即语法特点。
   -- 语法 就是 用 形式逻辑 的方式 构造 句子（符号序列），去表达 意义 符号序列 反映出 的 现实世界的 情况：即 意义 就是从 意识到实际的 实践空间。
   -- 词汇（单词：现实对象的符号索引） + 语法 （规则集合：层级化的树形结构，lhs -> rhs）
+  -- descartes全排列：a 可以理解为 单词(物质对象的符号索引) 类型
+  -- 规则集合每条规则表示为：lhs -> rhs 就是一个[lhs,rhs] 的类型为 [a], 所以 规则 的序列的集合就是[[a]], 
+  -- 语言的意义空间 即 句子(类型[a])集合类型为[[a]]
+  -- cph [ComPreHension：符号理解即意义空间，各种单词组合方式contingency table]
   cph :: [[a]] -> [[a]]
   cph xx = case xx of {(x:xs) -> [p:q | p <- x, q <- cph xs]; _ -> [[]]}
 in 
   -- 中文与英语方式
-  cph [subject, predicate, object] -- 使用一种语法结构 [subject][predicate][object] 构造一种 contigency table
+  cph [subject, predicate, object] -- 使用一种语法结构 [subject][predicate][object] 构造一种 contingency table
   --  日语方式
-  -- cph [subject, object, predicate] -- 使用一种语法结构 [subject][object][predicate]构造一种 contigency table
+  -- cph [subject, object, predicate] -- 使用一种语法结构 [subject][object][predicate]构造一种 contingency table
 :}
 
 -- reverse a string
