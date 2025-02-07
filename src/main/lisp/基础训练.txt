@@ -1,0 +1,7 @@
+# 定义 factorial
+(defun factorial (x) 
+  (if (< x 1) 1 (factorial (- x 1))))
+
+# 调用函数 
+(factorial 5)
+
