@@ -5,7 +5,7 @@ if (!require(purrr, quietly = TRUE)) {
 }
 
 # 求取聚类中心点
-km <- function(data, k, eps = 0.5) {
+km <- function(data, k, eps = 0.01) {
   n <- nrow(data)  # 数据长度
   
   # 计算 data 与 特定 点之间的距离 
@@ -31,7 +31,9 @@ km <- function(data, k, eps = 0.5) {
       ps <- .ps # 准聚类中心点正式作为聚类中心点
     }
   } # repeat
-  ps
+
+  # 返回结果， ps: 聚类中心点, cluster_ids: 聚类中心点ids
+  list(ps=structure(ps, names=names(data)), cluster_ids=cluster_ids(ps))
 }
 
 # 调用函数进行聚类
