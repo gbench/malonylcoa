@@ -55,6 +55,43 @@ km <- function(data, k, eps= 0.01) {
   list(centeroids=structure(centeroids, names=names(data)), cluster_ids=cluster_ids(centeroids))
 }
 
+# ---------------------------------------------------------------------
+# 数据绘图
+# ---------------------------------------------------------------------
 # 调用函数进行聚类
-result <- km(iris[, -5], 3)
-print(result)
+data <- iris[,-5] # 剔除Species 
+km.res<- km(data, 3) # 聚类分析
+print(km.res) # 打印结果
+
+# 将聚类结果添加到原始数据中
+data$Cluster <- as.factor(km.res$cluster_ids) # 加入聚类中心点
+
+# ---------------------------------------------------------------------
+# 长度
+# ---------------------------------------------------------------------
+# 创建散点图展示聚类结果
+ggplot(data, aes(x=Sepal.Length, y=Petal.Length, color=Cluster)) + # 属于同一聚类中心的点用同一颜色绘制
+  geom_point() + # 散点描绘&涂色
+  labs(title="K-Means 聚类结果", x="花萼长度", y="花瓣长度")
+
+# ---------------------------------------------------------------------
+# 宽度
+# ---------------------------------------------------------------------
+# 创建散点图展示聚类结果
+ggplot(data, aes(x=Sepal.Width, y=Petal.Width, color=Cluster)) + # 属于同一聚类中心的点用同一颜色绘制
+  geom_point() + # 散点描绘&涂色
+  labs(title = "K-Means 聚类结果", x="花萼宽度", y="花瓣宽度")
+
+    
+# ---------------------------------------------------------------------
+# 合并成一个绘图中进行显示
+# ---------------------------------------------------------------------
+data2 <- with(iris,rbind(# 分组组织数据
+  data.frame(x=Sepal.Length, y=Petal.Length, species=as.factor(km.res$cluster_ids), name="Length"),
+  data.frame(x=Sepal.Width, y=Petal.Width, species=as.factor(km.res$cluster_ids), name="Width")
+)) # with
+
+# 数据绘图
+ggplot(data2, aes(x=x, y=y, color=species)) + facet_wrap(.~name) + # 属于同一聚类中心的点用同一颜色绘制
+  geom_point() + # 散点描绘&涂色
+  labs(title = "K-Means 聚类结果", x="花萼", y="花瓣")
