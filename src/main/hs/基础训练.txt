@@ -28,7 +28,7 @@ tryRead h = check h >>= readLines [] where
     --  注意  '.' infixl 9 比 '>>=' infixr 1,故 '.' 优先级高， 所以 (check h >>=) . readLines  优先计算
     -- 没有读到文件末尾，还有数据，则 hGetLine h 读取一行数据
     -- 读取一行数据并将该结果追加到ret结果的最后 即 ((ret++) . (:[])) 
-    (h, False) ->  ((ret++) . (:[])) <$> hGetLine h >>= --  更新结果数据ret：
+    (h, False) ->  ((ret++) . (:[])) <$> hGetLine h >>= --  更新结果数据ret, 注意：>>=可视为OOP中链式编程里的'.'
        -- readLines接收更新后ret结果数据，并将生成的偏函数绑定>>=到check h的IO (Handle, Bool)文件状态之上
        -- 进而实现了在更新了文件读取状态IO (Handle, Bool)的新一轮递归调用，即 连续读取
        (check h >>=) . readLines  -- 一直读取，直到 没有数据为止的循环操作
