@@ -165,14 +165,14 @@ species_act <- append(iris$Species, as.factor(rep("centeroids", 3)))
 data2 <- with(rbind(iris[, -5], km.res$centeroids), rbind( # 分组 组织数据
   # -- 估计值
   data.frame(x = Sepal.Length, y = Petal.Length, species = species_est, label = "Length.Estimate"),
-  data.frame(x = Sepal.Width, y = Petal.Width, species = species_act, label = "Width.Estimate"),
+  data.frame(x = Sepal.Width, y = Petal.Width, species = species_est, label = "Width.Estimate"),
   # -- 实际值
   data.frame(x = Sepal.Length, y = Petal.Length, species = species_act, label = "Length.Actual"),
   data.frame(x = Sepal.Width, y = Petal.Width, species = species_act, label = "Width.Actual")
 )) # with
 
 # 获取除 centeroids 外的唯一类别
-other_species <- with(data2,unique(species)[unique(species) != "centeroids"])
+other_species <- with(data2, unique(species)[unique(species) != "centeroids"])
 # 生成除 centeroids 外其他类别使用 scale_color_hue 生成的颜色
 hue_colors <- hue_pal()(length(other_species))
 names(hue_colors) <- other_species
@@ -184,4 +184,4 @@ ggplot(data2, aes(x = x, y = y, color = species)) +
   facet_wrap(. ~ label) + # 属于同一聚类中心的点用同一颜色绘制
   geom_point() + # 散点描绘&涂色
   labs(title = "K-Means 聚类结果", x = "花萼", y = "花瓣") +
-    scale_color_manual(values = color_vector) 
+  scale_color_manual(values = color_vector)
