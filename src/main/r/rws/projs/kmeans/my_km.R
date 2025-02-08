@@ -178,10 +178,12 @@ hue_colors <- hue_pal()(length(other_species))
 names(hue_colors) <- other_species
 # 构建包含 centeroids 为红色以及其他类别对应颜色的颜色向量
 color_vector <- c("centeroids" = "darkred", hue_colors)
+size <- ifelse(data2$species == "centeroids", 2, 1)
 
 # 数据绘图
 ggplot(data2, aes(x = x, y = y, color = species)) +
   facet_wrap(. ~ label) + # 属于同一聚类中心的点用同一颜色绘制
-  geom_point() + # 散点描绘&涂色
+  geom_point(aes(size = size)) + # 散点描绘&涂色
   labs(title = "K-Means 聚类结果", x = "花萼", y = "花瓣") +
-  scale_color_manual(values = color_vector)
+  scale_color_manual(values = color_vector) +
+  scale_size_continuous(name = "size", range = range(size), breaks = seq(min(size), max(size), length.out = 2))
