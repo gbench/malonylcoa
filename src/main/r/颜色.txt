@@ -15,5 +15,8 @@ res <- (\(n=4, theta=30) {
   ))
 })()
 
-# 显示系统颜色
+# 显示系统颜色， 控制台 
 demo("colors")
+
+# 显示系统颜色， 网页
+demo(topic="colors", package="grDevices", type="html")
