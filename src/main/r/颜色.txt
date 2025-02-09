@@ -1,0 +1,19 @@
+library(scales) # pal_hue 所在的库
+
+# 显示调色板&颜色
+(\() {
+  o <- par(mfrow=c(2,2)); on.exit(par(o)) # 设置布局
+  (1:4)^2 |> lapply(\(i) show_col(pal_hue()(i))) # 显示颜色
+})()
+
+# 数据颜色的应用
+res <- (\(n=4, theta=30) {
+  1:n |> lapply(\(i) with(iris, # 颜色
+    ggplot(iris, aes(Sepal.Length, Petal.Length, color=Species)) + geom_point() + 
+    # 使用调色板 hue_pal 进行颜色设置, h: 色调[0,360], c : 色相, l: 亮度
+    scale_colour_manual(values=hue_pal(h=c(i*theta, 360-(n-i)*theta), c=40, l=70)(Species |> levels() |> length()))
+  ))
+})()
+
+# 显示系统颜色
+demo("colors")
