@@ -64,9 +64,9 @@ pgn(-1:1, 5) |> (\(x) transform(x, sum=apply(x, 1, sum))) () |> (\(x) split(x, x
 
 # iris-分组统计
 split(iris[, -5], iris$Species) |> # 中心点，依据物种进行分类并获取对应分类中心点(维度坐标分组的均值向量）
-  lapply(partial(apply, MARGIN=2, FUN=mean)) |> # 每种物种分类的均值
+  lapply(partial(apply, MARGIN=2, FUN=mean)) |> # 分组计算每种物种分类的均值
   Reduce(rbind, init=data.frame(), x=_) |> # 把各个分组进行连接，参见haskell的foldl
-  transform(Species=paste0(rep("centeroids" , compose(length, levels)(iris$Species)), "-", levels(iris$Species)) ) |> 
+  transform(Species=paste0(rep("centeroids", compose(length, levels)(iris$Species)), "-", levels(iris$Species)) ) |> 
   structure(names=names(iris)) 
 
 # iris-分组统计
