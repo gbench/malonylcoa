@@ -45,7 +45,7 @@ res <- (\(n=4, theta=30) {
 })()
 
 # 简化版本
-aggregate(.~Species, iris, mean) |> (\(x, s=x$Species) {x$Species <- as.factor(paste0(s, "-centeroid")); x})() |> rbind(iris) |> 
+aggregate(.~Species, iris, mean) |> transform(Species=as.factor(paste0(Species, "-centeroid"))) |> rbind(iris) |> 
   ggplot(aes(Sepal.Length, Petal.Length, color=Species)) + # 坐标映射
   geom_point(aes(  size=as.factor(ifelse(grepl("-", Species), 5, 1))  )) + # size 映射
   scale_size_manual(name="size", values=c(1,5), labels=c("数据点", "中心点"))
