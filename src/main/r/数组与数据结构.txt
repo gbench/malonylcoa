@@ -531,3 +531,9 @@ ids <- \(xs)  \(i) { # 为xs设计一维索引转高维索引的的函数
 [24,] "Rejected" "Female" "F"  317 
 > 
 
+# Kmean 算法各个数据点与中心点之间的距离进行数据分类的基本算法
+sample(seq_along(iris), 3) |> # 随机生成中心点
+   sapply( \(i, p=as.numeric(iris[i, -5, drop=T])) # 提取id点对应的点p(坐标向量）
+     sweep(iris[, -5], 2, p) |> `^`(x=_, y=2) |> # 计算iris数据点与i号各个坐标差的平方， sweep 按照指定维度轴向2(第二维度，行方向）批量剔除中心点p坐标。(x-x0)
+       apply(1, compose(sqrt, sum))) |> # 计算各iris数据点与i号点间的距离（按照行方向应用）,结果矩阵 (数据点（行方向）* 中心点（列方向))
+   apply(1, which.min) # 获得距离最近的中心的编号
