@@ -93,11 +93,29 @@ statdata <- aggregate(cbind(Length, Width)~ Species + Part, FUN=mean, data=data)
 longdata <- lapply(data, identity) |> as.data.frame() # 去除掉data由reshape标记的属性数据。
 
 # 把长格式转为宽格式，主要特点就是生成宽格式的varing列集合
-# varing 列集合的生成规则为：是由timevar字段的项目与v.names的参数项目进行组合使用sep进行连接生成
-widedata <- reshape(data=longdata, direction="wide", idvar="Id", timevar="Part", v.names=c("Length", "Width"), sep="_")
+# varing 列集合的生成规则为：是由v.names与timevar字段的项目参数项目进行组合使用sep进行连接生成
+# 默认的 varing 列名生成逻辑为：{v.names}.{timevar}, 如果需要生成 {timevar}.{v.names}结构需要手工指定
+widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Length", "Width"), timevar="Part",
+  sep="_") 
 
+# 需要注意：Length_Petal Width_Petal Length_Sepal Width_Sepal
 > widedata
        Species  Id Length_Petal Width_Petal Length_Sepal Width_Sepal
+1       setosa   1          5.1         3.5          1.4         0.2
+2       setosa   2          4.9         3.0          1.4         0.2
+3       setosa   3          4.7         3.2          1.3         0.2
+4       setosa   4          4.6         3.1          1.5         0.2
+5       setosa   5          5.0         3.6          1.4         0.2
+6       setosa   6          5.4         3.9          1.7         0.4
+7       setosa   7          4.6         3.4          1.4         0.3
+8       setosa   8          5.0         3.4          1.5         0.2
+
+#手工指定
+widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Length", "Width"), timevar="Part",
+  varying=c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"))
+
+> widedata
+       Species  Id Sepal.Length Sepal.Width Petal.Length Petal.Width
 1       setosa   1          5.1         3.5          1.4         0.2
 2       setosa   2          4.9         3.0          1.4         0.2
 3       setosa   3          4.7         3.2          1.3         0.2
