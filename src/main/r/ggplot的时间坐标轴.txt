@@ -10,16 +10,31 @@ data <- compute_kline(sqlquery("select * from t_ma505_20241213"))
 # breaks <- "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00" |>
 breaks <- "09:00:00,10:15:00;10:30:00,11:30:00" |>
   partition(delim=";") |> # 解析交易时段
-  lapply(\(line, ps=compose(as.datetime, partition)(line), interval="15 min") seq(ps[1], ps[2], by=interval)) |> # 提取交易标记点
+  lapply(\(line, ps=compose(as.datetime, partition)(line), interval="5 min") seq(ps[1], ps[2], by=interval)) |> # 提取交易标记点
   Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
 labels <- ifelse(minute(breaks)==0, format(breaks, "%H:00"), sprintf("%02d", minute(breaks)))
 
+ds <- data["T09:00/T11:30"] #  数据范围
 # 时间绘图
-ggplot(data, aes(index(data))) + 
+ggplot(ds, aes(index(ds))) + 
   geom_line(aes(y=High), color="red") +
   geom_line(aes(y=Close), color="blue") +
   geom_line(aes(y=Low), color="red") +
-  scale_x_datetime(breaks=breaks, limits=range(breaks), labels=labels)
+  scale_x_continuous(
+    breaks = function(x) {
+      dttm <- x |> as.datetime()
+      print(sprintf("breaks --> %s(%d)", x|>as.datetime(), length(x)))
+      breaks
+    },
+    labels = function(x) {
+      print(sprintf("labels --> %s(%d)", x|>as.datetime(), length(x)))
+      labels
+    },
+    limits = function(x) {
+      print(sprintf("limits --> %s(%d)", x|>as.datetime(), length(x)))
+      x
+    }
+  )
 
 # -------------------------------------------------------------------------------------------------------------------
 
