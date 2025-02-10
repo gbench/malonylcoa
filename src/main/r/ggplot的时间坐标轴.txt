@@ -19,9 +19,10 @@ dfm <- data["T09:00/T23:00"] |> (\(d, idx=index(d)) { # 剔除指定时间端的
 })() #  数据范围
 
 # 时间绘图
+library(tidyverse) # 加载函数库，ggplot2 与 dplyr
 ggplot(dfm, aes(seq_along(index(dfm)))) + # 基础数据
   geom_line(aes(y=Close)) + # 收盘价
-  scale_x_continuous( # 时间轴
+  scale_x_continuous( # 自定义时间轴
     breaks=\(x) { # 需要保持与ggplot的基础映射x的相同的数据类型
       print(sprintf("breaks:%s(%d)", x, length(x)))
       tp <- c("10:15:00", "11:30:00", "15:00:00") |> as.datetime() # 连接时间点，交易时段的结尾时刻
@@ -30,28 +31,25 @@ ggplot(dfm, aes(seq_along(index(dfm)))) + # 基础数据
       match(breaks, index(dfm)) |> na.omit() # 剔除NA值
     }, labels=\(x) { # 坐标id
       print(sprintf("labels:%s(%d)", x, length(x)))
-      points <- index(dfm)[x] # 提取时间点数据
-      lbls <- # 刻度标签
-        ifelse(minute(points)==0, # 整点
-          ifelse(points == as.datetime("21:00:00"), # 晚间开盘时点
-            "15/21:00", # 交易时间接续
-            format(points, "%H:00") # 整点刻度
-          ), # 
-          ifelse(points == as.datetime("10:30:00"), # 10:30刻度
-            "10:15/30",  
-            ifelse(points == as.datetime("13:30:00"), # 13:30刻度
-              "11/13:30:00",
-              sprintf("%02d", minute(points))
-            ) # 非整点刻度
-          ) # 
-        ) # 刻度名称
+      points <- index(dfm)[x] # 提取时间点数据的时间索引
+      # 定义关键时间点
+      p1030 <- as.datetime("10:30:00")
+      p1330 <- as.datetime("13:30:00")
+      p2100 <- as.datetime("21:00:00")
+      lbls <- dplyr::case_when( # 时间刻度
+         points == p1030 ~ "10:15/30", # 上午盘的时间交接点
+         points == p1330 ~ "11/13:30:00", # 下午盘的时间交接点
+         minute(points) == 0 & points == p2100 ~ "15/21:00", # 晚盘的时间交接点
+         minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
+         TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
+      ) # 时间刻度
       print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
       lbls
     }, limits=\(x) { # 刻度区间
       print(sprintf("limits:%s(%d)", x, length(x)))
       x
-    }) + 
-  labs(x = "时间", y = "收盘价格", title = "价格线图")
+    }) + # 自定义时间轴
+  labs(x = "时间", y = "收盘价格", title = "价格线图") # 坐标轴名称
 
 # -------------------------------------------------------------------------------------------------------------------
 
