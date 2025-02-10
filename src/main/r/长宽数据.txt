@@ -2,11 +2,21 @@
 # Wide 宽格式是一种记录的的数据格式
 # Long 长格式是一种数据核算（统计）的数据格式
 #
-# 宽格式示例(iris)
-# Id(idvar)	Sepal(类型1）	 	 	Petal(类型2）		    	Species
+# 宽格式示例(iris)， 非第一范式即列是非原子性的结构性变量，如:Sepal(Length, Width)，Petal(Length, Width) 。
+# Id(idvar)	Sepal(类型1,times）	 	 	Petal(类型2,times）		    	Species
 # -	Sepal.Length(值1.1)	Sepal.Width(值1.2)	 Petal.Length(值2.1) 	Petal.Width(值2.2)     Species
 # 1	5.1         		3.5          		1.4         		0.2     		setosa
-# 2 	4.9         		3.0          		1.4         		0.2     		setosa		
+# 2 	4.9         		3.0          		1.4         		0.2     		setosa	
+# ...
+#
+# 长格式示例：Species 将跟随Id进行照抄Part(timevar依据高层级进行展开)
+#        	Species	Id(idvar)  	Part(timevar) 	Length(v.names) 	Width(v.names)
+# 1.Petal  setosa  	1 	Petal    		5.1   		3.5
+# 2.Petal  setosa  	2 	Petal    		4.9   		3.0
+# 1.Sepal  setosa  	1 	Sepal    		1.4   		0.2
+# 2.Sepal  setosa  	2 	Sepal    		1.4   		0.2
+# ...
+#	
 # ------------------------------------------------------------------------------------------------------------
 
 # 宽格式 转换为长格式
@@ -18,8 +28,8 @@ data <- reshape( # 数据格式变换
   # 例如：iris 的 varying: {Sepal:{Length, Width}, Petal:{Length, Width}} 就这如此的JSON式样的层级结构
   varying=c("Sepal.Length", "Sepal.Width","Petal.Length", "Petal.Width"), # {times}.{v.names}的数据结构
   timevar="Part", # 返回结果即长格式里标识
-  times=c("Petal","Sepal"), # 高层次
-  v.names=c("Length","Width"), # 低层级(值层级）
+  times=c("Petal","Sepal"), # 高层级(类型层级：中间节点）
+  v.names=c("Length","Width"), # 低层级(值层级：叶子节点）
 )
 
 > data
