@@ -16,22 +16,19 @@ labels <- ifelse(minute(breaks)==0, format(breaks, "%H:00"), sprintf("%02d", min
 
 ds <- data["T09:00/T11:30"] #  数据范围
 # 时间绘图
-ggplot(ds, aes(index(ds))) + 
+ggplot(ds, aes( seq_along(index(ds)) )) + 
   geom_line(aes(y=High), color="red") +
   geom_line(aes(y=Close), color="blue") +
   geom_line(aes(y=Low), color="red") +
   scale_x_continuous(
     breaks = function(x) {
-      dttm <- x |> as.datetime()
-      print(sprintf("breaks --> %s(%d)", x|>as.datetime(), length(x)))
-      breaks
+      seq_along(index(ds)) |> Filter(\(i) i%%5==0, x=_) 
     },
     labels = function(x) {
-      print(sprintf("labels --> %s(%d)", x|>as.datetime(), length(x)))
-      labels
+      print(sprintf("%s", x))
+      strftime(index(ds)[x], "%M")
     },
     limits = function(x) {
-      print(sprintf("limits --> %s(%d)", x|>as.datetime(), length(x)))
       x
     }
   )
