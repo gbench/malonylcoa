@@ -24,17 +24,30 @@ ggplot(dfm, aes(seq_along(index(dfm)))) + # 基础数据
   scale_x_continuous( # 时间轴
     breaks=\(x) { # 需要保持与ggplot的基础映射x的相同的数据类型
       print(sprintf("breaks:%s(%d)", x, length(x)))
-      tp <- c("10:30:00", "13:30:00", "21:00:00") |> as.datetime() # 连接时间点
+      tp <- c("10:15:00", "11:30:00", "15:00:00") |> as.datetime() # 连接时间点，交易时段的结尾时刻
       breaks <- std.breaks[-match(tp, std.breaks)] # 剔除掉省略掉的时间
       print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
       match(breaks, index(dfm)) |> na.omit() # 剔除NA值
     }, labels=\(x) { # 坐标id
       print(sprintf("labels:%s(%d)", x, length(x)))
       points <- index(dfm)[x] # 提取时间点数据
-      lbls <- ifelse(minute(points)==0, format(points, "%H:00"), sprintf("%02d", minute(points))) # 刻度名称
+      lbls <- # 刻度标签
+        ifelse(minute(points)==0, # 整点
+          ifelse(points == as.datetime("21:00:00"), # 晚间开盘时点
+            "15/21:00", # 交易时间接续
+            format(points, "%H:00") # 整点刻度
+          ), # 
+          ifelse(points == as.datetime("10:30:00"), # 10:30刻度
+            "10:15/30",  
+            ifelse(points == as.datetime("13:30:00"), # 13:30刻度
+              "11/13:30:00",
+              sprintf("%02d", minute(points))
+            ) # 非整点刻度
+          ) # 
+        ) # 刻度名称
       print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
       lbls
-    }, limits=\(x) {
+    }, limits=\(x) { # 刻度区间
       print(sprintf("limits:%s(%d)", x, length(x)))
       x
     }) + 
