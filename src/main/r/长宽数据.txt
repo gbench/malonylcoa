@@ -22,5 +22,26 @@ data <- reshape( # 数据格式变换
   v.names=c("Length","Width"), # 低层级(值层级）
 )
 
+> data
+             Species  Id  Part Length Width
+1.Petal       setosa   1 Petal    5.1   3.5
+2.Petal       setosa   2 Petal    4.9   3.0
+3.Petal       setosa   3 Petal    4.7   3.2
+4.Petal       setosa   4 Petal    4.6   3.1
+5.Petal       setosa   5 Petal    5.0   3.6
+6.Petal       setosa   6 Petal    5.4   3.9
+7.Petal       setosa   7 Petal    4.6   3.4
+8.Petal       setosa   8 Petal    5.0   3.4
+
 # 数据统计
-aggregate(cbind(Length, Width)~ Species + Part, FUN=mean, data=data)
+statdata <- aggregate(cbind(Length, Width)~ Species + Part, FUN=mean, data=data)
+
+> statdata
+     Species  Part Length Width
+1     setosa Petal  5.006 3.428
+2 versicolor Petal  5.936 2.770
+3  virginica Petal  6.588 2.974
+4     setosa Sepal  1.462 0.246
+5 versicolor Sepal  4.260 1.326
+6  virginica Sepal  5.552 2.026
+
