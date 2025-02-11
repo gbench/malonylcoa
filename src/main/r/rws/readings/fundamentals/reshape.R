@@ -1,4 +1,9 @@
-# 把 long与wide格式进行相互转化的的示例
+# 把 long与wide格式进行相互转化的的示例：reshape 函数很综合的体现R语言的主要编程思想，因此很有必要仔细的阅读一下
+# 需要重点关注：
+# 1） 基本的数据数据结构
+# 2） 向量化数据操作的编码技巧（数据索引，数据批量复制 与 创建）
+# 3） 函数编程的思想
+# 4)  大型程序（函数）的函数化分解。等
 # 
 # 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
 # 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
@@ -76,9 +81,9 @@ function( # === 参数列表 ===
     vn <- unique(nn[, 1]) # nms 结构的 第一部分，变量名称
     v.names <- split(nms, factor(nn[, 1L], levels = vn)) # 把第一部分作为作为值名称
     times <- unique(nn[, 2L]) # 把第二部分，时点时刻
-    attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性
+    attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性, 写到返回值的属性的做事是一种用返回单个值的形式返回多个值的技术手段,要注意掌握和立即
     tt <- tryCatch(as.numeric(times), warning = function(w) times) # 尝试把times转换成数值，非数值情况则原来不变
-    attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性
+    attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性,, 写到返回值的属性的做事是一种用返回单个值的形式返回多个值的技术手段
     v.names # 返回长格式的值变量名称
   }
 
@@ -319,25 +324,28 @@ function( # === 参数列表 ===
           } else if (length(times) != ntimes) { # varying长度可以被v.names长度整除 
             stop("length of 'varying' must be the product of length of 'v.names' and length of 'times'")
           }
-	  # varying可以理解为:v.names X ntimes 的结构矩阵形式
+          # varying可以理解为:v.names X ntimes 的结构矩阵形式
+          # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({times}.{v.names})]的结构序列
+          # 本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
           varying <- split(varying, rep(v.names, ntimes)) # 按照 names 进行分组，每个name下包含ntimes个时点的数据
           attr(varying, "v.names") <- v.names
           attr(varying, "times") <- times
         }
       } else { # varying非简单类型向量 
         varying <- lapply(varying, ix2names) # 将索引转为名称
-      }
+      } # if atomic
 
       if (missing(v.names) && !is.null(attr(varying, "v.names"))) {
-        v.names <- attr(varying, "v.names")
-        times <- attr(varying, "times")
-      }
+        v.names <- attr(varying, "v.names") # 从属性值里读取数据，通过数据属性可以实现函数如何返回多个值的问题
+        times <- attr(varying, "times") # 从属性值里读取数据，通过数据属性可以实现函数如何返回多个值的问题
+      } # if
 
+      # 把宽格式数据转换成长格式数据
       reshapeLong(data,
         idvar = idvar, timevar = timevar, varying = varying,
         v.names = v.names, drop = drop, times = times, ids = ids,
         new.row.names = new.row.names
-      )
+      ) # reshapeLong
     }
   )
 }
