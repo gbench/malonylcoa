@@ -48,7 +48,7 @@
 # 一句话这就一个人Subject服用Indometh（非甾体类抗炎药）后血液药物浓度conc随时间time的变化：
 # 平均血药浓度曲线：aggregate(conc~time,Indometh,mean) |> plot(type="b")
 # 加入个体数据变化的血药浓度：
-# ggplot(Indometh, aes(time, conc, color=Subject)) + geom_line() + geom_line(data=aggregate(conc~time,Indometh,mean), linewidth=1, color="red")
+# ggplot(Indometh,aes(time,conc,color=Subject))+geom_line()+geom_line(data=aggregate(conc~time,Indometh,mean),linewidth=1,color="red")
 #
 # 很明显 ：
 # Subject就是 idvar长/宽数据的主键， 
