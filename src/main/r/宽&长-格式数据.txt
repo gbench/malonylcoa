@@ -95,8 +95,8 @@ guess <- function(nms, re = split$regexp, drop = !split$include, fixed = split$f
 		nn <- do.call("rbind", strsplit(nms, re, fixed = fixed))
 	} else {# 模式构件re于结果里保留,regexpr(re, nms) 获取re的起始点index
 		nn <- cbind( # 从后半部分的’regexpr(re, nms) + 1L‘来看，re 的长度应该指示一个字符。否则re就会被拆分的。
-		  substr(nms, 1L, regexpr(re, nms)), # 前半部分
-		  substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分
+			substr(nms, 1L, regexpr(re, nms)), # 前半部分
+		  	substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分
 		) # nn
 	} ## if
 	if (ncol(nn) != 2L) { # 确保varying的结构仅由{v.names}{times}两部分组成 
@@ -104,7 +104,7 @@ guess <- function(nms, re = split$regexp, drop = !split$include, fixed = split$f
 	}
 	vn <- unique(nn[, 1]) # nms 结构的 第一部分，变量名称
 	v.names <- split(nms, factor(nn[, 1L], levels = vn)) # 把第一部分作为作为值名称
-	times <- unique(nn[, 2L]) # 把第二部分，时点时刻 times
+	times <- unique(nn[, 2L]) # 把第二部分，时点时刻 times, 需要注意 times的顺序与v.names相对应,而v.names则与nms即varying相对应
 	attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性
 	tt <- tryCatch(as.numeric(times), warning = function(w) times) # 尝试把times转换成数值，非数值情况则保持原来不变
 	attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性
