@@ -1,7 +1,11 @@
 # 把 long与wide格式进行相互转化的的示例
 # 
+# 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
+# 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
+#
 #' @param data 待处理的数据,数据框，wide 或者 long 格式
-#' @param varying # wide 中的复合结构列变量名称序列比如[x1,x2,y1,y2,...], 是一种[({v.names}{times})]的结构序列
+#' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({times}.{v.names})]的结构序列
+#'                本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
 #' @param v.names long 中的数据值列名称
 #' @param timevar long 中的时间值times值所在的列名
 #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
@@ -11,7 +15,7 @@
 #' @param direction 变换目标的格式名称,long 长格式, wide 宽格式
 #' @param new.row.names 当由wide转成long的时候，新生成的新的行的名称集合。
 #' @param sep varying中v.names与times之间的分隔标记
-#' @param split 分解varying的正则表达式，即varying的构成结构模式{v.names}{sep}{times}
+#' @param split 分解varying的正则表达式，即varying的构成结构模式{v.names}{sep}{times}：例如x1
 function( # === 参数列表 ===
     data, # 待处理的数据
     varying = NULL, # wide 中的复合结构列变量名称序列比如[x1,x2,y1,y2,...], 是一种[({v.names}{times})]的结构序列
@@ -30,11 +34,13 @@ function( # === 参数列表 ===
       list(regexp = sep, include = FALSE, fixed = TRUE)
     } # split
 ) { #  === 算法正文 ===
+
   if (!is.character(sep) || length(sep) != 1L) { # 确保sep 只能为单个字符的字符串
     stop(gettextf("'%s' must be a character string", "sep"),
       domain = NA
     )
   }
+
   # 返回与索引值ix所对应的data的name
   #' @param ix 索引值
   #' @return 返回与索引值ix所对应的data的name
@@ -45,22 +51,23 @@ function( # === 参数列表 ===
       names(data)[ix]
     }
   }
-  # 通过varying即名称去nms猜测v.names值名称(long格式的variable names)
-  #' @param nms wide 格式中varying中的名称
-  #' @param re 分解nms的正则表达式，即nms的构成结构模式{v.names}{re}{times}
+
+  # 通过varying即名称nms去猜测v.names值名称(long格式的variable names)
+  #' @param nms wide 格式中varying中的名称： 结构为[x1,y1,...,x2,y2,...]
+  #' @param re 分解nms的正则表达式，即nms的构成结构模式{v.names}{re}{times},比如:x1 
   #' @param drop 分割符号sep 是否删除掉，T 删除掉, F 不予删除保留
   #' @param fixed 这是传递给strsplit的参数，T表示纯字符串, F表示正则表达式模式，默认为 F
   #' @return 值变量名称
   guess <- function(nms, re = split$regexp, drop = !split$include, fixed = split$fixed %||% FALSE) {
     # nn 是指 对 nms 进行re模式成分分解之后获得的nms的各个构成部件
-    # 比如 nms=c("a.1","a.2","b.1","b.2") 会被分解成矩阵:[["a","1"],["a","2"],["b","1"],["b","2"]]
+    # 比如 nms=(x1,y1,x2,y2) 会被分解成矩阵:[["x","1"],["y","1"],["x","2"],["y","2"]]
     # nn 的期望结构是{变量名称：name}{分隔模式：re}{时点名称:time}的模式
     if (drop) { # 模式构件re于结果里删除
       nn <- do.call("rbind", strsplit(nms, re, fixed = fixed))
     } else {# 模式构件re于结果里保留,regexpr(re, nms) 获取re的起始点index
       nn <- cbind( # 从后半部分的’regexpr(re, nms) + 1L‘来看，re 的长度应该指示一个字符。否则re就会被拆分的。
-          substr(nms, 1L, regexpr(re, nms)), # 前半部分
-          substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分
+          substr(nms, 1L, regexpr(re, nms)), # 前半部分,例如：就var123来说，此部分就是var
+          substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分,就var123来说，此部分就是123
       ) # nn
     } ## if
     if (ncol(nn) != 2L) { # 确保
@@ -72,12 +79,13 @@ function( # === 参数列表 ===
     attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性
     tt <- tryCatch(as.numeric(times), warning = function(w) times) # 尝试把times转换成数值，非数值情况则原来不变
     attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性
-    v.names # 返回长格式的值值变量名称
+    v.names # 返回长格式的值变量名称
   }
 
   # 把宽格式转为长格式
   #' @param data 待处理的数据,数据框，wide 或者 long 格式
-  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,x2,y1,y2,...], 是一种[({v.names}{times})]的结构序列
+  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({times}.{v.names})]的结构序列
+  #'        本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
   #' @param v.names long 中的数据值列名称
   #' @param timevar long 中的时间值times值所在的列名
   #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
@@ -121,7 +129,8 @@ function( # === 参数列表 ===
     } # new.row.names
 
     d <- data # 复制data数据,作为中间时间片的计算结果模具：单位初始模具
-    all.varying <- unlist(varying) # 读取待展开的复合结构的列名集合，并给予扁平化成一维结构的向量
+    # varying:{x:[x1,x2,y3],...;y:[y1,y2,y3]}, 相当于list("x"=c("x1","x2"),"y"=c("y1","y2")) |> unlist() 的 "x1" "x2" "y1" "y2" 
+    all.varying <- unlist(varying) # 读取待展开的复合结构的列名集合，并给予扁平化成一维结构的向量, 只有扁平化以后才能狗进行向量化索引读取数据
     d <- d[, !(names(data) %in% all.varying), drop = FALSE] # 提取除了all.varying中的各个列去初始化d，单位初始模具
     if (is.null(v.names)) { # 用户没有提供long格式的数据值列名集合
       v.names <- vapply(varying, `[`, 1L, FUN.VALUE = character(1L)) # 将varying作为v.names
@@ -130,20 +139,23 @@ function( # === 参数列表 ===
     # 从wide格式逐个剥离出varing.i列然后将相应的值贴附始到模具d的timevar列之上，剪一条varying.粘到d$timevar然后把各个d串联起来，就形成了long
     rval <- do.call(rbind, lapply(seq_along(times), function(i) { # 每次冲times提取一个时间片然后将varying列上的数据
       d[, timevar] <- times[i] # 提取指定时刻点与varying.i相匹配，注意这里修改的是d在function(i)中的复制品当i运行完毕执行i+1时候d将恢复到初模具状态
+      # varying:{x:[x1,x2,y3],...;y:[y1,y2,y3]}, 从 varying提取对应于时刻i的列名称：varying.i = [xi,yi,....]
+      # 注意:vapply的结果varying.i是名称向量对应一组名称而不是一个.也就是一个时刻值对应多个v.names
       varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 注意varying.i与times[i]相对应
-      d[, v.names] <- data[, varying.i] # 为中间结果追加数据值列v.names, 其实就是从wide格式截取一条(varying.i)贴到d的最后一列之后 
+      # 注意:这是向量化的批量操作的写法，R的向量化操作，对于批量化的数据的处理太方便了，说是神奇都不为过呀
+      d[, v.names] <- data[, varying.i] # 为中间结果追加数据值列v.names, 其实就是从wide格式截取一条(varying.i)贴到d的最后一列之后
       
       if (is.null(new.row.names)) { # 用户没有提供新生成数行的的名称
         attr(d, "row.names") <- paste(ids, times[i], sep = ".") # 把times[i]作为该单位模具的行名后缀
-      } else {
+      } else { # 用户提供了行名称，当前偏移位置为(i - 1L) * NROW(d)，注意这里每次书写了ROW(d)，向量化的批处理太简洁了，不在需要for循环了
         row.names(d) <- new.row.names[(i - 1L) * NROW(d) + 1L:NROW(d)] # 使用用户指定的new.row.names去初始化该新生成行的名称
       } # if
-      d # 返回该时间片的单位片。
+      d # 返回该时间片的单位片段。
     })) # rval
 
     if (length(idvar) == 1L && !(idvar %in% names(data))) { # 用户指定主键在宽格式的data中不存在
       rval[, idvar] <- ids # 指定的ids作为作为记录标识
-    }
+    } # if
 
     attr(rval, "reshapeLong") <- undoInfo # 追加逆操作信息
 
@@ -260,8 +272,10 @@ function( # === 参数列表 ===
       direction <- undo
     }
   }
-  direction <- match.arg(direction, c("wide", "long"))
+
+  direction <- match.arg(direction, c("wide", "long")) # 提取变换方向
   switch(direction,
+
     wide = {
       back <- attr(data, "reshapeLong")
       if (missing(timevar) && missing(idvar) && !is.null(back)) {
@@ -278,6 +292,7 @@ function( # === 参数列表 ===
         )
       }
     },
+
     long = {
       if (missing(varying)) {
         back <- attr(data, "reshapeWide")
@@ -292,30 +307,32 @@ function( # === 参数列表 ===
         varying <- split(c(varying), row(varying))
       }
       if (is.null(varying)) stop("'varying' must be nonempty list or vector")
-      if (is.atomic(varying)) {
-        varying <- ix2names(varying)
-        if (missing(v.names)) {
+      if (is.atomic(varying)) { # varying为简单类型向量
+        varying <- ix2names(varying) # 将索引转换成名称
+        if (missing(v.names)) { # 没有给出长格式的数据值列名集合
           varying <- guess(varying)
-        } else {
+        } else { # 给出了长格式数据值列名集合
           if (length(varying) %% length(v.names)) stop("length of 'v.names' does not evenly divide length of 'varying'")
-          ntimes <- length(varying) %/% length(v.names)
-          if (missing(times)) {
-            times <- seq_len(ntimes)
-          } else if (length(times) !=
-            ntimes) {
+          ntimes <- length(varying) %/% length(v.names) # 根据varying与v.names长度推测times长度
+          if (missing(times)) { # 没有给出时点名称序列
+            times <- seq_len(ntimes) # 时点长度
+          } else if (length(times) != ntimes) { # varying长度可以被v.names长度整除 
             stop("length of 'varying' must be the product of length of 'v.names' and length of 'times'")
           }
-          varying <- split(varying, rep(v.names, ntimes))
+	  # varying可以理解为:v.names X ntimes 的结构矩阵形式
+          varying <- split(varying, rep(v.names, ntimes)) # 按照 names 进行分组，每个name下包含ntimes个时点的数据
           attr(varying, "v.names") <- v.names
           attr(varying, "times") <- times
         }
-      } else {
-        varying <- lapply(varying, ix2names)
+      } else { # varying非简单类型向量 
+        varying <- lapply(varying, ix2names) # 将索引转为名称
       }
+
       if (missing(v.names) && !is.null(attr(varying, "v.names"))) {
         v.names <- attr(varying, "v.names")
         times <- attr(varying, "times")
       }
+
       reshapeLong(data,
         idvar = idvar, timevar = timevar, varying = varying,
         v.names = v.names, drop = drop, times = times, ids = ids,
