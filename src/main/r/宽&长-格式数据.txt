@@ -49,6 +49,8 @@
 # 平均血药浓度曲线：aggregate(conc~time,Indometh,mean) |> plot(type="b")
 # 加入个体数据变化的血药浓度：
 # ggplot(Indometh,aes(time,conc,color=Subject))+geom_line()+geom_line(data=aggregate(conc~time,Indometh,mean),linewidth=1,color="red")
+# 或者
+# ggplot(Indometh,aes(time,conc))+geom_line(aes(color=Subject))+stat_summary(fun="mean",color="red",geom="line",linewidth=1)
 #
 # 很明显 ：
 # Subject就是 idvar长/宽数据的主键， 
