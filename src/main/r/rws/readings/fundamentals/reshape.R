@@ -1,9 +1,10 @@
 # 把 long与wide格式进行相互转化的的示例
 # 
-#' @param 待处理的数据,数据框，wide 或者 long 格式
+#' @param data 待处理的数据,数据框，wide 或者 long 格式
 #' @param varying # wide 中的复合结构列变量名称序列比如[x1,x2,y1,y2,...], 是一种[({v.names}{times})]的结构序列
 #' @param v.names long 中的数据值列名称
 #' @param timevar long 中的时间值times值所在的列名
+#' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
 #' @param ids 默认的观测值的主键，如果不提供idvar，则采用ids作为wide行记录的主键。
 #' @param times  wide格式中varying列名集合中蕴含的long格式的时间值times序列
 #' @param drop 是从varying中删除sep
@@ -73,25 +74,34 @@ function( # === 参数列表 ===
     attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性
     v.names # 返回长格式的值值变量名称
   }
-  reshapeLong <- function(data, varying, v.names = NULL, timevar,
-                          idvar, ids = 1L:NROW(data), times, drop = NULL, new.row.names = NULL) {
-    ll <- unlist(lapply(varying, length))
-    if (any(ll != ll[1L])) {
+
+  # 把宽格式转为长格式
+  #' @param data 待处理的数据,数据框，wide 或者 long 格式
+  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,x2,y1,y2,...], 是一种[({v.names}{times})]的结构序列
+  #' @param v.names long 中的数据值列名称
+  #' @param timevar long 中的时间值times值所在的列名
+  #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
+  #' @param ids 默认的观测值的主键，如果不提供idvar，则采用ids作为wide行记录的主键。
+  #' @param times  wide格式中varying列名集合中蕴含的long格式的时间值times序列
+  #' @param drop 需要从data中剔除掉的列名集合 
+  #' @param new.row.names 当由wide转成long的时候，新生成的新的行的名称集合。
+  reshapeLong <- function(data, varying, v.names = NULL, timevar, idvar, 
+    ids = 1L:NROW(data), times, drop = NULL, new.row.names = NULL) {
+    # === 算法正文 ===
+    ll <- unlist(lapply(varying, length)) # 提取varying中各个成员的数据长度
+    if (any(ll != ll[1L])) { # 确保各个元素长度必须一致
       stop("'varying' arguments must be the same length")
     }
-    if (ll[1L] != length(times)) {
+    if (ll[1L] != length(times)) { # 时间值 必须 与 varying 保持一致
       stop("'lengths(varying)' must all match 'length(times)'")
     }
-    if (!is.null(drop)) {
-      if (is.character(drop)) {
-        drop <- names(data) %in% drop
+    if (!is.null(drop)) { # 用户指定了删除列向量
+      if (is.character(drop)) { # 当drop 是字符串向量的时候
+        drop <- names(data) %in% drop # 在data的names向量中标记要删除的列名
       }
-      data <- data[, if (is.logical(drop)) {
-        !drop
-      } else {
-        -drop
-      }, drop = FALSE]
-    }
+      data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] # 剔除掉drop中指定的各个列
+    } # 从data 中删除的掉的由drop指定的列 
+    # 逆操作基础信息
     undoInfo <- list(
       varying = varying, v.names = v.names,
       idvar = idvar, timevar = timevar
