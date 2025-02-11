@@ -16,6 +16,61 @@
 # 1.Sepal  setosa  	1 	Sepal    		1.4   		0.2
 # 2.Sepal  setosa  	2 	Sepal    		1.4   		0.2
 # ...
+#
+# 典型的长格式的数据就是Indometh
+# > Indometh
+# 	Subject	time	conc
+# 1        	1 	0.25 	1.50
+# 2        	1 	0.50 	0.94
+# 3        	1 	0.75 	0.78
+# 4        	1 	1.00 	0.48
+# 5        	1 	1.25 	0.37
+# 6        	1 	2.00 	0.19
+# 7        	1 	3.00 	0.12
+# 8        	1 	4.00 	0.11
+# 9        	1 	5.00 	0.08
+# 10       	1 	6.00 	0.07
+# 11       	1 	8.00 	0.05
+# 12       	2 	0.25 	2.03
+# 13       	2 	0.50 	1.63
+# 14       	2 	0.75 	0.71
+# 15       	2 	1.00 	0.70
+# 16       	2 	1.25 	0.64
+# 17       	2 	2.00 	0.36
+# 18       	2 	3.00 	0.32
+# 19       	2 	4.00 	0.20
+# 20       	2 	5.00 	0.25
+# 21       	2 	6.00 	0.12
+# 22       	2 	8.00 	0.08
+# ....
+#
+# 这是 不同人(Subject) 静脉注射药物Indometh后的采集血药浓度conc与相应是的时点时刻time的的数据.
+# 一句话这就一个人Subject服用Indometh（非甾体类抗炎药）后血液药物浓度conc随时间time的变化：
+# 平均血药浓度曲线：aggregate(conc~time,Indometh,mean) |> plot(type="b")
+# 加入个体数据变化的血药浓度：
+# ggplot(Indometh, aes(time, conc, color=Subject)) + geom_line() + geom_line(data=aggregate(conc~time,Indometh,mean), linewidth=1, color="red")
+#
+# 很明显 ：
+# Subject就是 idvar长/宽数据的主键， 
+# time 就是长数据的timevar(其值就是times)，也就 在长格式里对 v.names的值进行的类型标记。
+# conc 就是长数据的v.names（只有一项）
+# 宽格式的varying就是由长格式的v.names里的名称（此处是conc）与timevar中的数据向组合而生成的。
+# 比如 ：(可以说，long to wide 就是利用long的timevar与v.names去生成wide的varying的过程。）
+#
+# > reshape(Indometh, direction="wide", idvar="Subject", timevar="time", v.names="conc")
+#	Subject conc.0.25 conc.0.5 conc.0.75 conc.1 conc.1.25 conc.2 conc.3 conc.4 conc.5 conc.6 conc.8
+# 1        	1      1.50     0.94      0.78   0.48      0.37   0.19   0.12   0.11   0.08   0.07   0.05
+# 12       	2      2.03     1.63      0.71   0.70      0.64   0.36   0.32   0.20   0.25   0.12   0.08
+# ...
+# 注意：对于Indometh来说，由于只有一个v.names。所以，当指定了idvar，timevar 之后，v.names就是必然的了
+# 所以对于v.names比较简单的情况long2wide的时候v.names可以省略。
+# 即：reshape(Indometh, direction="wide", idvar="Subject", timevar="time")
+#
+# > reshape(Indometh, direction="wide", idvar="Subject", timevar="time")
+#	Subject conc.0.25 conc.0.5 conc.0.75 conc.1 conc.1.25 conc.2 conc.3 conc.4 conc.5 conc.6 conc.8
+# 1        	1      1.50     0.94      0.78   0.48      0.37   0.19   0.12   0.11   0.08   0.07   0.05
+# 12       	2      2.03     1.63      0.71   0.70      0.64   0.36   0.32   0.20   0.25   0.12   0.08
+#
 #	
 # ------------------------------------------------------------------------------------------------------------
 
