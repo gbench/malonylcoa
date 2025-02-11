@@ -295,3 +295,50 @@ long_data_reshape <- reshape(wide_data,
 # 打印值
 long_data_reshape
 ```
+# 注意：
+#   当把wide数据转换为long时候，reshape 会自动的采用的把idvar与times(默认为varying)相组合来后成row.names
+#   此时如果, varying 的名称还有特殊字符，会导致结构数据无法而出现错误，例如：relig_income {tidyr}
+# > relig_income
+#
+# A tibble: 18 × 11
+#   religion `<$10k` `$10-20k` `$20-30k` `$30-40k` `$40-50k` `$50-75k` `$75-100k`
+#   <chr>      <dbl>     <dbl>     <dbl>     <dbl>     <dbl>     <dbl>      <dbl>
+# 1 Agnostic      27        34        60        81        76       137        122
+# 2 Atheist       12        27        37        52        35        70         73
+# 3 Buddhist      27        21        30        34        33        58         62
+# 4 Catholic     418       617       732       670       638      1116        949
+# 5 Don’t k…      15        14        15        11        10        35         21
+# 
+# `<$10k` 就是含有特殊字符
+#
+# 行名有错的实现
+widedata <- reshape(relig_income, varying=names(relig_income)[-1], v.names="count", timevar="income_range", idvar="religion", direction="long"); widedata;
+# There were 30 warnings (use warnings() to see them)
+# # A tibble: 10 × 3
+# Error in `[<-`:
+# ! Assigned data `map(.subset(x, unname), vectbl_set_names, NULL)` must be compatible with existing data.
+# ✖ Existing data has 10 rows.
+# ✖ Element 1 of assigned data has 18 rows.
+# ℹ Only vectors of size 1 are recycled.
+# Caused by error in `vectbl_recycle_rhs_rows()`:
+# ! Can't recycle input of size 18 to size 10.
+# Run `rlang::last_trace()` to see where the error occurred.
+# 
+# > row.names(widedata)
+#  [1] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").1" 
+#  [2] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").2" 
+#  [3] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").3" 
+#  [4] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").4" 
+#  [5] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").5" 
+#  [6] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").6" 
+#  [7] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").7" 
+#  [8] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").8" 
+#  [9] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").9" 
+# [10] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").10"
+# > 
+#
+# 重置行名,就可了解决上述问题了
+# rownames(widedata) <- NULL
+row.names(widedata) <- NULL
+# 查看转换后的数据
+head(widedata)
