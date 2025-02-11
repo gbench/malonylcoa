@@ -208,3 +208,90 @@ widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Len
 6       setosa   6          5.4         3.9          1.7         0.4
 7       setosa   7          4.6         3.4          1.4         0.3
 8       setosa   8          5.0         3.4          1.5         0.2
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+tidyverse 与  reshape 的概念名称（参数）对比
+  pivot_wider：long -> wide   
+    names_from : timevar 
+    values_from : v.names
+ pivot_longer: wide -> long
+   cols : varying
+   names_to: timevar
+   values: v.names
+
+# -- 
+`tidyverse` 中 `pivot_wider`、`pivot_longer` 与 `reshape` 函数相关参数的对比
+
+### 从长格式转换为宽格式
+
+#### `pivot_wider` 与 `reshape`
+
+| `pivot_wider` 参数 | `reshape` 参数 | 功能描述 | 差异说明 |
+| --- | --- | --- | --- |
+| `names_from` | `timevar` | 指定长格式数据中的某列，该列的值将作为宽格式数据的新列名。 | - `pivot_wider` 支持多列作为 `names_from`，生成复合列名，`reshape` 的 `timevar` 通常只支持单列。 <br> - `pivot_wider` 语法更简洁直观，`reshape` 对于复杂情况需额外设置 `varying` 等参数配合。 |
+| `values_from` | `v.names` | 指定长格式数据中的某列，该列的值将填充到宽格式数据的新列中。 | - `pivot_wider` 可同时指定多个 `values_from` 列，而 `reshape` 一般处理单个 `v.names` 对应的转换。 <br> - `pivot_wider` 能更好处理缺失值和重复键的情况，`reshape` 在处理时可能需额外操作。 |
+|  | `idvar` | 用于标识不同观测组的列，是 `reshape` 中必需的参数，用于区分不同行的归属。 | `pivot_wider` 不需要显式指定类似参数，默认根据所有未参与 `names_from` 和 `values_from` 的列来分组。 |
+
+### 从宽格式转换为长格式
+
+#### `pivot_longer` 与 `reshape`
+
+| `pivot_longer` 参数 | `reshape` 参数 | 功能描述 | 差异说明 |
+| --- | --- | --- | --- |
+| `cols` | `varying` | 指定宽格式数据中需要转换为长格式的列。 | - `pivot_longer` 可以使用多种方式指定列，如列名、列索引、列名匹配等，非常灵活。`reshape` 的 `varying` 通常需要将列名整理成列表形式。 <br> - `pivot_longer` 能自动处理列名不规范的情况，`reshape` 对列名规范性要求较高。 |
+| `names_to` | `timevar` | 指定一个新列的名称，该列将存储原宽格式数据中被转换列的列名。 | - `pivot_longer` 可以设置特殊值（如 `.value`）实现更复杂的转换逻辑，`reshape` 的 `timevar` 只是简单存储列名。 |
+| `values_to` | `v.names` | 指定一个新列的名称，该列将存储原宽格式数据中被转换列的值。 | 两者功能基本一致，但 `pivot_longer` 语法更简洁，且在处理不同数据类型列时更智能。 |
+|  | `idvar` | 同样用于标识不同观测组的列，在宽转长时也需指定。 | 同长转宽时一样，`pivot_longer` 无需显式指定类似参数，默认根据未选择的列分组。 |
+
+### 示例代码对比
+
+#### 长转宽
+```R
+# 示例长格式数据
+long_data <- data.frame(
+  id = c(1, 1, 2, 2),
+  category = c("A", "B", "A", "B"),
+  value = c(10, 20, 30, 40)
+)
+
+# 使用 pivot_wider
+library(tidyr)
+wide_data_pivot <- long_data %>%
+  pivot_wider(names_from = category, values_from = value)
+wide_data_pivot
+
+# 使用 reshape
+wide_data_reshape <- reshape(long_data, 
+  idvar = "id", 
+  timevar = "category", 
+  direction = "wide")
+wide_data_reshape
+```
+
+#### 宽转长
+```R
+# 示例宽格式数据
+wide_data <- data.frame(
+  id = 1:2,
+  A = c(10, 30),
+  B = c(20, 40)
+)
+
+# 使用 pivot_longer
+long_data_pivot <- wide_data %>%
+  pivot_longer(cols = c(A, B), 
+    names_to = "category", 
+    values_to = "value")
+# 打印值
+long_data_pivot
+
+# 使用 reshape
+long_data_reshape <- reshape(wide_data, 
+  varying = list(c("A", "B")), 
+  v.names = "value", 
+  timevar = "category", 
+  idvar = "id", 
+  direction = "long")
+# 打印值
+long_data_reshape
+```
