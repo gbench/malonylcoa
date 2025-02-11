@@ -99,49 +99,58 @@ function( # === 参数列表 ===
       if (is.character(drop)) { # 当drop 是字符串向量的时候
         drop <- names(data) %in% drop # 在data的names向量中标记要删除的列名
       }
-      data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] # 剔除掉drop中指定的各个列
+      data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] # 剔除掉drop中指定的各个列（注意这里是复制品的删除）
     } # 从data 中删除的掉的由drop指定的列 
     # 逆操作基础信息
     undoInfo <- list(
       varying = varying, v.names = v.names,
       idvar = idvar, timevar = timevar
-    )
-    if (is.null(new.row.names)) {
-      if (length(idvar) > 1L) {
-        ids <- interaction(data[, idvar], drop = TRUE)
-      } else if (idvar %in% names(data)) {
-        ids <- data[, idvar]
+    ) # undoInfo
+
+    if (is.null(new.row.names)) { # 没有提供新生成行名向量则采用默认的行名
+      if (length(idvar) > 1L) {# 多个主键列
+    	# interaction(1:3,1:3)则返回值为1.1,2.2,3.3的factor,带有笛卡尔全排列的levels
+	# Levels: 1.1 2.1 3.1 1.2 2.2 3.2 1.3 2.3 3.3
+        ids <- interaction(data[, idvar], drop = TRUE) # 生成主键列数据
+      } else if (idvar %in% names(data)) { # 单个主键列
+        ids <- data[, idvar] # 提取主键列数据
       }
       if (anyDuplicated(ids)) {
         stop("'idvar' must uniquely identify records")
       }
+    } # new.row.names
+
+    d <- data # 复制data数据,作为中间时间片的计算结果模具：单位初始模具
+    all.varying <- unlist(varying) # 读取待展开的复合结构的列名集合，并给予扁平化成一维结构的向量
+    d <- d[, !(names(data) %in% all.varying), drop = FALSE] # 提取除了all.varying中的各个列去初始化d，单位初始模具
+    if (is.null(v.names)) { # 用户没有提供long格式的数据值列名集合
+      v.names <- vapply(varying, `[`, 1L, FUN.VALUE = character(1L)) # 将varying作为v.names
     }
-    d <- data
-    all.varying <- unlist(varying)
-    d <- d[, !(names(data) %in% all.varying), drop = FALSE]
-    if (is.null(v.names)) {
-      v.names <- vapply(varying, `[`, 1L, FUN.VALUE = character(1L))
-    }
-    rval <- do.call(rbind, lapply(seq_along(times), function(i) {
-      d[, timevar] <- times[i] # 提取指定时刻点与varying.i相匹配
+
+    # 从wide格式逐个剥离出varing.i列然后将相应的值贴附始到模具d的timevar列之上，剪一条varying.粘到d$timevar然后把各个d串联起来，就形成了long
+    rval <- do.call(rbind, lapply(seq_along(times), function(i) { # 每次冲times提取一个时间片然后将varying列上的数据
+      d[, timevar] <- times[i] # 提取指定时刻点与varying.i相匹配，注意这里修改的是d在function(i)中的复制品当i运行完毕执行i+1时候d将恢复到初模具状态
       varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 注意varying.i与times[i]相对应
-      d[, v.names] <- data[, varying.i]
-      if (is.null(new.row.names)) {
-        attr(d, "row.names") <- paste(ids, times[i],
-          sep = "."
-        )
+      d[, v.names] <- data[, varying.i] # 为中间结果追加数据值列v.names, 其实就是从wide格式截取一条(varying.i)贴到d的最后一列之后 
+      
+      if (is.null(new.row.names)) { # 用户没有提供新生成数行的的名称
+        attr(d, "row.names") <- paste(ids, times[i], sep = ".") # 把times[i]作为该单位模具的行名后缀
       } else {
-        row.names(d) <- new.row.names[(i - 1L) * NROW(d) +
-          1L:NROW(d)]
-      }
-      d
-    }))
-    if (length(idvar) == 1L && !(idvar %in% names(data))) {
-      rval[, idvar] <- ids
+        row.names(d) <- new.row.names[(i - 1L) * NROW(d) + 1L:NROW(d)] # 使用用户指定的new.row.names去初始化该新生成行的名称
+      } # if
+      d # 返回该时间片的单位片。
+    })) # rval
+
+    if (length(idvar) == 1L && !(idvar %in% names(data))) { # 用户指定主键在宽格式的data中不存在
+      rval[, idvar] <- ids # 指定的ids作为作为记录标识
     }
-    attr(rval, "reshapeLong") <- undoInfo
-    return(rval)
+
+    attr(rval, "reshapeLong") <- undoInfo # 追加逆操作信息
+
+    return(rval) # 返回结果值long格式
   }
+
+  # 长格式转换为宽格式
   reshapeWide <- function(data, timevar, idvar, varying = NULL,
                           v.names = NULL, drop = NULL, new.row.names = NULL) {
     if (!is.null(drop)) {
