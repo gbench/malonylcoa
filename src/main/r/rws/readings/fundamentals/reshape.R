@@ -1,35 +1,36 @@
-# 把 long与wide格式进行相互转化的的示例：reshape 函数很综合的体现R语言的主要编程思想，因此很有必要仔细的阅读一下
-# 需要重点关注：
+# 把 long与wide格式进行相互转化的的示例：reshape 函数很综合的体现R语言的主要编程思想，因此很有必要仔细的研读一下
+#
+# 需要重点关注以下几点：
 # 1） 基本的数据数据结构
 # 2） 向量化数据操作的编码技巧（数据索引，数据批量复制 与 创建）
 # 3） 函数编程的思想
-# 4)  大型程序（函数）的函数化分解。等
+# 4） 大型程序（函数）的函数化分解 等。
 # 
 # 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
 # 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
 #
 #' @param data 待处理的数据,数据框，wide 或者 long 格式
-#' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({times}.{v.names})]的结构序列
+#' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
 #'                本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
 #' @param v.names long 中的数据值列名称
 #' @param timevar long 中的时间值times值所在的列名
 #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
 #' @param ids 默认的观测值的主键，如果不提供idvar，则采用ids作为wide行记录的主键。
 #' @param times  wide格式中varying列名集合中蕴含的long格式的时间值times序列
-#' @param drop 是从varying中删除sep
+#' @param drop 需要从data中剔除掉的列名集合 
 #' @param direction 变换目标的格式名称,long 长格式, wide 宽格式
 #' @param new.row.names 当由wide转成long的时候，新生成的新的行的名称集合。
 #' @param sep varying中v.names与times之间的分隔标记
 #' @param split 分解varying的正则表达式，即varying的构成结构模式{v.names}{sep}{times}：例如x1
 function( # === 参数列表 ===
     data, # 待处理的数据
-    varying = NULL, # wide 中的复合结构列变量名称序列比如[x1,x2,y1,y2,...], 是一种[({v.names}{times})]的结构序列
+    varying = NULL, # wide 中的复合结构列变量名称序列比如[x1,y1,...,x2,y2,...], 是一种[({v.names}.{times})]的结构序列
     v.names = NULL, # long 中的数据值列名称
     timevar = "time", # long 中的时间值times值所在的列名
     idvar = "id", # wide的行记录，即观测值的主键所在列名
     ids = 1L:NROW(data), # 默认的观测值的主键，如果不提供idvar，则采用ids作为wide行记录的主键。
     times = seq_along(varying[[1L]]), # wide格式中varying列名集合中蕴含的long格式的时间值times序列
-    drop = NULL, # 是从varying中删除sep
+    drop = NULL, # 需要从data中剔除掉的列名集合 
     direction, # 变换目标的格式名称,long 长格式, wide 宽格式
     new.row.names = NULL, # 当由wide转成long的时候，新生成的新的行的名称集合。
     sep = ".", # varying中v.names与times之间的分隔标记
@@ -55,12 +56,12 @@ function( # === 参数列表 ===
     } else {
       names(data)[ix]
     }
-  }
+  } # ix2name
 
   # 通过varying即名称nms去猜测v.names值名称(long格式的variable names)
   #' @param nms wide 格式中varying中的名称： 结构为[x1,y1,...,x2,y2,...]
   #' @param re 分解nms的正则表达式，即nms的构成结构模式{v.names}{re}{times},比如:x1 
-  #' @param drop 分割符号sep 是否删除掉，T 删除掉, F 不予删除保留
+  #' @param drop 分割符号sep 是否删除掉，T 删除掉, F 不予删除保留, 需要注意这里的drop与reshape中的drop是不同含义的，guess重新定义drop的意义
   #' @param fixed 这是传递给strsplit的参数，T表示纯字符串, F表示正则表达式模式，默认为 F
   #' @return 值变量名称
   guess <- function(nms, re = split$regexp, drop = !split$include, fixed = split$fixed %||% FALSE) {
@@ -89,7 +90,7 @@ function( # === 参数列表 ===
 
   # 把宽格式转为长格式
   #' @param data 待处理的数据,数据框，wide 或者 long 格式
-  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({times}.{v.names})]的结构序列
+  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
   #'        本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
   #' @param v.names long 中的数据值列名称
   #' @param timevar long 中的时间值times值所在的列名
@@ -165,20 +166,15 @@ function( # === 参数列表 ===
     attr(rval, "reshapeLong") <- undoInfo # 追加逆操作信息
 
     return(rval) # 返回结果值long格式
-  }
+  } # reshapeLong 
 
   # 长格式转换为宽格式
-  reshapeWide <- function(data, timevar, idvar, varying = NULL,
-                          v.names = NULL, drop = NULL, new.row.names = NULL) {
+  reshapeWide <- function(data, timevar, idvar, varying = NULL, v.names = NULL, drop = NULL, new.row.names = NULL) {
     if (!is.null(drop)) {
       if (is.character(drop)) {
         drop <- names(data) %in% drop
       }
-      data <- data[, if (is.logical(drop)) {
-        !drop
-      } else {
-        -drop
-      }, drop = FALSE]
+      data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] 
     }
     undoInfo <- list(
       v.names = v.names, timevar = timevar,
@@ -230,11 +226,11 @@ function( # === 参数列表 ===
         all(tapply(
           a,
           as.vector(tmp), function(b) {
-            length(unique(b)) ==
-              1L
+            length(unique(b)) == 1L
           }
         ))
       }))
+
       if (!all(really.constant)) {
         warning(
           gettextf(
@@ -243,12 +239,12 @@ function( # === 参数列表 ===
           ),
           domain = NA
         )
-      }
-    }
-    rval <- data[!duplicated(data[, idvar]), !(names(data) %in%
-      c(timevar, v.names)), drop = FALSE]
+      } # if
+    } # if keep
+
+    rval <- data[!duplicated(data[, idvar]), !(names(data) %in% c(timevar, v.names)), drop = FALSE]
     for (i in seq_along(times)) {
-      thistime <- data[data[, timevar] %in% times[i], ]
+      thistime <- data[data[, timevar] %in% times[i], ] # 提取时间段落数据
       tab <- table(thistime[, idvar])
       if (any(tab > 1L)) {
         warning(sprintf(
@@ -256,20 +252,24 @@ function( # === 参数列表 ===
           timevar, times[i]
         ), domain = NA)
       }
-      rval[, varying[, i]] <- thistime[match(
-        rval[, idvar],
-        thistime[, idvar]
-      ), v.names]
-    }
+      # long 转 wide 的 核心代码：match(rval[, idvar]； 选定 idvar 所表标记数据行，依据 idvar 中的 主键索引进行批量复制&写入
+      # 提取v.names中的数据列，写入 wide里 varying[, i] ，i times索引去索引varying中宽格式的数据列名
+      rval[, varying[, i]] <- thistime[match(rval[, idvar], thistime[, idvar]), v.names] # 从long中提取idvar段落的行添加wide的相应列上。行转列
+    } # for
+
     if (!is.null(new.row.names)) {
       row.names(rval) <- new.row.names
     }
+
     if (drop.idvar) {
       rval[, idvar] <- NULL
     }
+
     attr(rval, "reshapeWide") <- undoInfo
+
     rval
-  }
+  } # reshapeWide 
+  
   if (missing(direction)) {
     undo <- c("wide", "long")[c("reshapeLong", "reshapeWide") %in%
       names(attributes(data))]
@@ -325,7 +325,7 @@ function( # === 参数列表 ===
             stop("length of 'varying' must be the product of length of 'v.names' and length of 'times'")
           }
           # varying可以理解为:v.names X ntimes 的结构矩阵形式
-          # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({times}.{v.names})]的结构序列
+          # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
           # 本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
           varying <- split(varying, rep(v.names, ntimes)) # 按照 names 进行分组，每个name下包含ntimes个时点的数据
           attr(varying, "v.names") <- v.names
