@@ -76,9 +76,43 @@
 #	
 # ------------------------------------------------------------------------------------------------------------
 
-# 宽格式转换为长格式，主要特点就是把宽格式的varing参数(即列名集合)分解成多个由timevar标记的行
-# 行数据生成规则 是 由varing列集合的分解来进行定义，具体方式是：用varing中每个元素的名称字符串
-# 以sep去拆解(strsplit)，拆解的第一项做timevar的值，第二项 作为 v.names 中相应的 列值。
+# 宽格式转换为长格式，主要特点就是把宽格式的varing参数(即列名集合)分解成多个由timevar标记的
+# 行数据生成规则是由varing列集合的分解来进行定义:
+# 具体方式（通过varying猜测v.names的逻辑）是参见reshape的源代码的guess部分：
+#
+#  通过宽格式的varying即复合结构的列名称nms去猜测长格式v.names列值名称(long格式的variable names)
+#
+#' @param nms 宽格式的varying的复合结构的列名称
+#' @param re 分解nms的正则表达式，即nms的构成结构模式{v.names}{re}{times}
+#' @param drop 分割符号sep 是否删除掉，T 删除掉, F 不予删除保留
+#' @param fixed 这是传递给strsplit的参数，T表示纯字符串, F表示正则表达式模式，默认为F
+#' @return 值变量名称
+guess <- function(nms, re = split$regexp, drop = !split$include, fixed = split$fixed %||% FALSE) {
+	# nn 是指 对 nms 进行re模式成分分解之后获得的nms的各个构成部件
+	# 比如 nms=c("a.1","a.2","b.1","b.2") 会被分解成矩阵:[["a","1"],["a","2"],["b","1"],["b","2"]]
+	# nn 的期望结构是{变量名称：name}{分隔模式：re}{时点名称:time}的模式
+	if (drop) { # 模式构件re于结果里删除
+		nn <- do.call("rbind", strsplit(nms, re, fixed = fixed))
+	} else {# 模式构件re于结果里保留,regexpr(re, nms) 获取re的起始点index
+		nn <- cbind( # 从后半部分的’regexpr(re, nms) + 1L‘来看，re 的长度应该指示一个字符。否则re就会被拆分的。
+		  substr(nms, 1L, regexpr(re, nms)), # 前半部分
+		  substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分
+		) # nn
+	} ## if
+	if (ncol(nn) != 2L) { # 确保varying的结构仅由{v.names}{times}两部分组成 
+		stop("failed to guess time-varying variables from their names")
+	}
+	vn <- unique(nn[, 1]) # nms 结构的 第一部分，变量名称
+	v.names <- split(nms, factor(nn[, 1L], levels = vn)) # 把第一部分作为作为值名称
+	times <- unique(nn[, 2L]) # 把第二部分，时点时刻 times
+	attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性
+	tt <- tryCatch(as.numeric(times), warning = function(w) times) # 尝试把times转换成数值，非数值情况则保持原来不变
+	attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性
+	v.names # 返回长格式的列值变量名称
+}
+
+# ------------------------------------------------------------------------------------------------------------
+
 # 注意：这里是采用 v.names 去定位区分 varying元素的中的数据的（特别是times省略的情况)。
 data <- reshape( # 数据格式变换
   direction="long", # 数据变换方式
