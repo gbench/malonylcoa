@@ -41,11 +41,9 @@ function( # === 参数列表 ===
     } # split
 ) { #  === 算法正文 ===
 
-  if (!is.character(sep) || length(sep) != 1L) { # 确保sep 只能为单个字符的字符串
-    stop(gettextf("'%s' must be a character string", "sep"),
-      domain = NA
-    )
-  }
+  if (!is.character(sep) || length(sep) != 1L) { # 确保sep只能为单个字符的字符串, 长度为1
+    stop(gettextf("'%s' must be a character string", "sep"), domain = NA) # 打印告警并退出 
+  } # if
 
   # 返回与索引值ix所对应的data的name
   #' @param ix 索引值
@@ -72,8 +70,8 @@ function( # === 参数列表 ===
       nn <- do.call("rbind", strsplit(nms, re, fixed = fixed))
     } else {# 模式构件re于结果里保留,regexpr(re, nms) 获取re的起始点index
       nn <- cbind( # 从后半部分的’regexpr(re, nms) + 1L‘来看，re 的长度应该指示一个字符。否则re就会被拆分的。
-          substr(nms, 1L, regexpr(re, nms)), # 前半部分,例如：就var123来说，此部分就是var
-          substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分,就var123来说，此部分就是123
+       substr(nms, 1L, regexpr(re, nms)), # 前半部分,例如：就var123来说，此部分就是var
+       substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分,就var123来说，此部分就是123
       ) # nn
     } ## if
     if (ncol(nn) != 2L) { # 确保
@@ -103,18 +101,22 @@ function( # === 参数列表 ===
 
     # === 算法正文 ===
     ll <- unlist(lapply(varying, length)) # 提取varying中各个成员的数据长度
+
     if (any(ll != ll[1L])) { # 确保各个元素长度必须一致
       stop("'varying' arguments must be the same length")
     }
+
     if (ll[1L] != length(times)) { # 时间值 必须 与 varying 保持一致
       stop("'lengths(varying)' must all match 'length(times)'")
     }
+
     if (!is.null(drop)) { # 用户指定了删除列向量
       if (is.character(drop)) { # 当drop 是字符串向量的时候
         drop <- names(data) %in% drop # 在data的names向量中标记要删除的列名, 转名称索引drop为逻辑值索引
-      }
+      } # if
       data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] # 剔除掉drop中指定的各个列（注意这里是复制品的删除）
     } # 从data 中删除的掉的由drop指定的列 
+
     # 逆操作基础信息
     undoInfo <- list(
       varying = varying, v.names = v.names,
@@ -128,10 +130,11 @@ function( # === 参数列表 ===
         ids <- interaction(data[, idvar], drop = TRUE) # 生成主键列数据
       } else if (idvar %in% names(data)) { # 单个主键列
         ids <- data[, idvar] # 提取主键列数据
-      }
-      if (anyDuplicated(ids)) {
+      } # if
+
+      if (anyDuplicated(ids)) { # ids 值是否有重复， 注意本文duplicated的应用，也很很巧妙的
         stop("'idvar' must uniquely identify records")
-      }
+      } #if
     } # new.row.names
 
     d <- data # 复制data数据,作为中间时间片的计算结果模具：单位初始模具
@@ -203,7 +206,8 @@ function( # === 参数列表 ===
         } # if
       }) # 直到，生成的字符串不与data数据框的变量名称相同为止
 
-      data[, tempidname] <- interaction(data[, idvar], drop = TRUE) # 临时主键索引初始化为原来的主键索引列 
+      # 注意，此时包括了idvar是向量复合主键列的情况, R的向量化运算很强大，特别是当以参数去进行索引读取数据的请示，就需要考虑该参数是多值向量的情况
+      data[, tempidname] <- interaction(data[, idvar], drop = TRUE) # 临时主键索引初始化为原来的主键索引列
       idvar <- tempidname # 将主键索引列名更新为临时主键索引
       drop.idvar <- TRUE # 标记主键所以已经被更新替换掉了（删除）
     } else { # 原来的主键索引列不存在（没有数据），直接使用用户指定的主键索引列名
@@ -213,7 +217,7 @@ function( # === 参数列表 ===
     times <- unique(data[, timevar]) # 提取时间列中的数据的唯一值样本
     if (anyNA(times)) { # 确保时间列中的数据没有NA值
       warning("there are records with missing times, which will be dropped.")
-    }
+    } # if
     undoInfo$times <- times # 把时间唯一值样本记录到逆操作参数信息之中
 
     if (is.null(v.names)) { # 用户没有提供值变量列名，尝试从 data列名与用户提供的timevar,idvar进行推导
@@ -230,12 +234,12 @@ function( # === 参数列表 ===
     } # if
     undoInfo$varying <- varying # varying复合结构列信息（v.names*times）记录到逆操作参数信息之中
 
-    keep <- !(names(data) %in% c( timevar, v.names, idvar, orig.idvar)) # 需要从长格式保留（复制到）宽格式中的剩余其他的列名
+    keep <- !(names(data) %in% c(timevar, v.names, idvar, orig.idvar)) # 需要从长格式保留（复制到）宽格式中的剩余其他的列名
     if (any(keep)) { # 存在保留列集合
       rval <- data[keep] # 提取保留列数据
       tmp <- data[, idvar] # 以主键列作为分类标签
       really.constant <- unlist( lapply(rval, function(a) { # 判断keep列名集合里的各个列向量a是否是只有单一值的常量列（向量）
-        all(tapply(a, as.vector(tmp), function(b) { # 判单列b chang量const的逻辑：tmp 是按照主键分组，即相这些值相对于特定主键是不变的与主键是双射关系
+        all(tapply(a, as.vector(tmp), function(b) { # 判断列b是常量const的逻辑:tmp是按照主键分组，即这些值相对于特定主键是不变的,与主键是双射关系
           length(unique(b)) == 1L # 指定列b只有一个值的情况就是常量
         })) # all
       })) # really.const -- unlist 
@@ -252,14 +256,16 @@ function( # === 参数列表 ===
 
     # 初始结构就是每行都是唯一的idvar主键，且除掉timevar与v.names的其他各个数据列
     rval <- data[!duplicated(data[, idvar]), !(names(data) %in% c(timevar, v.names)), drop = FALSE] # 初始化一个返回值的核心结构
-    for (i in seq_along(times)) {
+    for (i in seq_along(times)) { # 遍历时间值
       thistime <- data[data[, timevar] %in% times[i], ] # 提取时间段落数据
       tab <- table(thistime[, idvar]) # 统计idvar主键索引列的各个键值频数数据表
+
       if (any(tab > 1L)) { # 唯一索引中出现相同的名称的行，也就存在唯一索引不唯一情况
         warning(sprintf( "multiple rows match for %s=%s: first taken", timevar, times[i]), domain = NA) # 打印告警信息
       } # if
+
       # long 转 wide 的 核心代码：match(rval[, idvar]； 选定 idvar 所表标记数据行，依据 idvar 中的 主键索引进行批量复制&写入
-      # 提取v.names中的数据列，写入 wide里 varying[, i] ，i times索引去索引varying中宽格式的数据列名
+      # 提取v.names中的数据列，写入wide里 varying[, i]，i即times索引去索引varying中宽格式的数据列名， 这一端甚为经典， 一行代码完成很复杂的功能
       rval[, varying[, i]] <- thistime[match(rval[, idvar], thistime[, idvar]), v.names] # 从long中提取idvar段落的行添加wide的相应列上。行转列
     } # for
 
@@ -279,11 +285,11 @@ function( # === 参数列表 ===
   # ------------------------------------------------------------------------------------- 
   # reshape真正开始执行的位置
   # ------------------------------------------------------------------------------------- 
-  if (missing(direction)) {
-    undo <- c("wide", "long")[c("reshapeLong", "reshapeWide") %in% names(attributes(data))]
-    if (length(undo) == 1L) {
-      direction <- undo
-    }
+  if (missing(direction)) { # 用户没有指定操作方向direction
+    undo <- c("wide", "long")[c("reshapeLong", "reshapeWide") %in% names(attributes(data))] # 尝试从data中读取逆操作标识
+    if (length(undo) == 1L) { # 存在逆操作参数信息
+      direction <- undo # 使用你操作方向作为当前的操作方向
+    } # if
   } # if
 
   direction <- match.arg(direction, c("wide", "long")) # 提取变换方向
@@ -320,11 +326,11 @@ function( # === 参数列表 ===
       } # if
 
       if (is.matrix(varying)) { # 对于 varying 是矩阵的情况(v.names*times) 结构
-	# row 函数是返回一个与varing 相同结构的矩阵，但是矩阵的每个元素都是该元素所在的行号索引
-	# 例如：一个json格式的矩阵m:[["a.1","a.2"],["b.1","b.2"]], row(m): [[1,1],[2,2]] 
+        # row 函数是返回一个与varing 相同结构的矩阵，但是矩阵的每个元素都是该元素所在的行号索引
+        # 例如：一个json格式的矩阵m:[["a.1","a.2"],["b.1","b.2"]], row(m): [[1,1],[2,2]] 
         # split(m,row(m))|>toJSON() 将返回按照行号进行分组的结构：{"1":["a.1","a.2"],"2":["b.1","b.2"]} ，
-	# 即split的结构list结构即每个元素都一个数据值变量v.name,而该数据值变量的资源则是在时间维度上的展开：
-	# 示例就是a:[a.1,a.2]这样的树形结构
+        # 即split的结构list结构即每个元素都一个数据值变量v.name,而该数据值变量的资源则是在时间维度上的展开：
+        # 示例就是a:[a.1,a.2]这样的树形结构
         varying <- split(c(varying), row(varying)) # 对矩阵按照行进行分组
       } # if
 
