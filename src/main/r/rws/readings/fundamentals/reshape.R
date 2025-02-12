@@ -398,9 +398,9 @@ function( # === 参数列表 ===
         # 即{v.names}{sep}{times}的[名称*时间]模式的的"复合结构列名"集合的矩阵
         # v.names <- c("a","b") # 变量名
         # times <- 1:3 # 时间维度刻度
-	# varying <- outer(v.names,times,paste,sep=".") 
+        # varying <- outer(v.names,times,paste,sep=".") 
         # result <- split(c(varying), row(varying)) |> toJSON() 
-	# result == {"1":["a.1","a.2","a.3"],"2":["b.1","b.2","b.3"]} 即
+        # result == {"1":["a.1","a.2","a.3"],"2":["b.1","b.2","b.3"]} 即
         # varying结构模式为[`变量名索引`=[变量名在时间维度上的展开的各个时间刻度上的变量值投影列表]]
         varying <- split(c(varying), row(varying)) # 对矩阵按照行进行分组
       } # if
