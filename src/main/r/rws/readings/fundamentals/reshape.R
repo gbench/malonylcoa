@@ -10,19 +10,29 @@
 # 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
 #
 # varying 是一个复合结构列：可以理解为一个 v.names X times 的矩阵：
-# --------------------------
-# | \times: 1   2   3   .. 
-# | v |---:-----------------
-# | n | x : x1  x2  x3  ..
-# | a | y : y1  y2  y3  ..
-# | m | z : z1  z2  z3  ..
-# | e | . : ..  ..  ..  ..
-# --------------------------
+# -------------------------------
+# | \time : 1   2   3   ..  时间
+# | v |---:----------------------
+# | n | x : x1  x2  x3  ..  ..
+# | a | y : y1  y2  y3  ..  ..
+# | m | z : z1  z2  z3  ..  ..
+# | e | . : ..  ..  ..  ..  ..
+# | 名| . : ..  ..  ..  ..  ..
+# | 称| . : ..  ..  ..  ..  ..
+# -------------------------------
 # 在R中矩阵是列顺序优先的，由此上面的矩阵的atomic向量模式就是：x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...
-# 或者 list(x=c("x1","x2","x3", ...), y=c("y1","y2","y3", ...), z=c("z1","z2","z3", ...))
+# 或者 list(`1`=c("x1","y1","z1", ...), `2`=c("x2","y2","z2", ...), `3`=c("x3","y3","z3", ...))：
+# （需要知道：list(`1`=c("x1","y1","z1"), `2`=c("x2","y2","z2"), `3`=c("x3","y3","z3"))[1] |> unlist() == c("x1","y1","z1")）
+# 参见代码 reshapeLong：varying.i的使用部分
+# do.call(rbind, lapply(seq_along(times), function(i) { # 遍历时刻向量,也就是varying矩阵的列
+#   d[, timevar] <- times[i] # 读取第i个时刻的时间名称
+#   varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 提取第i个时刻所对应的varying中的复合结构列集合
+#   d[, v.names] <- data[, varying.i] # 把复合结构以var.names的形式追加到结果times[i]的长格式区段中
+#   ...
+# }) # do.call
 #
 #' @param data 待处理的数据,数据框，wide 或者 long 格式
-#' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
+#' @param varying # wide 中的复合结构列的变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
 #'                本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
 #' @param v.names long 中的数据值列名称
 #' @param timevar long 中的时间值times值所在的列名
