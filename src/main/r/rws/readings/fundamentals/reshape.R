@@ -49,11 +49,11 @@ function( # === 参数列表 ===
   #' @param ix 索引值
   #' @return 返回与索引值ix所对应的data的name
   ix2names <- function(ix) {
-    if (is.character(ix)) {
-      ix
-    } else {
-      names(data)[ix]
-    }
+    if (is.character(ix)) { # ix 是字符串
+      ix # 字符串原值返回
+    } else {# 非字符串：数值或是逻辑值
+      names(data)[ix] # 索引data的names向量中的对应元素
+    } # if
   } # ix2name
 
   # 通过varying即名称nms去猜测v.names值名称(long格式的variable names)
@@ -74,17 +74,21 @@ function( # === 参数列表 ===
        substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分,就var123来说，此部分就是123
       ) # nn
     } ## if
+
     if (ncol(nn) != 2L) { # 确保
       stop("failed to guess time-varying variables from their names")
-    }
+    } # if
+
     vn <- unique(nn[, 1]) # nms 结构的 第一部分，变量名称
     v.names <- split(nms, factor(nn[, 1L], levels = vn)) # 把第一部分作为作为值名称
     times <- unique(nn[, 2L]) # 把第二部分，时点时刻
     attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性, 写到返回值的属性的做事是一种用返回单个值的形式返回多个值的技术手段,要注意掌握和立即
+
     tt <- tryCatch(as.numeric(times), warning = function(w) times) # 尝试把times转换成数值，非数值情况则原来不变
     attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性,, 写到返回值的属性的做事是一种用返回单个值的形式返回多个值的技术手段
+
     v.names # 返回长格式的值变量名称
-  }
+  } # guess
 
   # 把宽格式转为长格式
   #' @param data 待处理的数据,数据框，wide 或者 long 格式
@@ -104,11 +108,11 @@ function( # === 参数列表 ===
 
     if (any(ll != ll[1L])) { # 确保各个元素长度必须一致
       stop("'varying' arguments must be the same length")
-    }
+    } # if
 
     if (ll[1L] != length(times)) { # 时间值 必须 与 varying 保持一致
       stop("'lengths(varying)' must all match 'length(times)'")
-    }
+    } # if
 
     if (!is.null(drop)) { # 用户指定了删除列向量
       if (is.character(drop)) { # 当drop 是字符串向量的时候
@@ -134,16 +138,17 @@ function( # === 参数列表 ===
 
       if (anyDuplicated(ids)) { # ids 值是否有重复， 注意本文duplicated的应用，也很很巧妙的
         stop("'idvar' must uniquely identify records")
-      } #if
+      } # if
     } # new.row.names
 
     d <- data # 复制data数据,作为中间时间片的计算结果模具：单位初始模具
     # varying:{x:[x1,x2,y3],...;y:[y1,y2,y3]}, 相当于list("x"=c("x1","x2"),"y"=c("y1","y2")) |> unlist() 的 "x1" "x2" "y1" "y2" 
     all.varying <- unlist(varying) # 读取待展开的复合结构的列名集合，并给予扁平化成一维结构的向量, 只有扁平化以后才能狗进行向量化索引读取数据
     d <- d[, !(names(data) %in% all.varying), drop = FALSE] # 提取除了all.varying中的各个列去初始化d，单位初始模具
+
     if (is.null(v.names)) { # 用户没有提供long格式的数据值列名集合
       v.names <- vapply(varying, `[`, 1L, FUN.VALUE = character(1L)) # 将varying作为v.names
-    }
+    } # if
 
     # 从wide格式逐个剥离出varing.i列然后将相应的值贴附始到模具d的timevar列之上，剪一条varying.粘到d$timevar然后把各个d串联起来，就形成了long
     rval <- do.call(rbind, lapply(seq_along(times), function(i) { # 每次冲times提取一个时间片然后将varying列上的数据
@@ -187,9 +192,9 @@ function( # === 参数列表 ===
     if (!is.null(drop)) {  # 用户指定了删除列向量
       if (is.character(drop)) { # 当drop 是字符串向量的时候
         drop <- names(data) %in% drop # 在data的names向量中标记要删除的列名, 转名称索引drop为逻辑值索引
-      }
+      } # if
       data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] # 剔除掉drop中指定的各个列（注意这里是复制品的删除）
-    }
+    } #if
     
     # 逆运算操作参数信息详情
     undoInfo <- list(
@@ -215,9 +220,11 @@ function( # === 参数列表 ===
     } # if
 
     times <- unique(data[, timevar]) # 提取时间列中的数据的唯一值样本
+
     if (anyNA(times)) { # 确保时间列中的数据没有NA值
       warning("there are records with missing times, which will be dropped.")
     } # if
+
     undoInfo$times <- times # 把时间唯一值样本记录到逆操作参数信息之中
 
     if (is.null(v.names)) { # 用户没有提供值变量列名，尝试从 data列名与用户提供的timevar,idvar进行推导
@@ -232,6 +239,7 @@ function( # === 参数列表 ===
     } else if (is.vector(varying)) { # 向量模式
       varying <- matrix(varying, nrow = length(v.names)) # 将向量按照
     } # if
+
     undoInfo$varying <- varying # varying复合结构列信息（v.names*times）记录到逆操作参数信息之中
 
     keep <- !(names(data) %in% c(timevar, v.names, idvar, orig.idvar)) # 需要从长格式保留（复制到）宽格式中的剩余其他的列名
