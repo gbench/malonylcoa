@@ -9,6 +9,18 @@
 # 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
 # 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
 #
+# varying 是一个复合结构列：可以理解为一个 v.names X times 的矩阵：
+# --------------------------
+# | \times: 1   2   3   .. 
+# | v |---:-----------------
+# | n | x : x1  x2  x3  ..
+# | a | y : y1  y2  y3  ..
+# | m | z : z1  z2  z3  ..
+# | e | . : ..  ..  ..  ..
+# --------------------------
+# 在R中矩阵是列顺序优先的，由此上面的矩阵的atomic向量模式就是：x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...
+# 或者 list(x=c("x1","x2","x3", ...), y=c("y1","y2","y3", ...), z=c("z1","z2","z3", ...))
+#
 #' @param data 待处理的数据,数据框，wide 或者 long 格式
 #' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
 #'                本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
@@ -82,7 +94,7 @@ function( # === 参数列表 ===
     vn <- unique(nn[, 1]) # nms 结构的 第一部分，变量名称
     v.names <- split(nms, factor(nn[, 1L], levels = vn)) # 把第一部分作为作为值名称
     times <- unique(nn[, 2L]) # 把第二部分，时点时刻
-    attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性, 写到返回值的属性的做事是一种用返回单个值的形式返回多个值的技术手段,要注意掌握和立即
+    attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性, 写到返回值的属性的做事是一种用返回单个值的形式返回多个值的技术手段,要注意掌握和理解
 
     tt <- tryCatch(as.numeric(times), warning = function(w) times) # 尝试把times转换成数值，非数值情况则原来不变
     attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性,, 写到返回值的属性的做事是一种用返回单个值的形式返回多个值的技术手段
