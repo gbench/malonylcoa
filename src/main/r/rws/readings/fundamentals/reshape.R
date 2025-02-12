@@ -41,7 +41,7 @@ function( # === 参数列表 ===
     } # split
 ) { #  === 算法正文 ===
 
-  if (!is.character(sep) || length(sep) != 1L) { # 确保sep只能为单个字符的字符串, 长度为1
+  if (!is.character(sep) || length(sep) != 1L) { # 确保sep为单个字符串的向量，也就是sep不能是向量化多值,只是一个普通的字符串
     stop(gettextf("'%s' must be a character string", "sep"), domain = NA) # 打印告警并退出 
   } # if
 
@@ -106,6 +106,16 @@ function( # === 参数列表 ===
     # === 算法正文 ===
     ll <- unlist(lapply(varying, length)) # 提取varying中各个成员的数据长度
 
+    # 由于R语言是非严格类型的语言，非严格类型非常方便进行脚本，或是实时环境中执行, 脚本/命令(这对
+    # 于调试与知识探索类应用很重要， 因为一个想法不是很成熟的时候，方向性的思路，要点逻辑远比周密
+    # 细节，更能提供工作效率，R是面向统计学家的语言，所以它天生就是用于高度凝练的概括性的工作环境
+    # 所谓行大事不拘小节，在特定的研究领域，环境是与信息一般都是极为确定和明确与转义，去掉繁文缛节，
+    # 简单的直接的直奔主题，要比层层安检，处处提防的小心谨慎更有效率，这就是严格类型语言的意义特点）
+    # 但对于模块化的函数就不是友好，因为它为函数入口给出了一个非常宽松的准入条件。没有对非法参数
+    # 给予强制性限定，由此为了确保函数的正确运行，入口就需要对参数类型做一定的检查核对。一下就是
+    # 对参数的校验。所以非严格类型语言，再写大型程序或是类库时候，即应对各种复杂的使用场景就不如严格
+    # 类型语言上方便，因为他需要自己手段的进行类型检查
+
     if (any(ll != ll[1L])) { # 确保各个元素长度必须一致
       stop("'varying' arguments must be the same length")
     } # if
@@ -130,7 +140,7 @@ function( # === 参数列表 ===
     if (is.null(new.row.names)) { # 没有提供新生成行名向量则采用默认的行名
       if (length(idvar) > 1L) {# 多个主键列
     	# interaction(1:3,1:3)则返回值为1.1,2.2,3.3的factor,带有笛卡尔全排列的levels
-	# Levels: 1.1 2.1 3.1 1.2 2.2 3.2 1.3 2.3 3.3
+        # Levels: 1.1 2.1 3.1 1.2 2.2 3.2 1.3 2.3 3.3
         ids <- interaction(data[, idvar], drop = TRUE) # 生成主键列数据
       } else if (idvar %in% names(data)) { # 单个主键列
         ids <- data[, idvar] # 提取主键列数据
@@ -222,6 +232,7 @@ function( # === 参数列表 ===
     times <- unique(data[, timevar]) # 提取时间列中的数据的唯一值样本
 
     if (anyNA(times)) { # 确保时间列中的数据没有NA值
+      # warning 是一种在函数内部输出日志信息的很有用的方式，可以理解为他是一种带重点提示的print
       warning("there are records with missing times, which will be dropped.")
     } # if
 
