@@ -9,24 +9,46 @@
 # 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
 # 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
 #
-# varying 是一个复合结构列：可以理解为一个 v.names X times 的矩阵：
-# -------------------------------
-# | \time : 1   2   3   ..  时间
-# | v |---:----------------------
-# | n | x : x1  x2  x3  ..  ..
-# | a | y : y1  y2  y3  ..  ..
-# | m | z : z1  z2  z3  ..  ..
-# | e | . : ..  ..  ..  ..  ..
-# | 名| . : ..  ..  ..  ..  ..
-# | 称| . : ..  ..  ..  ..  ..
-# -------------------------------
+# vns <- c("x", "y", "z") # v.names
+# tms <- 1:4 # tms
+# varying <- outer(vns, tms, paste, sep="") # 生成varying矩阵
+# > varying
+#      [,1] [,2] [,3] [,4]
+# [1,] "x1" "x2" "x3" "x4"
+# [2,] "y1" "y2" "y3" "y4"
+# [3,] "z1" "z2" "z3" "z4"
+# 展开成一维结构
+# > varying |> as.vector()
+# [1] "x1" "y1" "z1" "x2" "y2" "z2" "x3" "y3" "z3" "x4" "y4" "z4"
+# 在reshape内部varying是作为list列表来进行使用的：参见源码 
+# if (is.matrix(varying)) { 
+#   varying <- split(c(varying), row(varying)) # 对矩阵按照行进行分组
+#   ...
+# }
+# 展开成一维结构（JSON）
+# > varying |> toJSON()
+# {"1":["x1","x2","x3","x4"],"2":["y1","y2","y3","y4"],"3":["z1","z2","z3","z4"]}  
+# 即varying结构模式为用列表语言可以表述为：[`变量名索引`=[变量名在时间维度上的展开的各个时间刻度上的变量值投影列表]]
+# varying是结构变量列表，而每个列表元素对应着该变量在各个时点上的状态值。
+#
+# varying 是一个复合结构列集合：可以理解为一个 v.names X times 的矩阵：
+# ---------------------------------
+# | \time : 1   2   3   4   ..  时间
+# | v |---:------------------------
+# | n | x : x1  x2  x3  x4  ..  ..
+# | a | y : y1  y2  y3  y4  ..  ..
+# | m | z : z1  z2  z3  z4  ..  ..
+# | e | . : ..  ..  ..  ..  ..  ..
+# | 名| . : ..  ..  ..  ..  ..  ..
+# | 称| . : ..  ..  ..  ..  ..  ..
+# ---------------------------------
 # 在R中矩阵是列顺序优先的，由此上面的矩阵的atomic向量模式就是：x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...
 # 或者 list(`1`=c("x1","y1","z1", ...), `2`=c("x2","y2","z2", ...), `3`=c("x3","y3","z3", ...))：
 # （需要知道：list(`1`=c("x1","y1","z1"), `2`=c("x2","y2","z2"), `3`=c("x3","y3","z3"))[1] |> unlist() == c("x1","y1","z1")）
 # 参见代码 reshapeLong：varying.i的使用部分
 # do.call(rbind, lapply(seq_along(times), function(i) { # 遍历时刻向量,也就是varying矩阵的列
 #   d[, timevar] <- times[i] # 读取第i个时刻的时间名称
-#   varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 提取第i个时刻所对应的varying中的复合结构列集合
+#   varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 遍历varying提取其各成员变量（复合结构列）在时刻i数值,vapply(varying, \(vn)vn[i],...)
 #   d[, v.names] <- data[, varying.i] # 把复合结构以var.names的形式追加到结果times[i]的长格式区段中
 #   ...
 # }) # do.call
@@ -186,8 +208,9 @@ function( # === 参数列表 ===
     rval <- do.call(rbind, lapply(seq_along(times), function(i) { # 每次冲times提取一个时间片然后将varying列上的数据
       d[, timevar] <- times[i] # 提取指定时刻点与varying.i相匹配，注意这里修改的是d在function(i)中的复制品当i运行完毕执行i+1时候d将恢复到初模具状态
       # varying:{x:[x1,x2,y3],...;y:[y1,y2,y3]}, 从 varying提取对应于时刻i的列名称：varying.i = [xi,yi,....]
-      # 注意:vapply的结果varying.i是名称向量对应一组名称而不是一个.也就是一个时刻值对应多个v.names
-      varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 注意varying.i与times[i]相对应
+      # 注意:vapply的结果varying.i是名称向量对应一组名称而不是一个.也就是一个时刻值对应多个v.names(简称vns)
+      varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 遍历varying提取其各成员变量（复合结构列）在时刻i数值,vapply(varying, \(vn)vn[i],...)
+
       # 注意:这是向量化的批量操作的写法，R的向量化操作，对于批量化的数据的处理太方便了，说是神奇都不为过呀
       d[, v.names] <- data[, varying.i] # 为中间结果追加数据值列v.names, 其实就是从wide格式截取一条(varying.i)贴到d的最后一列之后
       
@@ -265,7 +288,9 @@ function( # === 参数列表 ===
     } # if
 
     if (is.null(varying)) { # 用户没有指定varying
-      # 示例：outer(c("a","b"),1:2,paste,sep=".")生成： [["a.1","b.1"],["a.2" "b.2"]] 的 {v.names}{sep}{times}的名称*时间的复合接结构列名矩阵
+      # 示例：outer(c("a","b"),1:2,paste,sep=".") 生成[名称X时间]矩阵:
+      # 列顺序矩阵[["a.1","b.1"],["a.2","b.2"]]（或着行序矩阵[["a.1","a.2"],["b.1","b.2"]]）      
+      # 即{v.names}{sep}{times}的[名称*时间]模式的的"复合结构列名"集合的矩阵
       varying <- outer(v.names, times, paste, sep = sep) # 使用v.names与times的外连接矩阵作为varying
     } else if (is.list(varying)) { # 用户指定的varying是一个列表结构，列表的每以行都是一个v.names项目
       varying <- do.call("rbind", varying) # 使用rbind将拼装成一个名称*时间的复合结构列名称矩阵
@@ -368,10 +393,15 @@ function( # === 参数列表 ===
 
       if (is.matrix(varying)) { # 对于 varying 是矩阵的情况(v.names*times) 结构
         # row 函数是返回一个与varing 相同结构的矩阵，但是矩阵的每个元素都是该元素所在的行号索引
-        # 例如：一个json格式的矩阵m:[["a.1","a.2"],["b.1","b.2"]], row(m): [[1,1],[2,2]] 
-        # split(m,row(m))|>toJSON() 将返回按照行号进行分组的结构：{"1":["a.1","a.2"],"2":["b.1","b.2"]} ，
-        # 即split的结构list结构即每个元素都一个数据值变量v.name,而该数据值变量的资源则是在时间维度上的展开：
-        # 示例就是a:[a.1,a.2]这样的树形结构
+        # varying的结构outer(c("a","b"),1:3,paste,sep=".") 生成[名称X时间]矩阵:
+        # 列顺序矩阵[["a.1","b.1"], ["a.2","b.2"], ["a.3","b.3"]]]（或着行序矩阵[["a.1","a.2","a.3"], ["b.1","b.2","b.3"]]） 
+        # 即{v.names}{sep}{times}的[名称*时间]模式的的"复合结构列名"集合的矩阵
+        # v.names <- c("a","b") # 变量名
+        # times <- 1:3 # 时间维度刻度
+	# varying <- outer(v.names,times,paste,sep=".") 
+        # result <- split(c(varying), row(varying)) |> toJSON() 
+	# result == {"1":["a.1","a.2","a.3"],"2":["b.1","b.2","b.3"]} 即
+        # varying结构模式为[`变量名索引`=[变量名在时间维度上的展开的各个时间刻度上的变量值投影列表]]
         varying <- split(c(varying), row(varying)) # 对矩阵按照行进行分组
       } # if
 
