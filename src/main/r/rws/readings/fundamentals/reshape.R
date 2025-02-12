@@ -99,8 +99,8 @@ function( # === 参数列表 ===
   #' @param times  wide格式中varying列名集合中蕴含的long格式的时间值times序列
   #' @param drop 需要从data中剔除掉的列名集合 
   #' @param new.row.names 当由wide转成long的时候，新生成的新的行的名称集合。
-  reshapeLong <- function(data, varying, v.names = NULL, timevar, idvar, 
-    ids = 1L:NROW(data), times, drop = NULL, new.row.names = NULL) {
+  reshapeLong <- function(data, varying, v.names = NULL, timevar, idvar, ids = 1L:NROW(data), times, drop = NULL, new.row.names = NULL) {
+
     # === 算法正文 ===
     ll <- unlist(lapply(varying, length)) # 提取varying中各个成员的数据长度
     if (any(ll != ll[1L])) { # 确保各个元素长度必须一致
@@ -111,7 +111,7 @@ function( # === 参数列表 ===
     }
     if (!is.null(drop)) { # 用户指定了删除列向量
       if (is.character(drop)) { # 当drop 是字符串向量的时候
-        drop <- names(data) %in% drop # 在data的names向量中标记要删除的列名
+        drop <- names(data) %in% drop # 在data的names向量中标记要删除的列名, 转名称索引drop为逻辑值索引
       }
       data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] # 剔除掉drop中指定的各个列（注意这里是复制品的删除）
     } # 从data 中删除的掉的由drop指定的列 
@@ -169,168 +169,188 @@ function( # === 参数列表 ===
   } # reshapeLong 
 
   # 长格式转换为宽格式
+  #' @param data 待处理的数据,数据框，wide 或者 long 格式
+  #' @param timevar long 中的时间值times值所在的列名
+  #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
+  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
+  #'        本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
+  #' @param v.names long 中的数据值列名称
+  #' @param drop 需要从data中剔除掉的列名集合 
+  #' @param ids 默认的观测值的主键，如果不提供idvar，则采用ids作为wide行记录的主键。
+  #' @param new.row.names 当由wide转成long的时候，新生成的新的行的名称集合。
   reshapeWide <- function(data, timevar, idvar, varying = NULL, v.names = NULL, drop = NULL, new.row.names = NULL) {
-    if (!is.null(drop)) {
-      if (is.character(drop)) {
-        drop <- names(data) %in% drop
+
+    # === 算法正文 ===
+    if (!is.null(drop)) {  # 用户指定了删除列向量
+      if (is.character(drop)) { # 当drop 是字符串向量的时候
+        drop <- names(data) %in% drop # 在data的names向量中标记要删除的列名, 转名称索引drop为逻辑值索引
       }
-      data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] 
+      data <- data[, if (is.logical(drop)) { !drop } else { -drop }, drop = FALSE] # 剔除掉drop中指定的各个列（注意这里是复制品的删除）
     }
+    
+    # 逆运算操作参数信息详情
     undoInfo <- list(
       v.names = v.names, timevar = timevar,
       idvar = idvar
-    )
-    orig.idvar <- idvar
-    if (length(idvar) > 1L) {
-      repeat ({
-        tempidname <- basename(tempfile("tempID"))
-        if (!(tempidname %in% names(data))) {
+    ) # undo
+
+    orig.idvar <- idvar # 保留原来的主键索引列 
+    if (length(idvar) > 1L) { # 主键索引列中存在数据
+      repeat ({ # 创建一个临时id名称列
+        tempidname <- basename(tempfile("tempID")) # 生成一个随机字符串，类似于"tempID2c14328b3319"的名称
+        if (!(tempidname %in% names(data))) { # 确保生成的字符串不与data数据框的变量名称相同
           break
-        }
-      })
-      data[, tempidname] <- interaction(data[, idvar],
-        drop = TRUE
-      )
-      idvar <- tempidname
-      drop.idvar <- TRUE
-    } else {
-      drop.idvar <- FALSE
-    }
-    times <- unique(data[, timevar])
-    if (anyNA(times)) {
+        } # if
+      }) # 直到，生成的字符串不与data数据框的变量名称相同为止
+
+      data[, tempidname] <- interaction(data[, idvar], drop = TRUE) # 临时主键索引初始化为原来的主键索引列 
+      idvar <- tempidname # 将主键索引列名更新为临时主键索引
+      drop.idvar <- TRUE # 标记主键所以已经被更新替换掉了（删除）
+    } else { # 原来的主键索引列不存在（没有数据），直接使用用户指定的主键索引列名
+      drop.idvar <- FALSE # 标记主键索引列没有被替换
+    } # if
+
+    times <- unique(data[, timevar]) # 提取时间列中的数据的唯一值样本
+    if (anyNA(times)) { # 确保时间列中的数据没有NA值
       warning("there are records with missing times, which will be dropped.")
     }
-    undoInfo$times <- times
-    if (is.null(v.names)) {
-      v.names <- names(data)[!(names(data) %in% c(
-        timevar,
-        idvar, orig.idvar
-      ))]
-    }
-    if (is.null(varying)) {
-      varying <- outer(v.names, times, paste, sep = sep)
-    } else if (is.list(varying)) {
-      varying <- do.call("rbind", varying)
-    } else if (is.vector(varying)) {
-      varying <- matrix(varying, nrow = length(v.names))
-    }
-    undoInfo$varying <- varying
-    keep <- !(names(data) %in% c(
-      timevar, v.names, idvar,
-      orig.idvar
-    ))
-    if (any(keep)) {
-      rval <- data[keep]
-      tmp <- data[, idvar]
-      really.constant <- unlist(lapply(rval, function(a) {
-        all(tapply(
-          a,
-          as.vector(tmp), function(b) {
-            length(unique(b)) == 1L
-          }
-        ))
-      }))
+    undoInfo$times <- times # 把时间唯一值样本记录到逆操作参数信息之中
 
-      if (!all(really.constant)) {
-        warning(
-          gettextf(
+    if (is.null(v.names)) { # 用户没有提供值变量列名，尝试从 data列名与用户提供的timevar,idvar进行推导
+      v.names <- names(data)[!(names(data) %in% c(timevar, idvar, orig.idvar))] # 将 除掉timevar,idvar列明依赖的变量列名都视为v.names
+    } # if
+
+    if (is.null(varying)) { # 用户没有指定varying
+      # 示例：outer(c("a","b"),1:2,paste,sep=".")生成： [["a.1","b.1"],["a.2" "b.2"]] 的 {v.names}{sep}{times}的名称*时间的复合接结构列名矩阵
+      varying <- outer(v.names, times, paste, sep = sep) # 使用v.names与times的外连接矩阵作为varying
+    } else if (is.list(varying)) { # 用户指定的varying是一个列表结构，列表的每以行都是一个v.names项目
+      varying <- do.call("rbind", varying) # 使用rbind将拼装成一个名称*时间的复合结构列名称矩阵
+    } else if (is.vector(varying)) { # 向量模式
+      varying <- matrix(varying, nrow = length(v.names)) # 将向量按照
+    } # if
+    undoInfo$varying <- varying # varying复合结构列信息（v.names*times）记录到逆操作参数信息之中
+
+    keep <- !(names(data) %in% c( timevar, v.names, idvar, orig.idvar)) # 需要从长格式保留（复制到）宽格式中的剩余其他的列名
+    if (any(keep)) { # 存在保留列集合
+      rval <- data[keep] # 提取保留列数据
+      tmp <- data[, idvar] # 以主键列作为分类标签
+      really.constant <- unlist( lapply(rval, function(a) { # 判断keep列名集合里的各个列向量a是否是只有单一值的常量列（向量）
+        all(tapply(a, as.vector(tmp), function(b) { # 判单列b chang量const的逻辑：tmp 是按照主键分组，即相这些值相对于特定主键是不变的与主键是双射关系
+          length(unique(b)) == 1L # 指定列b只有一个值的情况就是常量
+        })) # all
+      })) # really.const -- unlist 
+
+      if (!all(really.constant)) { # 不都是常量, keep列中的数据应该都是与idvar中各个主键列一一对应的
+        warning( # 打印告警信息，存在非常常量信息告警
+          gettextf( # 格式化文本输出
             "some constant variables (%s) are really varying",
             paste(names(rval)[!really.constant], collapse = ",")
-          ),
-          domain = NA
-        )
+          ), domain = NA
+        ) # warning
       } # if
     } # if keep
 
-    rval <- data[!duplicated(data[, idvar]), !(names(data) %in% c(timevar, v.names)), drop = FALSE]
+    # 初始结构就是每行都是唯一的idvar主键，且除掉timevar与v.names的其他各个数据列
+    rval <- data[!duplicated(data[, idvar]), !(names(data) %in% c(timevar, v.names)), drop = FALSE] # 初始化一个返回值的核心结构
     for (i in seq_along(times)) {
       thistime <- data[data[, timevar] %in% times[i], ] # 提取时间段落数据
-      tab <- table(thistime[, idvar])
-      if (any(tab > 1L)) {
-        warning(sprintf(
-          "multiple rows match for %s=%s: first taken",
-          timevar, times[i]
-        ), domain = NA)
-      }
+      tab <- table(thistime[, idvar]) # 统计idvar主键索引列的各个键值频数数据表
+      if (any(tab > 1L)) { # 唯一索引中出现相同的名称的行，也就存在唯一索引不唯一情况
+        warning(sprintf( "multiple rows match for %s=%s: first taken", timevar, times[i]), domain = NA) # 打印告警信息
+      } # if
       # long 转 wide 的 核心代码：match(rval[, idvar]； 选定 idvar 所表标记数据行，依据 idvar 中的 主键索引进行批量复制&写入
       # 提取v.names中的数据列，写入 wide里 varying[, i] ，i times索引去索引varying中宽格式的数据列名
       rval[, varying[, i]] <- thistime[match(rval[, idvar], thistime[, idvar]), v.names] # 从long中提取idvar段落的行添加wide的相应列上。行转列
     } # for
 
-    if (!is.null(new.row.names)) {
+    if (!is.null(new.row.names)) { # 用户指定了行名
       row.names(rval) <- new.row.names
-    }
+    } # if
 
-    if (drop.idvar) {
-      rval[, idvar] <- NULL
-    }
+    if (drop.idvar) { # 如果id.var已被更改（使用算法生成的临时列）
+      rval[, idvar] <- NULL # 伤处
+    } # if
 
-    attr(rval, "reshapeWide") <- undoInfo
+    attr(rval, "reshapeWide") <- undoInfo # 将你操作参数信息写入返回值的reshapeWide属性之中
 
     rval
   } # reshapeWide 
   
+  # ------------------------------------------------------------------------------------- 
+  # reshape真正开始执行的位置
+  # ------------------------------------------------------------------------------------- 
   if (missing(direction)) {
-    undo <- c("wide", "long")[c("reshapeLong", "reshapeWide") %in%
-      names(attributes(data))]
+    undo <- c("wide", "long")[c("reshapeLong", "reshapeWide") %in% names(attributes(data))]
     if (length(undo) == 1L) {
       direction <- undo
     }
-  }
+  } # if
 
   direction <- match.arg(direction, c("wide", "long")) # 提取变换方向
-  switch(direction,
+  switch(direction, # 根据direction指令方向选择特定的执行子程序
 
-    wide = {
-      back <- attr(data, "reshapeLong")
-      if (missing(timevar) && missing(idvar) && !is.null(back)) {
+    wide = { # 宽格式转换
+      back <- attr(data, "reshapeLong") # 尝试获取你操作信息
+      if (missing(timevar) && missing(idvar) && !is.null(back)) { # 没有逆操作信息 没有指定指定 timevar列 与 id主键列
         reshapeWide(data,
           idvar = back$idvar, timevar = back$timevar,
           varying = back$varying, v.names = back$v.names,
           new.row.names = new.row.names
-        )
-      } else {
+        ) # reshapeWide
+      } else { # 包括逆操作信息
         reshapeWide(data,
           idvar = idvar, timevar = timevar,
           varying = varying, v.names = v.names, drop = drop,
           new.row.names = new.row.names
-        )
-      }
-    },
+        ) # reshapeWide
+      } # if
+    }, # wide 
 
-    long = {
-      if (missing(varying)) {
-        back <- attr(data, "reshapeWide")
-        if (is.null(back)) stop("no 'reshapeWide' attribute, must specify 'varying'")
+    long = { # 长格式转换
+      if (missing(varying)) { # 用户没有指定复合结构列的varying
+        back <- attr(data, "reshapeWide") # 尝试从数据中读取逆操作信息
+        # 可把stop 理解为print & exit的复合操作 而 warning则是printerr之类的的告警输出上的但因信息, 需要注意领会该内容
+        if (is.null(back)) stop("no 'reshapeWide' attribute, must specify 'varying'") # 没有你操作信息且确实varying提示并退出。
+
         varying <- back$varying
         idvar <- back$idvar
         timevar <- back$timevar
         v.names <- back$v.names
         times <- back$times
-      }
-      if (is.matrix(varying)) {
-        varying <- split(c(varying), row(varying))
-      }
-      if (is.null(varying)) stop("'varying' must be nonempty list or vector")
+      } # if
+
+      if (is.matrix(varying)) { # 对于 varying 是矩阵的情况(v.names*times) 结构
+	# row 函数是返回一个与varing 相同结构的矩阵，但是矩阵的每个元素都是该元素所在的行号索引
+	# 例如：一个json格式的矩阵m:[["a.1","a.2"],["b.1","b.2"]], row(m): [[1,1],[2,2]] 
+        # split(m,row(m))|>toJSON() 将返回按照行号进行分组的结构：{"1":["a.1","a.2"],"2":["b.1","b.2"]} ，
+	# 即split的结构list结构即每个元素都一个数据值变量v.name,而该数据值变量的资源则是在时间维度上的展开：
+	# 示例就是a:[a.1,a.2]这样的树形结构
+        varying <- split(c(varying), row(varying)) # 对矩阵按照行进行分组
+      } # if
+
+      if (is.null(varying)) stop("'varying' must be nonempty list or vector") # 用户没有给出varying告警并退出
+
       if (is.atomic(varying)) { # varying为简单类型向量
         varying <- ix2names(varying) # 将索引转换成名称
+
         if (missing(v.names)) { # 没有给出长格式的数据值列名集合
-          varying <- guess(varying)
+          varying <- guess(varying) # 根据varying尝试猜测出v.names，v.names 与 times信息 将写在返回值的属性值之中
         } else { # 给出了长格式数据值列名集合
           if (length(varying) %% length(v.names)) stop("length of 'v.names' does not evenly divide length of 'varying'")
           ntimes <- length(varying) %/% length(v.names) # 根据varying与v.names长度推测times长度
+
           if (missing(times)) { # 没有给出时点名称序列
             times <- seq_len(ntimes) # 时点长度
           } else if (length(times) != ntimes) { # varying长度可以被v.names长度整除 
             stop("length of 'varying' must be the product of length of 'v.names' and length of 'times'")
-          }
+          } # if
           # varying可以理解为:v.names X ntimes 的结构矩阵形式
           # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
           # 本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
           varying <- split(varying, rep(v.names, ntimes)) # 按照 names 进行分组，每个name下包含ntimes个时点的数据
           attr(varying, "v.names") <- v.names
           attr(varying, "times") <- times
-        }
+        } # if
       } else { # varying非简单类型向量 
         varying <- lapply(varying, ix2names) # 将索引转为名称
       } # if atomic
@@ -346,6 +366,6 @@ function( # === 参数列表 ===
         v.names = v.names, drop = drop, times = times, ids = ids,
         new.row.names = new.row.names
       ) # reshapeLong
-    }
-  )
+    } # long
+  ) # switch
 }
