@@ -66,7 +66,7 @@ kplot <- function (# 绘制K线图
     # 图层添加：收盘价-linerange
     # geom_linerange(aes(ymin=Low, ymax=High, y=Open)) + # 收盘价
     # 图层添加：收盘价-boxplot KLINE图
-    geom_boxplot(aes ( # K线参数设置
+    geom_boxplot( aes ( # K线参数设置
       group=Id, # boxplot 每个Id位置均为独立分组
       lower=pmin(Open, Close), # 最低价
       upper=pmax(Open, Close), # 最高价
@@ -76,7 +76,7 @@ kplot <- function (# 绘制K线图
       fill=Color # 颜色
     ), stat = "identity") + # K线图
     # 图层添加：收盘价-line
-    geom_line(aes(y=Close), color="orange") + # 收盘
+    geom_line(aes(y=Close), color="pink") + # 收盘
     geom_point(aes(y=Close), color="purple") + # 收盘
     scale_fill_manual(name="颜色", labels=c(red="上涨", green="下降"), 
       values=c(red="red2", green="green2")) + # 颜色设置
@@ -101,7 +101,7 @@ kplot <- function (# 绘制K线图
           minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
           TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
         ) # 时间刻度
-	    print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
+	print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
         lbls # 时点标签
       }, limits=\(x) { # 刻度区间
         print(sprintf("limits:%s(%d)", x, length(x)))
@@ -122,7 +122,7 @@ data <- fread(last(data.files)) # 数据文件读取
 # K线数据
 klinedata <- data |> compute_kline() # 解析数据为ohlcv结构的K线数据
 # 指定范围的K线数据（精选时段）
-kdata <- klinedata["T21:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
+kdata <- klinedata["T09:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
   kd[ !( ix>as.datetime("15:00:00") & ix<as.datetime("21:00:00") ) ])(); kdata # 精选时段数据 
 
 # ****************************************
