@@ -50,7 +50,7 @@ as.datetime <- partial(as.POSIXct, format="%H:%M:%S") # 时间分析
 #' @param interval 时间间隔字符串， 默认为 "15min"
 #' @param std.breaks 时间间隔字符串，默认为 "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00"
 #’ @return ggplot的绘图对象
-kplot <- function (
+kplot <- function (# 绘制K线图
     kdata, # K线数据
     interval="15 min", # 时间间隔
     std.breaks="09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00" |> # 坐标刻度，标准时间刻度
@@ -63,8 +63,6 @@ kplot <- function (
       Id=seq_along(index(kdata)), # 追加时间索引
       Color=ifelse(Close > Open, "red", "green") # 数据颜色
     ), aes(Id) ) + # 基础数据
-    # 图层添加：收盘价-line
-    geom_line(aes(y=Close),color="red") + # 收盘
     # 图层添加：收盘价-linerange
     # geom_linerange(aes(ymin=Low, ymax=High, y=Open)) + # 收盘价
     # 图层添加：收盘价-boxplot KLINE图
@@ -77,7 +75,10 @@ kplot <- function (
       ymax=High, # 最高价
       fill=Color # 颜色
     ), stat = "identity") + # K线图
-    scale_fill_manual(name="颜色", labels=c(red="上涨",green="下降"), 
+    # 图层添加：收盘价-line
+    geom_line(aes(y=Close), color="orange") + # 收盘
+    geom_point(aes(y=Close), color="purple") + # 收盘
+    scale_fill_manual(name="颜色", labels=c(red="上涨", green="下降"), 
       values=c(red="red2", green="green2")) + # 颜色设置
     scale_x_continuous( # 自定义时间轴
       breaks=\(x) { # 需要保持与ggplot的基础映射x的相同的数据类型
@@ -106,7 +107,7 @@ kplot <- function (
         print(sprintf("limits:%s(%d)", x, length(x)))
         x # 坐标轴的刻度区间范围，目前采用默认不予调整
     }) + # 自定义时间轴
-    labs(x="时间", y="收盘价格", title="价格线图") + # 坐标轴名称
+    labs(x="时间", y="收盘价格", title="商品K线价格图") + # 坐标轴名称
     theme_minimal() # 精简风格
 } # kplot
 
@@ -121,7 +122,7 @@ data <- fread(last(data.files)) # 数据文件读取
 # K线数据
 klinedata <- data |> compute_kline() # 解析数据为ohlcv结构的K线数据
 # 指定范围的K线数据（精选时段）
-kdata <- klinedata["T09:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
+kdata <- klinedata["T21:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
   kd[ !( ix>as.datetime("15:00:00") & ix<as.datetime("21:00:00") ) ])(); kdata # 精选时段数据 
 
 # ****************************************
