@@ -6,6 +6,20 @@
 # 3） 函数编程的思想
 # 4） 大型程序（函数）的函数化分解 等。
 # 
+# longitudinal studies 中所用的的术语：
+# longitudinal study is characterized by repeated measurements of the same variable(s), e.g., height and weight, 
+# on each unit being studied (e.g., individual persons) at different time points (which are assumed to be the same 
+# for all units). These variables are called time-varying variables. The study may include other variables that are 
+# measured only once for each unit and do not vary with time (e.g., gender and race); these are called time-constant variables.
+# 时变变量time-varying variable(tvv)：即复合结构列，在一个实验单元unit上进行某种周期或是戒律性的多次测量，
+#        一般该变量随时间变化而变化。时变变量的名称常为一个标识符
+# 时点名变量：对于一个特定的时变变量而言，它在指定时点时候的名称。比如就身高而言，1岁身高（height1)，两岁身高(height2)就是时点名
+#        有时，在时点名也被视为变量，他命名称结构为时变时变变量的名称跟着一个数字后缀。[A-Za-z]+[0-9]+, 或是 {tvv}{sep}{tp}
+#        这是如此的规范的名称结构才使得通过时点名推测是出时间时变变量名与时点成为可能，这也是guess算法的基本逻辑。 
+# 时变常量time-constant variable：在一个实验单元上仅测量一次即可获得的满足要求的数据的变量，即该变量不随时间变化而变化
+# varying:时点名变量集(Collection), 它是一组时点名，根据用户的习惯与使用场合， varying 可采用不同的类型来进行表示：
+#   atomic vector, matrix 或是 list
+# 
 # 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
 # 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
 #
@@ -22,16 +36,17 @@
 # [1] "x1" "y1" "z1" "x2" "y2" "z2" "x3" "y3" "z3" "x4" "y4" "z4"
 # 在reshape内部varying是作为list列表来进行使用的：参见源码 
 # if (is.matrix(varying)) { 
-#   varying <- split(c(varying), row(varying)) # 对矩阵按照行进行分组
+#   varying <- split(c(varying), row(varying)) # 对矩阵按照行进行分组,row(varying)就是变量名索引，即对varying按照变量名分组
 #   ...
 # }
 # 展开成一维结构（JSON）
 # > varying |> toJSON()
 # {"1":["x1","x2","x3","x4"],"2":["y1","y2","y3","y4"],"3":["z1","z2","z3","z4"]}  
+# 更为鲜明的形式时这样：{"x":["x1","x2","x3","x4"],"y":["y1","y2","y3","y4"],"z":["z1","z2","z3","z4"]}, 矩阵的的每一行都对应有一个复合结构列，时变变量 
 # 即varying结构模式为用列表语言可以表述为：[`变量名索引(行号)`=[变量名在时间维度上的展开的各个时间刻度上的变量值投影列表]]
 # varying是结构变量列表，而每个列表元素对应着该变量在各个时点上的状态值。
 #
-# varying 是一个复合结构列集合：可以理解为一个 v.names X times 的矩阵：
+# varying 是一个复合结构列集合（时变变量）：可以理解为一个 v.names X times 的矩阵：
 # ---------------------------------
 # | \time : 1   2   3   4   ..  时间
 # | v |---:------------------------
@@ -42,20 +57,26 @@
 # | 名| . : ..  ..  ..  ..  ..  ..
 # | 称| . : ..  ..  ..  ..  ..  ..
 # ---------------------------------
-# 在R中矩阵是列顺序优先的，由此上面的矩阵的atomic向量模式就是：x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...
-# 或者 list(`1`=c("x1","y1","z1", ...), `2`=c("x2","y2","z2", ...), `3`=c("x3","y3","z3", ...))：
-# （需要知道：list(`1`=c("x1","y1","z1"), `2`=c("x2","y2","z2"), `3`=c("x3","y3","z3"))[1] |> unlist() == c("x1","y1","z1")）
-# 参见代码 reshapeLong：varying.i的使用部分
+# 在R中矩阵是列顺序优先的，由此上面的矩阵的atomic向量模式就是：x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ..., x4,y4,z4, ...
+# list的形式：{"x":["x1","x2","x3","x4"],"y":["y1","y2","y3","y4"],"z":["z1","z2","z3","z4"]}, 矩阵的的每一行都对应有一个复合结构列，时变变量 
+#
+# 参见代码 reshapeLong：varying.i(时点i所对应的各个 时变变量 在wide格式中的列名称 的向量)的使用部分:
 # do.call(rbind, lapply(seq_along(times), function(i) { # 遍历时刻向量,也就是varying矩阵的列
 #   d[, timevar] <- times[i] # 读取第i个时刻的时间名称
-#   varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 遍历varying提取其各成员变量（复合结构列）在时刻i数值,vapply(varying, \(vn)vn[i],...)
+#   varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 遍历varying提取其各成员变量（复合结构列）在时刻i的列名,vapply(varying, \(vn)vn[i],...)
 #   d[, v.names] <- data[, varying.i] # 把复合结构以var.names的形式追加到结果times[i]的长格式区段中
 #   ...
 # }) # do.call
 #
 #' @param data 待处理的数据,数据框，wide 或者 long 格式
-#' @param varying # wide 中的复合结构列的变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
-#'                本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
+#' @param varying 是点名变量集：可以采用不同的类型进行表达
+#'        atomic vector: x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...,
+#'        list: 列表元素为为时变变量tvv, 例如 {"x":["x1","x2","x3""],"y":["y1","y2","y3"],"z":["z1","z2","z3"]}；
+#'        matrix: 列顺序的矩阵, 每行对应一个tvv时变变量，例如行向量为如此的结构 [[x:x1,x2,x3,x4],[y:y1,y2,y3],[z:z1,z2,z3]]
+#'        对于reshapeLong函数而言,varying其内部算法使用的类型为list，其他类型都会被转成list， 参见代码：
+#'          1）矩阵情形：varying <- split(c(varying), row(varying))
+#'          2）简单向量情形：varying <- split(varying, rep(v.names, ntimes))
+#'        对于reshapeWide函数而言,varying其内部算法使用的类型为矩阵: 参见代码: varying <- outer(v.names, times, paste, sep = sep)
 #' @param v.names long 中的数据值列名称
 #' @param timevar long 中的时间值times值所在的列名
 #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
@@ -136,8 +157,13 @@ function( # === 参数列表 ===
 
   # 把宽格式转为长格式
   #' @param data 待处理的数据,数据框，wide 或者 long 格式
-  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
-  #'        本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
+  #' @param varying 是点名变量集：可以采用不同的类型进行表达
+  #'        atomic vector: x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...,
+  #'        list: 列表元素为为时变变量tvv, 例如 {"x":["x1","x2","x3""],"y":["y1","y2","y3"],"z":["z1","z2","z3"]}；
+  #'        matrix: 列顺序的矩阵, 每行对应一个tvv时变变量，例如行向量为如此的结构 [[x:x1,x2,x3,x4],[y:y1,y2,y3],[z:z1,z2,z3]]
+  #'        对于reshapeLong函数而言,varying其内部算法使用的类型为list，其他类型都会被转成list， 参见代码：
+  #'        1）矩阵情形：varying <- split(c(varying), row(varying))
+  #'        2）简单向量情形：varying <- split(varying, rep(v.names, ntimes))
   #' @param v.names long 中的数据值列名称
   #' @param timevar long 中的时间值times值所在的列名
   #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
@@ -201,14 +227,15 @@ function( # === 参数列表 ===
     d <- d[, !(names(data) %in% all.varying), drop = FALSE] # 提取除了all.varying中的各个列去初始化d，单位初始模具
 
     if (is.null(v.names)) { # 用户没有提供long格式的数据值列名集合
-      v.names <- vapply(varying, `[`, 1L, FUN.VALUE = character(1L)) # 将varying作为v.names
+      v.names <- vapply(varying, `[`, 1L, FUN.VALUE = character(1L)) # 将varying作为v.names, the first variable name in each set
     } # if
 
     # 从wide格式逐个剥离出varing.i列然后将相应的值贴附始到模具d的timevar列之上，剪一条varying.粘到d$timevar然后把各个d串联起来，就形成了long
     rval <- do.call(rbind, lapply(seq_along(times), function(i) { # 每次冲times提取一个时间片然后将varying列上的数据
       d[, timevar] <- times[i] # 提取指定时刻点与varying.i相匹配，注意这里修改的是d在function(i)中的复制品当i运行完毕执行i+1时候d将恢复到初模具状态
-      # varying:{x:[x1,x2,y3],...;y:[y1,y2,y3]}, 从 varying提取对应于时刻i的列名称：varying.i = [xi,yi,....]
-      # 注意:vapply的结果varying.i是名称向量对应一组名称而不是一个.也就是一个时刻值对应多个v.names(简称vns)
+      # varying:{x:[x1,x2,y3],...;y:[y1,y2,y3]}, 从 varying提取对应于时刻i的列名称：varying.i = [xi,yi,....]。
+      # 注意:vapply的结果varying.i是名称向量，即一组名称，而不是只有一个字符串的名字。
+      # varying.i 为varying在时点i处的时点名向量，时变变量的i时刻的时点名向量
       varying.i <- vapply(varying, `[`, i, FUN.VALUE = character(1L)) # 遍历varying提取其各成员变量（复合结构列）在时刻i数值,vapply(varying, \(vn)vn[i],...)
 
       # 注意:这是向量化的批量操作的写法，R的向量化操作，对于批量化的数据的处理太方便了，说是神奇都不为过呀
@@ -235,8 +262,11 @@ function( # === 参数列表 ===
   #' @param data 待处理的数据,数据框，wide 或者 long 格式
   #' @param timevar long 中的时间值times值所在的列名
   #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
-  #' @param varying # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
-  #'        本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
+  #' @param varying 是点名变量集：可以采用不同的类型进行表达
+  #'        atomic vector: x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...,
+  #'        list: 列表元素为为时变变量tvv, 例如 {"x":["x1","x2","x3""],"y":["y1","y2","y3"],"z":["z1","z2","z3"]}；
+  #'        matrix: 列顺序的矩阵, 每行对应一个tvv时变变量，例如行向量为如此的结构 [[x:x1,x2,x3,x4],[y:y1,y2,y3],[z:z1,z2,z3]]
+  #'        对于reshapeWide函数而言,varying其内部算法使用的类型为矩阵: 参见代码: varying <- outer(v.names, times, paste, sep = sep)
   #' @param v.names long 中的数据值列名称
   #' @param drop 需要从data中剔除掉的列名集合 
   #' @param ids 默认的观测值的主键，如果不提供idvar，则采用ids作为wide行记录的主键。
@@ -320,18 +350,20 @@ function( # === 参数列表 ===
       } # if
     } # if keep
 
-    # 初始结构就是每行都是唯一的idvar主键，且除掉timevar与v.names的其他各个数据列
+    # 返回值的数据引物：return value promoter, 就像DNA的复制一样, 含氮碱基的核算序列时需要一个引物来依次添加，后来的将追加到先前之上
+    # 引物/初始结构为data的由idvar主键行索引所标记的数据行(id不重复)，且剔除掉timevar与v.names的其他剩余的那些数据列（时变常量，包含idvar）
     rval <- data[!duplicated(data[, idvar]), !(names(data) %in% c(timevar, v.names)), drop = FALSE] # 初始化一个返回值的核心结构
-    for (i in seq_along(times)) { # 遍历时间值
-      thistime <- data[data[, timevar] %in% times[i], ] # 提取时间段落数据
-      tab <- table(thistime[, idvar]) # 统计idvar主键索引列的各个键值频数数据表
+    for (i in seq_along(times)) { # 遍历各个时间值
+      thistime <- data[data[, timevar] %in% times[i], ] # 提取长格式数据在时点i段落里的数据部分(子数据）
+      tab <- table(thistime[, idvar]) # 统计idvar主键索引列的各个键值频数数据表, 出现了多个主键一样的记录observation(obs)
 
-      if (any(tab > 1L)) { # 唯一索引中出现相同的名称的行，也就存在唯一索引不唯一情况
+      if (any(tab > 1L)) { # 唯一索引中出现相同的名称的行(obs)，也就一条数据很有可能写了两遍或是这条记录的主键编写错误了
         warning(sprintf( "multiple rows match for %s=%s: first taken", timevar, times[i]), domain = NA) # 打印告警信息
       } # if
 
-      # long 转 wide 的 核心代码：match(rval[, idvar]； 选定 idvar 所表标记数据行，依据 idvar 中的 主键索引进行批量复制&写入
-      # 提取v.names中的数据列，写入wide里 varying[, i]，i即times索引去索引varying中宽格式的数据列名， 这一端甚为经典， 一行代码完成很复杂的功能
+      # long 转 wide 的 核心代码：match(rval[, idvar]； 选定idvar所表标记数据行,依据 idvar 中的 主键索引进行批量复制&写入
+      # 提取v.names中的数据列，写入wide里 varying[, i]，i即times索引去索引varying中宽格式的数据列名，这一段甚为经典， 一行代码完成很复杂的功能
+      # 把各个时点名并联起来就形成了wide
       rval[, varying[, i]] <- thistime[match(rval[, idvar], thistime[, idvar]), v.names] # 从long中提取idvar段落的行添加wide的相应列上。行转列
     } # for
 
@@ -340,7 +372,7 @@ function( # === 参数列表 ===
     } # if
 
     if (drop.idvar) { # 如果id.var已被更改（使用算法生成的临时列）
-      rval[, idvar] <- NULL # 伤处
+      rval[, idvar] <- NULL # 删除临时主键列
     } # if
 
     attr(rval, "reshapeWide") <- undoInfo # 将你操作参数信息写入返回值的reshapeWide属性之中
@@ -349,7 +381,8 @@ function( # === 参数列表 ===
   } # reshapeWide 
   
   # ------------------------------------------------------------------------------------- 
-  # reshape真正开始执行的位置
+  # reshape函数真正开始执行的位置，上面的都是辅助结构的定义，函数式编程，函数本身就是封装
+  # 这也是为何函数被会称为：closure的原因，独立其封闭式结构（包含由对其定义环境的外部引用）
   # ------------------------------------------------------------------------------------- 
   if (missing(direction)) { # 用户没有指定操作方向direction
     undo <- c("wide", "long")[c("reshapeLong", "reshapeWide") %in% names(attributes(data))] # 尝试从data中读取逆操作标识
@@ -423,13 +456,12 @@ function( # === 参数列表 ===
           } # if
           # varying可以理解为:v.names X ntimes 的结构矩阵形式
           # wide 中的复合结构列变量名称序列比如[x1,y1,..., x2,y2, ...], 是一种[({v.names}.{times})]的结构序列
-          # 本质是一个[{1 -> c(x,y)},{2 -> c(x,y)}]的时间数据值v.names的映射关系.
-          varying <- split(varying, rep(v.names, ntimes)) # 按照 names 进行分组，每个name下包含ntimes个时点的数据
+          varying <- split(varying, rep(v.names, ntimes)) # 按照 names 进行分组，每个name下包含ntimes个时点的时点名
           attr(varying, "v.names") <- v.names
           attr(varying, "times") <- times
         } # if
       } else { # varying非简单类型向量 
-        varying <- lapply(varying, ix2names) # 将索引转为名称
+        varying <- lapply(varying, ix2names) # 将变量名索引转为变量名称
       } # if atomic
 
       if (missing(v.names) && !is.null(attr(varying, "v.names"))) {
