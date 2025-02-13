@@ -47,7 +47,17 @@ as.datetime <- partial(as.POSIXct, format="%H:%M:%S") # 时间分析
 
 #' 绘制单日的kdata
 #' @param kdata K线数据, xts 的数据格式, 包括 Open,High,Low,Close,Volume的数据
-kplot <- function(kdata) {
+#' @param interval 时间间隔字符串， 默认为 "15min"
+#' @param std.breaks 时间间隔字符串，默认为 "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00"
+#’ @return ggplot的绘图对象
+kplot <- function (
+    kdata, # K线数据
+    interval="15 min", # 时间间隔
+    std.breaks="09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00" |> # 坐标刻度，标准时间刻度
+      partition(delim=";") |> # 解析交易时段
+      lapply(\(line, ps=compose(as.datetime, partition)(line), intv=interval) seq(ps[1], ps[2], by=intv)) |> # 提取交易标记点
+      Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
+  ) {
   # 时间轴绘图
   ggplot(kdata, aes(seq_along(index(kdata)))) + # 基础数据
     geom_line(aes(y=Close)) + # 收盘价
@@ -85,13 +95,6 @@ kplot <- function(kdata) {
 # 数据准备
 # ****************************************
 
-# 间隔区间
-interval <- "15 min" # 时间间隔
-# 标准分割点
-std.breaks <- "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00" |> # 坐标刻度，标准时间刻度
-  partition(delim=";") |> # 解析交易时段
-  lapply(\(line, ps=compose(as.datetime, partition)(line), intv=interval) seq(ps[1], ps[2], by=intv)) |> # 提取交易标记点
-  Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
 # 当前工作区中的数据文件（以保证返回的文件路径都是相对于当前工作区的路径，而不是一个不可直接访问的简单字符串）
 data.files <- list.files(path=".", all.files=T, recursive=T, include.dirs=F); data.files # 数据文件集合
 # 读取指定数据:data.files 的最后一项
