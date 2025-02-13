@@ -57,38 +57,57 @@ kplot <- function (
       partition(delim=";") |> # 解析交易时段
       lapply(\(line, ps=compose(as.datetime, partition)(line), intv=interval) seq(ps[1], ps[2], by=intv)) |> # 提取交易标记点
       Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
-  ) {
+  ) { # 函数正文
   # 时间轴绘图
-  ggplot(kdata, aes(seq_along(index(kdata)))) + # 基础数据
-    geom_line(aes(y=Close)) + # 收盘价
+  ggplot( kdata |> as.data.frame() |> transform ( # 值列变换
+      Id=seq_along(index(kdata)), # 追加时间索引
+      Color=ifelse(Close > Open, "red", "green") # 数据颜色
+    ), aes(Id) ) + # 基础数据
+    # 图层添加：收盘价-line
+    geom_line(aes(y=Close),color="red") + # 收盘
+    # 图层添加：收盘价-linerange
+    # geom_linerange(aes(ymin=Low, ymax=High, y=Open)) + # 收盘价
+    # 图层添加：收盘价-boxplot KLINE图
+    geom_boxplot(aes ( # K线参数设置
+      group=Id, # boxplot 每个Id位置均为独立分组
+      lower=pmin(Open, Close), # 最低价
+      upper=pmax(Open, Close), # 最高价
+      middle=(Open + Close) / 2, # 中位价
+      ymin=Low, # 最低价
+      ymax=High, # 最高价
+      fill=Color # 颜色
+    ), stat = "identity") + # K线图
+    scale_fill_manual(name="颜色", labels=c(red="上涨",green="下降"), 
+      values=c(red="red2", green="green2")) + # 颜色设置
     scale_x_continuous( # 自定义时间轴
       breaks=\(x) { # 需要保持与ggplot的基础映射x的相同的数据类型
-	print(sprintf("breaks:%s(%d)", x, length(x)))
-	.p <- c("10:15:00", "11:30:00", "15:00:00") |> as.datetime() # 交易时段的结束时刻,由于连续交易,本时段的结束就是下一时段开始,故称其为时段连接点
-	breaks <- std.breaks[-match(.p, std.breaks)] # 考虑持续交易,每个时段都存在有后继时段,为避免重复绘制需要把上一个时段的尾部时点给剔除掉。
-	print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
-	match(breaks, index(kdata)) |> na.omit() # 剔除NA值后的交易时点
+        print(sprintf("breaks:%s(%d)", x, length(x)))
+        .p <- c("10:15:00", "11:30:00", "15:00:00") |> as.datetime() # 交易时段的结束时刻,由于连续交易,本时段的结束就是下一时段开始,故称其为时段连接点
+        breaks <- std.breaks[-match(.p, std.breaks)] # 考虑持续交易,每个时段都存在有后继时段,为避免重复绘制需要把上一个时段的尾部时点给剔除掉。
+        print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
+        match(breaks, index(kdata)) |> na.omit() # 剔除NA值后的交易时点
       }, labels=\(x) { # 坐标id
-	print(sprintf("labels:%s(%d)", x, length(x)))
-	points <- index(kdata)[x] # 提取时间点数据的时间索引
-	# 定义关键时间点
-	p1030 <- as.datetime("10:30:00")
-	p1330 <- as.datetime("13:30:00")
-	p2100 <- as.datetime("21:00:00")
-	lbls <- dplyr::case_when( # 时间刻度
-	   points == p1030 ~ "10:15/30", # 上午盘的时间交接点
-	   points == p1330 ~ "11/13:30:00", # 下午盘的时间交接点
-	   points == p2100 ~ "15/21:00", # 晚盘的时间交接点
-	   minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
-	   TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
+        print(sprintf("labels:%s(%d)", x, length(x)))
+        points <- index(kdata)[x] # 提取时间点数据的时间索引
+        # 定义关键时间点
+        p1030 <- as.datetime("10:30:00")
+        p1330 <- as.datetime("13:30:00")
+        p2100 <- as.datetime("21:00:00")
+        lbls <- dplyr::case_when( # 时间刻度
+          points == p1030 ~ "10:15/30", # 上午盘的时间交接点
+          points == p1330 ~ "11/13:30:00", # 下午盘的时间交接点
+          points == p2100 ~ "15/21:00", # 晚盘的时间交接点
+          minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
+          TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
 	) # 时间刻度
 	print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
-	lbls # 时点标签
+        lbls # 时点标签
       }, limits=\(x) { # 刻度区间
-	print(sprintf("limits:%s(%d)", x, length(x)))
-	x # 坐标轴的刻度区间范围，目前采用默认不予调整
-      }) + # 自定义时间轴
-    labs(x = "时间", y = "收盘价格", title = "价格线图") # 坐标轴名称
+        print(sprintf("limits:%s(%d)", x, length(x)))
+        x # 坐标轴的刻度区间范围，目前采用默认不予调整
+    }) + # 自定义时间轴
+    labs(x="时间", y="收盘价格", title="价格线图") + # 坐标轴名称
+    theme_minimal() # 精简风格
 } # kplot
 
 # ****************************************
