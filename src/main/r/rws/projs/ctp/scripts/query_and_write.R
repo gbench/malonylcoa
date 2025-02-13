@@ -68,7 +68,7 @@ kplot <- function(kdata) {
 	lbls <- dplyr::case_when( # 时间刻度
 	   points == p1030 ~ "10:15/30", # 上午盘的时间交接点
 	   points == p1330 ~ "11/13:30:00", # 下午盘的时间交接点
-	   minute(points) == 0 & points == p2100 ~ "15/21:00", # 晚盘的时间交接点
+	   points == p2100 ~ "15/21:00", # 晚盘的时间交接点
 	   minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
 	   TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
 	) # 时间刻度
