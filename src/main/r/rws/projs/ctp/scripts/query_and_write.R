@@ -90,7 +90,7 @@ interval <- "15 min" # 时间间隔
 # 标准分割点
 std.breaks <- "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00" |> # 坐标刻度，标准时间刻度
   partition(delim=";") |> # 解析交易时段
-  lapply(\(line, ps=compose(as.datetime, partition)(line), .interval=interval) seq(ps[1], ps[2], by=.interval)) |> # 提取交易标记点
+  lapply(\(line, ps=compose(as.datetime, partition)(line), intv=interval) seq(ps[1], ps[2], by=intv)) |> # 提取交易标记点
   Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
 # 当前工作区中的数据文件（以保证返回的文件路径都是相对于当前工作区的路径，而不是一个不可直接访问的简单字符串）
 data.files <- list.files(path=".", all.files=T, recursive=T, include.dirs=F); data.files # 数据文件集合
@@ -99,8 +99,8 @@ data <- fread(last(data.files)) # 数据文件读取
 # K线数据
 klinedata <- data |> compute_kline() # 解析数据为ohlcv结构的K线数据
 # 指定范围的K线数据（精选时段）
-kdata <- klinedata["T09:00/T23:00"] |> (\(d, idx=index(d))  # 剔除指定时间段后的数据
-  d[ ! (idx > as.datetime("15:00:00") & idx<as.datetime("21:00:00")) ])(); kdata # 精选时段数据 
+kdata <- klinedata["T09:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
+  kd[ !( ix>as.datetime("15:00:00") & ix<as.datetime("21:00:00") ) ])(); kdata # 精选时段数据 
 
 # ****************************************
 # 数据绘图
