@@ -69,7 +69,7 @@
 # }) # do.call
 #
 #' @param data 待处理的数据,数据框，wide 或者 long 格式
-#' @param varying 是点名变量集：可以采用不同的类型进行表达
+#' @param varying 时点名变量集：可以采用不同的类型进行表达
 #'        atomic vector: x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...,
 #'        list: 列表元素为为时变变量tvv, 例如 {"x":["x1","x2","x3""],"y":["y1","y2","y3"],"z":["z1","z2","z3"]}；
 #'        matrix: 列顺序的矩阵, 每行对应一个tvv时变变量，例如行向量为如此的结构 [[x:x1,x2,x3,x4],[y:y1,y2,y3],[z:z1,z2,z3]]
@@ -157,7 +157,7 @@ function( # === 参数列表 ===
 
   # 把宽格式转为长格式
   #' @param data 待处理的数据,数据框，wide 或者 long 格式
-  #' @param varying 是点名变量集：可以采用不同的类型进行表达
+  #' @param varying 时点名变量集：可以采用不同的类型进行表达
   #'        atomic vector: x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...,
   #'        list: 列表元素为为时变变量tvv, 例如 {"x":["x1","x2","x3""],"y":["y1","y2","y3"],"z":["z1","z2","z3"]}；
   #'        matrix: 列顺序的矩阵, 每行对应一个tvv时变变量，例如行向量为如此的结构 [[x:x1,x2,x3,x4],[y:y1,y2,y3],[z:z1,z2,z3]]
@@ -262,7 +262,7 @@ function( # === 参数列表 ===
   #' @param data 待处理的数据,数据框，wide 或者 long 格式
   #' @param timevar long 中的时间值times值所在的列名
   #' @param idvar wide的行记录主键列，即观测值(obs)的主键所在列名
-  #' @param varying 是点名变量集：可以采用不同的类型进行表达
+  #' @param varying 时点名变量集：可以采用不同的类型进行表达
   #'        atomic vector: x1,y1,z1, ... , x2,y2,z2, ..., x3,y3,z3, ...,
   #'        list: 列表元素为为时变变量tvv, 例如 {"x":["x1","x2","x3""],"y":["y1","y2","y3"],"z":["z1","z2","z3"]}；
   #'        matrix: 列顺序的矩阵, 每行对应一个tvv时变变量，例如行向量为如此的结构 [[x:x1,x2,x3,x4],[y:y1,y2,y3],[z:z1,z2,z3]]
