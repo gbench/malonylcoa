@@ -18,35 +18,36 @@ partition <- \(line, delim=",") line |> strsplit(delim) |> unlist() # 切分
 as.datetime <- partial(as.POSIXct, format="%H:%M:%S") # 时间分析
 
 #' 绘制单日的kdata
-#' @param kdata K线数据, xts 的数据格式, 包括 Open,High,Low,Close,Volume的数据
+#' @param kdata K线数据, xts 的数据格式, 包括由Open,High,Low,Close,Volume成员属性(variable)
 #' @param interval 时间间隔字符串， 默认为 "15min"
-#' @param sessions 交易时段字符串, 默认为 "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00"
+#' @param sessions 交易时段字符串,时间段之间用';'分隔,时段内时点用','分隔。
+#'        默认为 "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00"
 #' @return ggplot的绘图对象
 kplot <- function (# 绘制K线图
     kdata, # K线数据
     interval="15 min", # 时间间隔
     sessions="09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;21:00:00,23:00:00", # 交易时段字符串
-    # -------------------------------------------------------------------------------------------------------------
-    # Promise 变量定义区域，注意：以下参数是不需要传递的，之所以写在形式参数位置，仅是为了Lazy Evaluation的技巧而已
-    # -------------------------------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------------------------------------------
+    # Promise 变量定义区域。注意：以下参数是不需要传递的，之所以写在这里（形式参数位置），仅是为了Lazy Evaluation的编码技巧而已
+    # -------------------------------------------------------------------------------------------------------------------------
     sessmx=strsplit(sessions, ";") |> sapply(strsplit, split=",") |> sapply(c), # 交易时段矩阵
     std.breaks=apply(sessmx, 2, \(sess, ps=as.datetime(sess)) seq(ps[1], ps[2], by=interval)) |> # 提取交易标记点
-      Reduce(c, init=as.POSIXct(character(0)), x=_), # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
+      Reduce(c, init=as.POSIXct(character(0)), x=_), # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据。即避免类型檫除
     # 主要概念：
     # 交易时段：交易时段[a,b)是指从a（包含）时刻开始到b时刻（不包含）结束的一段交易过程。
     # 交易过程：由于交易存在中场休息或是停盘交易的情况，金融交易在实际请款中分段执行的，比如：[a,b), [c,d), [e, f), ... ,
     #           为了书写方便将该过程，简写为[a,b, c,d, e,f, ...)
-    # 连接点(join points)：连接点是指那种那种位于交易过程中具有具有时段意义上的承上启下的关键时点，它包括两个元素:
+    # 连接点(join points)：在交易过程中,`连接点`是指那些在相邻的时段之间充当着的承上启下的关键`时点`，它包括两个元素:
     #         前段交易的结束时刻previous_end, 后段交易的开始时刻current_start, 简记为(previous_end, current_start)
-    #         物理意义上previous_end与current_start一般是不同的，但是在逻辑上它们却是同一个交易时点。由此，就有了
+    #         物理意义上的previous_end与current_start一般是不同的，但是在逻辑上它们却是同一个交易时点。由此，就有了
     #         连接点的前端previous_end,与后端的current_start的说法。
     #         eg.对于一个多段交易过程（时点序列）：[a,b,c,d,e,f)，它的连接点集即jps的向量就可以写为：[(b,c), (d,e)]
     #         前一结束与后一开始在逻辑上是同一个时间的不同名称而已。逻辑上 b<=>c, d<==>e， 符号 <==> 表示等价
     #         是连接点把物理不连续的时间片段给拼凑成一条逻辑连续的交易序列.
-    jps=split(sessmx, floor(seq_along(sessmx)/2)) |> Filter(f=\(x) length(x)>1), # 构造连接点
-    jps.labels=jps |> sapply((\(x, ps=strsplit(x,":"), p1=ps[[1]], p2=ps[[2]]) # p1第一部分, p2第二部分
-      ifelse(p1[1]==p2[1], sprintf("%s:%s/%s", p1[1], p1[2], p2[2]),   # 相同前缀
-        ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s",p1[1], p2[1], p1[2]), # 相同中后缀
+    jps=split(sessmx, floor(seq_along(sessmx)/2)) |> Filter(f=\(x) length(x)>1), # 构造连接点:将彼此相邻的交易时段的前结尾与后开始的时点分成一组后给予提取
+    jps.labels=jps |> sapply((\(x, jp=strsplit(x, ":"), p1=jp[[1]], p2=jp[[2]]) # jp连接点,p1,p2为相应的前后端，其成员为时间字段的:时分秒
+      ifelse(p1[1]==p2[1], sprintf("%s:%s/%s", p1[1], p1[2], p2[2]),   # 相同前缀的情形
+        ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s",p1[1], p2[1], p1[2]), # 相同中后缀情形
           NA)))), # 连接点的格式文本
     is.jp=\(points) points %in% sapply(jps, `[`,2), # 以连接点的后端作为判断依据，返回点集合points各元素是否是连接点(由jps包含)的标志向量
     ix.jp=\(points) match(points, sapply(jps, `[`,2)) # points在连接点向量jps中的索引
@@ -77,9 +78,10 @@ kplot <- function (# 绘制K线图
       breaks=\(x) { # 需要保持与ggplot的基础映射x的相同的数据类型
         print(sprintf("breaks:%s(%d)", x, length(x)))
         pre.jps <- sapply(jps,`[`, 1) |> as.datetime() # 连接点的前端集合
-        # 考虑连续交易,每个时段都存在有后继时段,即连接点我们只能绘制一端,
-        # 为避免重复绘制,本算法将采用一连接点的后端合并前端的方式进行breaks绘制，
-        # 由此，这里就需要把pre.jps的前端（点）从std.breaks里给予剔除
+        # 当考虑连续交易时，每个时段都存在&有其相应的后继时段,即`连接点`我们只能绘制一端，否则就会出现
+        # 既要绘制上个交易的结束时刻又要绘制本次交易的开始时刻，而连续的就意味着前一结束就本次之开始。
+	# 为避免两次绘制所导致的在视觉上的连续性破坏,本算法将采用，以连接点的后端合并前端的方式来编制
+	# 刻度分位点集合的breaks，由此，这里就需要把pre.jps的前端（点）从std.breaks里给予剔除掉
         breaks <- std.breaks[-match(pre.jps, std.breaks)] # 从标准分点std.breaks中剔除掉pre.jps
         print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
         match(breaks, index(kdata)) |> na.omit() # 剔除NA值后的交易时点
@@ -106,15 +108,15 @@ kplot <- function (# 绘制K线图
 # 数据准备
 # ****************************************
 
-# 当前工作区中的数据文件（以保证返回的文件路径都是相对于当前工作区的路径，而不是一个不可直接访问的简单字符串）
+# 当前工作区中的数据文件（以保证返回的文件路径都是相对于当前工作区的路径，而不是一个`不可直接访问`的简单字符串）
 data.files <- list.files(path=".", all.files=T, recursive=T, include.dirs=F); data.files # 数据文件集合
-# 读取指定数据:data.files 的最后一项
+# 读取指定数据(data.files的最后一项即最新的数据文件)
 data <- fread(last(data.files)) # 数据文件读取
 # K线数据
-klinedata <- data |> compute_kline() # 解析数据为ohlcv结构的K线数据
+klinedata <- data |> compute_kline() # 解析数据为`ohlcv结构`的K线数据
 # 指定范围的K线数据（精选时段）
 kdata <- klinedata["T09:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
-  kd[ !( ix>as.datetime("15:00:00") & ix<as.datetime("21:00:00") ) ])(); kdata # 精选时段数据 
+  kd[ !( ix>as.datetime("15:00:00") & ix<as.datetime("21:00:00") ) ])(); kdata # 精选时段数据, 剔除掉非交易时间出现的噪音数据 
 
 # ****************************************
 # 数据绘图
