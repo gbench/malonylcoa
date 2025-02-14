@@ -26,9 +26,30 @@ kplot <- function (# 绘制K线图
     kdata, # K线数据
     interval="15 min", # 时间间隔
     sessions="09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;21:00:00,23:00:00", # 交易时段字符串
+    # -------------------------------------------------------------------------------------------------------------
+    # Promis变量定义区域，注意：以下参数是不需要传递的，之所以写在形式参数位置，仅是为了Lazy Evaluation的技巧而已
+    # -------------------------------------------------------------------------------------------------------------
     sessmx=strsplit(sessions, ";") |> sapply(strsplit, split=",") |> sapply(c), # 交易时段矩阵
     std.breaks=apply(sessmx, 2, \(sess, ps=as.datetime(sess)) seq(ps[1], ps[2], by=interval)) |> # 提取交易标记点
-      Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
+      Reduce(c, init=as.POSIXct(character(0)), x=_), # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
+    # 主要概念：
+    # 交易时段：交易时段[a,b)是指从a（包含）时刻开始到b时刻（不包含）结束的一段交易过程。
+    # 交易过程：由于交易存在中场休息或是停盘交易的情况，金融交易在实际请款中分段执行的，比如：[a,b), [c,d), [e, f), ... ,
+    #           为了书写方便将该过程，简写为[a,b, c,d, e,f, ...)
+    # 连接点(join points)：连接点是指那种那种位于交易过程中具有具有时段意义上的承上启下的关键时点，它包括两个元素:
+    #         前段交易的结束时刻previous_end, 后段交易的开始时刻current_start, 简记为(previous_end, current_start)
+    #         物理意义上previous_end与current_start一般是不同的，但是在逻辑上它们却是同一个交易时点。由此，就有了
+    #         连接点的前端previous_end,与后端的current_start的说法。
+    #         eg.对于一个多段交易过程（时点序列）：[a,b,c,d,e,f)，它的连接点集即jps的向量就可以写为：[(b,c), (d,e)]
+    #         前一结束与后一开始在逻辑上是同一个时间的不同名称而已。逻辑上 b<=>c, d<==>e， 符号 <==> 表示等价
+    #         是连接点把物理不连续的时间片段给拼凑成一条逻辑连续的交易序列.
+    jps=split(sessmx, floor(seq_along(sessmx)/2)) |> Filter(f=\(x) length(x)>1), # 构造连接点
+    jps.labels=jps |> sapply((\(x, ps=strsplit(x,":"), p1=ps[[1]], p2=ps[[2]]) # p1第一部分, p2第二部分
+      ifelse(p1[1]==p2[1], sprintf("%s:%s/%s", p1[1], p1[2], p2[2]),   # 相同前缀
+        ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s",p1[1], p2[1], p1[2]), # 相同中后缀
+          NA)))), # 连接点的格式文本
+    is.jp=\(points) points %in% sapply(jps, `[`,2), # 判断点集合points是否是连接点jps：返回标志向量，T是,F不是
+    ix.jp=\(points) match(points, sapply(jps, `[`,2)) # points在连接点向量jps中的索引
   ) { # 函数正文
   # 时间轴绘图
   ggplot( kdata |> as.data.frame() |> transform ( # 值列变换
@@ -55,27 +76,19 @@ kplot <- function (# 绘制K线图
     scale_x_continuous( # 自定义时间轴
       breaks=\(x) { # 需要保持与ggplot的基础映射x的相同的数据类型
         print(sprintf("breaks:%s(%d)", x, length(x)))
-        .p <- c("10:15:00", "11:30:00", "15:00:00") |> as.datetime() # 交易时段的结束时刻,由于连续交易,本时段的结束就是下一时段开始,故称其为时段连接点
-        breaks <- std.breaks[-match(.p, std.breaks)] # 考虑持续交易,每个时段都存在有后继时段,为避免重复绘制需要把上一个时段的尾部时点给剔除掉。
+        pre.jps <- sapply(jps,`[`, 1) |> as.datetime() # 连接点的前端集合
+        # 考虑连续交易,每个时段都存在有后继时段,即连接点我们只能绘制一端,
+	# 为避免重复绘制一端（本算法采用）用连接点的后端合并前端的方式进行breaks绘制，
+	# 由此这里将pre.jps的前端点给与剔除
+        breaks <- std.breaks[-match(pre.jps, std.breaks)] # 从标准分点std.breaks中剔除掉pre.jps
         print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
         match(breaks, index(kdata)) |> na.omit() # 剔除NA值后的交易时点
       }, labels=\(x) { # 坐标id
         print(sprintf("labels:%s(%d)", x, length(x)))
         points <- index(kdata)[x] # 提取时间点数据的时间索引
-        # 定义时段连接点:join points, （前一结束，后一开始的）交易时段的连接点
-        # 把[a,b,c,d,e] 分组成[(b,c),(d,e)]的仅包含前一时段结束时间与后一时段开始时间的连接点，
-        # 注意：前一结束与后一开始在逻辑上是同一个时间的不同名称而已，因此称其为连接点
-        # 是连接点把物理不连续的时间片段给拼凑成一条逻辑连续的交易序列
-        jps <- split(sessmx, floor(seq_along(sessmx)/2)) |> Filter(f=\(x) length(x)>1) # 构造连接点
-        jp.labels <- jps |> sapply((\(x, ps=strsplit(x,":"), p1=ps[[1]], p2=ps[[2]]) # p1第一部分, p2第二部分
-          ifelse(p1[1]==p2[1], sprintf("%s:%s/%s", p1[1], p1[2], p2[2]),   # 相同前缀
-            ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s",p1[1], p2[1], p1[2]), # 相同中后缀
-              F)))) # 连接点的格式文本
-        is.jp <-\(points) points %in% sapply(jps,`[`,2) # 判断是否是连接点
-        ix.jp <-\(points) match(points, sapply(jps,`[`,2)) # points在jps中的索引
         ps <- strftime(points, format="%H:%M:%S") # 时间点的格式化字符串
         lbls <- dplyr::case_when( # 时间刻度
-          is.jp(ps) ~ jp.labels[ix.jp(ps)], # 时段交界点
+          is.jp(ps) ~ jps.labels[ix.jp(ps)], # 时段交界点
           minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
           TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
         ) # 时间刻度
