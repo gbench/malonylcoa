@@ -64,7 +64,7 @@ kplot <- function (# 绘制K线图
         points <- index(kdata)[x] # 提取时间点数据的时间索引
         # 定义时段连接点:join points, （前一结束，后一开始的）交易时段的连接点
         # 把[a,b,c,d,e] 分组成[(b,c),(d,e)]的仅包含前一时段结束时间与后一时段开始时间的连接点，
-	# 注意：前一结束与后一开始在逻辑上是同一个时间的不同名称而已，因此称其为连接点
+        # 注意：前一结束与后一开始在逻辑上是同一个时间的不同名称而已，因此称其为连接点
         # 是连接点把物理不连续的时间片段给拼凑成一条逻辑连续的交易序列
         jps <- split(sessmx, floor(seq_along(sessmx)/2)) |> Filter(f=\(x) length(x)>1) # 构造连接点
         jp.labels <- jps |> sapply((\(x, ps=strsplit(x,":"), p1=ps[[1]], p2=ps[[2]]) # p1第一部分, p2第二部分
