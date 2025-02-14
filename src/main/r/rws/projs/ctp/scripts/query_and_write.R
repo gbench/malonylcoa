@@ -101,7 +101,7 @@ kplot <- function (# 绘制K线图
           minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
           TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
         ) # 时间刻度
-	print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
+        print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
         lbls # 时点标签
       }, limits=\(x) { # 刻度区间
         print(sprintf("limits:%s(%d)", x, length(x)))
