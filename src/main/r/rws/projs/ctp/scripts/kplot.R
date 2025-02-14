@@ -63,10 +63,11 @@ kplot <- function (# 绘制K线图
         print(sprintf("labels:%s(%d)", x, length(x)))
         points <- index(kdata)[x] # 提取时间点数据的时间索引
         # 定义时段连接点:join points, （前一结束，后一开始的）交易时段的连接点
-        # 把[a,b,c,d,e] 分组成[(b,c),(d,e)]的仅包含前一时段结束时间与后一时段的结束时间的连接点
+        # 把[a,b,c,d,e] 分组成[(b,c),(d,e)]的仅包含前一时段结束时间与后一时段开始时间的连接点，
+	# 注意：前一结束与后一开始在逻辑上是同一个时间的不同名称而已，因此称其为连接点
         # 是连接点把物理不连续的时间片段给拼凑成一条逻辑连续的交易序列
         jps <- split(sessmx, floor(seq_along(sessmx)/2)) |> Filter(f=\(x) length(x)>1) # 构造连接点
-        jp.labels <- jps |> sapply((\(x, ps=strsplit(x,":"), p1=ps[[1]], p2=ps[[2]])  
+        jp.labels <- jps |> sapply((\(x, ps=strsplit(x,":"), p1=ps[[1]], p2=ps[[2]]) # p1第一部分, p2第二部分
           ifelse(p1[1]==p2[1], sprintf("%s:%s/%s", p1[1], p1[2], p2[2]),   # 相同前缀
             ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s",p1[1], p2[1], p1[2]), # 相同中后缀
               F)))) # 连接点的格式文本
@@ -74,11 +75,11 @@ kplot <- function (# 绘制K线图
         ix.jp <-\(points) match(points, sapply(jps,`[`,2)) # points在jps中的索引
         ps <- strftime(points, format="%H:%M:%S") # 时间点的格式化字符串
         lbls <- dplyr::case_when( # 时间刻度
-          is.jp(ps) ~ jp.labels[ix.jp(ps) |> na.omit()], # 时段交界点
+          is.jp(ps) ~ jp.labels[ix.jp(ps)], # 时段交界点
           minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
           TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
         ) # 时间刻度
-	    print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
+        print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
         lbls # 时点标签
       }, limits=\(x) { # 刻度区间
         print(sprintf("limits:%s(%d)", x, length(x)))
@@ -99,7 +100,7 @@ data <- fread(last(data.files)) # 数据文件读取
 # K线数据
 klinedata <- data |> compute_kline() # 解析数据为ohlcv结构的K线数据
 # 指定范围的K线数据（精选时段）
-kdata <- klinedata["T21:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
+kdata <- klinedata["T09:00/T23:00"] |> (\(kd, ix=index(kd))  # 剔除指定时间段后的数据
   kd[ !( ix>as.datetime("15:00:00") & ix<as.datetime("21:00:00") ) ])(); kdata # 精选时段数据 
 
 # ****************************************
