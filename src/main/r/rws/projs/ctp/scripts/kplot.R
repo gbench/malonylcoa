@@ -48,7 +48,7 @@ kplot <- function (# 绘制K线图
       ifelse(p1[1]==p2[1], sprintf("%s:%s/%s", p1[1], p1[2], p2[2]),   # 相同前缀
         ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s",p1[1], p2[1], p1[2]), # 相同中后缀
           NA)))), # 连接点的格式文本
-    is.jp=\(points) points %in% sapply(jps, `[`,2), # 判断点集合points是否是连接点jps：返回标志向量，T是,F不是
+    is.jp=\(points) points %in% sapply(jps, `[`,2), # 以连接点的后端作为判断依据，返回点集合points各元素是否是连接点(由jps包含)的标志向量
     ix.jp=\(points) match(points, sapply(jps, `[`,2)) # points在连接点向量jps中的索引
   ) { # 函数正文
   # 时间轴绘图
@@ -78,8 +78,8 @@ kplot <- function (# 绘制K线图
         print(sprintf("breaks:%s(%d)", x, length(x)))
         pre.jps <- sapply(jps,`[`, 1) |> as.datetime() # 连接点的前端集合
         # 考虑连续交易,每个时段都存在有后继时段,即连接点我们只能绘制一端,
-	# 为避免重复绘制一端（本算法采用）用连接点的后端合并前端的方式进行breaks绘制，
-	# 由此这里将pre.jps的前端点给与剔除
+        # 为避免重复绘制,本算法将采用一连接点的后端合并前端的方式进行breaks绘制，
+        # 由此，这里就需要把pre.jps的前端（点）从std.breaks里给予剔除
         breaks <- std.breaks[-match(pre.jps, std.breaks)] # 从标准分点std.breaks中剔除掉pre.jps
         print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
         match(breaks, index(kdata)) |> na.omit() # 剔除NA值后的交易时点
