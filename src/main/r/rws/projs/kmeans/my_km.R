@@ -57,7 +57,6 @@ km <- function(data, k, eps = 0.01) {
   # K-Means++ 选择初始中心点
   # @param data 数据点集合, data.frame 或是 矩阵类型
   # @param k 聚类中心数量 整数类型
-  # @param centers 业已选择的中间点集合
   # @return 初始中点集合
   kmeans_plus_plus <- function(data, k) {
     data <- if(!is.matrix(data)) as.matrix(data) else data # 转成矩阵以避免data.frame的data在按行索引取行值返回data.frame而非行向量
