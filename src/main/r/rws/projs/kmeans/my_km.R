@@ -63,14 +63,14 @@ km <- function(data, k, eps = 0.01) {
     data <- if(!is.matrix(data)) as.matrix(data) else data # 转成矩阵以避免data.frame的data在按行索引取行值返回data.frame而非行向量
     if (k == 1) { # 唯一中心随机选择一项
       matrix(data[sample(nrow(data), 1), ], nrow = 1) # 随机选择一个数据
-    } else if(k>1) { 
-      centers <- kmeans_plus_plus(data, k-1) # 计算前k-1级别中心点
+    } else if(k > 1) { # 多余一个中心点
+      centers <- kmeans_plus_plus(data, k - 1) # 计算前k-1级别中心点
       dists <- apply(centers, 1, \(x) rowSums(sweep(data, 2, x)^2));# 计算各数据点与中心点的距离[data X centers的矩阵]
       wts <- apply(dists, 1, min) # 以数据点与中心点间最短的距离作为此后，继续参加备选中心点概率权重，距离越近概率越低
       wts[apply(data, 1, \(x) any(apply(centers, 1, \(y) all(x == y))))] <- 0; # 调整概率权重，已选则不再在参选，即权重为0
       rbind(centers, data[sample(nrow(data), 1, prob = wts / sum(wts)), ]) # 以新权重选出新中心点&追加,开始下一轮
     } else {
-      stop(k>=1,"k 必须大于等于1")
+      stop("k 必须大于等于1")
     } #if
   }
 
