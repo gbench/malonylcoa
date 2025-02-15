@@ -73,12 +73,12 @@ kplot <- function (# 绘制K线图
     #         前一结束与后一开始在逻辑上是同一个时间的不同名称而已。逻辑上 b<=>c, d<==>e， 符号 <==> 表示等价
     #         是连接点把物理不连续的时间片段给拼凑成一条逻辑连续的交易序列.
     jps=split(sessmx, floor(seq_along(sessmx)/2)) |> Filter(f=\(x) length(x)>1), # 构造连接点:将彼此相邻的交易时段的前结尾与后开始的时点分成一组后给予提取
-    jps.labels=jps |> sapply((\(x, jp=strsplit(x, ":"), p1=jp[[1]], p2=jp[[2]]) # jp连接点,p1,p2为相应的前后端，其成员为时间字段的:时分秒
+    jps.labels=jps |> sapply((\(jp, ps=strsplit(jp, ":"), p1=ps[[1]], p2=ps[[2]]) # jp连接点ps为其':'的模式分解,p1,p2为相应的前后端,其成员为时间字段:时分秒
       ifelse(p1[1]==p2[1], sprintf("%s:%s/%s", p1[1], p1[2], p2[2]),   # 相同前缀的情形
-        ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s",p1[1], p2[1], p1[2]), # 相同中后缀情形
+        ifelse(p1[[2]]==p2[[2]], sprintf("%s/%s:%s", p1[1], p2[1], p1[2]), # 相同中后缀情形
           NA)))), # 连接点的格式文本
-    is.jp=\(points) points %in% sapply(jps, `[`,2), # 以连接点的后端作为判断依据，返回点集合points各元素是否是连接点(由jps包含)的标志向量
-    ix.jp=\(points) match(points, sapply(jps, `[`,2)) # points在连接点向量jps中的索引
+    is.jp=\(points) points %in% sapply(jps, `[`, 2), # 以连接点的后端作为判断依据，返回点集合points各元素是否是连接点(由jps包含)的标志向量
+    ix.jp=\(points) match(points, sapply(jps, `[`, 2)) # points在连接点向量jps中的索引
   ) { # 函数正文
   # 时间轴绘图
   ggplot( kdata |> as.data.frame() |> transform ( # 值列变换
