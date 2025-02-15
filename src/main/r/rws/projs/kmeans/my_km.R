@@ -57,16 +57,17 @@ km <- function(data, k, eps = 0.01) {
   # K-Means++ 选择初始中心点
   # @param data 数据点集合, data.frame 或是 矩阵类型
   # @param k 聚类中心数量 整数类型
-  # @centers 业已选择的中间点集合
+  # @param centers 业已选择的中间点集合
+  # @return 初始中点集合
   kmeans_plus_plus <- function(data, k, centers = matrix(data[sample(nrow(data), 1), ], nrow = 1)) {
     data <- as.matrix(data) # 转换成矩阵以避免data.frame的data在按行索引取行值返回data.frame而非行向量
     if (nrow(centers) >= k){ 
-      centers # 已经选择完成,直接返回center退出执行。
+      head(centers, k) # 中心点数目达到要求, 直接返回,退出执行终止递归。
     } else { # 注意这里用到了'Lazy计算机制',即data <- as.matrix(data)不能移入else内以保证data在centers计算之前就要被转成矩阵形式。
       dists <- apply(centers, 1, \(x) rowSums(sweep(data, 2, x)^2));# 计算各数据点与中心点的距离[data X centers的矩阵]
-      wts <- apply(dists, 1, min) # 以数据点与中心点间最短的距离作为此后续参加备选概率权重，距离越近概率越低
-      wts[apply(data, 1, \(x) any(apply(centers, 1, \(y) all(x == y))))] <- 0; # 调整概率权重，已选的不再在选择，权重为0
-      kmeans_plus_plus(data, k, rbind(centers, data[sample(nrow(data), 1, prob = wts / sum(wts)), ])) # 以新权重选出&追加新中心进入下一轮
+      wts <- apply(dists, 1, min) # 以数据点与中心点间最短的距离作为此后，继续参加备选中心点概率权重，距离越近概率越低
+      wts[apply(data, 1, \(x) any(apply(centers, 1, \(y) all(x == y))))] <- 0; # 调整概率权重，已选则不再在参选，即权重为0
+      kmeans_plus_plus(data, k, rbind(centers, data[sample(nrow(data), 1, prob = wts / sum(wts)), ])) # 以新权重选出新中心点&追加,开始下一轮
     } #if
   }
 
