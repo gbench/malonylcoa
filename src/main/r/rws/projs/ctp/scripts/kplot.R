@@ -80,8 +80,8 @@ kplot <- function (# 绘制K线图
         pre.jps <- sapply(jps,`[`, 1) |> as.datetime() # 连接点的前端集合
         # 当考虑连续交易时，每个时段都存在&有其相应的后继时段,即`连接点`我们只能绘制一端，否则就会出现
         # 既要绘制上个交易的结束时刻又要绘制本次交易的开始时刻，而连续的就意味着前一结束就本次之开始。
-	# 为避免两次绘制所导致的在视觉上的连续性破坏,本算法将采用，以连接点的后端合并前端的方式来编制
-	# 刻度分位点集合的breaks，由此，这里就需要把pre.jps的前端（点）从std.breaks里给予剔除掉
+        # 为避免两次绘制所导致的在视觉上的连续性破坏,本算法将采用，以连接点的后端合并前端的方式来编制
+        # 刻度分位点集合的breaks，由此，这里就需要把pre.jps的前端（点）从std.breaks里给予剔除掉
         breaks <- std.breaks[-match(pre.jps, std.breaks)] # 从标准分点std.breaks中剔除掉pre.jps
         print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
         match(breaks, index(kdata)) |> na.omit() # 剔除NA值后的交易时点
