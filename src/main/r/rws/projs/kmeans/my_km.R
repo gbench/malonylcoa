@@ -55,39 +55,19 @@ km <- function(data, k, eps = 0.01) {
   }
 
   # K-Means++ 选择初始中心点
-  # @param data 数据点集合
-  # @param k 聚类中心数量
-  kmeans_plus_plus <- function(data, k) {
-    n <- nrow(data)
-    centers <- matrix(0, nrow = k, ncol = ncol(data))
-    # 随机选择第一个中心点
-    centers[1, ] <- as.numeric(data[sample(1:n, 1), ])
-    # 记录已经被选为中心点的数据点的索引
-    selected_indices <- integer(k)
-    selected_indices[1] <- which(apply(data, 1, function(x) all(x == centers[1, ])))
-
-    for (i in 2:k) {
-      # 计算每个数据点到已选中心点的距离
-      distances <- apply(centers[1:(i - 1), , drop = FALSE], 1, function(p) {
-        dist_matrix <- sweep(data, 2, p, "-")
-        sqrt(rowSums(dist_matrix^2))
-      })
-      # 排除已经被选为中心点的数据点
-      non_selected_indices <- setdiff(1:n, selected_indices[1:(i - 1)])
-      non_selected_distances <- distances[non_selected_indices, , drop = FALSE]
-      # 找到每个未被选数据点到已选中心点的最小距离
-      min_distances <- apply(non_selected_distances, 1, min)
-      # 计算每个未被选数据点被选为下一个中心点的概率：距离越近概率越小
-      probabilities <- min_distances / sum(min_distances)
-      # 根据概率从未被选的数据点中选择下一个中心点的索引
-      next_center_index_in_non_selected <- sample(seq_along(non_selected_indices), 1, prob = probabilities)
-      next_center_index <- non_selected_indices[next_center_index_in_non_selected]
-      # 更新中心点和已选索引
-      centers[i, ] <- as.numeric(data[next_center_index, ])
-      selected_indices[i] <- next_center_index
-    }
-
-    return(centers)
+  # @param data 数据点集合, data.frame 或是 矩阵类型
+  # @param k 聚类中心数量 整数类型
+  # @centers 业已选择的中间点集合
+  kmeans_plus_plus <- function(data, k, centers = matrix(data[sample(nrow(data), 1), ], nrow = 1)) {
+    data <- as.matrix(data) # 转换成矩阵以避免data.frame的data在按行索引取行值返回data.frame而非行向量
+    if (nrow(centers) >= k){ 
+      centers # 已经选择完成,直接返回center退出执行。
+    } else { # 注意这里用到了'Lazy计算机制',即data <- as.matrix(data)不能移入else内以保证data在centers计算之前就要被转成矩阵形式。
+      dists <- apply(centers, 1, \(x) rowSums(sweep(data, 2, x)^2));# 计算各数据点与中心点的距离[data X centers的矩阵]
+      wts <- apply(dists, 1, min) # 以数据点与中心点间最短的距离作为此后续参加备选概率权重，距离越近概率越低
+      wts[apply(data, 1, \(x) any(apply(centers, 1, \(y) all(x == y))))] <- 0; # 调整概率权重，已选的不再在选择，权重为0
+      kmeans_plus_plus(data, k, rbind(centers, data[sample(nrow(data), 1, prob = wts / sum(wts)), ])) # 以新权重选出&追加新中心进入下一轮
+    } #if
   }
 
   # 随机生成中心点
@@ -118,7 +98,7 @@ km <- function(data, k, eps = 0.01) {
       centeroids <- centeroids_gen(flag) # 结构不完整, 重新选择新的聚类中心点
     } else { # 进入下一轮循环
       centeroids <- .centeroids # 准聚类中心点正式作为聚类中心点
-    }
+    } # if
   } # repeat
 
   # 分类器
