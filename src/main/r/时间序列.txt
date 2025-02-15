@@ -96,6 +96,77 @@
 # --------------------------------------------------------------------------------------------------
 主要时间包&函数：
 # --------------------------------------------------------------------------------------------------
+
+# 时区函数
+> Sys.timezone()
+[1] "Asia/Shanghai"
+
+# 标准时间
+> ISOdate(2024,2,16,12,34,5)
+[1] "2024-02-16 12:34:05 GMT"
+
+> ISOdate(2024,2,16,12,34,5, tz="Asia/Shanghai")
+[1] "2024-02-16 12:34:05 CST"
+
+> ISOdate(2024,2,16,12,34,5, tz="Asia/Tokyo")
+[1] "2024-02-16 12:34:05 JST"
+
+# 标准时间
+> ISOdate(2024,2,16,12,34,5, tz=Sys.timezone())
+[1] "2024-02-16 12:34:05 CST"
+
+# 计算两个时间的差值
+> ISOdate(2024,2,16,12,34,5, tz=Sys.timezone()) - ISOdate(2024,2,16,12,34,5)
+Time difference of -8 hours
+
+# 时间的差值是difftime
+> (ISOdate(2024,2,16,12,34,5, tz=Sys.timezone()) - ISOdate(2024,2,16,12,34,5))|>class()
+[1] "difftime"
+
+# 计算两个时间按差值直接按的秒数
+> difftime(ISOdate(2024,2,16,12,34,5, tz=Sys.timezone()), ISOdate(2024,2,16,12,34,5), units="secs") 
+Time difference of -28800 secs
+
+# 系统时间
+# Sys.time and Sys.Date returns the system's idea of the current date with and without time.
+# 系统时间
+> Sys.time()
+[1] "2025-02-16 03:20:49 CST"
+> Sys.time() |> class()
+[1] "POSIXct" "POSIXt" 
+
+# 系统日期
+> Sys.Date()
+[1] "2025-02-16"
+> Sys.Date() |> class()
+[1] "Date"
+
+# R 标识时间的方法：POSIXct，POSIXlt
+# There are two basic classes of date/times. 
+1） Class "POSIXct" represents the (signed) number of seconds since the beginning of 1970 (in the UTC time zone) as a numeric vector.
+2 ）Class "POSIXlt" is internally a list of vectors with components named sec, min, hour for the time, mday, mon, and year, 
+      for the date, wday, yday for the day of the week and day of the year, isdst, a Daylight Saving Time flag, 
+      and sometimes (both optional) zone, a string for the time zone, and gmtoff, offset in seconds from GMT
+# 简单的说POSIXct（chrono,continous 连续时间）记录的时间是一个数(与epoch之间的差)，而 POSIXlt (list列表形式)记录时间方式是一个列表。
+
+# POSIXct提取属性会报错
+> (Sys.time()|>as.POSIXct())$year
+Error in (as.POSIXct(Sys.time()))$year : 
+  $ operator is invalid for atomic vectors
+
+# POSIXlt提取属性则可以
+> (Sys.time()|>as.POSIXlt())$year
+[1] 125
+
+# 时间的解析：string parse time
+> strptime("2025-02-16 03:41:13", "%Y-%m-%d %H:%M:%S")
+[1] "2025-02-16 03:41:13 CST"
+
+# 时间的格式化：string f time
+> strftime(Sys.time(), "%Y-%m-%d %H:%M:%S")
+[1] "2025-02-16 03:44:13"
+
+# ---
 library(xts)
 # timeBasedRange 是一个以ISO-8601格式去创建time-based objects 去以便索引 相关对象(xts object)的函数。
 # 时间对象序列
