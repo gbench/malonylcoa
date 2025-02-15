@@ -97,6 +97,45 @@
 主要时间包&函数：
 # --------------------------------------------------------------------------------------------------
 
+# R 标识时间的方法：POSIXct，POSIXlt
+# There are two basic classes of date/times. 
+1） Class "POSIXct" represents the (signed) number of seconds since the beginning of 1970 (in the UTC time zone) as a numeric vector.
+2 ）Class "POSIXlt" is internally a list of vectors with components named sec, min, hour for the time, mday, mon, and year, 
+      for the date, wday, yday for the day of the week and day of the year, isdst, a Daylight Saving Time flag, 
+      and sometimes (both optional) zone, a string for the time zone, and gmtoff, offset in seconds from GMT
+# 简单的说POSIXct（chrono,continous 连续时间）记录的时间是一个数(与epoch之间的差)，而 POSIXlt (list列表形式)记录时间方式是一个列表。
+
+# 系统时间
+# Sys.time and Sys.Date returns the system's idea of the current date with and without time.
+# 系统时间
+> Sys.time()
+[1] "2025-02-16 03:20:49 CST"
+> Sys.time() |> class()
+[1] "POSIXct" "POSIXt" 
+
+# 系统日期
+> Sys.Date()
+[1] "2025-02-16"
+> Sys.Date() |> class()
+[1] "Date"
+
+# POSIXct提取属性会报错
+> (Sys.time()|>as.POSIXct())$year
+Error in (as.POSIXct(Sys.time()))$year : 
+  $ operator is invalid for atomic vectors
+
+# POSIXlt提取属性则可以
+> (Sys.time()|>as.POSIXlt())$year
+[1] 125
+
+# 时间的解析：string parse time
+> strptime("2025-02-16 03:41:13", "%Y-%m-%d %H:%M:%S")
+[1] "2025-02-16 03:41:13 CST"
+
+# 时间的格式化：string f time
+> strftime(Sys.time(), "%Y-%m-%d %H:%M:%S")
+[1] "2025-02-16 03:44:13"
+
 # 时区函数
 > Sys.timezone()
 [1] "Asia/Shanghai"
@@ -127,44 +166,33 @@ Time difference of -8 hours
 > difftime(ISOdate(2024,2,16,12,34,5, tz=Sys.timezone()), ISOdate(2024,2,16,12,34,5), units="secs") 
 Time difference of -28800 secs
 
-# 系统时间
-# Sys.time and Sys.Date returns the system's idea of the current date with and without time.
-# 系统时间
-> Sys.time()
-[1] "2025-02-16 03:20:49 CST"
-> Sys.time() |> class()
-[1] "POSIXct" "POSIXt" 
+# 时刻与数字的运算数字被视为秒数的时间间隔
+> strptime("2024-02-16",format="%Y-%m-%d") + 9
+[1] "2024-02-16 00:00:09 CST"
 
-# 系统日期
-> Sys.Date()
-[1] "2025-02-16"
-> Sys.Date() |> class()
-[1] "Date"
+# 指定时间间隔
+> strptime("2024-02-16",format="%Y-%m-%d") + c(9, 30, 25) %*% c(3600, 60, 1)
+[1] "2024-02-16 00:00:09 CST"
 
-# R 标识时间的方法：POSIXct，POSIXlt
-# There are two basic classes of date/times. 
-1） Class "POSIXct" represents the (signed) number of seconds since the beginning of 1970 (in the UTC time zone) as a numeric vector.
-2 ）Class "POSIXlt" is internally a list of vectors with components named sec, min, hour for the time, mday, mon, and year, 
-      for the date, wday, yday for the day of the week and day of the year, isdst, a Daylight Saving Time flag, 
-      and sometimes (both optional) zone, a string for the time zone, and gmtoff, offset in seconds from GMT
-# 简单的说POSIXct（chrono,continous 连续时间）记录的时间是一个数(与epoch之间的差)，而 POSIXlt (list列表形式)记录时间方式是一个列表。
+# 超过24小时的时间
+> strptime("2024-02-16",format="%Y-%m-%d") + c(3*24+9, 30, 25) %*% c(3600, 60, 1)
+[1] "2024-02-19 09:30:25 CST"
 
-# POSIXct提取属性会报错
-> (Sys.time()|>as.POSIXct())$year
-Error in (as.POSIXct(Sys.time()))$year : 
-  $ operator is invalid for atomic vectors
-
-# POSIXlt提取属性则可以
-> (Sys.time()|>as.POSIXlt())$year
-[1] 125
-
-# 时间的解析：string parse time
-> strptime("2025-02-16 03:41:13", "%Y-%m-%d %H:%M:%S")
-[1] "2025-02-16 03:41:13 CST"
-
-# 时间的格式化：string f time
-> strftime(Sys.time(), "%Y-%m-%d %H:%M:%S")
-[1] "2025-02-16 03:44:13"
+# --- lubridate
+# 安装并加载 lubridate 包
+if (!require(lubridate)) {
+  install.packages("lubridate")
+  library(lubridate)
+}
+# 解析日期字符串
+start_date <- ymd("2024-02-16")
+# 定义时间间隔
+time_interval <- hours(9) + minutes(30) + seconds(25)
+# 计算新的时间
+new_time <- start_date + time_interval; new_time
+ 
+> new_time <- start_date + time_interval; new_time
+[1] "2024-02-16 09:30:25 UTC"
 
 # ---
 library(xts)
