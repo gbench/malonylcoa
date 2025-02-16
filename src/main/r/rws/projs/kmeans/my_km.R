@@ -16,7 +16,7 @@ if (!require(purrr, quietly = TRUE)) {
 # @param k 指定的分类即聚类中心的数量。注意,这个需要根据观测数据分布特点而后给出，也就是KMean
 #          不能自行发现出分类数，需要人为的给出相应提示，有KMean自行确定聚类中心的细节（具体坐标）
 # @param eps 收敛验证的误差限度，最大容许偏差，大于0的实数
-# @return list列表{centeroids:聚类中心点集合(一行代表一个点集合, 列为数据点在各个维度轴向的索引坐标),
+# @return list列表{centeroids::矩阵类型的聚类中心点集合(一行代表一个点集合, 列为数据点在各个维度轴向的索引坐标),
 #         cluster_ids: 聚类中心id, 即数据点的分类编码, cluster_id就是未给予正式的命名的概念或者说
 #         是机器分析出的概念，一旦为cluster_id即分类id进行了命名,给出了带有人类文化&经验色彩的名称,
 #         cluster_id或者说分类id就就变成了我们通常使用的概念了，它的意义将由该分类的下的数据元素的
@@ -89,12 +89,12 @@ km <- function (data, k, eps = 0.01) {
   
   #' 一直计算到中心点收敛到指定的误差范围之内eps：当前点.cs与先前点cs之间的各个维度坐标的差绝对值小于eps
   #' @param cs 假定中心点集合
-  #' @return 调整后的中心点集合 
+  #' @return 调整后的中心点集合:矩阵类型 
   loop <- function (cs = centeroids_gen(flag)) { 
     # 求出各个分类的样本的均值:作为准聚类中心点，更新聚类中心点
     .cs <- split(data, cluster_ids(data, cs)) |> # 计算各个数据点的聚类id
       lapply(\(x) apply(x, 2, mean)) |> # 介个每个分组的各个维度的坐标平均值
-      Reduce(x = _, f = rbind, init = data.frame()) # 结果合并为数据框,组合成当前中心点.cs,即准中心点
+      Reduce(x = _, f = \(a, b) if(is.null(a)) b else rbind(a, b), init = NULL) # 结果合并为数据框,组合成当前中心点.cs,即准中心点
     if (all(abs(cs - .cs) < eps)) # 当两次计算的聚簇中线点的坐标键的误差小于规定误差限度时终止算法，
          .cs # 中心点收敛，算法结束
     else loop ( if (nrow(.cs) < k) centeroids_gen(flag) # 中心点结构不完整，重新生成假定中心点已被再次重试 
@@ -105,8 +105,8 @@ km <- function (data, k, eps = 0.01) {
 
   # 分类器
   classifier <- function(data) cluster_ids(data, centeroids) # 将cluster_ids 作为数据点的分类器
-  # 返回结果，{centeroids: 聚类中心点, cluster_ids: 聚类中心点ids, 其实聚类中心id就是数据点的分类编码}
-  list(centeroids = structure(centeroids, names = names(data)), cluster_ids = classifier(data), classifier = classifier)
+  # 返回结果，{centeroids: :矩阵类型的聚类中心点, cluster_ids: 聚类中心点ids, 其实聚类中心id就是数据点的分类编码}
+  list(centeroids = structure(centeroids, dimnames=list(1:nrow(centeroids), names(data))), cluster_ids = classifier(data), classifier = classifier)
 }
 
 # ---------------------------------------------------------------------
