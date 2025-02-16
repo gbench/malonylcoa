@@ -57,7 +57,7 @@ km <- function (data, k, eps = 0.01) {
   # K-Means++ 选择初始中心点
   # @param data 数据点集合, data.frame 或是 矩阵类型
   # @param k 聚类中心数量 整数类型
-  # @return 初始中点集合
+  # @return 初始中点集合: 矩阵类型
   kmeans_plus_plus <- function (data, k) {
     data <- if(!is.matrix(data)) as.matrix(data) else data # 转成矩阵以避免data.frame的data在按行索引取行值返回data.frame而非行向量
     if (k == 1) { # 唯一中心随机选择一项
@@ -76,8 +76,9 @@ km <- function (data, k, eps = 0.01) {
   # 随机生成中心点
   # @param data 数据点集合
   # @param k 聚类中心数量
+  # @return 初始中心点集合: 矩阵类型
   rand_centeroids <- function (data, k) {
-    data[sample(1:n, k), ] # 随机选择k个中心点
+    data[sample(1:n, k), ] |> as.matrix() # 随机选择k个中心点
   }
 
   # 聚类中心点生成函数
