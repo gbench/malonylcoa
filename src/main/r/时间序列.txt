@@ -5,30 +5,30 @@
 #
 # 时间: 时间是对 运动 即 `纯过程持续 ` 的 线性 的 度量化描述。
 #
-# ( 主要符号与记法说明
-#     ::= 表示 定义为；
-#     <==> 表示 等价于 ；
-#     :: 表示 类型约束，
-#     inspire current 则 类似于 haskell 的  `函数应用` 概念 ，
-#     即 Inspire ::  t ->t 是的函数映射，一种到自身同种类型的映射关系或者说变换
+# (主要符号与记法说明
+#  =   表示值相等，  a  =  expression, 可以理解为a是expression的一种计算结果(可能是一种中间的计算状态,不一定是最终的最简结果形式)。
+#  ::= 表示 定义为， a ::= expression, 可以理解为符号a由表达式expression定义；
+#  <==> 表示 等价于  expression1 <=> expression2 可以理解为书写&记录方式expression1与expression2表达相同的内容；
+#  :: 表示 类型约束  a :: A 表示 a是类型A的一个实例对象，a的主要特定和性质由A进行定义和描述。
+#  inspire current 则 类似于 haskell 的 `函数应用` 概念 即 Inspire :: t ->t 是函数/映射，一种到自身同种类型的映射关系或者说变换.
 # ）
 #
 # 所谓 `纯过程持续` 是指一种递归式 的 启发关系（通过 `现有` 创造&新生 出 `后继`）Inspire :: t->t
 # 即 持续不断的 将某种 current 当前 Inspire 为 之后 的 next, 形式化 的 表述 就是:
 #
-# next ::= inspire current
-#       <==>  next1 ::= inspire current. 此时扩展以一下"上述的形式记法", 将 next0 ::=current, next1::= next 则
-#       <==>  next1 ::= inpire next0， 或 inspire^1 next0，这里再将 next0 ::= inspire^0， 我们继续递归应用 Inspire 则
-# next next = inspire next = inspire (inspire current) , 
-#       <==> next2 ::= next next 
-#       <==> next2 ::= (inpire . inspire) current. 此时扩展以一下上述的形式记法inpire . inspire ::= inpire^2
-#       <==> next2 ::= inspire^2 current  
-#       <==> next2 ::= inpire^2 next0
-# next next next ::= inspire (inspire (inspire (inspire current)))
-#       <==> next3 ::= inpire^3 next0
-# ... （持续不断对上述形式过程进行推导，我们就会很容获得以下的形式）
-# nextn = inpire^n next0 
-# ...
+# (1)  next           ::= inspire current
+#      <==> next1     ::= inspire current. 此时扩展以一下"上述的形式记法", 将 next0 ::=current, next1::= next 则
+#      <==> next1     ::= inpire next0， 或 inspire^1 next0，这里再将 next0 ::= inspire^0， 我们继续递归应用 Inspire 则
+# (2)  next next      ::= inspire next = inspire (inspire current) , 
+#      <==> next2     ::= next next 
+#      <==> next2     ::= (inpire . inspire) current. 此时扩展以一下上述的形式记法inpire . inspire ::= inpire^2
+#      <==> next2     ::= inspire^2 current  
+#      <==> next2     ::= inpire^2 next0
+# (3)  next next next ::= inspire (inspire (inspire current))
+#      <==> next3     ::= inpire^3 next0
+#      ... （持续不断对上述形式过程进行推导，我们就会很容获得以下的形式）
+# (n)  nextn =        ::= inpire^n next0 
+#      ...
 #
 # 由此，我们 为 过程 即 时间的描述内容 构造了一种 `序列化` 的 形式描述, 即
 # 1) 静态的（结果/状态）即 活动结果序列：next0,       next1,       next2,      next3,       ..., nextn,       ... 
