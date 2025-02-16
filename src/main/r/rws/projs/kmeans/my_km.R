@@ -61,7 +61,7 @@ km <- function (data, k, eps = 0.01) {
   kmeans_plus_plus <- function (data, k) {
     data <- if(!is.matrix(data)) as.matrix(data) else data # 转成矩阵以避免data.frame的data在按行索引取行值返回data.frame而非行向量
     if (k == 1) { # 唯一中心随机选择一项
-      matrix(data[sample(nrow(data), 1), ], nrow = 1) # 随机选择一个数据
+      data[sample(nrow(data), 1), , drop = F] # 随机选择一个数据, drop=F 确保返回结果为矩阵
     } else if(k > 1) { # 多余一个中心点
       centers <- kmeans_plus_plus(data, k - 1) # 计算前k-1级别中心点
       dists <- apply(centers, 1, \(x) rowSums(sweep(data, 2, x)^2));# 计算各数据点与中心点的距离[data X centers的矩阵]
@@ -77,29 +77,27 @@ km <- function (data, k, eps = 0.01) {
   # @param data 数据点集合
   # @param k 聚类中心数量
   # @return 初始中心点集合: 矩阵类型
-  rand_centeroids <- function (data, k) {
-    data[sample(1:n, k), ] |> as.matrix() # 随机选择k个中心点
+  rand_cs <- function (data, k) {
+    data[sample(1:n, k), , drop = F] |> as.matrix() # 随机选择k个中心点
   }
-
-  # 聚类中心点生成函数
-  centeroids_gen <- function (b = F) {
-    if (b) rand_centeroids(data, k) else kmeans_plus_plus(data, k)
-  }
-
-  flag <- F # 聚类中心点的生成方式，是否使用随机生成的中心点， True 随机方式, False非随机方式
   
-  #' 一直计算到中心点收敛到指定的误差范围之内eps：当前点.cs与先前点cs之间的各个维度坐标的差绝对值小于eps
-  #' @param cs 假定中心点集合:矩阵类型
+  #' 创建中心点初始化
+  #' @param flag 聚类中心点的生成方式，是否使用随机生成的中心点， True 随机方式, False非随机方式
+  # @return 初始中心点集合: 矩阵类型
+  init_cs <- function(flag = F) if (flag) rand_cs(data, k) else kmeans_plus_plus(data, k) # 创建中心点
+  
+  #' 一直计算到中心点收敛到指定的误差范围之内eps：当前点.cs与先前点cs之间的各个维度坐标的差的绝对值小于eps
+  #' @param cs 假定的中心点集合:矩阵类型
   #' @return 调整后的中心点集合:矩阵类型 
-  loop <- function (cs = centeroids_gen(flag)) { 
+  loop <- function (cs = init_cs()) { 
     # 求出各个分类的样本的均值:作为准聚类中心点，更新聚类中心点
     .cs <- split(data, cluster_ids(data, cs)) |> # 计算各个数据点的聚类id
       lapply(\(x) apply(x, 2, mean)) |> # 计算每个分组的在各个维度上的坐标平均值
-      Reduce(x = _, f = \(a, b) if(is.null(a)) b else rbind(a, b), init = NULL) # 结果合并为数据框,组合成当前中心点.cs,即准中心点
+      Reduce(x = _, f = rbind) # 结果合并为数据框,组合成当前中心点.cs,即准中心点
     # 依据两次中心点cs,.cs之间的相对关系决定下一步操作：终止结束还是继续进行
     if (all(abs(cs - .cs) < eps)) # 当两次计算的聚簇中线点的坐标间的误差小于规定误差限度时终止算法，
          .cs # 中心点收敛，算法结束
-    else loop ( if (nrow(.cs) < k) centeroids_gen(flag) # 中心点结构不完整，重新生成假定中心点已被再次重试 
+    else loop ( if (nrow(.cs) < k) init_cs() # 中心点结构不完整，重新生成假定中心点已被再次重试 
                 else .cs ) # 不收敛则再次循环, 继续调整
   } # loop
 
