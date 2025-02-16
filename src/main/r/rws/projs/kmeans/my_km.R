@@ -84,7 +84,7 @@ km <- function (data, k, eps = 0.01) {
   #' 创建中心点初始化
   #' @param flag 聚类中心点的生成方式，是否使用随机生成的中心点， True 随机方式, False非随机方式
   # @return 初始中心点集合: 矩阵类型
-  init_cs <- function(flag = F) if (flag) rand_cs(data, k) else kmeans_plus_plus(data, k) # 创建中心点
+  init_cs <- function (flag = F) if (flag) rand_cs(data, k) else kmeans_plus_plus(data, k) # 创建中心点
   
   #' 一直计算到中心点收敛到指定的误差范围之内eps：当前点.cs与先前点cs之间的各个维度坐标的差的绝对值小于eps
   #' @param cs 假定的中心点集合:矩阵类型
