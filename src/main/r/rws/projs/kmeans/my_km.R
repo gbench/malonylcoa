@@ -21,7 +21,7 @@ if (!require(purrr, quietly = TRUE)) {
 #         是机器分析出的概念，一旦为cluster_id即分类id进行了命名,给出了带有人类文化&经验色彩的名称,
 #         cluster_id或者说分类id就就变成了我们通常使用的概念了，它的意义将由该分类的下的数据元素的
 #         共性所承载,classifier:数据分类器}
-km <- function(data, k, eps = 0.01) {
+km <- function (data, k, eps = 0.01) {
   # -------------------------------------------------------
   # 数据类型验证
   # -------------------------------------------------------
@@ -41,24 +41,24 @@ km <- function(data, k, eps = 0.01) {
   # 计算 data 与 特定 点之间的距离,p:点的各个维度坐标的向量
   # @param data 数据点集合
   # @param p 指定数据点
-  d <- function(data, p) {
+  dist <- function (data, p) {
     apply(data, 1, compose(sqrt, sum, \(x) (x - p)^2))
   }
 
   # cluster_ids的本质是一个分类器(classifier), 即将拥有着共同的聚类中心的点视为同一个类别
   # @param data 数据点集合
-  # @param centeroids k个聚类中心的索引坐标 (行:点索引编号从1到k, 列:各个维度坐标)
+  # @param cs k个聚类中心的索引坐标 (行:点索引编号从1到k, 列:各个维度坐标)
   # @return 获取聚类中点id索引号：分类标记
-  cluster_ids <- function(data, centeroids) {
-    apply(centeroids, 1, \(p) d(data, p)) |> # 按行统计 ,计算各个点的距离, 结果为矩阵：(行data点编号,列centeroids点编号）
-      apply(1, which.min) # 按照行统计， 找出各数据data点与centeroids各点距离中最小的centeriods索引点编号作为cluster_id
+  cluster_ids <- function (data, cs) {
+    apply(cs, 1, \(p) dist(data, p)) |> # 按行统计 ,计算各个点的距离, 结果为矩阵：(行data点编号,列cs点编号）
+      apply(1, which.min) # 按照行统计， 找出各数据data点与cs各点距离中最小的cs索引点编号作为cluster_id
   }
 
   # K-Means++ 选择初始中心点
   # @param data 数据点集合, data.frame 或是 矩阵类型
   # @param k 聚类中心数量 整数类型
   # @return 初始中点集合
-  kmeans_plus_plus <- function(data, k) {
+  kmeans_plus_plus <- function (data, k) {
     data <- if(!is.matrix(data)) as.matrix(data) else data # 转成矩阵以避免data.frame的data在按行索引取行值返回data.frame而非行向量
     if (k == 1) { # 唯一中心随机选择一项
       matrix(data[sample(nrow(data), 1), ], nrow = 1) # 随机选择一个数据
@@ -76,33 +76,32 @@ km <- function(data, k, eps = 0.01) {
   # 随机生成中心点
   # @param data 数据点集合
   # @param k 聚类中心数量
-  rand_centeroids <- function(data, k) {
+  rand_centeroids <- function (data, k) {
     data[sample(1:n, k), ] # 随机选择k个中心点
   }
 
   # 聚类中心点生成函数
-  centeroids_gen <- function(b = F) {
+  centeroids_gen <- function (b = F) {
     if (b) rand_centeroids(data, k) else kmeans_plus_plus(data, k)
   }
 
   flag <- F # 聚类中心点的生成方式，是否使用随机生成的中心点， True 随机方式, False非随机方式
-  centeroids <- centeroids_gen(flag)
-
-  repeat { # 一直计算到中心点收敛到指定的误差范围之内eps：当前点.centeroids与先前点centeroids之间的各个维度坐标的差绝对值小于eps
+  
+  #' 一直计算到中心点收敛到指定的误差范围之内eps：当前点.cs与先前点cs之间的各个维度坐标的差绝对值小于eps
+  #' @param cs 假定中心点集合
+  #' @return 调整后的中心点集合 
+  loop <- function (cs = centeroids_gen(flag)) { 
     # 求出各个分类的样本的均值:作为准聚类中心点，更新聚类中心点
-    .centeroids <- split(data, cluster_ids(data, centeroids)) |> # 计算各个数据点的聚类id
+    .cs <- split(data, cluster_ids(data, cs)) |> # 计算各个数据点的聚类id
       lapply(\(x) apply(x, 2, mean)) |> # 介个每个分组的各个维度的坐标平均值
-      Reduce(x = _, f = rbind, init = data.frame()) # 结果合并为数据框,组合成当前中心点.centeroids,即准中心点
+      Reduce(x = _, f = rbind, init = data.frame()) # 结果合并为数据框,组合成当前中心点.cs,即准中心点
+    if (all(abs(cs - .cs) < eps)) # 当两次计算的聚簇中线点的坐标键的误差小于规定误差限度时终止算法，
+         .cs # 中心点收敛，算法结束
+    else loop ( if (nrow(.cs) < k) centeroids_gen(flag) # 中心点结构不完整，重新生成假定中心点已被再次重试 
+                else .cs ) # 不收敛则再次循环, 继续调整
+  } # loop
 
-    # 当两次计算的聚簇中线点的坐标键的误差小于规定误差限度时终止算法，
-    if (all(abs(centeroids - .centeroids) < eps)) { # 误差小于 eps, 获得中心点
-      break # 中心点收敛，算法结束
-    } else if (nrow(.centeroids) < k) { # 检查准聚类中心点是否结构完整
-      centeroids <- centeroids_gen(flag) # 结构不完整, 重新选择新的聚类中心点
-    } else { # 进入下一轮循环
-      centeroids <- .centeroids # 准聚类中心点正式作为聚类中心点
-    } # if
-  } # repeat
+  centeroids <- loop() # 计算出最优的中心点位置
 
   # 分类器
   classifier <- function(data) cluster_ids(data, centeroids) # 将cluster_ids 作为数据点的分类器
