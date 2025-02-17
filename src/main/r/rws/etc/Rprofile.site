@@ -77,12 +77,10 @@ mklzdb <- function(dbname, env = environment(), lazyloads_home = file.path(Sys.g
 
 #' 批量加载包
 #' @param xs 包名序列,元素间用逗号','分隔
-#' @return 无返回值，主要作用是加载到包到环境
 #' @export
-mklzdb <- function(dbname, env = environment(), lazyloads_home = file.path(Sys.getenv("RSCRIPT_HOME"), "lazyloads")) {
 batch_load <- function(xs = "RMySQL,tidyverse,jsonlite,quantmod,data.table") {
   xs <- if(length(xs) == 1 & is.character(xs)) strsplit(xs, "[,]+") |> unlist() else xs
-  xs |> sapply(\(x) tryCatch(require(trimws(x), character.only = TRUE), error = \(e) e))
+  xs |> sapply(\(x) tryCatch(require(trimws(x), character.only=TRUE), error=\(e) e))
 }
 
 # --------------------------------------------------------------------------------------
