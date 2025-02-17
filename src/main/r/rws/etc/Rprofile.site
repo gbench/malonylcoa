@@ -21,7 +21,10 @@
 #  if (interactive()) 
 #    fortunes::fortune()
 
+
 # --------------------------------------------------------------------------------------
+
+
 #' 创建一个目标目录
 #' 
 #' 根据输入的目录路径，递归地创建目录。
@@ -74,11 +77,13 @@ mklzdb <- function(dbname, env = environment(), lazyloads_home = file.path(Sys.g
 
 #' 批量加载包
 #' @param xs 包名序列,元素间用逗号','分隔
+#' @return 无返回值，主要作用是加载到包到环境
+#' @export
+mklzdb <- function(dbname, env = environment(), lazyloads_home = file.path(Sys.getenv("RSCRIPT_HOME"), "lazyloads")) {
 batch_load <- function(xs = "RMySQL,tidyverse,jsonlite,quantmod,data.table") {
   xs <- if(length(xs) == 1 & is.character(xs)) strsplit(xs, "[,]+") |> unlist() else xs
-  xs |> sapply(\(x) tryCatch(require(trimws(x), character.only=TRUE), error=\(e) e))
+  xs |> sapply(\(x) tryCatch(require(trimws(x), character.only = TRUE), error = \(e) e))
 }
-
 
 # --------------------------------------------------------------------------------------
 
@@ -89,11 +94,11 @@ setwd(dailywork_home) # 设置工作去目录
 
 if (FALSE) { # 根据指定模式加载数据文件
   # 自定义的预先加载的自定义函数文件列表
-  myfiles <- list.files(path=Sys.getenv('RSCRIPT_HOME'), pattern="\\.R$", recursive=T) 
-  scriptlog <- sprintf(fmt="%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) 
-} else {
+  myfiles <- list.files(path = Sys.getenv('RSCRIPT_HOME'), pattern="\\.R$", recursive = T) 
+  sprintf(fmt = "%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) |> invisible()
+} else { # 延迟加载(.rdx, .rdb 文件)
   # 延迟数据库根目录 
   lazyloads_home <- paste0(Sys.getenv("RSCRIPT_HOME"), "/lazyloads")
   # 启用延迟加载
-  lazyloads_home |> list.files("*.rdb", full.names=T) |> sub("\\.(rdb)$", "", x=_) |> lazyLoad() |> invisible()
+  lazyloads_home |> list.files(pattern = "*.rdb", full.names = T) |> sub("\\.(rdb)$", "", x=_) |> lazyLoad() |> invisible()
 } # if
