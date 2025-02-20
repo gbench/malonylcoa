@@ -23,16 +23,19 @@ pmn <- \(m, n) expand.grid(seq(m), seq(n)) |> apply(1, \(p, # 多项式的项目
 >
 a * x + b * x + a * y + b * y + a * z + b * z
 
-#  y 移动平均过程
-ma <- \(q) seq(1:q) |> lapply(\(i) if(i==1) quote(mu+eps[t]) else bquote(eps[t-.(i-1)])) |> Reduce(f=\(acc,a) bquote(.(acc)+.(a)))
+# 建立一个q阶移动平均的过程。
+# quote(mu + eps[t]) 当前表达式
+# bquote(theta[.(as.numeric(i))] * eps[t - .(i-1)]) 历届冲击eps的今日影响（阴影）,
+#  as.numeric(i) 是为了让格式更加美化，提醒i是一个数值，而不是一个向量，否贼 会显示成带有1L这种式样
+ma <- \(q) seq(1:q) |> lapply( \(i) if(i==1) quote(mu + eps[t]) else bquote(theta[.(as.numeric(i))] * eps[t - .(i-1)]) ) |> Reduce(f=\(acc,a) bquote(.(acc)+.(a)))
 
 # 生成 t=10时刻的ma(4)的表达式，指定当时刻为10
 bquote(substitute(.(ma(4)), list(t=10))) |> eval()
 
-# 使用substitute的实现: substitute 是不会计算它的第一参数的，所以 需要把最终需要替换的t写在最内层的substitute，指定当时刻为10
+# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，所以，需要把最终要替换的t写在最内层的substitute，指定当时刻为10
 substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 
-# 使用substitute的实现: substitute 是不会计算它的第一参数的，所以 需要把最终需要替换的t写在最内层的substitute，指定当时刻为10
+# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，所以，需要把最终要替换的t写在最内层的substitute，指定当时刻为10
 substitute(substitute(ma4, list(t=current)), list(ma4=ma(4))) |> eval(list(current=6))
 
 # 加载库
