@@ -101,7 +101,7 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
           params=weights/sum(weights), # 参数值为不同期限分配不同权重
           interrupts=rnorm(6),  # 外界干扰序列
           current=6 # 当前时刻值为6
-        )) |> eval() # 把数值表达式（计算实例值）
+        )) |> eval() # 生成数值表达式（计算实例值）
     ) |> ( \( data ) { # 生成的模型示例数据
           wts <- paste0(weights, collapse=',') # 权重
           print(sprintf("weights: %s ---> sd:%.4fd", wts, sd(data))) # 生成标准差
