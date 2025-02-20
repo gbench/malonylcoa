@@ -23,7 +23,7 @@ pmn <- \(m, n) expand.grid(seq(m), seq(n)) |> apply(1, \(p, # 多项式的项目
 >
 a * x + b * x + a * y + b * y + a * z + b * z
 
-#' 建立一个q阶移动平均的过程。
+#' 建立一个q阶移动平均的过程：形式结构的理论模型
 #' quote(mu + eps[t]) 当前表达式
 #' bquote(theta[.(as.numeric(i))] * eps[t - .(i-1)]) 历届冲击eps的今日影响（阴影）,
 #' @param q 移动平均 阶数， 大于等于1的整数，q阶表示一个冲击eps可持续影响的后继的时期数目，
@@ -44,19 +44,27 @@ bquote(substitute(.(ma(4)), list(t=10))) |> eval()
 # 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
 substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 
-# 计算一个4阶移动平均过程的在时刻6的数据分布
-# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
-# 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
-substitute(substitute(ma4, list(t=current, nu=base, eps=interrupts, theta=params)), list(ma4=ma(4))) |> (\(expr) # 构造过程模型并指定绑定关系
- sapply(1:100, \(i) eval(expr, list( # 指定实例参数生成实例i
-      base=1, # 基础
-      params=(4:1)/sum(1:4), # 参数值,越是近期影响权重就越大
-      interrupts=rnorm(6),  # 外界干扰序列
-      current=6 # 当前时刻值为6
-    )) |> eval() # 把数值表达式（计算实例值）
-  ) |> hist(xlab="x", main="计算一个4阶移动平均过程的在时刻6的数据分布") # 绘制直方图
-)  ()
-
+(\(){ # 绘图过程
+  o <- par(mfrow=c(2,1));on.exit(par(o)); # 图形窗口设置
+  # 计算一个4阶移动平均过程的在时刻6的数据分布
+  # 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
+  # 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
+  wtplot <- \(weights) substitute(substitute(ma4, list(t=current, nu=base, eps=interrupts, theta=params)), list(ma4=ma(4))) |> 
+    (\(model) # 构造过程模型并指定绑定关系
+      # 将理论模型expr应用在实际中与具体的base,params,interrupts,以及时刻current进行关联绑定
+      sapply(1:100, \(i) eval(model, list( # 指定实例参数生成实例i, 参见汉密尔顿的时间序列分析1卷p53
+          base=1, # 基础
+          params=weights/sum(weights), # 参数值,越是近期影响权重就越大
+          interrupts=rnorm(6),  # 外界干扰序列
+          current=6 # 当前时刻值为6
+	)) |> eval() # 把数值表达式（计算实例值）
+     ) |> hist(xlab="x", main=paste0("计算一个4阶移动平均过程(", paste0(weights, collapse=',') ,")的在时刻6的数据分布")) # 绘制直方图
+    ) ()
+   # 近期权重大
+   wtplot(4:1) 
+   # 远期期权重大
+   wtplot(1:4) 
+}) ()
 
 # 加载库
 library(data.table)
