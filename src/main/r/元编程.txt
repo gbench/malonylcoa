@@ -23,6 +23,24 @@ pmn <- \(m, n) expand.grid(seq(m), seq(n)) |> apply(1, \(p, # 多项式的项目
 >
 a * x + b * x + a * y + b * y + a * z + b * z
 
+#  y 移动平均过程
+ma <- \(q) seq(1:q) |> lapply(\(i) if(i==1) quote(mu+eps[t]) else bquote(eps[t-.(i-1)])) |> Reduce(f=\(acc,a) bquote(.(acc)+.(a)))
+
+# 生成 t=10  时刻的ma的表达式
+bquote(substitute(.(ma(4)), list(t=10))) |> eval()
+
+# 使用substitute的实现: substitute 是不会计算它的第一参数的，所以 需要把最终需要替换的t写在最内层的substitute
+substitute( substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
+
+# 使用substitute的实现: substitute 是不会计算它的第一参数的，所以 需要把最终需要替换的t写在最内层的substitute
+substitute( substitute(ma4, list(t=as.symbol(s))), list(ma4=ma(4))) |> eval()
+
+# 把t进行改名
+substitute( substitute(ma4, list(t=s)), list(ma4=ma(4))) |> eval(list(s=10))
+
+
+
+
 
 # 加载库
 library(data.table)
