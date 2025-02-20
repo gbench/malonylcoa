@@ -23,15 +23,16 @@ pmn <- \(m, n) expand.grid(seq(m), seq(n)) |> apply(1, \(p, # 多项式的项目
 >
 a * x + b * x + a * y + b * y + a * z + b * z
 
-#' 建立一个q阶移动平均的过程：形式结构的理论模型
+#' 建立一个q阶移动平均的过程：形式结构 的 理论模型
+#' as.numeric()是为了把数据整形转成double类型，因给整形的数字后面会增加以L后缀,比如1L
 #' quote(nu + eps[t]) 当前表达式
-#' bquote(theta[.(i)] * eps[t - .(i-1)]) 历届冲击eps的今日影响（阴影）,
+#' bquote(theta[.(j)] * eps[t - .(j)]) 历届冲击eps的今日影响（阴影）,
 #' @param q 移动平均 阶数， 大于等于1的整数，q阶表示一个冲击eps可持续影响的后继的时期数目，
 #           或是当前时期可以感受到曾经冲击的最远的数量（记忆的数量）
-ma <- \(q) seq(1:q) |> 
+ma <- \(q) seq(0,  q) |> as.numeric() |>
   lapply( \(i) # 时刻索引从1开始
-    if(i==1) quote(nu + eps[t]) # 当期
-    else bquote(theta[.(i-1)] * eps[t - .(i-1)])  # 历届前期
+    if(i==0) quote(nu + eps[t]) # 当期
+    else bquote(theta[.(i)] * eps[t - .(i)])  # 历届前期
   ) |> Reduce(f=\(acc, a) bquote(.(acc) + .(a)))
 
 # ma(4)的表达式
