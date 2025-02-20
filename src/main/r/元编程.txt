@@ -84,7 +84,7 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 # 第一次substitute叫做提出创造理论是认知：分析理解
 # 第二次substitute叫做理论联系实际是应用：实践创造
 (\() { # 绘图过程
-  o <- par(mfrow=c(2,1)); on.exit(par(o)); # 图形窗口设置
+  o <- par(mfrow=c(2, 1)); on.exit(par(o)); # 图形窗口设置
   
   #' 计算一个4阶移动平均过程的在时刻6的数据分布
   #' 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
@@ -95,18 +95,17 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
   wtsplot <- \(weights) #  权重分配 
     list( ma4=ma(4), # 生成理论模型：4阶级移动平均 ma4: nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]
           assocs=quote( list(t=current, nu=base, eps=interrupts, theta=params) ) # 模型中的结构符号与实际问题中变量的对应关系,理论联系实际
-    ) |> substitute(substitute(ma4, assocs), env=_)  |>  ( \(model) # 构造过程模型并指定绑定关系
-        # 将理论模型expr应用在实际中与具体的base,params,interrupts,以及时刻current进行关联绑定
+    ) |> substitute(substitute(ma4, assocs), env=_)  |>  ( \( model ) # 构造模型并指定绑定关系
         sapply(1:1000, \(i) eval(model, list( # 指定实例参数生成实例i, 参见汉密尔顿的时间序列分析1卷p53
           base=1, # 基础
           params=weights/sum(weights), # 参数值为不同期限分配不同权重
           interrupts=rnorm(6),  # 外界干扰序列
           current=6 # 当前时刻值为6
         )) |> eval() # 把数值表达式（计算实例值）
-    ) |> ( \(data) { # 生成的模型示例数据
-        wts <- paste0(weights, collapse=',') # 权重
-        print(sprintf("weights: %s ---> sd:%.4fd", wts, sd(data))) # 生成标准差
-        hist(data, xlab="x", main=paste0("计算一个4阶移动平均过程(", wts, ")的在时刻6的数据分布")) # 绘制直方图
+    ) |> ( \( data ) { # 生成的模型示例数据
+          wts <- paste0(weights, collapse=',') # 权重
+          print(sprintf("weights: %s ---> sd:%.4fd", wts, sd(data))) # 生成标准差
+          hist(data, xlab="x", main=paste0("计算一个4阶移动平均过程(", wts, ")的在时刻6的数据分布")) # 绘制直方图
       }) () # data
   ) () # model
   
