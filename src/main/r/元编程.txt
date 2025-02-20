@@ -23,20 +23,40 @@ pmn <- \(m, n) expand.grid(seq(m), seq(n)) |> apply(1, \(p, # 多项式的项目
 >
 a * x + b * x + a * y + b * y + a * z + b * z
 
-# 建立一个q阶移动平均的过程。
-# quote(mu + eps[t]) 当前表达式
-# bquote(theta[.(as.numeric(i))] * eps[t - .(i-1)]) 历届冲击eps的今日影响（阴影）,
-#  as.numeric(i) 是为了让格式更加美化，提醒i是一个数值，而不是一个向量，否贼 会显示成带有1L这种式样
-ma <- \(q) seq(1:q) |> lapply( \(i) if(i==1) quote(mu + eps[t]) else bquote(theta[.(as.numeric(i))] * eps[t - .(i-1)]) ) |> Reduce(f=\(acc,a) bquote(.(acc)+.(a)))
+#' 建立一个q阶移动平均的过程。
+#' quote(mu + eps[t]) 当前表达式
+#' bquote(theta[.(as.numeric(i))] * eps[t - .(i-1)]) 历届冲击eps的今日影响（阴影）,
+#' @param q 移动平均 阶数， 大于等于1的整数，q阶表示一个冲击eps可持续影响的后继的时期数目，
+#                   或是当前时期可以感受到曾经冲击的最远的数量（记忆的数量）
+ma <- \(q) seq(1:q) |> 
+  lapply( \(i) # 时刻索引从1开始
+    if(i==1) quote(nu + eps[t]) # 当期
+    else bquote(theta[.(i-1)] * eps[t - .(i-1)])  # 历届前期
+  ) |> Reduce(f=\(acc, a) bquote(.(acc) + .(a)))
+
+# ma(4)的表达式
+ma(4)
 
 # 生成 t=10时刻的ma(4)的表达式，指定当时刻为10
 bquote(substitute(.(ma(4)), list(t=10))) |> eval()
 
-# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，所以，需要把最终要替换的t写在最内层的substitute，指定当时刻为10
+# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
+# 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
 substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 
-# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，所以，需要把最终要替换的t写在最内层的substitute，指定当时刻为10
-substitute(substitute(ma4, list(t=current)), list(ma4=ma(4))) |> eval(list(current=6))
+# 计算一个4阶移动平均过程的在时刻6的数据分布
+# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
+# 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
+substitute(substitute(ma4, list(t=current, nu=base, eps=interrupts, theta=params)), list(ma4=ma(4))) |> (\(expr) # 构造过程模型并指定绑定关系
+ sapply(1:100, \(i) eval(expr, list( # 指定实例参数生成实例i
+      base=1, # 基础
+      params=(4:1)/sum(1:4), # 参数值,越是近期影响权重就越大
+      interrupts=rnorm(6),  # 外界干扰序列
+      current=6 # 当前时刻值为6
+    )) |> eval() # 把数值表达式（计算实例值）
+  ) |> hist(xlab="x", main="计算一个4阶移动平均过程的在时刻6的数据分布") # 绘制直方图
+)  ()
+
 
 # 加载库
 library(data.table)
