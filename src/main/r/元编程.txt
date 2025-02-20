@@ -83,7 +83,7 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 # 所以：这里面的哲学思想就是实践论：（把base,params,interrupts,current通过ma(4)的理论进行组织和应用）
 # 第一次substitute叫做提出创造理论是认知：分析理解
 # 第二次substitute叫做理论联系实际是应用：实践创造
-(\(){ # 绘图过程
+(\() { # 绘图过程
   o <- par(mfrow=c(2,1)); on.exit(par(o)); # 图形窗口设置
   
   #' 计算一个4阶移动平均过程的在时刻6的数据分布
@@ -93,7 +93,7 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
   #' 权重绘图
   #' @param weights 权重分配 
   wtsplot <- \(weights) #  权重分配 
-    list( ma4=ma(4), # 生成理论模型：4阶级移动平均 ma4
+    list( ma4=ma(4), # 生成理论模型：4阶级移动平均 ma4: nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]
           assocs=quote( list(t=current, nu=base, eps=interrupts, theta=params) ) # 模型中的结构符号与实际问题中变量的对应关系,理论联系实际
     ) |> substitute(substitute(ma4, assocs), env=_)  |>  ( \(model) # 构造过程模型并指定绑定关系
         # 将理论模型expr应用在实际中与具体的base,params,interrupts,以及时刻current进行关联绑定
@@ -103,13 +103,17 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
           interrupts=rnorm(6),  # 外界干扰序列
           current=6 # 当前时刻值为6
         )) |> eval() # 把数值表达式（计算实例值）
-    ) |> hist(xlab="x", main=paste0("计算一个4阶移动平均过程(", paste0(weights, collapse=',') ,")的在时刻6的数据分布")) # 绘制直方图
-  ) ()
+    ) |> ( \(data) { # 生成的模型示例数据
+        wts <- paste0(weights, collapse=',') # 权重
+        print(sprintf("weights: %s ---> sd:%.4fd", wts, sd(data))) # 生成标准差
+        hist(data, xlab="x", main=paste0("计算一个4阶移动平均过程(", wts, ")的在时刻6的数据分布")) # 绘制直方图
+      }) () # data
+  ) () # model
   
   # 返回结果
   list("4:1"=wtsplot(4:1), # 近期权重大
        "1:4"=wtsplot(1:4)) # 远期期权重大
-}) ()
+}) () # 绘图过程
 
 # 加载库
 library(data.table)
