@@ -74,12 +74,12 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 #
 # 注意：这里的两层substitute的理解:
 # substitute(substitute(ma4, list(t=current, nu=base, eps=interrupts, theta=params)), list(ma4=ma(4)))
-# 外层substitute:通过ma4绑定到ma(4)返回理论表达式: 'nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3]' 
+# 外层substitute:通过ma4绑定到ma(4)返回理论表达式: 'nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]' 
 # 但这个表达式由于只是理论上的过程的形式结构，它的参数的意义(如:nu,eps,theta只是结构符号)无法与实际过程中的变量名相对应；
 # 因此需要根据实际情况给予再次明确。也就是 需要 将理论结构 联系到 实际场景之中的 具体概念（对象），这就是为何又在内层对理论模型:
-# 'nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3]' 
+# 'nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]' 
 # 中的参数(nu,eps,theta)进行重新二次绑定(将理论模型的概念映射到具体实现场景中的概念）的原因，理论联系实际的实践思想，即实践。
-# substitute(nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3], list(t=current, nu=base, eps=interrupts, theta=params)
+# substitute(nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4], list(t=current, nu=base, eps=interrupts, theta=params)
 # 所以：这里面的哲学思想就是实践论：（把base,params,interrupts,current通过ma(4)的理论进行组织和应用）
 # 第一次substitute叫做提出创造理论是认知：分析理解
 # 第二次substitute叫做理论联系实际是应用：实践创造
