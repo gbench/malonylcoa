@@ -45,12 +45,12 @@ bquote(substitute(.(ma(4)), list(t=10))) |> eval()
 # 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
 substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 
-# 形式说就是表达逻辑结构的基本方法（普遍的结构就是形式）
+# 所谓 形式，就是 表达 逻辑/结构 的 基本方法（普遍的、一般的 结构 就叫做 形式）
 # nu + eps[t] + theta[1] * eps[t - 1] + theta[2] * eps[t - 2] + theta[3] * eps[t - 3] + theta[4] * eps[t - 4]
 # install.packages("lobstr") # ast 语法树所在的包
 # library(lobstr) # 导入lobstr
-# 查看ma(4)的形式结构，其实元编程的基本技巧就是操作(创建&调整)这颗语法树AST(abstract syntax tree)
-> substitute(ast(x),list(x=ma(4))) |> eval()
+# 查看ma(4)的 形式结构，其实，元编程的基本技巧 就是 操作(创建&调整) 这颗语法树 AST(abstract syntax tree)
+> substitute(ast(x), list(x=ma(4))) |> eval()
 █─`+` 
 ├─█─`+` 
 │ ├─█─`+` 
@@ -100,7 +100,7 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 
 # -----------------------------------------------------------------------------------------------------------------------------
 # 这里的代码主要是教学与思想启发意义上，请留意作者思考问题的方式。
-# 也就是， 如何 建立起 理论 与 实际 之间的 结构关系。这是 理解并用应用 元编程的 基础与核心。
+# 也就是，如何 建立起 理论 与 实际 之间的 结构关系。这是 理解并用应用 元编程的 基础与核心。
 #
 # 元编程的特点：将一个由形式符号进行描述的理论结构（模型或者结构模式），通过 在 一个 具体的
 # 问题环境中 与 特定的 概念对象进行 关联绑定，进而 构造出 一种 具有 
@@ -125,7 +125,7 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 # 而 应用在 文学 上，它就是 思想逻辑与文档大纲，可用应用在 小说编写，与 散文创造 等。 
 # -----------------------------------------------------------------------------------------------------------------------------
 #
-# 注意：这里的两层substitute的理解:
+# 注意：这里的两层substitute的理解办法:
 # substitute(substitute(ma4, list(t=current, nu=base, eps=interrupts, theta=params)), list(ma4=ma(4)))
 # 外层substitute:通过ma4绑定到ma(4)返回理论表达式: 'nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]' 
 # 但这个表达式由于只是理论上的过程的形式结构，它的参数的意义(如:nu,eps,theta只是结构符号)无法与实际过程中的变量名相对应；
@@ -139,7 +139,7 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 (\() { # 绘图过程
   o <- par(mfrow=c(2, 1)); on.exit(par(o)); # 图形窗口设置
   
-  #' 计算一个4阶移动平均过程的在时刻6的数据分布
+  #' 计算一个4阶移动平均过程在时刻6的数据分布
   #' 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
   #' 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
   #'
@@ -167,11 +167,11 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
        "1:4"=wtsplot(1:4)) # 远期期权重大
 }) () # 绘图过程
 
-#' 求组合数: 计算 (1+2)^5
+#' 求幂次: 计算 (1+2)^5
 #' @param n 大于1的整数
 #' @return 对 (a+b)^n的多项式分解各个项目数量的向量，比如p(5) 返回
 #'               a^1*b^4     a^2*b^3     a^3*b^2     a^4*b^1     a^5     b^5 
-#'               5                10               10                5                1          1 
+#'               5                 10               10               5                 1         1 
 p <- \(n) rep(letters[1:2], n) |> split(gl(n, 2)) |> expand.grid() |> apply(1, table) |> sapply(\(.) paste0(names(.), "^", ., collapse="*")) |> table()
 p(5) |> (\(., exprs=str2expression(paste0(., "*", names(.)))) exprs |> sapply(eval, envir=list(a=1, b=2)) |> sum()) ()
 
