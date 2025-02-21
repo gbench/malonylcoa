@@ -114,6 +114,14 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
        "1:4"=wtsplot(1:4)) # 远期期权重大
 }) () # 绘图过程
 
+#' 求组合数: 计算 (1+2)^5
+#' @param n 大于1的整数
+#' @return 对 (a+b)^n的多项式分解各个项目数量的向量，比如p(5) 返回
+#'               a^1*b^4     a^2*b^3     a^3*b^2     a^4*b^1     a^5     b^5 
+#'               5                10               10                5                1          1 
+p <- \(n) rep(letters[1:2], n) |> split(gl(n, 2)) |> expand.grid() |> apply(1, table) |> sapply(\(.) paste0(names(.), "^", ., collapse="*")) |> table()
+p(5) |> (\(., exprs=str2expression(paste0(., "*", names(.)))) exprs |> sapply(eval, envir=list(a=1, b=2)) |> sum()) ()
+
 # 加载库
 library(data.table)
 
