@@ -1,0 +1,37 @@
+# 定义一个函数来模拟自定义运算
+myop <- function(x, y) {
+  result <- x + y
+  if (result == 0) {
+    # 当结果为 0 时，抛出异常
+    stop("运算结果为零: ", x, " + ", y, "  = 0", call. = FALSE)
+  }
+  return(result)
+}
+
+# 定义一个包装函数来处理异常
+try_myop <- function(x, y) {
+  tryCatch(
+    {
+      # 尝试执行 myop 函数
+      res <- myop(x, y)
+      return(res)
+    },
+    error = function(e) {
+      # 捕获异常并输出错误信息
+      message("捕获到异常: ", conditionMessage(e))
+      return(NA)
+    }
+  )
+}
+
+# 测试正常情况
+res1 <- try_myop(1, 2)
+if (!is.na(res1)) {
+  cat("运算结果: ", res1, "\n")
+}
+
+# 测试异常情况
+res2 <- try_myop(-1, 1)
+if (!is.na(res2)) {
+  cat("运算结果: ", res2, "\n")
+}

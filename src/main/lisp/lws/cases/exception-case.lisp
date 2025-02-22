@@ -1,10 +1,3 @@
-;; 定义 factorial
-(defun factorial (x) 
-  (if (< x 1) 1 (factorial (- x 1))))
-
-;; 调用函数 
-(factorial 5)
-
 ;; -------------------------------------------------------------
 ;; LISP中的异常处理
 ;; define-condition zero-value (error) 相当于 java/scala 的 
@@ -44,3 +37,4 @@
       (format t "运算结果: ~a~%" res))
   (zero-value (condition)
     (format t "捕获到异常: ~a~%" condition)))
+
