@@ -101,35 +101,42 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 # -----------------------------------------------------------------------------------------------------------------------------
 # 语法树修改
 # -----------------------------------------------------------------------------------------------------------------------------
-#' 把expr中的term子项目替换成.term项目
+
+#' 把expr中的pattern模式的项目采用replacement的方式进行替换
 #' 一个表达的的内部结构即语法树ast是一个列表，例如：
 #' a+b+c 的是按照 list(quote(`+`), list(quote(`+`), quote(a), quote(b)), quote(c)) 进行存放的
 # 其中运算符quote(`+`)作为列表项目的元素，本质就是lisp的S-Expression
 # 于是 a+b+c <==> (+ (+ a b) c)
-#' @param expr  表达式语句
-#' @param term  目标项目
-#' @param .term 替换项目
-astsub <- function(expr, term, .term) { # ast substitute
-  #' @param .expr 子表达式
-  .sub <- function(.expr) { # 定义递归替换函数, recursive substitute
-    if (identical(.expr, term)) { # 如果当前子表达式与要替换的项相同
-      .term
-    } else if (is.call(.expr)) { # 如果当前子表达式是一个调用表达式（如函数调用、运算符表达式等）
-      .args <- lapply(as.list(.expr)[-1], .sub) # 对调用表达式的每个参数递归调用替换函数
-      as.call(c(list(.expr[[1]]), .args)) # 重新构建调用表达式
+# 使用示例：
+# 1）astsub( quote(a + (b + c)), quote(b + c), quote(b * c + d) )
+# 2）astsub( ma(4), pattern=\(e) length(e)>1 && head(e, 2)==quote(theta[]), replacement=\(e) as.symbol(paste0(e[[2]], e[[3]])) )
+#' @param x  表达式语句
+#' @param pattern  目标pattern：expression 或是 一个 检测 expression 结构的谓词函数
+#' @param replacement 替换的内容：expression 或是对 expression 结构变换的函数
+astsub <- function(x, pattern, replacement) { # ast substitute
+  #' @param expr 子表达式
+  sub <- function(expr) { # 定义递归替换函数, recursive substitute
+    if ( if(is.function(pattern)) pattern(expr)  else identical(expr, pattern) ) { # 如果expr于pattern相互匹配
+      if(is.function(replacement)) replacement(expr) else replacement #  如果是replacement调用该函数进行转换否则直接返回replacement
+    } else if (is.call(expr)) { # 如果当前子表达式是一个调用表达式（如函数调用、运算符表达式等）
+      args <- lapply(as.list(expr)[-1], sub) # 对调用表达式的每个参数递归调用替换函数
+      as.call(c(list(expr[[1]]), args)) # 重新构建调用表达式
     } else { # 其他情形直接返回
-      .expr # 子表达式
+      expr # 子表达式
     } # if
-  } # .sub
+  } # sub
   
-  .sub(expr) # 从整个表达式开始递归替换
+  sub(x) # 从整个表达式开始递归替换
 }
 
 # 示例使用, 调用替换函数
-astsub(quote(a + (b + c)), quote(b + c), quote(b * c + d))
+astsub( quote(a + (b + c)), quote(b + c), quote(b * c + d))
 
 # 注意 由于 1:4 是整数，直接 bquote(theta[ .(i) ]) 会返回 theta[1L]这种表达式，使用 n=as.numeric(i) 于 .(n)  转换一下, 就会变成 theta[1] 这样的模式了
 Reduce( x=1:4, init=ma(4), f=\(acc, i, n=as.numeric(i)) astsub(acc, bquote(theta[.(n)]),  as.symbol(paste0("theta", i))) )
+
+# 带有模式匹配的替换
+astsub( ma(4), pattern=\(e) length(e)>1 && head(e, 2)==quote(theta[]), replacement=\(e) as.symbol(paste0(e[[2]], e[[3]])) )
 
 # -----------------------------------------------------------------------------------------------------------------------------
 # 这里的代码主要是教学与思想启发意义上，请留意作者思考问题的方式。
@@ -169,6 +176,7 @@ Reduce( x=1:4, init=ma(4), f=\(acc, i, n=as.numeric(i)) astsub(acc, bquote(theta
 # 所以：这里面的哲学思想就是实践论：（把base,params,interrupts,current通过ma(4)的理论进行组织和应用）
 # 第一次substitute叫做提出创造理论是认知：分析理解
 # 第二次substitute叫做理论联系实际是应用：实践创造
+
 (\() { # 绘图过程
   o <- par(mfrow=c(2, 1)); on.exit(par(o)); # 图形窗口设置
   
