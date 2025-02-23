@@ -118,22 +118,21 @@ substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
 #' @param replacement 替换的内容：expression 或是对 expression 结构变换的函数
 astsub <- function(x, pattern, replacement) { # ast substitute 语法树的替换
   #' @param expr 子表达式
-  sub <- function(expr) { # 定义递归替换函数, recursive substitute
-    if (if(is.function(pattern)) pattern(expr) else identical(expr, pattern)) { # 如果expr于pattern相互匹配
-      if (is.function(replacement)) replacement(expr) else replacement #  如果是replacement调用该函数进行转换否则直接返回replacement
-    } else if (is.call(expr)) { # 如果当前子表达式是一个调用表达式（如函数调用、运算符表达式等）
-      args <- lapply(as.list(expr)[-1], sub) # 对调用表达式的每个参数递归调用替换函数
-      as.call(c(list(expr[[1]]), args)) # 重新构建调用表达式
-    } else { # 其他情形直接返回
+  sub <- function(expr) { # 递归模式替换
+    if (if(is.function(pattern)) pattern(expr) else identical(expr, pattern)) { # 如果expr与pattern相互匹配
+      if (is.function(replacement)) replacement(expr) else replacement #  如果replacement是函数以此该函数进行转换,否则直接返回replacement本身
+    } else if (is.call(expr)) { # 如果当前子表达式expr是一个调用表达式(如函数调用、运算符表达式等)
+      as.call(c(expr[[1]], lapply(as.list(expr)[-1], sub))) # 保持表头项expr[[1]]不变,并lapply对其余表达式各参数递归应用sub替换函数,最后重构此调用表达式。
+    } else { # 其他情形直接返回子表达式
       expr # 子表达式
     } # if
   } # sub
   
   sub(x) # 从整个表达式开始递归替换
-}
+} # astsub
 
 # 示例使用, 调用替换函数
-astsub( quote(a + (b + c)), quote(b + c), quote(b * c + d))
+astsub( quote(a + (b + c)), quote(b + c), quote(b * c + d) )
 
 # 注意 由于 1:4 是整数，直接 bquote(theta[ .(i) ]) 会返回 theta[1L]这种表达式，使用 n=as.numeric(i) 于 .(n)  转换一下, 就会变成 theta[1] 这样的模式了
 Reduce( x=1:4, init=ma(4), f=\(acc, i, n=as.numeric(i)) astsub(acc, bquote(theta[.(n)]),  as.symbol(paste0("theta", i))) )
