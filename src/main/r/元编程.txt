@@ -132,7 +132,7 @@ replace <- function(expr, term, term_new) {
 # 示例使用, 调用替换函数
 replace(quote(a + (b + c)), quote(b + c), quote(b * c + d))
 
-# 注意 由于 1:4 是整数，直接 bquote(theta[ .(i) ]）会返回 theta[1L]这种表达式，.(as.numeric(i)) 以后 就会 变成  theta[1] 这样模式了
+# 注意 由于 1:4 是整数，直接 bquote(theta[ .(i) ]) 会返回 theta[1L]这种表达式，.(as.numeric(i)) 以后 就会 变成  theta[1] 这样模式了
 Reduce( 1:4, init=ma(4), f=\(acc, i) replace(acc, bquote(theta[ .(as.numeric(i)) ]),  as.symbol(paste0("theta", i))) )
 
 # -----------------------------------------------------------------------------------------------------------------------------
