@@ -141,10 +141,10 @@ Formats :  Overview of the different kinds of R binary files that are available.
 list.files() |> lapply(unlink, recursive=T)
 
 # 把当前会话的对象全部存入一个新的环境
-my_lazy_env = as.list(environment()) |> list2env(parent=emptyenv())
+my_lazy_env <- as.list(environment()) |> list2env(parent=emptyenv())
 
-path="data-db" # 目标目镜
-filebase=paste0(path,  "/my_lazyload_db") 
+path <- "data-db" # 目标目录
+filebase <- paste0(path,  "/my_lazyload_db") 
 
 # 创建数据文件目录
 if(!dir.exists(path)) dir.create(path)

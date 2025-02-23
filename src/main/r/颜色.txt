@@ -1,0 +1,57 @@
+library(scales) # pal_hue 所在的库
+
+# 显示调色板&颜色
+(\() {
+  o <- par(mfrow=c(2,2)); on.exit(par(o)) # 设置布局
+  (1:4)^2 |> lapply(\(i) show_col(pal_hue()(i))) # 显示颜色
+})()
+
+# 数据颜色的应用
+res <- (\(n=4, theta=30) {
+  1:n |> lapply(\(i) with(iris, # 颜色
+    ggplot(iris, aes(Sepal.Length, Petal.Length, color=Species)) + geom_point() + 
+    # 使用调色板 hue_pal 进行颜色设置, h: 色调[0,360], c : 色相, l: 亮度
+    scale_colour_manual(values=hue_pal(h=c(i*theta, 360-(n-i)*theta), c=40, l=70)(Species |> levels() |> length()))
+  ))
+})()
+
+# 中心点着色
+(\(){
+  library(purrr) # 加载函数编程库
+  library(scales) # 调色板库
+  
+  # 分类中心点
+  species <- iris$Species # 物种分类
+  # 中心点，依据物种进行分类并获取对应分类中心点(维度坐标分组的均值向量）
+  centeroids <- split(iris[, -5], species) |> 
+    lapply(partial(apply, MARGIN=2, FUN=mean)) |> # 每种物种分类的均值
+    Reduce(rbind, init=data.frame(), x=_) |> # 把各个分组进行连接，参见haskell的foldl
+    transform(Species=rep("centeroids" |> as.factor(),  # 注意需要转成factor否则后面进行rbind会都换成字符串的
+      compose(length, levels)(species))) # 复制species的levels的数量次数
+  # 色彩向量
+  colors <- (\(x=species) { # 需要注意color的aes映射需要是factor值类型
+    clr <- hue_pal()(compose(length, levels)(x)) # 物种分类的杨色向量
+    structure(clr, names=levels(x)) |> c(centeroids="#DD0000") # 单独指定centeroids为红色
+  })()
+  sizes <- c("数据点"=1, "中心点"=5) # size向量值值映射
+
+  # 设置前4项目
+  names(centeroids)[1:4] <- names(iris)[1:4] # 设置前四项名称
+  rbind(centeroids, iris) |> # 将中心点加入到iris数据
+    ggplot(aes(Sepal.Length, Petal.Length, color=Species)) + # 坐标映射
+    geom_point(aes(size=ifelse(Species=="centeroids", max(sizes), min(sizes)) |> as.factor())) + # 特别标识centeroids
+    scale_size_manual(name="size", values=sizes |> as.integer(), labels=names(sizes)) + # size 设定
+    scale_color_manual(values=colors) # 颜色设定
+})()
+
+# 简化版本
+aggregate(.~Species, iris, mean) |> transform(Species=as.factor(paste0(Species, "-centeroid"))) |> rbind(iris) |> 
+  ggplot(aes(Sepal.Length, Petal.Length, color=Species)) + # 坐标映射
+  geom_point(aes(  size=as.factor(ifelse(grepl("-", Species), 5, 1))  )) + # size 映射
+  scale_size_manual(name="size", values=c(1,5), labels=c("数据点", "中心点"))
+
+# 显示系统颜色， 控制台 
+demo("colors")
+
+# 显示系统颜色， 网页
+demo(topic="colors", package="grDevices", type="html")

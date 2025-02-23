@@ -1,0 +1,379 @@
+# ------------------------------------------------------------------------------------------------------------
+# Wide 宽格式是一种记录的的数据格式
+# Long 长格式是一种数据核算（统计）的数据格式
+#
+# 宽格式示例(iris)， 非第一范式即列是非原子性的结构性变量，如:Sepal(Length, Width)，Petal(Length, Width) 。
+# Id(idvar)	Sepal(类型1,times）	 	 	Petal(类型2,times）		    	Species
+# -	Sepal.Length(值1.1)	Sepal.Width(值1.2)	 Petal.Length(值2.1) 	Petal.Width(值2.2)     Species
+# 1	5.1         		3.5          		1.4         		0.2     		setosa
+# 2 	4.9         		3.0          		1.4         		0.2     		setosa	
+# ...
+#
+# 长格式示例：Species 将跟随Id进行照抄Part(timevar依据高层级进行展开)
+#        	Species	Id(idvar)  	Part(timevar) 	Length(v.names) 	Width(v.names)
+# 1.Petal  setosa  	1 	Petal    		5.1   		3.5
+# 2.Petal  setosa  	2 	Petal    		4.9   		3.0
+# 1.Sepal  setosa  	1 	Sepal    		1.4   		0.2
+# 2.Sepal  setosa  	2 	Sepal    		1.4   		0.2
+# ...
+#
+# 典型的长格式的数据就是Indometh
+# > Indometh
+# 	Subject	time	conc
+# 1        	1 	0.25 	1.50
+# 2        	1 	0.50 	0.94
+# 3        	1 	0.75 	0.78
+# 4        	1 	1.00 	0.48
+# 5        	1 	1.25 	0.37
+# 6        	1 	2.00 	0.19
+# 7        	1 	3.00 	0.12
+# 8        	1 	4.00 	0.11
+# 9        	1 	5.00 	0.08
+# 10       	1 	6.00 	0.07
+# 11       	1 	8.00 	0.05
+# 12       	2 	0.25 	2.03
+# 13       	2 	0.50 	1.63
+# 14       	2 	0.75 	0.71
+# 15       	2 	1.00 	0.70
+# 16       	2 	1.25 	0.64
+# 17       	2 	2.00 	0.36
+# 18       	2 	3.00 	0.32
+# 19       	2 	4.00 	0.20
+# 20       	2 	5.00 	0.25
+# 21       	2 	6.00 	0.12
+# 22       	2 	8.00 	0.08
+# ....
+#
+# 这是 不同人(Subject) 静脉注射药物Indometh后的采集血药浓度conc与相应是的时点时刻time的的数据.
+# 一句话这就一个人Subject服用Indometh（非甾体类抗炎药）后血液药物浓度conc随时间time的变化：
+# 平均血药浓度曲线：aggregate(conc~time,Indometh,mean) |> plot(type="b")
+# 加入个体数据变化的血药浓度：
+# ggplot(Indometh,aes(time,conc,color=Subject))+geom_line()+geom_line(data=aggregate(conc~time,Indometh,mean),linewidth=1,color="red")
+# 或者
+# ggplot(Indometh,aes(time,conc))+geom_line(aes(color=Subject))+stat_summary(fun="mean",color="red",geom="line",linewidth=1)
+#
+# 很明显 ：
+# Subject就是 idvar长/宽数据的主键， 
+# time 就是长数据的timevar(其值就是times)，也就 在长格式里对 v.names的值进行的类型标记。
+# conc 就是长数据的v.names（只有一项）
+# 宽格式的varying就是由长格式的v.names里的名称（此处是conc）与timevar中的数据向组合而生成的。
+# 比如 ：(可以说，long to wide 就是利用long的timevar与v.names去生成wide的varying的过程。）
+#
+# > reshape(Indometh, direction="wide", idvar="Subject", timevar="time", v.names="conc")
+#	Subject conc.0.25 conc.0.5 conc.0.75 conc.1 conc.1.25 conc.2 conc.3 conc.4 conc.5 conc.6 conc.8
+# 1        	1      1.50     0.94      0.78   0.48      0.37   0.19   0.12   0.11   0.08   0.07   0.05
+# 12       	2      2.03     1.63      0.71   0.70      0.64   0.36   0.32   0.20   0.25   0.12   0.08
+# ...
+# 注意：对于Indometh来说，由于只有一个v.names。所以，当指定了idvar，timevar 之后，v.names就是必然的了
+# 所以对于v.names比较简单的情况long2wide的时候v.names可以省略。
+# 即：reshape(Indometh, direction="wide", idvar="Subject", timevar="time")
+#
+# > reshape(Indometh, direction="wide", idvar="Subject", timevar="time")
+#	Subject conc.0.25 conc.0.5 conc.0.75 conc.1 conc.1.25 conc.2 conc.3 conc.4 conc.5 conc.6 conc.8
+# 1        	1      1.50     0.94      0.78   0.48      0.37   0.19   0.12   0.11   0.08   0.07   0.05
+# 12       	2      2.03     1.63      0.71   0.70      0.64   0.36   0.32   0.20   0.25   0.12   0.08
+#
+#	
+# ------------------------------------------------------------------------------------------------------------
+
+# 宽格式转换为长格式，主要特点就是把宽格式的varing参数(即列名集合)分解成多个由timevar标记的
+# 行数据生成规则是由varing列集合的分解来进行定义:
+# 具体方式（通过varying猜测v.names的逻辑）是参见reshape的源代码的guess部分：
+#
+# 通过varying即名称nms去猜测v.names值名称(long格式的variable names)
+#' @param nms wide 格式中varying中的名称： 结构为[x1,y1,...,x2,y2,...]
+#' @param re 分解nms的正则表达式，即nms的构成结构模式{v.names}{re}{times},比如:x1 
+#' @param drop 分割符号sep 是否删除掉，T 删除掉, F 不予删除保留
+#' @param fixed 这是传递给strsplit的参数，T表示纯字符串, F表示正则表达式模式，默认为 F
+#' @return 值变量名称
+guess <- function(nms, re = split$regexp, drop = !split$include, fixed = split$fixed %||% FALSE) {
+  # nn 是指 对 nms 进行re模式成分分解之后获得的nms的各个构成部件
+  # 比如 nms=(x1,y1,x2,y2) 会被分解成矩阵:[["x","1"],["y","1"],["x","2"],["y","2"]]
+  # nn 的期望结构是{变量名称：name}{分隔模式：re}{时点名称:time}的模式
+  if (drop) { # 模式构件re于结果里删除
+    nn <- do.call("rbind", strsplit(nms, re, fixed = fixed))
+  } else {# 模式构件re于结果里保留,regexpr(re, nms) 获取re的起始点index
+    nn <- cbind( # 从后半部分的’regexpr(re, nms) + 1L‘来看，re 的长度应该指示一个字符。否则re就会被拆分的。
+        substr(nms, 1L, regexpr(re, nms)), # 前半部分,例如：就var123来说，此部分就是var
+        substr(nms, regexpr(re, nms) + 1L, 10000L) # 后半部分,就var123来说，此部分就是123
+    ) # nn
+  } ## if
+  if (ncol(nn) != 2L) { # 确保
+    stop("failed to guess time-varying variables from their names")
+  }
+  vn <- unique(nn[, 1]) # nms 结构的 第一部分，变量名称
+  v.names <- split(nms, factor(nn[, 1L], levels = vn)) # 把第一部分作为作为值名称
+  times <- unique(nn[, 2L]) # 把第二部分，时点时刻
+  attr(v.names, "v.names") <- vn # v.names 变量中写入 v.names 属性
+  tt <- tryCatch(as.numeric(times), warning = function(w) times) # 尝试把times转换成数值，非数值情况则原来不变
+  attr(v.names, "times") <- tt # # v.names 变量中写入 times 属性
+  v.names # 返回长格式的值变量名称
+}
+
+# ------------------------------------------------------------------------------------------------------------
+
+# 注意：这里是采用 v.names 去定位区分 varying元素的中的数据的（特别是times省略的情况)。
+# 需要注意，varying，times  的字段顺序需要保持一致。否则生成的数据的顺序会发生错乱。
+# 即：varying=c("Sepal.Length", "Sepal.Width","Petal.Length", "Petal.Width") 与 times=c("Petal","Sepal") 一起使用
+# 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
+# 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
+# 本文示例的Sepal.Length 相当于 x1, Sepal.Width 相当于y1, 即 Sepal:1，Length:x, Width: y,  此处注意体会。
+# 这种{times}.{v.names}的模式结构
+data <- reshape( # 数据格式变换
+  direction="long", # 数据变换方式
+  data=iris |> transform(Id=1:150), #  Wide  数据名称
+  idvar="Id", # 记录Id，用于唯一标识一条数据记录
+  # 宽格式 varying是一种复合结构的列（非原子形列）给与扁平化后列序列，同一层级的列拥有着共同的路径
+  # 例如：iris 的 varying: {Sepal:{Length, Width}, Petal:{Length, Width}} 就这如此的JSON式样的层级结构
+  varying=c("Sepal.Length", "Sepal.Width","Petal.Length", "Petal.Width"), # {times}.{v.names}的数据结构
+  timevar="Part", # 返回结果即长格式里标识
+  times=c("Sepal","Petal"), # 高层级(类型层级：中间节点）
+  v.names=c("Length","Width"), # 低层级(值层级：叶子节点）
+  sep="."
+)
+
+> head(data)
+        Species Id  Part Length Width
+1.Sepal  setosa  1 Sepal    5.1   3.5
+2.Sepal  setosa  2 Sepal    4.9   3.0
+3.Sepal  setosa  3 Sepal    4.7   3.2
+4.Sepal  setosa  4 Sepal    4.6   3.1
+5.Sepal  setosa  5 Sepal    5.0   3.6
+6.Sepal  setosa  6 Sepal    5.4   3.9
+
+# 数据统计
+statdata <- aggregate(cbind(Length, Width)~ Species + Part, FUN=mean, data=data)
+
+> statdata
+     Species  Part Length Width
+1     setosa Petal  5.006 3.428
+2 versicolor Petal  5.936 2.770
+3  virginica Petal  6.588 2.974
+4     setosa Sepal  1.462 0.246
+5 versicolor Sepal  4.260 1.326
+6  virginica Sepal  5.552 2.026
+
+# 注意，当不指定times时timevar指的生成逻辑不是不是去拆解varying而生成的，而是采用数字编号
+data0 <- reshape( # 数据格式变换
+  direction="long", # 数据变换方式
+  data=iris |> transform(Id=1:150), #  Wide  数据名称
+  idvar="Id", # 记录Id，用于唯一标识一条数据记录
+  # 宽格式 varying是一种复合结构的列（非原子形列）给与扁平化后列序列，同一层级的列拥有着共同的路径
+  # 例如：iris 的 varying: {Sepal:{Length, Width}, Petal:{Length, Width}} 就这如此的JSON式样的层级结构
+  varying=c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"), # {times}.{v.names}的数据结构
+  timevar="Part", # 返回结果即长格式里标识
+  # times=c("Sepal", "Petal"), # 高层级(类型层级：中间节点）# 关闭times Part 中出现了编号，row.names 也是Part里的编号
+  v.names=c("Length", "Width"), # 低层级(值层级：叶子节点）
+  sep="."
+)
+
+> head(data0)
+    Species Id Part Length Width
+1.1  setosa  1    1    5.1   3.5
+2.1  setosa  2    1    4.9   3.0
+3.1  setosa  3    1    4.7   3.2
+4.1  setosa  4    1    4.6   3.1
+5.1  setosa  5    1    5.0   3.6
+6.1  setosa  6    1    5.4   3.9
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# 注意：reshape 会把 处理的属性信息标记在结果result之中
+> data |> str()
+'data.frame':   300 obs. of  5 variables:
+ $ Species: Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
+ $ Id     : int  1 2 3 4 5 6 7 8 9 10 ...
+ $ Part   : chr  "Sepal" "Sepal" "Sepal" "Sepal" ...
+ $ Length : num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+ $ Width  : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+ - attr(*, "reshapeLong")=List of 4
+  ..$ varying:List of 2
+  .. ..$ Length: chr [1:2] "Sepal.Length" "Petal.Length"
+  .. ..$ Width : chr [1:2] "Sepal.Width" "Petal.Width"
+  .. ..- attr(*, "v.names")= chr [1:2] "Length" "Width"
+  .. ..- attr(*, "times")= chr [1:2] "Sepal" "Petal"
+  ..$ v.names: chr [1:2] "Length" "Width"
+  ..$ idvar  : chr "Id"
+  ..$ timevar: chr "Part"
+
+# 对于 由reshape转换后的数据可以再次执行reshape而无需指定参数而完成相应的逆操作,即 X == reshape(reshape(X))
+> reshape(data)
+             Species  Id Sepal.Length Sepal.Width Petal.Length Petal.Width
+1.Sepal       setosa   1          5.1         3.5          1.4         0.2
+2.Sepal       setosa   2          4.9         3.0          1.4         0.2
+3.Sepal       setosa   3          4.7         3.2          1.3         0.2
+4.Sepal       setosa   4          4.6         3.1          1.5         0.2
+5.Sepal       setosa   5          5.0         3.6          1.4         0.2
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+# 长格式
+longdata <- lapply(data, identity) |> as.data.frame() # 去除掉data由reshape标记的属性数据。
+
+# 把长格式转为宽格式，主要特点就是生成宽格式的varing列集合
+# varing 列集合的生成规则为：是由v.names与timevar字段的项目参数项目进行组合使用sep进行连接生成
+# 默认的 varing 列名生成逻辑为：{v.names}.{timevar}, 如果需要生成 {timevar}.{v.names}结构需要手工指定
+widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Length", "Width"), timevar="Part", sep="_") 
+
+# 需要注意：Length_Petal Width_Petal Length_Sepal Width_Sepal 这种变量名称的生成顺序是{v.names}_{times}的结构
+#
+> head(widedata)
+  Species Id Length_Sepal Width_Sepal Length_Petal Width_Petal
+1  setosa  1          5.1         3.5          1.4         0.2
+2  setosa  2          4.9         3.0          1.4         0.2
+3  setosa  3          4.7         3.2          1.3         0.2
+4  setosa  4          4.6         3.1          1.5         0.2
+5  setosa  5          5.0         3.6          1.4         0.2
+6  setosa  6          5.4         3.9          1.7         0.4
+
+
+# 手工指定， 需要注意：varying 与 v.names 的一致性（Length在前，Width在后）,varying中Length,Width出现以保持,[x1,y1,...x2,y2,...]的标准模式
+widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Length", "Width"), timevar="Part",
+  varying=c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"))
+
+> widedata
+       Species  Id Sepal.Length Sepal.Width Petal.Length Petal.Width
+1       setosa   1          5.1         3.5          1.4         0.2
+2       setosa   2          4.9         3.0          1.4         0.2
+3       setosa   3          4.7         3.2          1.3         0.2
+4       setosa   4          4.6         3.1          1.5         0.2
+5       setosa   5          5.0         3.6          1.4         0.2
+6       setosa   6          5.4         3.9          1.7         0.4
+7       setosa   7          4.6         3.4          1.4         0.3
+8       setosa   8          5.0         3.4          1.5         0.2
+9       setosa   9          4.4         2.9          1.4         0.2
+10      setosa  10          4.9         3.1          1.5         0.1
+11      setosa  11          5.4         3.7          1.5         0.2
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------
+tidyverse 与  reshape 的概念名称（参数）对比
+  pivot_wider：long -> wide   
+    names_from : timevar 
+    values_from : v.names
+ pivot_longer: wide -> long
+   cols : varying
+   names_to: timevar
+   values: v.names
+
+# -- 
+`tidyverse` 中 `pivot_wider`、`pivot_longer` 与 `reshape` 函数相关参数的对比
+
+### 从长格式转换为宽格式
+
+#### `pivot_wider` 与 `reshape`
+
+| `pivot_wider` 参数 | `reshape` 参数 | 功能描述 | 差异说明 |
+| --- | --- | --- | --- |
+| `names_from` | `timevar` | 指定长格式数据中的某列，该列的值将作为宽格式数据的新列名。 | - `pivot_wider` 支持多列作为 `names_from`，生成复合列名，`reshape` 的 `timevar` 通常只支持单列。 <br> - `pivot_wider` 语法更简洁直观，`reshape` 对于复杂情况需额外设置 `varying` 等参数配合。 |
+| `values_from` | `v.names` | 指定长格式数据中的某列，该列的值将填充到宽格式数据的新列中。 | - `pivot_wider` 可同时指定多个 `values_from` 列，而 `reshape` 一般处理单个 `v.names` 对应的转换。 <br> - `pivot_wider` 能更好处理缺失值和重复键的情况，`reshape` 在处理时可能需额外操作。 |
+|  | `idvar` | 用于标识不同观测组的列，是 `reshape` 中必需的参数，用于区分不同行的归属。 | `pivot_wider` 不需要显式指定类似参数，默认根据所有未参与 `names_from` 和 `values_from` 的列来分组。 |
+
+### 从宽格式转换为长格式
+
+#### `pivot_longer` 与 `reshape`
+
+| `pivot_longer` 参数 | `reshape` 参数 | 功能描述 | 差异说明 |
+| --- | --- | --- | --- |
+| `cols` | `varying` | 指定宽格式数据中需要转换为长格式的列。 | - `pivot_longer` 可以使用多种方式指定列，如列名、列索引、列名匹配等，非常灵活。`reshape` 的 `varying` 通常需要将列名整理成列表形式。 <br> - `pivot_longer` 能自动处理列名不规范的情况，`reshape` 对列名规范性要求较高。 |
+| `names_to` | `timevar` | 指定一个新列的名称，该列将存储原宽格式数据中被转换列的列名。 | - `pivot_longer` 可以设置特殊值（如 `.value`）实现更复杂的转换逻辑，`reshape` 的 `timevar` 只是简单存储列名。 |
+| `values_to` | `v.names` | 指定一个新列的名称，该列将存储原宽格式数据中被转换列的值。 | 两者功能基本一致，但 `pivot_longer` 语法更简洁，且在处理不同数据类型列时更智能。 |
+|  | `idvar` | 同样用于标识不同观测组的列，在宽转长时也需指定。 | 同长转宽时一样，`pivot_longer` 无需显式指定类似参数，默认根据未选择的列分组。 |
+
+### 示例代码对比
+
+#### 长转宽
+```R
+# 示例长格式数据
+long_data <- data.frame(
+  id = c(1, 1, 2, 2),
+  category = c("A", "B", "A", "B"),
+  value = c(10, 20, 30, 40)
+)
+
+# 使用 pivot_wider
+library(tidyr)
+wide_data_pivot <- long_data %>%
+  pivot_wider(names_from = category, values_from = value)
+wide_data_pivot
+
+# 使用 reshape
+wide_data_reshape <- reshape(long_data, 
+  idvar = "id", 
+  timevar = "category", 
+  direction = "wide")
+wide_data_reshape
+```
+
+#### 宽转长
+```R
+# 示例宽格式数据
+wide_data <- data.frame(
+  id = 1:2,
+  A = c(10, 30),
+  B = c(20, 40)
+)
+
+# 使用 pivot_longer
+long_data_pivot <- wide_data %>%
+  pivot_longer(cols = c(A, B), 
+    names_to = "category", 
+    values_to = "value")
+# 打印值
+long_data_pivot
+
+# 使用 reshape
+long_data_reshape <- reshape(wide_data, 
+  varying = list(c("A", "B")), 
+  v.names = "value", 
+  timevar = "category", 
+  idvar = "id", 
+  direction = "long")
+# 打印值
+long_data_reshape
+```
+# 注意：
+#   当把wide数据转换为long时候，reshape 会自动的采用的把idvar与times(默认为varying)相组合来后成row.names
+#   此时如果, varying 的名称还有特殊字符，会导致结构数据无法而出现错误，例如：relig_income {tidyr}
+# > relig_income
+#
+# A tibble: 18 × 11
+#   religion `<$10k` `$10-20k` `$20-30k` `$30-40k` `$40-50k` `$50-75k` `$75-100k`
+#   <chr>      <dbl>     <dbl>     <dbl>     <dbl>     <dbl>     <dbl>      <dbl>
+# 1 Agnostic      27        34        60        81        76       137        122
+# 2 Atheist       12        27        37        52        35        70         73
+# 3 Buddhist      27        21        30        34        33        58         62
+# 4 Catholic     418       617       732       670       638      1116        949
+# 5 Don’t k…      15        14        15        11        10        35         21
+# 
+# `<$10k` 就是含有特殊字符
+#
+# 行名有错的实现
+widedata <- reshape(relig_income, varying=names(relig_income)[-1], v.names="count", timevar="income_range", idvar="religion", direction="long"); widedata;
+# There were 30 warnings (use warnings() to see them)
+# # A tibble: 10 × 3
+# Error in `[<-`:
+# ! Assigned data `map(.subset(x, unname), vectbl_set_names, NULL)` must be compatible with existing data.
+# ✖ Existing data has 10 rows.
+# ✖ Element 1 of assigned data has 18 rows.
+# ℹ Only vectors of size 1 are recycled.
+# Caused by error in `vectbl_recycle_rhs_rows()`:
+# ! Can't recycle input of size 18 to size 10.
+# Run `rlang::last_trace()` to see where the error occurred.
+# 
+# > row.names(widedata)
+#  [1] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").1" 
+#  [2] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").2" 
+#  [3] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").3" 
+#  [4] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").4" 
+#  [5] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").5" 
+#  [6] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").6" 
+#  [7] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").7" 
+#  [8] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").8" 
+#  [9] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").9" 
+# [10] "c(\"Agnostic\", \"Atheist\", \"Buddhist\", \"Catholic\", \"Don’t know/refused\", \"Evangelical Prot\", \"Hindu\", \"Historically Black Prot\", \"Jehovah's Witness\", \"Jewish\", \"Mainline Prot\", \"Mormon\", \"Muslim\", \"Orthodox\", \"Other Christian\", \"Other Faiths\", \"Other World Religions\", \"Unaffiliated\").10"
+# > 
+#
+# 重置行名,就可了解决上述问题了
+# rownames(widedata) <- NULL
+row.names(widedata) <- NULL
+# 查看转换后的数据
+head(widedata)

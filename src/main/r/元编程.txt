@@ -2,6 +2,223 @@
 # 元编程通过操作程序实体，在编译时生成运行时所需的常数、类型和代码。它通过利用编程语言提供的模板机制，
 # 在编译时生成程序，然后再进行编译，最终生成目标代码。‌
 
+# 引子
+# 思考一个问题，编写代码的时候如果要写一个比较长的序列表达式，比如 ： a + b + c + ... + z ，除了手动的把他打出来，是否有简单的办法
+# 也就是用程序生成代码，而不是手工的一个字的一个字敲：这就是元编程的最初想法，比如C的宏替换， 就是对这种想法的 一种策略。
+# 但这个是宏替换是预处理的，是否有一种 动态的方法的，当然，bquote 就可以 通过定义一个 模板： .(acc) + .(a) 来实现这样的操作。
+# .(acc), .(a) 则 都是模板的占位符 它们可以 从相应的 环境里提取出对应的值（符号也是一种值）进行替换，进而 生成 对应的表达式。
+Reduce( f=\(acc, a) bquote(.(acc) + .(a) ) , x=sapply(letters, as.symbol) )
+
+>
+a + b + c + d + e + f + g + h + i + j + k + l + m + n + o + p + 
+    q + r + s + t + u + v + w + x + y + z
+
+# 稍微扩展以下，如何写出(a+b)*(x+y+z)的展开式。
+pmn <- \(m, n) expand.grid(seq(m), seq(n)) |> apply(1, \(p, # 多项式的项目的索引编码（索引提供一种轻量型组织对象关系的方法）
+    lhs=as.symbol(head(letters, m) [p[1]]), #  左手边, 从头开始
+    rhs=as.symbol(tail(letters, n) [p[2]]) #  右手边，从尾开始
+  ) bquote(.(lhs) * .(rhs)) ) |>
+  Reduce(f=\(acc, a) bquote(.(acc) + .(a)), x=_ ); pmn(2, 3)
+
+>
+a * x + b * x + a * y + b * y + a * z + b * z
+
+#' 建立一个q阶移动平均的过程：形式结构 的 理论模型
+#' as.numeric()是为了把数据整形转成double类型，因给整形的数字后面会增加以L后缀,比如1L
+#' quote(nu + eps[t]) 当前表达式
+#' bquote(theta[.(j)] * eps[t - .(j)]) 历届冲击eps的今日影响（阴影）,
+#' @param q 移动平均 阶数， 大于等于1的整数，q阶表示一个冲击eps可持续影响的后继的时期数目，
+#           或是当前时期可以感受到曾经冲击的最远的数量（记忆的数量）
+ma <- \(q) seq(0,  q) |> as.numeric() |>
+  lapply( \(i) # 时刻索引从1开始
+    if(i==0) quote(nu + eps[t]) # 当期
+    else bquote(theta[.(i)] * eps[t - .(i)])  # 历届前期
+  ) |> Reduce(f=\(acc, a) bquote(.(acc) + .(a)))
+
+# ma(4)的表达式
+ma(4)
+
+# 生成 t=10时刻的ma(4)的表达式，指定当时刻为10
+bquote(substitute(.(ma(4)), list(t=10))) |> eval()
+
+# 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
+# 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
+substitute(substitute(ma4, list(t=10)), list(ma4=ma(4))) |> eval()
+
+# 所谓 形式，就是 表达 逻辑/结构 的 基本方法（普遍的、一般的 结构 就叫做 形式）
+# nu + eps[t] + theta[1] * eps[t - 1] + theta[2] * eps[t - 2] + theta[3] * eps[t - 3] + theta[4] * eps[t - 4]
+# install.packages("lobstr") # ast 语法树所在的包
+# library(lobstr) # 导入lobstr
+# 查看ma(4)的 形式结构，其实，元编程的基本技巧 就是 操作(创建&调整) 这颗语法树 AST(abstract syntax tree)
+> substitute(ast(x), list(x=ma(4))) |> eval()
+█─`+` 
+├─█─`+` 
+│ ├─█─`+` 
+│ │ ├─█─`+` 
+│ │ │ ├─█─`+` 
+│ │ │ │ ├─nu 
+│ │ │ │ └─█─`[` 
+│ │ │ │   ├─eps 
+│ │ │ │   └─t 
+│ │ │ └─█─`*` 
+│ │ │   ├─█─`[` 
+│ │ │   │ ├─theta 
+│ │ │   │ └─1 
+│ │ │   └─█─`[` 
+│ │ │     ├─eps 
+│ │ │     └─█─`-` 
+│ │ │       ├─t 
+│ │ │       └─1 
+│ │ └─█─`*` 
+│ │   ├─█─`[` 
+│ │   │ ├─theta 
+│ │   │ └─2 
+│ │   └─█─`[` 
+│ │     ├─eps 
+│ │     └─█─`-` 
+│ │       ├─t 
+│ │       └─2 
+│ └─█─`*` 
+│   ├─█─`[` 
+│   │ ├─theta 
+│   │ └─3 
+│   └─█─`[` 
+│     ├─eps 
+│     └─█─`-` 
+│       ├─t 
+│       └─3 
+└─█─`*` 
+  ├─█─`[` 
+  │ ├─theta 
+  │ └─4 
+  └─█─`[` 
+    ├─eps 
+    └─█─`-` 
+      ├─t 
+      └─4 
+> 
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# 语法树修改
+# -----------------------------------------------------------------------------------------------------------------------------
+
+#' 把(x中的pattern模式的项目采用replacement的方式进行替换
+#' 一个表达式expression的内部结构即语法树ast是一个列表结构，例如：
+#' a+b+c 的是按照 list(quote(`+`), list(quote(`+`), quote(a), quote(b)), quote(c)) 进行组织的。
+# 其中运算符quote(`+`)作为列表项目的元素，本质就是lisp的S-Expression
+# 于是 a+b+c <==> (+ (+ a b) c)
+# 使用示例：
+# 1）astsub( quote(a + (b + c)), quote(b + c), quote(b * c + d) )
+# 需要知道 theta[i] 的 列表形式 是 (`[`, theta, i) 结构， 还有 head(quote(theta[i]),2)  == quote(theta[]) 
+# 此时 length(head(quote(theta[i]),2)) == 2; length(quote(theta[])) == 3， 可以见 == 并非进行元素级别的数据比较而是整体结构层面的比较
+# 2）astsub( ma(4), pattern=\(e) length(e)>1 && head(e, 2)==quote(theta[]), replacement=\(e) as.symbol(paste0(e[[2]], e[[3]])) )
+#
+#' @param x  表达式语句
+#' @param pattern  目标pattern：expression 或是 一个 检测 expression 结构的谓词函数
+#' @param replacement 替换的内容：expression 或是对 expression 结构变换的函数
+astsub <- function(x, pattern, replacement) { # ast substitute 语法树的替换
+  #' @param expr 子表达式
+  sub <- function(expr) { # 递归模式替换
+    if (if(is.function(pattern)) pattern(expr) else identical(expr, pattern)) { # 如果expr与pattern相互匹配
+      if (is.function(replacement)) replacement(expr) else replacement #  如果replacement是函数以此该函数进行转换,否则直接返回replacement本身
+    } else if (is.call(expr)) { # 如果当前子表达式expr是一个调用表达式(如函数调用、运算符表达式等)
+      as.call(lapply(expr, sub)) # lapply对表达式各参数递归应用sub替换函数,最后,重构此调用表达式。
+    } else { # 其他情形直接返回子表达式
+      expr # 子表达式
+    } # if
+  } # sub
+  
+  sub(x) # 从整个表达式开始递归替换
+} # astsub
+
+# 示例使用, 调用替换函数
+astsub( quote(a + (b + c)), quote(b + c), quote(b * c + d) )
+
+# 注意 由于 1:4 是整数，直接 bquote(theta[ .(i) ]) 会返回 theta[1L]这种表达式，使用 n=as.numeric(i) 于 .(n)  转换一下, 就会变成 theta[1] 这样的模式了
+Reduce( x=1:4, init=ma(4), f=\(acc, i, n=as.numeric(i)) astsub(acc, bquote(theta[.(n)]),  as.symbol(paste0("theta", i))) )
+
+# 带有模式匹配的替换
+astsub( ma(4), pattern=\(e) length(e)>1 && head(e, 2)==quote(theta[]), replacement=\(e) as.symbol(paste0(e[[2]], e[[3]])) )
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# 这里的代码主要是教学与思想启发意义上，请留意作者思考问题的方式。
+# 也就是，如何 建立起 理论 与 实际 之间的 结构关系。这是 理解并用应用 元编程的 基础与核心。
+#
+# 元编程的特点：将一个由形式符号进行描述的理论结构（模型或者结构模式），通过 在 一个 具体的
+# 问题环境中 与 特定的 概念对象进行 关联绑定，进而 构造出 一种 具有 
+# 实际意义的，新的对象结构。即 理论应用 或者是 模式匹配。
+#
+# 举个例子说明一下，Treeable形式结构(这里采用Haskell语法): 
+# data Tree a = Empty | Node a [Tree a] deriving (Show)
+# 注意，这里的： 
+#     Empty  【空节点】
+#     Node a [Tree a] 【一个带有节点值a,外加子节点列表 的树形节点】
+# 等 都是 用于表示 某个整体（目标的理论对象）的各个部分之间关系 的 结构符号，
+# 它们 都是 以 (结构)占位符 的形式 去 构建起其 某种 公式/模式/模板 或者说 思想的脚手架 即 想法/观点/灵感，
+# 除此之外没有其他意义，甚至, 都不需要 有 实际意义。
+# 这也是， 为何说它 是 理论模型 即 形式结构 的 原因（核心任务就是描述清楚：部分是如何构造成出整体，
+# 即各部分之间是如何进行联系与组织关联的）。
+# 至于，部分具体是什么不重要。这就像我们说：一只碗状的几何结构，它究竟金的，铁的，还是泥土捏的
+# 根本不重要！深度与开口形状，底部形态与大小才是我们需要重点给予重点关心的。
+# 这就是思维&认知理解的的阶段性（认识是一步一步的循序渐进而不是一蹴而就）。
+# 抽象 形成 理论认知 是 最开始的阶段，之后，才能够开展去进行实践。
+#
+# 当 把这种关系模型（树形的形式结构），应用 在 计算计算机科学 它就可以 构造 出 计算图,  进而实现 程序设计。 
+# 而 应用在 文学 上，它就是 思想逻辑 与 文档大纲，可应用在 小说编写，与 散文创作 等。 
+# -----------------------------------------------------------------------------------------------------------------------------
+#
+# 注意：这里的 两层substitute 的 理解办法（认知哲学）:
+# substitute(substitute(ma4, list(t=current, nu=base, eps=interrupts, theta=params)), list(ma4=ma(4)))
+# 外层substitute:通过ma4绑定到ma(4)返回理论表达式: 'nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]' 
+# 但这个表达式由于只是理论上的过程的形式结构，它的参数的意义(如:nu,eps,theta只是结构符号)无法与实际过程中的变量名相对应；
+# 因此需要根据实际情况给予再次明确。也就是 需要 将理论结构 联系到 实际场景之中的 具体概念（对象），这就是为何又在内层对理论模型:
+# 'nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]' 
+# 中的参数(nu,eps,theta)进行重新二次绑定(将理论模型的概念映射到具体实现场景中的概念）的原因，理论联系实际的实践思想，即实践。
+# substitute(nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4], list(t=current, nu=base, eps=interrupts, theta=params)
+# 所以：这里面的哲学思想就是实践论：（把base,params,interrupts,current通过ma(4)的理论进行组织和应用）
+# 第一次substitute叫做提出创造理论是认知：分析理解
+# 第二次substitute叫做理论联系实际是应用：实践创造
+
+(\() { # 绘图过程
+  o <- par(mfrow=c(2, 1)); on.exit(par(o)); # 图形窗口设置
+  
+  #' 计算一个4阶移动平均过程在时刻6的数据分布
+  #' 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
+  #' 所以，需要把最终要替换的t,写在最内层的substitute，指定当时刻为10
+  #'
+  #' 权重绘图
+  #' @param weights 权重分配 
+  wtsplot <- \(weights) #  权重分配 
+    list( ma4=ma(4), # 生成理论模型：4阶级移动平均 ma4: nu + eps[t] + theta[1] * eps[t-1] + theta[2] * eps[t-2] + theta[3] * eps[t-3] + theta[4] * eps[t - 4]
+          assocs=quote( list(t=current, nu=base, eps=interrupts, theta=params) ) # 模型中的结构符号与实际问题中变量的对应关系,理论联系实际
+    ) |> substitute(substitute(ma4, assocs), env=_)  |>  ( \( model ) # 构造模型并指定绑定关系
+        sapply(1:1000, \(i) eval(model, list( # 指定实例参数生成实例i, 参见汉密尔顿的时间序列分析1卷p53
+          base=1, # 基础
+          params=weights/sum(weights), # 参数值为不同期限分配不同权重
+          interrupts=rnorm(6),  # 外界干扰序列
+          current=6 # 当前时刻值为6
+        )) |> eval() # 生成数值表达式（计算实例值）
+    ) |> ( \( data ) { # 生成的模型示例数据
+          wts <- paste0(weights, collapse=',') # 权重
+          print(sprintf("weights: %s ---> sd:%.4fd", wts, sd(data))) # 生成标准差
+          hist(data, xlab="x", main=paste0("计算一个4阶移动平均过程(", wts, ")的在时刻6的数据分布")) # 绘制直方图
+      }) () # data
+  ) () # model
+  
+  # 返回结果
+  list("4:1"=wtsplot(4:1), # 近期权重大
+       "1:4"=wtsplot(1:4)) # 远期期权重大
+}) () # 绘图过程
+
+#' 求幂次: 计算 (1+2)^5
+#' @param n 大于1的整数
+#' @return 对 (a+b)^n的多项式分解各个项目数量的向量，比如p(5) 返回
+#'               a^1*b^4     a^2*b^3     a^3*b^2     a^4*b^1     a^5     b^5 
+#'               5                 10               10               5                 1         1 
+p <- \(n) rep(letters[1:2], n) |> split(gl(n, 2)) |> expand.grid() |> apply(1, table) |> sapply(\(.) paste0(names(.), "^", ., collapse="*")) |> table()
+p(5) |> (\(., exprs=str2expression(paste0(., "*", names(.)))) exprs |> sapply(eval, envir=list(a=1, b=2)) |> sum()) ()
+
+# -----------------------------------------------------------------------------------------------------------------------------
 # 加载库
 library(data.table)
 

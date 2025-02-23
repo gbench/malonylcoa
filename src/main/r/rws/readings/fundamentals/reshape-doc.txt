@@ -1,0 +1,64 @@
+Conversion from wide to long with direction = "long" is the more common operation as most (univariate) statistical modeling functions expect data in the long format. In the simpler case where there is only one time-varying variable, the corresponding columns in the wide format input can be specified as the varying argument, which can be either a vector of column names or the corresponding column indices. The name of the corresponding variable in the long format output combining these columns can be optionally specified as the v.names argument, and the name of the time variables as the timevar argument. The values to use as the time values corresponding to the different columns in the wide format can be specified as the times argument. If v.names is unspecified, the function will attempt to guess v.names and times from varying (an explicitly specified times argument is unused in that case). The default expects variable names like x.1, x.2, where sep = "." specifies to split at the dot and drop it from the name. To have alphabetic followed by numeric times use sep = "".
+
+将wide转换为long格式是会时常用到的操作，因为很多统计建模（单变量）函数往往都会要求其输入的数据格式为long。
+最简单的情形，是只有一个time-varying variable（时变变量
+TVV）的input变量，此(TVV)对应在INPUT的wide格式的数据里要有多个列来进行表示。
+此时,你就需要通过输入参数varying（变量变量的列名集合）来给予具体指明清楚才行。
+varying的类型可以是列名向量或是向对应与该此列名向量的列索引号码。
+
+相应的，在long格式中对应的output变量, 则会将input里的那些列合并聚合在一起，
+而这又是可以通过v.names与timevar来进行指定&规范。 
+v.names参数 指定的 时变时变变量名（可选）
+timevar参数 指定 时间变量的名称。
+还有，对于那些与wide中的各个列相对应的时间(时点）的数值，可以通过times参数进行指定。
+
+要是没有指定v.names,reshape函数会尝试根据varying去猜测出v.names与times.
+此时，就算是你指定了times参数，它也会被舍弃的。
+
+默认时，所期待的变量名称是x.1, x.2,这种的结构模式，
+这里是采用了用设置sep的数值的方法去告知程序具体要在何处对名称字符串进行split的切分i,
+例如：sep="." 的意义是做在'.'的位置进行分隔,并将"."给丢弃掉。
+要是希望使用，字母开头数字时间结尾的结构模式的变量名（如var123)，你就使用sep=""。
+
+### 优化后的译文
+
+将 wide 格式转换为 long 格式是较为常见的操作，因为大多数（单变量）统计建模函数要求数据为 long 格式。
+在较为简单的情形下，若仅有一个时变变量，其在 wide 格式输入中的对应列，需通过输入参数 varying 来指明。varying 既可以是列名向量，也可以是这些列对应的索引。
+在 long 格式输出中，将这些列合并后对应的变量名，可通过 v.names 参数（可选）指定，时间变量的名称则通过 timevar 参数指定。与 wide 格式中各列对应的时间值，可通过 times 参数指定。
+若未指定 v.names，函数会尝试依据 varying 推测出 v.names 和 times。在这种情况下，指定的 times 参数将不会被使用。默认期望的变量名形式为 x.1、x.2 等，这里 sep = “.” 用于指定从名称中进行切分的位置，并将该分隔符从名称中去除。若希望变量名采用字母在前、数字（表示时间）在后的结构模式，可使用 sep = “” 。
+
+Multiple time-varying variables can be specified in two ways, either with varying as an atomic vector as above, or as a list (or a matrix). The first form is useful (and mandatory) if the automatic variable name splitting as described above is used; this requires the names of all time-varying variables to be suitably formatted in the same manner, and v.names to be unspecified. If varying is a list (with one component for each time-varying variable) or a matrix (one row for each time-varying variable), variable name splitting is not attempted, and v.names and times will generally need to be specified, although they will default to, respectively, the first variable name in each set, and sequential times.
+
+对应于,有多个时变变量的时候，有两种方式来进行选择：
+一种是像上文所说的那样，采用一个 atomic vector 的 简单向量。
+另一种就是使用列表（或是矩阵）的形式。
+在变量名需要自动的以上文所说的那种方式进行自动化的拆解的时候，第一种形式（简单向量）就很有用，并且还必须的方式。
+此时，所有的时变变量的名称就必须按照一致的方式来进行，那种规范&格式的方式予以书写，这样，v.names 就不需要再给予指定了（可以guessing）。
+要是varying是一个list(列表元素用于表示一个时变变量）或是矩阵（矩阵的行对应一个时变变量），此时，就不再会对变量名进行拆解分割了。
+由此，v.names 与 times， 一般来说，就需要地给予专门的明确指定，因为，
+默认上他们v.names会采用相应的名称集合里第一个元素的名称。
+而 times 则谁采用 常规的序列化的编号1,2,3....。 （这个很可能不是很适合）
+
+### 优化后的译文：
+
+当存在多个时变变量时，有两种指定方式：一种是采用如上文所述的原子向量；另一种是使用列表（或矩阵）形式。
+当需要按照上文所述方式自动拆解变量名时，第一种形式（原子向量）既有用且必要。此时，所有时变变量的名称必须以一致方式规范格式书写，v.names 无需另行指定。
+若 varying 是一个列表（每个列表元素对应一个时变变量）或矩阵（每一行对应一个时变变量），则不会尝试拆解变量名。因此，v.names 和 times 通常需要明确指定，尽管它们的默认值分别为每组中的第一个变量名和顺序编号 1, 2, 3... 。
+
+
+Also, guessing is not attempted if v.names is given explicitly, even if varying is an atomic vector. In that case, the number of time-varying variables is taken to be the length of v.names, and varying is implicitly converted into a matrix, with one row for each time-varying variable. As in the case of long to wide conversion, the matrix is filled up by column, so careful attention needs to be paid to the order of variable names (or indices) in varying, which is taken to be like x.1, y.1, x.2, y.2 (i.e., variables corresponding to the same time point need to be grouped together).
+
+此外，要是 v.names 被明确的给出了，就算此时 varying 采用了 atomic vector， 就不再会进行猜测guessing了。此时，时变变量的数量会作为v.names的长度。
+同时，varying 会默认的转换成为每行有对应相应着的时变变量的矩阵。
+就像上文在’把long格式转换为wide格式'中提到的情形一样，此矩阵会采用按照列的顺序进行构建/准备(fill up)。
+所以，需要格外的留意varying里的变量名称（或是索引）的顺序，他们采用类似于：x.1,
+y.1, x.2, y.2 这样的形式 (也就是， 位于相同时点的变量需要编排组合在相邻的位置，即聚在一起）
+
+### 优化后的译文
+此外，若明确指定了 `v.names`，即便 `varying` 是一个原子向量，也不会再进行猜测。此时，时变变量的数量会被视为 `v.names` 的长度，同时，`varying` 会被隐式转换为一个矩阵，矩阵的每一行对应一个时变变量。
+
+在进行从长格式转换为宽格式的操作时，该矩阵会按列进行填充，因此需要格外留意 `varying` 中变量名称（或索引）的顺序，其形式类似于 x.1, y.1, x.2, y.2 （即相同时点对应的变量需要组合在一起）。 
+
+
+
+

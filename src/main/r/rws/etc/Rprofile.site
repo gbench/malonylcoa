@@ -21,12 +21,82 @@
 #  if (interactive()) 
 #    fortunes::fortune()
 
-rws_home <- "F:/slicef/ws/rws"
-dailywork_home <- sprintf("%s/dwk/%s", rws_home, Sys.Date()) 
-if ( !dir.exists(dailywork_home) )  dir.create(dailywork_home)
-setwd(dailywork_home)
 
-# 自定义的预先加载的自定义函数文件列表
-myfiles <- list.files(path=Sys.getenv('RSCRIPT_HOME'), pattern="\\.R$", recursive=T) 
-scriptlog <- sprintf(fmt="%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) 
+# --------------------------------------------------------------------------------------
 
+
+#' 创建一个目标目录
+#' 
+#' 根据输入的目录路径，递归地创建目录。
+#' 
+#' @param x 目录路径，例如 "/the/file/path"
+#' @return 无返回值，主要作用是创建目录
+#' @export
+mkdir <- function(x) {
+  tryCatch({
+    if (!dir.exists(x)) {
+      dir.create(x, recursive = TRUE)
+      message(paste("Successfully created directory:", x))
+    } else {
+      message(paste("Directory already exists:", x))
+    }
+  }, error = function(e) {
+    stop(paste("Failed to create directory:", x, "Error:", e$message))
+  })
+}
+
+#' 制作延迟加载库
+#' 
+#' 把指定 env 环境中的数据，写成 .rdb, .rdx 文件以便日后进行 lazyLoad。
+#' 生成了数据以后，可以采用如下方法加载数据文件：
+#' lazyLoad(paste0(lazyloads_home, "/", dbname))
+#' 
+#' @param dbname 数据库名称
+#' @param env 指定的会话环境, 默认为当前的会话环境
+#' @param lazyloads_home 延迟数据库根目录，默认为 RSCRIPT_HOME 环境变量指定路径下的 lazyloads 文件夹
+#' @return 生成的延迟加载数据库文件的路径
+#' @export
+mklzdb <- function(dbname, env = environment(), lazyloads_home = file.path(Sys.getenv("RSCRIPT_HOME"), "lazyloads")) {
+  # 创建延迟加载的数据根目录
+  mkdir(lazyloads_home)
+  
+  # 构建目标文件路径
+  target <- file.path(lazyloads_home, dbname)
+  
+  # 生成数据文件
+  tryCatch({
+    tools:::makeLazyLoadDB(env, target)
+    message(paste("Successfully created lazy load database at:", target))
+  }, error = function(e) {
+    stop(paste("Failed to create lazy load database at:", target, "Error:", e$message))
+  })
+  
+  # 返回数据文件路径
+  return(target)
+}
+
+#' 批量加载包
+#' @param xs 包名序列,元素间用逗号','分隔
+#' @export
+batch_load <- function(xs = "RMySQL,tidyverse,jsonlite,quantmod,data.table") {
+  xs <- if(length(xs) == 1 & is.character(xs)) strsplit(xs, "[,]+") |> unlist() else xs
+  xs |> sapply(\(x) tryCatch(require(trimws(x), character.only=TRUE), error=\(e) e))
+}
+
+# --------------------------------------------------------------------------------------
+
+rws_home <- "F:/slicef/ws/rws" # 工作区目录
+dailywork_home <- sprintf("%s/dwk/%s", rws_home, Sys.Date()) # 工作目录
+if (!dir.exists(dailywork_home))  mkdir(dailywork_home) # 创建工作目录
+setwd(dailywork_home) # 设置工作去目录
+
+if (FALSE) { # 根据指定模式加载数据文件
+  # 自定义的预先加载的自定义函数文件列表
+  myfiles <- list.files(path = Sys.getenv('RSCRIPT_HOME'), pattern="\\.R$", recursive = T) 
+  sprintf(fmt = "%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) |> invisible()
+} else { # 延迟加载(.rdx, .rdb 文件)
+  # 延迟数据库根目录 
+  lazyloads_home <- paste0(Sys.getenv("RSCRIPT_HOME"), "/lazyloads")
+  # 启用延迟加载
+  lazyloads_home |> list.files(pattern = "*.rdb", full.names = T) |> sub("\\.(rdb)$", "", x=_) |> lazyLoad() |> invisible()
+} # if

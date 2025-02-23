@@ -111,3 +111,34 @@ ghc 9.8.2 [Approved]
  Mailing List: https://mail.haskell.org/cgi-bin/mailman/listinfo/haskell-cafe
  Issues: https://ghc.haskell.org/trac/ghc/
  Summary: GHC is a state-of-the-art, open source, compiler and interactive environment for the functional language Haskell.
+
+# 处理问题: 安装带有./configure的包文件
+# 1.安装 MSYS2
+choco install msys2 -y
+
+# 2.初始化 MSYS2
+# 打开一个新的具有管理员权限的 PowerShell 或命令提示符，执行以下命令来更新 MSYS2 及其包数据库：
+# 启动 MSYS2 的 Bash 环境，并执行 pacman -Syuu 命令来更新 MSYS2 及其所有包。
+# 在 PowerShell 中，& 是调用操作符（Call Operator）。它的作用是将一个命令或脚本文件作为一个单独的进程来执行。
+& 'C:\tools\msys64\usr\bin\bash.exe' -lc "pacman -Syuu"
+
+#3. 安装必要的编译工具： 
+# -l：这个参数表示以登录 shell 的方式启动 bash。当使用 -l 参数时，bash 会读取并执行用户的登录脚本（如 .bash_profile 或 .profile），
+#      加载必要的环境变量和配置信息，就像你在 Unix 系统中登录时一样。
+# -c：-c 参数后面需要跟一个字符串，这个字符串就是要在 bash 环境中执行的命令。bash 会将 -c 后面的字符串作为一个命令来执行，执行完毕后就退出。
+# pacman：MSYS2 所使用的包管理器，类似于 Linux 系统中的 apt 或 yum，用于安装、更新和管理软件包。
+# base-devel：这是一个元包，它包含了一组基本的开发工具，如 make、gcc、autoconf 等，这些工具在编译和构建软件时经常会用到。
+# mingw-w64-x86_64-toolchain：这是一个用于 64 位 Windows 系统的 MinGW-w64 工具链包，包含了用于编译 C、C++ 等语言的编译器和相关工具。
+& 'C:\tools\msys64\usr\bin\bash.exe' -lc "pacman -S --needed base-devel mingw-w64-x86_64-toolchain"
+
+#4. 配置环境变量
+# 为了让 Windows 系统能够找到 MSYS2 中的 sh 等命令
+# 需要将 MSYS2 的 bin 目录添加到系统的环境变量 PATH 中。在 PowerShell 中，$env: 是一个特殊的前缀，用于访问和操作环境变量。
+# [Environment]::SetEnvironmentVariable：这是一个 .NET 类的静态方法，用于设置环境变量。
+# [EnvironmentVariableTarget] 是一个枚举类型，Machine 表示将环境变量的修改应用到整个系统，即对所有用户和所有进程都生效。
+$env:PATH = $env:PATH + ";C:\tools\msys64\usr\bin"
+[Environment]::SetEnvironmentVariable("PATH", $env:PATH, [EnvironmentVariableTarget]::Machine)
+
+# 重新安装失败的文件包
+cabal install network-3.2.7.0
+

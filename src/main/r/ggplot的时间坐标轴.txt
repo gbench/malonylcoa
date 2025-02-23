@@ -4,78 +4,68 @@ prices 的时间索引是不连续的，首先，价格数据只在工作日才�
 请编写使用ggplot绘制出该prices的分时图。需要把各个价格时间进行连续显示，
 也就是10:15的下一刻是10:30，11:30的下一刻是13:00，15:00 下一刻21:00，23:00的下一刻是次日的9:00。如果
 今日是周一，次日就是本周周二，如果今日是周五，次日是下周一，其余依次类推。
+# -------------------------------------------------------------------------------------------------------------------
 
-# 加载必要的库
-library(ggplot2)
-library(dplyr)
-library(lubridate)
-library(xts)
-library(zoo)
+partition <- \(line, delim=",") line |> strsplit(delim) |> unlist() # 切分
+as.datetime <- partial(as.POSIXct, format="%H:%M:%S") # 时间分析
+data <- sqlquery("select * from t_ma501_20241209") |> compute_kline() # K 线数据
+interval <- "15 min" # 时间间隔
+std.breaks <- "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00" |> # 坐标刻度，标准时间刻度
+  partition(delim=";") |> # 解析交易时段
+  lapply(\(line, ps=compose(as.datetime, partition)(line), .interval=interval) seq(ps[1], ps[2], by=.interval)) |> # 提取交易标记点
+  Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
+dfm <- data["T09:00/T23:00"] |> (\(d, idx=index(d)) { # 剔除指定时间端的数据
+  d[ ! (idx>as.datetime("15:00:00") & idx<as.datetime("21:00:00")) ]
+})() #  数据范围
 
-# 示例数据（假设 prices 是一个 xts 对象）
-prices <- local (\(n) {
-	library(xts)
-	init <- strptime('2025-01-01 00:00:00', '%Y-%m-%d %H:%M:%S')
-	tms <- seq( init, by="1 min", length.out=n )  # 时间序列
-	xts(data.frame(Close=rnorm(n), Open=rnorm(n)), order.by=tms) # 时间序列
-})(1000)
-# 这里你需要用你自己的 prices 数据替换上面的示例数据
+# 时间绘图
+library(tidyverse) # 加载函数库，ggplot2 与 dplyr
+ggplot(dfm, aes(seq_along(index(dfm)))) + # 基础数据
+  geom_line(aes(y=Close)) + # 收盘价
+  scale_x_continuous( # 自定义时间轴
+    breaks=\(x) { # 需要保持与ggplot的基础映射x的相同的数据类型
+      print(sprintf("breaks:%s(%d)", x, length(x)))
+      tp <- c("10:15:00", "11:30:00", "15:00:00") |> as.datetime() # 连接时间点，交易时段的结尾时刻
+      breaks <- std.breaks[-match(tp, std.breaks)] # 剔除掉省略掉的时间
+      print(sprintf("breaks --> %s(%d)", breaks, length(breaks)))
+      match(breaks, index(dfm)) |> na.omit() # 剔除NA值
+    }, labels=\(x) { # 坐标id
+      print(sprintf("labels:%s(%d)", x, length(x)))
+      points <- index(dfm)[x] # 提取时间点数据的时间索引
+      # 定义关键时间点
+      p1030 <- as.datetime("10:30:00")
+      p1330 <- as.datetime("13:30:00")
+      p2100 <- as.datetime("21:00:00")
+      lbls <- dplyr::case_when( # 时间刻度
+         points == p1030 ~ "10:15/30", # 上午盘的时间交接点
+         points == p1330 ~ "11/13:30:00", # 下午盘的时间交接点
+         minute(points) == 0 & points == p2100 ~ "15/21:00", # 晚盘的时间交接点
+         minute(points) == 0 ~ format(points, "%H:00"), # 默认整点时刻
+         TRUE ~ sprintf("%02d", minute(points)) # 默认非整点时刻
+      ) # 时间刻度
+      print(sprintf("labels --> %s(%d)", lbls, length(lbls)))
+      lbls
+    }, limits=\(x) { # 刻度区间
+      print(sprintf("limits:%s(%d)", x, length(x)))
+      x
+    }) + # 自定义时间轴
+  labs(x = "时间", y = "收盘价格", title = "价格线图") # 坐标轴名称
 
-# 定义一个函数，将交易时间映射到连续的时间索引
-map_trading_time <- function(time) {
-  hour <- hour(time)
-  minute <- minute(time)
-  
-  # 映射交易时间到连续时间
-  if (hour == 9 && minute == 0) {
-    return(0)  # 9:00 AM
-  } else if (hour == 10 && minute == 15) {
-    return(75)  # 10:15 AM
-  } else if (hour == 10 && minute == 30) {
-    return(90)  # 10:30 AM
-  } else if (hour == 11 && minute == 30) {
-    return(150)  # 11:30 AM
-  } else if (hour == 13 && minute == 0) {
-    return(240)  # 1:00 PM
-  } else if (hour == 15 && minute == 0) {
-    return(420)  # 3:00 PM
-  } else if (hour == 21 && minute == 0) {
-    return(780)  # 9:00 PM
-  } else if (hour == 23 && minute == 0) {
-    return(900)  # 11:00 PM
-  } else {
-    # 对于交易时间内的其他分钟，我们可以根据需要进行细分，这里简单处理为返回 NA
-    return(NA)
-  }
-}
+# -------------------------------------------------------------------------------------------------------------------
 
-# 应用映射函数，并过滤掉 NA 值
-prices_df <- as.data.frame(prices)
-prices_df$continuous_time <- sapply(index(prices), map_trading_time)
-prices_df <- na.omit(prices_df)
+partition <- \(line, delim=",") line |> strsplit(delim) |> unlist() # 切分
+as.datetime <- partial(as.POSIXct, format="%H:%M:%S") # 时间分析
+data <- sqlquery("select * from t_ma505_20241213") # 检索数据
+data$UpdateTime <- as.datetime (data$UpdateTime) # 解析时间
 
-# 处理跨日连续性
-prices_df$day_index <- as.numeric(factor(as.Date(index(prices_df)), levels = sort(unique(as.Date(index(prices_df))))))
-prices_df$overall_index <- prices_df$day_index * 900 + prices_df$continuous_time
+# 时间段分割
+# "09:00:00,10:15:00;10:30:00,11:30:00;13:30:00,15:00:00;20:00:00,23:00:00" |>
+breaks <- "09:00:00,10:15:00;10:30:00,11:30:00" |>
+  partition(delim=";") |> # 解析交易时段
+  lapply(\(line, ps=compose(as.datetime, partition)(line), interval="15 min") seq(ps[1], ps[2], by=interval)) |> # 提取交易标记点
+  Reduce(c, init=as.POSIXct(character(0)), x=_) # Reduce 需要为init指定由初始类型，如果提供默认c()则会返回long型数据
+labels <- ifelse(minute(breaks)==0, format(breaks, "%H:00"), sprintf("%02d", minute(breaks)))
 
-# 绘制分时图
-ggplot(prices_df, aes(x = overall_index, y = Close)) +  # 假设 prices.Close 是价格列，根据实际情况调整
-  geom_line() +
-  scale_x_continuous(breaks = seq(0, max(prices_df$overall_index), by = 30),
-                     labels = function(x) {
-                       # 自定义 x 轴标签，以显示实际交易时间
-                       minute_labels <- c("9:00", "10:15", "10:30", "11:30", "13:00", "15:00", "21:00", "23:00")
-                       day_labels <- c("Mon", "Tue", "Wed", "Thu", "Fri")
-                       day_index <- floor(x / 900)
-                       minute_index <- x %/% 30  # 每30分钟一个刻度
-                       minute_label <- minute_labels[ceiling(minute_index / 30)]
-                       if (minute_index == 0 || minute_index == 25 || minute_index == 50 || 
-		minute_index == 75 || minute_index == 150 || minute_index == 210 || 
-		minute_index == 330 || minute_index == 450) {
-                         return(paste0(day_labels[day_index %% 5 + 1], " ", minute_label))
-                       } else {
-                         return("")
-                       }
-                     }) +
-  labs(title = "分时图", x = "时间", y = "价格") +
-  theme_minimal()
+# 时间绘图
+ggplot(data, aes(UpdateTime, LastPrice)) + geom_line() +
+  scale_x_datetime(breaks=breaks, limits=range(breaks), labels=labels)

@@ -1,0 +1,40 @@
+;; -------------------------------------------------------------
+;; LISP中的异常处理
+;; define-condition zero-value (error) 相当于 java/scala 的 
+;; class ZeroMessageException(error: String, cause: Throwable = null) extends Exception(error, cause)
+;; (x :initarg :x :reader zero-value-x)) 相当于给java的ZeroExceptionClass添加一个成员变量x, 
+;; 用 :initarg :x 的方式 指定一个叫做`:x` 的setter
+;; 用 :reader zero-value-x 的方式 指定叫做 zero-value-x的getter
+;; :report 这一部分就相当于java的 toString , 即后面的匿名函数会生成一个包含 x 和 y 值的异常描述信息。
+;; -------------------------------------------------------------
+;; 定义自定义条件类型
+(define-condition zero-value (error)
+  ((x :initarg :x :reader zero-value-x)
+   (y :initarg :y :reader zero-value-y))
+  (:report (lambda (condition stream)
+      (format stream "运算结果为零: ~a + ~a = 0"
+          (zero-value-x condition)
+          (zero-value-y condition)))))
+
+;; 定义自定义运算函数
+;; 一旦运算结尾为x+y抛出0值异常
+(defun myop (x y)
+  (let ((result (+ x y)))
+    (if (zerop result)
+        (error 'zero-value :x x :y y)
+        result)))
+
+;; 测试代码 - 正常运行
+(handler-case
+    (let ((res (myop 2 -3)))
+      (format t "运算结果: ~a~%" res))
+  (zero-value (condition)
+    (format t "捕获到异常: ~a~%" condition)))
+
+;; 测试代码 - 正常运行 异常运行
+(handler-case
+    (let ((res (myop 1 -1)))
+      (format t "运算结果: ~a~%" res))
+  (zero-value (condition)
+    (format t "捕获到异常: ~a~%" condition)))
+
