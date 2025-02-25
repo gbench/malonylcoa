@@ -95,26 +95,14 @@ rsv[is.na(rsv) | is.infinite(rsv)] <- 50 # 设置无效值为50
 k <- Reduce(f = ema3_init(), x = rsv, accumulate = T) # K 值
 d <- Reduce(f = ema3_init(), x = k, accumulate = T) # J值
 # 生成xts 对象
-data <- xts(cbind(rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"]
+data <- xts(cbind(x = seq_along(rsv), rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"]
 
 # 绘图
-ggplot(data, aes(x = 1:nrow(data))) +
-  geom_line(aes(y = rsv), col = rgb(.7, .7, .7)) +
-  geom_line(aes(y = k), col = "red") +
-  geom_line(aes(y = d), col = "blue") +
-  geom_line(aes(y = j), col = rgb(.5, .1, .1)) +
-  scale_x_continuous(
-    n.breaks = 10,
-    labels = partial(sapply, FUN = \(i) index(data)[i] |> strftime("%H:%M"))
-  ) +
-  labs(
-    title = "专业KDJ指标分析",
-    subtitle = format(start(data), "%Y-%m-%d"),
-    x = "交易时段",
-    y = "指标值"
-  ) +
-  theme(
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
-    panel.grid.minor = element_blank()
-  )
+ggplot(data, aes(x)) +
+  geom_line(aes(y = rsv), color = "grey70", alpha = 0.6) +
+  geom_line(aes(y = k), color = "red", linewidth = 0.8) +
+  geom_line(aes(y = d), color = "blue", linewidth = 0.8) +
+  geom_line(aes(y = j), color = "darkred", linetype = "dashed") +
+  scale_x_continuous(n.breaks = 10, labels = partial(sapply, FUN = \(i) index(data)[i] |> strftime("%H:%M"))) +
+  labs(title = "专业KDJ指标分析", subtitle = format(start(data), "%Y-%m-%d"), x = "交易时段", y = "指标值") +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), panel.grid.minor = element_blank())
