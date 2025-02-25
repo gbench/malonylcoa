@@ -74,38 +74,47 @@ index(bigvols) |> diff()
 # -------------------------------------------------------
 
 # 滑动窗口计算
-#' x 原始数据
-#' n 窗口大小
-# ‘ f 窗口应用函数
-sliding <- \(x, n, f) sapply(seq(x), \(i) if (i < n) NA else do.call(f, list(i = i, n = n, data = x[(i - n):i])))
+#' @param x 原始数据
+#' @param n 窗口大小
+#' @param  f 窗口应用函数
+sliding <- \(x, n, f) sapply(seq(x), \(i) if (i < n) NA else do.call(f, list(i = i, n = n, data = x[(i - n + 1):i])))
 
-# 未成熟随机值
-rsv <- sliding(x, 9, \(i, n, data, llv = min(data), hhv = max(data))  {
-  if (i < n) 0 else (x[i] - llv) / (hhv - llv)
-})
+#' 周期为3的指数平均
+#' @param init
+ema3_init <- \(init = 50) \(acc, a) if (is.na(a)) NA else 2 / 3 * (if (is.na(acc)) init else acc) + a / 3
 
-k <- Reduce(
-  f = \(acc, a, b1 = !is.na(acc), b2 = !is.na(a))
-  if (b1 && b2) 2 / 3 * acc + a / 3 else if (!b1 && b2) a else NA,
-  x = rsv, accumulate = T
-)
-
-d <- Reduce(
-  f = \(acc, a, b1 = !is.na(acc), b2 = !is.na(a))
-  if (b1 && b2) 2 / 3 * acc + a / 3 else if (!b1 && b2) a else NA,
-  x = k, accumulate = T
-)
-
+# 基础数据
+kdata <- na.omit(kdata) # 清除NA值， kdata 时一个 OHLCV 的数据xts结构的数据
+x <- kdata$Close |> as.numeric()
+hi <- kdata$High |> as.numeric()
+lo <- kdata$Low |> as.numeric()
+# 指标计算
+rsv <- sliding(x, 9, \(i, n, data, j = (i - n + 1):i, llv = min(lo[j]), hhv = max(hi[j]), amp = hhv - llv)
+if (i < n || amp == 0) 50 else 100 * (x[i] - llv) / amp) # 未成熟随机值
+rsv[is.na(rsv) | is.infinite(rsv)] <- 50 # 设置无效值为50
+k <- Reduce(f = ema3_init(), x = rsv, accumulate = T) # K 值
+d <- Reduce(f = ema3_init(), x = k, accumulate = T) # J值
 # 生成xts 对象
-data <- xts(data.frame(rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"]
+data <- xts(cbind(rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"]
 
 # 绘图
 ggplot(data, aes(x = 1:nrow(data))) +
-  geom_line(aes(y = rsv), col = rgb(.7,.7,.7)) +
+  geom_line(aes(y = rsv), col = rgb(.7, .7, .7)) +
   geom_line(aes(y = k), col = "red") +
   geom_line(aes(y = d), col = "blue") +
-  geom_line(aes(y = j), col = rgb(.5,.1,.1)) +
+  geom_line(aes(y = j), col = rgb(.5, .1, .1)) +
   scale_x_continuous(
     n.breaks = 10,
     labels = partial(sapply, FUN = \(i) index(data)[i] |> strftime("%H:%M"))
+  ) +
+  labs(
+    title = "专业KDJ指标分析",
+    subtitle = format(start(data), "%Y-%m-%d"),
+    x = "交易时段",
+    y = "指标值"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    panel.grid.minor = element_blank()
   )
