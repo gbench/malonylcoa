@@ -58,9 +58,9 @@ dbl <- as.numeric # 转换成字符串数值向量的简写
 # 多头与空头可能同时抛单，结果就造成了，尽管成交量放大了，价格却变化不大的局面。
 # 如果收盘价接近最低C_LO,说明 空头趋势 -1
 # 如果收盘价接近最高C_HI,说明 多头趋势 1
-kdata[index(bigvols)] |> # 
+kdata[index(bigvols)] |> #
   transform(C_LO = dbl(Close - Low), C_HI = dbl(Close - High)) |> # xts 需要用dbl转换成数字,否则C_LO，C_HI命名无效
-  transform(Desc = ifelse(abs(dbl(C_LO)) <= abs(dbl(C_HI)), -1, 1)) # 另外 这里必须使用transform mutate 不可以
+  transform(Desc = ifelse(abs(C_LO) <= abs(C_HI), -1, 1)) # 另外 这里必须使用transform mutate 不可以
 
 bigvols2 <- vol[x > quantile(x, 0.95)]
 # 百分位数与经验分布计算的数据时一样
@@ -68,3 +68,44 @@ bigvols2 == bigvols
 
 # 查看大成交量项出现的时间间隔
 index(bigvols) |> diff()
+
+# -------------------------------------------------------
+# KDJ 绘图
+# -------------------------------------------------------
+
+# 滑动窗口计算
+#' x 原始数据
+#' n 窗口大小
+# ‘ f 窗口应用函数
+sliding <- \(x, n, f) sapply(seq(x), \(i) if (i < n) NA else do.call(f, list(i = i, n = n, data = x[(i - n):i])))
+
+# 未成熟随机值
+rsv <- sliding(x, 9, \(i, n, data, llv = min(data), hhv = max(data))  {
+  if (i < n) 0 else (x[i] - llv) / (hhv - llv)
+})
+
+k <- Reduce(
+  f = \(acc, a, b1 = !is.na(acc), b2 = !is.na(a))
+  if (b1 && b2) 2 / 3 * acc + a / 3 else if (!b1 && b2) a else NA,
+  x = rsv, accumulate = T
+)
+
+d <- Reduce(
+  f = \(acc, a, b1 = !is.na(acc), b2 = !is.na(a))
+  if (b1 && b2) 2 / 3 * acc + a / 3 else if (!b1 && b2) a else NA,
+  x = k, accumulate = T
+)
+
+# 生成xts 对象
+data <- xts(data.frame(rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"]
+
+# 绘图
+ggplot(data, aes(x = 1:nrow(data))) +
+  geom_line(aes(y = rsv), col = rgb(.7,.7,.7)) +
+  geom_line(aes(y = k), col = "red") +
+  geom_line(aes(y = d), col = "blue") +
+  geom_line(aes(y = j), col = rgb(.5,.1,.1)) +
+  scale_x_continuous(
+    n.breaks = 10,
+    labels = partial(sapply, FUN = \(i) index(data)[i] |> strftime("%H:%M"))
+  )
