@@ -82,16 +82,15 @@ kdata <- na.omit(kdata) # 清除NA值，kdata 是一个xts类型的OHLCV数据
 x <- kdata$Close |> as.numeric() # 收盘价
 hi <- kdata$High |> as.numeric() # 最高值
 lo <- kdata$Low |> as.numeric() # 最低值
-# 指标计算, i:当前坐标索引, n:窗口宽度, j:窗口索引范围, data:当前窗口数据, llv:窗口数据最低价, hhv:窗口数据最高价, amp: 振幅大小
-rsv <- sliding(x, 9, \(i, n, j, data, llv = min(lo[j]), hhv = max(hi[j]), amp = hhv - llv) if (i < n || amp == 0) 50 else 100 * (x[i] - llv) / amp) # 未成熟随机值
-rsv[is.na(rsv) | is.infinite(rsv)] <- 50 # 设置无效值为50
-k <- Reduce(f = esgen(3), x = rsv, accumulate = T) # K 值
-d <- Reduce(f = esgen(3), x = k, accumulate = T) # J值
-data <- xts(cbind(x = seq_along(rsv), rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"] # 生成xts 对象
-labels <- partial(sapply, FUN = \(i) index(kdata)[i] |> strftime("%H:%M")) # 需要注意 index(kdata) 使用 kdata 而是data 以保证与data$x的同步，都是使用kdata的绝对时间索引
+# 指标计算, i:当前坐标索引, n:窗口宽度, j:窗口索引范围, data:当前窗口数据, llv:窗口数据最低价, hhv:窗口数据最高价, amp:振幅大小
+rsv <- sliding(x, 9, \(i, n, j, data, llv = min(lo[j]), hhv = max(hi[j]), amp = hhv - llv) if (i < n || amp == 0) NA else 100 * (x[i] - llv) / amp) # 未成熟随机值
+k <- Reduce(f = esgen(3), x = rsv, accumulate = T) # K值
+d <- Reduce(f = esgen(3), x = k, accumulate = T) # D值
+data <- xts(cbind(x = seq_along(rsv), rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))# 生成xts对象以便进行时间索引过滤
+labels <- partial(sapply, FUN = \(i) index(kdata)[i] |> strftime("%H:%M")) # 注意index(kdata)使用kdata而非data以保证labels与data$x的同步,都使用kdata的绝对时间索引
 
 # 绘图
-ggplot(data, aes(x)) +
+ggplot(data["T09:00/T15:30"] |> apply(2, \(p) ifelse(is.na(p), 50, p)), aes(x)) +
   geom_line(aes(y = rsv), color = "grey70", alpha = 0.6, linetype = "dashed") +
   geom_line(aes(y = k), color = "red", linewidth = 0.8) +
   geom_line(aes(y = d), color = "blue", linewidth = 0.8) +
