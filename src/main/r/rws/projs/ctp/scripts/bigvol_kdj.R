@@ -8,25 +8,20 @@ library(xts)
 
 #' 一个将输入字符串内容转换成POSIXct日期格式的函数
 as.datetime <- partial(as.POSIXct, format = "%H:%M:%S") # 时间分析
+
 # K线数据的提取
 kdata <- (if (T) { # 使用文件数据还是数据库数据
-  # 当前工作区中的数据文件（以保证返回的文件路径都是相对于当前工作区的路径，而不是一个`不可直接访问`的简单字符串）
-  data.files <- list.files(path = ".", all.files = T, recursive = T, include.dirs = F)
-  data.files # 数据文件集合
-  # 读取指定数据(data.files的最后一项即最新的数据文件)
-  fread(last(data.files)) # 数据文件读取
-} else { # 读取数据库数据
-  "t_rb2505_20250225" |>
-    sprintf(fmt = "select * from %s") |>
-    sqlquery.h10ctp2()
-}) |>
-  compute_kline() |>
-  (\(x, kd = x["T09:00/T23:00"], ix = index(kd)) # 提取指定时间段内的数据&并清除噪音数据
-  kd[ # 小时跨度的时间跨度过滤
-    !(ix > as.datetime("15:00:00") & ix < as.datetime("21:00:00")) |
+    # 当前工作区中的数据文件（以保证返回的文件路径都是相对于当前工作区的路径，而不是一个`不可直接访问`的简单字符串）
+    data.files <- list.files(path = ".", pattern="*.csv", all.files = T, recursive = T, include.dirs = F)
+    fread(last(data.files)) # 数据文件读取(最后一个数据文件,时间最新)
+  } else { # 读取数据库数据
+    "t_rb2505_20250225" |> sprintf(fmt = "select * from %s") |> sqlquery.h10ctp2()
+  }) |> compute_kline() |> (\(x, kd = x["T09:00/T23:00"], ix = index(kd)) # 提取指定时间段内的数据&并清除噪音数据
+    kd[ # 小时跨度的时间跨度过滤
+      !(ix > as.datetime("15:00:00") & ix < as.datetime("21:00:00")) |
       !(ix > as.datetime("11:30:00") & ix < as.datetime("13:30:00")) |
       !(ix > as.datetime("10:15:00") & ix < as.datetime("10:30:00"))
-  ])()
+    ])()
 kdata # 精选时段数据
 
 # ----------------------------------------------------------------------------------------------------------------------------------
@@ -34,10 +29,7 @@ kdata # 精选时段数据
 # 显示K线图
 ggplot(kdata, aes(seq(Close), Close)) +
   geom_line() +
-  scale_x_continuous(
-    n.breaks = 10,
-    labels = partial(sapply, FUN = \(i) index(kdata)[i] |> strftime("%H:%M"))
-  )
+  scale_x_continuous( n.breaks = 10, labels = partial(sapply, FUN = \(i) index(kdata)[i] |> strftime("%H:%M")))
 
 # 提取交易数据（xts格式)
 vol <- kdata$Volume # 获取成交量数据
@@ -60,7 +52,7 @@ dbl <- as.numeric # 转换成字符串数值向量的简写
 # 如果收盘价接近最高C_HI,说明 多头趋势 1
 kdata[index(bigvols)] |> #
   transform(C_LO = dbl(Close - Low), C_HI = dbl(Close - High)) |> # xts 需要用dbl转换成数字,否则C_LO，C_HI命名无效
-  transform(Desc = ifelse(abs(C_LO) <= abs(C_HI), -1, 1)) # 另外 这里必须使用transform mutate 不可以
+  transform(Desc = dbl(ifelse(abs(C_LO) <= abs(C_HI), -1, 1))) # 另外 这里必须使用transform mutate 不可以
 
 bigvols2 <- vol[x > quantile(x, 0.95)]
 # 百分位数与经验分布计算的数据时一样
@@ -88,7 +80,7 @@ kdata <- na.omit(kdata) # 清除NA值，kdata 是一个xts类型的OHLCV数据
 x <- kdata$Close |> as.numeric() # 收盘价
 hi <- kdata$High |> as.numeric() # 最高值
 lo <- kdata$Low |> as.numeric() # 最低值
-# 指标计算, i：当前坐标索引,n:窗口宽度,j：窗口索引范围, data 当前窗口数据, llv：窗口数据最低价， hhv：窗口数据最高价，
+# 指标计算, i:当前坐标索引, n:窗口宽度, j:窗口索引范围, data:当前窗口数据, llv:窗口数据最低价, hhv:窗口数据最高价, amp: 振幅大小
 rsv <- sliding(x, 9, \(i, n, j, data, llv = min(lo[j]), hhv = max(hi[j]), amp = hhv - llv) if (i < n || amp == 0) 50 else 100 * (x[i] - llv) / amp) # 未成熟随机值
 rsv[is.na(rsv) | is.infinite(rsv)] <- 50 # 设置无效值为50
 k <- Reduce(f = ema3_init(), x = rsv, accumulate = T) # K 值
