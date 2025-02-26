@@ -50,9 +50,9 @@ dbl <- as.numeric # 转换成字符串数值向量的简写
 # 多头与空头可能同时抛单，结果就造成了，尽管成交量放大了，价格却变化不大的局面。
 # 如果收盘价接近最低C_LO,说明 空头趋势 -1
 # 如果收盘价接近最高C_HI,说明 多头趋势 1
-kdata[index(bigvols)] |> #
+kdata[index(bigvols)] |> # 依据bigvols时间索引提取kdata数据
   transform(C_LO = dbl(Close - Low), C_HI = dbl(Close - High)) |> # xts 需要用dbl转换成数字,否则C_LO，C_HI命名无效
-  transform(Desc = dbl(ifelse(abs(C_LO) <= abs(C_HI), -1, 1))) # 另外 这里必须使用transform mutate 不可以
+  transform(Desc = dbl(ifelse(abs(C_LO) <= abs(C_HI), -1, 1))) # 另外，这里必须使用transform, 而mutate是不可以的，因为它不能用于xts结构
 
 bigvols2 <- vol[x > quantile(x, 0.95)]
 # 百分位数与经验分布计算的数据时一样
@@ -69,11 +69,13 @@ index(bigvols) |> diff()
 #' @param x 原始数据
 #' @param n 窗口大小
 #' @param  f 窗口应用函数
-sliding <- \(x, n, f) sapply(seq(x), \(i, j = (i - n + 1):i) if (i < n) NA else do.call(f, list(i = i, n = n, j = j, data = x[j])))
+sliding <- \(x, n, f) sapply(seq_along(x), \(i, j = (i - n + 1):i) if (i < n) NA else do.call(f, list(i = i, n = n, j = j, data = x[j])))
 
-#' 周期为3的指数平均
+#' 周期为n的指数平滑
+#' @param n 周期长度，大于1的整数, 分配的系数权重向量,c(前期:n-1,当前期:1/n)
 #' @param init 指标初始值，默认为50
-ema3_init <- \(init = 50) \(acc, a) if (is.na(a)) NA else 2 / 3 * (if (is.na(acc)) init else acc) + a / 3
+#' @return 按照 c(n-1, 1)/n %*% c(pre：前期, cur：当前期) 的
+es_init <- \(n, init = 50) \(pre, cur) if (is.na(cur) || n < 2) NA else c(if (is.na(pre)) init else pre, cur) %*% c(n - 1, 1) / n
 
 # 基础数据
 kdata <- na.omit(kdata) # 清除NA值，kdata 是一个xts类型的OHLCV数据
@@ -83,17 +85,17 @@ lo <- kdata$Low |> as.numeric() # 最低值
 # 指标计算, i:当前坐标索引, n:窗口宽度, j:窗口索引范围, data:当前窗口数据, llv:窗口数据最低价, hhv:窗口数据最高价, amp: 振幅大小
 rsv <- sliding(x, 9, \(i, n, j, data, llv = min(lo[j]), hhv = max(hi[j]), amp = hhv - llv) if (i < n || amp == 0) 50 else 100 * (x[i] - llv) / amp) # 未成熟随机值
 rsv[is.na(rsv) | is.infinite(rsv)] <- 50 # 设置无效值为50
-k <- Reduce(f = ema3_init(), x = rsv, accumulate = T) # K 值
-d <- Reduce(f = ema3_init(), x = k, accumulate = T) # J值
+k <- Reduce(f = es_init(3), x = rsv, accumulate = T) # K 值
+d <- Reduce(f = es_init(3), x = k, accumulate = T) # J值
 data <- xts(cbind(x = seq_along(rsv), rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"] # 生成xts 对象
 labels <- partial(sapply, FUN = \(i) index(kdata)[i] |> strftime("%H:%M")) # 需要注意 index(kdata) 使用 kdata 而是data 以保证与data$x的同步，都是使用kdata的绝对时间索引
 
 # 绘图
 ggplot(data, aes(x)) +
-  geom_line(aes(y = rsv), color = "grey70", alpha = 0.6) +
+  geom_line(aes(y = rsv), color = "grey70", alpha = 0.6, linetype = "dashed") +
   geom_line(aes(y = k), color = "red", linewidth = 0.8) +
   geom_line(aes(y = d), color = "blue", linewidth = 0.8) +
-  geom_line(aes(y = j), color = "darkred", linetype = "dashed") +
+  geom_line(aes(y = j), color = "orchid3") +
   scale_x_continuous(n.breaks = 10, labels = labels) +
   labs(title = "专业KDJ指标分析", subtitle = format(start(data), "%Y-%m-%d"), x = "交易时段", y = "指标值") +
   theme(plot.title = element_text(face = "bold", hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), panel.grid.minor = element_blank())
