@@ -71,11 +71,11 @@ index(bigvols) |> diff()
 #' @param  f 窗口应用函数
 sliding <- \(x, n, f) sapply(seq_along(x), \(i, j = (i - n + 1):i) if (i < n) NA else do.call(f, list(i = i, n = n, j = j, data = x[j])))
 
-#' 周期为n的指数平滑
-#' @param n 周期长度，大于1的整数, 分配的系数权重向量,c(前期:n-1,当前期:1/n)
+#' 一阶指数平滑生成函数(Exponential Smoothing，ES，Generator GEN, 序列x[t]的平滑公式为：s[t]=a*s[t-1]+(1-a)*x[t]且 s[1]=init
+#' @param n 周期长度(ES权重系数a的定义参数)，大于1的整数, 权重系数向量的结构为c(前期:n-1,当前期:1/n)
 #' @param init 指标初始值，默认为50
-#' @return 按照 c(n-1, 1)/n %*% c(pre：前期, cur：当前期) 的
-es_init <- \(n, init = 50) \(pre, cur) if (is.na(cur) || n < 2) NA else c(if (is.na(pre)) init else pre, cur) %*% c(n - 1, 1) / n
+#' @return 按照 c(n-1, 1)/n %*% c(pre：前期, cur：当前期) 的指数平滑
+esgen <- \(n, init = 50) \(pre, cur) if (is.na(cur) || n < 2) NA else c(if (is.na(pre)) init else pre, cur) %*% c(n - 1, 1) / n
 
 # 基础数据
 kdata <- na.omit(kdata) # 清除NA值，kdata 是一个xts类型的OHLCV数据
@@ -85,8 +85,8 @@ lo <- kdata$Low |> as.numeric() # 最低值
 # 指标计算, i:当前坐标索引, n:窗口宽度, j:窗口索引范围, data:当前窗口数据, llv:窗口数据最低价, hhv:窗口数据最高价, amp: 振幅大小
 rsv <- sliding(x, 9, \(i, n, j, data, llv = min(lo[j]), hhv = max(hi[j]), amp = hhv - llv) if (i < n || amp == 0) 50 else 100 * (x[i] - llv) / amp) # 未成熟随机值
 rsv[is.na(rsv) | is.infinite(rsv)] <- 50 # 设置无效值为50
-k <- Reduce(f = es_init(3), x = rsv, accumulate = T) # K 值
-d <- Reduce(f = es_init(3), x = k, accumulate = T) # J值
+k <- Reduce(f = esgen(3), x = rsv, accumulate = T) # K 值
+d <- Reduce(f = esgen(3), x = k, accumulate = T) # J值
 data <- xts(cbind(x = seq_along(rsv), rsv = rsv, k = k, d = d, j = 3 * k - 2 * d), order.by = index(kdata))["T21:00/T23:30"] # 生成xts 对象
 labels <- partial(sapply, FUN = \(i) index(kdata)[i] |> strftime("%H:%M")) # 需要注意 index(kdata) 使用 kdata 而是data 以保证与data$x的同步，都是使用kdata的绝对时间索引
 
