@@ -2,15 +2,15 @@
 # 
 # 二分法 求值：过程方式。缓存fa, 减少一次调用。注意，不要小看这减少的一次调用，对性能影响是很大的，详见 后面的性能分析。
 bisect <- function (f, a=0, b=1, eps=1e-10) {
-	(\(fa) { # 缓存f(a)的计算结果
-		if (fa*f(b)>0) # 相同符号则放弃运算
-			NA # 结果不可用
-		else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
-			if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
-			((a+b)/2) |> (\(x) assign(ifelse(fa*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
-		}
-		(a+b)/2 
-	}) (f(a)) # 计算f(a) 并将结果缓存到fa
+  (\(fa) { # 缓存f(a)的计算结果
+    if (fa*f(b)>0) # 相同符号则放弃运算
+      NA # 结果不可用
+    else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
+      if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
+      ((a+b)/2) |> (\(x) assign(ifelse(fa*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
+    }
+    (a+b)/2 
+  }) (f(a)) # 计算f(a) 并将结果缓存到fa
 }
 
 # 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
@@ -56,28 +56,28 @@ apply(vs, 2, sum)
 
 # 二分法 求值：过程方式,  不换缓存fa
 bisect1 <- function (f, a=0, b=1, eps=1e-10) {
-	if (f(a)*f(b)>0) # 相同符号则放弃运算
-		NA
-	else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
-		if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
-		((a+b)/2) |> (\(x) assign(ifelse(f(a)*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
-	}
-	(a+b)/2
+  if (f(a)*f(b)>0) # 相同符号则放弃运算
+    NA
+  else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
+    if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
+    ((a+b)/2) |> (\(x) assign(ifelse(f(a)*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
+  }
+  (a+b)/2
 }
 
 # 二分法 求值:  递归方式1
 bisect2 <- function (f, a=0, b=1, eps=1e-10) f(a) |> (\(fa) ifelse( fa*f(b)>0, NA,  (\(x) ifelse(abs(b-a)<eps, x,
-	ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f, x, b, eps) ))) ((a+b)/2))) ()
+  ifelse(fa*f(x)<0, bisect2(f,a,x,eps), bisect2(f, x, b, eps) ))) ((a+b)/2))) ()
 
 # 二分法 求值:  递归方式2
 # bisect2较bisect3来说,使用一层fa=f(a)的函数调用来减少一次f计算，bisect2 使用fa 参数来保留中间的计算结果
 bisect3 <- function (f, a=0, b=1, eps=1e-10) ifelse(f(a)*f(b)>0, NA,  (\(x) ifelse(abs(b-a)<eps, x,
-	ifelse(f(a)*f(x)<0, bisect3(f, a, x, eps), bisect3(f, x, b, eps) ))) ((a+b)/2)) 
+  ifelse(f(a)*f(x)<0, bisect3(f, a, x, eps), bisect3(f, x, b, eps) ))) ((a+b)/2)) 
 
 # 各个函数的计算统计
 (\(fs) { # 分别执行fs中指定的函数n次,并进行统计运算效率
-	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
-	sapply(fs, \(f) f( \(r) npv(r, pmts, price) ) ) |> structure(names=args)
+  args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
+    sapply(fs, \(f) f( \(r) npv(r, pmts, price) ) ) |> structure(names=args)
 })(c(bisect, bisect1, bisect2, bisect3))
 
 >
@@ -97,10 +97,10 @@ bisect bisect1 bisect2 bisect3
 # 此外从执行时间：bisect1>bisect, bisect3>bisect2 可以看出，参数计算的数据缓存是非常影响效率的，于是可以的话请多使用参数缓存。
 # 
 (\(fs, n=1000) { # 分别执行fs中指定的函数n次,并进行统计运算效率
-	args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
-	xs <- sapply(fs, \(f) lapply(1:n, \(i) f(\(r) npv(r, pmts, price))) |> system.time()) # 分别执行n次测试函数并统计函数执行时间。
-	dimnames(xs)[[2]] <- args # 修改数组维度名称
-	xs
+  args <- match.call() |> as.list() |> _[-1]$fs |> paste() |> _[-1] # 提取输入参数字符串
+  xs <- sapply(fs, \(f) lapply(1:n, \(i) f(\(r) npv(r, pmts, price))) |> system.time()) # 分别执行n次测试函数并统计函数执行时间。
+  dimnames(xs)[[2]] <- args # 修改数组维度名称
+  xs
 })(c(bisect, bisect1, bisect2, bisect3), 10000) # 批量运行1万次
 
 >
@@ -168,13 +168,14 @@ g(y)
 
 # 通过call的访问，我们可以实现一个类似于 tidyverse 的 mutate类似的函数功能
 my_mutate <- function (data, ...) { # 确保第一个参数为data, 其余为用户的指定。
-	call <- match.call() # 获取函数调用
-	exprs <- 2:length(call) |> lapply(\(i) call[[i]] ) # 提取函数调用的参数列表
-	names <- 2:length(call) |> lapply(\(i) names(call)[[i]] ) # 提取函数调用的参数列表
-	myenv <- list2env(data, parent=sys.frame()) # 把数据转换成运行环境并将当前运行环境作为新新建的data的环境的父亲环境。
-	vs <- seq_along(exprs) |> lapply(\(i) assign(names[[i]], eval(exprs[[i]], env=myenv), env=myenv)) # 执行函数调用计算结果值,并更新e中数据的状态
-	do.call(cbind,vs[-1]) |> structure(dimnames=list(NULL, names[-1])) # 把结果值拼装成向量,去除data参数
+  call <- match.call() # 获取函数调用
+  exprs <- 2:length(call) |> lapply(\(i) call[[i]] ) # 提取函数调用的参数列表
+  names <- 2:length(call) |> lapply(\(i) names(call)[[i]] ) # 提取函数调用的参数列表
+  myenv <- list2env(data, parent=sys.frame()) # 把数据转换成运行环境并将当前运行环境作为新新建的data的环境的父亲环境。
+  vs <- seq_along(exprs) |> lapply(\(i) assign(names[[i]], eval(exprs[[i]], env=myenv), env=myenv)) # 执行函数调用计算结果值,并更新e中数据的状态
+  do.call(cbind,vs[-1]) |> structure(dimnames=list(NULL, names[-1])) # 把结果值拼装成向量,去除data参数
 }
+
 # 函数调用
 data.frame(x=1:5, y=6:10) |> my_mutate(x=x, y=y, u=x*2, v=x+y)
 
@@ -189,10 +190,10 @@ data.frame(x=1:5, y=6:10) |> my_mutate(x=x, y=y, u=x*2, v=x+y)
 #  综合 上面消费贷款的例子，分解按揭贷款为一组折扣债券
 # 一个按揭贷款，可以分解为一组以折扣债券，折扣债券的数量为按揭贷款的期数。
 data.frame(rate, pvs, pmts) |> my_mutate(rate=rate, pvs=pvs, pmts=pmts, # 原来的变量
-	interest=pvs-pmts, # 利息
-	r=abs(interest/pvs), # 折扣利息，这个本质就是把一个按揭贷款，分解成一系列的 discount bond的折价利率
-	nrate=seq_along(rate)*rate, # n倍的rate
-	diff=r-nrate # 倍率差值， 折扣利率 与 nrate 之间的差，二者近乎相等，这也是为何 年利率=月利率*12的原因
+  interest=pvs-pmts, # 利息
+  r=abs(interest/pvs), # 折扣利息，这个本质就是把一个按揭贷款，分解成一系列的 discount bond的折价利率
+  nrate=seq_along(rate)*rate, # n倍的rate
+  diff=r-nrate # 倍率差值， 折扣利率 与 nrate 之间的差，二者近乎相等，这也是为何 年利率=月利率*12的原因
 ) 
 
 >
