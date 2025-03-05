@@ -135,4 +135,10 @@ $`5`
 # 一个 (1:m)^n 构成的结构组合
 (\(m=2, n=4) list(seq(m)) |> rep(n) |> expand.grid() |> table() |> ftable(row.vars=paste0("Var", seq(n)))) ()
 
+# 一个 (1:m)^n 构成的结构组合
+pmn <- \(m, n, render=\(sep, collapse) \(tbl) paste(names(tbl) |> sprintf(fmt='(%s)'), tbl, sep=sep, collapse=collapse)) 
+  seq(m) |> list() |> rep(n) |> expand.grid() |> apply(1, table) |> sapply(render("^", "*")) |> table() |> render("*", "+") ()
+
+# 设置多项式
+p <- pmn(3, 3) |> str2lang(); p;  eval(p)
 
