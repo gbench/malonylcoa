@@ -105,7 +105,7 @@ ctsql <- function( dfm, tbl ) {
     ) switch(t, # 类型判断
         `logical`='bool', # 布尔类型
         `integer`=if(cls=='factor') default_type else 'integer', # 列表类型
-        `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) "timestamp" else 'double', # 列表类型
+        `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) "datetime" else 'double', # 列表类型
         `list`='json', # 列表类型
         default_type # 默认类型 
     )) |> (\(x) # 获取字段定义
