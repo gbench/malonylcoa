@@ -215,6 +215,12 @@ pkgdesc[,'Authors@R'] |> parse(text=_) |> eval()
 system.file("DESCRIPTION", package="ggplot2") |> read.dcf() |> (\(pkgdesc, f=file("pkgdesc.ggplot2","w")) { on.exit(close(f)); cat(pkgdesc, file=f) }) ()
 
 # -------------------------------------------------------------------------------------------------------------
+# 数据排行
+"F:/slicef/ws/gitws/malonylcoa/src/test/resources/docs/texts/政府工作报告" |> list.files(recursive=T) |> 
+  (\(.) (regexec("(\\D+)[/\\](\\d+)\\D+", .) |> regmatches(., m=_)) |> do.call(rbind, args=_) |> structure(dimnames=list(NULL, c("name", "premier", "year")))) () |> 
+  as.data.frame() |> transform(year=as.numeric(year)) |> (\(.) .[order(.$year), ]) ()
+
+# -------------------------------------------------------------------------------------------------------------
 # 元编程
 # -------------------------------------------------------------------------------------------------------------
 # 偏函数表达式pf的逆向管道计算（函数复合f.g.h）的演示示例
