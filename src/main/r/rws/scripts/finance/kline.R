@@ -32,7 +32,12 @@ pvo_rules <- # Json 格式的规则定义
   {"PChg":-1,"VChg":-1,"OChg":-1,"Name":"多平-","Description":"价格下降，成交量下降，持仓量下降"}
 ]' |> fromJSON() # 转换成data.frame
 
-# 标识辨析
+#' 标识辨析
+#' @param PChg 价格变动
+#' @param VChg 交易量变动
+#' @param OChg 持仓量变动
+#' @param pvo_rules 变动解释规则
+#' @return 变动的的意义解释
 identify <- function(PChg, VChg, OChg, pvo_rules=pvo_rules) {
   if(c(PChg,VChg,OChg) |> sapply(is.na) |> any()){ # 存在无效数据的情况
     list(PChg=PChg, VChg=VChg, OChg=VChg, Name="无效", Description="无效") # 起始数据无效
@@ -41,7 +46,9 @@ identify <- function(PChg, VChg, OChg, pvo_rules=pvo_rules) {
   }
 } # identify
 
-# 交易解析
+#' 交易解析
+#' @param tdfm xts 结构的 Open,High,Low,Close,Volume
+#' @return 交易解析
 tanalyze <- function(tdfm) {
   tdfm |> mutate (
     PChg = c(NA, diff(LastPrice)),
@@ -52,10 +59,11 @@ tanalyze <- function(tdfm) {
   ) |> select(Id, UpdateTime, LastPrice, PChg, VChg, OChg, Name, Description) |> arrange(-Id)
 }
 
-# 计算K线
-# 将tickdata的dataframe  即 tdfm 转换成分钟线 
-# tdfm tickdata 的数据
-# tdate tickdata 所在的交易日期
+#' 计算K线
+#' 将tickdata的dataframe  即 tdfm 转换成分钟线 
+#' @param tdfm tickdata 的数据
+#' @param tdate tickdata 所在的交易日期
+#' @return xts 结构的 Open,High,Low,Close,Volume
 compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
   # Step 1: 创建 TickData  (依据更新时间进行数据排序）
   tickdata <- tdfm |> mutate(Period=substr(UpdateTime, 1, 5)) |> arrange(UpdateTime, UpdateMillisec) # 交易数据
@@ -76,8 +84,12 @@ compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
     with(xts(order.by=Period, data.frame(Open,High,Low,Close,Volume)))
 } # compute_kline 
 
-# 交易数据母函数
-tickdata.genfun <- function(symbol=ma505, date=Sys.Date(), tbl=paste0('t_', symbol, '_',strftime(date, '%Y%m%d')), n=20){
+#' 交易数据母函数
+#' @param symbol 证券代码
+#' @param date 日期
+#' @param tbl 数据表名
+#' @param nl 返回数量数量
+tickdata.genfun <- function(symbol=ma505, date=Sys.Date(), tbl=paste0('t_', symbol, '_', strftime(date, '%Y%m%d')), n=20){
   symbol <- substitute(symbol) |> deparse()
   sql <- sprintf('select * from %s where Id > ( select max(Id)-%s from %s )', tbl, n, tbl)
   \(f) f( sql )

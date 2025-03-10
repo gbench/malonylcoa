@@ -28,13 +28,16 @@ if(!all(flags)) { # 存在没有安装的程序包
   sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 重新加载
 } # if
 
-# 数据库函数
+#' 数据库函数
+#' @param f 连接执行函数
+#' @param 执行SQL语句 的函数
 dbfun <- function(f, ...) {
   dbcfg <- list(...) # 数据库连接参数配置
   defaultcfg <- list(drv=MySQL(), host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认连接参数
   readcfg <- \(key) dbcfg[[key]] %||% defaultcfg[[key]] #  带有默认值的配置参数key的值读取 
 
-  # 执行SQL语句 
+  #' 执行SQL语句
+  #' @param sql  SQL语句
   function (sql) {
     # 数据库连接
     try({
@@ -46,12 +49,13 @@ dbfun <- function(f, ...) {
   } # function (sql)
 } # dbfun
 
-# 执行SQL语句查询数据结果（dbGetQuery模式)
-# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
-# simplify 是否对查询结果做简化处理后再返回，
-#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
-#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
-# n 查询结果的返回最大数量
+#' 执行SQL语句查询数据结果（dbGetQuery模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @param n 查询结果的返回最大数量
+#' @return 返回结果数据集
 sqlquery <- function(sql, simplify=T, n=-1, ...) {
   # 连接使用函数
   dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
@@ -60,16 +64,16 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
   }, ...)(sql) # 连接使用函数
 }
 
-# 执行SQL语句（dbExecute模式)
-# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
-# simplify 是否对查询结果做简化处理后再返回，
-#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
-#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
-# 返回结果是 affected_rows, last_insert_id 两列的数据框，对于
-# insert into t_user(name) values('name_1'),('name_2'),...,('name_n') 一条语句插入多条数据
-# 的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
-# 其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
-# 返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
+#' 执行SQL语句（dbExecute模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @return 返回结果是 affected_rows, last_insert_id 两列的数据框，对于
+#'    insert into t_user(name) values('name_1'),('name_2'),...,('name_n') 一条语句插入多条数据
+#'    的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
+#'    其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
+#'    返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
 sqlexecute <- function(sql, simplify=T, ...) {
     # 连接使用函数
     dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
@@ -89,10 +93,12 @@ sqlexecute <- function(sql, simplify=T, ...) {
     }, ...)(sql) # 连接使用函数
 }
 
-# 创建数据表SQL
-# dfm 数据框数据
-ctsql <- function( dfm ) {
-  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+#' 创建数据表SQL
+#' @param dfm 数据框数据
+#' @param tbl  数据表名
+#' @return 创建数据表SQL
+ctsql <- function( dfm, tbl ) {
+  tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
   dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
       n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
       default_type=sprintf('varchar(%s)', n) # 默认类型
@@ -107,10 +113,12 @@ ctsql <- function( dfm ) {
     ) () # SQL 创建表语句
 }
 
-# 表数据插入SQL
-# dfm 数据框对象
-insql <- function( dfm ) {
-  tbl <- deparse( substitute( dfm ) ) #  提取数据表名
+#' 表数据插入SQL
+#' @param dfm 数据框数据
+#' @param tbl  数据表名
+#' @return 表数据插入SQL
+insql <- function( dfm, tbl ) {
+  tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
   keys <- names( dfm ) |> paste(collapse=", ") # 列名列表
   values <- dfm |> lapply(\(e, t=typeof(e), cls=class(e)) # 记录值列表的各个字段值处理：
     switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
