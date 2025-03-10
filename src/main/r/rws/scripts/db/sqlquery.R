@@ -105,7 +105,7 @@ ctsql <- function( dfm, tbl ) {
     ) switch(t, # 类型判断
         `logical`='bool', # 布尔类型
         `integer`=if(cls=='factor') default_type else 'integer', # 列表类型
-        `double`='double', # 列表类型
+        `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) "timestamp" else 'double', # 列表类型
         `list`='json', # 列表类型
         default_type # 默认类型 
     )) |> (\(x) # 获取字段定义
@@ -124,7 +124,7 @@ insql <- function( dfm, tbl ) {
     switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
       `logical`=e, # 逻辑类型，保持原值不变
       `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
-      `double`=e, # 双精度，保持原值不变
+      `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) sprintf("'%s'", e) else e, # 双精度，保持原值不变
       `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
       sprintf("'%s'", e) # 默认类型，使用单引号'给括起来
     )) |> do.call(\(...) mapply(\(...) paste(..., sep=',', collapse=','), ...), args=_) |> # 单行映射,这里的\(...)符号具有层级差异，是两个不同变量
