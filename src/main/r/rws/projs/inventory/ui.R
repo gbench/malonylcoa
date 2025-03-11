@@ -1,11 +1,11 @@
 library(shiny)
 library(DT)
+batch_load() # gbench 环境初始化
 
 # 创建App
 createApp <- \(..., settings = list(...)){
   \(side_ctrls, main_ctrls) {
-    shinyApp( # shinyApp应用对象创建
-      # shinyApp环境与参数, 通过匿名函数的嵌套构造出结构层级与变量作用域
+    shinyApp( # shinyApp应用对象创建，shinyApp环境与参数, 通过匿名函数的嵌套构造出结构层级与变量作用域
       # 前端页面设计
       ui = fluidPage(
         titlePanel = "web应用", # 页面标题
@@ -28,37 +28,78 @@ sqlquery.inv <- partial(sqlquery, dbname = "inventory")
 #' inventory 数据库执行函数
 sqlexecute.inv <- partial(sqlexecute, dbname = "inventory")
 
-# 数据刷新
-refresh <- \()
-sqlquery.inv("show tables") |>
-  unlist() |>
-  sprintf(fmt = "select * from %s") |>
-  sqlquery.inv() |>
-  (\(.){
-    nms <- names(.)
-    matches <- regexec(pattern = ".*\\s+(t_([^_]+)_([^_]+))$", text = nms) |>
-      regmatches(nms, m = _) |>
-      do.call(rbind, args = _)
-    lapply(seq(nrow(matches)), \(i) transform(.[[i]], tbl = matches[i, 2], name = matches[i, 3], date = matches[i, 4])) |>
-      Reduce(f = rbind) |>
-      (\(.) { # 数据统计
-        data <- transform(., qty = quantity * drcr, date = strftime(create_time, format = "%Y-%m-%d"), times = 1)
-        print(data)
-        aggregate(cbind(qty, times) ~ product_id + date + company_id + warehouse_id, data, sum) # 数据统计与透视
-      })()
-  })()
+#' 数据表是否存在
+#' @param tbl 数据表
+#' @return 存在的标志
+tblexists <- \(...) {
+  "SELECT COUNT(*) > 0 flag FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'" |>
+    sprintf(c(...)) |>
+    sqlquery.inv() |>
+    Reduce(f = dplyr::bind_rows, x = ) |>
+    (\(.) structure(if (!is.na(match("flag", names(.)))) .$flag else ., names = c(...)))()
+}
 
+# 数据刷新
+refresh <- \() {
+  sqlquery.inv("show tables") |> unlist() |> sprintf(fmt = "select * from %s") |> sqlquery.inv() |>
+    (\(.){
+      nms <- names(.)
+      matches <- regexec(pattern = ".*\\s+(t_([^_]+)_([^_]+))$", text = nms) |> regmatches(nms, m = _) |>
+        do.call(rbind, args = _)
+      lapply(seq(nrow(matches)), \(i) transform(.[[i]], tbl = matches[i, 2], name = matches[i, 3], date = matches[i, 4])) |>
+        Reduce(f = rbind) |>
+        (\(.) { # 数据统计
+          data <- transform(., qty = quantity * drcr, date = strftime(create_time, format = "%Y-%m-%d"), times = 1)
+          print(data)
+          aggregate(cbind(qty, times) ~ product_id + date + company_id + warehouse_id, data, sum) # 数据统计与透视
+        })()
+    })()
+}
+
+# id 主键
+idpk <- \(x) sub(pattern = "\\(\n", replacement = "(\n  id int primary key auto_increment,\n", x = x)
+
+# 产品列表
+products <- c("苹果" = "apple001", "香蕉" = "banana001", "草莓" = "strawberry001") # 产品列表
+# 公司列表
+companies <- c("中国第一出口公司" = "001", "华北进出口公司" = "002") # 公司
+# 仓库列表
+warehouses <- c("北京仓库" = "001", "上海仓库" = "002") # 产品列表
+
+# 数据应用
 app <- createApp(
   event_handler = \(input, output, session) {
-    observeEvent(input$variable, { # 监听合约内容变化
-      print(input$variable)
-    }) # observeEvent symbol
+    # 变革产品选择
+    observeEvent(input$product_id, {
+      print(input$product_id)
+    })
+    # 按钮提交
+    observeEvent(input$submit, {
+      drcr <- ifelse(input$direction, 1, -1)
+      ps <- regexec(pattern = "([[:alpha:]]+)(\\d+)", text = product_id) |> regmatches(product_id, m = _) |> unlist()
+      name <- ps[2]
+      cttm <- Sys.time()
+      data <- tribble(
+        ~bill_id, ~name, ~quantity, ~drcr, ~product_id, ~company_id, ~warehouse_id, ~create_time,
+        "IN20230121001", name, input$quantity, drcr, input$product_id, input$company_id, input$warehouse_id, cttm
+      )
+      print(data)
+      tbl <- sprintf("t_%s_%s", name, strftime(cttm, format = "%Y%m%d")) # 船舰数据表名
+      if (!tblexists(tbl))  ctsql(data, tbl) |> idpk() |> print() |> sqlexecute.inv() # 创世数据表
+      insql(data, tbl) |> print() |>  sqlexecute.inv()
+      output$dt <- renderDT(refresh()) # 数据刷新
+    })
   },
-  render_handler = \(input, output, session) {
+  render_handler = \(input, output, session) { # 初始图像绘制
     output$dt <- renderDT(refresh())
   }
 )(side_ctrls = list( # 侧边面板控件
-  selectInput("variable", "Variable:", c("Cylinders" = "cyl", "Transmission" = "am", "Gears" = "gear"))
+  selectInput("product_id", "产品:", products),
+  selectInput("company_id", "公司:", companies),
+  selectInput("warehouse_id", "仓库:", warehouses),
+  checkboxInput("direction", "是否出库", F), # 出库入库
+  numericInput("quantity", "数量", value = 10, min = 0, max = 100),
+  actionButton("submit", "提交") # 数据提交
 ), main_ctrls = list( # 主面板控件
   dataTableOutput("dt") # 数据表
 ))
