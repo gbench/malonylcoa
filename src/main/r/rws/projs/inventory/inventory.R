@@ -59,7 +59,12 @@ batch_appends(data0, data1, data2)
 
 # 读取数据
 sqlquery.inv("show tables") |> unlist() |> sprintf(fmt="select * from %s")|> sqlquery.inv() |> (\(.){
-  xs <- names(.) 
-  matches <- regexec(pattern=".*\\s+(t_([^_]+)_([^_]+))$", text=xs) |> regmatches(xs, m=_) |> do.call(rbind, args=_) 
-  lapply(seq(nrow(matches)), \(i) transform(.[[i]], tbl=matches[i, 2], name=matches[i, 3], date=matches[i, 4])) |> Reduce(f=rbind)
+  nms <- names(.) 
+  matches <- regexec(pattern=".*\\s+(t_([^_]+)_([^_]+))$", text=nms) |> regmatches(nms, m=_) |> do.call(rbind, args=_) 
+  lapply(seq(nrow(matches)), \(i) transform(.[[i]], tbl=matches[i, 2], name=matches[i, 3], date=matches[i, 4])) |> Reduce(f=rbind) |>
+   (\(.) { # 数据统计
+     data <- transform(., qty=quantity * drcr, date=strftime(create_time, format="%Y-%m-%d"), times=1)
+     print(data)
+     aggregate(cbind(qty, times)~name+date+warehouse_id, data, sum) # 数据统计与透视
+   }) ()
 }) () 
