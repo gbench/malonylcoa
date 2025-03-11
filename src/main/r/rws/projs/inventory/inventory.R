@@ -42,7 +42,7 @@ tblexists <- \(...) {
 batch_appends <- \(...) list(...) |> Reduce(f=dplyr::bind_rows , x=) |> # 将批次数据合并起来
   transform(tbl=sprintf("t_%s_%s", name, strftime(create_time, format="%Y%m%d"))) |> # 根据数据内容指派到各自的不同的数据表tbl
   (\(data) { # 进行数据出入处理
-    xs <- split(data, data$tbl) # 依据表明进行数据分片
+    xs <- split(data, data$tbl) # 依据表名进行数据分片
     nms <- names(xs)  # 数据名称
     flags <- tblexists(nms) # 数据表是否存在的标志
     lapply(seq(xs), \(i) { # 遍历数据表
