@@ -39,16 +39,19 @@ tblexists <- \(...) {
 
 #'  批量添加数据
 #' @param ... 数据表
-batch_appends <- \(...) list(...) |> Reduce(f=dplyr::bind_rows , x=) |> 
-  transform(tbl=sprintf("t_%s_%s", name, strftime(create_time, format="%Y%m%d"))) |> (\(data) {
-    xs <- split(data, data$tbl) # 分片数据
+batch_appends <- \(...) list(...) |> Reduce(f=dplyr::bind_rows , x=) |> # 将批次数据合并起来
+  transform(tbl=sprintf("t_%s_%s", name, strftime(create_time, format="%Y%m%d"))) |> # 根据数据内容指派到各自的不同的数据表tbl
+  (\(data) { # 进行数据出入处理
+    xs <- split(data, data$tbl) # 依据表明进行数据分片
     nms <- names(xs)  # 数据名称
     flags <- tblexists(nms) # 数据表是否存在的标志
     lapply(seq(xs), \(i) { # 遍历数据表
       x <- xs[[i]] |> (\(.) .[, -match(c("id", "tbl"), names(.))]) () #  提取分表数据，去除掉id与表名
-      if(!flags[i]) ctsql(x, nms[i]) |> sub("\\(\n", "(\n  id int primary key auto_increment,\n", x=_) |> print() |> sqlexecute.inv() # 创建数据表
+      if(!flags[i]) ctsql(x, nms[i]) |> # 创建数据表SQL
+        sub(pattern="\\(\n", replacement="(\n  id int primary key auto_increment,\n", x=_) |> # 增加数据库主键
+        print() |> sqlexecute.inv() # 创建数据表
       insql(x, nms[i]) |> sqlexecute.inv() # 插入表数据
-    })
+    }) # lapply
   }) ()
 
 # 插入表数据
