@@ -9,7 +9,7 @@ sqlexecute.inv <- partial(sqlexecute, dbname = "inventory")
 #' @param tbl 数据表
 #' @return 存在的标志
 tblexists <- \(...) {
-  "SELECT COUNT(*) >0 flag FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'" |>
+  "SELECT COUNT(*) > 0 flag FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'" |>
     sprintf(c(...)) |>
     sqlquery.inv() |>
     Reduce(f = dplyr::bind_rows, x = ) |>
@@ -26,6 +26,13 @@ if (!tblexists("table_metadata")) {
     sub(pattern = "\\(\n", replacement = "(\n  id int primary key auto_increment,\n", x = _) |> # 增加数据库主键
     sqlexecute.inv()
 }
+
+sqlquery.inv("show tables") |>
+  unlist() |> (\(nms) {
+    sqls <- sprintf(fmt = "select * from %s", nms) 
+    nms
+  })()
+  
 
 # 读取数据
 sqlquery.inv("show tables") |>

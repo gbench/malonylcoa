@@ -12,14 +12,14 @@ data1 <- tribble (
   ~id, ~bill_id,  ~name, ~quantity,  ~drcr,  ~product_id, ~company_id,  ~warehouse_id,  ~create_time,
   1, "IN20230121001", 'apple', 1, 1, "apple001", 1, 1, as.POSIXct('2023-01-21 17:30:23'),
   2, "OUT20230118001", 'banana', 20, -1, "banana001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
-  2, "OUT20230118001", 'strawberry', 20, -1, "straberry001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
+  3, "OUT20230118001", 'strawberry', 20, -1, "straberry001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
 )
 #
 data2 <- tribble (
   ~id, ~bill_id,  ~name, ~quantity,  ~drcr,  ~product_id, ~company_id,  ~warehouse_id,  ~create_time,
   1, "IN20230121001", 'apple', 1, 1, "apple001", 1, 1, as.POSIXct('2023-01-21 17:30:23'),
   2, "OUT20230118001", 'banana', 20, -1, "banana001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
-  2, "OUT20230118001", 'strawberry', 20, -1, "straberry001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
+  3, "OUT20230118001", 'strawberry', 20, -1, "straberry001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
 )
 
 #' create database inventory default character set utf8mb4
