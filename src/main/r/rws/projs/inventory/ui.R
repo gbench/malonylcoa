@@ -7,22 +7,28 @@ if (!require(plotly)) install.packages("plotly")
 
 batch_load() # gbench 环境初始化
 
-#' 创建App
-#' @param settings 基础设置，至少需要包含：事件处理器event_handler, interactive页面渲染器render_handler
-createApp <- \(..., settings = list(...)){
+#' 创建App， 定义 应用的图形控件的布局与动态响应逻辑
+#' @param event_handler (1st) 手动控制逻辑:通过定义与设计页面控件的事件回调（响应）函数来控制页面组件状态
+#' @param render_handler (1st) 自动控制逻辑:通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
+#' @param settings (1st) 基础设置，至少需要包含：事件处理器event_handler, interactive页面渲染器render_handler
+#' @param side_ctrls (2nd) 侧域控件，下拉：selectInput，点选：checkboxInput，按钮：actionButton 等
+#' @param main_ctrls (2nd) 主域控件，数据：renderDT，图片：renderPlot 等
+createApp <- \(..., settings = list(...)){ # 1st 第一层 应用逻辑
   #' @param side_ctrls 侧域控件，下拉：selectInput，点选：checkboxInput，按钮：actionButton 等
   #' @param main_ctrls 主域控件，数据：renderDT，图片：renderPlot 等
-  \(side_ctrls, main_ctrls){
+  \(side_ctrls, main_ctrls){ # 2nd 应用界面，页面布局的UI设计
     shinyApp( # shinyApp应用对象创建，shinyApp环境与参数, 通过匿名函数的嵌套构造出结构层级与变量作用域
       # 前端页面设计
-      ui = fluidPage(
+      ui = fluidPage(# 流式布局
         titlePanel = "web应用", # 页面标题
         sidebarLayout(do.call(sidebarPanel, args = side_ctrls), do.call(mainPanel, args = main_ctrls))
       ), # ui 页面设置
       # 后端处理逻辑
       server = \(input, output, session){ # server 后台处理程序
         with(settings, { # 处理页面的各种事件相应与状态渲染
-          lapply(c(event_handler, render_handler), \(f) f(input, output, session)) # 事件与状态渲染，注册reactive
+          # 手动控制逻辑event_handler:通过定义与设计页面控件的事件回调（响应）函数来控制页面组件状态
+          # 自动控制逻辑render_handler:通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
+          lapply(c(event_handler, render_handler), \(f) f(input, output, session)) # 事件与状态渲染，注册响应式reactive对象
         }) # with
       } # server
     ) # shinyApp
@@ -148,7 +154,7 @@ event_handler <- \(input, output, session) {
     
     output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据刷新
     updateTextInput(session, "bill_id", value = billid(input$direction)) # 更新表单id
-    updateTextInput(session, "timestamp", value = Sys.time()) # 更新表单id
+    updateTextInput(session, "timestamp", value = Sys.time()) # 更新timestamp
     
   }) # input$submit
   
@@ -166,8 +172,8 @@ render_handler <- \(input, output, session) { # 初始图像绘制
     p <- pivotTable(as.formula(input$pivot_path)) |> 
       pivot_longer(cols=c(total_in, total_out, qty), names_to="type") |>
       ggplot(aes(name, y=value, fill=type)) + # 数据绘图
-      geom_bar(position = "dodge", stat="identity") 
-    ggplotly(p, tooltip = c("x", "y"))
+      geom_bar(position = "dodge", stat="identity") # 绘制条形图 
+    ggplotly(p, tooltip = c("x", "y")) # 动态绘图
   }) # 数据图表
   output$bcplotly <- renderPlotly(bchart()) # 动态图表
   
