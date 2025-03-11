@@ -2,25 +2,25 @@ library(data.table)
 
 # 数据表: id, quantity, drcr,  company_id, warehouse_id, create_time
 data0 <- tribble (
-  ~id,  ~name, ~quantity,  ~drcr,  ~company_id,  ~warehouse_id,  ~create_time,
-  1,     'apple',  1,                1,        1,                     1,                        as.Date('2023-01-21'),
-  2,     'orange',  2,              -1,       1,                     1,                        as.Date('2023-01-22'),
-  3,     'peach', 3,                1,         1,                     1,                        as.Date('2023-01-23')
+  ~id, ~bill_id,  ~name, ~quantity,  ~drcr,  ~product_id, ~company_id,  ~warehouse_id,  ~create_time,
+  1, "IN20230121001", 'apple', 10, 1, "apple001", 1, 1, as.Date('2023-01-21'),
+  2, "OUT20230118001", 'banana', 20, -1, "banana001", 1, 1, as.Date('2023-01-18'),
+  3, "OUT20230118001", 'strawberry', 20, -1, "strawberry001", 1, 1, as.Date('2023-01-18'),
 )
 #
 data1 <- tribble (
-  ~id,  ~name, ~quantity,  ~drcr,  ~company_id,  ~warehouse_id,  ~create_time,
-  1,     'apple', 1,                1,        1,                     1,                        as.POSIXct('2023-01-25 14:23:45'),
-  2,     'orange', 2,              -1,       1,                     1,                        as.POSIXct('2023-01-26 14:23:45'),
-  3,     'peach', 3,                1,         1,                    1,                        as.POSIXct('2023-01-27 14:23:45')
+  ~id, ~bill_id,  ~name, ~quantity,  ~drcr,  ~product_id, ~company_id,  ~warehouse_id,  ~create_time,
+  1, "IN20230121001", 'apple', 1, 1, "apple001", 1, 1, as.POSIXct('2023-01-21 17:30:23'),
+  2, "OUT20230118001", 'banana', 20, -1, "banana001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
+  2, "OUT20230118001", 'strawberry', 20, -1, "straberry001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
 )
 #
 data2 <- tribble (
-  ~id,  ~name, ~quantity,  ~drcr,  ~company_id,  ~warehouse_id,  ~create_time,
-  1,     'apple', 1,                1,        1,                     1,                        as.POSIXct('2023-01-26 14:23:45'),
-  2,     'orange', 2,              -1,       1,                     1,                        as.POSIXct('2023-01-27 14:23:45'),
-  3,     'peach', 3,                1,         1,                    1,                        as.POSIXct('2023-01-28 14:23:45')
-) 
+  ~id, ~bill_id,  ~name, ~quantity,  ~drcr,  ~product_id, ~company_id,  ~warehouse_id,  ~create_time,
+  1, "IN20230121001", 'apple', 1, 1, "apple001", 1, 1, as.POSIXct('2023-01-21 17:30:23'),
+  2, "OUT20230118001", 'banana', 20, -1, "banana001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
+  2, "OUT20230118001", 'strawberry', 20, -1, "straberry001", 1, 1, as.POSIXct('2023-01-18 12:34:45'),
+)
 
 #' create database inventory default character set utf8mb4
 # inventory 数据库查询函数
@@ -34,8 +34,10 @@ sqlexecute.inv <- partial(sqlexecute, dbname="inventory")
 #' @return 存在的标志
 tblexists <- \(...) {
   "SELECT COUNT(*) >0 flag FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'" |>
-  sprintf(c(...)) |> sqlquery.inv() |> Reduce(f=dplyr::bind_rows , x=) |> (\(.)structure(.$flag, names=c(...)))()
+    sprintf(c(...)) |> sqlquery.inv() |> Reduce(f=dplyr::bind_rows , x=) |> 
+    (\(.) structure(if( !is.na(match("flag", names(.))) ) .$flag else ., names=c(...)))()
 }
+
 
 #'  批量添加数据
 #' @param ... 数据表
@@ -54,6 +56,9 @@ batch_appends <- \(...) list(...) |> Reduce(f=dplyr::bind_rows , x=) |> # 将批
     }) # lapply
   }) ()
 
+# 清空数据库
+# sqlquery.inv("show tables") |> unlist() |> sprintf(fmt="drop table if exists %s") |> sqlexecute.inv()
+
 # 插入表数据
 batch_appends(data0, data1, data2)
 
@@ -65,6 +70,6 @@ sqlquery.inv("show tables") |> unlist() |> sprintf(fmt="select * from %s")|> sql
    (\(.) { # 数据统计
      data <- transform(., qty=quantity * drcr, date=strftime(create_time, format="%Y-%m-%d"), times=1)
      print(data)
-     aggregate(cbind(qty, times)~name+date+warehouse_id, data, sum) # 数据统计与透视
+     aggregate(cbind(qty, times)~product_id+date+company_id+warehouse_id, data, sum) # 数据统计与透视
    }) ()
 }) () 
