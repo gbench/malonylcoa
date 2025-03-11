@@ -1,5 +1,10 @@
 library(shiny)
 library(DT)
+
+# 安装包（如果尚未安装）
+if (!require(ggplot2)) install.packages("ggplot2")
+if (!require(plotly)) install.packages("plotly")
+
 batch_load() # gbench 环境初始化
 
 #' 创建App
@@ -32,14 +37,12 @@ sqlquery.inv <- partial(sqlquery, dbname = "inventory")
 #' inventory 数据库执行函数
 sqlexecute.inv <- partial(sqlexecute, dbname = "inventory")
 
-#' 数据表是否存在
+#' 判断数据表名是否存在
 #' @param tbl 数据表
 #' @return 存在的标志
 tblexists <- \(...) {
   "SELECT COUNT(*) > 0 flag FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'" |>
-    sprintf(c(...)) |>
-    sqlquery.inv() |>
-    Reduce(f = dplyr::bind_rows, x = ) |>
+    sprintf(c(...)) |> sqlquery.inv() |> Reduce(f = dplyr::bind_rows, x = ) |>
     (\(.) structure(if (!is.na(match("flag", names(.)))) .$flag else ., names = c(...)))()
 }
 
@@ -55,13 +58,19 @@ pivotTable <- \(formula=cbind(qty, times) ~ product_id + date + company_id + war
         lapply(seq(nrow(matches)), \(i)
           transform(.[[i]], tbl = matches[i, 2], name = matches[i, 3], date = matches[i, 4])) |>
             Reduce(f = rbind) |> (\(.) { # 数据统计
-              data <- transform(., qty = quantity * drcr, date = strftime(create_time, format = "%Y-%m-%d"), times = 1)
+              data <- transform(., # 字段定义
+                times = 1, # 次数统计
+                qty = quantity * drcr, # 数量统计
+                total_in = ifelse(drcr==1, quantity, 0), # 入库数量
+                total_out = ifelse(drcr==-1, quantity, 0), # 出库数量
+                date = strftime(create_time, format = "%Y-%m-%d") # 日期
+              ) # data
               # print(data)
               aggregate(formula, data, sum) # 数据统计与透视
             })() # 数据统计
       })() # tbls
-  } # if
-}
+  } # if 有没有数据表
+} # pivotTable
 
 # id 主键
 idpk <- \(x) sub(pattern = "\\(\n", replacement = "(\n  id int primary key auto_increment,\n", x = x)
@@ -73,7 +82,7 @@ companies <- c("中国第一出口公司" = "001", "华北进出口公司" = "00
 # 仓库列表
 warehouses <- c("北京仓库" = "001", "上海仓库" = "002") # 产品列表
 # 默认统计公式
-default_path <- "cbind(qty, times) ~ name + date + company_id + warehouse_id"
+default_path <- "cbind(total_in, total_out, qty, times) ~ name + date + company_id + warehouse_id"
 
 # 侧边面板控件
 side_ctrls = list( # 侧边面板控件
@@ -83,12 +92,14 @@ side_ctrls = list( # 侧边面板控件
   checkboxInput("direction", "是否出库,T:出库,F:入库", F), # 出库入库
   numericInput("quantity", "数量", value = 10, min = 0, max = 100),
   textInput("bill_id", "单据编码", value = "--"),
-  textInput("pivot_path", "单据编码", value = default_path),
+  textInput("timestamp", "时间戳", value = Sys.time()), # 用户响应式编程的刷星页面图表
+  textInput("pivot_path", "数据透视路径", value = default_path),
   actionButton("submit", "提交") # 数据提交
 )
 # 主面板控件
 main_ctrls = list( # 主面板控件
-  dataTableOutput("dt") # 数据表
+  dataTableOutput("dt"), # 数据表
+  plotlyOutput("bcplotly") # 数据图
 )
 
 #‘ 表单id生成
@@ -101,7 +112,7 @@ billid <- \(direction) sprintf("%s%s", ifelse(direction, "OUT", "IN"), strftime(
 add_items <- \(items, tbl) {
   # 数据库插入
   if (!tblexists(tbl)) ctsql(items, tbl) |> idpk() |> print() |> sqlexecute.inv() # 创世数据表
-  insql(items, tbl) |> print() |>  sqlexecute.inv()
+  insql(items, tbl) |> print() |>  sqlexecute.inv() # 数据插入
 }
 
 # 事件处理器
@@ -114,7 +125,7 @@ event_handler <- \(input, output, session) {
   
   # 变更产品选择
   observeEvent(input$product_id, {
-    print(input$product_id)
+    # print(input$product_id)
   })
   
   # 按钮提交
@@ -137,6 +148,8 @@ event_handler <- \(input, output, session) {
     
     output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据刷新
     updateTextInput(session, "bill_id", value = billid(input$direction)) # 更新表单id
+    updateTextInput(session, "timestamp", value = Sys.time()) # 更新表单id
+    
   }) # input$submit
   
 } # event_handler
@@ -146,6 +159,17 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   
   # 数据图表
   output$dt <- renderDT(pivotTable(as.formula(input$pivot_path)))
+  
+  bchart <- reactive({ # 数据绘图
+    par(mar = c(0, 0, 0, 0) + 0.1) 
+    print(sprintf("刷新透视图:%s",input$timestamp)) # 刷新数据表
+    p <- pivotTable(as.formula(input$pivot_path)) |> 
+      pivot_longer(cols=c(total_in, total_out, qty), names_to="type") |>
+      ggplot(aes(name, y=value, fill=type)) + # 数据绘图
+      geom_bar(position = "dodge", stat="identity") 
+    ggplotly(p, tooltip = c("x", "y"))
+  }) # 数据图表
+  output$bcplotly <- renderPlotly(bchart()) # 动态图表
   
 } # render_handler
 
