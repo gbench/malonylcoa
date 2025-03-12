@@ -8,9 +8,12 @@
 library(shiny)
 library(DT)
 
+
 # 安装包（如果尚未安装）
-if (!require(ggplot2)) install.packages("ggplot2")
-if (!require(plotly)) install.packages("plotly")
+"ggplot2,plotly,htmlwidgets" |> strsplit(",") |> unlist() |> lapply(\(p) {
+    if (!require(p, character.only = T)) install.packages(p)
+    library(p, character.only = T)
+  })
 
 # batch_load函数，来自R的启动配置 https://gitee.com/gbench/malonylcoa/blob/master/src/main/r/rws/etc/Rprofile.site
 # 本app程序需要按照Rprofile.site的的基础配置来进行运行 (sqlquery, sqlexecute 也是配置在该环境之中的)
