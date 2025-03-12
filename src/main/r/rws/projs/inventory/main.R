@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------------
-# INVENTORY 库存&存货统计程序
+# INVENTORY 库存&存货统计程序-主程序
 #
 # author:gbench@sina.com
 # date: 2025-03-12
@@ -7,21 +7,20 @@
 
 home <- dirname(sys.frame(1)$ofile) # 文件基准路径
 
-source(file.path(home, "app.R")) # creatApp 与 数据库函数
+# ************************************************************************************
+# 注意：R语言的文件引用包含采用:library 与 source 两种方式
+# 1）library 相当于C的 标准位置 包含 即 include <>
+# 2）source  相当于C的 本地内容 包含 即 include ""
+# ************************************************************************************
+
+source(file.path(home, "app.R")) # 应用框架：creatApp 与 数据库函数
+source(file.path(home, "mastdata.R")) # 应用主数据
 source(file.path(home, "ctrls.R")) # 页面控件
 
-# 产品列表
-products <- c("苹果" = "apple001", "香蕉" = "banana001", "草莓" = "strawberry001") # 产品列表
-# 公司列表
-companies <- c("中国第一出口公司" = "001", "华北进出口公司" = "002") # 公司
-# 仓库列表
-warehouses <- c("北京仓库" = "001", "上海仓库" = "002") # 产品列表
-# 默认统计公式
-default_path <- "cbind(total_in, total_out, qty, times) ~ name + date + company_id + warehouse_id"
 
 #' 数据透视表
 #' @param formula 透视表核算的枢轴公式（公式）
-pivotTable <- \(formula=cbind(qty, times) ~ product_id + date + company_id + warehouse_id) {
+pivotTable <- \(formula=as.formula(input$pivot_path)) {
   tbls <- sqlquery.inv("show tables") |> unlist() |> grep(pattern="^t_([^_]+)_([^_]+)$", value=T) # 提取数据表
   if (length(tbls) <= 0) { # 没有数据表
     data.frame() # 空图表
@@ -108,7 +107,7 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   
 } # render_handler
 
-# ------------------------------------------------------------------------------------
+# ************************************************************************************
 # 创建并启动app, 指定运行端口号为 7070
-# ------------------------------------------------------------------------------------
+# ************************************************************************************
 createApp(event_handler, render_handler)(side_ctrls(), main_ctrls()) |> runApp(port = 7070)
