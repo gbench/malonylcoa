@@ -12,9 +12,11 @@ library(DT)
 if (!require(ggplot2)) install.packages("ggplot2")
 if (!require(plotly)) install.packages("plotly")
 
+# batch_load函数，来自R的启动配置 https://gitee.com/gbench/malonylcoa/blob/master/src/main/r/rws/etc/Rprofile.site
+# 本app程序需要按照Rprofile.site的的基础配置来进行运行 (sqlquery, sqlexecute 也是配置在该环境之中的)
 batch_load() # gbench 环境初始化
 
-#' 创建App， 定义 应用的图形控件的布局与动态响应逻辑
+#' 创建App： 定义 应用 之 图形控件 的 布局与动态响应 逻辑
 #' @param event_handler (1st) 手动控制逻辑:通过定义与设计页面控件的事件回调（响应）函数来控制页面组件状态
 #' @param render_handler (1st) 自动控制逻辑:通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
 #' @param settings (1st) 基础设置，至少需要包含：事件处理器event_handler, interactive页面渲染器render_handler
@@ -35,7 +37,7 @@ createApp <- \(..., settings = list(...)){ # 1st 第一层 应用逻辑
         with(settings, { # 处理页面的各种事件相应与状态渲染
           # 手动控制逻辑event_handler:通过定义与设计页面控件的事件回调（响应）函数来控制页面组件状态
           # 自动控制逻辑render_handler:通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
-          lapply(c(event_handler, render_handler), \(f) f(input, output, session)) # 事件与状态渲染，注册响应式reactive对象
+          lapply(c(event_handler, render_handler), \(f) f(input, output, session)) # 事件&状态渲染，注册 响应式reactive对象
         }) # with
       } # server
     ) # shinyApp
@@ -59,17 +61,17 @@ tblexists <- \(...) {
     (\(.) structure(if (!is.na(match("flag", names(.)))) .$flag else ., names = c(...)))()
 }
 
-#’ 增加主键字段
+#' 增加主键字段
 #' @param xu 数据表定义
 #' @param id 主键字段名称，默认为 id
 add_pk <- \(x, pk="id") sub(pattern = "\\(\n", replacement = sprintf("(\n  %s int primary key auto_increment,\n", pk), x = x)
 
 #' 添加数据
-#’ @param items 数据项目
-#’ @param tbl 数据表
+#' @param items 数据项目
+#' @param tbl 数据表
 add_items <- \(items, tbl) {
   # 数据库插入
-  if (!tblexists(tbl)) ctsql(items, tbl) |> add_pk() |> print() |> sqlexecute.inv() # 创世数据表
+  if (!tblexists(tbl)) ctsql(items, tbl) |> add_pk() |> print() |> sqlexecute.inv() #  创建数据表
   insql(items, tbl) |> print() |>  sqlexecute.inv() # 数据插入
 }
 
