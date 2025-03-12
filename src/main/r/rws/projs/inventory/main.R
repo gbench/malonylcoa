@@ -17,11 +17,10 @@ source(file.path(home, "app.R")) # 应用框架：creatApp 与 数据库函数
 source(file.path(home, "mastdata.R")) # 应用主数据
 source(file.path(home, "ctrls.R")) # 页面控件
 
-
 #' 数据透视表
 #' @param formula 透视表核算的枢轴公式（公式）
 #' @return 数据透视表
-pivotTable <- \(formula=as.formula(input$pivot_path)) {
+pivotTable <- \(formula=cbind(total_in, total_out, qty, times) ~ name + date + company_id + warehouse_id) {
   tbls <- sqlquery.inv("show tables") |> unlist() |> grep(pattern="^t_([^_]+)_([^_]+)$", value=T) # 提取数据表
   if (length(tbls) <= 0) { # 没有数据表
     data.frame() # 空图表
