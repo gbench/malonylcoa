@@ -20,6 +20,7 @@ source(file.path(home, "ctrls.R")) # 页面控件
 
 #' 数据透视表
 #' @param formula 透视表核算的枢轴公式（公式）
+#' @return 数据透视表
 pivotTable <- \(formula=as.formula(input$pivot_path)) {
   tbls <- sqlquery.inv("show tables") |> unlist() |> grep(pattern="^t_([^_]+)_([^_]+)$", value=T) # 提取数据表
   if (length(tbls) <= 0) { # 没有数据表
@@ -45,32 +46,33 @@ pivotTable <- \(formula=as.formula(input$pivot_path)) {
   } # if 有没有数据表
 } # pivotTable
 
-# 事件处理器
+# ************************************************************************************
+# 事件处理器（手动控制逻辑：各种控件的事件响应逻辑)
+# 通过定义与设计页面控件的事件回调（响应）函数来控制页面组件状态
+# ************************************************************************************
 event_handler <- \(input, output, session) {
   
   #‘ 表单id生成
   #’ @param direction 出入库标志 T出库, F 入库
   bill_id_of <- \(direction) sprintf("%s%s", ifelse(direction, "OUT", "IN"), strftime(Sys.time(), "%Y%m%d%H%M%OS"))
   
-  # 变更出入库标志
+  #' 变更出入库标志
   observeEvent(input$direction, {
     updateTextInput(session, "bill_id", value = bill_id_of(input$direction))
   })
   
-  # 变更产品选择
+  #' 变更产品选择
   observeEvent(input$product_id, {
     # print(input$product_id)
   })
   
-  # 按钮提交
+  #' 按钮提交
   observeEvent(input$submit, {
-    
+    cttm <- Sys.time() # 系统时间
     drcr <- ifelse(input$direction, -1, +1) # 出库-1, 入库+1
     product_id <- input$product_id # 产品id
     ps <- regexec("([[:alpha:]]+)(\\d+)", product_id) |> regmatches(product_id, m = _) |> unlist() # 产品id分析
     name <- ps[2] # 提取名称
-    cttm <- Sys.time() # 系统时间
-    
     items <- tribble( # 数据项目
       ~bill_id, ~name, ~quantity, ~drcr, ~product_id, ~company_id, ~warehouse_id, ~create_time, # 字段名称
       input$bill_id, name, input$quantity, drcr, input$product_id, input$company_id, input$warehouse_id, cttm # 数据行
@@ -78,22 +80,22 @@ event_handler <- \(input, output, session) {
     # print(items)
     
     tbl <- sprintf("t_%s_%s", name, strftime(cttm, format = "%Y%m%d")) # 确定数据的插入数据表名
-    add_items(items, tbl) # 插入数据
+    add_items(items, tbl) # 插入数据项目
     
     output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据刷新
-    updateTextInput(session, "bill_id", value = bill_id_of(input$direction)) # 更新表单id
-    updateTextInput(session, "timestamp", value = Sys.time()) # 更新timestamp
-    
+    updateTextInput(session, "bill_id", value = bill_id_of(input$direction)) # 更新 出入库单id
+    updateTextInput(session, "timestamp", value = Sys.time()) # 更新 timestamp，通知响应式对象进行状态&数据刷新
   }) # input$submit
   
 } # event_handler
 
-# 渲染处理器
+# ************************************************************************************
+# 渲染处理器（自动控制逻辑：自维护控件的状态刷新逻辑)
+# 通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
+# ************************************************************************************
 render_handler <- \(input, output, session) { # 初始图像绘制
   
-  # 数据图表
-  output$dt <- renderDT(pivotTable(as.formula(input$pivot_path)))
-  
+  output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据图表
   bchart <- reactive({ # 数据绘图
     par(mar = c(0, 0, 0, 0) + 0.1) # 设置图形
     print(sprintf("刷新透视图:%s",input$timestamp)) # 刷新数据表
@@ -102,7 +104,7 @@ render_handler <- \(input, output, session) { # 初始图像绘制
       ggplot(aes(name, y=value, fill=type)) + # 数据绘图
       geom_bar(position = "dodge", stat="identity") # 绘制条形图 
     ggplotly(p, tooltip = c("x", "y")) # 动态绘图
-  }) # 数据图表
+  }) # # 应式对象-数据图表
   output$bcplotly <- renderPlotly(bchart()) # 动态图表
   
 } # render_handler
