@@ -37,7 +37,7 @@ createApp <- \(..., settings = list(...)){ # 1st 第一层 应用逻辑
 
 #' create database inventory default character set utf8mb4
 
-# inventory 数据库查询函数
+#' inventory 数据库查询函数
 sqlquery.inv <- partial(sqlquery, dbname = "inventory")
 
 #' inventory 数据库执行函数
@@ -52,19 +52,20 @@ tblexists <- \(...) {
     (\(.) structure(if (!is.na(match("flag", names(.)))) .$flag else ., names = c(...)))()
 }
 
-# 数据透视表
+#' 数据透视表
+#' @param formula 透视表核算的枢轴公式（公式）
 pivotTable <- \(formula=cbind(qty, times) ~ product_id + date + company_id + warehouse_id) {
   tbls <- sqlquery.inv("show tables") |> unlist() |> grep(pattern="^t_([^_]+)_([^_]+)$", value=T) # 提取数据表
   if (length(tbls) <= 0) { # 没有数据表
     data.frame() # 空图表
   } else { # 数据表
-    tbls |> sprintf(fmt = "select * from %s") |> sqlquery.inv(simplify=F) |> (\(.){ # 数据查询
-        sqls <- names(.) # 提取各个结果集相应的查询sql语句
+    tbls |> sprintf(fmt = "select * from %s") |> sqlquery.inv(simplify=F) |> (\(rs){ # 数据查询
+        sqls <- names(rs) # 提取各个结果集相应的查询sql语句
         matches <- regexec(".*\\s+(t_([^_]+)_([^_]+))$", text = sqls) |> regmatches(sqls, m = _) |> do.call(rbind, args = _)
         lapply(seq(nrow(matches)), \(i)
-          transform(.[[i]], tbl = matches[i, 2], name = matches[i, 3], date = matches[i, 4])) |>
-            Reduce(f = rbind) |> (\(.) { # 数据统计
-              data <- transform(., # 字段定义
+          transform(rs[[i]], tbl = matches[i, 2], name = matches[i, 3], date = matches[i, 4])) |>
+            Reduce(f = rbind) |> (\(ds) { # 数据统计
+              data <- transform(ds, # 字段定义
                 times = 1, # 次数统计
                 qty = quantity * drcr, # 数量统计
                 total_in = ifelse(drcr==1, quantity, 0), # 入库数量
@@ -77,9 +78,6 @@ pivotTable <- \(formula=cbind(qty, times) ~ product_id + date + company_id + war
       })() # tbls
   } # if 有没有数据表
 } # pivotTable
-
-# id 主键
-idpk <- \(x) sub(pattern = "\\(\n", replacement = "(\n  id int primary key auto_increment,\n", x = x)
 
 # 产品列表
 products <- c("苹果" = "apple001", "香蕉" = "banana001", "草莓" = "strawberry001") # 产品列表
@@ -110,14 +108,19 @@ main_ctrls = list( # 主面板控件
 
 #‘ 表单id生成
 #’ @param direction 出入库标志 T出库, F 入库
-billid <- \(direction) sprintf("%s%s", ifelse(direction, "OUT", "IN"), strftime(Sys.time(), "%Y%m%d%H%M%OS"))
+bill_id_of <- \(direction) sprintf("%s%s", ifelse(direction, "OUT", "IN"), strftime(Sys.time(), "%Y%m%d%H%M%OS"))
 
-# 添加数据
+#’ 增加主键字段
+#' @param xu 数据表定义
+#' @param id 主键字段名称，默认为 id
+add_pk <- \(x, pk="id") sub(pattern = "\\(\n", replacement = sprintf("(\n  %s int primary key auto_increment,\n", pk), x = x)
+
+#' 添加数据
 #’ @param items 数据项目
 #’ @param tbl 数据表
 add_items <- \(items, tbl) {
   # 数据库插入
-  if (!tblexists(tbl)) ctsql(items, tbl) |> idpk() |> print() |> sqlexecute.inv() # 创世数据表
+  if (!tblexists(tbl)) ctsql(items, tbl) |> add_pk() |> print() |> sqlexecute.inv() # 创世数据表
   insql(items, tbl) |> print() |>  sqlexecute.inv() # 数据插入
 }
 
@@ -153,7 +156,7 @@ event_handler <- \(input, output, session) {
     add_items(items, tbl) # 插入数据
     
     output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据刷新
-    updateTextInput(session, "bill_id", value = billid(input$direction)) # 更新表单id
+    updateTextInput(session, "bill_id", value = bill_id_of(input$direction)) # 更新表单id
     updateTextInput(session, "timestamp", value = Sys.time()) # 更新timestamp
     
   }) # input$submit
