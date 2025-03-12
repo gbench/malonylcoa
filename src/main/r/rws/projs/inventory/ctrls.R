@@ -1,5 +1,5 @@
-# 侧边面板控件
-side_ctrls = list( # 侧边面板控件
+#' 侧边面板控件
+side_ctrls <- \() list( # 侧边面板控件
   selectInput("product_id", "产品:", products),
   selectInput("company_id", "公司:", companies),
   selectInput("warehouse_id", "仓库:", warehouses),
@@ -11,8 +11,8 @@ side_ctrls = list( # 侧边面板控件
   actionButton("submit", "提交") # 数据提交
 )
 
-# 主面板控件
-main_ctrls = list( # 主面板控件
+#' 主面板控件
+main_ctrls <- \() list( # 主面板控件
   dataTableOutput("dt"), # 数据表
   plotlyOutput("bcplotly") # 数据图
 )

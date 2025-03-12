@@ -129,7 +129,7 @@ event_handler <- \(input, output, session) {
   
   # 变更出入库标志
   observeEvent(input$direction, {
-    updateTextInput(session, "bill_id", value = billid(input$direction))
+    updateTextInput(session, "bill_id", value = bill_id_of(input$direction))
   })
   
   # 变更产品选择

@@ -55,7 +55,7 @@ event_handler <- \(input, output, session) {
   
   # 变更出入库标志
   observeEvent(input$direction, {
-    updateTextInput(session, "bill_id", value = billid(input$direction))
+    updateTextInput(session, "bill_id", value = bill_id_of(input$direction))
   })
   
   # 变更产品选择
@@ -111,4 +111,4 @@ render_handler <- \(input, output, session) { # 初始图像绘制
 # ------------------------------------------------------------------------------------
 # 创建并启动app, 指定运行端口号为 7070
 # ------------------------------------------------------------------------------------
-createApp(event_handler, render_handler)(side_ctrls, main_ctrls) |> runApp(port = 7070)
+createApp(event_handler, render_handler)(side_ctrls(), main_ctrls()) |> runApp(port = 7070)
