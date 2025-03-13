@@ -87,9 +87,8 @@ event_handler <- \(input, output, session) {
     tbl <- sprintf("t_%s_%s", name, strftime(cttm, format = "%Y%m%d")) # 确定数据的插入数据表名
     add_items(items, tbl) # 插入数据项目
     
-    output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据刷新
     updateTextInput(session, "bill_id", value = bill_id_of(input$direction)) # 更新 出入库单id
-    updateTextInput(session, "timestamp", value = Sys.time()) # 更新 timestamp，通知响应式对象进行状态&数据刷新
+    updateTextInput(session, "timestamp", value = Sys.time()) # 更新timestamp,通知响应式对象(由render_handler定义维护)作状态同步&刷新
   }) # input$submit
   
 } # event_handler
@@ -100,12 +99,12 @@ event_handler <- \(input, output, session) {
 # ************************************************************************************
 render_handler <- \(input, output, session) { # 初始图像绘制
   
-  output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据图表
-  
-  bchart <- reactive({ # 数据绘图
-    par(mar = c(0, 0, 0, 0) + 0.1) # 设置图形
+  pvtdata <- reactive({ # 创建一个响应式-二维表对象，跟踪：input的timestamp, pivot_path成员变量
     print(sprintf("刷新透视图:%s",input$timestamp)) # 刷新数据表
-    p <- pivotTable(as.formula(input$pivot_path)) |> # 提取透视表数据
+    pivotTable(as.formula(input$pivot_path)) # 数据透视表
+  }) # 数据透视表数据
+  bchart <- reactive({ # 创建一个响应式-柱形图对象 - 跟踪：响应式对象 pvtdata 的 数据状态
+    p <- pvtdata() |> # 提取透视表数据
       pivot_longer(cols=c(total_in, total_out, qty), names_to="state", values_to="volume") |> # 长格式变换
       transform(place=paste0("C", company_id, "W", warehouse_id)  # 场所位置-C公司IDW仓库ID
       ) |> ggplot(aes(name, y=volume, fill=state, color=place)) + # ggplot数据绘图
@@ -121,7 +120,10 @@ render_handler <- \(input, output, session) { # 初始图像绘制
       ) + labs(title = "INVENTORY存货分布状况", x = "NAME产品", y = "VOLUME数量", fill = "库存状态") # p 数据绘图
     ggplotly(p, tooltip = c("x", "y", "fill", "color")) # 动态绘图
   }) # 响应式对象-数据图表
-  # 增加页面组件bar点击事件
+  
+  # 绘制二维表
+  output$dt <- renderDT(pvtdata()) # 数据图表 - 跟踪 pvtdata 数据状态
+  # 绘制柱形图，增加页面组件bar点击事件
   output$bcplotly <- renderPlotly(bchart() |> (\(p)if (is.null(on_bar_click)) p else p |> onRender(on_bar_click))())
 
 } # render_handler
