@@ -117,7 +117,7 @@ render_handler <- \(input, output, session) { # 初始图像绘制
       ) + scale_fill_manual( # 填充 特征的绘图配置
         values = c("total_in"="#0073C2FF", "total_out"="#EFC000FF", "qty"="#868686FF"), # 设置各个值的颜色映射
         labels = c("total_in"="入库量", "total_out"="出库量", "qty"="余量") # 文本值
-      ) + labs(title = "INVENTORY存货分布状况", x = "NAME产品", y = "VOLUME数量", fill = "库存状态") # p 数据绘图
+      ) + labs(title = "INVENTORY存货分布状况", x = "NAME产品", y = "VOLUME数量", fill = "库存状态", color="仓库位置") # p 数据绘图
     ggplotly(p, tooltip = c("x", "y", "fill", "color")) # 动态绘图
   }) # 响应式对象-数据图表
   
