@@ -8,7 +8,6 @@
 library(shiny)
 library(DT)
 
-
 # 安装包（如果尚未安装）
 "ggplot2,plotly,htmlwidgets" |> strsplit(",") |> unlist() |> lapply(\(p) {
     if (!require(p, character.only = T)) install.packages(p)
@@ -70,11 +69,11 @@ tblexists <- \(...) {
 add_pk <- \(x, pk="id") sub(pattern = "\\(\n", replacement = sprintf("(\n  %s int primary key auto_increment,\n", pk), x = x)
 
 #' 添加数据
-#' @param items 数据项目
+#' @param items 数据项目（数据框对象）
 #' @param tbl 数据表
 add_items <- \(items, tbl) {
   # 数据库插入
-  if (!tblexists(tbl)) ctsql(items, tbl) |> add_pk() |> print() |> sqlexecute.inv() #  创建数据表
+  if (!tblexists(tbl)) ctsql(na.omit(items), tbl) |> add_pk() |> print() |> sqlexecute.inv() #  创建数据表
   insql(items, tbl) |> print() |>  sqlexecute.inv() # 数据插入
 }
 

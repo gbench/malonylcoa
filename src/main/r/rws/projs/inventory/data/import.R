@@ -5,14 +5,14 @@
 # date: 2025-03-13
 # ------------------------------------------------------------------------------------
 
-# 安装并加载 readxl 包
-if (!require(readxl)) {
-  install.packages("readxl")
-  library(readxl)
-}
+# 安装并加载程序包
+"RMySQL,tibble,purrr,readxl" |> strsplit(",") |> unlist() |> lapply(\(p) {
+  if (!require(p, character.only = T)) {
+    install.packages(p)
+    library(readxl, character.only = T)
+  } # if
+}) # lapply
 
-# 数据导入
-batch_load()
 
 #' 判断数据表名是否存在
 #' @param tbl 数据表
@@ -29,11 +29,11 @@ tblexists <- \(...) {
 add_pk <- \(x, pk="id") sub(pattern = "\\(\n", replacement = sprintf("(\n  %s int primary key auto_increment,\n", pk), x = x)
 
 #' 添加数据
-#' @param items 数据项目
+#' @param items 数据项目（数据框对象）
 #' @param tbl 数据表
 add_items <- \(items, tbl) {
   # 数据库插入
-  if (!tblexists(tbl)) ctsql(items, tbl) |> add_pk() |> print() |> sqlexecute.inv() #  创建数据表
+  if (!tblexists(tbl)) ctsql(na.omit(items), tbl) |> add_pk() |> print() |> sqlexecute.inv() #  创建数据表
   insql(items, tbl) |> print() |>  sqlexecute.inv() # 数据插入
 }
 
@@ -50,8 +50,10 @@ regexec("(.+)\\.xlsx", files) |> regmatches(files, m=_) |> Reduce(rbind, x=_) |>
   tbls = sprintf("t_%s", ps[, 2]) # 表名集合
   seq(tbls) |> lapply(\(i){ # 遍历表名
     tbl <- tbls[i] # 数据表名
-    file <- file.path(home, ps[i, 1]) # 文件名
-    data <-  read_excel(file)[-1,] %>% mutate(code=sprintf("%03d", as.numeric(code))) # 表数据
+    file <- file.path(home, ps[i, 1]) # 绝对文件路径
+    data <-  read_excel(file)[-1,] |> transform(# 表数据 
+      code=sprintf("%s%03d", toupper(abbreviate(ps[i, 2])), as.numeric(code)) # 生成公司编码
+    ) # 表数据 
     if (!tblexists(tbl)) { # 数据表已经存在
       add_items(data, tbl) # 插入数据
     } else { # 数据表不存在
