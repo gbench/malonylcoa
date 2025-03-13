@@ -17,7 +17,11 @@ source(file.path(home, "app.R")) # 应用框架：creatApp 与 数据库函数
 source(file.path(home, "mastdata.R")) # 应用主数据
 source(file.path(home, "ctrls.R")) # 页面控件
 
-on_bar_click <- file.path(home,"js", "on_bar_click.js") |> readLines() |> paste(collapse = "\n") # js 代码文件
+# 读取 js 代码文件：plotly　的前端页面交互程序，bar 被点击时候的事件处理逻辑
+on_bar_click <- file.path(home,"js", "on_bar_click.js") |> ( \(f) 
+   if (file.exists(f)) readLines(f) |> paste(collapse = "\n") # 文件存在,则返回文件文本
+   else NULL # 文件不存在返回NULL
+) ()
 
 #' 数据透视表
 #' @param formula 透视表核算的枢轴公式（公式）
@@ -97,6 +101,7 @@ event_handler <- \(input, output, session) {
 render_handler <- \(input, output, session) { # 初始图像绘制
   
   output$dt <- renderDT(pivotTable(as.formula(input$pivot_path))) # 数据图表
+  
   bchart <- reactive({ # 数据绘图
     par(mar = c(0, 0, 0, 0) + 0.1) # 设置图形
     print(sprintf("刷新透视图:%s",input$timestamp)) # 刷新数据表
@@ -106,14 +111,9 @@ render_handler <- \(input, output, session) { # 初始图像绘制
       geom_bar(position = "dodge", stat="identity") # 绘制条形图 
     ggplotly(p, tooltip = c("x", "y")) # 动态绘图
   }) # 响应式对象-数据图表
-  output$bcplotly <- renderPlotly({
-    p <- bchart()
-    if (is.na(on_bar_click) | is.null(on_bar_click)) 
-      p 
-    else 
-      p |> onRender(on_bar_click) # 增加页面组件点击事件
-  })
-  
+  # 增加页面组件bar点击事件
+  output$bcplotly <- renderPlotly(bchart() |> (\(p)if (is.null(on_bar_click)) p else p |> onRender(on_bar_click))())
+
 } # render_handler
 
 # ************************************************************************************
