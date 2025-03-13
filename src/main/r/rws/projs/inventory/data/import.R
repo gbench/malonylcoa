@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------------
-# INVENTORY 库存&存货统计程序-数据导入数据库程序
+# INVENTORY 库存&存货统计程序-主数据导入程序
 #
 # author:gbench@sina.com
 # date: 2025-03-13
@@ -45,18 +45,18 @@ sqlexecute.inv <- partial(sqlexecute, dbname = "inventory")
 
 # 文件基准路径
 home <- "F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/inventory/data" # 文件基准路径
-files <- list.files(home, pattern = "\\.xlsx$") # 读取excel 文件
-regexec("(.+)\\.xlsx",files) |> regmatches(files, m=_) |> Reduce(rbind, x=_) |> (\(p) {
-  tbls = sprintf("t_%s", p[, 2])
-  seq(tbls) |> lapply(\(i){
-    file <- file.path(home, p[i, 1]) # 提取文件名
-    data <-  read_excel(file)[-1,] %>% mutate(code=sprintf("%03d", as.numeric(code)))
-    tbl <- tbls[i]
-    if (!tblexists(tbl)) {
-      add_items(data, tbl)
-    } else {
+files <- list.files(home, pattern = "\\.xlsx$") # 读取excel文件
+regexec("(.+)\\.xlsx", files) |> regmatches(files, m=_) |> Reduce(rbind, x=_) |> (\(ps) { #文件解析 ps:parts
+  tbls = sprintf("t_%s", ps[, 2]) # 表名集合
+  seq(tbls) |> lapply(\(i){ # 遍历表名
+    tbl <- tbls[i] # 数据表名
+    file <- file.path(home, ps[i, 1]) # 文件名
+    data <-  read_excel(file)[-1,] %>% mutate(code=sprintf("%03d", as.numeric(code))) # 表数据
+    if (!tblexists(tbl)) { # 数据表已经存在
+      add_items(data, tbl) # 插入数据
+    } else { # 数据表不存在
       print(sprintf("%s 业已存在", tbl))
       sqlquery.inv(sprintf("select * from %s", tbl)) |> print()
     } # if
   }) # lapply
-})()
+})() # ps
