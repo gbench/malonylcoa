@@ -105,11 +105,20 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   bchart <- reactive({ # 数据绘图
     par(mar = c(0, 0, 0, 0) + 0.1) # 设置图形
     print(sprintf("刷新透视图:%s",input$timestamp)) # 刷新数据表
-    p <- pivotTable(as.formula(input$pivot_path)) |> 
-      pivot_longer(cols=c(total_in, total_out, qty), names_to="type") |>
-      ggplot(aes(name, y=value, fill=type)) + # 数据绘图
-      geom_bar(position = "dodge", stat="identity") # 绘制条形图 
-    ggplotly(p, tooltip = c("x", "y")) # 动态绘图
+    p <- pivotTable(as.formula(input$pivot_path)) |> # 提取透视表数据
+      pivot_longer(cols=c(total_in, total_out, qty), names_to="state", values_to="volume") |> # 长格式变换
+      ggplot(aes(name, y=volume, fill=state)) + # ggplot数据绘图
+      geom_bar(position = "dodge", stat="identity") + # 绘制条形图 
+      theme( # 设置主题
+        text = element_text(family = "Helvetica", size = 12), # 设置整体字体
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # 调整绘图区域标题样式
+        axis.title = element_text(size = 12, face = "bold"), # 调整坐标轴标题样式
+        axis.text = element_text(size = 12), # 调整坐标轴文本样式
+      ) + scale_fill_manual( # 填充 特征的绘图配置
+        values = c("total_in"="#0073C2FF", "total_out"="#EFC000FF", "qty"="#868686FF"), # 设置各个值的颜色映射
+        labels = c("total_in"="入库量", "total_out"="出库量", "qty"="余量") # 文本值
+      ) + labs(title = "INVENTORY存货分布状况", x = "NAME产品", y = "VOLUME数量", fill = "库存状态") # p 数据绘图
+    ggplotly(p, tooltip = c("x", "y", "fill")) # 动态绘图
   }) # 响应式对象-数据图表
   # 增加页面组件bar点击事件
   output$bcplotly <- renderPlotly(bchart() |> (\(p)if (is.null(on_bar_click)) p else p |> onRender(on_bar_click))())
