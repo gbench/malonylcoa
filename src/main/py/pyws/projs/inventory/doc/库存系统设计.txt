@@ -1,0 +1,138 @@
+我有一份，产品出入库明细 数据库，数据按照（产品，日期） 进行分表，
+比如：t_apple_20250310 就代表apple苹果20250310的出入库情况,每个产品，每天都是重新生成一张数据表进行信息保存。
+出入库明细数据表 的 结构字段为：
+Id: 主键索引，自增长
+product_id:  产品id
+quantity: 出入库数量
+drcr: 出入库方向，1 代表入库， -1 代表出库
+company_id:  公司编码，记录公司，开局 出/入库单 的 公司 主体
+warehouse_id: 仓库编码，记录仓库物质
+bill_id: 出/入库单编码
+create_time：产品出入库 时间。
+description:  单据说明５１２字节长度
+
+现为我设计一个 实时库存系统，主要需求如下：
+０）　库存数据录入，客户端用户程序，异步录入　出／入库单信息：
+　　　ioentry :｛product_id，quantity，drcr，company_id，warehouse_id，bill_id，create_time，description｝
+　　　以KAFKA消息的形式发送到消息队列：PREFIX－TOPIC－INVENTORY　消息队列，队列名称：可配置　
+　　　库存数据监控服务 inv－daemon   连接　REFIX－TOPIC－INVENTORY　接收　单据消息，并将　ioentry  记录到相应数据库系统。
+１）  可以实时统计 各个 仓库、产品 的 库存数量（dashboard统计大屏）
+２)  可以时段统计: 各个 仓库、产品 的 出库，入库，以及 库存数量 。
+３）为保证统计性能&数据完整：改用 NOSQL+关系数据库 异型双系统结构方案。
+     实时：NOSQL数据库用于 提供实时统计 ：实时库存量 = 基期初始库存量base + 期间累计库存变更量change
+     系统：关系数据库数据库用于  提供完整的 出入库记录操作记录详情。
+４）审计时点CHECKPOINT：
+　　CHECKPOINT　是指　系统运行　审计程序　将　NOSQL数据库与关系数据库　进行检查核对的时刻。
+　　CHECKPOINT 的触发机制：
+　　１）　时长到期　机制，系统配置一个过期期限EXPIRATION，当现有时间CURRENT与上次CHECKPOINT结束时间LASTCHECK大于等于EXPIRATION时触发
+　　　　　即　CURRENT-LASTCHECK>=EXPIRATION　
+　　２）　人工指定触发  ，　人为　手动启动　审计程序，一定手动启动，则该成功手动执行的完成时间将作为下一次　时长到期　的　LASTCHECK。若　用户再
+　　　　　时长到期　时限内连续多次　启动审计程序，LASTCHECK　以　最后一次的　审计完成时间为准，即后面的覆盖前面的。
+　　３）提供　审计时点设置功能　可通过　配置文件　指定　特定的时间　长度，默认为　１ｈ
+５）审计程序：当系统到达指定审计时点CHECKPOINT　执行　审计程序，即　偏差审计：
+     将关系数据库　的　库存结果RRS（relational　result）与　NoSQL的库存结果　NRS（NoSQL　result）　进行 校验核对：
+　　成功－结果１：RRS　＝＝　NRS　审计正常，无需处理，记录审计日志：｛STATE： 正常无偏差，FLAG: F,  DESCRIPTION：一致无需处理｝
+　　成功－结果２：RRS　＞　NRS　说明　NRS　出现数据缺失，由于关系数据库使用了UNIQUE校验（product_id，company_id，warehouse_id，bill_id）
+　　　　　　不会出现重复，NRS数据少必然是NRS数据缺失，于是：统计关系数据库库存结果，作为NRS的库存结果。
+　　　　　　记录审计日志：｛STATE： NRS缺失，FLAG: F,  DESCRIPTION：已用关系数据库数据进行校正｝
+　　失败－结果３：NRS　＜　RRS　说明　RRS　数据出现缺失　或者　NRS　出现　数据重复记录
+　　　　　　记录审计日志：｛STATE： RRS或NRS重复，FLAG: F,  DESCRIPTION：需要人工回放消息队列给予比对矫正｝
+　　对于，成功的审计结果：审计程序　结束后，NOSQL　使用最新的　审计后的　库存数量作为　新的 base  同时　change 予以清零，系统记录：LASTCHECK
+　　对于，失败的审计结果：LASTCHECK　不予设置，直至审计成功执行为止。
+
+请完善并优化该方案
+
+审计期间服务可用性问题
+NoSQL 采用双Buffer+版本号的无锁设计：即 BASE-CHANGE采用如下结构。
+{
+   // 1# 版本
+  "base_v1": 1000,  // 当前生效基期
+  "change_v1": 35,  // 当前生效变更
+   // 2# 版本
+  "base_v2": 0,     // 准备中的新基期
+  "change_v2": 0,   // 准备中的新变更
+   // 活跃版本
+  "active_version": 1 // 当前生效版本
+}
+
+# 数据读取，
+# 当有查询实时库存的请求时，系统根据 active_version 字段确定当前生效的版本
+# 然后从对应的 base 和 change 字段中获取数据并计算实时库存。
+# 这样，无论审计过程中数据如何变化，只要 active_version 不变，查询到的实时库存数据就是一致的。
+import redis
+r = redis.Redis(host='localhost', port=6379, db=0)
+def get_real_time_inventory(product, warehouse_id):
+    key = f"{product}_{warehouse_id}" # 实时 产品库存 key
+    data = r.hgetall(key) # 提取 产品库存 结构数据
+    active_version = int(data[b"active_version"]) # 获取&确定当前生效的版本
+    base_key = f"base_v{active_version}"
+    change_key = f"change_v{active_version}"
+    base = int(data[base_key]) # 基期数据
+    change = int(data[change_key]) # 变更数据
+    return base + change # 实时库存数据
+
+# 库存审计
+def audit_inventory(product, warehouse_id):
+    key = f"{product}_{warehouse_id}"
+    data = r.hgetall(key)
+    current_active_version = int(data[b"active_version"])
+    base_key = f"base_v{current_active_version}"
+    change_key = f"change_v{current_active_version}"
+    base = int(data[base_key])
+    change = int(data[change_key])
+
+    # 备份当前数据（可选）
+    # backup_base_key = f"backup_base_v{current_active_version}"
+    # backup_change_key = f"backup_change_v{current_active_version}"
+    # r.hset(key, backup_base_key, base)
+    # r.hset(key, backup_change_key, change)
+
+    # 更新新的基期数据和变更数据
+    new_base_key = "base_v2"
+    new_change_key = "change_v2"
+    r.hset(key, new_base_key, base + change)
+    r.hset(key, new_change_key, 0)
+
+    # 更新活跃版本
+    r.hset(key, "active_version", 2)
+
+# 更新库存
+def update_inventory(product, warehouse_id, quantity):
+    key = f"{product}_{warehouse_id}"
+    data = r.hgetall(key)
+    active_version = int(data[b"active_version"])
+    change_key = f"change_v{active_version}"
+    current_change = int(data[change_key])
+    new_change = current_change + quantity
+    r.hset(key, change_key, new_change)
+
+- 审计过程：在v1正常服务的同时，对v2进行数据核对与校准
+- 版本切换：通过原子操作切换active_version字段完成瞬时切换
+- 优势：完全消除写入冻结时间，审计过程对业务无感知
+
+关系型数据库统计效率瓶颈
+每小时执行全量历史表UNION ALL操作存在明显缺陷：
+I/O压力大：每次审计需扫描所有历史分表
+行时间长：随着数据量增长，统计耗时可能超过审计窗口
+应对方案：
+分层预聚合+增量计算
+
+-- 元数据管理表
+CREATE TABLE table_metadata (
+    product_id VARCHAR(50),
+    date_range_start DATE,
+    date_range_end DATE,
+    total_in INT,
+    total_out INT,
+    PRIMARY KEY(product_id, date_range_start)
+);
+
+-- 审计时快速聚合
+SELECT 
+    SUM(total_in) AS all_in,
+    SUM(total_out) AS all_out 
+FROM table_metadata
+WHERE product_id=? AND date_range_start <= ?;
+
+
+
