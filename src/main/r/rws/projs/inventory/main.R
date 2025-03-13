@@ -18,7 +18,7 @@ source(file.path(home, "mastdata.R")) # 应用主数据
 source(file.path(home, "ctrls.R")) # 页面控件
 
 # 读取 js 代码文件：plotly　的前端页面交互程序，bar 被点击时候的事件处理逻辑
-on_bar_click <- file.path(home,"js", "on_bar_click.js") |> ( \(f) 
+on_bar_click <- file.path(home, "js", "on_bar_click.js") |> ( \(f) 
   if (file.exists(f)) readLines(f) |> paste(collapse = "\n") # 文件存在,则返回文件文本
   else NULL # 文件不存在返回NULL
 ) ()
