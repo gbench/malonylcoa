@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------------------
+# INVENTORY 库存&存货统计程序-数据导入数据库程序
+#
+# author:gbench@sina.com
+# date: 2025-03-13
+# ------------------------------------------------------------------------------------
+
 # 安装并加载 readxl 包
 if (!require(readxl)) {
   install.packages("readxl")
@@ -40,15 +47,16 @@ sqlexecute.inv <- partial(sqlexecute, dbname = "inventory")
 home <- "F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/inventory/data" # 文件基准路径
 files <- list.files(home, pattern = "\\.xlsx$") # 读取excel 文件
 regexec("(.+)\\.xlsx",files) |> regmatches(files, m=_) |> Reduce(rbind, x=_) |> (\(p) {
-  tbls = sprintf("t_%s", p[,2])
+  tbls = sprintf("t_%s", p[, 2])
   seq(tbls) |> lapply(\(i){
-    file <- file.path(home, p[i,1])
+    file <- file.path(home, p[i, 1]) # 提取文件名
     data <-  read_excel(file)[-1,] %>% mutate(code=sprintf("%03d", as.numeric(code)))
     tbl <- tbls[i]
     if (!tblexists(tbl)) {
       add_items(data, tbl)
     } else {
       print(sprintf("%s 业已存在", tbl))
+      sqlquery.inv(sprintf("select * from %s", tbl)) |> print()
     } # if
   }) # lapply
 })()
