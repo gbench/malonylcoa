@@ -104,20 +104,23 @@ render_handler <- \(input, output, session) { # 初始图像绘制
     pivotTable(as.formula(input$pivot_path)) # 数据透视表
   }) # 数据透视表数据
   bchart <- reactive({ # 创建一个响应式-柱形图对象 - 跟踪：响应式对象 pvtdata 的 数据状态
-    p <- pvtdata() |> # 提取透视表数据
-      pivot_longer(cols=c(total_in, total_out, qty), names_to="state", values_to="volume") |> # 长格式变换
-      transform(place=paste0("C", company_id, "W", warehouse_id)  # 场所位置-C公司IDW仓库ID
-      ) |> ggplot(aes(name, y=volume, fill=state, color=place)) + # ggplot数据绘图
-      geom_bar(position = "dodge", stat="identity") + # 绘制条形图 
-      theme( # 设置主题
-        text = element_text(family = "Helvetica", size = 12), # 设置整体字体
-        plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # 调整绘图区域标题样式
-        axis.title = element_text(size = 12, face = "bold"), # 调整坐标轴标题样式
-        axis.text = element_text(size = 12), # 调整坐标轴文本样式
-      ) + scale_fill_manual( # 填充 特征的绘图配置
-        values = c("total_in"="#0073C2FF", "total_out"="#EFC000FF", "qty"="#868686FF"), # 设置各个值的颜色映射
-        labels = c("total_in"="入库量", "total_out"="出库量", "qty"="余量") # 文本值
-      ) + labs(title = "INVENTORY存货分布状况", x = "NAME产品", y = "VOLUME数量", fill = "库存状态", color="仓库位置") # p 数据绘图
+    p <- pvtdata() |> (\(data) { # 根据透视表返回的结果状态创造响应的绘图对象
+      if ( nrow(data) < 1 ) ggplot() # 数据表没有数据
+      else data |> # 数据含有数据,提取透视表数据
+        pivot_longer(cols=c(total_in, total_out, qty), names_to="state", values_to="volume") |> # 长格式变换
+        transform(place=paste0("C", company_id, "W", warehouse_id)  # 场所位置-C公司IDW仓库ID
+        ) |> ggplot(aes(name, y=volume, fill=state, color=place)) + # ggplot数据绘图
+        geom_bar(position = "dodge", stat="identity") + # 绘制条形图 
+        theme( # 设置主题
+          text = element_text(family = "Helvetica", size = 12), # 设置整体字体
+          plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # 调整绘图区域标题样式
+          axis.title = element_text(size = 12, face = "bold"), # 调整坐标轴标题样式
+          axis.text = element_text(size = 12), # 调整坐标轴文本样式
+        ) + scale_fill_manual( # 填充 特征的绘图配置
+          values = c("total_in"="#0073C2FF", "total_out"="#EFC000FF", "qty"="#868686FF"), # 设置各个值的颜色映射
+          labels = c("total_in"="入库量", "total_out"="出库量", "qty"="余量") # 文本值
+        ) + labs(title = "INVENTORY存货分布状况", x = "NAME产品", y = "VOLUME数量", fill = "库存状态", color="仓库位置") # p 数据绘图
+    })() # p plot 绘图结构
     ggplotly(p, tooltip = c("x", "y", "fill", "color")) # 动态绘图
   }) # 响应式对象-数据图表
   
