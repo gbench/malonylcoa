@@ -126,8 +126,8 @@ insql <- function( dfm, tbl ) {
       `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
       `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) sprintf("'%s'", e) else e, # 双精度，保持原值不变
       `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
-      sprintf("'%s'", e) # 默认类型，使用单引号'给括起来
-    )) |> do.call(\(...) mapply(\(...) paste(..., sep=',', collapse=','), ...), args=_) |> # 单行映射,这里的\(...)符号具有层级差异，是两个不同变量
+      sprintf("'%s'", gsub("'", "''", e)) # 默认类型，使用单引号'给括起来, 并对单引号进行转义
+    )) |> do.call(\(...) mapply(\(...) paste(..., sep=', ', collapse=','), ...), args=_) |> # 行映射,此处\(...)有层级差异,内为字段外为数据行是两个不同变量
     sprintf(fmt='( %s )') |> paste(collapse=',\n  ') # 值列表
   sprintf( "insert into %s (%s) values \n  %s\n", tbl, keys, values ) # SQL 插入记录行数据（多行）语句
 }
