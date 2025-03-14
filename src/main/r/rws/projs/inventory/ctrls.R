@@ -15,7 +15,8 @@ side_ctrls <- \() list( # 侧边面板控件
   textInput("bill_id", "单据编码", value = "--"),
   textInput("timestamp", "时间戳", value = Sys.time()), # 用户响应式编程的刷星页面图表
   textInput("pivot_path", "数据透视路径", value = default_path),
-  actionButton("submit", "提交") # 数据提交
+  actionButton("submit", "提交"), # 数据提交
+  actionButton("stopApp", "关闭") # 关闭应用
 )
 
 #' 主面板控件

@@ -90,6 +90,11 @@ event_handler <- \(input, output, session) {
     updateTextInput(session, "bill_id", value = bill_id_of(input$direction)) # 更新 出入库单id
     updateTextInput(session, "timestamp", value = Sys.time()) # 更新timestamp,通知响应式对象(由render_handler定义维护)作状态同步&刷新
   }) # input$submit
+
+  #' 关闭shiny应用程序
+  observeEvent(input$stopApp, {
+    stopApp()
+  }) # input$stopApp
   
 } # event_handler
 
