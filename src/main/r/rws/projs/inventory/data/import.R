@@ -51,14 +51,14 @@ regexec("(.+)\\.xlsx", files) |> regmatches(files, m=_) |> Reduce(rbind, x=_) |>
   seq(tbls) |> lapply(\(i){ # 遍历表名
     tbl <- tbls[i] # 数据表名
     file <- file.path(home, ps[i, 1]) # 绝对文件路径
-    data <-  read_excel(file)[-1,] |> transform(# 表数据 
+    data <-  read_excel(file)[-1, ] |> transform(# 去除字段说明行（第一行）, 然后进行表数据结构变换,内容/类型转换等工作以便add_items函数处理 
       code=sprintf("%s%03d", toupper(abbreviate(ps[i, 2])), as.numeric(code)) # 生成公司编码
     ) # 表数据 
     if (!tblexists(tbl)) { # 数据表已经存在
       add_items(data, tbl) # 插入数据
     } else { # 数据表不存在
       print(sprintf("%s 业已存在", tbl))
-      sqlquery.inv(sprintf("select * from %s", tbl)) |> print()
     } # if
+    sqlquery.inv(sprintf("select * from %s", tbl)) |> print() # 查询&并打印数据结果
   }) # lapply
 })() # ps
