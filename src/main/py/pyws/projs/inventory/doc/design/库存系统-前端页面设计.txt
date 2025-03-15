@@ -15,8 +15,8 @@
                   表单字段-产品: product_id 下拉列表，选项映射 (name=value) : {apple=apple001, banana=banana001, strawberry=strawberry001}
                   表单字段-数量(单位吨): quantity 数值文本框，有效值 [1, 100],  默认值:1
                   表单字段-方式: drcr 单选框radiobox，选项映射 (name=value) : {入库=1，出库=-1，约定=0}
-                  表单字段-公司: company_id 下拉列表，选项映射 (name=value) : {中国进出口贸易公司=C001, 华东国际贸易公司=C002}
-                  表单字段-仓库: warehouse_id 下拉列表，选项映射(name=value ): {北京第一仓库=W001, 上海第二仓库=W002}
+                  表单字段-公司: company_id 下拉列表，选项映射 (name=value) : {沃尔玛=CMPN001, 亚马逊=CMPN002}
+                  表单字段-仓库: warehouse_id 下拉列表，选项映射(name=value ): {北京京邦达贸易有限公司=WRHS001, 顺丰控股股份有限公司=WRHS002}
                   表单字段-单据: bill_id 字符文本框, 正则格式要求: (IN|OUT|CONTRACT)\d{4}\d{2}\d{2}\d{2}\d{2}\d{2}即 (IN|OUT|CONTRACT)后跟一时间戳
                       例如: IN20250315090228
                   表单字段-下单时间: create_time 时间选择框，默认为 系统当前时间

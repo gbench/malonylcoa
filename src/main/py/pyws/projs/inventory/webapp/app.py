@@ -49,13 +49,13 @@ def index():
     }
     # 公司选项映射
     company_options = {
-        "中国进出口贸易公司": "CMPN001",
-        "华东国际贸易公司": "CMPN002"
+        "沃尔玛": "CMPN001",
+        "亚马逊": "CMPN002"
     }
     # 仓库选项映射
     warehouse_options = {
-        "北京第一仓库": "WRHS001",
-        "上海第二仓库": "WRHS002"
+        "北京京邦达贸易有限公司": "WRHS001",
+        "顺丰控股股份有限公司": "WRHS002"
     }
     # 默认下单时间
     default_create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
