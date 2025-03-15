@@ -15,15 +15,15 @@ opts <- \(tbls, n=-1, simplify=T) "select * from %s %s" |> sprintf(tbls, ifelse(
   (\(.) structure(., names=names(.) |> sub(".*from\\s+(\\S+)(\\s*.*)", "\\1", x=_))) () |> # 提取表名
   (\(.) if(simplify & length(.)<2) .[[1]] else .) () # 对于只有一行数据的情况，进行简化处理
 
-#' 带有默认值的opts
+#' 带有默认值的opts2
 #' 该函数依赖于sqlquery.inv,故需要在引入了sqlquery.inv 的环境中运行,比如：source(file.path(home, "app.R"))
 #' 生成下拉选项集合函数
 #' @param tbls 数据表名向量
 #' @param default 最大返回数据行数
 #' @param n 最大返回数据行数
-opts2 <- \(tbls, default, n=-1, simplify=T) is.na(match(tbls, sqlquery.inv("show tables") |> unlist())) |> 
+opts2 <- \(tbls, default, n=-1) match(tbls, sqlquery.inv("show tables") |> unlist()) |> is.na() |> 
   (\(bs) seq(bs) |> lapply(\(i, b=bs[i]) if(b) default else opts(tbls[i], n, T))) () |> # 若数据表不存在返回默认值
-  (\(.) if(simplify & length(.)<2) .[[1]] else .) () # 对于只有一行数据的情况，进行简化处理
+  (\(.) if(length(.)<2) .[[1]] else .) () # 对于只有一行数据的情况，进行简化处理
 
 # 产品列表
 products <- opts2("t_products", c("苹果" = "apple001", "香蕉" = "banana001", "草莓" = "strawberry001"), 10)
