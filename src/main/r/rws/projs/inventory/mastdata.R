@@ -21,10 +21,9 @@ opts <- \(tbls, n=-1, simplify=T) "select * from %s %s" |> sprintf(tbls, ifelse(
 #' @param tbls 数据表名向量
 #' @param default 最大返回数据行数
 #' @param n 最大返回数据行数
-opts2 <- \(tbls, default, n=-1, simplify=T) 
-  is.na(match(tbls, sqlquery.inv("show tables") |> unlist())) |> 
-    (\(bs) seq(bs) |> lapply(\(i, b=bs[i]) if(b) default else opts(tbls[i], n, T))) () |> # 若数据表不存在返回默认值
-    (\(.) if(simplify & length(.)<2) .[[1]] else .) () # 对于只有一行数据的情况，进行简化处理
+opts2 <- \(tbls, default, n=-1, simplify=T) is.na(match(tbls, sqlquery.inv("show tables") |> unlist())) |> 
+  (\(bs) seq(bs) |> lapply(\(i, b=bs[i]) if(b) default else opts(tbls[i], n, T))) () |> # 若数据表不存在返回默认值
+  (\(.) if(simplify & length(.)<2) .[[1]] else .) () # 对于只有一行数据的情况，进行简化处理
 
 # 产品列表
 products <- opts2("t_products", c("苹果" = "apple001", "香蕉" = "banana001", "草莓" = "strawberry001"), 10)
