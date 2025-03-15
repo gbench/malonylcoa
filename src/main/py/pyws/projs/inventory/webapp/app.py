@@ -59,12 +59,12 @@ def index():
     }
     # 默认下单时间
     default_create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    return render_template('index.html',
-                           product_options=product_options,
-                           company_options=company_options,
-                           warehouse_options=warehouse_options,
-                           default_create_time=default_create_time)
+    kwargs = {"product_options":product_options, 
+        "company_options":company_options, 
+        "warehouse_options":warehouse_options, 
+        "default_create_time":default_create_time}
+   
+    return render_template('index.html', **kwargs)
 
 
 def create_inv_order(ioentry):
@@ -87,15 +87,16 @@ def create_inv_order(ioentry):
             company_id VARCHAR(255) NOT NULL,
             warehouse_id VARCHAR(255) NOT NULL,
             bill_id VARCHAR(255) NOT NULL,
-            create_time DATETIME NOT NULL
+            create_time DATETIME NOT NULL,
+            description VARCHAR(255) NOT NULL
         )
         """
         cursor.execute(create_table_query)
 
         # 插入数据
         insert_query = f"""
-        INSERT INTO {table_name} (name,product_id, quantity, drcr, company_id, warehouse_id, bill_id, create_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO {table_name} (name, product_id, quantity, drcr, company_id, warehouse_id, bill_id, create_time, description)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         values = (
             re.sub(r'\d+$', '', ioentry["product_id"]),
@@ -105,7 +106,8 @@ def create_inv_order(ioentry):
             ioentry["company_id"],
             ioentry["warehouse_id"],
             ioentry["bill_id"],
-            ioentry["create_time"]
+            ioentry["create_time"],
+            ioentry["description"]
         )
         cursor.execute(insert_query, values)
         conn.commit()
