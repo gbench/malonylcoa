@@ -80,32 +80,32 @@ def create_inv_order(ioentry):
         create_table_query = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
             product_id VARCHAR(255) NOT NULL,
             quantity INT NOT NULL,
             drcr INT NOT NULL,
             company_id VARCHAR(255) NOT NULL,
             warehouse_id VARCHAR(255) NOT NULL,
             bill_id VARCHAR(255) NOT NULL,
-            create_time DATETIME NOT NULL,
-            description VARCHAR(512)
+            create_time DATETIME NOT NULL
         )
         """
         cursor.execute(create_table_query)
 
         # 插入数据
         insert_query = f"""
-        INSERT INTO {table_name} (product_id, quantity, drcr, company_id, warehouse_id, bill_id, create_time, description)
+        INSERT INTO {table_name} (name,product_id, quantity, drcr, company_id, warehouse_id, bill_id, create_time)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         values = (
+            re.sub(r'\d+$', '', ioentry["product_id"]),
             ioentry["product_id"],
             ioentry["quantity"],
             ioentry["drcr"],
             ioentry["company_id"],
             ioentry["warehouse_id"],
             ioentry["bill_id"],
-            ioentry["create_time"],
-            ioentry["description"]
+            ioentry["create_time"]
         )
         cursor.execute(insert_query, values)
         conn.commit()
