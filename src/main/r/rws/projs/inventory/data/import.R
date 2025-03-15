@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------------
 
 # 安装并加载程序包
-"RMySQL,tibble,purrr,readxl" |> strsplit(",") |> unlist() |> lapply(\(p) {
+"RMySQL,tibble,dplyr,purrr,readxl" |> strsplit(",") |> unlist() |> lapply(\(p) {
   if (!require(p, character.only = T)) {
     install.packages(p)
     library(readxl, character.only = T)
@@ -75,7 +75,9 @@ change_product_code <- \() {
     sprintf("update %s set\n  %s \nwhere id=%s","t_products", flds, data$id) |> print() |> sqlexecute.inv() # 执行并更
   }
   sqlquery.inv("alter table t_products modify column code varchar(100)") # 列字段长度扩增
-  sqlquery.inv("select * from t_products") |> mutate(code = sprintf(fmt="%s%03d", gsub("\\s", "_", tolower(ename)), id)) |> update() # 批量更新
+  sqlquery.inv("select * from t_products") |> 
+    mutate(code = sprintf(fmt="%s%03d", gsub("\\s", "_", tolower(ename)), 1)) |> # 将 code 设置为{ename}001的版本样式
+    update() # 批量更新
   sqlquery.inv("select * from t_products")
 }
 # 修改code
