@@ -66,16 +66,16 @@ regexec("(.+)\\.xlsx", files) |> regmatches(files, m=_) |> Reduce(rbind, x=_) |>
 # 修改products数据表的 code 字段
 change_product_code <- \() {
   #' 数据更新
-  #' @param param 更新数据
+  #' @param param 更新数据源
   #' @param pk 数据主键
   update <- \(data, pk="id") { # 数据更新
     nms <- names(data) # 提取各个数据列
     flds <- sapply(nms, \(i) sprintf("%s='%s'", i, data[, i, drop=T] |> gsub("'", "''",x=_))) |> 
       apply(1, \(line) paste(line[-match(pk, nms)], collapse=",\n  ")) 
-    sprintf("update %s set\n  %s \nwhere id=%s","t_products", flds, data$id) |> print()|> sqlexecute.inv() # 执行并更
+    sprintf("update %s set\n  %s \nwhere id=%s","t_products", flds, data$id) |> print() |> sqlexecute.inv() # 执行并更
   }
   sqlquery.inv("alter table t_products modify column code varchar(100)") # 列字段长度扩增
-  sqlquery.inv("select * from t_products") |> mutate(code = sprintf(fmt="%s%03d", gsub("\\s", "_", tolower(ename)), id)) |> update()
+  sqlquery.inv("select * from t_products") |> mutate(code = sprintf(fmt="%s%03d", gsub("\\s", "_", tolower(ename)), id)) |> update() # 批量更新
   sqlquery.inv("select * from t_products")
 }
 # 修改code
