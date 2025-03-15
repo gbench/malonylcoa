@@ -76,7 +76,7 @@ event_handler <- \(input, output, session) {
     cttm <- Sys.time() # 系统时间
     drcr <- ifelse(input$direction, -1, +1) # 出库-1, 入库+1
     product_id <- input$product_id # 产品id
-    ps <- regexec("([[:alpha:]]+)(\\d+)", product_id) |> regmatches(product_id, m = _) |> unlist() # 产品id分析
+    ps <- regexec("([_[:alpha:]]+)(\\d+)", product_id) |> regmatches(product_id, m = _) |> unlist() # 产品id分析
     name <- ps[2] # 提取名称
     description <- (\(keys) sprintf("%s-%s", keys[match(drcr, c(1, -1))], product_id) |> toupper()) (c("IN", "OUT"))
     items <- tribble( # 数据项目
