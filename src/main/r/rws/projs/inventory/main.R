@@ -78,9 +78,10 @@ event_handler <- \(input, output, session) {
     product_id <- input$product_id # 产品id
     ps <- regexec("([[:alpha:]]+)(\\d+)", product_id) |> regmatches(product_id, m = _) |> unlist() # 产品id分析
     name <- ps[2] # 提取名称
+    description <- (\(keys) sprintf("%s-%s", keys[match(drcr, c(1, -1))], product_id) |> toupper()) (c("IN", "OUT"))
     items <- tribble( # 数据项目
-      ~bill_id, ~name, ~quantity, ~drcr, ~product_id, ~company_id, ~warehouse_id, ~create_time, # 字段名称
-      input$bill_id, name, input$quantity, drcr, input$product_id, input$company_id, input$warehouse_id, cttm # 数据行
+      ~bill_id, ~name, ~quantity, ~drcr, ~product_id, ~company_id, ~warehouse_id, ~create_time, ~description, # 字段名称
+      input$bill_id, name, input$quantity, drcr, input$product_id, input$company_id, input$warehouse_id, cttm, description, # 数据行
     ) # items
     # print(items)
     
@@ -113,7 +114,9 @@ render_handler <- \(input, output, session) { # 初始图像绘制
       if ( nrow(data) < 1 ) ggplot() # 数据表没有数据
       else data |> # 数据含有数据,提取透视表数据
         pivot_longer(cols=c(total_in, total_out, qty), names_to="state", values_to="volume") |> # 长格式变换
-        transform(place=paste0("C", company_id, "W", warehouse_id)  # 场所位置-C公司IDW仓库ID
+        transform( # 字段值变换
+          place=paste0(company_id, warehouse_id) |> toupper() |> # 拼接 场所位置为 C{公司ID}W{仓库ID}
+            gsub((\(s)sprintf(fmt="%s%s",s,s))("([[:alpha:]])[[:alpha:]]+([[:digit:]]+)"), "\\1\\2\\3\\4", x=_) # 格式简化
         ) |> ggplot(aes(name, y=volume, fill=state, color=place, alpha=date)) + # ggplot数据绘图
         geom_bar(position = "dodge", stat="identity") + # 绘制条形图 
         theme( # 设置主题
