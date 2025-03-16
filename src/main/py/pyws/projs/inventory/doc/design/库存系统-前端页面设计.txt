@@ -1,0 +1,60 @@
+编写python语言的的web程序, 要求 如下
+1 前端页面：　
+     1.1 录入-数据区：
+      表单样例：ioentry = {
+        "product_id": "apple001,",
+         "quantity": 10,
+         "drcr": 1,
+         "company_id": "CPMN001",
+         "warehouse_id": "WRHS001",
+         "bill_id": "B001",
+         "create_time": "2025-03-13 12:00:00",
+        "description": "入库单据"
+      }
+      1.1.1 接收用户录入并将数据组织成表单请求发送给后端服务请求（create_inv_order)：
+                  表单字段-产品: product_id 下拉列表，选项映射 (name=value) : {apple=apple001, banana=banana001, strawberry=strawberry001}
+                  表单字段-数量(单位吨): quantity 数值文本框，有效值 [1, 100],  默认值:1
+                  表单字段-方式: drcr 单选框radiobox，选项映射 (name=value) : {入库=1，出库=-1，约定=0}
+                  表单字段-公司: company_id 下拉列表，选项映射 (name=value) : {沃尔玛=CMPN001, 亚马逊=CMPN002}
+                  表单字段-仓库: warehouse_id 下拉列表，选项映射(name=value ): {北京京邦达贸易有限公司=WRHS001, 顺丰控股股份有限公司=WRHS002}
+                  表单字段-单据: bill_id 字符文本框, 正则格式要求: (IN|OUT|CONTRACT)\d{4}\d{2}\d{2}\d{2}\d{2}\d{2}即 (IN|OUT|CONTRACT)后跟一时间戳
+                      例如: IN20250315090228
+                  表单字段-下单时间: create_time 时间选择框，默认为 系统当前时间
+                  表单字段-备注说明: description 字符文本区域，默认为 '方式drcr+产品product_id}' 字样，例如：'IN-APPLE001'
+                  表单按钮-按钮: 
+                      验证上述各字段格式内容有效性，
+                      验证无误后，组织成表单对象，以json方式POST到后端服务接口，
+                      服务器接收请求，将表单数据存入数据库的对应的关系数据表。
+　　1.1.2 接收后端服务返回的数据处理结果，即 ioentry所在数据表的更新内容， 
+                若数据表不存在则后端创建数据表，然后插入数据；
+　　　　   最后，将此数据表的最新内容返回，
+               前端以表格形式形式展示返回结果（数据表内容）。
+2 后端API接口：以restapi的方式接收前端页面传送过来的请求参数ioentry(json格式), 将ioentry数据存入关系数据表：
+2.1 数据表格式如下：
+2.1.1 表名pattern：t_{name}_{date}  其中
+              name来自于对ioentry.product_id(例如:apple001)字段的分析, 提取其前面的字母部分作为name(例如apple）
+              date来自于对ioentry.create_time(例如:2025-03-13 12:00:00)字段的分析, 提取其前面的年月日作为date(例如20250313）
+              由此, 表单样例(ioentry) 所对应的表名就是: t_apple_20250313
+2.1.2 数据表字段结构：SQL 建表语句
+      CREATE TABLE t_{product_name}_{date} (
+   　　 id INT AUTO_INCREMENT PRIMARY KEY,
+   　　 product_id VARCHAR(255) NOT NULL,
+    　　quantity INT NOT NULL,
+    　　drcr INT NOT NULL,
+    　　company_id VARCHAR(255) NOT NULL,
+    　　warehouse_id VARCHAR(255) NOT NULL,
+    　　bill_id VARCHAR(255) NOT NULL,
+    　　create_time DATETIME NOT NULL,
+    　　description VARCHAR(512)
+　   );
+2.2 数据库配置
+2.2.1 数据库类型：Server version: 9.1.0 MySQL Community Server - GPL
+2.2.2 连接参数配置，默认为：HOST＝localhost, user=root, password=123456, database=inventory, port=3371
+
+3 创建一个conda环境myinv来运行上述程序
+conda create -n myinv python=3.11
+conda activate myinv
+pip install flask mysql-connector-python
+python app.py
+
+

@@ -194,7 +194,7 @@ library|>deparse()|>paste(collapse="\n")|>(\(x,f=file('library.R','w')){on.exit(
 #' NB: the DESCRIPTION  of a package is a dcf format(1*n matrix), so we could use it as the test case
 #' @param pkg package name
 #' @param file DCF file
-(\(pkg, file=paste0(.libPaths(), "/", pkg,"/DESCRIPTION" )) read.dcf(file) ) ('shiny') |> 
+(\(pkg, file=file.path(.libPaths(), pkg, "DESCRIPTION" )) read.dcf(file) ) ('shiny') |> 
 #' 
 #'@param x is a matrix object,so it can use the colnames to extract its field
 (\(x) {
@@ -205,10 +205,20 @@ library|>deparse()|>paste(collapse="\n")|>(\(x,f=file('library.R','w')){on.exit(
 pkgdesc <- (\(pkg, file=paste0(.libPaths(), "/", pkg,"/DESCRIPTION" )) read.dcf(file) ) ('shiny') 
 pkgdesc[,'Authors@R'] |> parse(text=_) |> eval()
 
+# read pkg's authors-使用system.file读取包文件
+pkgdesc <- (\(pkg, file=system.file("DESCRIPTION", package=pkg)) read.dcf(file) ) ('shiny') 
+pkgdesc[,'Authors@R'] |> parse(text=_) |> eval()
+
 #' 文件读写,把DESCRIPTION文件中的数据写入文件pkgdesc.data
 #' file("pkgdesc.data","w") 打开文件
 #' on.exit(close(f)) 退出时候关闭文件
-paste0(.libPaths(),'/ggplot2/DESCRIPTION') |> read.dcf() |> (\(pkgdesc, f=file("pkgdesc.ggplot2","w")) { on.exit(close(f)); cat(pkgdesc, file=f) }) ()
+system.file("DESCRIPTION", package="ggplot2") |> read.dcf() |> (\(pkgdesc, f=file("pkgdesc.ggplot2","w")) { on.exit(close(f)); cat(pkgdesc, file=f) }) ()
+
+# -------------------------------------------------------------------------------------------------------------
+# 数据排行
+"F:/slicef/ws/gitws/malonylcoa/src/test/resources/docs/texts/政府工作报告" |> list.files(recursive=T) |> 
+  (\(.) (regexec("(\\D+)[/\\](\\d+)\\D+", .) |> regmatches(., m=_)) |> do.call(rbind, args=_) |> structure(dimnames=list(NULL, c("name", "premier", "year")))) () |> 
+  as.data.frame() |> transform(year=as.numeric(year)) |> (\(.) .[order(.$year), ]) ()
 
 # -------------------------------------------------------------------------------------------------------------
 # 元编程

@@ -1,21 +1,21 @@
 # 指数平均1
 ema <- \(x, n=2) Reduce( \(acc,a) if(is.na(acc)) a else substitute ( # EMA的计算表达式,n大于等于1
-		sum( c(acc, a)*c(n-1,2)/(n+1) ), # 计算公式
-		list(acc=acc,a=a,n=n) # 参数列表
-	) |> eval(), x, NA, accumulate=T ) |> (\(x) { # 后续处理
-		if (n>1) { # 长度大于1
-			x[seq(n)] <- NA; # 对于前面n-1个元素设置为NA
-		} 
-		x[-1] # 删除第一个NA元素
-	})() # ema 指数平均
+  sum( c(acc, a)*c(n-1,2)/(n+1) ), # 计算公式
+  list(acc=acc,a=a,n=n) # 参数列表
+) |> eval(), x, NA, accumulate=T ) |> (\(x) { # 后续处理
+  if (n>1) { # 长度大于1
+    x[seq(n)] <- NA; # 对于前面n-1个元素设置为NA
+  } 
+  x[-1] # 删除第一个NA元素
+})() # ema 指数平均
 
 # 指数平均2
 ema <- \(x, n) Reduce(\(acc,a) if(is.na(acc)) a else sum(c(acc,a)*c(n-1,2)/(n+1)), x, accumulate=T) |> (\(x) { # 后续处理
-		if (n>1) { # 长度大于1
-			x[seq(n-1)] <- NA; # 对于前面n-1个元素设置为NA
-		} 
-		x
-	})() # ema 指数平均
+  if (n>1) { # 长度大于1
+    x[seq(n-1)] <- NA; # 对于前面n-1个元素设置为NA
+  } 
+  x
+})() # ema 指数平均
 
 # 滞后算子
 lagn <- \(x, n=1) if(n<1) x else append(rep(NA,n),x[seq(n)-1-length(x)])

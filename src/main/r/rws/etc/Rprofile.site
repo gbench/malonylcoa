@@ -90,10 +90,11 @@ dailywork_home <- sprintf("%s/dwk/%s", rws_home, Sys.Date()) # 工作目录
 if (!dir.exists(dailywork_home))  mkdir(dailywork_home) # 创建工作目录
 setwd(dailywork_home) # 设置工作去目录
 
-if (FALSE) { # 根据指定模式加载数据文件
+if (F) { # 根据指定模式加载数据文件
   # 自定义的预先加载的自定义函数文件列表
   myfiles <- list.files(path = Sys.getenv('RSCRIPT_HOME'), pattern="\\.R$", recursive = T) 
   sprintf(fmt = "%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) |> invisible()
+  mklzdb("malonylcoa", .GlobalEnv) # 创建/更新layloads malonylcoa
 } else { # 延迟加载(.rdx, .rdb 文件)
   # 延迟数据库根目录 
   lazyloads_home <- paste0(Sys.getenv("RSCRIPT_HOME"), "/lazyloads")

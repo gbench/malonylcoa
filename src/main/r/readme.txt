@@ -305,3 +305,50 @@ function() {
     y <- 2
     x + y
 }
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------
+# 一个 (1:m)^n 构成的结构组合
+(\(m=2, n=4) list(seq(m)) |> rep(n) |> expand.grid() |> table() |> ftable(row.vars=paste0("Var", seq(n)))) ()
+
+# 一个 (1:m)^n 构成的结构组合
+pmn <- \(m, n, render=\(sep, collapse) \(tbl) paste(names(tbl) |> sprintf(fmt='(%s)'), tbl, sep=sep, collapse=collapse)) 
+  seq(m) |> list() |> rep(n) |> expand.grid() |> apply(1, table) |> sapply(render("^", "*")) |> table() |> render("*", "+") ()
+
+# 设置多项式
+p <- pmn(3, 3) |> str2lang(); p;  eval(p)
+
+#  多项式的语法树 表达式
+library(lobstr)
+substitute(ast(expr), list(expr=pmn(2, 2) |> str2lang())) |> eval()
+
+# 语法树
+> substitute(ast(expr), list(expr=pmn(2, 2) |> str2lang())) |> eval()
+█─`+` 
+├─█─`+` 
+│ ├─█─`*` 
+│ │ ├─█─`(` 
+│ │ │ └─█─`*` 
+│ │ │   ├─█─`^` 
+│ │ │   │ ├─█─`(` 
+│ │ │   │ │ └─1 
+│ │ │   │ └─1 
+│ │ │   └─█─`^` 
+│ │ │     ├─█─`(` 
+│ │ │     │ └─2 
+│ │ │     └─1 
+│ │ └─2 
+│ └─█─`*` 
+│   ├─█─`(` 
+│   │ └─█─`^` 
+│   │   ├─█─`(` 
+│   │   │ └─1 
+│   │   └─2 
+│   └─1 
+└─█─`*` 
+  ├─█─`(` 
+  │ └─█─`^` 
+  │   ├─█─`(` 
+  │   │ └─2 
+  │   └─2 
+  └─1 
+> 

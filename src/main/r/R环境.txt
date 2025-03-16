@@ -348,70 +348,87 @@ attr(,"name")
 > 
 
 # Package environments and the search path
-#  follow all the parents back, you see the order in which every package has been attached. 
-# This is known as the search path because all objects in these environments can be found from the top-level interactive workspace.
+#
 # https://adv-r.hadley.nz/environments.html#search-path
+# if follow all the parents back, you will see the order in which every package has been attached. 
+# This is known as the search path because all objects in these environments can be found from the top-level interactive workspace.
+# top-level interactive workspace 就是指的 是 .GlobalEnv的检索对象符号的方法
+#
 # You can see the names of these environments with base::search()
-# searchpaths 就是搜索get符号定义的(确定符号所在的环境位置），环境即使将符号（变量）与值进行关联的一组空间或者说是一种对应关系associations：R称其为bindings
-# R的运行的原理就是不断的创建构建环境，来实现这种符号与值之间的关系绑定。
-# R批量的将 一组符号集合 加载到内存（运行时） 形成有用的（有绑定的功能意义）的操作叫做attach。
-# library() 就是将 package中的符号以 searchpaths 的节点元素的而形式attach添加到 运行环境(运行时）的方法。
-
+# searchpaths 就是搜索get符号定义的(确定符号所在的环境位置），环境即使将符号（变量）
+# 与值进行关联的一组空间或者说是一种对应关系associations：R称其为bindings
+#
+# R的运行的原理就是不断的 创建&构建 环境，来实现这种 符号与值 之间 的 关系绑定。
+#
+# R 批量 地 将 一组 符号定义的集合 加载到内存（运行时） 形成 有用的变量或函数（有绑定的功能意义）的 操作 叫做 attach。
+# attach 的 机制 就是 构建起 一套 检索符号存在的 位置体系。
+# library() 的原理 就是 将 package 中的 符号 以 searchpaths节点/元素 的 形式 添加/attach 到 运行环境(运行时） 中。
+#
 # Every namespace environment has the same set of ancestors:
-
+#
 # Each namespace has an imports environment that contains bindings to all the functions used by the package. 
 # The imports environment is controlled by the package developer with the NAMESPACE file.
-
+#
 # Explicitly importing every base function would be tiresome, so the parent of the imports environment is the base namespace. 
-# The base namespace contains the same bindings as the base environment, but it has a different parent.
-
-# The parent of the base namespace is the global environment. 
+# 注意: base namespace environment 与 base environment 的不同
+# * The base namespace contains the same bindings as the base environment, but it has a different parent.
+# * The parent of the base namespace is the global environment. 
 # This means that if a binding isn't defined in the imports environment the package will look for it in the usual way. 
 # This is usually a bad idea (because it makes code depend on other loaded packages), 
 # so R CMD check automatically warns about such code. It is needed primarily for historical reasons, particularly due to how S3 method dispatch works.
 
 # ------------------------------------------------------------------------------
 # nsenv 命名空间的即函数的 enclosing environment 
-# pkgenv 包环境 采用library 加包加载到searchpaths中以便程序使用的环境
+# pkgenv 包环境 采用library 加包加载到searchpaths中 以便 程序使用的 环境
 # https://adv-r.hadley.nz/environments.html#search-path
 # ------------------------------------------------------------------------------
 
-# library: 的本质就是把
-# when you attach another package with library(), the parent environment of the global environment changes:
-
+# library: 就是将 package 中的 符号 以 searchpaths节点/元素 的 形式 添加/attach 到 运行环境(运行时） 中。
+# library 构建了 命名空间环境（依据NAMESPCE文件） 与 包环境（依据DESCRIPTION文件）
+# when you attach another package with library(), the parent environment of the global environment changes
+#
 # The package environment is the external interface to the package. 
 # It's how you, the R user, find a function in an attached package or with ::. Its parent is determined by search path, i.e. 
 # the order in which packages have been attached.
-
+#
 # The namespace environment is the internal interface to the package. 
-# The package environment controls how we find the function; 
-#the namespace controls how the function finds its variables.
-
-# 查看install.packages所在的定义环境enclosing environment
+# * The package environment controls how we find the function; 
+# * the namespace controls how the function finds its variables.
+#
+# 查看 函数 'install.packages' 所在的 定义环境 enclosing environment, 注意： 这是 一个 namespace 环境，namespace 环境是用于 运行的计算求值的
 > environment(install.packages)
+
 <environment: namespace:utils>
+
 # 定义环境中的名称数量
 > environment(install.packages) |> ls(all.names=T) |> length()
 [1] 639
-# 查看install.packages所在的包环境（exports 导出符号的)
+
+# 查看install.packages所在的包环境（exports 导出符号的)， 注意： 这是 一个 package 环境, package  是运用 搜索的 函数符号的
 > envclos() %>% structure(., names=sapply(., attr, which='name')) |> lapply(ls.str, all.names=T) |> grep(pattern='install.packages', value=T) |> names()
+
 [1] "package:utils"
+
 # 注意 与 package:utils 与 namespace:utils 是不同的
-上一句使用进行取代
+# 上一句使用pryr::where进行取代
+# install.packages("pryr") ; library(pryr)
+
 > pryr::where('install.packages')
+
 <environment: package:utils>
 attr(,"name")
 [1] "package:utils"
 attr(,"path")
 [1] "D:/sliced/develop/r/R-4.4.2/library/utils"
 
-# 证明连namespace环境与package环境的不同
-> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages')) identical(nsenv, pkgenv))()
+# 证明 namespace环境 与 package环境 的 不同
+> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages')) identical(nsenv, pkgenv)) ()
+
 [1] FALSE
 
-# 变量数目由很大不同,namespace中要中的符号要远远多余package环境中的符号
-> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages'))  
-+   structure(c(nsenv, pkgenv), names=c('nsenv','pkgenv')) |>lapply(length))  ()
+# 变量数目有很大不同，namespace中拥有的符号要 远远多于 package环境中的符号
+> (\(nsenv=environment(install.packages), pkgenv=pryr::where('install.packages')) structure(c(nsenv, pkgenv), names=c('nsenv', 'pkgenv')) |> lapply(length)) ()
+
 $nsenv
 [1] 639
 
