@@ -40,15 +40,12 @@ render_handler <- \(input, output, session) { # 初始图像绘制
         group_by(time=substr(UpdateTime, 1, 5)|> as.POSIXct(format="%H:%M")) |> 
         summarize(y=mean(LastPrice))
       as.time <- \(time) as.POSIXct(time,format="%H:%M")
-      fetch(input$symbol, input$date) |> filter(as.time(input$start_time) < time & time<as.time(input$end_time)) 
+      fetch(input$symbol, input$date) |> filter(as.time(input$start_time) < time & time<as.time(input$end_time))
     })
     
     output$dt <- renderDT(data() |> head(5))
-    output$pt <- renderPlot( data() %>% { 
-      plot(.);
-      lines(.$time, lm(y~seq_along(time), data=.) |> predict(), col="red")
-    })
-    
+    output$pt <- renderPlot(data() %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
+      ggplot(., aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red"))
 } # render_handler
 
 # ************************************************************************************
