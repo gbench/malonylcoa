@@ -8,3 +8,4 @@
 symbols <- c("螺纹钢2505"="rb2505", "甲醇505"="MA505")
 startime <- "09:00" 
 endtime <- "10:00"
+current_date <- "2025-02-28"

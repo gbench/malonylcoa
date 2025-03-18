@@ -44,7 +44,7 @@ render_handler <- \(input, output, session) { # 初始图像绘制
     })
     
     output$dt <- renderDT(data() |> head(5))
-    output$pt <- renderPlot( data %>% { 
+    output$pt <- renderPlot( data() %>% { 
       plot(.);
       lines(.$time, lm(y~seq_along(time), data=.) |> predict(), col="red")
     })
