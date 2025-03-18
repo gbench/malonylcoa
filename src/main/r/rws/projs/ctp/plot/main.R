@@ -35,17 +35,20 @@ event_handler <- \(input, output, session) {
 # 通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
 # ************************************************************************************
 render_handler <- \(input, output, session) { # 初始图像绘制
-    data <- reactive({
-      fetch <- \(symbol, date) sprintf("select * from t_%s_%s", symbol, strftime(as.Date(date), "%Y%m%d")) |> sqlquery()|>
-        group_by(time=substr(UpdateTime, 1, 5)|> as.POSIXct(format="%H:%M")) |> 
+  as.time <- \(time) as.POSIXct(time, format="%H:%M") # 时间格式
+  data <- reactive({
+      fetch <- \(symbol, date) "select * from t_%s_%s" |> 
+        sprintf(symbol, strftime(as.Date(date), "%Y%m%d")) |> sqlquery() |>
+        group_by(time=substr(UpdateTime, 1, 5) |> as.time()) |> 
         summarize(y=mean(LastPrice))
-      as.time <- \(time) as.POSIXct(time,format="%H:%M")
+      # 读取数据
       fetch(input$symbol, input$date) |> filter(as.time(input$start_time) < time & time<as.time(input$end_time))
-    })
+  }) # data
     
-    output$dt <- renderDT(data() |> head(5))
-    output$pt <- renderPlot(data() %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
-      ggplot(., aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red"))
+  output$dt <- renderDT(datatable(data(), options=list(pageLength=5))) # renderDT
+  output$pt <- renderPlot({ data() %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
+    ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
+  }) # renderPlot
 } # render_handler
 
 # ************************************************************************************
