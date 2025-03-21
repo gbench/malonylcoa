@@ -63,3 +63,35 @@ positions (36, 1.7, 39, 1.9 , -1, -1, 1:70)
 
 # 头寸资产 结构-买入看涨,卖出看跌
 positions (36, 1.7, 39, 1.9 , 1, -1, 1:70)
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+
+#' 头寸资产
+#' @param kc 看涨期权的行权价格 strike price of call
+#' @param pc 看涨期权的合约价格 price of call
+#' @param kp 看跌期权的行权价格 strike price of put
+#' @param pp 看跌期权的合约价格 price of put
+#' @param nc 看涨期权头寸数量 numer of call 负数表示 卖出， 正数表示买入， 当 nc, np 均为NA的时候 绘制全方案
+#' @param np 看空期权头寸数量 number of put 负数表示 卖出， 正数表示买入， 当 nc, np 均为NA的时候 绘制全方案
+#' @param price 价格区间
+positions <- \(kc, pc, kp, pp, nc=1, np=1, price=1:100) data.frame(price=price) |>  with({ # 指定一个价格变动范围
+    ( if( c(nc, np) |> is.na() |> all() ) { # 绘制全方案
+        old <- par(mfrow=c(2, 2)); on.exit(par(old)) # 设置绘图参数
+        expand.grid(rep(list(c(-1, 1)), 2)) # 生成全方案
+      } else { # 单一方案
+         data.frame(nc=nc, np=np)  
+      } ) |> apply(1, \(p) { # 生成资产配置方案
+        main=sprintf("期权合约示意图:(%s)", paste0(p, collapse=","))
+        rc=(pmax(price-kc, 0) - pc) * p[1] # 看涨期权 的 单手收益（多头）: return of call
+        rp=(pmax(kp-price, 0) - pp) * p[2] # 看跌期权  的 单手收益（多头）: return of put
+        plot(price, rc, type='l', col="red",  main=main, ylab="income") # 看涨收入
+        lines(rp, col="green") # 看跌收入
+        lines(rc+rp, col="blue") # 组后总和收益
+      }) # apply
+ }) # with
+
+# 指定头寸方案
+positions (36, 1.7, 39, 1.9 , , , 1:70)
+
+# 绘制全方案
+positions (36, 1.7, 39, 1.9 , NA, NA, 1:70)
