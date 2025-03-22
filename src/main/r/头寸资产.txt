@@ -80,8 +80,9 @@ positions (36, 1.7, 39, 1.9 , 1, -1, 1:70)
 #' @param pp 看跌期权的合约价格 price of put
 #' @param nc 看涨期权头寸数量 numer of call 负数表示 卖出， 正数表示买入， 当 nc, np 均为NA的时候 绘制全方案
 #' @param np 看空期权头寸数量 number of put 负数表示 卖出， 正数表示买入， 当 nc, np 均为NA的时候 绘制全方案
-#' @param price 价格区间
-positions <- \(kc, pc, kp, pp, nc=1, np=1, price=1:100) data.frame(price=price) |>  with({ # 指定一个价格变动范围
+#' @param price x轴的区间范围， 价格区间
+#' @param ylim y轴的区间范围， 收益区间， 默认为NULL, 表示放大最小&最大值的0.1倍
+positions <- \(kc, pc, kp, pp, nc=1, np=1, price=1:100, ylim=NULL) data.frame(price=price) |>  with({ # 指定一个价格变动范围
     (if( c(nc, np) |> is.na() |> all() ) { # 绘制头寸资产组合的全方案: [(看涨数量, 看跌数量)], 即 各种 (看涨数量, 看跌数量) 的组合
         old <- par(mfrow=c(2, 2)); on.exit(par(old)) # 设置绘图参数
         expand.grid(rep(list(c(-1, 1)), 2)) # 生成头寸资产组合的全配置方案
@@ -91,9 +92,13 @@ positions <- \(kc, pc, kp, pp, nc=1, np=1, price=1:100) data.frame(price=price) 
       main=sprintf("期权合约示意图:(%s)", paste0(p, collapse=","))
       rc=(pmax(price-kc, 0) - pc) * p[1] # 看涨期权 的 单手收益（多头）: return of call
       rp=(pmax(kp-price, 0) - pp) * p[2] # 看跌期权  的 单手收益（多头）: return of put
-      plot(price, rc, type='l', col="red",  main=main, ylab="income") # 看涨期权头寸收益
+      ra <- rc+rp # return of all 总汇报
+      scale_range <- \ (range, ratio=.1, center=mean(range))  center + (range - center) * (1+ratio) # 区间放大
+      ylim <-  if(!is.null(ylim))  ylim else scale_range(range(c(rc, rp, ra)))  # 坐标轴范围
+      # 收益绘图
+      plot(price, rc, type='l', col="red",  main=main, ylab="income", ylim=ylim) # 看涨期权头寸收益
       lines(rp, col="green") # 看跌期权头寸收益
-      lines(rc+rp, col="blue") # 头寸组合的总和收益
+      lines(ra, col="blue") # 头寸组合的总和收益
     }) # apply
  }) # with
 
