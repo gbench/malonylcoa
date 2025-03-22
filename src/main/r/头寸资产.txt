@@ -93,7 +93,7 @@ positions <- \(kc, pc, kp, pp, nc=1, np=1, price=1:100, ylim=NULL) data.frame(pr
       rc=(pmax(price-kc, 0) - pc) * p[1] # 看涨期权 的 单手收益（多头）: return of call
       rp=(pmax(kp-price, 0) - pp) * p[2] # 看跌期权  的 单手收益（多头）: return of put
       ra <- rc+rp # return of all 总汇报
-      scale_range <- \ (range, ratio=.1, center=mean(range))  center + (range - center) * (1+ratio) # 区间放大
+      scale_range <- \ (range, ratio=.1, center=mean(range)) center + (range - center) * (1 + ratio) # 区间放大
       ylim <-  if(!is.null(ylim)) if(length(ylim)==2) ylim else range(ylim) else scale_range(range(c(rc, rp, ra)))  # 坐标轴范围
       # 收益绘图
       plot(price, rc, type='l', col="red",  main=main, ylab="income", ylim=ylim) # 看涨期权头寸收益
