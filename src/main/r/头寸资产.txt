@@ -94,7 +94,7 @@ positions <- \(kc, pc, kp, pp, nc=1, np=1, price=1:100, ylim=NULL) data.frame(pr
       rp=(pmax(kp-price, 0) - pp) * p[2] # 看跌期权  的 单手收益（多头）: return of put
       ra <- rc+rp # return of all 总汇报
       scale_range <- \ (range, ratio=.1, center=mean(range))  center + (range - center) * (1+ratio) # 区间放大
-      ylim <-  if(!is.null(ylim))  ylim else scale_range(range(c(rc, rp, ra)))  # 坐标轴范围
+      ylim <-  if(!is.null(ylim)) if(length(ylim)==2) ylim else range(ylim) else scale_range(range(c(rc, rp, ra)))  # 坐标轴范围
       # 收益绘图
       plot(price, rc, type='l', col="red",  main=main, ylab="income", ylim=ylim) # 看涨期权头寸收益
       lines(rp, col="green") # 看跌期权头寸收益
@@ -105,6 +105,8 @@ positions <- \(kc, pc, kp, pp, nc=1, np=1, price=1:100, ylim=NULL) data.frame(pr
 # 资产：合约（交易方价值态度的组合&统一就是合约），买方看涨，买方看跌
 # 指定头寸方案（买入1手看涨，买入1手看跌）: 看涨合约 执行价格36，售价 1.7；看跌合约 执行价格39，售价 1.9；
 positions (36, 1.7, 39, 1.9, , , 1:70)
+# 指定头寸方案（买入1手看涨，买入1手看跌）: 看涨合约 执行价格36，售价 1.7；看跌合约 执行价格39，售价 1.9；增加收益区间的调整
+positions (36, 1.7, 39, 1.9, , , 1:70, -10:40)
 # 指定头寸方案（买入2手看涨，买入1手看跌）: 看涨合约 执行价格36，售价 1.7；看跌合约 执行价格39，售价 1.9；
 positions (36, 1.7, 39, 1.9, 2, 1, 1:70)
 # 指定头寸方案（买入1手看涨，买入2手看跌）: 看涨合约 执行价格36，售价 1.7；看跌合约 执行价格39，售价 1.9；
