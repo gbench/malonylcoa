@@ -91,7 +91,7 @@ Stream.iterate(analyze("cos x"), e -> e.derivate()).map(e -> e.eval("x", 0)).lim
 org.h2.tools.Server.createWebServer("-web").start()
 
 # 文件打包
-把当前目录下的文件打包成 ARCHIVE_NAME， ':(exclude).*' 表示 除了以.开头的文件
+把当前目录下的文件打包成 ARCHIVE_NAME， ':(exclude).*' 表示 除了以.开头的文件即排除隐藏文件
 ``` bash
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main") # 获取当前分支名称，如果失败则使用默认值 "main"
 CURRENT_DIR_NAME=$(basename "$(pwd)") # 获取当前目录的名称（而不是完整路径）
