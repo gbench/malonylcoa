@@ -1,20 +1,32 @@
-# 自定义函数 编写式例
-# 
-# 二分法 求值：过程方式。缓存fa, 减少一次调用。注意，不要小看这减少的一次调用，对性能影响是很大的，详见 后面的性能分析。
+#' 自定义函数 编写式例
+#' 
+#' 二分法 求值：过程方式，缓存fa, 减少一次调用。
+#' 注意，不要小看这减少的一次调用，对性能影响是很大的，详见 后面的性能分析。
+#'
+#' @param f 数值方程， 比如  \(x) x^2 - 4
+#' @param a 数值方程， 区间开始位置，默认为0
+#' @param b 数值方程， 结束位置，默认为1
+#' @param eps 误差大小 默认为  1e-10
 bisect <- function (f, a=0, b=1, eps=1e-10) {
   (\(fa) { # 缓存f(a)的计算结果
     if (fa*f(b)>0) # 相同符号则放弃运算
       NA # 结果不可用
-    else repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
-      if(abs(b-a)<eps) break # 持续计算直到b与a之间的距离小于误差限制eps
-      ((a+b)/2) |> (\(x) assign(ifelse(fa*f(x)<0, 'b', 'a'), x, parent.frame()))()  # 把a,b的中点作为 下一阶段计算的初始值
-    }
-    (a+b)/2 
+    else { # a, b 位于 root 异侧
+      c <- (a+b)/2 # a 与 b 的中心点
+      repeat { # 以持续缩短结果root值的区间长度的方式（二分法）, 逐渐优化定位有效root根值的所在区间，直到该区间长度进入精度范围。
+        if(assign('fc', f(c))==0 || abs(b-a)<eps) break # 直接获得精确解 或者  持续计算直到b与a之间的距离小于误差限制eps，终止计算
+        flag <- fa*fc<0 # fa与a,b的中心点c处的f值fc是否位于f与x轴交点即root的两旁：true: a,c 异侧，false: a,c同侧.
+        if(!flag) assign('fa', fc) # a, c同侧则需要更新fa，这样就可以保证 fa与f(b)是始终是异号，进而a,b区间必然包含有root值
+        assign(ifelse(flag, 'b', 'a'), c,  parent.frame()) # 根据 flag 状态 将中心点c配置到下一阶段的初始值位置:a,c 同侧c更新a; a,c异侧c更新b;以保证新的a,b区间始终包含root
+        c <- (a+b)/2 # 更新中心点c值
+      } # repeat
+      c # 返回 a 与 b 的中心点
+    } # if
   }) (f(a)) # 计算f(a) 并将结果缓存到fa
 }
 
-# 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
-npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
+# 净现值函数, rate:折现利率, pmts:支付现金流(负值), price:资产现价(正值)
+npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts))) + price
 # 使用管道的一种写法, 不过这样的写法，运行效率要比上一种低。管道增加了函数call的调用深度。
 # npv <- function (rate, pmts, price) seq_along(pmts) |> lapply(\(i) (1+rate)^-i*pmts[i]) |> append(price) |> do.call(sum,args=_)
 
@@ -110,6 +122,45 @@ sys.self     0.00    0.04    0.07    0.07
 elapsed      6.17    8.08   15.36   16.86
 user.child     NA      NA      NA      NA
 sys.child      NA      NA      NA      NA
+
+# 执行效率测试
+# install.packages('microbenchmark')
+
+# 加载效率
+library(microbenchmark)
+
+# 测试两个函数的运行时间(相对复杂的f)
+(\(f, a, b) microbenchmark(bisect(f, a, b), bisect1(f, a, b), times = 1000)) (\(r) npv(r, pmts, price), 0, 10)
+
+>
+Unit: microseconds
+             expr   min    lq     mean median     uq    max neval
+  bisect(f, a, b) 709.0 746.7 823.5151 770.25 811.35 4711.7  1000
+ bisect1(f, a, b) 717.1 761.0 823.3807 784.80 825.35 2965.8  1000
+
+# 测试两个函数的运行时间(相对简单的f)
+(\(f, a, b) microbenchmark(bisect(f, a, b), bisect1(f, a, b), times = 1000)) (\(x) x^2 - 4, 0, 10)
+
+>
+Unit: microseconds
+             expr   min     lq     mean median     uq    max neval
+  bisect(f, a, b) 455.6 479.50 566.4356 512.20 552.05 5045.8  1000
+ bisect1(f, a, b) 320.7 340.35 397.3862 363.75 392.75 2557.9  1000
+
+# 效率分析
+# 1. 函数调用和内存开销
+# bisect 函数：使用了一个匿名函数来缓存 f(a) 的值，这会增加一定的函数调用开销。
+#                    此外，在迭代过程中，使用 assign 函数来更新变量，并且在不同的环境中操作，这可能会导致额外的内存开销和性能损耗。
+# bisect1 函数：没有使用额外的匿名函数，函数调用开销相对较小。虽然也使用了 assign 函数来更新变量，但整体的内存操作相对简单。
+# 2. 函数求值次数
+# bisect 函数：缓存了 f(a) 的值，避免了在每次迭代中重复计算 f(a)。但是，在每次迭代中都需要计算 f(c)，并且根据条件更新 fa 时可能会再次计算函数值。
+# bisect1 函数：在每次迭代中都需要计算 f(a) 和 f(x)，没有缓存机制，可能会导致更多的函数求值次数。
+# 3. 代码复杂度
+# bisect 函数：代码逻辑相对复杂，包含了匿名函数、条件判断和变量更新等操作，这可能会增加代码的执行时间。
+# bisect1 函数：代码逻辑相对简单，主要是一个循环和条件判断，执行时间可能会相对较短。
+# 总结
+# 如果函数 f 的计算成本较高，bisect 函数的缓存机制可能会带来一定的性能提升，因为它避免了重复计算 f(a)。
+# 如果函数 f 的计算成本较低，bisect1 函数的简单逻辑和较少的函数调用开销可能会使其运行效率更高。
 
 # ------------------------------------------------------------------------------------------
 # 补充一点 fc: function call 函数调用的内容，这样我们就可以设计一个 my_mutate辅助工作。

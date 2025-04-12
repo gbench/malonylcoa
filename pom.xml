@@ -199,8 +199,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin-version}</version>
 				<configuration>
-					<source>21</source>
-					<target>21</target>
+					<source>24</source>
+					<target>24</target>
 					<compilerArgs>
 						<compilerArg>-parameters</compilerArg> <!-- java反射获取参数名 -->
 						<compilerArg>-Xlint:unchecked</compilerArg>
