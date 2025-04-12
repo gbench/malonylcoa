@@ -33,8 +33,8 @@ strips <- \(ps, n=length(ps), price=10000) {
   data.frame(pmts=ps) |> mutate(rate=bisect(\(r) npv(r, -pmts, price)), pvs=pmts*((1+rate)^-(1:length(pmts))), interest=pmts-pvs)
 }
 
-# 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
-vs <- strips(rep((10000+30*0.5*12)/12, 12)); vs
+# 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列: (\(n=12) rep((10000+30*0.5*n)/n, n))()
+(\(n=12) rep((10000+30*0.5*n)/n, n))() |> strips()
 
 >
        pmts        rate      pvs  interest
@@ -52,7 +52,7 @@ vs <- strips(rep((10000+30*0.5*12)/12, 12)); vs
 12 848.3333 0.002755332 820.7800 27.553318
 
 # 对列向量组，按照列，进行累计汇总
-strips(rep((10000+30*0.5*12)/12, 12))|>apply(2, sum)
+(\(n=12) rep((10000+30*0.5*n)/n, n))() |> strips() |> apply(2, sum)
 
 >
         pmts         rate          pvs     interest 
