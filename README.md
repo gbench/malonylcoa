@@ -93,6 +93,17 @@ Stream.iterate(analyze("cos x"), e -> e.derivate()).map(e -> e.eval("x", 0)).lim
 # 启动H2控制台 : 在eclipse debugshell
 org.h2.tools.Server.createWebServer("-web").start()
 
+# 源代码打包
+把当前目录下的文件打包成 ARCHIVE_NAME， ':(exclude).*' 表示 除了以.开头的文件即排除隐藏文件
+``` bash
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main") # 获取当前分支名称，如果失败则使用默认值 "main"
+CURRENT_DIR_NAME=$(basename "$(pwd)") # 获取当前目录的名称（而不是完整路径）
+TIMESTAMP=$(date +'%Y%m%d%H%M%S') # 时间戳
+ARCHIVE_NAME="${CURRENT_DIR_NAME}_${CURRENT_BRANCH}_${TIMESTAMP}.zip" # 设置 ARCHIVE_NAME 变量，仅包含目录名称和分支名称
+git archive --format=zip --output="$ARCHIVE_NAME" "$CURRENT_BRANCH" -- . ':(exclude).*'
+echo "Archive created: $ARCHIVE_NAME"
+```
+
 #### 参与贡献
 
 1.  Fork 本仓库
