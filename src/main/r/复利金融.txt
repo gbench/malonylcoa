@@ -15,9 +15,9 @@ bisect <- function (f, a=0, b=1, eps=1e-10) {
       repeat { # 以持续缩短根值root区间[a,b]的长度的方式（二分法）, 逐渐优化&定位有效根值root位置，直到该区间长度进入精度(误差容许)范围。
         assign('c', (a+b)/2) #  指定c为 a 与 b 的中心点, 不采用 c <- (a+b)/2的原因是为了强调：这是用一个符号'c'绑定值(a+b)/2；'c' 可以理解为[a,b]的中点位置的值引用
         if(assign('fc', f(c))==0 || abs(b-a)<eps) break # 直接获得精确解 或者  持续计算直到b与a之间的距离小于误差限制eps，终止计算
-        flag <- fa*fc<0 # fa与a,b的中心点c处的f值fc是否位于f与x轴交点即root的两旁：true: a,c 异侧，false: a,c同侧.
+        assign('flag', fa*fc < 0) # fa与a,b的中心点c处的f值fc是否位于f与x轴交点即root的两旁：true: a,c 异侧，false: a,c同侧.
         if(!flag) assign('fa', fc) # a, c同侧则需要更新fa，这样就可以保证 fa与f(b)是始终是异号，进而a,b区间必然包含有root值
-        assign(ifelse(flag, 'b', 'a'), c,  parent.frame()) # 根据flag状态将中心点c配置到下一阶段的初始值位置:a,c 同侧c更新a; a,c异侧c更新b;以保证新的a,b区间始终包含root
+        assign(ifelse(flag, 'b', 'a'), c, parent.frame()) # 根据flag状态将中心点c配置到下一阶段的初始值位置:a,c 同侧c更新a; a,c异侧c更新b;以保证新的a,b区间始终包含root
       } # repeat
       c # 返回 a 与 b 的中心点
     } # if
@@ -26,10 +26,11 @@ bisect <- function (f, a=0, b=1, eps=1e-10) {
 
 #' 净现值函数
 #'
-#' @param rate:折现利率
+#' @param rate:内部收益率(折现利率)
 #' @param pmts:支付现金流(负值)
 #' @param price:资产现价(正值)
-#' @return 净现值 ：将支付现金流pmts按照利率rate进行折现去冲抵资产现价price所产生的余额当price与(pmts,rate)相匹配的时候,npv为0
+#' @return 净现值:将支付现金流pmts按照利率rate进行折现去冲抵资产现价price所产生的余额,当price与元组(pmts, rate)相匹配的时候,npv为0
+#'               反过来也可以定义内部收益率(IRR) 为，调整price与元组(pmts, rate)相抵即npv为0时的折现利率。
 npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts))) + price
 
 #' 等额本息支付类型的金融工具（债券,按揭贷款等）的 结构拆解(分解成一组折现债券)
@@ -39,11 +40,11 @@ npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts))) + price
 #' @return 一组折现债券
 strips <- function (ps,  price=10000) {
   n <- length(ps) # 支付序列长度
-  pmts <- ps #  支付序列
-  rate <- bisect(\(r) npv(r, -pmts, price)) #  折现利率
-  pvs <- pmts * ((1+rate)^-seq(n)) # 现值(本金)序列
-  interest <- pmts - pvs # 利息序列：支付与现值之间的差额
-  data.frame(pmts, rate, pvs, interest) # 一组折现债券（每一行为一个折现债券）
+  pmts <- ps #  支付序列(债券面值)
+  rate <- bisect(\(r) npv(r, -pmts, price)) # 内部收益率(折现利率）
+  pvs <- pmts * (1+rate)^-seq(n) # 现值(本金)序列(现值价格)
+  interest <- pmts - pvs # 利息序列:支付与现值之间的差额(到期利息收益)
+  data.frame(pvs, pmts, rate, interest) # 一组折现债券（每行一个折价债券，pvs:现值价格，pmts:面值，rate:折现利率，interest:到期利息收益, row.names: 到期期限）
 }
 
 # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列: (\(n=12) rep((10000+30*0.5*n)/n, n))()
