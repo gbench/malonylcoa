@@ -31,7 +31,7 @@ npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts))) + price
 # 将一个分期贷款，分解成一组 贴现债券
 strips <- \(ps, n=length(ps), price=10000) {
   library(dplyr); 
-  data.frame(pmts=ps) |> mutate(rate=bisect(\(r) npv(r, -pmts, price)), pvs=pmts*((1+rate)^-(1:length(pmts))), interest=pvs-pmts)
+  data.frame(pmts=ps) |> mutate(rate=bisect(\(r) npv(r, -pmts, price)), pvs=pmts*((1+rate)^-(1:length(pmts))), interest=pmts-pvs)
 }
 
 # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
