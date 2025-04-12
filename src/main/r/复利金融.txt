@@ -24,8 +24,8 @@ bisect <- function (f, a=0, b=1, eps=1e-10) {
   }) (f(a)) # 计算f(a) 并将结果缓存到fa
 }
 
-# 净现值函数,rate:折现利率,pmts:支付现金流,price:资产现价
-npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts)))+price
+# 净现值函数, rate:折现利率, pmts:支付现金流(负值), price:资产现价(正值)
+npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts))) + price
 
 # 按揭贷款的支付周期的实际利率计算。
 # 将一个分期贷款，分解成一组 贴现债券
@@ -33,7 +33,6 @@ strips <- \(ps, n=length(ps), price=10000) {
   library(dplyr); 
   data.frame(pmts=ps) |> mutate(rate=bisect(\(r) npv(r, -pmts, price)), pvs=pmts*((1+rate)^-(1:length(pmts))), interest=pvs-pmts)
 }
-
 
 # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
 vs <- strips(rep((10000+30*0.5*12)/12, 12)); vs
