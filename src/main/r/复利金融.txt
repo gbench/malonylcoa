@@ -1,11 +1,12 @@
 #' 
-#' 二分法 求值：过程方式, 缓存fa, 减少一次调用。
+#' 二分法求值：过程方式, 缓存fa, 减少一次调用。
 #' 注意，不要小看这减少的一次调用，对性能影响是很大的，详见 后面的性能分析。
 #'
 #' @param f 数值方程， 比如  \(x) x^2 - 4
 #' @param a 数值方程， 区间开始位置，默认为0
 #' @param b 数值方程， 结束位置，默认为1
 #' @param eps 误差大小 默认为  1e-10
+#' @return f(x)==0 的方程根
 bisect <- function (f, a=0, b=1, eps=1e-10) {
   (\(fa) { # 缓存f(a)的计算结果
     if (fa*f(b)>0) # 相同符号则放弃运算
@@ -23,14 +24,26 @@ bisect <- function (f, a=0, b=1, eps=1e-10) {
   }) (f(a)) # 计算f(a) 并将结果缓存到fa
 }
 
-# 净现值函数, rate:折现利率, pmts:支付现金流(负值), price:资产现价(正值)
+#' 净现值函数
+#'
+#' @param rate:折现利率
+#' @param pmts:支付现金流(负值)
+#' @param price:资产现价(正值)
+#' @return 净现值 ：将支付现金流pmts按照利率rate进行折现去冲抵资产现价price所产生的余额当price与(pmts,rate)相匹配的时候,npv为0
 npv <- function (rate, pmts, price) sum(pmts*(1+rate)^-(1:length(pmts))) + price
 
-# 按揭贷款的支付周期的实际利率计算。
-# 将一个分期贷款，分解成一组 贴现债券
-strips <- \(ps, n=length(ps), price=10000) {
-  library(dplyr); 
-  data.frame(pmts=ps) |> mutate(rate=bisect(\(r) npv(r, -pmts, price)), pvs=pmts*((1+rate)^-(1:length(pmts))), interest=pmts-pvs)
+#' 等额本息支付类型的金融工具（债券,按揭贷款等）的 结构拆解(分解成一组折现债券)
+#'
+#' @param ps 等额本息的支付序列
+#' @param price 金融工具价格(当前价格）
+#' @return 一组折现债券
+strips <- function (ps,  price=10000) {
+  n <- length(ps) # 支付序列长度
+  pmts <- ps #  支付序列
+  rate <- bisect(\(r) npv(r, -pmts, price)) #  折现利率
+  pvs <- pmts * ((1+rate)^-seq(n)) # 现值(本金)序列
+  interest <- pmts - pvs # 利息序列：支付与现值之间的差额
+  data.frame(pmts, rate, pvs, interest) # 一组折现债券（每一行为一个折现债券）
 }
 
 # 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列: (\(n=12) rep((10000+30*0.5*n)/n, n))()
