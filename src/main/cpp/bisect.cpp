@@ -360,7 +360,7 @@ T npv (T rate, vec<T> pmts, T price) {
 }
 
 int main() {
-	std::cout << "* SQRT OF [1..10]" << std::endl;
+	std::cout << "* SQRT OF [0..9]" << std::endl;
 	for (int i=0; i<10; i++) {
   		double v = bisect(to_f([&i](double x) {return pow(x, 2) - i;}), 0, 10);
 		printf("sqrt(%d) = %.3f \n", i, v);
@@ -369,15 +369,20 @@ int main() {
 	printf("-----------------------------------------------------------------------------\n");
 
 	double price = 10000; // 1万元现金资产
-	auto pmts = vec<double>(12, [=](auto x){return (price+30*.5*12)/12;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
+	auto n = 12; // 一年的月份数量
+	auto m = 30; // 一月的天数
+	auto fee = .5; // 日费用
+	auto pmts = vec<double>(n, [=](auto x){return (price+m*n*fee)/n;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
 	auto rate = bisect(to_f([&](double r){return npv(r, pmts*-1, price);})); // 内部收益率(折现利率）
 	auto pvs = pmts.fmap<double>([=](int i, auto &x){ return x*pow(1+rate, -(i+1));}); // 现值序列
 	auto interests = pmts-pvs; // 利息
 
-	std::cout << "* IRR:" << rate << std::endl;
-	std::cout << "* PVS:" << pvs << std::endl;
-	std::cout << "* PMTS:" << pmts << std::endl;
-	std::cout << "* INTERESTS:" << interests << std::endl;
+	std::cout << "* TOTAL_PVS: " << pvs.sum() << std::endl;
+	std::cout << "* TOTAL_INTERESTS: " << interests.sum() << std::endl;
+	std::cout << "* IRR: " << rate << std::endl;
+	std::cout << "* PVS: " << pvs << std::endl;
+	std::cout << "* PMTS: " << pmts << std::endl;
+	std::cout << "* INTERESTS: " << interests << std::endl;
 	
 	return 0;
 }
