@@ -217,6 +217,65 @@ struct vec {
         });
     }
 
+    // vec<U> 与单个元素 U 相加
+    vec<T> operator+(const T& u) const {
+        return vec<T>(size, [this, u](size_t i) {
+            return this->data[i] + u;
+        });
+    }
+
+    // vec<U> 与另一个 vec<U> 按照对应位置相加
+    vec<T> operator+(const vec<T>& us) const {
+        if (size != us.size) {
+            throw std::invalid_argument("Vectors must have the same size for element-wise addition.");
+        }
+        return vec<T>(size, [this, &us](size_t i) {
+            return this->data[i] + us.data[i];
+        });
+    }
+
+    // vec<U> 与单个元素 U 相减
+    vec<T> operator-(const T& u) const {
+        return vec<T>(size, [this, u](size_t i) {
+            return this->data[i] - u;
+        });
+    }
+
+    // vec<U> 与另一个 vec<U> 按照对应位置相减
+    vec<T> operator-(const vec<T>& us) const {
+        if (size != us.size) {
+            throw std::invalid_argument("Vectors must have the same size for element-wise subtraction.");
+        }
+        return vec<T>(size, [this, &us](size_t i) {
+            return this->data[i] - us.data[i];
+        });
+    }
+
+    // vec<U> 与单个元素 U 相除
+    vec<T> operator/(const T& u) const {
+        if (u == T()) {
+            throw std::invalid_argument("Division by zero is not allowed.");
+        }
+        return vec<T>(size, [this, u](size_t i) {
+            return this->data[i] / u;
+        });
+    }
+
+    // vec<U> 与另一个 vec<U> 按照对应位置相除
+    vec<T> operator/(const vec<T>& us) const {
+        if (size != us.size) {
+            throw std::invalid_argument("Vectors must have the same size for element-wise division.");
+        }
+        for (size_t i = 0; i < size; ++i) {
+            if (us.data[i] == T()) {
+                throw std::invalid_argument("Division by zero is not allowed.");
+            }
+        }
+        return vec<T>(size, [this, &us](size_t i) {
+            return this->data[i] / us.data[i];
+        });
+    }
+
     // 对 vec 中各个元素求和
     T sum() const {
         T result = T();
@@ -306,11 +365,19 @@ int main() {
   		double v = bisect(to_f([&i](double x) {return pow(x, 2) - i;}), 0, 10);
 		printf("sqrt(%d) = %.3f \n", i, v);
 	}
+
 	printf("-----------------------------------------------------------------------------\n");
+
 	double price = 10000; // 1万元现金资产
-	auto pmts = vec<double>(12, [=](auto x){ return (price+30*.5*12)/12;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
-	auto rate = bisect(to_f([&](double r) {return npv(r, pmts*-1 , price);})); // 内部收益率(折现利率）
+	auto pmts = vec<double>(12, [=](auto x){return (price+30*.5*12)/12;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
+	auto rate = bisect(to_f([&](double r){return npv(r, pmts*-1, price);})); // 内部收益率(折现利率）
+	auto pvs = pmts.fmap<double>([=](int i, auto &x){ return x*pow(1+rate, -(i+1));}); // 现值序列
+	auto interests = pmts-pvs; // 利息
+
 	std::cout << "* IRR:" << rate << std::endl;
+	std::cout << "* PVS:" << pvs << std::endl;
+	std::cout << "* PMTS:" << pmts << std::endl;
+	std::cout << "* INTERESTS:" << interests << std::endl;
 	
 	return 0;
 }
