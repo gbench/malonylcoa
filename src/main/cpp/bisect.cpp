@@ -18,7 +18,6 @@
 #include <functional>
 #include <type_traits>
 #include <iostream>
-#include <vector>
 #include <string>
 
 // ----------------------------------------------------------------------------------
@@ -95,28 +94,28 @@ struct all_convertible<T, First, Rest...>
 // 数据结构
 // ----------------------------------------------------------------------------------
 
-// 前置声明 vec 类，以便在 is_vec 中使用
+// 前置声明 ndarray 类，以便在 is_ndarray 中使用
 template<typename T>
-struct vec;
+struct ndarray;
 
-// 辅助模板来判断类型是否为 vec
+// 辅助模板来判断类型是否为 ndarray
 template<typename T>
-struct is_vec : std::false_type {};
+struct is_ndarray : std::false_type {};
 
 template<typename T>
-struct is_vec<vec<T>> : std::true_type {};
+struct is_ndarray<ndarray<T>> : std::true_type {};
 
-// 定义模板结构体 vec
+// 定义模板结构体 ndarray
 template <typename T>
-struct vec {
+struct ndarray {
     // 构造函数，使用可变参数模板
     template <typename... Args, typename std::enable_if<all_convertible<T, Args...>::value, int>::type = 0>
-    vec(Args&&... args) : size(sizeof...(args)), data(new T[size]) {
+    ndarray(Args&&... args) : size(sizeof...(args)), data(new T[size]) {
         initialize(0, std::forward<Args>(args)...);
     }
 
     // 根据 lambda 函数生成向量的构造函数
-    vec(size_t s, std::function<T(size_t)> generator) : size(s) {
+    ndarray(size_t s, std::function<T(size_t)> generator) : size(s) {
         data = new T[size];
         for (size_t i = 0; i < size; ++i) {
             data[i] = generator(i);
@@ -124,20 +123,20 @@ struct vec {
     }
 
     // 拷贝构造函数
-    vec(const vec& other) : size(other.size), data(new T[size]) {
+    ndarray(const ndarray& other) : size(other.size), data(new T[size]) {
         for (std::size_t i = 0; i < size; ++i) {
             data[i] = other.data[i];
         }
     }
 
     // 移动构造函数
-    vec(vec&& other) noexcept : size(other.size), data(other.data) {
+    ndarray(ndarray&& other) noexcept : size(other.size), data(other.data) {
         other.size = 0;
         other.data = nullptr;
     }
 
     // 拷贝赋值运算符
-    vec& operator=(const vec& other) {
+    ndarray& operator=(const ndarray& other) {
         if (this != &other) {
             delete[] data;
             size = other.size;
@@ -150,7 +149,7 @@ struct vec {
     }
 
     // 移动赋值运算符
-    vec& operator=(vec&& other) noexcept {
+    ndarray& operator=(ndarray&& other) noexcept {
         if (this != &other) {
             delete[] data;
             size = other.size;
@@ -162,7 +161,7 @@ struct vec {
     }
 
     // 析构函数，释放动态分配的内存
-    ~vec() {
+    ~ndarray() {
         delete[] data;
     }
 
@@ -184,85 +183,85 @@ struct vec {
         return data[index];
     }
 
-    // 对 vec 每个元素 t 应用 mapper(t) 变换成 vec<U>
+    // 对 ndarray 每个元素 t 应用 mapper(t) 变换成 ndarray<U>
     template<typename U>
-    vec<U> fmap(std::function<U(const T&)> mapper) const {
-        return vec<U>(size, [this, mapper](size_t i) {
+    ndarray<U> fmap(std::function<U(const T&)> mapper) const {
+        return ndarray<U>(size, [this, mapper](size_t i) {
             return mapper(this->data[i]);
         });
     }
 
     // 重载 fmap 函数，支持 U (int, T&) 类型的 mapper
     template<typename U>
-    vec<U> fmap(std::function<U(int, T&)> mapper) const {
-        return vec<U>(size, [this, mapper](size_t i) {
+    ndarray<U> fmap(std::function<U(int, T&)> mapper) const {
+        return ndarray<U>(size, [this, mapper](size_t i) {
             return mapper(static_cast<int>(i), this->data[i]);
         });
     }
 
-    // vec<U> 与单个元素 U 相乘
-    vec<T> operator*(const T& u) const {
-        return vec<T>(size, [this, u](size_t i) {
+    // ndarray<U> 与单个元素 U 相乘
+    ndarray<T> operator*(const T& u) const {
+        return ndarray<T>(size, [this, u](size_t i) {
             return this->data[i] * u;
         });
     }
 
-    // vec<U> 与另一个 vec<U> 按照对应位置相乘
-    vec<T> operator*(const vec<T>& us) const {
+    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相乘
+    ndarray<T> operator*(const ndarray<T>& us) const {
         if (size != us.size) {
             throw std::invalid_argument("Vectors must have the same size for element-wise multiplication.");
         }
-        return vec<T>(size, [this, &us](size_t i) {
+        return ndarray<T>(size, [this, &us](size_t i) {
             return this->data[i] * us.data[i];
         });
     }
 
-    // vec<U> 与单个元素 U 相加
-    vec<T> operator+(const T& u) const {
-        return vec<T>(size, [this, u](size_t i) {
+    // ndarray<U> 与单个元素 U 相加
+    ndarray<T> operator+(const T& u) const {
+        return ndarray<T>(size, [this, u](size_t i) {
             return this->data[i] + u;
         });
     }
 
-    // vec<U> 与另一个 vec<U> 按照对应位置相加
-    vec<T> operator+(const vec<T>& us) const {
+    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相加
+    ndarray<T> operator+(const ndarray<T>& us) const {
         if (size != us.size) {
             throw std::invalid_argument("Vectors must have the same size for element-wise addition.");
         }
-        return vec<T>(size, [this, &us](size_t i) {
+        return ndarray<T>(size, [this, &us](size_t i) {
             return this->data[i] + us.data[i];
         });
     }
 
-    // vec<U> 与单个元素 U 相减
-    vec<T> operator-(const T& u) const {
-        return vec<T>(size, [this, u](size_t i) {
+    // ndarray<U> 与单个元素 U 相减
+    ndarray<T> operator-(const T& u) const {
+        return ndarray<T>(size, [this, u](size_t i) {
             return this->data[i] - u;
         });
     }
 
-    // vec<U> 与另一个 vec<U> 按照对应位置相减
-    vec<T> operator-(const vec<T>& us) const {
+    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相减
+    ndarray<T> operator-(const ndarray<T>& us) const {
         if (size != us.size) {
             throw std::invalid_argument("Vectors must have the same size for element-wise subtraction.");
         }
-        return vec<T>(size, [this, &us](size_t i) {
+        return ndarray<T>(size, [this, &us](size_t i) {
             return this->data[i] - us.data[i];
         });
     }
 
-    // vec<U> 与单个元素 U 相除
-    vec<T> operator/(const T& u) const {
+    // ndarray<U> 与单个元素 U 相除
+    ndarray<T> operator/(const T& u) const {
         if (u == T()) {
             throw std::invalid_argument("Division by zero is not allowed.");
         }
-        return vec<T>(size, [this, u](size_t i) {
+        return ndarray<T>(size, [this, u](size_t i) {
             return this->data[i] / u;
         });
     }
 
-    // vec<U> 与另一个 vec<U> 按照对应位置相除
-    vec<T> operator/(const vec<T>& us) const {
+    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相除
+    ndarray<T> operator/(const ndarray<T>& us) const {
         if (size != us.size) {
             throw std::invalid_argument("Vectors must have the same size for element-wise division.");
         }
@@ -271,12 +270,12 @@ struct vec {
                 throw std::invalid_argument("Division by zero is not allowed.");
             }
         }
-        return vec<T>(size, [this, &us](size_t i) {
+        return ndarray<T>(size, [this, &us](size_t i) {
             return this->data[i] / us.data[i];
         });
     }
 
-    // 对 vec 中各个元素求和
+    // 对 ndarray 中各个元素求和
     T sum() const {
         T result = T();
         for (size_t i = 0; i < size; ++i) {
@@ -301,9 +300,9 @@ struct vec {
         return result;
     }
 
-    // vec 类型的 to_string 实现
+    // ndarray 类型的 to_string 实现
     template<typename U = T>
-    typename std::enable_if<is_vec<U>::value, std::string>::type
+    typename std::enable_if<is_ndarray<U>::value, std::string>::type
     to_string() const {
         std::string result = "[";
         for (std::size_t i = 0; i < size; ++i) {
@@ -322,7 +321,7 @@ struct vec {
 };
 
 template <typename T>
-std::ostream& operator << (std::ostream &os, vec<T> xs) {
+std::ostream& operator << (std::ostream &os, ndarray<T> xs) {
 	os << xs.to_string();
 	return os;
 };
@@ -350,19 +349,23 @@ loop: 		double c = (a + b) / 2, fc = f(c);
 	}
 }
 
+/**
+ * 净现值
+ * @param rate 内部收益率，折现率 
+ * @param pmts 支付序列（负数序列）, 注意pmts是右值引用（只接受临时对象，比如xs*-1这样没有被左值引用的值）
+ * @param price 资产价格
+ */
 template <typename T>
-T npv (T rate, vec<T> pmts, T price) {
+T npv (T &rate, ndarray<T> &&pmts, T &price) {
     // 显式创建 std::function 对象
-    std::function<T(int, T&)> mapper = [=](int i, T& p) {
-        return p * std::pow(1 + rate, -(i + 1));
-    };
-    return pmts.fmap(mapper).sum() + price;
+    std::function<T(int, T&)> pv = [=](int i, T& pmt) {return pmt * std::pow(1+rate, -(i+1));};
+    return pmts.fmap(pv).sum() + price;
 }
 
 int main() {
 	std::cout << "* SQRT OF [0..9]" << std::endl;
 	for (int i=0; i<10; i++) {
-  		double v = bisect(to_f([&i](double x) {return pow(x, 2) - i;}), 0, 10);
+  		double v = bisect(to_f([&i](double x) {return pow(x, 2)-i;}), 0, 10);
 		printf("sqrt(%d) = %.3f \n", i, v);
 	}
 
@@ -372,9 +375,9 @@ int main() {
 	auto n = 12; // 一年的月份数量
 	auto m = 30; // 一月的天数
 	auto fee = .5; // 日费用
-	auto pmts = vec<double>(n, [=](auto x){return (price+m*n*fee)/n;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
+	auto pmts = ndarray<double>(n, [&](auto x){return (price+m*n*fee)/n;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
 	auto rate = bisect(to_f([&](double r){return npv(r, pmts*-1, price);})); // 内部收益率(折现利率）
-	auto pvs = pmts.fmap<double>([=](int i, auto &x){ return x*pow(1+rate, -(i+1));}); // 现值序列
+	auto pvs = pmts.fmap<double>([=](int i, auto &x){return x*pow(1+rate, -(i+1));}); // 现值序列
 	auto interests = pmts-pvs; // 利息
 
 	std::cout << "* TOTAL_PVS: " << pvs.sum() << std::endl;
