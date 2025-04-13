@@ -7,6 +7,8 @@
  * warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * g++ bisect.cpp && a
+ *
+ * #ref https://blog.csdn.net/witton/article/details/145187279
  * 
  ********************************************************/
 
@@ -15,6 +17,9 @@
 #include <math.h>
 #include <functional>
 #include <type_traits>
+#include <iostream>
+#include <vector>
+#include <string>
 
 // 实现函数，用于将 lambda 表达式转换为普通函数
 template <class L, class R, class... Args>
@@ -71,6 +76,10 @@ static auto to_f(L&& l) {
     return to_f_impl<L>::impl(std::move(l));
 }
 
+// ----------------------------------------------------------------------------------
+// 算法正文
+// ----------------------------------------------------------------------------------
+
 typedef double (*fn)(double);
 
 double bisect(fn f, double a=0, double b=1, double eps=1e-10) {
@@ -90,10 +99,143 @@ loop: 		double c = (a + b) / 2, fc = f(c);
 	}
 }
 
+// 辅助模板类，用于判断所有类型是否都能转换为 T
+template <typename T, typename... Args>
+struct all_convertible;
+
+template <typename T>
+struct all_convertible<T> : std::true_type {};
+
+template <typename T, typename First, typename... Rest>
+struct all_convertible<T, First, Rest...>
+    : std::integral_constant<bool, std::is_convertible<First, T>::value && all_convertible<T, Rest...>::value> {};
+
+
+// 前置声明 vec 类，以便在 is_vec 中使用
+template<typename T>
+struct vec;
+
+// 辅助模板来判断类型是否为 vec
+template<typename T>
+struct is_vec : std::false_type {};
+
+template<typename T>
+struct is_vec<vec<T>> : std::true_type {};
+
+// 定义模板结构体 vec
+template <typename T>
+struct vec {
+    // 构造函数，使用可变参数模板
+    template <typename... Args, typename std::enable_if<all_convertible<T, Args...>::value, int>::type = 0>
+    vec(Args&&... args) : size(sizeof...(args)), data(new T[size]) {
+        initialize(0, std::forward<Args>(args)...);
+    }
+
+    // 拷贝构造函数
+    vec(const vec& other) : size(other.size), data(new T[size]) {
+        for (std::size_t i = 0; i < size; ++i) {
+            data[i] = other.data[i];
+        }
+    }
+
+    // 移动构造函数
+    vec(vec&& other) noexcept : size(other.size), data(other.data) {
+        other.size = 0;
+        other.data = nullptr;
+    }
+
+    // 拷贝赋值运算符
+    vec& operator=(const vec& other) {
+        if (this != &other) {
+            delete[] data;
+            size = other.size;
+            data = new T[size];
+            for (std::size_t i = 0; i < size; ++i) {
+                data[i] = other.data[i];
+            }
+        }
+        return *this;
+    }
+
+    // 移动赋值运算符
+    vec& operator=(vec&& other) noexcept {
+        if (this != &other) {
+            delete[] data;
+            size = other.size;
+            data = other.data;
+            other.size = 0;
+            other.data = nullptr;
+        }
+        return *this;
+    }
+
+    // 析构函数，释放动态分配的内存
+    ~vec() {
+        delete[] data;
+    }
+
+    // 辅助函数，用于递归初始化数组
+    template <typename First, typename... Rest>
+    void initialize(std::size_t index, First&& first, Rest&&... rest) {
+        data[index] = static_cast<T>(std::forward<First>(first));
+        initialize(index + 1, std::forward<Rest>(rest)...);
+    }
+
+    void initialize(std::size_t) {}
+
+    // 将数组内容转换为字符串的方法
+    // 基础类型的 to_string 实现
+    template<typename U = T>
+    typename std::enable_if<std::is_fundamental<U>::value, std::string>::type
+    to_string() const {
+        std::string result = "[";
+        for (std::size_t i = 0; i < size; ++i) {
+            result += std::to_string(data[i]);
+            if (i < size - 1) {
+                result += ", ";
+            }
+        }
+        result += "]";
+        return result;
+    }
+
+    // vec 类型的 to_string 实现
+    template<typename U = T>
+    typename std::enable_if<is_vec<U>::value, std::string>::type
+    to_string() const {
+        std::string result = "[";
+        for (std::size_t i = 0; i < size; ++i) {
+            result += data[i].to_string();
+            if (i < size - 1) {
+                result += ", ";
+            }
+        }
+        result += "]";
+        return result;
+    }
+
+    // 数据成员
+    std::size_t size;
+    T* data;
+};
+
+template <typename T>
+std::ostream& operator << (std::ostream &os, vec<T> xs) {
+	os << xs.to_string() << std::endl;
+	return os;
+};
+
 int main() {
-	for (int i=0;i<10;i++) {
+	for (int i=0; i<10; i++) {
   		double v = bisect(to_f([&i](double x) {return pow(x, 2) - i;}), 0, 10);
-		printf("sqrt(%d) = %.8f \n", i, v);
+		printf("sqrt(%d) = %.3f \n", i, v);
 	}
+	auto a = vec<int>(1, 2, 3, 4, 5);
+	auto b = vec<int>(2, 4, 6, 8, 10);
+	auto c = vec<vec<int>>(a, b);
+	std::cout << a << std::endl;
+	std::cout << b << std::endl;
+	std::cout << c << std::endl;
+	
 	return 0;
 }
