@@ -21,6 +21,10 @@
 #include <vector>
 #include <string>
 
+// ----------------------------------------------------------------------------------
+// 类型转换工具
+// ----------------------------------------------------------------------------------
+
 // 实现函数，用于将 lambda 表达式转换为普通函数
 template <class L, class R, class... Args>
 static auto impl_impl(L&& l) {
@@ -76,29 +80,6 @@ static auto to_f(L&& l) {
     return to_f_impl<L>::impl(std::move(l));
 }
 
-// ----------------------------------------------------------------------------------
-// 算法正文
-// ----------------------------------------------------------------------------------
-
-typedef double (*fn)(double);
-
-double bisect(fn f, double a=0, double b=1, double eps=1e-10) {
-	double fa = f(a), fb = f(b);
-	if (fa * fb > 0) return NAN; 
-	else if (fabs(fa) < eps) return a;
-	else if (fabs(fb) < eps) return b;
-	else {
-loop: 		double c = (a + b) / 2, fc = f(c);
-		if (fabs(fc) < eps || fabs((b-a)/2) < eps) return c;
-		else {
-			double flag = fa * fc > 0;
-			*(flag > 0 ? &a : &b) = c;
-			if (flag > 0) fa = fc;
-			goto loop;
-		}
-	}
-}
-
 // 辅助模板类，用于判断所有类型是否都能转换为 T
 template <typename T, typename... Args>
 struct all_convertible;
@@ -110,6 +91,9 @@ template <typename T, typename First, typename... Rest>
 struct all_convertible<T, First, Rest...>
     : std::integral_constant<bool, std::is_convertible<First, T>::value && all_convertible<T, Rest...>::value> {};
 
+// ----------------------------------------------------------------------------------
+// 数据结构
+// ----------------------------------------------------------------------------------
 
 // 前置声明 vec 类，以便在 is_vec 中使用
 template<typename T>
@@ -129,6 +113,14 @@ struct vec {
     template <typename... Args, typename std::enable_if<all_convertible<T, Args...>::value, int>::type = 0>
     vec(Args&&... args) : size(sizeof...(args)), data(new T[size]) {
         initialize(0, std::forward<Args>(args)...);
+    }
+
+    // 根据 lambda 函数生成向量的构造函数
+    vec(size_t s, std::function<T(size_t)> generator) : size(s) {
+        data = new T[size];
+        for (size_t i = 0; i < size; ++i) {
+            data[i] = generator(i);
+        }
     }
 
     // 拷贝构造函数
@@ -183,6 +175,57 @@ struct vec {
 
     void initialize(std::size_t) {}
 
+    // [] 索引访问元素
+    T& operator[](size_t index) {
+        return data[index];
+    }
+
+    const T& operator[](size_t index) const {
+        return data[index];
+    }
+
+    // 对 vec 每个元素 t 应用 mapper(t) 变换成 vec<U>
+    template<typename U>
+    vec<U> fmap(std::function<U(const T&)> mapper) const {
+        return vec<U>(size, [this, mapper](size_t i) {
+            return mapper(this->data[i]);
+        });
+    }
+
+    // 重载 fmap 函数，支持 U (int, T&) 类型的 mapper
+    template<typename U>
+    vec<U> fmap(std::function<U(int, T&)> mapper) const {
+        return vec<U>(size, [this, mapper](size_t i) {
+            return mapper(static_cast<int>(i), this->data[i]);
+        });
+    }
+
+    // vec<U> 与单个元素 U 相乘
+    vec<T> operator*(const T& u) const {
+        return vec<T>(size, [this, u](size_t i) {
+            return this->data[i] * u;
+        });
+    }
+
+    // vec<U> 与另一个 vec<U> 按照对应位置相乘
+    vec<T> operator*(const vec<T>& us) const {
+        if (size != us.size) {
+            throw std::invalid_argument("Vectors must have the same size for element-wise multiplication.");
+        }
+        return vec<T>(size, [this, &us](size_t i) {
+            return this->data[i] * us.data[i];
+        });
+    }
+
+    // 对 vec 中各个元素求和
+    T sum() const {
+        T result = T();
+        for (size_t i = 0; i < size; ++i) {
+            result += data[i];
+        }
+        return result;
+    }
+
     // 将数组内容转换为字符串的方法
     // 基础类型的 to_string 实现
     template<typename U = T>
@@ -221,21 +264,53 @@ struct vec {
 
 template <typename T>
 std::ostream& operator << (std::ostream &os, vec<T> xs) {
-	os << xs.to_string() << std::endl;
+	os << xs.to_string();
 	return os;
 };
 
+// ----------------------------------------------------------------------------------
+// 算法正文
+// ----------------------------------------------------------------------------------
+
+typedef double (*fn)(double);
+
+double bisect(fn f, double a=0, double b=1, double eps=1e-10) {
+	double fa = f(a), fb = f(b);
+	if (fa * fb > 0) return NAN; 
+	else if (fabs(fa) < eps) return a;
+	else if (fabs(fb) < eps) return b;
+	else {
+loop: 		double c = (a + b) / 2, fc = f(c);
+		if (fabs(fc) < eps || fabs((b-a)/2) < eps) return c;
+		else {
+			double flag = fa * fc > 0;
+			*(flag > 0 ? &a : &b) = c;
+			if (flag > 0) fa = fc;
+			goto loop;
+		}
+	}
+}
+
+template <typename T>
+T npv (T rate, vec<T> pmts, T price) {
+    // 显式创建 std::function 对象
+    std::function<T(int, T&)> mapper = [=](int i, T& p) {
+        return p * std::pow(1 + rate, -(i + 1));
+    };
+    return pmts.fmap(mapper).sum() + price;
+}
+
 int main() {
+	std::cout << "* SQRT OF [1..10]" << std::endl;
 	for (int i=0; i<10; i++) {
   		double v = bisect(to_f([&i](double x) {return pow(x, 2) - i;}), 0, 10);
 		printf("sqrt(%d) = %.3f \n", i, v);
 	}
-	auto a = vec<int>(1, 2, 3, 4, 5);
-	auto b = vec<int>(2, 4, 6, 8, 10);
-	auto c = vec<vec<int>>(a, b);
-	std::cout << a << std::endl;
-	std::cout << b << std::endl;
-	std::cout << c << std::endl;
+	printf("-----------------------------------------------------------------------------\n");
+	double price = 10000; // 1万元现金资产
+	auto pmts = vec<double>(12, [=](auto x){ return (price+30*.5*12)/12;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
+	auto rate = bisect(to_f([&](double r) {return npv(r, pmts*-1 , price);})); // 内部收益率(折现利率）
+	std::cout << "* IRR:" << rate << std::endl;
 	
 	return 0;
 }
