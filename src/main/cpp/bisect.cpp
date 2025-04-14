@@ -70,7 +70,7 @@ struct to_f_impl : public to_f_impl<decltype(&L::operator())> {
 };
 
 // 定义宏来简化模板代码
-#define SIMPLIFY_IMPL \
+#define DEFAULT_F_IMPL \
     /* 这里还需要带上 lambda 表达式类的类型 L，方便传递 lambda 表达式类对象 */ \
     template <class L> \
     static auto impl(L&& l) { \
@@ -80,13 +80,13 @@ struct to_f_impl : public to_f_impl<decltype(&L::operator())> {
 // 特化模板类，处理 const 修饰的 lambda 表达式的 operator() 方法
 template <class ClassType, class R, class... Args>
 struct to_f_impl<R(ClassType::*)(Args...) const> { // 注意这里带有const
-    SIMPLIFY_IMPL
+    DEFAULT_F_IMPL
 };
 
 // 特化模板类，处理非 const 修饰的 lambda 表达式的 operator() 方法
 template <class ClassType, class R, class... Args>
 struct to_f_impl<R(ClassType::*)(Args...)> { // 注意这里少了一个const
-    SIMPLIFY_IMPL
+    DEFAULT_F_IMPL
 };
 
 // 最终的封装 API，用于将 lambda 表达式转换为普通函数
