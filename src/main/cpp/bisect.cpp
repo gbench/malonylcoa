@@ -24,6 +24,8 @@
 // 类型转换工具
 // ----------------------------------------------------------------------------------
 
+
+// 将带有capture的lambda转换成不带有capture的lambda（可以转换成函数指针的lambda）的实现函数的模板
 // 实现函数，用于将 lambda 表达式转换为普通函数
 template <class L, class R, class... Args>
 static auto impl_impl(L&& l) {
@@ -31,17 +33,31 @@ static auto impl_impl(L&& l) {
         !std::is_same<L, std::function<R(Args...)>>::value,
         "Only lambdas are supported, it is unsafe to use std::function or other non - lambda callables"
     );
+
     // 这里将 lambda 表达式类对象保存下来，设置为静态变量，
     // 后面的新的 lambda 表达式才能访问到
     static L lambda_s = std::move(l);
-    // 返回一个新的 lambda 表达式
-    return [](Args... args) -> R {
+
+    /**
+     * 返回一个新的 lambda 表达式
+     * 注意：这里的返回的lambda是没有capture捕获变量的，也就是可以被转换成函数指针的lambda
+     * 要知道：lambda_s是可以有capture的，所以，通过impl_impl模板函数，我们就完成将一个
+     * 带有capture的lambda_s给转换成了不带有capture的新的lambda，
+     * 这就是为何to_f可以将带有capture的lambda为函数指针的原理。
+     */
+    return [](Args... args) -> R { // 注意 capture[]是空的 
         // 调用保存的 lambda 表达式类对象的 `operator()` 方法
         return lambda_s(args...);
     };
 }
 
-// 辅助模板类，用于推导 lambda 表达式的调用类型
+/**
+ * 辅助模板类，用于推导 lambda 表达式的调用类型
+ * 需要注意: 定义的to_f_impl<L>继承了自己的某一个特化版本的to_f_impl:
+ * to_f_impl<R(ClassType::*)(Args...) const> 带有const
+ * to_f_impl<R(ClassType::*)(Args...)> 不带有const
+ * 具体继承的是什么则需要根据lambda的类型L进行判断，这个技巧很有意思
+ */
 template <class L>
 struct to_f_impl : public to_f_impl<decltype(&L::operator())> {
     // 这里先定义一个模板，只是确定模板参数用，方便后面的模板特化
@@ -53,14 +69,24 @@ struct to_f_impl : public to_f_impl<decltype(&L::operator())> {
     // template <typename ReturnType, typename ClassType, typename... ArgTypes>
 };
 
+// 定义宏来简化模板代码
+#define SIMPLIFY_IMPL \
+    /* 这里还需要带上 lambda 表达式类的类型 L，方便传递 lambda 表达式类对象 */ \
+    template <class L> \
+    static auto impl(L&& l) { \
+        return impl_impl<L, R, Args...>(std::move(l)); \
+    }
+
 // 特化模板类，处理 const 修饰的 lambda 表达式的 operator() 方法
 template <class ClassType, class R, class... Args>
-struct to_f_impl<R(ClassType::*)(Args...) const> {
-    // 这里还需要带上 lambda 表达式类的类型 L，方便传递 lambda 表达式类对象
-    template <class L>
-    static auto impl(L&& l) {
-        return impl_impl<L, R, Args...>(std::move(l));
-    }
+struct to_f_impl<R(ClassType::*)(Args...) const> { // 注意这里带有const
+    SIMPLIFY_IMPL
+};
+
+// 特化模板类，处理非 const 修饰的 lambda 表达式的 operator() 方法
+template <class ClassType, class R, class... Args>
+struct to_f_impl<R(ClassType::*)(Args...)> { // 注意这里少了一个const
+    SIMPLIFY_IMPL
 };
 
 // 最终的封装 API，用于将 lambda 表达式转换为普通函数
@@ -274,7 +300,7 @@ double bisect(fx f, double a=0, double b=1, double eps=1e-10) {
 	else if (fabs(fa) < eps) return a;
 	else if (fabs(fb) < eps) return b;
 	else {
-loop: 		double c = (a + b) / 2, fc = f(c);
+loop:		double c = (a + b) / 2, fc = f(c);
 		if (fabs(fc) < eps || fabs((b-a)/2) < eps) return c;
 		else {
 			double flag = fa * fc > 0;
