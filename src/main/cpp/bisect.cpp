@@ -63,16 +63,6 @@ struct to_f_impl<R(ClassType::*)(Args...) const> {
     }
 };
 
-// 特化模板类，处理非 const 修饰的 lambda 表达式的 operator() 方法
-template <class ClassType, class R, class... Args>
-struct to_f_impl<R(ClassType::*)(Args...)> {
-    // 这里还需要带上 lambda 表达式类的类型 L，方便传递 lambda 表达式类对象
-    template <class L>
-    static auto impl(L&& l) {
-        return impl_impl<L, R, Args...>(std::move(l));
-    }
-};
-
 // 最终的封装 API，用于将 lambda 表达式转换为普通函数
 template <class L>
 static auto to_f(L&& l) {
@@ -330,9 +320,9 @@ std::ostream& operator << (std::ostream &os, ndarray<T> xs) {
 // 算法正文
 // ----------------------------------------------------------------------------------
 
-typedef double (*fn)(double);
+typedef double (*fx)(double);
 
-double bisect(fn f, double a=0, double b=1, double eps=1e-10) {
+double bisect(fx f, double a=0, double b=1, double eps=1e-10) {
 	double fa = f(a), fb = f(b);
 	if (fa * fb > 0) return NAN; 
 	else if (fabs(fa) < eps) return a;
@@ -358,7 +348,7 @@ loop: 		double c = (a + b) / 2, fc = f(c);
 template <typename T>
 T npv (T &rate, ndarray<T> &&pmts, T &price) {
     // 显式创建 std::function 对象
-    std::function<T(int, T&)> pv = [=](int i, T& pmt) {return pmt * std::pow(1+rate, -(i+1));};
+    std::function<T(int, T&)> pv = [=](int i, T& pmt) {return pmt*std::pow(1+rate, -(i+1));}; // 现值函数
     return pmts.fmap(pv).sum() + price;
 }
 
@@ -377,7 +367,7 @@ int main() {
 	auto fee = .5; // 日费用
 	auto pmts = ndarray<double>(n, [&](auto x){return (price+m*n*fee)/n;}); // 购买1万元现金资产，以日利息0.5元的融资费用，产生的月度支付序列
 	auto rate = bisect(to_f([&](double r){return npv(r, pmts*-1, price);})); // 内部收益率(折现利率）
-	auto pvs = pmts.fmap<double>([=](int i, auto &x){return x*pow(1+rate, -(i+1));}); // 现值序列
+	auto pvs = pmts.fmap<double>([=](int i, auto &pmt){return pmt*pow(1+rate, -(i+1));}); // 现值序列
 	auto interests = pmts-pvs; // 利息
 
 	std::cout << "* TOTAL_PVS: " << pvs.sum() << std::endl;
