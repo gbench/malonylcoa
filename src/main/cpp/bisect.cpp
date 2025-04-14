@@ -69,7 +69,7 @@ struct to_f_impl : public to_f_impl<decltype(&L::operator())> {
 };
 
 // 定义宏来简化模板代码
-#define DEFAULT_F_IMPL \
+#define DEFAULT_IMPL_METHOD_TPL \
     /* 这里还需要带上 lambda 表达式类的类型 L，方便传递 lambda 表达式类对象 */ \
     template <class L> \
     static auto impl(L&& l) { \
@@ -79,13 +79,13 @@ struct to_f_impl : public to_f_impl<decltype(&L::operator())> {
 // 特化模板类，处理 const 修饰的 lambda 表达式的 operator() 方法
 template <class ClassType, class R, class... Args>
 struct to_f_impl<R(ClassType::*)(Args...) const> { // 注意这里带有const
-    DEFAULT_F_IMPL
+    DEFAULT_IMPL_METHOD_TPL
 };
 
 // 特化模板类，处理非 const 修饰的 lambda 表达式的 operator() 方法
 template <class ClassType, class R, class... Args>
 struct to_f_impl<R(ClassType::*)(Args...)> { // 注意这里少了一个const
-    DEFAULT_F_IMPL
+    DEFAULT_IMPL_METHOD_TPL
 };
 
 // 最终的封装 API，用于将 lambda 表达式转换为普通函数
@@ -93,6 +93,8 @@ template <class L>
 static auto to_f(L&& l) {
     return to_f_impl<L>::impl(std::move(l));
 }
+
+#undef DEFAULT_IMPL_METHOD_TPL
 
 // 辅助模板类，用于判断所有类型是否都能转换为 T
 template <typename T, typename... Args>
