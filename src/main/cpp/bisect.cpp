@@ -24,7 +24,6 @@
 // 类型转换工具
 // ----------------------------------------------------------------------------------
 
-
 // 将带有capture的lambda转换成不带有capture的lambda（可以转换成函数指针的lambda）的实现函数的模板
 // 实现函数，用于将 lambda 表达式转换为普通函数
 template <class L, class R, class... Args>
@@ -236,6 +235,8 @@ struct ndarray {
     NDARRAY_OPERATOR(-)
     NDARRAY_OPERATOR(*)
     NDARRAY_OPERATOR(/)
+
+#undef NDARRAY_OPERATOR
     
     // 对 ndarray 中各个元素求和
     T sum() const {
@@ -246,36 +247,42 @@ struct ndarray {
         return result;
     }
 
+    // 定义将数组转换为字符串的宏
+#define TO_STRING(x) \
+    do { \
+        std::string result = "["; \
+        for (std::size_t i = 0; i < size; ++i) { \
+            result += x; \
+            if (i < size - 1) { \
+                result += ", "; \
+            } \
+        } \
+        result += "]"; \
+        return result; \
+    } while(0)
+
     // 将数组内容转换为字符串的方法
-    // 基础类型的 to_string 实现
     template<typename U = T>
     typename std::enable_if<std::is_fundamental<U>::value, std::string>::type
     to_string() const {
-        std::string result = "[";
-        for (std::size_t i = 0; i < size; ++i) {
-            result += std::to_string(data[i]);
-            if (i < size - 1) {
-                result += ", ";
-            }
-        }
-        result += "]";
-        return result;
+        TO_STRING(std::to_string(data[i]));
+    }
+
+    // 将数组内容转换为字符串的方法
+    template<typename U = T>
+    typename std::enable_if<std::is_same<U, std::string>::value, std::string>::type
+    to_string() const {
+        TO_STRING(data[i]);
     }
 
     // ndarray 类型的 to_string 实现
     template<typename U = T>
     typename std::enable_if<is_ndarray<U>::value, std::string>::type
     to_string() const {
-        std::string result = "[";
-        for (std::size_t i = 0; i < size; ++i) {
-            result += data[i].to_string();
-            if (i < size - 1) {
-                result += ", ";
-            }
-        }
-        result += "]";
-        return result;
+        TO_STRING(data[i].to_string());
     }
+
+#undef TO_STRING
 
     // 数据成员
     std::size_t size;
@@ -348,6 +355,13 @@ int main() {
 	std::cout << "* PVS: " << pvs << std::endl;
 	std::cout << "* PMTS: " << pmts << std::endl;
 	std::cout << "* INTERESTS: " << interests << std::endl;
+
+	printf("-----------------------------------------------------------------------------\n");
+
+	auto format = [](int i, double &x) {char buffer[256]; sprintf(buffer, "(%d#%.4f)", i, x); return std::string(buffer);};
+	std::cout << "* PVS: " << pvs.fmap<std::string>(format) << std::endl;
+	std::cout << "* PMTS: " << pmts.fmap<std::string>(format) << std::endl;
+	std::cout << "* INTERESTS: " << interests.fmap<std::string>(format) << std::endl;
 	
 	return 0;
 }
