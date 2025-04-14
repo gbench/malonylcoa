@@ -189,82 +189,28 @@ struct ndarray {
         });
     }
 
-    // ndarray<U> 与单个元素 U 相乘
-    ndarray<T> operator*(const T& u) const {
-        return ndarray<T>(size, [this, u](size_t i) {
-            return this->data[i] * u;
-        });
+    // 定义运算符重载宏
+#define NDARRAY_OPERATOR(op) \
+    ndarray<T> operator op(const T& u) const { \
+        return ndarray<T>(size, [this, u](size_t i) { \
+            return this->data[i] op u; \
+        }); \
+    } \
+    ndarray<T> operator op(const ndarray<T>& us) const { \
+        if (size != us.size) { \
+            throw std::invalid_argument("Vectors must have the same size for element-wise operation."); \
+        } \
+        return ndarray<T>(size, [this, &us](size_t i) { \
+            return this->data[i] op us.data[i]; \
+        }); \
     }
 
-    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相乘
-    ndarray<T> operator*(const ndarray<T>& us) const {
-        if (size != us.size) {
-            throw std::invalid_argument("Vectors must have the same size for element-wise multiplication.");
-        }
-        return ndarray<T>(size, [this, &us](size_t i) {
-            return this->data[i] * us.data[i];
-        });
-    }
-
-    // ndarray<U> 与单个元素 U 相加
-    ndarray<T> operator+(const T& u) const {
-        return ndarray<T>(size, [this, u](size_t i) {
-            return this->data[i] + u;
-        });
-    }
-
-    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相加
-    ndarray<T> operator+(const ndarray<T>& us) const {
-        if (size != us.size) {
-            throw std::invalid_argument("Vectors must have the same size for element-wise addition.");
-        }
-        return ndarray<T>(size, [this, &us](size_t i) {
-            return this->data[i] + us.data[i];
-        });
-    }
-
-    // ndarray<U> 与单个元素 U 相减
-    ndarray<T> operator-(const T& u) const {
-        return ndarray<T>(size, [this, u](size_t i) {
-            return this->data[i] - u;
-        });
-    }
-
-    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相减
-    ndarray<T> operator-(const ndarray<T>& us) const {
-        if (size != us.size) {
-            throw std::invalid_argument("Vectors must have the same size for element-wise subtraction.");
-        }
-        return ndarray<T>(size, [this, &us](size_t i) {
-            return this->data[i] - us.data[i];
-        });
-    }
-
-    // ndarray<U> 与单个元素 U 相除
-    ndarray<T> operator/(const T& u) const {
-        if (u == T()) {
-            throw std::invalid_argument("Division by zero is not allowed.");
-        }
-        return ndarray<T>(size, [this, u](size_t i) {
-            return this->data[i] / u;
-        });
-    }
-
-    // ndarray<U> 与另一个 ndarray<U> 按照对应位置相除
-    ndarray<T> operator/(const ndarray<T>& us) const {
-        if (size != us.size) {
-            throw std::invalid_argument("Vectors must have the same size for element-wise division.");
-        }
-        for (size_t i = 0; i < size; ++i) {
-            if (us.data[i] == T()) {
-                throw std::invalid_argument("Division by zero is not allowed.");
-            }
-        }
-        return ndarray<T>(size, [this, &us](size_t i) {
-            return this->data[i] / us.data[i];
-        });
-    }
-
+    // 使用宏定义 + - * / 运算
+    NDARRAY_OPERATOR(+)
+    NDARRAY_OPERATOR(-)
+    NDARRAY_OPERATOR(*)
+    NDARRAY_OPERATOR(/)
+    
     // 对 ndarray 中各个元素求和
     T sum() const {
         T result = T();
