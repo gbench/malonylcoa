@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
- * 
+ * cat - | nc localhost 9898
  */
 public class NcCtp {
 
