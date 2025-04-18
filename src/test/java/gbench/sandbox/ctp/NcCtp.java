@@ -7,13 +7,33 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
 
+/**
+ * 
+ */
 public class NcCtp {
 
+	private static String join(final String... ss) {
+		return Stream.of(ss).collect(Collectors.joining("\t"));
+	}
+
+	private static void println(final String... message) {
+		System.out.println(join(message));
+	}
+
+	private static void print(final String... message) {
+		System.out.print(join(message));
+	}
+
 	/**
-	 * @param host
-	 * @param port
+	 * CTP 连接
+	 * 
+	 * @param host 主机地址（IP)
+	 * @param port 连接端口
 	 */
 	public void connect(final String host, final int port) {
 		try (final Socket socket = new Socket(host, port);
@@ -27,14 +47,13 @@ public class NcCtp {
 			final Thread readerThread = new Thread(() -> {
 				try {
 					while (!flag.get()) {
-						String line = socketBr.readLine();
-						if (line == null) {
+						final var c = socketBr.read(); // 读取字符
+						if (c < 0) {
 							// 连接已关闭，退出循环
 							break;
+						} else {
+							print(String.valueOf((char) c));
 						}
-						line = line.replace("> $", "");
-						println(line);
-						Thread.sleep(500);
 					}
 				} catch (Exception e) {
 					if (!flag.get()) { // 非预期异常打印堆栈
@@ -80,11 +99,6 @@ public class NcCtp {
 
 	@Test
 	public void foo() {
-		println("NcCtp>\n ");
 		this.connect("192.168.1.10", 9898);
-	}
-
-	private void println(String message) {
-		System.out.println(message);
 	}
 }
