@@ -11,6 +11,8 @@ side_ctrls <- \() list( # 侧边面板控件
   selectInput("dbname", "数据库名称:", dbnames),
   selectInput("instrument", "合约名称:", instruments),
   selectInput("datatbl", "数据表名称:", dbtbls),
+  selectInput("plotmode", "绘图类型:", plotmodes),
+  numericInput("timeframe", "时间周期", 5, min = 1, max = 60),
   dateInput("date", "日期", value=current_date),
   timeInput("start_time", "开始时间", value = startime),
   timeInput("end_time", "结束时间", value = endtime),

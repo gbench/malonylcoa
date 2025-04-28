@@ -23,6 +23,12 @@ import_files("util") # 辅助函数, get_xxx 系列(dbs, tbls, instruments)
 # 数据操作函数
 # ************************************************************************************
 
+# kdj 的绘图
+plot_kdj<- \(data) ggplot(data, aes(x=1:length(DateTime))) +
+  geom_line(aes(y=K), color="red") +
+  geom_line(aes(y=D), color="green") +
+  geom_line(aes(y=J), color="blue")
+
 # ************************************************************************************
 # 事件处理器（手动控制逻辑：各种控件的事件响应逻辑)
 # 通过定义与设计页面控件的事件回调（响应）函数来控制页面组件状态
@@ -60,7 +66,7 @@ event_handler <- \(input, output, session) {
 # ************************************************************************************
 render_handler <- \(input, output, session) { # 初始图像绘制
   as.time <- \(time) as.POSIXct(time, format="%H:%M") # 时间格式
-  data <- reactive({
+  lm_data <- reactive ({
       fetch <- \(symbol) # 根据合约代码提取数据
         if(anyNA(symbol) || regexec(pat="^[\\s-]*$", symbol)>=0) 
           NA # 非法表名 
@@ -76,18 +82,35 @@ render_handler <- \(input, output, session) { # 初始图像绘制
         ) () # if
       } # if
   }) # data
-    
-  output$dt <- renderDT({
-    data() |> (\(x) if(anyNA(x) || nrow(x) <1) data.frame() else 
-      datatable(x, options=list(pageLength=5)))()
+  
+  # kdj数据
+  kdjdata <- reactive({ # 计算kdj数据
+    tickdata <- input$datatbl |> sprintf(fmt="select * from %s") |> env_adhoc$sqlquery() 
+    calculate_ohlcv(tickdata) |> aggregate_ohlcv(paste(input$timeframe, "mins")) |> calculate_kdj()
+  }) # kdjdata
+  
+  # -----------------------------------------------------------------------------------
+  # 数据渲染
+  # -----------------------------------------------------------------------------------
+  
+  output$dt <- renderDT({ # 绘制数据
+    if (input$plotmode=="kdj") datatable(identify_kdj_cross(kdjdata()), options=list(pageLength=5))
+    else { # 默认模式
+      lm_data()
+    }
   }) # renderDT
-  output$pt <- renderPlot({
-    data() |> (\(x) if(anyNA(x) || nrow(x) <1) ggplot() else {
-      print(x)
-      x %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
-      ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
-    })()
+  
+  output$pt <- renderPlot({ # 数据绘图
+    if (input$plotmode == "kdj") # kdj 的金叉死叉模式
+      kdjdata() |> plot_kdj()
+    else { # 默认模式
+      data() |> (\(x) if(anyNA(x) || nrow(x) <1) ggplot() else {
+        x %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
+        ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
+      }) ()
+    } # if
   }) # renderPlot
+  
 } # render_handler
 
 # ************************************************************************************
