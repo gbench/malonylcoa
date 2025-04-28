@@ -23,6 +23,8 @@ import_files("util") # 辅助函数, get_xxx 系列(dbs, tbls, instruments)
 # 数据操作函数
 # ************************************************************************************
 
+# 时间格式化函数
+as.time <- \(time) as.POSIXct(time, format="%H:%M") # 时间格式
 # kdj 的绘图
 plot_kdj<- \(data) ggplot(data, aes(x=1:length(DateTime))) +
   geom_line(aes(y=K), color="red") +
@@ -65,7 +67,6 @@ event_handler <- \(input, output, session) {
 # 通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
 # ************************************************************************************
 render_handler <- \(input, output, session) { # 初始图像绘制
-  as.time <- \(time) as.POSIXct(time, format="%H:%M") # 时间格式
   lm_data <- reactive ({
       fetch <- \(symbol) # 根据合约代码提取数据
         if(anyNA(symbol) || regexec(pat="^[\\s-]*$", symbol)>=0) 
@@ -75,10 +76,9 @@ render_handler <- \(input, output, session) { # 初始图像绘制
             summarize(y=mean(LastPrice))
       # 读取数据表
       if(anyNA(input$datatbl)) NA else {
-        fetch(input$datatbl) |> (\(dfm)
-        if(anyNA(dfm)) NA else dfm |> filter( 
+        fetch(input$datatbl) |> (\(dfm) if(anyNA(dfm)) NA else dfm |> filter( 
           as.time(input$start_time) < time & time<as.time(input$end_time)) |>
-            (\(x) if(anyNA(x) || nrow(x) < 1) NA else x ) ()
+            (\(x) if(anyNA(x) || nrow(x) < 1) NA else x) ()
         ) () # if
       } # if
   }) # data
@@ -94,17 +94,16 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   # -----------------------------------------------------------------------------------
   
   output$dt <- renderDT({ # 绘制数据
-    if (input$plotmode=="kdj") datatable(identify_kdj_cross(kdjdata()), options=list(pageLength=5))
-    else { # 默认模式
-      lm_data()
-    }
+    (if (input$plotmode=="kdj") identify_kdj_cross(kdjdata()) # kdj 模式
+    else  lm_data() # 默认模式
+    ) |> datatable(options=list(pageLength=5))
   }) # renderDT
   
   output$pt <- renderPlot({ # 数据绘图
     if (input$plotmode == "kdj") # kdj 的金叉死叉模式
       kdjdata() |> plot_kdj()
     else { # 默认模式
-      data() |> (\(x) if(anyNA(x) || nrow(x) <1) ggplot() else {
+      lm_data() |> (\(x) if(anyNA(x) || nrow(x) <1) ggplot() else {
         x %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
         ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
       }) ()
