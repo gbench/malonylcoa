@@ -26,10 +26,21 @@ import_files("util") # 辅助函数, get_xxx 系列(dbs, tbls, instruments)
 # 时间格式化函数
 as.time <- \(time) as.POSIXct(time, format="%H:%M") # 时间格式
 # kdj 的绘图
-plot_kdj<- \(data) ggplot(data, aes(x=1:length(DateTime))) +
-  geom_line(aes(y=K), color="red") +
-  geom_line(aes(y=D), color="green") +
-  geom_line(aes(y=J), color="blue")
+plot_kdj<- \(data) {
+  if(is.null(data) || nrow(data) < 1) ggplot()
+  else {
+    cross_data <- identify_kdj_cross(data) # 金叉数据
+    cross_points <- cross_data$DateTime |> sapply(strftime, format="%H:%M") # 金叉数据时刻
+    points <- data$DateTime |> sapply(\(x) if(is.na(x) || is.null(x)) "" else strftime(x, format="%H:%M")) # 交叉时刻
+    cross_index <- match(cross_points, points) # 时点索引
+    ggplot(data, aes(x=1:length(DateTime))) +
+      geom_line(aes(y=K), color="red") +
+      geom_line(aes(y=D), color="green") +
+      geom_line(aes(y=J), color="blue") + 
+      scale_x_continuous(breaks=\(x) cross_index, labels=\(x) points[cross_index]) + 
+      labs(x="时间" , y="kdj")
+  } # if
+}
 
 # ************************************************************************************
 # 事件处理器（手动控制逻辑：各种控件的事件响应逻辑)
@@ -67,26 +78,30 @@ event_handler <- \(input, output, session) {
 # 通过将页面控件与某响应式对象(interactive组件)相绑定来动态跟踪响应式对象的状态变化
 # ************************************************************************************
 render_handler <- \(input, output, session) { # 初始图像绘制
+  
   lm_data <- reactive ({
       fetch <- \(symbol) # 根据合约代码提取数据
         if(anyNA(symbol) || regexec(pat="^[\\s-]*$", symbol)>=0) 
-          NA # 非法表名 
+          NULL # 非法表名 
         else "select * from %s" |> sprintf(symbol) |> env_adhoc$sqlquery() |>
           group_by(time=substr(UpdateTime, 1, 5) |> as.time()) |> 
             summarize(y=mean(LastPrice))
       # 读取数据表
-      if(anyNA(input$datatbl)) NA else {
-        fetch(input$datatbl) |> (\(dfm) if(anyNA(dfm)) NA else dfm |> filter( 
+      if(anyNA(input$datatbl)) NULL else {
+        fetch(input$datatbl) |> (\(dfm) if(anyNA(dfm)) NULL else dfm |> filter( 
           as.time(input$start_time) < time & time<as.time(input$end_time)) |>
-            (\(x) if(anyNA(x) || nrow(x) < 1) NA else x) ()
+            (\(x) if(anyNA(x) || nrow(x) < 1) NULL else x) ()
         ) () # if
       } # if
   }) # data
   
   # kdj数据
   kdjdata <- reactive({ # 计算kdj数据
-    tickdata <- input$datatbl |> sprintf(fmt="select * from %s") |> env_adhoc$sqlquery() 
-    calculate_ohlcv(tickdata) |> aggregate_ohlcv(paste(input$timeframe, "mins")) |> calculate_kdj()
+    tickdata <- input$datatbl |> (\(x) if(is.null(x) || regexec(pat="^[\\s-]*$", x)>=0) NULL 
+      else sprintf(fmt="select * from %s", x) |> env_adhoc$sqlquery()) ()
+    kdj_dfm <- if(is.null(tickdata) || nrow(tickdata)<1) NULL else calculate_ohlcv(tickdata) |> 
+      aggregate_ohlcv(paste(input$timeframe, "mins")) |> calculate_kdj() # kdj 数据
+    kdj_dfm |> na.omit()
   }) # kdjdata
   
   # -----------------------------------------------------------------------------------
@@ -94,16 +109,17 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   # -----------------------------------------------------------------------------------
   
   output$dt <- renderDT({ # 绘制数据
-    (if (input$plotmode=="kdj") identify_kdj_cross(kdjdata()) # kdj 模式
-    else  lm_data() # 默认模式
-    ) |> datatable(options=list(pageLength=5))
+    {if (input$plotmode=="kdj") # kdj 模式
+      kdjdata() |> (\(x) if (is.null(x)) data.frame() else x |> identify_kdj_cross()) ()
+    else lm_data() # 默认模式
+    } |> datatable(options=list(pageLength=5)) |> na.omit()
   }) # renderDT
   
   output$pt <- renderPlot({ # 数据绘图
     if (input$plotmode == "kdj") # kdj 的金叉死叉模式
       kdjdata() |> plot_kdj()
     else { # 默认模式
-      lm_data() |> (\(x) if(anyNA(x) || nrow(x) <1) ggplot() else {
+      lm_data() |> (\(x) if(is.null(x) || nrow(x) <1) ggplot() else {
         x %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
         ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
       }) ()
