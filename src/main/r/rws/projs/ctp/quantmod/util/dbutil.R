@@ -1,7 +1,7 @@
 # 获得期货合约
 get_instruments <- \(n=100) {
   try({
-    dfm <- env_adhoc$sqlquery.adhoc("show tables") # 查询数据表
+    dfm <- env_adhoc$sqlquery("show tables") # 查询数据表
     i <- dfm |> unlist() |> grep(pat="^t_[[:alnum:]]+_\\d{8}$") # 提取数据表索引
     if(length(i)>0) {
       datatbls <- dfm[i, 1, drop=T] # 数据表名称
@@ -17,8 +17,7 @@ get_instruments <- \(n=100) {
 # 获得期货合约
 get_tbls <- \(instrument, n=100) {
   try({
-    print(instrument)
-    dfm <- env_adhoc$sqlquery.adhoc("show tables") # 查询数据表
+    dfm <- env_adhoc$sqlquery("show tables") # 查询数据表
     pat=sprintf(fmt="^t_%s+_\\d{8}$", instrument)
     i <- dfm |> unlist() |> grep(pat=pat) # 提取数据表索引
     if(length(i)>0) {
@@ -34,7 +33,7 @@ get_tbls <- \(instrument, n=100) {
 # 获得期货合约
 get_dbs <- \() {
   try({
-    dfm <- env_adhoc$sqlquery.adhoc("show databases") # 查询数据表
+    dfm <- env_adhoc$sqlquery("show databases") # 查询数据表
     dbs <- dfm[, 1, drop=T] # 数据表名称
     dbs
   })

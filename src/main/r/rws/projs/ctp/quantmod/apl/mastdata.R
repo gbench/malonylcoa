@@ -5,7 +5,6 @@
 # date: 2025-03-12
 # ------------------------------------------------------------------------------------
 
-symbols <- c("螺纹钢2505"="rb2505", "甲醇505"="MA505")
 startime <- "09:00" 
 endtime <- "10:00"
 current_date <- "2025-02-28"
@@ -17,6 +16,6 @@ instruments <- c() # 合约列表
 # 随兴&自定义环境
 env_adhoc <- new.env() # 函数环境
 update.adhoc <- \(dbhost, dbname) { # 环境更新
-  env_adhoc$sqlquery.adhoc <- \(...) sqlquery(host = dbhost, dbname = dbname, ...) # 数据库查询函数
+  env_adhoc$sqlquery <- \(...) sqlquery(host = dbhost, dbname = dbname, ...) # 数据库查询函数
 }
 update.adhoc(dbhosts[1], dnames[1]) # 随兴&自定义环境

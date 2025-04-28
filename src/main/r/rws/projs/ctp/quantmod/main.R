@@ -36,14 +36,14 @@ event_handler <- \(input, output, session) {
 
   observeEvent(input$dbhost, { # 监听数据库ip内容变化
     update.adhoc(input$dbhost, input$dbname) # 环境更新
-    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", tables：", env_adhoc$sqlquery.adhoc("select database()"))
+    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", tables：", env_adhoc$sqlquery("select database()"))
     output$debug = renderText(line)
     updateSelectInput(session, "dbname", choices = get_dbs()) # 更新数据表名
   }) # observeEvent symbol
 
   observeEvent(input$dbname, { # 监听数据库名称内容变化
     update.adhoc(input$dbhost, input$dbname) # 环境更新
-    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", tables：", env_adhoc$sqlquery.adhoc("select database()"))
+    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", tables：", env_adhoc$sqlquery("select database()"))
     output$debug = renderText(line)
     updateSelectInput(session, "instrument", choices = get_instruments()) # 更新数据表名
   }) # observeEvent symbol
@@ -61,17 +61,27 @@ event_handler <- \(input, output, session) {
 render_handler <- \(input, output, session) { # 初始图像绘制
   as.time <- \(time) as.POSIXct(time, format="%H:%M") # 时间格式
   data <- reactive({
-      fetch <- \(symbol, date) "select * from t_%s_%s" |> 
-        sprintf(symbol, strftime(as.Date(date), "%Y%m%d")) |> sqlquery() |>
-        group_by(time=substr(UpdateTime, 1, 5) |> as.time()) |> 
+      fetch <- \(symbol) if(anyNA(symbol)) NA else "select * from %s" |> sprintf(symbol) |> 
+        env_adhoc$sqlquery() |> group_by(time=substr(UpdateTime, 1, 5) |> as.time()) |> 
         summarize(y=mean(LastPrice))
-      # 读取数据
-      fetch(input$symbol, input$date) |> filter(as.time(input$start_time) < time & time<as.time(input$end_time))
+      
+      # 数据读取
+      if(anyNA(input$datatbl)) NA else {
+        dfm <- fetch(input$datatbl) 
+        dfm|> filter(as.time(input$start_time) < time & time<as.time(input$end_time))
+        if(anyNA(dfm) || nrow(dfm) < 1) NA else dfm
+      }
   }) # data
     
-  output$dt <- renderDT(datatable(data(), options=list(pageLength=5))) # renderDT
-  output$pt <- renderPlot({ data() %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
-    ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
+  output$dt <- renderDT({
+    data() |> (\(x) if(anyNA(x)) data.frame() else datatable(., options=list(pageLength=5)))()
+  }) # renderDT
+  output$pt <- renderPlot({
+    data() |> (\(x) if(anyNA(x)) ggplot() else {
+      print(x)
+      x %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
+      ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
+    })()
   }) # renderPlot
 } # render_handler
 
