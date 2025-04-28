@@ -61,23 +61,28 @@ event_handler <- \(input, output, session) {
 render_handler <- \(input, output, session) { # 初始图像绘制
   as.time <- \(time) as.POSIXct(time, format="%H:%M") # 时间格式
   data <- reactive({
-      fetch <- \(symbol) if(anyNA(symbol)) NA else "select * from %s" |> sprintf(symbol) |> 
-        env_adhoc$sqlquery() |> group_by(time=substr(UpdateTime, 1, 5) |> as.time()) |> 
-        summarize(y=mean(LastPrice))
-      
-      # 数据读取
+      fetch <- \(symbol) # 根据合约代码提取数据
+        if(anyNA(symbol) || regexec(pat="^[\\s-]*$", symbol)>=0) 
+          NA # 非法表名 
+        else "select * from %s" |> sprintf(symbol) |> env_adhoc$sqlquery() |>
+          group_by(time=substr(UpdateTime, 1, 5) |> as.time()) |> 
+            summarize(y=mean(LastPrice))
+      # 读取数据表
       if(anyNA(input$datatbl)) NA else {
-        dfm <- fetch(input$datatbl) 
-        dfm|> filter(as.time(input$start_time) < time & time<as.time(input$end_time))
-        if(anyNA(dfm) || nrow(dfm) < 1) NA else dfm
-      }
+        fetch(input$datatbl) |> (\(dfm)
+        if(anyNA(dfm)) NA else dfm |> filter( 
+          as.time(input$start_time) < time & time<as.time(input$end_time)) |>
+            (\(x) if(anyNA(x) || nrow(x) < 1) NA else x ) ()
+        ) () # if
+      } # if
   }) # data
     
   output$dt <- renderDT({
-    data() |> (\(x) if(anyNA(x)) data.frame() else datatable(., options=list(pageLength=5)))()
+    data() |> (\(x) if(anyNA(x) || nrow(x) <1) data.frame() else 
+      datatable(x, options=list(pageLength=5)))()
   }) # renderDT
   output$pt <- renderPlot({
-    data() |> (\(x) if(anyNA(x)) ggplot() else {
+    data() |> (\(x) if(anyNA(x) || nrow(x) <1) ggplot() else {
       print(x)
       x %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
       ggplot(aes(time, y)) + geom_point() + geom_line(aes(y=yhat), col="red")
