@@ -1,5 +1,7 @@
 library(dplyr)
 library(lubridate)
+library(RcppRoll)
+library(TTR)
 
 # 1. 生成多周期OHLCV数据
 generate_ohlcv_for_periods <- function(tickdata, periods) {
@@ -37,42 +39,23 @@ generate_ohlcv_for_periods <- function(tickdata, periods) {
   return(ohlcv_list)
 }
 
-# 2. 计算KDJ指标
-ema <- function(x, n) {
-  if (n <= 1 || length(x) < n) return(rep(NA, length(x)))
-  ema <- numeric(length(x))
-  ema[n] <- mean(x[1:n], na.rm = TRUE)
-  multiplier <- 2 / (n + 1)
-  for (i in (n+1):length(x)) {
-    ema[i] <- ifelse(is.na(ema[i-1]), NA, 
-                     (x[i] * multiplier) + (ema[i-1] * (1 - multiplier)))
-  }
-  ema[1:(n-1)] <- NA
-  ema
-}
-
+# 2. 计算ohlcv的KDJ 
 calculate_kdj <- function(ohlcv, n = 9, m1 = 3, m2 = 3) {
   high <- ohlcv$High
   low <- ohlcv$Low
   close <- ohlcv$Close
-  rsv <- numeric(length(close))
   
-  for (i in 1:length(close)) {
-    if (i < n) {
-      rsv[i] <- NA
-    } else {
-      hh <- max(high[(i-n+1):i], na.rm = TRUE)
-      ll <- min(low[(i-n+1):i], na.rm = TRUE)
-      if (hh == ll) {
-        rsv[i] <- 50
-      } else {
-        rsv[i] <- (close[i] - ll) / (hh - ll) * 100
-      }
-    }
-  }
+  # 向量化计算滚动极值
+  hh <- roll_max(high, n, fill = NA, align = "right", na.rm = TRUE)
+  ll <- roll_min(low, n, fill = NA, align = "right", na.rm = TRUE)
   
-  K <- ema(rsv, m1)
-  D <- ema(K, m2)
+  # 计算RSV（向量化操作）
+  rsv <- (close - ll) / (hh - ll) * 100
+  rsv[is.na(hh) | is.na(ll) | hh == ll] <- NA
+  
+  # 使用优化后的EMA计算K/D值
+  K <- EMA(rsv, m1)
+  D <- EMA(K, m2)
   J <- 3*K - 2*D
   
   data.frame(K, D, J)
@@ -82,24 +65,34 @@ calculate_kdj <- function(ohlcv, n = 9, m1 = 3, m2 = 3) {
 find_kdj_cross <- function(kdj, confirm_bars) {
   K <- kdj$K
   D <- kdj$D
-  n <- nrow(kdj)
-  golden <- logical(n)
-  dead <- logical(n)
+  n <- length(K)
   
-  for (i in (confirm_bars + 1):(n - confirm_bars)) {
-    if (any(is.na(K[(i-confirm_bars):i]), is.na(D[(i-confirm_bars):i]))) next
-    
-    # 金叉确认：前confirm_bars次K<=D，当前K>D
-    if (all(K[(i-confirm_bars):i] > D[(i-confirm_bars):i]) &&
-        any(K[(i-confirm_bars-1)] <= D[(i-confirm_bars-1)], na.rm = TRUE)) {
-      golden[i] <- TRUE
-    }
-    # 死叉确认：前confirm_bars次K>=D，当前K<D
-    if (all(K[(i-confirm_bars):i] < D[(i-confirm_bars):i]) &&
-        any(K[(i-confirm_bars-1)] >= D[(i-confirm_bars-1)], na.rm = TRUE)) {
-      dead[i] <- TRUE
-    }
-  }
+  # 生成逻辑向量并处理NA
+  k_above_d <- K > D
+  k_below_d <- K < D
+  valid <- !is.na(K) & !is.na(D)
+  
+  # 计算有效窗口（confirm_bars长度内无NA）
+  valid_window <- roll_sum(valid, confirm_bars, align = "right", fill = NA) == confirm_bars
+  
+  # 金叉条件计算 -------------------------------------------------
+  # 条件1：连续confirm_bars个K>D
+  cond_golden1 <- roll_sum(k_above_d, confirm_bars, align = "right", fill = NA) == confirm_bars
+  # 条件2：前一个位置K<=D（使用滞后操作）
+  cond_golden2 <- c(rep(NA, confirm_bars), (K <= D)[1:(n - confirm_bars)])
+  golden <- cond_golden1 & cond_golden2 & valid_window
+  
+  # 死叉条件计算 -------------------------------------------------
+  # 条件1：连续confirm_bars个K<D
+  cond_dead1 <- roll_sum(k_below_d, confirm_bars, align = "right", fill = NA) == confirm_bars
+  # 条件2：前一个位置K>=D（使用滞后操作）
+  cond_dead2 <- c(rep(NA, confirm_bars), (K >= D)[1:(n - confirm_bars)])
+  dead <- cond_dead1 & cond_dead2 & valid_window
+  
+  # 处理边界NA值
+  golden[is.na(golden)] <- FALSE
+  dead[is.na(dead)] <- FALSE
+  
   list(golden = which(golden), dead = which(dead))
 }
 
