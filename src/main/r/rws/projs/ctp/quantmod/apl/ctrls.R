@@ -9,6 +9,8 @@
 side_ctrls <- \() list( # 侧边面板控件
   selectInput("dbhost", "数据库主机IP:", dbhosts),
   selectInput("dbname", "数据库名称:", dbnames),
+  selectInput("instrument", "合约名称:", instruments),
+  selectInput("datatbl", "数据表名称:", dbtbls),
   dateInput("date", "日期", value=current_date),
   selectInput("symbol", "合约:", symbols),
   timeInput("start_time", "开始时间", value = startime),

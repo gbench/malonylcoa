@@ -11,6 +11,8 @@ endtime <- "10:00"
 current_date <- "2025-02-28"
 dbhosts <- c("localhost"="localhost", "192.168.1.10"="192.168.1.10")
 dbnames <- c("ctp"="ctp", "ctp2"="ctp2", "ctp4"="ctp4")
+dbtbls <- c() # 数据表
+instruments <- c() # 合约列表
 
 # 随兴&自定义环境
 env_adhoc <- new.env() # 函数环境
