@@ -34,20 +34,26 @@ identify_kdj_cross <- function(kdj_data,
       )
     ) %>%
     filter(!is.na(cross_type)) %>%
-    select(DateTime, K, D, cross_type)
+    select(DateTime, K, D, J, cross_type, Open, High, Low, Close, Volume)
   
-  # 添加交叉时的价格信息（如果原始数据包含Close）
-  if ("Close" %in% colnames(kdj_data)) {
-    crosses <- crosses %>%
-      left_join(
-        kdj_data %>% select(DateTime, Close),
-        by = "DateTime"
-      )
+  # 确保所有要求的列都存在，如果不存在则设为NA
+  required_return_cols <- c("DateTime", "K", "D", "J", "cross_type", 
+                            "Open", "High", "Low", "Close", "Volume")
+  
+  for (col in required_return_cols) {
+    if (!col %in% colnames(crosses)) {
+      crosses[[col]] <- NA
+    }
   }
   
   # 按需返回xts或data.frame
-  if (return_xts && requireNamespace("xts", quietly = TRUE)) {
-    xts_obj <- xts::xts(crosses[, -1], order.by = crosses$DateTime)
+  if (return_xts) {
+    if (!requireNamespace("xts", quietly = TRUE)) {
+      install.packages("xts")
+    }
+    library(xts)
+    xts_obj <- xts(crosses[, -which(names(crosses) == "DateTime")], 
+                   order.by = crosses$DateTime)
     return(xts_obj)
   } else {
     return(as.data.frame(crosses))
