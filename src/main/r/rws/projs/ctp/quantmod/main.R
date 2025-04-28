@@ -55,7 +55,7 @@ event_handler <- \(input, output, session) {
 
   observeEvent(input$dbhost, { # 监听数据库ip内容变化
     update.adhoc(input$dbhost, input$dbname) # 环境更新
-    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", tables：", env_adhoc$sqlquery("select database()"))
+    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", database：", env_adhoc$sqlquery("select database()"))
     output$debug = renderText(line)
     updateSelectInput(session, "dbname", choices = get_dbs()) # 更新数据表名
   }) # observeEvent symbol
