@@ -30,7 +30,6 @@ plot_kdj<- \(data) {
   if(is.null(data) || nrow(data) < 1) ggplot()
   else {
     cross_data <- identify_kdj_cross(data) # 金叉数据
-    print(cross_data)
     cross_points <- cross_data$DateTime |> sapply(strftime, format="%H:%M") # 金叉数据时刻
     points <- data$DateTime |> sapply(\(x) if(is.na(x) || is.null(x)) "" else strftime(x, format="%H:%M")) # 交叉时刻
     cross_index <- match(cross_points, points) # 时点索引
@@ -40,7 +39,7 @@ plot_kdj<- \(data) {
       geom_line(aes(y=D), color="green") +
       geom_line(aes(y=J), color="blue") + 
       scale_x_continuous(breaks=\(x) cross_index, labels=\(x) points[cross_index]) + 
-      labs(x="时间" , y="kdj")
+      labs(x="时间", y="kdj")
   } # if
 }
 
