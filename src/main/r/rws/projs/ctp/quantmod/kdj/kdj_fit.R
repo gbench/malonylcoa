@@ -1,3 +1,15 @@
+# -----------------------------------------------------------------------------------------------------
+# 编写程序：
+# 1） ohlcv（K线）计算：计算指定周期(分钟级别）级别，如(1, 2, 3, 5, 15, 60 ) ohlcv的值：
+# 2） kdj 指标计算：计算ohlcv (data.frame ,tibble, xts 等格式) 在指定参数默认为（9，3，3）时kdj指标。
+# 3） kdj 与 ohlcv 适配度计算: 识别kd交叉点(金叉死叉), ohlcv的K线价格拐点(顶部拐点,底部拐点) 
+# 通过kd交叉点K线拐点的匹配情况来评估kdj与ohlcv的匹配情况，即对特定的ohlcv数据K线, 
+# 调试出最佳的kdj参数(rsv周期数n, k线平滑m1,d线平滑m2)以精准描述ohlcv即K线的价格拐点， 
+# 验证标准为：KDJ的金叉与K线底部拐点，KDJ 死叉与K线顶部拐点　即KD交叉与拐点之间的长度的平方和最小!
+# argmin(n, m1, m2) sum((kd交叉点与ohlcv价格拐点之间的距离)^2)：
+# 交叉点与价格拐点以K线索引描述，距离为索引之间的差值描述
+# -----------------------------------------------------------------------------------------------------                        
+
 library(dplyr)
 library(lubridate)
 library(RcppRoll)
@@ -125,30 +137,49 @@ find_valleys <- function(series, window_size) {
   which(valleys)
 }
 
-# 5. 计算适应度
+#' 5. 计算适应度
+#’
+#' 计算kd交叉点cross与价格拐点(peaks,valleys) 之间距离的差值的平方和fitness
+#’ 用以表示kd交叉点（金叉/死叉） 标记 价格拐点的适配度：
+#' fitness越小cross预测价格趋势就越高, 由此该模式kdj描述价格趋势能力就越强：
+#‘
+#' @param cross kdj的k线与d线的交叉位置索引
+#' @param peaks 价格顶部拐点
+#' @param valleys 价格底部拐点
 calculate_fitness <- function(cross, peaks, valleys) {
   golden_cross <- cross$golden
   dead_cross <- cross$dead
   
-  fitness <- 0
-  # 处理金叉和底部拐点
-  for (gc in golden_cross) {
-    if (length(valleys) == 0) next
-    distances <- abs(valleys - gc)
-    min_dist <- min(distances)
-    fitness <- fitness + min_dist^2
+  # 计算金叉到最近谷底的最小距离平方和
+  fitness_golden <- if (length(golden_cross) > 0 && length(valleys) > 0) {
+    dist_matrix <- outer(golden_cross, valleys, function(g, v) abs(g - v))
+    sum(apply(dist_matrix, 1, min)^2)
+  } else {
+    0
   }
-  # 处理死叉和顶部拐点
-  for (dc in dead_cross) {
-    if (length(peaks) == 0) next
-    distances <- abs(peaks - dc)
-    min_dist <- min(distances)
-    fitness <- fitness + min_dist^2
+  
+  # 计算死叉到最近峰顶的最小距离平方和
+  fitness_dead <- if (length(dead_cross) > 0 && length(peaks) > 0) {
+    dist_matrix <- outer(dead_cross, peaks, function(d, p) abs(d - p))
+    sum(apply(dist_matrix, 1, min)^2)
+  } else {
+    0
   }
-  fitness
+  
+  fitness_golden + fitness_dead
 }
 
-# 6. 参数优化主函数
+#‘ 6. 参数优化主函数
+#’ @param tickdata 交易数据数据框: 各个列变量
+#’          ActionDay 为交易日期, UpdateTime为交易时间(分钟）
+#'          UpdateMillisec为交易时间(毫秒), LastPrice:最新成交价格
+#’ @param periods K线周期向量如：c(1,3,5) 表示1,3,5 分钟的K线
+#’ @param periods K线周期向量如：c(1,3,5) 表示1,3,5 分钟的K线
+#’ @param n_range kdj的周期（计算RSV采用数据窗口大小）范围：如 c(5, 10)
+#’ @param m1_range kdj的K线平滑参数的数据范围：如 c(2, 5)
+#’ @param m2_range kdj的D线平滑参数的数据范围：如 c(2, 5)
+#’ @param confirm_bars 计算kdj的k线与d线交叉时进行交叉点验证的ohlcv柱子的K线数量
+#’ @param window_size 计算价格拐点采用的数据窗口大小：如5
 optimize_kdj_strategy <- function(tickdata, periods, n_range, m1_range, m2_range, 
                                   confirm_bars, window_size) {
   ohlcv_list <- generate_ohlcv_for_periods(tickdata, periods)
