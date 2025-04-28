@@ -30,9 +30,11 @@ plot_kdj<- \(data) {
   if(is.null(data) || nrow(data) < 1) ggplot()
   else {
     cross_data <- identify_kdj_cross(data) # 金叉数据
+    print(cross_data)
     cross_points <- cross_data$DateTime |> sapply(strftime, format="%H:%M") # 金叉数据时刻
     points <- data$DateTime |> sapply(\(x) if(is.na(x) || is.null(x)) "" else strftime(x, format="%H:%M")) # 交叉时刻
     cross_index <- match(cross_points, points) # 时点索引
+    
     ggplot(data, aes(x=1:length(DateTime))) +
       geom_line(aes(y=K), color="red") +
       geom_line(aes(y=D), color="green") +
@@ -62,7 +64,7 @@ event_handler <- \(input, output, session) {
 
   observeEvent(input$dbname, { # 监听数据库名称内容变化
     update.adhoc(input$dbhost, input$dbname) # 环境更新
-    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", tables：", env_adhoc$sqlquery("select database()"))
+    line = paste0("dbhost:", input$dbhost, ", dbname:", input$dbname, ", database：", env_adhoc$sqlquery("select database()"))
     output$debug = renderText(line)
     updateSelectInput(session, "instrument", choices = get_instruments()) # 更新数据表名
   }) # observeEvent symbol
@@ -110,7 +112,13 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   
   output$dt <- renderDT({ # 绘制数据
     {if (input$plotmode=="kdj") # kdj 模式
-      kdjdata() |> (\(x) if (is.null(x)) data.frame() else x |> identify_kdj_cross()) ()
+      kdjdata() |> (\(x) if (is.null(x)) data.frame() else x |> identify_kdj_cross()) () |> 
+        (\(x) { if(nrow(x)<1) data.frame() else x |> transform ( # 数据格式变换
+            DateTime=strftime(DateTime, "%H:%M"), # 日期格式化
+            K=sprintf("%.2f",K), # K值
+            D=sprintf("%.2f",D), # D值
+            J=sprintf("%.2f",J) # J值
+        )}) () 
     else lm_data() # 默认模式
     } |> datatable(options=list(pageLength=5)) |> na.omit()
   }) # renderDT
