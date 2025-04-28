@@ -5,8 +5,8 @@
 # > head(tickdata,2) |> toJSON()
 # [{"Id":1,"ActionDay":"20250428","AskPrice1":3145,"AskPrice2":0,"AskPrice3":0,"AskPrice4":0,"AskPrice5":0,"AskVolume1":1019,"AskVolume2":0,"AskVolume3":0,"AskVolume4":0,"AskVolume5":0,"AveragePrice":31424.8336,"BidPrice1":3144,"BidPrice2":0,"BidPrice3":0,"BidPrice4":0,"BidPrice5":0,"BidVolume1":2069,"BidVolume2":0,"BidVolume3":0,"BidVolume4":0,"BidVolume5":0,"ClosePrice":0,"CurrDelta":0,"CxxCtpCreateTime":"2025-04-28 09:12:48","ExchangeID":"","ExchangeInstID":"","HighestPrice":3164,"InstrumentID":"rb2510","LastPrice":3145,"LowerLimitPrice":2954,"LowestPrice":3102,"OpenInterest":2066536,"OpenPrice":3106,"PreClosePrice":3101,"PreDelta":0,"PreOpenInterest":1986742,"PreSettlementPrice":3110,"SettlementPrice":0,"TradingDay":"20250428","Turnover":66586771220,"UpdateMillisec":0,"UpdateTime":"09:12:47","UpperLimitPrice":3265,"Volume":2118922},{"Id":2,"ActionDay":"20250428","AskPrice1":3145,"AskPrice2":0,"AskPrice3":0,"AskPrice4":0,"AskPrice5":0,"AskVolume1":1019,"AskVolume2":0,"AskVolume3":0,"AskVolume4":0,"AskVolume5":0,"AveragePrice":31424.8336,"BidPrice1":3144,"BidPrice2":0,"BidPrice3":0,"BidPrice4":0,"BidPrice5":0,"BidVolume1":2066,"BidVolume2":0,"BidVolume3":0,"BidVolume4":0,"BidVolume5":0,"ClosePrice":0,"CurrDelta":0,"CxxCtpCreateTime":"2025-04-28 09:12:48","ExchangeID":"","ExchangeInstID":"","HighestPrice":3164,"InstrumentID":"rb2510","LastPrice":3145,"LowerLimitPrice":2954,"LowestPrice":3102,"OpenInterest":2066538,"OpenPrice":3106,"PreClosePrice":3101,"PreDelta":0,"PreOpenInterest":1986742,"PreSettlementPrice":3110,"SettlementPrice":0,"TradingDay":"20250428","Turnover":66586865560,"UpdateMillisec":500,"UpdateTime":"09:12:47","UpperLimitPrice":3265,"Volume":2118925}] 
 #> 
-# 编写程序：
-# 1） ohlcv（K线）计算：计算指定周期(分钟级别）级别，如(1, 2, 3, 5, 15, 60 ) ohlcv的值,
+# 编写程序(R语言）：
+# 1） ohlcv（K线）计算：计算指定周期(分钟级别）级别，如(1, 3, 5, 15, 60) ohlcv的值,
 # 2） kdj 指标计算：计算ohlcv (data.frame ,tibble, xts 等格式) 在指定参数默认为（9，3，3）时kdj指标。
 # 3） kdj 与 ohlcv 适配度计算: 识别kd交叉点(金叉死叉), ohlcv的K线价格拐点(顶部拐点,底部拐点) 
 # 通过kd交叉点K线拐点的匹配情况来评估kdj与ohlcv的匹配情况，即对特定的ohlcv数据K线, 
@@ -14,6 +14,8 @@
 # 验证标准为：KDJ的金叉与K线底部拐点，KDJ 死叉与K线顶部拐点　即KD交叉与拐点之间的长度的平方和最小!
 # argmin(n, m1, m2) sum((kd交叉点与ohlcv价格拐点之间的距离)^2)：
 # 交叉点与价格拐点以K线索引描述，距离为索引之间的差值描述
+# 4) 测试&验证：对c(1,3,5) 周期的K线进行 结果验证
+#   绘制K线图, 绘制KDJ曲线图（优化后的参数）, 标记出K线与KDJ线参数
 # -----------------------------------------------------------------------------------------------------                        
 
 library(dplyr)
