@@ -155,26 +155,15 @@ find_valleys <- function(series, window_size) {
 #' @param peaks 价格顶部拐点
 #' @param valleys 价格底部拐点
 calculate_fitness <- function(cross, peaks, valleys) {
-  golden_cross <- cross$golden
-  dead_cross <- cross$dead
   
-  # 计算金叉到最近谷底的最小距离平方和
-  fitness_golden <- if (length(golden_cross) > 0 && length(valleys) > 0) {
-    dist_matrix <- outer(golden_cross, valleys, function(g, v) abs(g - v))
-    sum(apply(dist_matrix, 1, min)^2)
-  } else {
-    0
+  # 定义局部函数计算单个交叉类型到拐点的适应度
+  compute_fitness <- function(cross_points, turns) {
+    if (length(cross_points) == 0 || length(turns) == 0) return(0)
+    outer(cross_points, turns, \(a, b) abs(a - b)) |> apply(1, min) |> (\(x) x^2)() |> sum()
   }
   
-  # 计算死叉到最近峰顶的最小距离平方和
-  fitness_dead <- if (length(dead_cross) > 0 && length(peaks) > 0) {
-    dist_matrix <- outer(dead_cross, peaks, function(d, p) abs(d - p))
-    sum(apply(dist_matrix, 1, min)^2)
-  } else {
-    0
-  }
-  
-  fitness_golden + fitness_dead
+  # 计算金叉和死叉的适应度并求和
+  with(cross, compute_fitness(golden, valleys) + compute_fitness(dead, peaks))
 }
 
 #‘ 6. 参数优化主函数
