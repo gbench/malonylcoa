@@ -116,33 +116,38 @@ find_kdj_cross <- function(kdj, confirm_bars) {
   list(golden = which(golden), dead = which(dead))
 }
 
-# 4. 寻找价格拐点
+# 4. 寻找价格拐点-低点
 find_peaks <- function(series, window_size) {
   n <- length(series)
-  peaks <- logical(n)
-  for (i in 1:n) {
-    left <- max(1, i - window_size)
-    right <- min(n, i + window_size)
-    current_window <- series[left:right]
-    if (!any(is.na(current_window)) && series[i] == max(current_window)) {
-      peaks[i] <- TRUE
-    }
-  }
-  which(peaks)
+  indices <- seq_len(n)
+  lefts <- pmax(1L, indices - window_size)
+  rights <- pmin(n, indices + window_size)
+  
+  # 向量化计算每个窗口是否包含NA
+  valid_windows <- mapply(function(l, r) !any(is.na(series[l:r])), lefts, rights, SIMPLIFY = TRUE)
+  
+  # 计算每个窗口的最大值（仅处理有效窗口）
+  max_values <- mapply(function(l, r) if (valid_windows[l]) max(series[l:r]) else NA, lefts, rights, SIMPLIFY = TRUE)
+  
+  # 确定峰值位置
+  which(valid_windows & (series == max_values))
 }
 
+# 4. 寻找价格拐点-高点
 find_valleys <- function(series, window_size) {
   n <- length(series)
-  valleys <- logical(n)
-  for (i in 1:n) {
-    left <- max(1, i - window_size)
-    right <- min(n, i + window_size)
-    current_window <- series[left:right]
-    if (!any(is.na(current_window)) && series[i] == min(current_window)) {
-      valleys[i] <- TRUE
-    }
-  }
-  which(valleys)
+  indices <- seq_len(n)
+  lefts <- pmax(1L, indices - window_size)
+  rights <- pmin(n, indices + window_size)
+  
+  # 向量化计算每个窗口是否包含NA
+  valid_windows <- mapply(function(l, r) !any(is.na(series[l:r])), lefts, rights, SIMPLIFY = TRUE)
+  
+  # 计算每个窗口的最小值（仅处理有效窗口）
+  min_values <- mapply(function(l, r) if (valid_windows[l]) min(series[l:r]) else NA, lefts, rights, SIMPLIFY = TRUE)
+  
+  # 确定谷值位置
+  which(valid_windows & (series == min_values))
 }
 
 #' 5. 计算适应度
