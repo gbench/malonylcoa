@@ -97,13 +97,13 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   }) # data
   
   # kdj数据
-  kdjdata <- reactive({ # 计算kdj数据
+  kdj_data <- reactive({ # 计算kdj数据
     tickdata <- input$datatbl |> (\(x) if(is.null(x) || regexec(pat="^[\\s-]*$", x)>=0) NULL 
       else sprintf(fmt="select * from %s", x) |> env_adhoc$sqlquery()) ()
-    kdj_dfm <- if(is.null(tickdata) || nrow(tickdata)<1) NULL else calculate_ohlcv(tickdata) |> 
+    dfm <- if(is.null(tickdata) || nrow(tickdata)<1) NULL else calculate_ohlcv(tickdata) |> 
       aggregate_ohlcv(paste(input$timeframe, "mins")) |> calculate_kdj() # kdj 数据
-    kdj_dfm |> na.omit()
-  }) # kdjdata
+    dfm |> na.omit()
+  }) # kdj_data
   
   # -----------------------------------------------------------------------------------
   # 数据渲染
@@ -111,7 +111,7 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   
   output$dt <- renderDT({ # 绘制数据
     {if (input$plotmode=="kdj") # kdj 模式
-      kdjdata() |> (\(x) if (is.null(x)) data.frame() else x |> identify_kdj_cross()) () |> 
+      kdj_data() |> (\(x) if (is.null(x)) data.frame() else x |> identify_kdj_cross()) () |> 
         (\(x) { if(nrow(x)<1) data.frame() else x |> transform ( # 数据格式变换
             DateTime=strftime(DateTime, "%H:%M"), # 日期格式化
             K=sprintf("%.2f",K), # K值
@@ -124,7 +124,7 @@ render_handler <- \(input, output, session) { # 初始图像绘制
   
   output$pt <- renderPlot({ # 数据绘图
     if (input$plotmode == "kdj") # kdj 的金叉死叉模式
-      kdjdata() |> plot_kdj()
+      kdj_data() |> plot_kdj()
     else { # 默认模式
       lm_data() |> (\(x) if(is.null(x) || nrow(x) <1) ggplot() else {
         x %>% mutate(yhat=lm(y~seq_along(time), data=.) |> predict()) %>% 
