@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import gbench.util.data.MyDataApp;
 import gbench.util.lisp.IRecord;
-import gbench.webapps.world.api.config.param.Param;
+import gbench.webapps.myfuture.api.config.param.Param;
 import reactor.core.publisher.Mono;
 
 /**
@@ -57,7 +57,7 @@ public class ApiController {
 
 	/**
 	 * sql语句查询 <br>
-	 * http://localhost:6010/api/sqlquery?sql=select*from%20t_maozedong%20limit%2020
+	 * http://localhost:7010/api/sqlquery?sql=select*from%20t_maozedong%20limit%2020
 	 * 
 	 * @param sql      SQL 语句
 	 * @param exchange post 函数
