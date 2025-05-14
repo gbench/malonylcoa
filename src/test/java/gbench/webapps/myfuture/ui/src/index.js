@@ -3,6 +3,10 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import { AComp } from './comps/acomp/AComp';
 import { BComp } from './comps/bcomp/BComp';
 import { TraderComp } from './comps/tradercomp/TraderComp';
+import { BrokerComp } from './comps/brokercomp/BrokerComp';
+import { XchgComp } from './comps/xchgcomp/XchgComp';
+import { CPComp } from './comps/cpcomp/CPComp';
+import { BankComp } from './comps/bankcomp/BankComp';
 import { DataTable } from './ctrls/DataTable';
 import { AutoComplete } from './ctrls/AutoComplete';
 import { store } from './store';
@@ -30,6 +34,10 @@ $(function () {
             { path: "/AComp", component: AComp }, // 
             { path: "/BComp", component: BComp }, // 
 			{ path: "/TraderComp", component: TraderComp }, // 
+			{ path: "/BrokerComp", component: BrokerComp }, // 
+			{ path: "/XchgComp", component: XchgComp }, // 
+			{ path: "/CPComp", component: CPComp }, // 
+			{ path: "/BankComp", component: BankComp }, // 
         ];
 
         // 创建路由

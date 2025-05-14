@@ -1,10 +1,10 @@
 import { ACompStore } from "./comps/acomp/ACompStore";
 import { BCompStore } from "./comps/bcomp/BCompStore";
 import { TraderCompStore } from "./comps/tradercomp/TraderCompStore";
-import { TraderCompStore } from "./comps/tradercomp/BrokerCompStore";
-import { TraderCompStore } from "./comps/tradercomp/XchgCompStore";
-import { TraderCompStore } from "./comps/tradercomp/CPCompStore";
-import { TraderCompStore } from "./comps/tradercomp/BankCompStore";
+import { BrokerCompStore } from "./comps/brokercomp/BrokerCompStore";
+import { XchgCompStore } from "./comps/xchgcomp/XchgCompStore";
+import { CPCompStore } from "./comps/cpcomp/CPCompStore";
+import { BankCompStore } from "./comps/bankcomp/BankCompStore";
 
 import { Store, createStore } from "vuex";
 
@@ -20,6 +20,10 @@ const store = createStore({// 数据持久化层
         ACompStore,
         BCompStore,
 		TraderCompStore,
+		BrokerCompStore,
+		XchgCompStore,
+		CPCompStore,
+		BankCompStore,
     },
 
     state: {// 本地缓存数据
