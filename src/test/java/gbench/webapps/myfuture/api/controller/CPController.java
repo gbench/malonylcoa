@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
  * 注意参数必须加入 @Param 标记进行注释，否则 post方法会获得不到参数。
  */
 @RestController
-@RequestMapping("cp")
+@RequestMapping("api/cp")
 public class CPController {
 
 	/**

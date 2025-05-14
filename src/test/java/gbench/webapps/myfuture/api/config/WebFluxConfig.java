@@ -14,6 +14,7 @@ import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.result.method.annotation.ArgumentResolverConfigurer;
@@ -21,7 +22,7 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.json.MyJson;
-import gbench.webapps.world.api.config.param.ParamResolver;
+import gbench.webapps.myfuture.api.config.param.ParamResolver;
 
 /**
  * 系统配置信息
@@ -87,6 +88,15 @@ public class WebFluxConfig implements WebFluxConfigurer {
 			codecs.jackson2JsonDecoder(new Jackson2JsonDecoder(objM));
 			codecs.jackson2JsonEncoder(new Jackson2JsonEncoder(objM));
 		});
+	}
+
+	@Override
+	public void addCorsMappings(CorsRegistry registry) {
+		registry.addMapping("/**") // 允许所有路径
+				.allowedOrigins("*") // 允许所有来源（生产环境应替换为具体域名）
+				.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 允许的HTTP方法
+				.allowedHeaders("*") // 允许所有请求头
+				.allowCredentials(false); // 是否允许凭证（如Cookies）
 	}
 
 }

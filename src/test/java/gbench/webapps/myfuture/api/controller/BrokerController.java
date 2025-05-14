@@ -23,7 +23,7 @@ import reactor.core.publisher.Mono;
  * 注意参数必须加入 @Param 标记进行注释，否则 post方法会获得不到参数。
  */
 @RestController
-@RequestMapping("broker")
+@RequestMapping("api/broker")
 @CrossOrigin(origins = "*") // 允许所有来源
 public class BrokerController {
 
@@ -73,6 +73,20 @@ public class BrokerController {
 		return Mono.just(ret);
 	}
 
+	/**
+	 * 请求示例 <br>
+	 * $.ajax({ <br>
+	 * url:"http://localhost:7010/api/broker/openAccount", <br>
+	 * data:{req:JSON.stringify({name:"zhangsan1"})}, <br>
+	 * method:"post", <br>
+	 * success:e=>{ <br>
+	 * console.log("7010",JSON.stringify(e)); <br>
+	 * } <br>
+	 * }); <br>
+	 * 
+	 * @param req
+	 * @return
+	 */
 	@RequestMapping("openAccount")
 	public Mono<IRecord> openAccount(final @Param IRecord req) {
 
