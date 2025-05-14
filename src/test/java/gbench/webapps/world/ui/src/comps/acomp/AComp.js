@@ -10,7 +10,7 @@ const AComp = {
 	 * @returns 
 	 */
 	data() {
-		return { component: "-", articles: [] };
+		return { component: "-", articles: [], registrations:[] };
 	},
 
 	/**
@@ -24,12 +24,21 @@ const AComp = {
 			const data = res.data.data;
 			this.state.name = data.name;
 			this.component = data.name + " In " + data.service + " @ " + data.time;
+			
+			// 注册应用
+			http_post("/h5/api/regist", {rec:JSON.stringify(
+				{name: data.name, "application":"world"})}).then(res => {
+				const data = res.data.data;
+				this.registrations = data.registrations;
+				console.log(JSON.stringify(this.regisrations));
+			});
 		});
 
 		// sql data 
 		sqlquery("SELECT ID,TITLE,VOLUME,TIME FROM t_maozedong LIMIT 10").then(res => {
 			this.articles = res.data.data;
 		});
+		
 	},
 
 	/**

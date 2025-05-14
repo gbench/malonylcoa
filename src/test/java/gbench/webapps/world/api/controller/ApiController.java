@@ -4,8 +4,11 @@ import static gbench.util.lisp.IRecord.REC;
 import static java.text.MessageFormat.format;
 import static java.time.LocalDateTime.now;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +59,9 @@ public class ApiController {
 	}
 
 	/**
+	 * 
+	 * 需要注意：当使用world作为原型模板区创建新项目的时候，要保证 @Param 使用的 是 新项目的 对应类 <br>
+	 * 不要在引用 gbench.webapps.world.api.config.param.Param 了否则 会出现 参数提取不到的错误了。 <br>
 	 * sql语句查询 <br>
 	 * http://localhost:6010/api/sqlquery?sql=select*from%20t_maozedong%20limit%2020
 	 * 
@@ -70,6 +76,34 @@ public class ApiController {
 		return Mono.just(ret);
 	}
 
+	/**
+	 * 信息等级
+	 * 
+	 * @param rec 登记信息
+	 * @return
+	 */
+	@RequestMapping("regist")
+	public Mono<IRecord> regist(final @Param IRecord rec) {
+		final var ret = IRecord.REC("code", 0);
+		final var name = rec.str("name");
+		final var entry = registrations.computeIfAbsent(name, k -> {
+			final var id = String.format("WORLD-ID-%s", ai.getAndIncrement());
+			return REC("id", id, "name", name).add(rec);
+		});
+		return Mono.just(ret.add(REC("data", REC("entry", entry, "registrations", registrations.values()))));
+	}
+
+	/**
+	 * 信息等级
+	 * 
+	 * @return 登记信息
+	 */
+	@RequestMapping("registrations")
+	public Mono<IRecord> registrations() {
+		final var ret = IRecord.REC("code", 0);
+		return Mono.just(ret.add(REC("data", registrations.values())));
+	}
+
 	@Autowired
 	private MyDataApp dataApp;
 
@@ -77,5 +111,8 @@ public class ApiController {
 	private String port;
 	@Value("${spring.application.name:world-api}")
 	private String appname;
+
+	private Map<String, IRecord> registrations = new HashMap<>();
+	private AtomicInteger ai = new AtomicInteger();
 
 }
