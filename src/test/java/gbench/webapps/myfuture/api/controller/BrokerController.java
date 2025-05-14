@@ -9,10 +9,12 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gbench.util.data.MyDataApp;
+import gbench.util.io.Output;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.myfuture.api.config.param.Param;
 import reactor.core.publisher.Mono;
@@ -21,8 +23,9 @@ import reactor.core.publisher.Mono;
  * 注意参数必须加入 @Param 标记进行注释，否则 post方法会获得不到参数。
  */
 @RestController
-@RequestMapping("msvc")
-public class MicroServiceController {
+@RequestMapping("broker")
+@CrossOrigin(origins = "*") // 允许所有来源
+public class BrokerController {
 
 	/**
 	 * 模块信息 <br>
@@ -70,8 +73,30 @@ public class MicroServiceController {
 		return Mono.just(ret);
 	}
 
+	@RequestMapping("openAccount")
+	public Mono<IRecord> openAccount(final @Param IRecord req) {
+
+		return Mono.just(bh.openAccount(req));
+	}
+
+	private class BrokerHelper {
+		/**
+		 * 
+		 * @param req
+		 * @return
+		 */
+		public IRecord openAccount(final IRecord req) {
+			final var ret = IRecord.REC("code", 0);
+			Output.println(req);
+			ret.add("account", 1);
+			return ret;
+		}
+	}
+
 	@Autowired
 	private MyDataApp dataApp;
+
+	private BrokerHelper bh = this.new BrokerHelper();
 
 	@Value("${server.port:6010}")
 	private String port;
