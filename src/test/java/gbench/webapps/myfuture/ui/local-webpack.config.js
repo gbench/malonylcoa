@@ -1,4 +1,8 @@
 ﻿const MYFUTURE_SERVER_HOST= "http://localhost:9010";
+const TRADER_SERVER_HOST= "http://localhost:3010";
+const BROKER_SERVER_HOST= "http://localhost:4010";
+const XCHG_SERVER_HOST= "http://localhost:5010";
+const CP_SERVER_HOST= "http://localhost:6010";
 const path = require("path");
 const webpack = require("webpack");
 const ESLintPlugin = require("eslint-webpack-plugin");
@@ -22,13 +26,27 @@ module.exports = {
 	devServer: {
 		hot: true,
 		proxy: {
-			'/h5/api/': { // 转换 h5:world的服务端口是8010
+			'/h5/api/': { // 转换 h5:mytrader的服务端口是8010
 				target: MYFUTURE_SERVER_HOST,
 				secure: true,
 				logLevel: 'debug',
 				changeOrigin: true, // 必须加入否则会导致webpack奔溃
 				pathRewrite: { '^/h5/api': '/myfuture/api' }, // 转换接口标记
-			}, // world服务器
+			}, // mytrader服务器
+			'/h5/trader/': { // 转换 h5:mytrader的服务端口是8010
+				target: TRADER_SERVER_HOST,
+				secure: true,
+				logLevel: 'debug',
+				changeOrigin: true, // 必须加入否则会导致webpack奔溃
+				pathRewrite: { '^/h5/trader': '/api' }, // 转换接口标记
+			}, // mytrader服务器
+			'/h5/broker/': { // 转换 h5:mytrader的服务端口是8010
+				target: BROKER_SERVER_HOST,
+				secure: true,
+				logLevel: 'debug',
+				changeOrigin: true, // 必须加入否则会导致webpack奔溃
+				pathRewrite: { '^/h5/broker': '/api' }, // 转换接口标记
+			}, // mytrader服务器
 		},// proxy
 	},// devServer
 

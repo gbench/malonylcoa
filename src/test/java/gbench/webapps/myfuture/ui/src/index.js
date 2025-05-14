@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import { AComp } from './comps/acomp/AComp';
 import { BComp } from './comps/bcomp/BComp';
+import { TraderComp } from './comps/tradercomp/TraderComp';
 import { DataTable } from './ctrls/DataTable';
 import { AutoComplete } from './ctrls/AutoComplete';
 import { store } from './store';
@@ -28,6 +29,7 @@ $(function () {
             { path: "/", redirect: "/AComp" }, // 设置默认路由
             { path: "/AComp", component: AComp }, // 
             { path: "/BComp", component: BComp }, // 
+			{ path: "/TraderComp", component: TraderComp }, // 
         ];
 
         // 创建路由
