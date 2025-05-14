@@ -1,11 +1,16 @@
 package gbench.webapps.myfuture.api.controller;
 
+import static gbench.util.data.MyDataApp.insert_sql;
+import static gbench.util.io.Output.println;
 import static gbench.util.lisp.IRecord.REC;
 import static java.text.MessageFormat.format;
 import static java.time.LocalDateTime.now;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,8 +81,9 @@ public class BrokerController {
 	/**
 	 * 请求示例 <br>
 	 * $.ajax({ <br>
-	 * url:"http://localhost:7010/api/broker/openAccount", <br>
-	 * data:{req:JSON.stringify({name:"zhangsan1"})}, <br>
+	 * url:"http://localhost:7010/api/broker/createTraderAccount", <br>
+	 * data:{req:JSON.stringify({name:"zhangsan1", idcard:"210222198206238734",
+	 * bankcard:"6250056654287"})}, <br>
 	 * method:"post", <br>
 	 * success:e=>{ <br>
 	 * console.log("7010",JSON.stringify(e)); <br>
@@ -87,23 +93,44 @@ public class BrokerController {
 	 * @param req
 	 * @return
 	 */
-	@RequestMapping("openAccount")
+	@RequestMapping("createTraderAccount")
 	public Mono<IRecord> openAccount(final @Param IRecord req) {
-
-		return Mono.just(bh.openAccount(req));
+		final var ret = IRecord.REC("code", 0);
+		return Mono.just(ret.add("data", bh.createTraderAccount(req)));
 	}
 
 	private class BrokerHelper {
 		/**
+		 * 创建交易者账户
 		 * 
-		 * @param req
+		 * @param req 数据申请记录
 		 * @return
 		 */
-		public IRecord openAccount(final IRecord req) {
-			final var ret = IRecord.REC("code", 0);
+		public IRecord createTraderAccount(final IRecord req) {
 			Output.println(req);
-			ret.add("account", 1);
-			return ret;
+			final var now = LocalDateTime.now();
+			final var no = ai.getAndIncrement();
+			final var rec = REC();
+			final var reqrec = IRecord
+					.rb("CODE,ABBRE,NAME,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION")
+					.get(String.format("TRADER%03d", no), req.get("name"), req.get("idcard"), req.get("bankcard"),
+							String.format("MA%03d", no), now, now, "-");
+			dataApp.withTransaction(sess -> {
+				final var insql = insert_sql("t_trader", reqrec.toMap());
+				final var rs = sess.sql2execute(insql);
+				if (rs != null && rs.size() > 0) {
+					final var id = rs.get(0).get(0);
+					final var dfm = sess.sql2x("select * from t_trader order by ID desc");
+					println(dfm);
+					dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst().ifPresent(e -> {
+						rec.add(e);
+					});
+				} else {
+					rec.add("error", "创建失败", "reqrec", reqrec, "insql", insql);
+				} // if
+			});
+
+			return rec;
 		}
 	}
 
@@ -116,5 +143,6 @@ public class BrokerController {
 	private String port;
 	@Value("${spring.application.name:world-api}")
 	private String appname;
+	private AtomicInteger ai = new AtomicInteger(10);
 
 }
