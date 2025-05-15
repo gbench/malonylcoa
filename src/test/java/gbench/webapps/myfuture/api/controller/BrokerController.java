@@ -131,7 +131,7 @@ public class BrokerController {
 						return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst()
 								.map(e -> REC(e.toMap()));
 					}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
-							local.get().opt("$exception").orElse(req), "reqrec", reqrec, "insql", insql));
+							local.get().opt("$exception").orElse("-"), "reqrec", reqrec, "insql", insql));
 		}
 	}
 
