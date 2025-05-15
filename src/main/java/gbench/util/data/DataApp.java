@@ -136,7 +136,7 @@ public class DataApp {
 	/**
 	 * 查询出数据框
 	 *
-	 * @param sb sql 语句
+	 * @param sb sql语句构建器
 	 * @return DFrame
 	 */
 	public DFrame sqldframe(final SqlBuilder sb) {
@@ -162,6 +162,52 @@ public class DataApp {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * 查询出数据框
+	 *
+	 * @param sql sql 语句
+	 * @return DFrame
+	 */
+	@SuppressWarnings("unchecked")
+	public DFrame sqlexecute(final String sql) {
+		Object ret = this.withTransaction(sess -> {
+			final var rs = sess.sql2execute(sql);
+			sess.setData(rs);
+		});
+		if (ret instanceof List<?> rs && rs.size() > 0) {
+			final var r = rs.get(0);
+			if (r instanceof IRecord) {
+				return DFrame.of((List<IRecord>) rs);
+			} else {
+				return null;
+			}
+		} else if (ret instanceof IRecord rec) {
+			return DFrame.of(rec);
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * 查询出数据框
+	 *
+	 * @param sql sql 语句
+	 * @return DFrame
+	 */
+	public Optional<DFrame> sqlexecuteopt(final String sql) {
+		return Optional.ofNullable(this.sqlexecute(sql));
+	}
+
+	/**
+	 * 查询出数据框
+	 *
+	 * @param sb sql语句构建器
+	 * @return DFrame
+	 */
+	public Optional<DFrame> sqlexecuteopt(final SqlBuilder sb) {
+		return this.sqlexecuteopt(sb.toString());
 	}
 
 	/**

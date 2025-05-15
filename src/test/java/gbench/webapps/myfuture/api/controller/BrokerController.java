@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -96,7 +97,11 @@ public class BrokerController {
 	@RequestMapping("createTraderAccount")
 	public Mono<IRecord> openAccount(final @Param IRecord req) {
 		final var ret = IRecord.REC("code", 0);
-		return Mono.just(ret.add("data", bh.createTraderAccount(req)));
+		final var rec = bh.createTraderAccount(req);
+		if (rec.has("$code")) { // 提取错误码
+			ret.set("code", rec.get("$code"));
+		}
+		return Mono.just(ret.add("data", rec.filter((k, v) -> !k.startsWith("$")))); // 将内部状态字段($开头)剔除后返回
 	}
 
 	private class BrokerHelper {
@@ -107,30 +112,28 @@ public class BrokerController {
 		 * @return
 		 */
 		public IRecord createTraderAccount(final IRecord req) {
-			Output.println(req);
+			Output.println("createTraderAccount: req", req);
 			final var now = LocalDateTime.now();
-			final var no = ai.getAndIncrement();
-			final var rec = REC();
-			final var reqrec = IRecord
-					.rb("CODE,ABBRE,NAME,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION")
-					.get(String.format("TRADER%03d", no), req.get("name"), req.get("idcard"), req.get("bankcard"),
-							String.format("MA%03d", no), now, now, "-");
-			dataApp.withTransaction(sess -> {
-				final var insql = insert_sql("t_trader", reqrec.toMap());
-				final var rs = sess.sql2execute(insql);
-				if (rs != null && rs.size() > 0) {
-					final var id = rs.get(0).get(0);
-					final var dfm = sess.sql2x("select * from t_trader order by ID desc");
-					println(dfm);
-					dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst().ifPresent(e -> {
-						rec.add(e);
-					});
-				} else {
-					rec.add("error", "创建失败", "reqrec", reqrec, "insql", insql);
-				} // if
-			});
-
-			return rec;
+			final var serialnum = ai.getAndIncrement(); // 流水号
+			final var flds = "CODE,ABBRE,NAME,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
+			final var reqrec = IRecord.rb(flds).get(String.format("TRADER%03d", serialnum), req.get("name"),
+					req.get("idcard"), req.get("bankcard"), String.format("MA%03d", serialnum), now, now, "-");
+			final var insql = insert_sql("t_trader", reqrec.toMap());
+			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
+			return dataApp.sqlexecuteopt(insql).map(rs -> {
+				final var line = rs.getFirst();
+				if (line.keys().contains("$error")) { // SQL直线出现了错误
+					local.get().set("$error", line.str("$error")).set("$exception", line.str("$exception"));
+					return null;
+				} else { // SQL正常执行
+					return line.get(0);
+				}
+			}).flatMap(id -> {
+				final var dfm = dataApp.sqldframe("select * from t_trader order by ID desc");
+				println(dfm);
+				return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst().map(e -> REC(e.toMap()));
+			}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
+					local.get().opt("$exception").orElse(req), "reqrec", reqrec, "insql", insql));
 		}
 	}
 
