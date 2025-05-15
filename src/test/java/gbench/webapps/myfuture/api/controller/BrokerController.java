@@ -1,5 +1,6 @@
 package gbench.webapps.myfuture.api.controller;
 
+import static gbench.util.data.DataApp.checkerr;
 import static gbench.util.data.MyDataApp.insert_sql;
 import static gbench.util.io.Output.println;
 import static gbench.util.lisp.IRecord.REC;
@@ -120,15 +121,10 @@ public class BrokerController {
 					req.get("idcard"), req.get("bankcard"), String.format("MA%03d", serialnum), now, now, "-");
 			final var insql = insert_sql("t_trader", reqrec.toMap());
 			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
-			return dataApp.sqlexecuteopt(insql).map(rs -> {
-				final var line = rs.getFirst();
-				if (line.keys().contains("$error")) { // SQL直线出现了错误
-					local.get().set("$error", line.str("$error")).set("$exception", line.str("$exception"));
-					return null;
-				} else { // SQL正常执行
-					return line.get(0);
-				}
-			}).flatMap(id -> {
+
+			return dataApp.sqlexecuteopt(insql).flatMap(rs -> checkerr(rs, line -> {
+				local.get().set("$error", line.str("$error")).set("$exception", line.str("$exception"));
+			}).map(d -> d.head().get(0))).flatMap(id -> {
 				final var dfm = dataApp.sqldframe("select * from t_trader order by ID desc");
 				println(dfm);
 				return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst().map(e -> REC(e.toMap()));

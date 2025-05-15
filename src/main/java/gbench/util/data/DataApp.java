@@ -6796,6 +6796,25 @@ public class DataApp {
 		return line;
 	}
 
+	/**
+	 * 对dfm进行就按单插查错
+	 * 
+	 * @param dfm   sqlquery 或是 sqlexecute执行结果
+	 * @param onerr 错误信息处理
+	 * @return 对于 含有错误信息的dfm 返回 Optional.empty 否则返回dfm保持不变。
+	 */
+	public static Optional<DFrame> checkerr(final DFrame dfm, final Consumer<IRecord> onerr) {
+		return Optional.ofNullable(dfm).map(rs -> {
+			final var line = rs.getFirst();
+			if (line.keys().contains("$error")) { // SQL直线出现了错误
+				onerr.accept(line);
+				return null;
+			} else {
+				return rs;
+			}
+		});
+	}
+
 	private static int MAX_SIZE = 1024 * 1024 * 1024; // 最大长度
 	/**
 	 * 调试输出函数
