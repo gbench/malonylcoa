@@ -122,14 +122,16 @@ public class BrokerController {
 			final var insql = insert_sql("t_trader", reqrec.toMap());
 			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
 
-			return dataApp.sqlexecuteopt(insql).flatMap(rs -> checkerr(rs, line -> {
-				local.get().set("$error", line.str("$error")).set("$exception", line.str("$exception"));
-			}).map(d -> d.head().get(0))).flatMap(id -> {
-				final var dfm = dataApp.sqldframe("select * from t_trader order by ID desc");
-				println(dfm);
-				return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst().map(e -> REC(e.toMap()));
-			}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
-					local.get().opt("$exception").orElse(req), "reqrec", reqrec, "insql", insql));
+			return dataApp.sqlexecuteopt(insql) //
+					.flatMap(rs -> checkerr(rs, errinfo -> local.get().set("$error", errinfo.str("$error"))
+							.set("$exception", errinfo.str("$exception"))).map(linedfm -> linedfm.head().get(0)) // 提出插入数据的主键
+					).flatMap(id -> { // 数据主键
+						final var dfm = dataApp.sqldframe("select * from t_trader order by ID desc");
+						println(dfm);
+						return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst()
+								.map(e -> REC(e.toMap()));
+					}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
+							local.get().opt("$exception").orElse(req), "reqrec", reqrec, "insql", insql));
 		}
 	}
 
