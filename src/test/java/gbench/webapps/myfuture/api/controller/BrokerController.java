@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import gbench.util.chn.PinyinUtil;
 import gbench.util.data.MyDataApp;
 import gbench.util.io.Output;
 import gbench.util.lisp.IRecord;
@@ -117,8 +118,10 @@ public class BrokerController {
 			final var now = LocalDateTime.now();
 			final var serialnum = ai.getAndIncrement(); // 流水号
 			final var flds = "CODE,ABBRE,NAME,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
-			final var reqrec = IRecord.rb(flds).get(String.format("TRADER%03d", serialnum), req.get("name"),
-					req.get("idcard"), req.get("bankcard"), String.format("MA%03d", serialnum), now, now, "-");
+			final var reqrec = IRecord.rb(flds).get(String.format("TRADER%03d", serialnum),
+					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase(), req.get("name"), req.get("idcard"),
+					req.get("bankcard"), String.format("MACCT%03d", serialnum), now, now,
+					req.opt("description").orElse("普通交易者"));
 			final var insql = insert_sql("t_trader", reqrec.toMap());
 			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
 			return dataApp.sqlexecuteopt(insql) //
