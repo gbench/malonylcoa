@@ -96,7 +96,7 @@ public class BrokerController {
 	 * @return
 	 */
 	@RequestMapping("createTraderAccount")
-	public Mono<IRecord> openAccount(final @Param IRecord req) {
+	public Mono<IRecord> createTraderAccount(final @Param IRecord req) {
 		final var ret = IRecord.REC("code", 0);
 		final var rec = bh.createTraderAccount(req);
 		if (rec.has("$code")) { // 提取错误码
@@ -121,7 +121,6 @@ public class BrokerController {
 					req.get("idcard"), req.get("bankcard"), String.format("MA%03d", serialnum), now, now, "-");
 			final var insql = insert_sql("t_trader", reqrec.toMap());
 			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
-
 			return dataApp.sqlexecuteopt(insql) //
 					.flatMap(rs -> checkerr(rs, errinfo -> local.get().set("$error", errinfo.str("$error"))
 							.set("$exception", errinfo.str("$exception"))).map(linedfm -> linedfm.head().get(0)) // 提出插入数据的主键
