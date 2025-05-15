@@ -6806,7 +6806,7 @@ public class DataApp {
 	public static Optional<DFrame> checkerr(final DFrame dfm, final Consumer<IRecord> onerr) {
 		return Optional.ofNullable(dfm).map(rs -> {
 			final var line = rs.getFirst();
-			if (null != null && line.keys().contains("$error")) { // SQL直线出现了错误
+			if (null != line && line.keys().contains("$error")) { // SQL直线出现了错误
 				onerr.accept(line);
 				return null;
 			} else {
