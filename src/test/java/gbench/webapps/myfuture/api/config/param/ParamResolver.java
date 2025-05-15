@@ -3,6 +3,7 @@ package gbench.webapps.myfuture.api.config.param;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +20,6 @@ import org.springframework.web.reactive.result.method.annotation.AbstractMessage
 import org.springframework.web.server.ServerWebExchange;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gbench.util.json.MyJson;
 import gbench.util.type.Types;
@@ -69,17 +69,18 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 	 * @throws UnsupportedEncodingException
 	 */
 	public static String form2json(final String formString) throws UnsupportedEncodingException {
-		final ObjectMapper objectMapper = new ObjectMapper();
-		final ObjectNode rootNode = objectMapper.createObjectNode();
-		final String[] pairs = formString.split("&");
+		ObjectMapper objectMapper = new ObjectMapper();
+		Map<String, Object> resultMap = new HashMap<>();
+		String[] pairs = formString.split("&");
 
-		for (final String pair : pairs) {
+		for (String pair : pairs) {
 			String[] keyValue = pair.split("=", 2);
 			if (keyValue.length < 2)
 				continue;
 
-			String key = keyValue[0];
+			String encodedKey = keyValue[0];
 			String value = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.name());
+			String key = URLDecoder.decode(encodedKey, StandardCharsets.UTF_8.name());
 
 			// 处理嵌套结构，如 address[province]
 			if (key.contains("[")) {
@@ -90,25 +91,24 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 					String parentKey = key.substring(0, bracketStart);
 					String childKey = key.substring(bracketStart + 1, bracketEnd);
 
-					// 初始化嵌套的ObjectNode
-					if (!rootNode.has(parentKey)) {
-						rootNode.putObject(parentKey);
-					}
+					// 初始化嵌套的Map
+					resultMap.putIfAbsent(parentKey, new HashMap<String, Object>());
 
-					ObjectNode nestedNode = (ObjectNode) rootNode.get(parentKey);
-					nestedNode.put(childKey, value);
+					@SuppressWarnings("unchecked")
+					Map<String, Object> nestedMap = (Map<String, Object>) resultMap.get(parentKey);
+					nestedMap.put(childKey, value);
 				} else {
 					// 如果不是标准的嵌套格式，当作普通键值对处理
-					rootNode.put(key, value);
+					resultMap.put(key, value);
 				}
 			} else {
 				// 普通键值对
-				rootNode.put(key, value);
+				resultMap.put(key, value);
 			}
 		}
 
 		try {
-			return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
+			return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(resultMap);
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to convert to JSON", e);
 		}
