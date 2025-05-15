@@ -54,6 +54,8 @@ const BrokerComp = {
 	template:
 		`<div>
 		<div class="highlight">{{name}}</div>
+		{{component}}
+		<hr>
 		<div>
 		   姓名: <input v-model="reqform.name"/> &nbsp;
 		   身份证: <input v-model="reqform.idcard"/> &nbsp;
