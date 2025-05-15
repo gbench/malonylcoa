@@ -1,5 +1,6 @@
 import { mapGetters, mapState } from "vuex";
 import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
+import axios from 'axios';
 
 const AComp = {
 
@@ -26,8 +27,8 @@ const AComp = {
 			this.component = data.name + " In " + data.service + " @ " + data.time;
 			
 			// 注册应用
-			http_post("/h5/api/regist", {rec:JSON.stringify(
-				{name: data.name, "application":"world"})}).then(res => {
+			axios.post("/h5/api/regist", {name: data.name, "application":"world"})
+			.then(res => {
 				const data = res.data.data;
 				this.registrations = data.registrations;
 				console.log(JSON.stringify(this.regisrations));

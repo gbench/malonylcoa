@@ -69,6 +69,9 @@ public class ParamResolver extends AbstractMessageReaderArgumentResolver {
 	 * @throws UnsupportedEncodingException
 	 */
 	public static String form2json(final String formString) throws UnsupportedEncodingException {
+		if (MyJson.isJson(formString))
+			return formString;
+
 		final ObjectMapper objectMapper = new ObjectMapper();
 		final ObjectNode rootNode = objectMapper.createObjectNode();
 		final String[] pairs = formString.split("&");
