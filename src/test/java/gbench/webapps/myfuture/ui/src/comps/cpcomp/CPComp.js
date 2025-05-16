@@ -266,6 +266,7 @@ const CPComp = {
 						o.POSITION, 
 						t.NAME TNAME, 
 						s.NAME SNAME, 
+						o.PRICE, 
 						o.QUANTITY, 
 						o.CREATE_TIME, 
 						o.DESCRIPTION 
