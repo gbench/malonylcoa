@@ -66,7 +66,7 @@ const CPComp = {
 			   <button @click="regist_trader(traderfrm)"> 注册交易者</button>
 			</div>
 			<hr>
-			<div style="height:200px;overflow:auto;border:solid 1px red;">
+			<div style="height:100px;overflow:auto;border:solid 1px red;">
 				<data-table :data="traders" />
 			</div>
 			<hr>
@@ -87,8 +87,27 @@ const CPComp = {
 			   <button @click="regist_security(securityfrm)"> 登记证券</button>
 			</div>
 			<hr>
+			<div style="height:100px;overflow:auto;border:solid 1px red;">
+				<data-table :data="securities" style="width:100%" />
+			</div>
+			<hr>
+			头寸: <select v-model="orderfrm.position"> 
+				<option v-for="position in orderfrm.positions" :value="position">
+					{{position}}
+				</option>
+			</select> &nbsp;
+			交易者: <select v-model="orderfrm.traderid"> 
+			  <option v-for="trd in traders" :value="trd.ID">{{trd.NAME}}</option>
+		    </select> &nbsp;
+			证券: <select v-model="orderfrm.securityid"> 
+			   <option v-for="sec in securities" :value="sec.ID">{{sec.NAME}}</option>
+		    </select> &nbsp;
+			价格: <input v-model="orderfrm.price" style='width:100px;' /> &nbsp;
+			数量: <input v-model="orderfrm.quantity" style='width:100px;' /> &nbsp;
+			<button @click="create_order(orderfrm)"> 挂单</button>
+			<hr>
 			<div style="height:200px;overflow:auto;border:solid 1px red;">
-				<data-table :data="securities" style="width:100%"/>
+				<data-table :data="orders" style="width:100%" />
 			</div>
 		</div>`,
 
@@ -100,6 +119,7 @@ const CPComp = {
 		return {
 			component: "-", articles: [],
 			traders: [], securities: [],
+			orders: [],
 			traderfrm: {
 				name: randgen(surnames, 3),
 				password: 123456,
@@ -117,6 +137,14 @@ const CPComp = {
 				open: moment().format('YYYY-MM-DD'),
 				close: moment().add(1, 'years').format('YYYY-MM-DD'),
 				description: "金融证券"
+			},
+			orderfrm: {
+				position: "LONG",
+				positions: "LONG,SHORT".split(/,/),
+				traderid: "1",
+				securityid: "1",
+				price: randgen(digits, 5),
+				quantity: randgen(digits, 5)
 			}
 		};
 	},
@@ -148,6 +176,9 @@ const CPComp = {
 		sqlquery("SELECT * FROM t_security where ID!=0 LIMIT 10").then(res => {
 			this.securities = res.data.data;
 		});
+
+		// sql data 
+		this.refresh_orders(this.orderfrm.traderid);
 	},
 
 	/**
@@ -200,6 +231,49 @@ const CPComp = {
 				});
 				this.securityfrm.code = "CODE" + randgen(digits, 3);
 				this.securityfrm.name = "证券" + randgen(digits, 3);
+			});
+		},
+
+		/**
+		* 创建订单
+		*/
+		create_order(orderfrm) {
+			// 注册应用
+			axios.post("/h5/api/cp/createOrder", {
+				traderid: orderfrm.traderid,
+				securityid: orderfrm.securityid,
+				position: orderfrm.position,
+				price: orderfrm.price,
+				quantity: orderfrm.quantity,
+				description: orderfrm.description
+			}).then(res => {
+				const data = res.data.data;
+				console.log(JSON.stringify(data));
+				this.refresh_orders(orderfrm.traderid);
+				this.securityfrm.code = "CODE" + randgen(digits, 3);
+				this.securityfrm.name = "证券" + randgen(digits, 3);
+			});
+		},
+
+		/**
+		 *  刷新挂单
+		 */
+		refresh_orders(id) {
+			sqlquery(`select
+						o.ID, 
+						o.POSITION, 
+						t.NAME TNAME, 
+						s.NAME SNAME, 
+						o.QUANTITY, 
+						o.CREATE_TIME, 
+						o.DESCRIPTION 
+					from t_order o
+						left join t_trader t on o.TRADER_ID=t.ID
+						left join t_security s on o.SECURITY_ID=s.ID
+					where t.ID=${id}
+					order by o.ID desc
+			`).then(res => { // 刷新交易者
+				this.orders = res.data.data;
 			});
 		}
 	}

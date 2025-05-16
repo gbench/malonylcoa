@@ -114,6 +114,31 @@ public class CPController {
 	}
 
 	/**
+	 * 请求示例 <br>
+	 * $.ajax({ <br>
+	 * url:"http://localhost:7010/api/broker/createTraderAccount", <br>
+	 * data:{req:JSON.stringify({name:"zhangsan1", idcard:"210222198206238734",
+	 * bankcard:"6250056654287"})}, <br>
+	 * method:"post", <br>
+	 * success:e=>{ <br>
+	 * console.log("7010",JSON.stringify(e)); <br>
+	 * } <br>
+	 * }); <br>
+	 * 
+	 * @param req
+	 * @return
+	 */
+	@RequestMapping("createOrder")
+	public Mono<IRecord> createOrder(final @Param IRecord req) {
+		final var ret = IRecord.REC("code", 0);
+		final var rec = oh.createOrder(req);
+		if (rec.has("$code")) { // 提取错误码
+			ret.set("code", rec.get("$code"));
+		}
+		return Mono.just(ret.add("data", rec.filter((k, v) -> !k.startsWith("$")))); // 将内部状态字段($开头)剔除后返回
+	}
+
+	/**
 	 * sql语句查询 <br>
 	 * http://localhost:7010/msvc/sqlquery?sql=show tables
 	 * 
@@ -175,6 +200,27 @@ public class CPController {
 	}
 
 	/**
+	 * 证券
+	 */
+	private class OrderHelper extends DBPesist {
+		/**
+		 * 创建交易者账户
+		 * 
+		 * @param req 数据申请记录
+		 * @return
+		 */
+		public IRecord createOrder(final IRecord req) {
+			Output.println("createSecurity: req", req);
+			final var now = LocalDateTime.now();
+			final var flds = "TRADER_ID,SECURITY_ID,POSITION,PRICE,QUANTITY,CREATE_TIME,DESCRIPTION";
+			final var datarec = IRecord.rb(flds).get(req.str(("traderid")), req.str(("securityid")),
+					Objects.equals("LONG", req.str("position")) ? 1 : -1, req.str("price"), req.str("quantity"), now,
+					req.opt("description").orElse("金融证券"));
+			return this.insert("t_order", datarec);
+		}
+	}
+
+	/**
 	 * 数据持久化
 	 */
 	public class DBPesist {
@@ -209,5 +255,6 @@ public class CPController {
 
 	private BrokerHelper bh = this.new BrokerHelper();
 	private SecurityHelper sh = this.new SecurityHelper();
+	private OrderHelper oh = this.new OrderHelper();
 
 }
