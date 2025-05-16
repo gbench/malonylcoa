@@ -58,8 +58,9 @@ const CPComp = {
 			{{component}}
 			<hr>
 			<div>
-			   姓名: <input v-model="traderfrm.name"/> &nbsp;
-			   身份证: <input v-model="traderfrm.idcard"/> &nbsp;
+			   姓名: <input v-model="traderfrm.name" style='width:100px;' /> &nbsp;
+			   密码: <input v-model="traderfrm.password" style='width:100px;' /> &nbsp;
+			   身份证: <input v-model="traderfrm.idcard" /> &nbsp;
 			   银行卡: <input v-model="traderfrm.bankcard"/> &nbsp;
 			   描述: <input v-model="traderfrm.description"/> &nbsp;
 			   <button @click="regist_trader(traderfrm)"> 注册交易者</button>
@@ -76,13 +77,13 @@ const CPComp = {
 			   交易所: <select v-model=securityfrm.xchg> 
 			   		<option v-for="type in securityfrm.xchgs">{{type}}</option>
 			   </select>&nbsp;
-			   CODE: <input v-model="securityfrm.code" style='width:100px;'/> &nbsp;
-			   名称: <input v-model="securityfrm.name" style='width:100px;'/> &nbsp;
+			   CODE: <input v-model="securityfrm.code" style='width:100px;' /> &nbsp;
+			   名称: <input v-model="securityfrm.name" style='width:100px;' /> &nbsp;
 			   发行日期: <input v-model="securityfrm.open" type="date"  style='width:100px;'/> &nbsp;
 			   <span v-if="securityfrm.type!='STOCK'"> 
 			   	结束日期: <input v-model="securityfrm.close" type="date"  style='width:100px;' /> &nbsp; 
 			   </span>
-			   描述: <input v-model="securityfrm.description"/> &nbsp;
+			   描述: <input v-model="securityfrm.description" style='width:80px;' /> &nbsp;
 			   <button @click="regist_security(securityfrm)"> 登记证券</button>
 			</div>
 			<hr>
@@ -101,17 +102,18 @@ const CPComp = {
 			traders: [], securities: [],
 			traderfrm: {
 				name: randgen(surnames, 3),
+				password: 123456,
 				idcard: randgen(digits, 18),
 				bankcard: randgen(digits, 19),
 				description: "普通交易者"
 			},
 			securityfrm: {
-				types: "FUTURE,STOCK,BOND".split(/,/),
-				xchgs:"SHEX,SHFE,DCE,CZCE,CFFEX,INE,GFEX".split(/,/),
-				type: "STOCK",
-				xchg:"SHFE",
-				code: "SECURITY" + randgen(digits, 3),
-				name: "SECURITY" + randgen(digits, 3),
+				types: "FUTURE,STOCK,BOND,FUND".split(/,/),
+				xchgs: "SHEX,SHFE,DCE,CZCE,CFFEX,INE,GFEX".split(/,/),
+				type: "FUTURE",
+				xchg: "SHFE",
+				code: "CODE" + randgen(digits, 3),
+				name: "证券" + randgen(digits, 3),
 				open: moment().format('YYYY-MM-DD'),
 				close: moment().add(1, 'years').format('YYYY-MM-DD'),
 				description: "金融证券"
@@ -190,16 +192,15 @@ const CPComp = {
 				name: securityfrm.name,
 				open: securityfrm.open,
 				close: securityfrm.close
-			})
-				.then(res => {
-					const data = res.data.data;
-					console.log(JSON.stringify(data));
-					sqlquery("select * from t_security order by ID desc limit 10").then(res => { // 刷新交易者
-						this.securities = res.data.data;
-					});
-					this.securityfrm.code = "SECURITY" + randgen(digits, 3);
-					this.securityfrm.name = "SECURITY" + randgen(digits, 3);
+			}).then(res => {
+				const data = res.data.data;
+				console.log(JSON.stringify(data));
+				sqlquery("select * from t_security order by ID desc limit 10").then(res => { // 刷新交易者
+					this.securities = res.data.data;
 				});
+				this.securityfrm.code = "CODE" + randgen(digits, 3);
+				this.securityfrm.name = "证券" + randgen(digits, 3);
+			});
 		}
 	}
 

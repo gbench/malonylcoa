@@ -142,10 +142,10 @@ public class CPController {
 			Output.println("createTraderAccount: req", req);
 			final var now = LocalDateTime.now();
 			final var serialnum = ai.getAndIncrement(); // 流水号
-			final var flds = "CODE,ABBRE,NAME,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
+			final var flds = "CODE,ABBRE,NAME,PASSWORD,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
 			final var datarec = IRecord.rb(flds).get(String.format("TRADER%03d", serialnum),
-					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase(), req.get("name"), req.get("idcard"),
-					req.get("bankcard"), String.format("MACCT%03d", serialnum), now, now,
+					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase(), req.get("name"), req.get("password"),
+					req.get("idcard"), req.get("bankcard"), String.format("MACCT%03d", serialnum), now, now,
 					req.opt("description").orElse("普通交易者"));
 			return this.insert("t_trader", datarec);
 		}
@@ -167,7 +167,7 @@ public class CPController {
 			final var flds = "TYPE,XCHG,CODE,ABBRE,NAME,OPEN_DATE,CLOSE_DATE,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
 			final var datarec = IRecord.rb(flds).get(req.str(("type")), req.str(("xchg")), req.str(("code")),
 					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase()
-							+ req.strOpt("name").map(e -> e.replaceAll("^[\\sa-zA-Z]*", "")).orElse(""),
+							+ req.strOpt("name").map(e -> e.replaceAll("^[^\\d]*", "")).orElse(""),
 					req.get("name"), req.get("open"), req.get("close"), now, now,
 					req.opt("description").orElse("金融证券"));
 			return this.insert("t_security", datarec);
