@@ -140,12 +140,12 @@ const CPComp = {
 		});
 
 		// sql data 
-		sqlquery("SELECT * FROM t_trader LIMIT 10").then(res => {
+		sqlquery("SELECT * FROM t_trader where ID!=0 LIMIT 10").then(res => {
 			this.traders = res.data.data;
 		});
 
 		// sql data 
-		sqlquery("SELECT * FROM t_security LIMIT 10").then(res => {
+		sqlquery("SELECT * FROM t_security where ID!=0 LIMIT 10").then(res => {
 			this.securities = res.data.data;
 		});
 	},
