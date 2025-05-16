@@ -96,7 +96,7 @@ const CPComp = {
 					{{position}}
 				</option>
 			</select> &nbsp;
-			交易者: <select v-model="orderfrm.traderid"> 
+			交易者: <select v-model="orderfrm.traderid" @change="refresh_orders(orderfrm.traderid)"> 
 			  <option v-for="trd in traders" :value="trd.ID">{{trd.NAME}}</option>
 		    </select> &nbsp;
 			证券: <select v-model="orderfrm.securityid"> 
@@ -104,9 +104,10 @@ const CPComp = {
 		    </select> &nbsp;
 			价格: <input v-model="orderfrm.price" style='width:100px;' /> &nbsp;
 			数量: <input v-model="orderfrm.quantity" style='width:100px;' /> &nbsp;
+			描述: <input v-model="orderfrm.description" style='width:80px;' /> &nbsp;
 			<button @click="create_order(orderfrm)"> 挂单</button>
 			<hr>
-			<div style="height:200px;overflow:auto;border:solid 1px red;">
+			<div style="height:180px;overflow:auto;border:solid 1px red;">
 				<data-table :data="orders" style="width:100%" />
 			</div>
 		</div>`,
@@ -144,7 +145,8 @@ const CPComp = {
 				traderid: "1",
 				securityid: "1",
 				price: randgen(digits, 5),
-				quantity: randgen(digits, 5)
+				quantity: randgen(digits, 5),
+				description: "普通交易单"
 			}
 		};
 	},
