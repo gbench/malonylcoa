@@ -73,10 +73,15 @@ const CPComp = {
 			   证券类型: <select v-model=securityfrm.type> 
 			   		<option v-for="type in securityfrm.types">{{type}}</option>
 			   </select>&nbsp;
-			   CODE: <input v-model="securityfrm.code"/> &nbsp;
-			   名称: <input v-model="securityfrm.name"/> &nbsp;
-			   发行日期: <input v-model="securityfrm.open" type="date"/> &nbsp;
-			   <span v-if="securityfrm.type!='STOCK'"> 结束日期: <input v-model="securityfrm.close" type="date" /> &nbsp; </span>
+			   交易所: <select v-model=securityfrm.xchg> 
+			   		<option v-for="type in securityfrm.xchgs">{{type}}</option>
+			   </select>&nbsp;
+			   CODE: <input v-model="securityfrm.code" style='width:100px;'/> &nbsp;
+			   名称: <input v-model="securityfrm.name" style='width:100px;'/> &nbsp;
+			   发行日期: <input v-model="securityfrm.open" type="date"  style='width:100px;'/> &nbsp;
+			   <span v-if="securityfrm.type!='STOCK'"> 
+			   	结束日期: <input v-model="securityfrm.close" type="date"  style='width:100px;' /> &nbsp; 
+			   </span>
 			   描述: <input v-model="securityfrm.description"/> &nbsp;
 			   <button @click="regist_security(securityfrm)"> 登记证券</button>
 			</div>
@@ -102,7 +107,9 @@ const CPComp = {
 			},
 			securityfrm: {
 				types: "FUTURE,STOCK,BOND".split(/,/),
+				xchgs:"SHEX,SHFE,DCE,CZCE,CFFEX,INE,GFEX".split(/,/),
 				type: "STOCK",
+				xchg:"SHFE",
 				code: "SECURITY" + randgen(digits, 3),
 				name: "SECURITY" + randgen(digits, 3),
 				open: moment().format('YYYY-MM-DD'),
@@ -178,6 +185,7 @@ const CPComp = {
 			// 注册应用
 			axios.post("/h5/api/cp/createSecurity", {
 				code: securityfrm.code,
+				xchg: securityfrm.xchg,
 				type: securityfrm.type,
 				name: securityfrm.name,
 				open: securityfrm.open,

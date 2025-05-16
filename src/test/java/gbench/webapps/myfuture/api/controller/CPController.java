@@ -128,7 +128,10 @@ public class CPController {
 		return Mono.just(ret);
 	}
 
-	private class BrokerHelper {
+	/**
+	 * 券商
+	 */
+	private class BrokerHelper extends DBPesist {
 		/**
 		 * 创建交易者账户
 		 * 
@@ -140,26 +143,18 @@ public class CPController {
 			final var now = LocalDateTime.now();
 			final var serialnum = ai.getAndIncrement(); // 流水号
 			final var flds = "CODE,ABBRE,NAME,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
-			final var reqrec = IRecord.rb(flds).get(String.format("TRADER%03d", serialnum),
+			final var datarec = IRecord.rb(flds).get(String.format("TRADER%03d", serialnum),
 					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase(), req.get("name"), req.get("idcard"),
 					req.get("bankcard"), String.format("MACCT%03d", serialnum), now, now,
 					req.opt("description").orElse("普通交易者"));
-			final var insql = insert_sql("t_trader", reqrec.toMap());
-			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
-			return dataApp.sqlexecuteopt(insql) //
-					.flatMap(rs -> checkerr(rs, errinfo -> local.get().set("$error", errinfo.str("$error"))
-							.set("$exception", errinfo.str("$exception"))).map(linedfm -> linedfm.head().get(0)) // 提出插入数据的主键
-					).flatMap(id -> { // 数据主键
-						final var dfm = dataApp.sqldframe("select * from t_trader order by ID desc");
-						// println(dfm);
-						return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst()
-								.map(e -> REC(e.toMap()));
-					}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
-							local.get().opt("$exception").orElse("-"), "reqrec", reqrec, "insql", insql));
+			return this.insert("t_trader", datarec);
 		}
 	}
 
-	private class SecurityHelper {
+	/**
+	 * 证券
+	 */
+	private class SecurityHelper extends DBPesist {
 		/**
 		 * 创建交易者账户
 		 * 
@@ -169,11 +164,26 @@ public class CPController {
 		public IRecord createSecurity(final IRecord req) {
 			Output.println("createSecurity: req", req);
 			final var now = LocalDateTime.now();
-			final var flds = "TYPE,CODE,ABBRE,NAME,OPEN_DATE,CLOSE_DATE,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
-			final var reqrec = IRecord.rb(flds).get(req.str(("type")), req.str(("code")),
-					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase(), req.get("name"), req.get("open"),
-					req.get("close"), now, now, req.opt("description").orElse("金融证券"));
-			final var insql = insert_sql("t_security", reqrec.toMap());
+			final var flds = "TYPE,XCHG,CODE,ABBRE,NAME,OPEN_DATE,CLOSE_DATE,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
+			final var datarec = IRecord.rb(flds).get(req.str(("type")), req.str(("xchg")), req.str(("code")),
+					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase()
+							+ req.strOpt("name").map(e -> e.replaceAll("^[\\sa-zA-Z]*", "")).orElse(""),
+					req.get("name"), req.get("open"), req.get("close"), now, now,
+					req.opt("description").orElse("金融证券"));
+			return this.insert("t_security", datarec);
+		}
+	}
+
+	/**
+	 * 数据持久化
+	 */
+	public class DBPesist {
+
+		/**
+		 * 数据插入
+		 */
+		public IRecord insert(final String tbl, final IRecord datarec) {
+			final var insql = insert_sql(tbl, datarec.toMap());
 			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
 			return dataApp.sqlexecuteopt(insql) //
 					.flatMap(rs -> checkerr(rs, errinfo -> local.get().set("$error", errinfo.str("$error"))
@@ -184,7 +194,7 @@ public class CPController {
 						return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst()
 								.map(e -> REC(e.toMap()));
 					}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
-							local.get().opt("$exception").orElse("-"), "reqrec", reqrec, "insql", insql));
+							local.get().opt("$exception").orElse("-"), "reqrec", datarec, "insql", insql));
 		}
 	}
 
