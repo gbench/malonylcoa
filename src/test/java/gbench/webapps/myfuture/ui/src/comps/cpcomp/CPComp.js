@@ -338,25 +338,30 @@ const CPComp = {
 		 *  刷新挂单
 		 */
 		refresh_orders(traderid, securityid) {
-			const base = function(position) {
-				return `select distinct
-					o.ID,
-					o.POSITION, 
-					-- t.NAME TNAME, 
-					s.NAME SNAME, 
-					ROUND(o.PRICE, 2) PRICE, 
-					o.QUANTITY, 
-					o.CREATE_TIME 
-					-- o.DESCRIPTION 
-				from (select * from t_order where POSITION=${position} and SECURITY_ID=${securityid}) o
-					left join t_trader t on o.TRADER_ID=t.ID
-					left join t_security s on o.SECURITY_ID=s.ID
+			const positions = function(position) {
+				return `select
+					o.ID, -- 头寸单主键
+					o.POSITION, -- 头寸
+					-- t.NAME TNAME, -- 交易者
+					s.NAME SNAME,  -- 证券名称
+					ROUND(o.PRICE, 2) PRICE, -- 价格
+					o.QUANTITY, -- 数量
+					o.CREATE_TIME -- 下单时间
+					-- o.DESCRIPTION -- 说明
+				from (select * from t_order where POSITION=${position} and SECURITY_ID=${securityid}) o -- 检索指定头寸单
+					left join t_trader t on o.TRADER_ID=t.ID -- 交易者
+					left join t_security s on o.SECURITY_ID=s.ID -- 证券
 				where t.ID=${traderid}`;
-			};
-			const ask_sql = `${base(-1)} order by o.PRICE desc, CREATE_TIME desc`; // 卖单
-			const bid_sql = `${base(1)} order by o.PRICE desc, CREATE_TIME`; // 买单
+			}; // 头寸资产单
+
+			const ask_sql = `${positions(-1)} order by o.PRICE desc, CREATE_TIME desc`; // 卖单 - 空头
+			const bid_sql = `${positions(1)} order by o.PRICE desc, CREATE_TIME`; // 买单 - 多头
+			
 			sqlquery(`(${ask_sql}) union all (${bid_sql})`).then(res => {
-				this.orders = res.data.data;
+				this.orders = res.data.data.map(e => {
+					e.POSITION = e.POSITION == 1 ? "LONG" : "SHORT";
+					return e;
+				});
 			});
 		}
 	}
