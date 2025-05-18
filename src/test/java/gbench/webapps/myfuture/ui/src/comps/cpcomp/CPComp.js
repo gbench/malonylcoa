@@ -96,10 +96,10 @@ const CPComp = {
 					{{position}}
 				</option>
 			</select> &nbsp;
-			交易者: <select v-model="orderfrm.traderid" @change="refresh_orders(orderfrm.traderid)"> 
+			交易者: <select v-model="orderfrm.traderid" @change="refresh_orders(orderfrm.traderid, orderfrm.securityid)"> 
 			  <option v-for="trd in traders" :value="trd.ID">{{trd.NAME}}</option>
 		    </select> &nbsp;
-			证券: <select v-model="orderfrm.securityid"> 
+			证券: <select v-model="orderfrm.securityid"  @change="refresh_orders(orderfrm.traderid, orderfrm.securityid)"> 
 			   <option v-for="sec in securities" :value="sec.ID">{{sec.NAME}}</option>
 		    </select> &nbsp;
 			价格: <input v-model="orderfrm.price" style='width:100px;' /> &nbsp;
@@ -144,8 +144,8 @@ const CPComp = {
 				positions: "LONG,SHORT".split(/,/),
 				traderid: "1",
 				securityid: "1",
-				price: randgen(digits, 5),
-				quantity: randgen(digits, 5),
+				price: 10000,
+				quantity: 10,
 				description: "普通交易单"
 			}
 		};
@@ -180,7 +180,7 @@ const CPComp = {
 		});
 
 		// sql data 
-		this.refresh_orders(this.orderfrm.traderid);
+		this.refresh_orders(this.orderfrm.traderid, this.orderfrm.securityid);
 	},
 
 	/**
@@ -251,31 +251,32 @@ const CPComp = {
 			}).then(res => {
 				const data = res.data.data;
 				console.log(JSON.stringify(data));
-				this.refresh_orders(orderfrm.traderid);
-				this.securityfrm.code = "CODE" + randgen(digits, 3);
-				this.securityfrm.name = "证券" + randgen(digits, 3);
+				this.refresh_orders(orderfrm.traderid, orderfrm.securityid);
 			});
 		},
 
 		/**
 		 *  刷新挂单
 		 */
-		refresh_orders(id) {
-			sqlquery(`select
-						o.ID, 
-						o.POSITION, 
-						t.NAME TNAME, 
-						s.NAME SNAME, 
-						o.PRICE, 
-						o.QUANTITY, 
-						o.CREATE_TIME, 
-						o.DESCRIPTION 
-					from t_order o
-						left join t_trader t on o.TRADER_ID=t.ID
-						left join t_security s on o.SECURITY_ID=s.ID
-					where t.ID=${id}
-					order by o.ID desc
-			`).then(res => { // 刷新交易者
+		refresh_orders(traderid, securityid) {
+			const base = function(position) {
+				return `select distinct
+					o.ID,
+					o.POSITION, 
+					-- t.NAME TNAME, 
+					s.NAME SNAME, 
+					ROUND(o.PRICE, 2) PRICE, 
+					o.QUANTITY, 
+					o.CREATE_TIME 
+					-- o.DESCRIPTION 
+				from (select * from t_order where POSITION=${position} and SECURITY_ID=${securityid}) o
+					left join t_trader t on o.TRADER_ID=t.ID
+					left join t_security s on o.SECURITY_ID=s.ID
+				where t.ID=${traderid}`;
+			};
+			const ask_sql = `${base(-1)} order by o.PRICE desc, CREATE_TIME desc`; // 卖单
+			const bid_sql = `${base(1)} order by o.PRICE desc, CREATE_TIME`; // 买单
+			sqlquery(`(${ask_sql}) union all (${bid_sql})`).then(res => {
 				this.orders = res.data.data;
 			});
 		}
