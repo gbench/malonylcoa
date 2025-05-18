@@ -208,10 +208,10 @@ const CPComp = {
 		 * @returns 
 		 */
 		current_orderdata() {
-			if (this.current.orderdata_index < 0 || this.tbldata.length < 1) {
+			if (this.current.orderdata_index < 0 || this.orderdata_index.length < 1) {
 				return null;
 			} else {
-				return this.orderdata[this.current.tbldata_index];
+				return this.orderdata[this.current.orderdata_index];
 			}
 		},
 	},
@@ -356,7 +356,7 @@ const CPComp = {
 
 			const ask_sql = `${positions(-1)} order by o.PRICE desc, CREATE_TIME desc`; // 卖单 - 空头
 			const bid_sql = `${positions(1)} order by o.PRICE desc, CREATE_TIME`; // 买单 - 多头
-			
+
 			sqlquery(`(${ask_sql}) union all (${bid_sql})`).then(res => {
 				this.orders = res.data.data.map(e => {
 					e.POSITION = e.POSITION == 1 ? "LONG" : "SHORT";
