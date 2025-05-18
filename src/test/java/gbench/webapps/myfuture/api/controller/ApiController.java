@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gbench.util.data.MyDataApp;
+import gbench.util.data.DataApp.DFrame;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.myfuture.api.config.param.Param;
 import reactor.core.publisher.Mono;
@@ -67,6 +68,20 @@ public class ApiController {
 	public Mono<IRecord> sqlquery(final @Param String sql) {
 		final var ret = IRecord.REC("code", 0);
 		ret.add("data", this.dataApp.sqldframe(sql));
+		return Mono.just(ret);
+	}
+
+	/**
+	 * sql语句查询 <br>
+	 * http://localhost:7010/api/cp/sqlexecute?sql=xxx
+	 * 
+	 * @param sql SQL 语句
+	 * @return IRecord
+	 */
+	@RequestMapping("sqlexecute")
+	public Mono<IRecord> sqlexecute(final @Param String sql) {
+		final var ret = IRecord.REC("code", 0);
+		ret.add("data", this.dataApp.sqlexecuteopt(sql).orElse(DFrame.of()));
 		return Mono.just(ret);
 	}
 

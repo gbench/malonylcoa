@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import gbench.util.chn.PinyinUtil;
+import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.MyDataApp;
 import gbench.util.io.Output;
 import gbench.util.lisp.IRecord;
@@ -49,7 +50,7 @@ public class CPController {
 	/**
 	 * 提取组件模块 <br>
 	 * <p>
-	 * http://localhost:7010/msvc/component
+	 * http://localhost:7010/api/cp/component
 	 *
 	 * @return IRecord
 	 */
@@ -66,7 +67,7 @@ public class CPController {
 	/**
 	 * 请求示例 <br>
 	 * $.ajax({ <br>
-	 * url:"http://localhost:7010/api/broker/createTraderAccount", <br>
+	 * url:"http://localhost:7010/api/cp/createTraderAccount", <br>
 	 * data:{req:JSON.stringify({name:"zhangsan1", idcard:"210222198206238734",
 	 * bankcard:"6250056654287"})}, <br>
 	 * method:"post", <br>
@@ -91,7 +92,7 @@ public class CPController {
 	/**
 	 * 请求示例 <br>
 	 * $.ajax({ <br>
-	 * url:"http://localhost:7010/api/broker/createTraderAccount", <br>
+	 * url:"http://localhost:7010/api/cp/createTraderAccount", <br>
 	 * data:{req:JSON.stringify({name:"zhangsan1", idcard:"210222198206238734",
 	 * bankcard:"6250056654287"})}, <br>
 	 * method:"post", <br>
@@ -116,7 +117,7 @@ public class CPController {
 	/**
 	 * 请求示例 <br>
 	 * $.ajax({ <br>
-	 * url:"http://localhost:7010/api/broker/createTraderAccount", <br>
+	 * url:"http://localhost:7010/api/cp/createTraderAccount", <br>
 	 * data:{req:JSON.stringify({name:"zhangsan1", idcard:"210222198206238734",
 	 * bankcard:"6250056654287"})}, <br>
 	 * method:"post", <br>
@@ -140,7 +141,7 @@ public class CPController {
 
 	/**
 	 * sql语句查询 <br>
-	 * http://localhost:7010/msvc/sqlquery?sql=show tables
+	 * http://localhost:7010/api/cp/sqlquery?sql=show tables
 	 * 
 	 * @param sql      SQL 语句
 	 * @param exchange post 函数
@@ -150,6 +151,20 @@ public class CPController {
 	public Mono<IRecord> sqlquery(final @Param String sql) {
 		final var ret = IRecord.REC("code", 0);
 		ret.add("data", this.dataApp.sqldframe(sql));
+		return Mono.just(ret);
+	}
+
+	/**
+	 * sql语句查询 <br>
+	 * http://localhost:7010/api/cp/sqlexecute?sql=xxx
+	 * 
+	 * @param sql SQL 语句
+	 * @return IRecord
+	 */
+	@RequestMapping("sqlexecute")
+	public Mono<IRecord> sqlexecute(final @Param String sql) {
+		final var ret = IRecord.REC("code", 0);
+		ret.add("data", this.dataApp.sqlexecuteopt(sql).orElse(DFrame.of()));
 		return Mono.just(ret);
 	}
 

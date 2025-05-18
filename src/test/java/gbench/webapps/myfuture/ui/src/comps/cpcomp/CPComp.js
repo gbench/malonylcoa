@@ -1,7 +1,9 @@
 import { mapGetters, mapState } from "vuex";
 import { http_post, http_get, sqlquery, sqlquery2, sqlexecute } from "../../gbench/util/sqlquery";
+import { is_valid_url, image_url, alias, pathget, gets, get, assoc_by, aslist, select, clear } from "../../gbench/util/common";
 import axios from 'axios';
 import moment from 'moment';
+import _ from "lodash";
 
 /**
  * 随机选择letters数组中的n个元素，并将这些元素拼接成一个字符串
@@ -105,10 +107,14 @@ const CPComp = {
 			价格: <input v-model="orderfrm.price" style='width:100px;' /> &nbsp;
 			数量: <input v-model="orderfrm.quantity" style='width:100px;' /> &nbsp;
 			描述: <input v-model="orderfrm.description" style='width:80px;' /> &nbsp;
-			<button @click="create_order(orderfrm)"> 挂单</button>
+			<button @click="create_order(orderfrm)"> 挂单</button> &nbsp;
+			<button @click="remove_order()"> 删除</button>
 			<hr>
 			<div style="height:180px;overflow:auto;border:solid 1px red;">
-				<data-table :data="orders" style="width:100%" />
+				<data-table :data="orders" 
+					@trclick="on_orderdata_trclick"
+					:trclass="(line,i)=>is_orderdata_selected(i)?current.orderdata_index==i?'highlight2':'highlight':'tdclass'"
+					style="width:100%" />
 			</div>
 		</div>`,
 
@@ -144,9 +150,13 @@ const CPComp = {
 				positions: "LONG,SHORT".split(/,/),
 				traderid: "1",
 				securityid: "1",
-				price: 10000,
+				price: 1000,
 				quantity: 10,
 				description: "普通交易单"
+			},
+			current: {
+				orderdata_index: -1,
+				orderdatas_selected: []
 			}
 		};
 	},
@@ -192,9 +202,58 @@ const CPComp = {
 		 */
 		...mapGetters("CPCompStore", ["name"]),
 		...mapState("CPCompStore", { state: state => state }),
+
+		/**
+		 * 当前的表数据行 
+		 * @returns 
+		 */
+		current_orderdata() {
+			if (this.current.orderdata_index < 0 || this.tbldata.length < 1) {
+				return null;
+			} else {
+				return this.orderdata[this.current.tbldata_index];
+			}
+		},
 	},
 
 	methods: {
+
+		/**
+		 * 行是否被选中 
+		* @param {*} i 
+		*/
+		is_orderdata_selected(i) {
+			return _.includes(this.current.orderdatas_selected, i);
+		},
+
+		/**
+		 * 表数据
+		 */
+		reset_orderdata() {
+			this.orderdata = [];
+		},
+
+		/**
+		 * 重置行项目 
+		 */
+		reset_selected_orderdata() {
+			this.current.orderdatas_selected = [];
+			this.current.orderdata_index = -1;
+		},
+
+		/**
+		 * 数据表的行点击 
+		 * @param {*} param 
+		 */
+		on_orderdata_trclick({ line, i, event }) {
+			if (select(this.current.orderdatas_selected, i)) {
+				this.current.orderdata_index = i;
+			} else { //  清空当前选的行
+				this.current.orderdata_index = -1;
+				return;
+			};
+		},
+
 		/**
 		 * 
 		 */
@@ -253,6 +312,26 @@ const CPComp = {
 				console.log(JSON.stringify(data));
 				this.refresh_orders(orderfrm.traderid, orderfrm.securityid);
 			});
+		},
+
+		/**
+		* 创建订单
+		*/
+		remove_order() {
+			const ii = this.current.orderdatas_selected;
+			if (ii.length > 0) {
+				const ids = this.orders.filter((e, i) => _.includes(ii, i)).map(e => e.ID);
+				const sql = `delete from t_order where ID in (${ids.join(",")})`;
+				console.log(sql);
+				// sql data 
+				sqlexecute(sql).then(res => {
+					this.reset_selected_orderdata();
+					const data = res.data.data;
+					this.refresh_orders(this.orderfrm.traderid, this.orderfrm.securityid);
+				});
+			} else {
+				alert("请选择有效头寸单");
+			}
 		},
 
 		/**

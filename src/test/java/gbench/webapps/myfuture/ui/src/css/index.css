@@ -1,3 +1,12 @@
+body {
+    font-family: Sans-serif;
+}
+
+thead {
+    position: sticky;
+    top: -1px;
+}
+
 th {
     color: white;
     background-color: red;
@@ -6,11 +15,13 @@ th {
 
 td {
     border: solid 1px red;
+    white-space: nowrap;
 }
 
 tr:hover {
-    color: black;
-    background-color: lightyellow;
+    color: red;
+    font-weight: bold;
+    /*background-color: lightyellow;*/
     cursor: pointer;
 }
 
@@ -20,6 +31,43 @@ tr:hover {
     cursor: pointer;
 }
 
+.highlight2 {
+    color: black;
+    background-color: bisque;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.gray {
+    color: black;
+    background-color: #dfdfdf;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.gray2 {
+    color: black;
+    background-color: #dfdfdf;
+    cursor: pointer;
+}
+
+.colored {
+    color:red;
+}
+
+.colorpink {
+    color:pink;
+}
+
+select input {
+    vertical-align: top;
+}
+
+select {
+    height: 21px;
+}
+
+/*
 ul,
 li {
     overflow: auto;
@@ -28,3 +76,4 @@ li {
     list-style: none;
     border-bottom: solid 1px red;
 }
+*/
