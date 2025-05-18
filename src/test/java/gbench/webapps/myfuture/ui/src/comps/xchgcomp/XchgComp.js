@@ -7,6 +7,8 @@ const XchgComp = {
 
 	template: ` <div>
 		<div class="highlight">{{name}}</div>
+		{{component}}
+		<hr>
 		证券: <select v-model="securityid"  
 				@change="refresh_orders(securityid)"> 
 				<option v-for="sec in securities" :value="sec.ID">{{sec.NAME}}</option>
