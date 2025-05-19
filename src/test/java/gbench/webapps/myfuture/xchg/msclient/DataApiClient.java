@@ -34,6 +34,32 @@ public class DataApiClient {
 	 * @param sql
 	 * @return
 	 */
+	public Mono<DFrame> sqlexecute(final String sql) {
+		return this.sqlexecutePost(sql);
+	}
+
+	/**
+	 * 
+	 * @param sql
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public Mono<DFrame> sqlexecutePost(final String sql) {
+		MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+		formData.add("sql", sql);
+		final var mono = wb.baseUrl(MYFUTURE_API_MSVC).build().post()
+				.uri(uriBuilder -> uriBuilder.path("/api/sqlexecute").build())
+				.contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(formData))
+				.retrieve().bodyToMono(IRecord.class)
+				.map(e -> e.llS("data", t -> ((List<IRecord>) t).stream()).collect(DFrame.dfmclc));
+		return mono;
+	}
+
+	/**
+	 * 
+	 * @param sql
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public Mono<DFrame> sqlqueryPost(final String sql) {
 		MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();

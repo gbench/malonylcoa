@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import javax.sql.DataSource;
 
 import static gbench.util.lisp.IRecord.REC;
-import static gbench.webapps.world.api.model.DataModel.*;
+import static gbench.webapps.myfuture.api.model.DataModel.*;
 
 @Configuration
 public class DataAppConfig {
