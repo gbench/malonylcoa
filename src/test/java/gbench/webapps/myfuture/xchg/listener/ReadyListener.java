@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -25,21 +26,29 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		final var thread = new Thread(() -> {
 			while (true) {
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(5000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 
-				this.getSecurities().subscribe(secdfrm -> {
-					secdfrm.cols(0, IRecord.obj2int()).forEach(securityid -> {
-						final var sql = """
-									select * from t_order where SECURITY_ID=%s
-								""".formatted(securityid);
-						this.sqlqueryPost(sql).subscribe(ordfrm -> {
-							println(ordfrm);
+				final var ordsql = """
+							select * from t_order where SECURITY_ID=$0 and ID not in (
+								(select SHORT_ORDER_ID from t_match_order where SECURITY_ID=$0) union
+								(select LONG_ORDER_ID from t_match_order where SECURITY_ID=$0)
+							)
+						""";
+				this.getSecurities().map(dfm -> dfm.colS(0, IRecord.obj2int())).flatMapMany(Flux::fromStream)
+						.subscribe(securityid -> {
+							println("-------------------------------------------");
+							println("securityid:%s".formatted(securityid));
+							println("-------------------------------------------");
+							final var sql = IRecord.FT(ordsql, securityid);
+							println(sql);
+							this.sqlqueryPost(sql).subscribe(ordfrm -> {
+								println(ordfrm);
+							});
+							println("-------------------------------------------\n");
 						});
-					});
-				});
 			}
 		});
 		thread.setDaemon(true);
