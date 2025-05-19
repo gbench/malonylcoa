@@ -2,21 +2,17 @@ package gbench.webapps.myfuture.xchg.listener;
 
 import static gbench.util.io.Output.println;
 
-import java.util.List;
+import java.util.Arrays;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.BodyInserters;
 
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
+import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @Component
 public class ReadyListener implements ApplicationListener<ApplicationReadyEvent> {
@@ -31,23 +27,20 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 					e.printStackTrace();
 				}
 
-				final var ordsql = """
-							select * from t_order where SECURITY_ID=$0 and ID not in (
-								(select SHORT_ORDER_ID from t_match_order where SECURITY_ID=$0) union
-								(select LONG_ORDER_ID from t_match_order where SECURITY_ID=$0)
-							)
-						""".strip();
-				this.getSecurities().map(dfm -> dfm.colS(0, IRecord.obj2int())).flatMapMany(Flux::fromStream)
-						.subscribe(securityid -> {
-							final var sql = IRecord.FT(ordsql, securityid);
-							this.sqlqueryPost(sql).subscribe(ordfrm -> {
-								println("-------------------------------------------");
-								println("-- securityid:%s".formatted(securityid));
-								println("-- sql:%s".formatted(sql));
-								println("-- orders:");
-								println(ordfrm);
-								println("-------------------------------------------\n");
-							});
+				dataClient.sqldframe(SECURITY_SQL).map(dfm -> dfm.colS(0, IRecord.obj2int()))
+						.flatMapMany(Flux::fromStream)
+						.flatMap(securityid -> dataClient.sqldframe(IRecord.FT(UNMATCHED_ORDER_SQL, securityid)))
+						.subscribe(ordfrm -> {
+							final var securityid = ordfrm.headOpt().map(e -> e.get("SECURITY_ID")).orElse("-");
+							println("-------------------------------------------");
+							println("-- securityid:%s".formatted(securityid));
+							final var groups = ordfrm.groupBy(e -> e.i4("POSITION"));
+							final var lngdfm = DFrame.of(groups.getOrDefault(1, Arrays.asList()))
+									.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
+							final var shtdfm = DFrame.of(groups.getOrDefault(-1, Arrays.asList()))
+									.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
+							println("-- LONGS:%s".formatted(lngdfm));
+							println("-- SHORTS:%s".formatted(shtdfm));
 						});
 			}
 		});
@@ -55,36 +48,14 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		thread.start();
 	}
 
-	Mono<DFrame> getSecurities() {
-		final var sql = """
-					select distinct SECURITY_ID from t_order
-				""";
-		return sqlqueryPost(sql);
-	}
-
-	@SuppressWarnings("unchecked")
-	Mono<DFrame> sqlqueryPost(final String sql) {
-		MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-		formData.add("sql", sql);
-		final var mono = wb.baseUrl("http://myfuture-api").build().post()
-				.uri(uriBuilder -> uriBuilder.path("/api/sqlquery").build())
-				.contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromFormData(formData))
-				.retrieve().bodyToMono(IRecord.class)
-				.map(e -> e.llS("data", t -> ((List<IRecord>) t).stream()).collect(DFrame.dfmclc));
-		return mono;
-	}
-
-	@SuppressWarnings("unchecked")
-	Mono<DFrame> sqlqueryGet(final String sql) {
-		final var mono = wb.baseUrl(MYFUTURE_API_MSVC).build().get()
-				.uri(uriBuilder -> uriBuilder.path("/api/sqlquery").queryParam("sql", sql).build()).retrieve()
-				.bodyToMono(IRecord.class)
-				.map(e -> e.llS("data", t -> ((List<IRecord>) t).stream()).collect(DFrame.dfmclc));
-		return mono;
-	}
-
 	@Autowired
-	private WebClient.Builder wb;
+	DataApiClient dataClient;
 
-	final static String MYFUTURE_API_MSVC = "http://myfuture-api";
+	final static String SECURITY_SQL = "select distinct SECURITY_ID from t_order";
+	final static String UNMATCHED_ORDER_SQL = """
+				select * from t_order where SECURITY_ID=$0 and ID not in (
+					(select SHORT_ORDER_ID from t_match_order where SECURITY_ID=$0) union
+					(select LONG_ORDER_ID from t_match_order where SECURITY_ID=$0)
+				)
+			""".strip();
 }

@@ -2790,22 +2790,24 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	/**
 	 * 比较器,需要 键名序列keys中的每个值对象带有比较能力:Comparable
 	 *
-	 * @param keys 键名序列
+	 * @param keys 键名序列,用逗号分割
+	 * @param ascs 是否升序,true 表示升序,小值在前,false 表示降序,大值在前, 索引循环使用
 	 * @return keys 序列的比较器
 	 */
-	static Comparator<IRecord> cmp(final String[] keys) {
-		return IRecord.cmp(keys, true);
+	static Comparator<IRecord> cmp(final String keys, final boolean... ascs) {
+		return IRecord.cmp(keys.split(","), ascs);
 	}
 
 	/**
 	 * 比较器,需要 键名序列keys中的每个值对象带有比较能力:Comparable
 	 *
 	 * @param keys 键名序列
-	 * @param asc  是否升序,true 表示升序,小值在前,false 表示降序,大值在前
+	 * @param ascs 是否升序,true 表示升序,小值在前,false 表示降序,大值在前, 索引循环使用
 	 * @return keys 序列的比较器
 	 */
-	static Comparator<IRecord> cmp(final String[] keys, final boolean asc) {
-		return cmp(keys, null, asc);
+	static Comparator<IRecord> cmp(final String[] keys, final boolean... ascs) {
+		final var _ascs = Objects.isNull(ascs) || ascs.length < 1 ? new boolean[] { true } : ascs;
+		return cmp(keys, null, _ascs);
 	}
 
 	/**
@@ -2815,12 +2817,12 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 	 * @param <U>    具有比较能力的类型
 	 * @param keys   键名序列
 	 * @param mapper (key:键名,t:键值)->u 比较能力变换器
-	 * @param asc    是否升序,true 表示升序,小值在前,false 表示降序,大值在前
+	 * @param ascs   是否升序,true 表示升序,小值在前,false 表示降序,大值在前, 索引循环使用
 	 * @return keys 序列的比较器
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, U extends Comparable<?>> Comparator<IRecord> cmp(final String[] keys,
-			final BiFunction<String, T, U> mapper, final boolean asc) {
+			final BiFunction<String, T, U> mapper, final boolean... ascs) {
 
 		final BiFunction<String, T, U> final_mapper = mapper == null
 				? (String i, T o) -> o instanceof Comparable ? (U) o : (U) (o + "")
@@ -2828,8 +2830,12 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 
 		return (a, b) -> {
 			final Queue<String> queue = new LinkedList<String>();
-			for (String k : keys)
+			for (String k : keys) {
 				queue.offer(k);// 压入队列
+			}
+
+			int i = 0;
+			final var n = ascs.length;
 			while (!queue.isEmpty()) {
 				final String key = queue.poll(); // 提取队首元素
 				final Comparable<Object> ta = (Comparable<Object>) a.invoke(key, (T t) -> final_mapper.apply(key, t));
@@ -2846,6 +2852,7 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 
 					try {
 						ret = ta.compareTo(tb);// 进行元素比较
+
 					} catch (Exception e) {
 						final String[] aa = Stream.of(ta, tb).map(o -> o != null ? o.getClass().getName() + o : "null")
 								.toArray(String[]::new);
@@ -2853,9 +2860,14 @@ public interface IRecord extends Iterable<Tuple2<String, Object>>, Comparable<IR
 					} // try
 
 					if (ret != 0) {
-						return (asc ? 1 : -1) * ret; // 返回比较结果,如果不相等直接返回,相等则继续比计较
+						final var j = i % n; // 循环取余数
+						final int _ret = (ascs[j] ? 1 : -1) * ret;
+//						final var line = "n:%s, i:%s, j:%s, ta:%s, tb:%s, ret:%s, _ret:%s";
+//						System.out.println(line.formatted(n, i, j, ta, tb, ret, _ret));
+						return _ret; // 返回比较结果,如果不相等直接返回,相等则继续比计较
 					} // if
 				} // if
+				i++; // 索引后移一位置
 			} // while
 
 			return 0;// 所有key都比较完毕,则认为两个元素相等
