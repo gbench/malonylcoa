@@ -250,10 +250,10 @@ public class CCPController {
 					.flatMap(rs -> checkerr(rs, errinfo -> local.get().set("$error", errinfo.str("$error"))
 							.set("$exception", errinfo.str("$exception"))).map(linedfm -> linedfm.head().get(0)) // 提出插入数据的主键
 					).flatMap(id -> { // 数据主键
-						final var dfm = dataApp.sqldframe("select * from t_trader order by ID desc");
-						// println(dfm);
-						return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst()
+						final var dfm = dataApp.sqldframe("select * from %s order by ID desc".formatted(tbl));
+						final var ret = dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst()
 								.map(e -> REC(e.toMap()));
+						return ret;
 					}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
 							local.get().opt("$exception").orElse("-"), "reqrec", datarec, "insql", insql));
 		}

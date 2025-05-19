@@ -12,7 +12,12 @@ const TraderComp = {
 		交易者: <select v-model="current.traderid" @change="refresh_orders(current.traderid, current.securityid)"> 
 				<option v-for="trd in current.traders" :value="trd.ID">{{trd.NAME}}</option>
 			</select> &nbsp;
-		证券: <select v-model="current.securityid"  @change="refresh_orders(current.traderid, orderfrm.securityid)"> 
+		头寸: <select v-model="orderfrm.position"> 
+				<option v-for="position in orderfrm.positions" :value="position">
+					{{position}}
+				</option>
+			 </select> &nbsp;	
+		证券: <select v-model="current.securityid"  @change="refresh_orders(current.traderid, current.securityid)"> 
 				<option v-for="sec in current.securities" :value="sec.ID">{{sec.NAME}}</option>
 			</select> &nbsp;
 		价格: <input v-model="orderfrm.price" style='width:100px;' /> &nbsp;
@@ -179,7 +184,12 @@ const TraderComp = {
 		/**
 		 *  刷新挂单
 		 */
-		refresh_orders(traderid, securityid) {
+		refresh_orders(traderid, securityid, flag = true) {
+			if (flag) { // 同步变更orderfrm的字段
+				this.orderfrm.traderid = traderid;
+				this.orderfrm.securityid = securityid;
+			}
+
 			const positions = function(position) {
 				return `select
 					o.ID, -- 头寸单主键
