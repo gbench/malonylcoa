@@ -36,18 +36,18 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 								(select SHORT_ORDER_ID from t_match_order where SECURITY_ID=$0) union
 								(select LONG_ORDER_ID from t_match_order where SECURITY_ID=$0)
 							)
-						""";
+						""".strip();
 				this.getSecurities().map(dfm -> dfm.colS(0, IRecord.obj2int())).flatMapMany(Flux::fromStream)
 						.subscribe(securityid -> {
-							println("-------------------------------------------");
-							println("securityid:%s".formatted(securityid));
-							println("-------------------------------------------");
 							final var sql = IRecord.FT(ordsql, securityid);
-							println(sql);
 							this.sqlqueryPost(sql).subscribe(ordfrm -> {
+								println("-------------------------------------------");
+								println("-- securityid:%s".formatted(securityid));
+								println("-- sql:%s".formatted(sql));
+								println("-- orders:");
 								println(ordfrm);
+								println("-------------------------------------------\n");
 							});
-							println("-------------------------------------------\n");
 						});
 			}
 		});
@@ -76,7 +76,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 
 	@SuppressWarnings("unchecked")
 	Mono<DFrame> sqlqueryGet(final String sql) {
-		final var mono = wb.baseUrl("http://myfuture-api").build().get()
+		final var mono = wb.baseUrl(MYFUTURE_API_MSVC).build().get()
 				.uri(uriBuilder -> uriBuilder.path("/api/sqlquery").queryParam("sql", sql).build()).retrieve()
 				.bodyToMono(IRecord.class)
 				.map(e -> e.llS("data", t -> ((List<IRecord>) t).stream()).collect(DFrame.dfmclc));
@@ -86,4 +86,5 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	@Autowired
 	private WebClient.Builder wb;
 
+	final static String MYFUTURE_API_MSVC = "http://myfuture-api";
 }
