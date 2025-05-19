@@ -2,7 +2,7 @@
 const TRADER_SERVER_HOST= "http://localhost:3010";
 const BROKER_SERVER_HOST= "http://localhost:4010";
 const XCHG_SERVER_HOST= "http://localhost:5010";
-const CP_SERVER_HOST= "http://localhost:6010";
+const CCP_SERVER_HOST= "http://localhost:6010";
 const BANK_SERVER_HOST= "http://localhost:8010";
 const path = require("path");
 const webpack = require("webpack");
@@ -55,12 +55,12 @@ module.exports = {
 				changeOrigin: true, // 必须加入否则会导致webpack奔溃
 				pathRewrite: { '^/h5/xchg': '/api' }, // 转换接口标记
 			}, // mytrader服务器
-			'/h5/cp/': { // 转换 h5:mytrader的服务端口是8010
-				target: CP_SERVER_HOST,
+			'/h5/ccp/': { // 转换 h5:mytrader的服务端口是8010
+				target: CCP_SERVER_HOST,
 				secure: true,
 				logLevel: 'debug',
 				changeOrigin: true, // 必须加入否则会导致webpack奔溃
-				pathRewrite: { '^/h5/cp': '/api' }, // 转换接口标记
+				pathRewrite: { '^/h5/ccp': '/api' }, // 转换接口标记
 			}, // mytrader服务器
 			'/h5/bank/': { // 转换 h5:mytrader的服务端口是8010
 				target: BANK_SERVER_HOST,

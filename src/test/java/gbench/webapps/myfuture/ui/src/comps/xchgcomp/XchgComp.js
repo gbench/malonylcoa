@@ -94,9 +94,9 @@ const XchgComp = {
 	methods: {
 
 		/**
-				 * 行是否被选中 
-				* @param {*} i 
-				*/
+		 * 行是否被选中 
+		 * @param {*} i 
+		 */
 		is_orderdata_selected(i) {
 			return _.includes(this.current.orderdatas_selected, i);
 		},

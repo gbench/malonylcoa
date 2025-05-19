@@ -1,6 +1,6 @@
 spring:
   application:
-    name: cp-api
+    name: ccp-api
   cloud:
     nacos:
       config:
@@ -8,4 +8,4 @@ spring:
       discovery:
         server-addr: 127.0.0.1:8848
 server:
-  port: 6010
+  port: 6011

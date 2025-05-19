@@ -1,4 +1,4 @@
-package gbench.webapps.myfuture.cp.controller;
+package gbench.webapps.myfuture.ccp.controller;
 
 import static gbench.util.lisp.IRecord.REC;
 import static java.text.MessageFormat.format;

@@ -1,4 +1,4 @@
-package gbench.webapps.myfuture.cp.config.param;
+package gbench.webapps.myfuture.ccp.config.param;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;

@@ -1,4 +1,4 @@
-const CPCompStore = {
+const CCPCompStore = {
     namespaced: true,
 
     /**
@@ -7,7 +7,7 @@ const CPCompStore = {
      */
     state: () => {
         return { // 我的项目的页面数据-网页存储
-            name: "CPComp"
+            name: "CCPComp"
         };
     },
 
@@ -41,4 +41,4 @@ const CPCompStore = {
 
 };
 
-export { CPCompStore };
+export { CCPCompStore };

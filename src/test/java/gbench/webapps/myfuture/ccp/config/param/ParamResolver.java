@@ -1,4 +1,4 @@
-package gbench.webapps.myfuture.cp.config.param;
+package gbench.webapps.myfuture.ccp.config.param;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;

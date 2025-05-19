@@ -1,4 +1,4 @@
-package gbench.webapps.myfuture.cp.model;
+package gbench.webapps.myfuture.ccp.model;
 
 import static gbench.util.data.DataApp.IRecord.REC;
 

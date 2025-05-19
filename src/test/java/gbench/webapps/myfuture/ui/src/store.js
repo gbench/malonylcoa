@@ -3,7 +3,7 @@ import { BCompStore } from "./comps/bcomp/BCompStore";
 import { TraderCompStore } from "./comps/tradercomp/TraderCompStore";
 import { BrokerCompStore } from "./comps/brokercomp/BrokerCompStore";
 import { XchgCompStore } from "./comps/xchgcomp/XchgCompStore";
-import { CPCompStore } from "./comps/cpcomp/CPCompStore";
+import { CCPCompStore } from "./comps/ccpcomp/CCPCompStore";
 import { BankCompStore } from "./comps/bankcomp/BankCompStore";
 
 import { Store, createStore } from "vuex";
@@ -22,7 +22,7 @@ const store = createStore({// 数据持久化层
 		TraderCompStore,
 		BrokerCompStore,
 		XchgCompStore,
-		CPCompStore,
+		CCPCompStore,
 		BankCompStore,
     },
 

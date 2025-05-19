@@ -52,7 +52,7 @@ const surnames = [
 
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
 
-const CPComp = {
+const CCPComp = {
 
 	template:
 		`<div>
@@ -168,7 +168,7 @@ const CPComp = {
 		console.log(this.name);
 
 		// 开始信息
-		http_post("/h5/cp/component", { name: "CPComp" }).then(res => {
+		http_post("/h5/ccp/component", { name: "CPComp" }).then(res => {
 			const data = res.data.data;
 			this.state.name = data.name;
 			this.component = data.name + " In " + data.service + " @ " + data.time;
@@ -200,8 +200,8 @@ const CPComp = {
 		/**
 		 * Getters 数据
 		 */
-		...mapGetters("CPCompStore", ["name"]),
-		...mapState("CPCompStore", { state: state => state }),
+		...mapGetters("CCPCompStore", ["name"]),
+		...mapState("CCPCompStore", { state: state => state }),
 
 		/**
 		 * 当前的表数据行 
@@ -259,7 +259,7 @@ const CPComp = {
 		 */
 		regist_trader(traderfrm) {
 			// 注册应用
-			axios.post("/h5/api/cp/createTraderAccount", traderfrm)
+			axios.post("/h5/api/ccp/createTraderAccount", traderfrm)
 				.then(res => {
 					const data = res.data.data;
 					console.log(JSON.stringify(data));
@@ -277,7 +277,7 @@ const CPComp = {
 		 */
 		regist_security(securityfrm) {
 			// 注册应用
-			axios.post("/h5/api/cp/createSecurity", {
+			axios.post("/h5/api/ccp/createSecurity", {
 				code: securityfrm.code,
 				xchg: securityfrm.xchg,
 				type: securityfrm.type,
@@ -300,7 +300,7 @@ const CPComp = {
 		*/
 		create_order(orderfrm) {
 			// 注册应用
-			axios.post("/h5/api/cp/createOrder", {
+			axios.post("/h5/api/ccp/createOrder", {
 				traderid: orderfrm.traderid,
 				securityid: orderfrm.securityid,
 				position: orderfrm.position,
@@ -368,4 +368,4 @@ const CPComp = {
 
 };
 
-export { CPComp };
+export { CCPComp };

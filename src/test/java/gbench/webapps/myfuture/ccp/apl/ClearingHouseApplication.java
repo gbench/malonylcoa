@@ -1,16 +1,16 @@
-package gbench.webapps.myfuture.cp.apl;
+package gbench.webapps.myfuture.ccp.apl;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
- * WorldApplication <br>
+ * ClearingHouseApplication (CCP: Central Counterparty) <br>
  * 
  * 启动参数: <br>
  * --server.port=6010 或 <br>
  * VM argument: <br>
- * -Dspring.config.location=classpath:/config/webapps/myfuture/cp/application.yml
+ * -Dspring.config.location=classpath:/config/webapps/myfuture/ccp/application.yml
  * <br>
  * 启动nacos脚本(windows) <br>
  * set nacos_home=D:\sliced\develop\nacos\nacos-server-2.3.0 <br>
@@ -20,7 +20,7 @@ import org.springframework.context.annotation.ComponentScan;
  * 
  * @author xuqinghua
  */
-@ComponentScan(basePackages = { "gbench.webapps.myfuture.cp" })
+@ComponentScan(basePackages = { "gbench.webapps.myfuture.ccp" })
 @SpringBootApplication
 public class ClearingHouseApplication {
 

@@ -1,4 +1,4 @@
-package gbench.webapps.myfuture.cp.config;
+package gbench.webapps.myfuture.ccp.config;
 
 import gbench.util.data.DataApp.DFrame;
 import gbench.util.data.MyDataApp;

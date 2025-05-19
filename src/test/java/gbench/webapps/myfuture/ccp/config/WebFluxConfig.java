@@ -1,4 +1,4 @@
-package gbench.webapps.myfuture.cp.config;
+package gbench.webapps.myfuture.ccp.config;
 
 import java.util.ArrayList;
 
