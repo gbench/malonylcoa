@@ -11,7 +11,7 @@ const XchgComp = {
 		{{component}}
 		<hr>
 		证券: <select v-model="securityid"  
-				@change="refresh_orders(securityid)"> 
+				@change="refresh_matchorders(securityid)"> 
 				<option v-for="sec in securities" :value="sec.ID">{{sec.NAME}}</option>
 			</select> &nbsp
 		<button @click="match_order()">撮合</button>
@@ -26,7 +26,6 @@ const XchgComp = {
 		<div style="height:200px;overflow:auto;border:solid 1px red;">
 			<data-table :data="matchorders" style="width:100%" />
 		</div>
-		
 	</div>
 	`,
 
@@ -208,6 +207,7 @@ const XchgComp = {
 		 */
 		refresh_matchorders(securityid) {
 			sqlquery(`select * from t_match_order where SECURITY_ID=${securityid} and ID>0`).then(res => {
+				this.reset_selected_orderdata();
 				this.matchorders = res.data.data;
 				console.log(this.matchorders);
 				this.refresh_orders(securityid);
