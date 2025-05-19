@@ -225,7 +225,7 @@ public class CCPController {
 		 * @return
 		 */
 		public IRecord createOrder(final IRecord req) {
-			Output.println("createSecurity: req", req);
+			Output.println("createOrder: req", req);
 			final var now = LocalDateTime.now();
 			final var flds = "TRADER_ID,SECURITY_ID,POSITION,PRICE,QUANTITY,CREATE_TIME,DESCRIPTION";
 			final var datarec = IRecord.rb(flds).get(req.str(("traderid")), req.str(("securityid")),
