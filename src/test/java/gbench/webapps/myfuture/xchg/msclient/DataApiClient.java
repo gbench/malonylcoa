@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -45,7 +44,7 @@ public class DataApiClient {
 	 */
 	@SuppressWarnings("unchecked")
 	public Mono<DFrame> sqlexecutePost(final String sql) {
-		MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+		final var formData = new LinkedMultiValueMap<String, String>();
 		formData.add("sql", sql);
 		final var mono = wb.baseUrl(MYFUTURE_API_MSVC).build().post()
 				.uri(uriBuilder -> uriBuilder.path("/api/sqlexecute").build())
@@ -62,7 +61,7 @@ public class DataApiClient {
 	 */
 	@SuppressWarnings("unchecked")
 	public Mono<DFrame> sqlqueryPost(final String sql) {
-		MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+		final var formData = new LinkedMultiValueMap<String, String>();
 		formData.add("sql", sql);
 		final var mono = wb.baseUrl(MYFUTURE_API_MSVC).build().post()
 				.uri(uriBuilder -> uriBuilder.path("/api/sqlquery").build())

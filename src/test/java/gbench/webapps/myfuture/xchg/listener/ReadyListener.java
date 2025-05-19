@@ -70,6 +70,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 			final var loid = lo.str("ID");
 			final var lo_price = lo.i4("PRICE");
 			final var lo_quantiy = lo.i4("QUANTITY");
+
 			for (final var so : shorts) {
 				final var soid = so.str("ID");
 				final var so_price = so.i4("PRICE");
