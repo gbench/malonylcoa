@@ -86,31 +86,33 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				if (lo_quantity < 1 || so_quantity < 1) {
 					if (so_quantity < 1) // 空头数量已经匹配完成
 						i++;
-					break;
-				}
+					else
+						break;
+				} else {
+					if (lo_price < so_price) { // 买价低于卖价：无法进行撮合
+						break;
+					} else { // 买价大于等于卖价
+						final var now = LocalDateTime.now();
+						final var price = Math.min(lo_price, so_price); // 撮合价格
+						final var quantity = Math.min(lo_quantity, so_quantity); // 撮合数量
+						final var datarec = rb.get(lo_id, so_id, securityid, price, quantity, now, now, "撮合交易单"); // 撮合单数据
+						final var insql = MyDataApp.insert_sql("t_match_order", datarec.toMap()); // 数据插入语句
 
-				if (lo_price < so_price) { // 买价低于卖价：无法进行撮合
-					break;
-				} else { // 买价大于等于卖价
-					final var now = LocalDateTime.now();
-					final var price = Math.min(lo_price, so_price); // 撮合价格
-					final var quantity = Math.min(lo_quantity, so_quantity); // 撮合数量
-					final var datarec = rb.get(lo_id, so_id, securityid, price, quantity, now, now, "撮合交易单"); // 撮合单数据
-					final var insql = MyDataApp.insert_sql("t_match_order", datarec.toMap()); // 数据插入语句
+						dataClient.sqlexecute(insql).subscribe(Output::println); // 写入数据库
+						// 更新数量
+						final var so_left = so_quantity - quantity;
+						final var lo_left = lo_quantity - quantity;
 
-					dataClient.sqlexecute(insql).subscribe(Output::println); // 写入数据库
-					// 更新数量
-					final var so_left = so_quantity - quantity;
-					final var lo_left = lo_quantity - quantity;
-
-					for (final var rec : asList(so.set("UNMATCHED", so_left), lo.set("UNMATCHED", lo_left))) { // 更新未匹配数量
-						final var upsql = "update t_order set UNMATCHED=%s where ID=%s" //
-								.formatted(rec.get("UNMATCHED"), rec.get("ID"));
-						dataClient.sqlexecute(upsql).subscribe(Output::println); // 更新订单
-					} // for
+						for (final var rec : asList(so.set("UNMATCHED", so_left), lo.set("UNMATCHED", lo_left))) { // 更新未匹配数量
+							final var upsql = "update t_order set UNMATCHED=%s where ID=%s" //
+									.formatted(rec.get("UNMATCHED"), rec.get("ID"));
+							dataClient.sqlexecute(upsql).subscribe(Output::println); // 更新订单
+						} // for
+					} // if
 				} // if
 			} // for so
 		} // for lo
+
 	}
 
 	@Autowired
