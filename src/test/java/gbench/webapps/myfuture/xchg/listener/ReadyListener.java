@@ -76,11 +76,17 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 			final var lo_price = lo.i4("PRICE");
 			final var lo_quantity = lo.i4("UNMATCHED");
 
+			if (lo_quantity < 1) // 确保多头数量大于0
+				continue;
+
 			for (; i < sn; i++) { // 空头
 				final var so = shorts.row(i);
 				final var so_id = so.str("ID");
 				final var so_price = so.i4("PRICE");
 				final var so_quantity = so.i4("UNMATCHED");
+
+				if (lo_quantity < 1 || so_quantity < 1) // 确保多头,空头 数量都大于0
+					continue; // 确保
 
 				if (lo_price < so_price) { // 买价低于卖价：无法进行撮合
 					break;
@@ -101,11 +107,6 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 								.formatted(rec.get("UNMATCHED"), rec.get("ID"));
 						dataClient.sqlexecute(upsql).subscribe(Output::println); // 更新订单
 					} // for
-
-					if (so_left < 1) {
-						i++;
-						break;
-					} // so_left
 				} // if
 
 			} // for so
