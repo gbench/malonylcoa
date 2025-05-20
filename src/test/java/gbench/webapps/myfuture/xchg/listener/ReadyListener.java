@@ -94,9 +94,6 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				createMatchRecord(lo, so, quantity);
 				updateQuantities(lo, so, quantity, dirties);
 				lo_quantity -= quantity;
-
-				if (so.i4("UNMATCHED") < 1)
-					i++;
 			} // while
 		} // for
 
@@ -113,7 +110,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		final var rec = IRecord.rb(MATCHORDER_KEYS).get(lo.str("ID"), so.str("ID"), lo.get("SECURITY_ID"),
 				Math.min(lo.i4("PRICE"), so.i4("PRICE")), qty, LocalDateTime.now(), LocalDateTime.now(), "撮合交易单");
 		dataClient.sqlexecute(MyDataApp.insert_sql("t_match_order", rec.toMap()))
-				.subscribe(r -> println("Match record inserted:%s".formatted(r)));
+				.subscribe(r -> println("Match record inserted:\n%s".formatted(r)));
 	}
 
 	/**
@@ -148,7 +145,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		buffer.append("END WHERE ID IN ( %s )".formatted(ids));
 		final var sql = buffer.toString();
 
-		dataClient.sqlexecute(sql).subscribe(r -> println("Updated %s orders:%s".formatted(updates.size(), r)));
+		dataClient.sqlexecute(sql).subscribe(r -> println("Updated %s orders:\n%s".formatted(updates.size(), r)));
 	}
 
 	@Autowired
