@@ -65,6 +65,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	 */
 	public void matchOrders(final DFrame longs, final DFrame shorts) {
 		final var dirties = new HashSet<Integer>();
+		final var sn = shorts.nrows();
 		int i = 0; // 空单索引
 		boolean shouldTerminate = false;
 
@@ -76,7 +77,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 			if (lo_quantity <= 0)
 				continue;
 
-			while (i < shorts.nrows() && lo_quantity > 0) {
+			while (i < sn && lo_quantity > 0) {
 				final var so = shorts.row(i);
 				final int so_quantity = so.i4("UNMATCHED");
 				if (so_quantity <= 0) {
