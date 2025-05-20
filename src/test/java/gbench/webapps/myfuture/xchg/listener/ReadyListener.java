@@ -85,9 +85,9 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 
 				if (lo_quantity < 1 || so_quantity < 1) {
 					if (so_quantity < 1) // 空头数量已经匹配完成
-						i++;
-					else
-						break;
+						i++; // 使用下一个空单
+					else // 多单已经配置完成
+						break; // 继续下一个多单
 				} else {
 					if (lo_price < so_price) { // 买价低于卖价：无法进行撮合
 						break;
