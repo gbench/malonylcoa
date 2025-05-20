@@ -198,6 +198,7 @@ const TraderComp = {
 					s.NAME SNAME,  -- 证券名称
 					ROUND(o.PRICE, 2) PRICE, -- 价格
 					o.QUANTITY, -- 数量
+					o.UNMATCHED, -- 数量
 					o.CREATE_TIME -- 下单时间
 					-- o.DESCRIPTION -- 说明
 				from (select * from t_order where POSITION=${position} and SECURITY_ID=${securityid}) o -- 检索指定头寸单
