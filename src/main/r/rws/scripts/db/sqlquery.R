@@ -40,11 +40,14 @@ dbfun <- function(f, ...) {
   #' @param sql  SQL语句
   function (sql) {
     # 数据库连接
-    try({
+    tryCatch({
       keys <- "drv,host,user,password,port,dbname" |> strsplit(",") |> unlist() # 配置参数keys向量
       con <- structure(keys, names=keys) |> lapply(readcfg)  |> do.call(dbConnect, args=_ ) # 读取配置并获得数据库连接
       on.exit(dbDisconnect(con), add=TRUE) # 注册函数运行结束时关闭调该数据库连接con
       f(con) # 执行sql
+    }, error=\(err) {
+      print(sprintf("sql:%s", sql)) # 打印错误sql
+      stop(err) # 重新抛出错误
     }) # 数据库连接
   } # function (sql)
 } # dbfun

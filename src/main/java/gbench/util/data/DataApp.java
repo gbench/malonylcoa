@@ -136,7 +136,7 @@ public class DataApp {
 	/**
 	 * 查询出数据框
 	 *
-	 * @param sb sql 语句
+	 * @param sb sql语句构建器
 	 * @return DFrame
 	 */
 	public DFrame sqldframe(final SqlBuilder sb) {
@@ -162,6 +162,52 @@ public class DataApp {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * 查询出数据框
+	 *
+	 * @param sql sql 语句
+	 * @return DFrame
+	 */
+	@SuppressWarnings("unchecked")
+	public DFrame sqlexecute(final String sql) {
+		Object ret = this.withTransaction(sess -> {
+			final var rs = sess.sql2execute(sql);
+			sess.setData(rs);
+		});
+		if (ret instanceof List<?> rs && rs.size() > 0) {
+			final var r = rs.get(0);
+			if (r instanceof IRecord) {
+				return DFrame.of((List<IRecord>) rs);
+			} else {
+				return null;
+			}
+		} else if (ret instanceof IRecord rec) {
+			return DFrame.of(rec);
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * 查询出数据框
+	 *
+	 * @param sql sql 语句
+	 * @return DFrame
+	 */
+	public Optional<DFrame> sqlexecuteopt(final String sql) {
+		return Optional.ofNullable(this.sqlexecute(sql));
+	}
+
+	/**
+	 * 查询出数据框
+	 *
+	 * @param sb sql语句构建器
+	 * @return DFrame
+	 */
+	public Optional<DFrame> sqlexecuteopt(final SqlBuilder sb) {
+		return this.sqlexecuteopt(sb.toString());
 	}
 
 	/**
@@ -6748,6 +6794,25 @@ public class DataApp {
 		final String line = Arrays.stream(objects).map(e -> "" + e).collect(Collectors.joining("\n"));
 		System.out.println(line);
 		return line;
+	}
+
+	/**
+	 * 对dfm进行就按单插查错
+	 * 
+	 * @param dfm   sqlquery 或是 sqlexecute执行结果
+	 * @param onerr 错误信息处理
+	 * @return 对于 含有错误信息的dfm 返回 Optional.empty 否则返回dfm保持不变。
+	 */
+	public static Optional<DFrame> checkerr(final DFrame dfm, final Consumer<IRecord> onerr) {
+		return Optional.ofNullable(dfm).map(rs -> {
+			final var line = rs.getFirst();
+			if (null != line && line.keys().contains("$error")) { // SQL直线出现了错误
+				onerr.accept(line);
+				return null;
+			} else {
+				return rs;
+			}
+		});
 	}
 
 	private static int MAX_SIZE = 1024 * 1024 * 1024; // 最大长度

@@ -296,6 +296,87 @@ public class SimpleExcel implements AutoCloseable {
 	}
 
 	/**
+	 * 自动检测sheetname中的数据区域<br>
+	 * 
+	 * @param sheetname 表单sheet名称
+	 * @return 可用的 sheetname 页面的数据区域
+	 */
+	public DataMatrix<Object> autoDetectDMX(final String sheetname) {
+		final var data = this.autoDetectAA(sheetname).rowS()
+				.map(row -> row.stream(this::evaluate).toArray(Object[]::new)).toArray(Object[][]::new);
+		return new DataMatrix<Object>(data);
+	}
+
+	/**
+	 * 自动检测sheetname中的数据区域<br>
+	 * 
+	 * @param sheetname 表单sheet名称
+	 * @return 可用的 sheetname 页面的数据区域
+	 */
+	public DataMatrix<Object> autoDetectDMX(final Sheet sht) {
+		return this.autoDetectDMX(sht.getSheetName());
+	}
+
+	/**
+	 * 自动检测sheetname中的数据区域<br>
+	 * 
+	 * @param sheetname 表单sheet名称
+	 * @return 可用的 sheetname 页面的数据区域
+	 */
+	public AffectedArea autoDetectAA(final String sheetname) {
+		return this.select("%s!%s".formatted(sheetname, this.autoDetectRN(sheetname)));
+	}
+
+	/**
+	 * 自动检测sheetname中的数据区域<br>
+	 * 
+	 * @param sht 表单对象
+	 * @return 可用的 sheetname 页面的数据区域
+	 */
+	public AffectedArea autoDetectAA(final Sheet sht) {
+		return this.autoDetectAA(sht.getSheetName());
+	}
+
+	/**
+	 * 自动检测sheetname中的数据区域<br>
+	 * 
+	 * @param sheetname 表单sheet名称
+	 * @return 可用的 sheetname 页面的数据区域
+	 */
+	public String autoDetectRN(final String sheetname) {
+		final var i = this.shtname2shtid(sheetname);
+		return this.autoDetectRN(this.sheet(i), 0, MAX_SIZE);
+	}
+
+	/**
+	 * 自动定位数据位置<br>
+	 * 读取指定sht 的最大可用状态
+	 * 
+	 * @param sht 表单对象
+	 * @return 可用的 sheetname 页面的数据区域
+	 */
+	public String autoDetectRN(final Sheet sht) {
+		return this.autoDetectRN(sht, 0, MAX_SIZE);
+	}
+
+	/**
+	 * 自动定位数据位置 <br>
+	 * 读取指定sht 的最大可用状态
+	 * 
+	 * @param sht           表单对象
+	 * @param firstRowIndex 首行索引从0开始
+	 * @param maxSize       检索范围边界
+	 * @return 数据矩阵
+	 */
+	public String autoDetectRN(final Sheet sht, final Integer firstRowIndex, final Integer maxSize) {
+		final Tuple2<Integer, Integer> lt = this.lt(sht, firstRowIndex, maxSize);
+		final Tuple2<Integer, Integer> rb = this.rb(sht, firstRowIndex, maxSize);
+		final String rangeName = ltrb2name(lt, rb);// 转换成rangename
+
+		return rangeName;
+	}
+
+	/**
 	 * 自动定位数据位置 <br>
 	 * 读取指定sht 的最大可用状态
 	 * 
