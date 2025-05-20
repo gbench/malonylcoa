@@ -176,15 +176,11 @@ const XchgComp = {
 							s.NAME SNAME,  -- 证券名称
 							ROUND(o.PRICE, 2) PRICE, -- 价格
 							o.QUANTITY, -- 数量
+							o.UNMATCHED, -- 为匹配数量
 							o.CREATE_TIME -- 下单时间
 							-- o.DESCRIPTION -- 说明
 						from (select * from t_order -- 交易单
-								where POSITION=${position} and SECURITY_ID=${securityid} and
-									ID not in ( -- 从匹配交易单中给予剔除
-											(select SHORT_ORDER_ID from t_match_order)  -- 空方
-											union
-											(select LONG_ORDER_ID from t_match_order) -- 多方
-									) -- 从匹配交易单中给予剔除
+								where POSITION=${position} and SECURITY_ID=${securityid} and UNMATCHED !=0
 							) o -- 检索指定头寸单
 							left join t_trader t on o.TRADER_ID=t.ID -- 交易者
 							left join t_security s on o.SECURITY_ID=s.ID -- 证券

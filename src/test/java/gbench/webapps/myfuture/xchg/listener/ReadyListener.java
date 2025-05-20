@@ -74,13 +74,13 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		for (final var lo : longs) { // 多头
 			final var lo_id = lo.str("ID");
 			final var lo_price = lo.i4("PRICE");
-			final var lo_quantity = lo.i4("QUANTITY");
+			final var lo_quantity = lo.i4("UNMATCHED");
 
 			for (; i < sn; i++) { // 空头
 				final var so = shorts.row(i);
 				final var so_id = so.str("ID");
 				final var so_price = so.i4("PRICE");
-				final var so_quantity = so.i4("QUANTITY");
+				final var so_quantity = so.i4("UNMATCHED");
 
 				if (lo_price < so_price) { // 买价低于卖价：无法进行撮合
 					break;
@@ -96,9 +96,9 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 					final var so_left = so_quantity - quantity;
 					final var lo_left = lo_quantity - quantity;
 
-					for (final var rec : asList(so.set("QUANTITY", so_left), lo.set("QUANTITY", lo_left))) { // 更新未匹配数量
+					for (final var rec : asList(so.set("UNMATCHED", so_left), lo.set("UNMATCHED", lo_left))) { // 更新未匹配数量
 						final var upsql = "update t_order set UNMATCHED=%s where ID=%s" //
-								.formatted(rec.get("QUANTITY"), rec.get("ID"));
+								.formatted(rec.get("UNMATCHED"), rec.get("ID"));
 						dataClient.sqlexecute(upsql).subscribe(Output::println); // 更新订单
 					} // for
 
@@ -117,10 +117,5 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 
 	final static String MATCHORDER_KEYS = "LONG_ORDER_ID,SHORT_ORDER_ID,SECURITY_ID,PRICE,QUANTITY,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
 	final static String SECURITY_SQL = "select distinct SECURITY_ID from t_order";
-	final static String UNMATCHED_ORDER_SQL = """
-				select * from t_order where SECURITY_ID=$0 and ID not in (
-					(select SHORT_ORDER_ID from t_match_order where SECURITY_ID=$0) union
-					(select LONG_ORDER_ID from t_match_order where SECURITY_ID=$0)
-				)
-			""".strip();
+	final static String UNMATCHED_ORDER_SQL = "select * from t_order where SECURITY_ID=$0 and UNMATCHED!=0";
 }
