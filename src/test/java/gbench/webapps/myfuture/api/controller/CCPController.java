@@ -252,10 +252,10 @@ public class CCPController {
 		public IRecord createOrder(final IRecord req) {
 			Output.println("createOrder: req", req);
 			final var now = LocalDateTime.now();
-			final var flds = "TRADER_ID,SECURITY_ID,POSITION,PRICE,QUANTITY,CREATE_TIME,DESCRIPTION";
+			final var flds = "TRADER_ID,SECURITY_ID,POSITION,PRICE,QUANTITY,UNMATCHED,CREATE_TIME,DESCRIPTION";
 			final var datarec = IRecord.rb(flds).get(req.str(("traderid")), req.str(("securityid")),
-					Objects.equals("LONG", req.str("position")) ? 1 : -1, req.str("price"), req.str("quantity"), now,
-					req.opt("description").orElse("金融证券"));
+					Objects.equals("LONG", req.str("position")) ? 1 : -1, req.str("price"), req.str("quantity"),
+					req.str("quantity"), now, req.opt("description").orElse("金融证券"));
 			return this.insert("t_order", datarec);
 		}
 	}

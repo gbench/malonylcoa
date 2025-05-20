@@ -1,6 +1,7 @@
 package gbench.webapps.myfuture.xchg.listener;
 
 import static gbench.util.io.Output.println;
+import static java.util.Arrays.asList;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -62,19 +63,21 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	 * @param shorts 空头头寸
 	 */
 	public void matchOrders(final DFrame longs, final DFrame shorts) {
-		if (longs.nrows() < 1 || shorts.nrows() < 1) {
+		final var sn = shorts.nrows();
+		if (longs.nrows() < 1 || sn < 1) {
 			return;
 		}
 
 		final var rb = IRecord.rb(MATCHORDER_KEYS);
 		final var securityid = longs.head().get("SECURITY_ID");
-
+		var i = 0;
 		for (final var lo : longs) { // 多头
 			final var lo_id = lo.str("ID");
 			final var lo_price = lo.i4("PRICE");
-			final var lo_quantiy = lo.i4("QUANTITY");
+			final var lo_quantity = lo.i4("QUANTITY");
 
-			for (final var so : shorts) { // 空头
+			for (; i < sn; i++) { // 空头
+				final var so = shorts.row(i);
 				final var so_id = so.str("ID");
 				final var so_price = so.i4("PRICE");
 				final var so_quantity = so.i4("QUANTITY");
@@ -84,12 +87,27 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				} else { // 买价大于等于卖价
 					final var now = LocalDateTime.now();
 					final var price = Math.min(lo_price, so_price); // 撮合价格
-					final var quantity = Math.min(lo_quantiy, so_quantity); // 撮合数量
+					final var quantity = Math.min(lo_quantity, so_quantity); // 撮合数量
 					final var datarec = rb.get(lo_id, so_id, securityid, price, quantity, now, now, "撮合交易单"); // 撮合单数据
 					final var insql = MyDataApp.insert_sql("t_match_order", datarec.toMap()); // 数据插入语句
 
-					dataClient.sqlexecute(insql).subscribe(Output::println);
+					dataClient.sqlexecute(insql).subscribe(Output::println); // 写入数据库
+					// 更新数量
+					final var so_left = so_quantity - quantity;
+					final var lo_left = lo_quantity - quantity;
+
+					for (final var rec : asList(so.set("QUANTITY", so_left), lo.set("QUANTITY", lo_left))) { // 更新未匹配数量
+						final var upsql = "update t_order set UNMATCHED=%s where ID=%s" //
+								.formatted(rec.get("QUANTITY"), rec.get("ID"));
+						dataClient.sqlexecute(upsql).subscribe(Output::println); // 更新订单
+					} // for
+
+					if (so_left < 1) {
+						i++;
+						break;
+					} // so_left
 				} // if
+
 			} // for so
 		} // for lo
 	}
