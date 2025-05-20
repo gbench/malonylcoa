@@ -71,22 +71,23 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		final var rb = IRecord.rb(MATCHORDER_KEYS);
 		final var securityid = longs.head().get("SECURITY_ID");
 		var i = 0;
+
 		for (final var lo : longs) { // 多头
 			final var lo_id = lo.str("ID");
 			final var lo_price = lo.i4("PRICE");
-			final var lo_quantity = lo.i4("UNMATCHED");
 
-			if (lo_quantity < 1) // 确保多头数量大于0
-				continue;
-
-			for (; i < sn; i++) { // 空头
+			while (i < sn) { // 空头
 				final var so = shorts.row(i);
 				final var so_id = so.str("ID");
 				final var so_price = so.i4("PRICE");
-				final var so_quantity = so.i4("UNMATCHED");
+				final var so_quantity = so.i4("UNMATCHED"); // 空头数量
+				final var lo_quantity = lo.i4("UNMATCHED"); // 多头数量
 
-				if (lo_quantity < 1 || so_quantity < 1) // 确保多头,空头 数量都大于0
-					continue; // 确保
+				if (lo_quantity < 1 || so_quantity < 1) {
+					if (so_quantity < 1) // 空头数量已经匹配完成
+						i++;
+					break;
+				}
 
 				if (lo_price < so_price) { // 买价低于卖价：无法进行撮合
 					break;
@@ -108,7 +109,6 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 						dataClient.sqlexecute(upsql).subscribe(Output::println); // 更新订单
 					} // for
 				} // if
-
 			} // for so
 		} // for lo
 	}
