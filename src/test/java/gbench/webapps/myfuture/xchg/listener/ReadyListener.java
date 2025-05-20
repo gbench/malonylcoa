@@ -1,12 +1,13 @@
 package gbench.webapps.myfuture.xchg.listener;
 
 import static gbench.util.io.Output.println;
-import static java.util.Arrays.asList;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import gbench.util.data.MyDataApp;
-import gbench.util.io.Output;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
@@ -64,68 +64,90 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	 * @param shorts 空头头寸
 	 */
 	public void matchOrders(final DFrame longs, final DFrame shorts) {
-		final var ln = longs.nrows(); // 多单数量
-		final var sn = shorts.nrows(); // 空单数量
-		if (ln < 1 || sn < 1) {
-			return;
-		}
+		final var dirties = new HashSet<Integer>();
+		int i = 0; // 空单索引
+		boolean shouldTerminate = false;
 
-		final var dirties = new HashSet<Integer>(); // 修改国的订单
-		final var rb = IRecord.rb(MATCHORDER_KEYS);
-		final var securityid = longs.head().get("SECURITY_ID");
-		var i = 0; // so 空单 遍历索引
-		var flag = false; // 终止订单匹配：已经把匹配的订单都匹配了
-
-		for (final var lo : longs) { // lo:当前多单
-			if (flag) {
+		for (final var lo : longs) {
+			if (shouldTerminate)
 				break;
-			}
 
-			final var lo_id = lo.str("ID");
-			final var lo_price = lo.i4("PRICE");
+			int lo_quantity = lo.i4("UNMATCHED");
+			if (lo_quantity <= 0)
+				continue;
 
-			while (i < sn) { // 空头
-				final var so = shorts.row(i); // 当前空单
-				final var so_id = so.str("ID");
-				final var so_price = so.i4("PRICE");
-				final var so_quantity = so.i4("UNMATCHED"); // 空头数量
-				final var lo_quantity = lo.i4("UNMATCHED"); // 多头数量
+			while (i < shorts.nrows() && lo_quantity > 0) {
+				final var so = shorts.row(i);
+				final int so_quantity = so.i4("UNMATCHED");
+				if (so_quantity <= 0) {
+					i++;
+					continue;
+				}
 
-				if (lo_quantity < 1 || so_quantity < 1) {
-					if (so_quantity < 1) // 空头数量已经匹配完成
-						i++; // 使用下一个空单
-					else // 多单已经配置完成
-						break; // 继续下一个多单
-				} else {
-					if (lo_price < so_price) { // 买价低于卖价：无法进行撮合
-						flag = true; // 当前多单价格（最高价）小于当前空单价格（最低价），后面的就没有必要基础处理了，标记退出标志
-						break;
-					} else { // 买价大于等于卖价
-						final var now = LocalDateTime.now();
-						final var price = Math.min(lo_price, so_price); // 撮合价格
-						final var quantity = Math.min(lo_quantity, so_quantity); // 撮合数量
-						final var datarec = rb.get(lo_id, so_id, securityid, price, quantity, now, now, "撮合交易单"); // 撮合单数据
-						final var insql = MyDataApp.insert_sql("t_match_order", datarec.toMap()); // 数据插入语句
+				if (lo.i4("PRICE") < so.i4("PRICE")) {
+					shouldTerminate = true; // 后续多单价格更低，无需处理
+					break;
+				}
 
-						dataClient.sqlexecute(insql).subscribe(Output::println); // 写入数据库
+				final int quantity = Math.min(lo_quantity, so_quantity);
+				createMatchRecord(lo, so, quantity);
+				updateQuantities(lo, so, quantity, dirties);
+				lo_quantity -= quantity;
 
-						// 更新数量
-						final var so_left = so_quantity - quantity;
-						final var lo_left = lo_quantity - quantity;
+				if (so.i4("UNMATCHED") < 1)
+					i++;
+			} // while
+		} // for
 
-						for (final var rec : asList(so.set("UNMATCHED", so_left), lo.set("UNMATCHED", lo_left))) { // 更新未匹配数量
-							dirties.add(rec.i4("ID")); // 标记已经修改过的订单ID
-						} // for UNMATCHED
-					} // if lo_price < so_price
-				} // if lo_quantity
-			} // for so 空单
-		} // for lo 多单
+		batchUpdateDirtyOrders(dirties, longs, shorts);
+	}
 
-		// 更新 DIRTY_ORDER
-		Stream.concat(longs.rowS(), shorts.rowS()).filter(rec -> dirties.contains(rec.get("ID")))
-				.map(rec -> DIRTY_ORDER_SQL.formatted(rec.get("UNMATCHED"), rec.get("ID"))).map(dataClient::sqlexecute)
-				.forEach(mono -> mono.subscribe(Output::println));
+	/**
+	 * 
+	 * @param lo
+	 * @param so
+	 * @param qty
+	 */
+	private void createMatchRecord(final IRecord lo, final IRecord so, final int qty) {
+		final var rec = IRecord.rb(MATCHORDER_KEYS).get(lo.str("ID"), so.str("ID"), lo.get("SECURITY_ID"),
+				Math.min(lo.i4("PRICE"), so.i4("PRICE")), qty, LocalDateTime.now(), LocalDateTime.now(), "撮合交易单");
+		dataClient.sqlexecute(MyDataApp.insert_sql("t_match_order", rec.toMap()))
+				.subscribe(r -> println("Match record inserted:%s".formatted(r)));
+	}
 
+	/**
+	 * 
+	 * @param lo
+	 * @param so
+	 * @param qty
+	 * @param dirties
+	 */
+	private void updateQuantities(final IRecord lo, final IRecord so, final int qty, final Set<Integer> dirties) {
+		lo.set("UNMATCHED", lo.i4("UNMATCHED") - qty);
+		so.set("UNMATCHED", so.i4("UNMATCHED") - qty);
+		dirties.add(lo.i4("ID"));
+		dirties.add(so.i4("ID"));
+	}
+
+	/**
+	 * 
+	 * @param dirties
+	 * @param frames
+	 */
+	private void batchUpdateDirtyOrders(final Set<Integer> dirties, final DFrame... frames) {
+		if (dirties.isEmpty())
+			return;
+
+		final var buffer = new StringBuffer();
+		buffer.append("UPDATE t_order SET UNMATCHED = CASE ID ");
+		final var updates = Stream.of(frames).flatMap(DFrame::rowS).filter(r -> dirties.contains(r.i4("ID")))
+				.collect(Collectors.toMap(r -> r.i4("ID"), r -> r.i4("UNMATCHED")));
+		final var ids = updates.keySet().stream().map(String::valueOf).collect(Collectors.joining(","));
+		updates.forEach((id, qty) -> buffer.append(" WHEN %s THEN %s ".formatted(id, qty)));
+		buffer.append("END WHERE ID IN ( %s )".formatted(ids));
+		final var sql = buffer.toString();
+
+		dataClient.sqlexecute(sql).subscribe(r -> println("Updated %s orders:%s".formatted(updates.size(), r)));
 	}
 
 	@Autowired
