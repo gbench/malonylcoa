@@ -211,7 +211,7 @@ const TraderComp = {
 			const ask_sql = `${positions(-1)} order by o.PRICE desc, CREATE_TIME desc`; // 卖单 - 空头
 			const bid_sql = `${positions(1)} order by o.PRICE desc, CREATE_TIME`; // 买单 - 多头
 
-			sqlquery(`(${ask_sql}) union all (${bid_sql})`).then(res => {
+			sqlquery(`select * from  ((${ask_sql}) union all (${bid_sql})) t order by t.ID desc `).then(res => {
 				this.orders = res.data.data.map(e => {
 					e.POSITION = e.POSITION == 1 ? "LONG" : "SHORT";
 					return e;
