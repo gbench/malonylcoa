@@ -1,18 +1,11 @@
 package gbench.webapps.myfuture.api.controller;
 
-import static gbench.util.data.DataApp.checkerr;
-import static gbench.util.data.MyDataApp.insert_sql;
-import static gbench.util.io.Output.println;
 import static gbench.util.lisp.IRecord.REC;
 import static java.text.MessageFormat.format;
 import static java.time.LocalDateTime.now;
 
-import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,11 +13,10 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import gbench.util.chn.PinyinUtil;
 import gbench.util.data.MyDataApp;
-import gbench.util.io.Output;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.myfuture.api.config.param.Param;
+import gbench.webapps.myfuture.api.msclient.BaseApiClient;
 import reactor.core.publisher.Mono;
 
 /**
@@ -98,54 +90,17 @@ public class BrokerController {
 	 */
 	@RequestMapping("createTraderAccount")
 	public Mono<IRecord> createTraderAccount(final @Param IRecord req) {
-		final var ret = IRecord.REC("code", 0);
-		final var rec = bh.createTraderAccount(req);
-		if (rec.has("$code")) { // 提取错误码
-			ret.set("code", rec.get("$code"));
-		}
-		return Mono.just(ret.add("data", rec.filter((k, v) -> !k.startsWith("$")))); // 将内部状态字段($开头)剔除后返回
-	}
-
-	private class BrokerHelper {
-		/**
-		 * 创建交易者账户
-		 * 
-		 * @param req 数据申请记录
-		 * @return
-		 */
-		public IRecord createTraderAccount(final IRecord req) {
-			Output.println("createTraderAccount: req", req);
-			final var now = LocalDateTime.now();
-			final var serialnum = ai.getAndIncrement(); // 流水号
-			final var flds = "CODE,ABBRE,NAME,ID_CARD,BANK_ACCOUNT,MARGIN_ACCOUNT,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
-			final var reqrec = IRecord.rb(flds).get(String.format("TRADER%03d", serialnum),
-					PinyinUtil.getPinyinShort(req.get("name")).toUpperCase(), req.get("name"), req.get("idcard"),
-					req.get("bankcard"), String.format("MACCT%03d", serialnum), now, now,
-					req.opt("description").orElse("普通交易者"));
-			final var insql = insert_sql("t_trader", reqrec.toMap());
-			final var local = new AtomicReference<IRecord>(REC()); // 本地会话变量
-			return dataApp.sqlexecuteopt(insql) //
-					.flatMap(rs -> checkerr(rs, errinfo -> local.get().set("$error", errinfo.str("$error"))
-							.set("$exception", errinfo.str("$exception"))).map(linedfm -> linedfm.head().get(0)) // 提出插入数据的主键
-					).flatMap(id -> { // 数据主键
-						final var dfm = dataApp.sqldframe("select * from t_trader order by ID desc");
-						println(dfm);
-						return dfm.rowS().filter(e -> Objects.equals(id, e.get(0))).findFirst()
-								.map(e -> REC(e.toMap()));
-					}).orElseGet(() -> REC("$code", 1, "error", local.get().opt("$error").orElse("创建失败"), "exception",
-							local.get().opt("$exception").orElse("-"), "reqrec", reqrec, "insql", insql));
-		}
+		return baseApiClient.postJson("api/ccp/createTraderAccount", req);
 	}
 
 	@Autowired
 	private MyDataApp dataApp;
-
-	private BrokerHelper bh = this.new BrokerHelper();
+	@Autowired
+	private BaseApiClient baseApiClient;
 
 	@Value("${server.port:6010}")
 	private String port;
 	@Value("${spring.application.name:world-api}")
 	private String appname;
-	private AtomicInteger ai = new AtomicInteger(10);
 
 }

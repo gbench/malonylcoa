@@ -57,11 +57,13 @@ const BrokerComp = {
 		{{component}}
 		<hr>
 		<div>
-		   姓名: <input v-model="reqform.name"/> &nbsp;
+		   姓名: <input v-model="reqform.name" style='width:100px;' /> &nbsp;
+		   密码: <input v-model="reqform.password" style='width:100px;' /> &nbsp;
 		   身份证: <input v-model="reqform.idcard"/> &nbsp;
 		   银行卡: <input v-model="reqform.bankcard"/> &nbsp;
 		   描述: <input v-model="reqform.description"/> &nbsp;
-		   <button @click="regist(reqform)"> 注册交易者</button>
+		   <button @click="regist(reqform)"> 注册交易者</button> &nbsp;
+		   <button @click="refresh_traders"> 刷新交易者</button>
 		</div>
 		<hr>
 		<data-table :data="traders" />
@@ -78,6 +80,7 @@ const BrokerComp = {
 			traders: [],
 			reqform: {
 				name: randgen(surnames, 3),
+				password: 123456,
 				idcard: randgen(digits, 18),
 				bankcard: randgen(digits, 19),
 				description: "普通交易者"
@@ -104,9 +107,7 @@ const BrokerComp = {
 		});
 
 		// sql data 
-		sqlquery("SELECT * FROM t_trader LIMIT 10").then(res => {
-			this.traders = res.data.data;
-		});
+		this.refresh_traders();
 	},
 
 	/**
@@ -130,13 +131,20 @@ const BrokerComp = {
 				.then(res => {
 					const data = res.data.data;
 					console.log(JSON.stringify(data));
-					sqlquery("select * from t_trader order by ID desc limit 10").then(res => { // 刷新交易者
-						this.traders = res.data.data;
-					});
+					this.refresh_traders();
 					this.reqform.name = randgen(surnames, 3);
 					this.reqform.idcard = randgen(digits, 18);
 					this.reqform.bankcard = randgen(digits, 19);
 				});
+		},
+
+		/**
+		 * 
+		 */
+		refresh_traders() {
+			sqlquery("select * from t_trader order by ID desc limit 10").then(res => { // 刷新交易者
+				this.traders = res.data.data;
+			});
 		}
 	}
 
