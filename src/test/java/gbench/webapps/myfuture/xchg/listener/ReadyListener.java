@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import gbench.util.data.MyDataApp;
+import gbench.util.io.Output;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
 import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
@@ -109,6 +110,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	}
 
 	/**
+	 * 创建撮合订单
 	 * 
 	 * @param lo
 	 * @param so
@@ -143,8 +145,10 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 			return;
 
 		final var recs = matches.stream().map(IRecord::toMap).map(MyDataApp.IRecord::REC).toList();
-		Optional.ofNullable(MyDataApp.insert_sql("t_match_order", recs)).map(dataClient::sqlexecute)
-				.ifPresent(mono -> mono.subscribe(r -> println("Match record inserted:\n%s".formatted(r))));
+
+		Optional.ofNullable(MyDataApp.insert_sql("t_match_order", recs)).map(Output::println)
+				.map(dataClient::sqlexecute).ifPresent(
+						mono -> mono.subscribe(r -> println("Match %s record inserted:\n%s".formatted(r.nrows(), r))));
 	}
 
 	/**
@@ -163,7 +167,8 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				.collect(Collectors.joining(" "));
 		final var sql = "UPDATE t_order SET UNMATCHED = CASE ID %s END WHERE ID IN ( %s )".formatted(ps, ids);
 
-		dataClient.sqlexecute(sql).subscribe(r -> println("Updated %s orders:\n%s".formatted(updates.size(), r)));
+		Optional.ofNullable(sql).map(Output::println).map(dataClient::sqlexecute)
+				.ifPresent(mono -> mono.subscribe(r -> println("Updated %s orders:\n%s".formatted(updates.size(), r))));
 	}
 
 	@Autowired

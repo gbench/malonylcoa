@@ -255,7 +255,7 @@ public class MyDataApp extends DataApp {
 
 		if (rs.size() > 0) {
 			final var rec = rs.get(0);
-			final var join = Collectors.joining(",");
+			final var join = Collectors.joining(" , ");
 			final String keys = rec.keyS().collect(join);
 			final String values = rs.stream()
 					.map(r -> rec.valueS()
@@ -263,8 +263,8 @@ public class MyDataApp extends DataApp {
 									: "'%s'".formatted(!flag ? e
 											: (e instanceof Map ? MyJson.toJson(e) : e.toString()).replace("'", "\\'")))
 							.collect(join))
-					.map("( %s )"::formatted).collect(join);
-			return IRecord.FT("insert into $0 ($1) values $2;", name, keys, values);
+					.map("(%s)"::formatted).collect(join);
+			return IRecord.FT("insert into $0 ($1) values $2", name, keys, values);
 		} else {
 			return null;
 		}
