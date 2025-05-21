@@ -40,8 +40,8 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 					pollAndMatchOrders(); // 拉取交易订单并进行撮合
 				} catch (InterruptedException e) {
 					e.printStackTrace();
-					println("撮合线程中断"); // 重新拉取交易订单并进行撮合
-					pollAndMatchOrders();
+					println("撮合线程中断");
+					pollAndMatchOrders(); // 重新拉取交易订单并进行撮合
 				} catch (Exception e) {
 					e.printStackTrace();
 					println("撮合线程异常");
