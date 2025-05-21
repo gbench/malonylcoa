@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -58,30 +59,43 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				.map(dfm -> dfm.colOpt(0).map(List::stream).orElse(Stream.empty()).map(IRecord.obj2int()))
 				.flatMapMany(Flux::fromStream)
 				.flatMap(securityid -> dataClient.sqldframe(IRecord.FT(UNMATCHED_ORDER_SQL, securityid)))
-				.subscribe(ordfrm -> {
-					final var securityid = ordfrm.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1); // 获取证券ID
-					es.execute(() -> {
-						try {
-							// 使用ConcurrentHashMap管理证券ID对应的锁，确保同一个证券的撮合任务穿行执行，避免并发冲突
-							synchronized (securityLocks.computeIfAbsent(securityid, k -> new Object())) {
-								println("-------------------------------------------");
-								println("-- securityid:%s".formatted(securityid));
+				.subscribe(this::handleOrders); // subscribe
+	}
 
-								final var groups = ordfrm.groupBy(e -> e.i4("POSITION"));
-								final var longs = DFrame.of(groups.getOrDefault(1, Arrays.asList()))
-										.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
-								final var shorts = DFrame.of(groups.getOrDefault(-1, Arrays.asList()))
-										.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
-								println("-- LONGS:%s".formatted(longs));
-								println("-- SHORTS:%s".formatted(shorts));
-								this.matchOrders(longs, shorts);
-							} // synchronized
-						} catch (Exception e) {
-							e.printStackTrace();
-							println("-- ERROR match for securityid:%s".formatted(securityid));
-						} // try
-					}); // 撮合订单
-				}); // subscribe
+	/**
+	 * 订单处理
+	 * 
+	 * @param ordfrm
+	 */
+	public void handleOrders(final DFrame ordfrm) {
+		if (ordfrm.nrows() < 1)
+			return;
+
+		es.execute(() -> {
+			final var securityid = ordfrm.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1); // 获取证券ID
+			try {
+				// 使用ConcurrentHashMap管理证券ID对应的锁，确保同一个证券的撮合任务串行执行，避免并发冲突
+				synchronized (securityLocks.computeIfAbsent(securityid, k -> new Object())) {
+					println("-------------------------------------------");
+					println("-- securityid:%s".formatted(securityid));
+
+					final var groups = ordfrm.groupBy(e -> e.i4("POSITION")); // 依据订单的头寸（多头:1,空头:-1)
+					final var longs = DFrame.of(groups.getOrDefault(LONG_POSITION, EMPTY))
+							.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
+					final var shorts = DFrame.of(groups.getOrDefault(SHORT_POSITION, EMPTY))
+							.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
+					println("-- LONGS:%s".formatted(longs));
+					println("-- SHORTS:%s".formatted(shorts));
+
+					if (longs.nrows() > 0 && shorts.nrows() > 0) {
+						this.matchOrders(longs, shorts); // 撮合订单
+					} // if
+				} // synchronized
+			} catch (Exception e) {
+				e.printStackTrace();
+				println("-- ERROR match for securityid:%s".formatted(securityid));
+			} // try
+		}); // 撮合订单
 	}
 
 	/**
@@ -91,24 +105,24 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	 * @param shorts 空头头寸
 	 */
 	public void matchOrders(final DFrame longs, final DFrame shorts) {
-		final var dirties = new HashSet<Integer>();
-		final var matches = new ArrayList<IRecord>();
-		final var sn = shorts.nrows();
+		final var dirties = new HashSet<Integer>(); // 变更单的ID集合
+		final var matches = new ArrayList<IRecord>(); // 撮合单集合
+		final var sn = shorts.nrows(); // 空单数量
+		boolean shouldTerminate = false; // 是否需要提前终止
 		int i = 0; // 空单索引
-		boolean shouldTerminate = false;
 
 		for (final var lo : longs) {
 			if (shouldTerminate)
 				break;
 
 			int lo_quantity = lo.i4("UNMATCHED");
-			if (lo_quantity <= 0)
+			if (lo_quantity < 1)
 				continue;
 
 			while (i < sn && lo_quantity > 0) {
 				final var so = shorts.row(i);
 				final int so_quantity = so.i4("UNMATCHED");
-				if (so_quantity <= 0) {
+				if (so_quantity < 1) {
 					i++;
 					continue;
 				}
@@ -118,8 +132,10 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 					break;
 				}
 
-				final int quantity = Math.min(lo_quantity, so_quantity);
-				matches.add(createMatchRecord(lo, so, Math.min(lo.i4("PRICE"), so.i4("PRICE")), quantity));
+				final var quantity = Math.min(lo_quantity, so_quantity); // 成交数量
+				final var price = Math.min(lo.i4("PRICE"), so.i4("PRICE")); // 成交价格
+
+				matches.add(createMatchRecord(lo, so, price, quantity));
 				updateQuantities(lo, so, quantity, dirties);
 				lo_quantity -= quantity;
 			} // while
@@ -132,9 +148,9 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	/**
 	 * 创建撮合订单
 	 * 
-	 * @param lo
-	 * @param so
-	 * @param qty
+	 * @param lo  多头单
+	 * @param so  空头单
+	 * @param qty 成交数量
 	 */
 	private IRecord createMatchRecord(final IRecord lo, final IRecord so, final Number price, final int qty) {
 		final var rec = IRecord.rb(MATCHORDER_KEYS).get(lo.str("ID"), so.str("ID"), lo.get("SECURITY_ID"), price, qty,
@@ -144,10 +160,10 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 
 	/**
 	 * 
-	 * @param lo
-	 * @param so
-	 * @param qty
-	 * @param dirties
+	 * @param lo      多头单
+	 * @param so      空头单
+	 * @param qty     成交数量
+	 * @param dirties 变动单的ID集合
 	 */
 	private void updateQuantities(final IRecord lo, final IRecord so, final int qty, final Set<Integer> dirties) {
 		lo.set("UNMATCHED", lo.i4("UNMATCHED") - qty);
@@ -196,12 +212,16 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		es.shutdownNow();
 	}
 
+	@Value("${xchg.matchorder.interval:5000}")
+	private Integer INTERVAL;
 	@Autowired
 	private DataApiClient dataClient;
 	private final ConcurrentHashMap<Integer, Object> securityLocks = new ConcurrentHashMap<>();
 	private ExecutorService es = Executors.newFixedThreadPool(10);
 
-	final static Integer INTERVAL = 5000;
+	final static List<IRecord> EMPTY = Arrays.asList();
+	final static Integer LONG_POSITION = 1; // 多头头寸
+	final static Integer SHORT_POSITION = -1; // 空头头寸
 	final static String MATCHORDER_KEYS = "LONG_ORDER_ID,SHORT_ORDER_ID,SECURITY_ID,PRICE,QUANTITY,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
 	final static String SECURITY_SQL = "select distinct SECURITY_ID from t_order";
 	final static String UNMATCHED_ORDER_SQL = "select * from t_order where SECURITY_ID=$0 and UNMATCHED!=0";
