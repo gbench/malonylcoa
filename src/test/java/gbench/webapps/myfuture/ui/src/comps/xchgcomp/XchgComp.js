@@ -14,7 +14,8 @@ const XchgComp = {
 				@change="refresh_matchorders(securityid)"> 
 				<option v-for="sec in securities" :value="sec.ID">{{sec.NAME}}</option>
 			</select> &nbsp
-		<button @click="match_order()">撮合</button>
+		<button @click="match_order()">撮合</button> &nbsp;
+		<button @click="refresh_orders(securityid)"> 刷新 </button>
 		<hr>
 		<div style="height:200px;overflow:auto;border:solid 1px red;">
 			<data-table :data="orders" 

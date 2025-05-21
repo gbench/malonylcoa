@@ -23,8 +23,9 @@ const TraderComp = {
 		价格: <input v-model="orderfrm.price" style='width:100px;' /> &nbsp;
 		数量: <input v-model="orderfrm.quantity" style='width:100px;' /> &nbsp;
 		描述: <input v-model="orderfrm.description" style='width:80px;' /> &nbsp;
-		<button @click="create_order(orderfrm)"> 挂单</button> &nbsp;
-		<button @click="remove_order()"> 删除</button>
+		<button @click="create_order(orderfrm)"> 挂单 </button> &nbsp;
+		<button @click="remove_order()"> 删除 </button> &nbsp;
+		<button @click="refresh_orders(current.traderid, current.securityid)"> 刷新 </button>
 		<hr>
 		<div style="height:180px;overflow:auto;border:solid 1px red;">
 			<data-table :data="orders" 
