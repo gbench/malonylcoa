@@ -3,10 +3,14 @@ package gbench.webapps.myfuture.xchg.listener;
 import static gbench.util.io.Output.println;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -25,7 +29,7 @@ import reactor.core.publisher.Flux;
 public class ReadyListener implements ApplicationListener<ApplicationReadyEvent> {
 
 	@Override
-	public void onApplicationEvent(ApplicationReadyEvent event) {
+	public void onApplicationEvent(final ApplicationReadyEvent event) {
 		final var thread = new Thread(() -> {
 			while (true) {
 				try {
@@ -42,6 +46,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 							final var securityid = ordfrm.headOpt().map(e -> e.get("SECURITY_ID")).orElse("-"); // 获取证券ID
 							println("-------------------------------------------");
 							println("-- securityid:%s".formatted(securityid));
+
 							final var groups = ordfrm.groupBy(e -> e.i4("POSITION"));
 							final var longs = DFrame.of(groups.getOrDefault(1, Arrays.asList()))
 									.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
@@ -49,7 +54,8 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 									.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
 							println("-- LONGS:%s".formatted(longs));
 							println("-- SHORTS:%s".formatted(shorts));
-							this.matchOrders(longs, shorts); // 撮合订单
+
+							es.execute(() -> this.matchOrders(longs, shorts)); // 撮合订单
 						});
 			} // while
 		});
@@ -65,6 +71,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	 */
 	public void matchOrders(final DFrame longs, final DFrame shorts) {
 		final var dirties = new HashSet<Integer>();
+		final var matches = new ArrayList<IRecord>();
 		final var sn = shorts.nrows();
 		int i = 0; // 空单索引
 		boolean shouldTerminate = false;
@@ -91,12 +98,13 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				}
 
 				final int quantity = Math.min(lo_quantity, so_quantity);
-				createMatchRecord(lo, so, quantity);
+				matches.add(createMatchRecord(lo, so, Math.min(lo.i4("PRICE"), so.i4("PRICE")), quantity));
 				updateQuantities(lo, so, quantity, dirties);
 				lo_quantity -= quantity;
 			} // while
 		} // for
 
+		batchInsertMatchOrders(matches);
 		batchUpdateDirtyOrders(dirties, longs, shorts);
 	}
 
@@ -106,11 +114,10 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	 * @param so
 	 * @param qty
 	 */
-	private void createMatchRecord(final IRecord lo, final IRecord so, final int qty) {
-		final var rec = IRecord.rb(MATCHORDER_KEYS).get(lo.str("ID"), so.str("ID"), lo.get("SECURITY_ID"),
-				Math.min(lo.i4("PRICE"), so.i4("PRICE")), qty, LocalDateTime.now(), LocalDateTime.now(), "撮合交易单");
-		dataClient.sqlexecute(MyDataApp.insert_sql("t_match_order", rec.toMap()))
-				.subscribe(r -> println("Match record inserted:\n%s".formatted(r)));
+	private IRecord createMatchRecord(final IRecord lo, final IRecord so, final Number price, final int qty) {
+		final var rec = IRecord.rb(MATCHORDER_KEYS).get(lo.str("ID"), so.str("ID"), lo.get("SECURITY_ID"), price, qty,
+				LocalDateTime.now(), LocalDateTime.now(), "撮合交易单");
+		return rec;
 	}
 
 	/**
@@ -129,6 +136,19 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 
 	/**
 	 * 
+	 * @param matches
+	 */
+	private void batchInsertMatchOrders(final List<IRecord> matches) {
+		if (matches.isEmpty())
+			return;
+
+		final var recs = matches.stream().map(IRecord::toMap).map(MyDataApp.IRecord::REC).toList();
+		Optional.ofNullable(MyDataApp.insert_sql("t_match_order", recs)).map(dataClient::sqlexecute)
+				.ifPresent(mono -> mono.subscribe(r -> println("Match record inserted:\n%s".formatted(r))));
+	}
+
+	/**
+	 * 
 	 * @param dirties
 	 * @param frames
 	 */
@@ -136,20 +156,19 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		if (dirties.isEmpty())
 			return;
 
-		final var buffer = new StringBuffer();
-		buffer.append("UPDATE t_order SET UNMATCHED = CASE ID ");
 		final var updates = Stream.of(frames).flatMap(DFrame::rowS).filter(r -> dirties.contains(r.i4("ID")))
 				.collect(Collectors.toMap(r -> r.i4("ID"), r -> r.i4("UNMATCHED")));
 		final var ids = updates.keySet().stream().map(String::valueOf).collect(Collectors.joining(","));
-		updates.forEach((id, qty) -> buffer.append(" WHEN %s THEN %s ".formatted(id, qty)));
-		buffer.append("END WHERE ID IN ( %s )".formatted(ids));
-		final var sql = buffer.toString();
+		final var ps = updates.entrySet().stream().map(e -> " WHEN %s THEN %s ".formatted(e.getKey(), e.getValue()))
+				.collect(Collectors.joining(" "));
+		final var sql = "UPDATE t_order SET UNMATCHED = CASE ID %s END WHERE ID IN ( %s )".formatted(ps, ids);
 
 		dataClient.sqlexecute(sql).subscribe(r -> println("Updated %s orders:\n%s".formatted(updates.size(), r)));
 	}
 
 	@Autowired
 	private DataApiClient dataClient;
+	private ExecutorService es = Executors.newFixedThreadPool(10);
 
 	final static String MATCHORDER_KEYS = "LONG_ORDER_ID,SHORT_ORDER_ID,SECURITY_ID,PRICE,QUANTITY,CREATE_TIME,UPDATE_TIME,DESCRIPTION";
 	final static String SECURITY_SQL = "select distinct SECURITY_ID from t_order";
