@@ -60,31 +60,28 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				.flatMap(securityid -> dataClient.sqldframe(IRecord.FT(UNMATCHED_ORDER_SQL, securityid)))
 				.subscribe(ordfrm -> {
 					final var securityid = ordfrm.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1); // 获取证券ID
-					println("-------------------------------------------");
-					println("-- securityid:%s".formatted(securityid));
-
-					final var groups = ordfrm.groupBy(e -> e.i4("POSITION"));
-					final var longs = DFrame.of(groups.getOrDefault(1, Arrays.asList()))
-							.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
-					final var shorts = DFrame.of(groups.getOrDefault(-1, Arrays.asList()))
-							.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
-					println("-- LONGS:%s".formatted(longs));
-					println("-- SHORTS:%s".formatted(shorts));
-
 					es.execute(() -> {
 						try {
 							// 使用ConcurrentHashMap管理证券ID对应的锁，确保同一个证券的撮合任务穿行执行，避免并发冲突
 							synchronized (securityLocks.computeIfAbsent(securityid, k -> new Object())) {
+								println("-------------------------------------------");
+								println("-- securityid:%s".formatted(securityid));
+
+								final var groups = ordfrm.groupBy(e -> e.i4("POSITION"));
+								final var longs = DFrame.of(groups.getOrDefault(1, Arrays.asList()))
+										.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
+								final var shorts = DFrame.of(groups.getOrDefault(-1, Arrays.asList()))
+										.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
+								println("-- LONGS:%s".formatted(longs));
+								println("-- SHORTS:%s".formatted(shorts));
 								this.matchOrders(longs, shorts);
-							}
+							} // synchronized
 						} catch (Exception e) {
 							e.printStackTrace();
-							println("-- ERROR securityid:%s".formatted(securityid));
-							println("-- ERROR LONGS:%s".formatted(longs));
-							println("-- ERROR SHORTS:%s".formatted(shorts));
-						}
+							println("-- ERROR match for securityid:%s".formatted(securityid));
+						} // try
 					}); // 撮合订单
-				});
+				}); // subscribe
 	}
 
 	/**
