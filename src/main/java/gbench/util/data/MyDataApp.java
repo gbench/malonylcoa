@@ -255,7 +255,7 @@ public class MyDataApp extends DataApp {
 
 		if (rs.size() > 0) {
 			final var rec = rs.get(0);
-			final var join = Collectors.joining(" , ");
+			final var join = Collectors.joining(", ");
 			final String keys = rec.keyS().collect(join);
 			final String values = rs.stream()
 					.map(r -> rec.valueS()

@@ -163,7 +163,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		final var updates = Stream.of(frames).flatMap(DFrame::rowS).filter(r -> dirties.contains(r.i4("ID")))
 				.collect(Collectors.toMap(r -> r.i4("ID"), r -> r.i4("UNMATCHED")));
 		final var ids = updates.keySet().stream().map(String::valueOf).collect(Collectors.joining(","));
-		final var ps = updates.entrySet().stream().map(e -> " WHEN %s THEN %s ".formatted(e.getKey(), e.getValue()))
+		final var ps = updates.entrySet().stream().map(e -> "WHEN %s THEN %s ".formatted(e.getKey(), e.getValue()))
 				.collect(Collectors.joining(" "));
 		final var sql = "UPDATE t_order SET UNMATCHED = CASE ID %s END WHERE ID IN ( %s )".formatted(ps, ids);
 
