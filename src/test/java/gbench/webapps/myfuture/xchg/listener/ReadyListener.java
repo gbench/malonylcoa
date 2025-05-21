@@ -3,6 +3,7 @@ package gbench.webapps.myfuture.xchg.listener;
 import static gbench.util.io.Output.println;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -78,14 +79,15 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 				synchronized (securityLocks.computeIfAbsent(securityid, k -> new Object())) {
 					println("-------------------------------------------");
 					println("-- securityid:%s".formatted(securityid));
+					println("-- time:%s".formatted(LocalTime.now()));
 
 					final var groups = ordfrm.groupBy(e -> e.i4("POSITION")); // 依据订单的头寸（多头:1,空头:-1)
 					final var longs = DFrame.of(groups.getOrDefault(LONG_POSITION, EMPTY))
 							.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
 					final var shorts = DFrame.of(groups.getOrDefault(SHORT_POSITION, EMPTY))
 							.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
-					println("-- LONGS:%s".formatted(longs));
-					println("-- SHORTS:%s".formatted(shorts));
+					println("-- LONGS(%d):%s".formatted(longs.nrows(), longs));
+					println("-- SHORTS(%d):%s".formatted(shorts.nrows(), shorts));
 
 					if (longs.nrows() > 0 && shorts.nrows() > 0) {
 						this.matchOrders(longs, shorts); // 撮合订单
@@ -184,7 +186,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 
 		Optional.ofNullable(MyDataApp.insert_sql("t_match_order", recs)).map(Output::println)
 				.map(dataClient::sqlexecute).ifPresent(
-						mono -> mono.subscribe(r -> println("Match %s record inserted:\n%s".formatted(r.nrows(), r))));
+						mono -> mono.subscribe(r -> println("Match %s records inserted:\n%s".formatted(r.nrows(), r))));
 	}
 
 	/**
