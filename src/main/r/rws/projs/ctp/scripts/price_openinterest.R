@@ -7,6 +7,7 @@ getdata <- \(tbl) tbl |> sprintf(fmt = " -- 数据查询的SQL语句
       concat(TradingDay, ' ' ,UpdateTime, '.', UpdateMillisec) Time, -- 拼接成交易时间
       LastPrice, -- 成交价格
       AveragePrice, -- 平均价格
+      Volume, -- 平均价格
       OpenInterest, -- 开仓量
       PreOpenInterest -- 前日开仓量
     FROM %s ORDER BY Id DESC -- 按照插入数据库的序号进行倒序排列，最新数据位于前头
@@ -15,15 +16,13 @@ getdata <- \(tbl) tbl |> sprintf(fmt = " -- 数据查询的SQL语句
 
 # 指定时间范围
 curdate <- Sys.Date() # 当前时间
-period <- paste(curdate, c("09:00", "15:00"), collapse = "/") # 指定数据区间范围
-tickdata <- paste0("t_ma509_", curdate |> gsub(pat = "-", rep = "")) |> getdata() # 提取交易数据
-tickdata <- tickdata[period, ] # 骄傲一数据
-volume <- tickdata[, "OpenInterest"] |> diff() # 提取交易量
-tickdata <- tickdata |> cbind(Volume = as.numeric(volume)) # 指定Volume列名, 注意需要as.numberic转成向量
+tickdata <- paste0("t_ma509_", curdate |> gsub(pat = "-", rep = "")) |> 
+  getdata() |> transform(volume=diff(Volume) |> as.vector()) # 提取交易数据 并 计算 分笔成交量
+period <- paste(curdate, c("09:00", "15:00"), collapse = "/") # 指定交易时段的时间范围
+tickdata <- tickdata[period, ] # 提取指定交易时段范围中的数据
 
 # 统计开平仓数量
-volume |> tapply(sign(volume), sum) 
-plot(volume)
+tickdata |> with(OpenInterest |> diff() %>% tapply(sign(.), sum))
 
 n <- 30 # 分钟间隔
 breaks <- endpoints(tickdata, on = "mins", n) |> (\(x) c(1, x[-1]))() # 提取n min分隔点
