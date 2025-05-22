@@ -14,10 +14,10 @@ getdata <- \(tbl) tbl |> sprintf(fmt = " -- 数据查询的SQL语句
   with(xts(.[, -1], order.by = Time))
 
 # 指定时间范围
-curdate <- Sys.Date()
+curdate <- Sys.Date() # 当前时间
 period <- paste(curdate, c("09:00", "15:00"), collapse = "/") # 指定数据区间范围
-tickdata <- paste0("t_ma509_", curdate |> gsub(pat = "-", rep = "")) |> getdata()
-tickdata <- tickdata[period, ]
+tickdata <- paste0("t_ma509_", curdate |> gsub(pat = "-", rep = "")) |> getdata() # 提取交易数据
+tickdata <- tickdata[period, ] # 骄傲一数据
 volume <- tickdata[, "OpenInterest"] |> diff() # 提取交易量
 tickdata <- tickdata |> cbind(Volume = as.numeric(volume)) # 指定Volume列名, 注意需要as.numberic转成向量
 
@@ -25,16 +25,16 @@ tickdata <- tickdata |> cbind(Volume = as.numeric(volume)) # 指定Volume列名,
 volume |> tapply(sign(volume), sum) 
 plot(volume)
 
-# 计算 OpenInterest 的缩放比例（根据需要调整）
-scale_factor <- with(tickdata, max(LastPrice) / max(OpenInterest))
 n <- 30 # 分钟间隔
 breaks <- endpoints(tickdata, on = "mins", n) |> (\(x) c(1, x[-1]))() # 提取n min分隔点
-labels <- index(tickdata)[breaks] |> strftime(format="%H:%M")
-ggplot(tickdata, aes(x = 1:nrow(tickdata))) + 
+labels <- index(tickdata)[breaks] |> strftime(format="%H:%M") # 时间格式化
+scale_factor <- with(tickdata, max(LastPrice) / max(OpenInterest)) # 计算 OpenInterest 的缩放比例（根据需要调整）
+
+ggplot(tickdata, aes(x = 1:nrow(tickdata))) +
   geom_line(aes(y = LastPrice, color = "LastPrice"), linewidth = 1) +
-  geom_line(aes(y = OpenInterest * scale_factor, color = "OpenInterest"), linewidth = 1) + 
+  geom_line(aes(y = OpenInterest * scale_factor, color = "OpenInterest"), linewidth = 1) +
   scale_y_continuous(name = "Price", sec.axis = sec_axis(~ ./scale_factor, name = "OpenInterest")) + # 右侧坐标轴
   scale_x_continuous(breaks = breaks, labels = labels) + # 自定义标签
-  scale_color_manual(values = c(LastPrice = "red", OpenInterest = "blue")) + 
-  labs(x = "时间", y = "收盘价格", title = "价格持仓量") +  # 坐标轴名称
+  scale_color_manual(values = c(LastPrice = "red", OpenInterest = "blue")) +
+  labs(x = "时间", y = "收盘价格", title = "价格持仓量") + # 坐标轴名称
   theme_minimal()
