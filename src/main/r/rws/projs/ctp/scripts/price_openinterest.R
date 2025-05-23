@@ -17,12 +17,12 @@ getdata <- \(tbl) tbl |> sprintf(fmt = " -- 数据查询的SQL语句
 # 自定义参数
 curdate <- Sys.Date() # 当前时间.例如：2025-05-23
 contract <- "rb2510" # 期货合约, 候选项目：ma509,v2509,i2509,c2507
-times <- c("13:30", "15:00") # 时间范围: 09:00/11:30;13:30/15:00;21:00/23:00, selected =13:30/15:00
+times <- c("13:30", "15:00") # 时间范围: 09:00/11:30;13:30/15:00;21:00/23:00, selected=13:30/15:00
 k <- 30 # 时间间隔数量，number of periods each endpoint should cover.
 on <- "mins" # 候选项目 us,ms,secs,mins,hours,days,weeks,months,quarters,years
 
 # 获取&转换交易数据
-tickdata <- paste0("t_", contract, "_", curdate |> gsub(pat = "-", rep = "")) |> 
+tickdata <- paste0("t_", contract, "_", curdate |> gsub(pattern = "-", replace = "")) |> 
   getdata() |> transform(volume=diff(Volume) |> as.vector()) # 提取交易数据并计算分笔成交量
 period <- paste(curdate, times, collapse = "/") # 指定交易时段的时间范围
 tickdata <- tickdata[period, ] # 提取指定交易时段范围中的数据
