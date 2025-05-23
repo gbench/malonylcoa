@@ -14,21 +14,26 @@ getdata <- \(tbl) tbl |> sprintf(fmt = " -- 数据查询的SQL语句
   ") |> sqlquery.adhoc() |> transform(Time = as.POSIXct(Time, format = "%Y%m%d %H:%M:%OS")) %>% 
   with(xts(.[, -1], order.by = Time))
 
-# 指定时间范围
-curdate <- Sys.Date() # 当前时间
-tickdata <- paste0("t_ma509_", curdate |> gsub(pat = "-", rep = "")) |> 
+# 绘图自定义参数
+curdate <- Sys.Date() # 当前时间.例如：2025-05-23
+contract <- "rb2510" # 期货合约, 候选项目：ma509,v2509,i2509,c2507
+times <- c("13:00", "15:00") # 时间范围
+k <- 30 # 时间间隔数量，number of periods each endpoint should cover.
+on <- "mins, hou" # 候选项目 us,ms,secs,mins,hours,days,weeks,months,quarters,years
+
+# 转杯交易数据
+tickdata <- paste0("t_", contract, "_", curdate |> gsub(pat = "-", rep = "")) |> 
   getdata() |> transform(volume=diff(Volume) |> as.vector()) # 提取交易数据 并 计算 分笔成交量
-period <- paste(curdate, c("09:00", "15:00"), collapse = "/") # 指定交易时段的时间范围
+period <- paste(curdate, times, collapse = "/") # 指定交易时段的时间范围
 tickdata <- tickdata[period, ] # 提取指定交易时段范围中的数据
 
 # 统计开平仓数量
-tickdata |> with(OpenInterest |> diff() %>% tapply(sign(.), sum))
-
-n <- 30 # 分钟间隔
-breaks <- endpoints(tickdata, on = "mins", n) |> (\(x) c(1, x[-1]))() # 提取n min分隔点
+tickdata |> with(OpenInterest |> as.numeric() |> diff() %>% tapply(sign(.), sum)) |> barplot()
+breaks <- endpoints(tickdata, on = "mins", k) |> (\(x) c(1, x[-1]))() # 提取n min分隔点
 labels <- index(tickdata)[breaks] |> strftime(format="%H:%M") # 时间格式化
 scale_factor <- with(tickdata, max(LastPrice) / max(OpenInterest)) # 计算 OpenInterest 的缩放比例（根据需要调整）
 
+# 分时图
 ggplot(tickdata, aes(x = 1:nrow(tickdata))) +
   geom_line(aes(y = LastPrice, color = "LastPrice"), linewidth = 1) +
   geom_line(aes(y = OpenInterest * scale_factor, color = "OpenInterest"), linewidth = 1) +
