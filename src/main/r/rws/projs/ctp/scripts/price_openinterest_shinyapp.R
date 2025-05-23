@@ -2,6 +2,8 @@ library(shiny)
 library(ggplot2)
 library(xts)
 
+batch_load()
+
 # 定义数据库函数
 sqlquery.adhoc <- function(...) {
   sqlquery(..., dbname = "ctp", port = 3372)
@@ -32,27 +34,38 @@ ui <- fluidPage(
       dateInput("curdate", "日期", value = Sys.Date()),
       selectInput("contract", "期货合约", choices = contracts, selected = "rb2510"),
       selectInput("times", "交易时段", choices = c("09:00-11:30", "13:30-15:00", "21:00-23:00"),
-                  selected = "13:30-15:00"),
+        selected = "13:30-15:00"),
       numericInput("k", "时间间隔数量", value = 30, min = 1),
       selectInput("on", "时间单位",
-                  choices = c("微秒" = "us", "毫秒" = "ms", "秒" = "secs", 
-                              "分钟" = "mins", "小时" = "hours", "天" = "days",
-                              "周" = "weeks", "月" = "months", "季" = "quarters", 
-                              "年" = "years"),
-                  selected = "mins")
+        choices = c("微秒" = "us", "毫秒" = "ms", "秒" = "secs", "分钟" = "mins", 
+          "小时" = "hours", "天" = "days", "周" = "weeks", "月" = "months", 
+          "季" = "quarters", "年" = "years"),
+        selected = "mins"),
+      actionButton("refresh", "刷新数据", icon = icon("sync"))
     ),
     mainPanel(
       tabsetPanel(
         tabPanel("价格与持仓量", plotOutput("priceOiPlot")),
         tabPanel("开平仓统计", plotOutput("oiBarPlot")))
-    )
-  )
-)
+    ) # mainPanel
+  ) # sidebarLayout
+) # fluidPage
 
 # Server逻辑
 server <- function(input, output) {
+  
+  # 创建响应式值用于触发刷新
+  refreshTrigger <- reactiveVal(0)
+  
+  # 当点击刷新按钮时增加refreshTrigger的值
+  observeEvent(input$refresh, {
+    refreshTrigger(refreshTrigger() + 1)
+  })
+  
   # 响应式数据加载
   processedData <- reactive({
+    # 依赖所有输入参数和refreshTrigger
+    input$refresh
     req(input$contract, input$curdate)
     
     tickdata <- paste0("t_", input$contract, "_", gsub("-", "", input$curdate)) |> 
@@ -101,12 +114,10 @@ server <- function(input, output) {
     oi_changes <- data$tickdata |> with(OpenInterest |> as.numeric() |> diff())
     oi_data <- tapply(oi_changes, sign(oi_changes), sum)
     
-    barplot(oi_data,
-            main = "开平仓数量统计",
-            xlab = "方向 (1=开仓, -1=平仓)",
-            ylab = "数量",
-            col = c("#FF6B6B", "#4ECDC4"),
-            border = NA)
+    bp <- barplot(oi_data, main = "开平仓数量统计",
+      xlab = "方向 (1=开仓,0=不变, -1=平仓)", ylab = "数量", 
+      col = c("#FF6B6B", "#4E67C4", "#4ECDC4"), ylim=range(oi_data)*1.5)
+    text(x = bp, y = oi_data, labels = round(oi_data, 2), pos=3) # 显示持仓量
   })
 }
 
