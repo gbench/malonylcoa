@@ -7,7 +7,7 @@ getdata <- \(tbl) tbl |> sprintf(fmt = " -- 数据查询的SQL语句
       concat(TradingDay, ' ' ,UpdateTime, '.', UpdateMillisec) Time, -- 拼接成交易时间
       LastPrice, -- 成交价格
       AveragePrice, -- 平均价格
-      Volume, -- 平均价格
+      Volume, -- 累计成交量
       OpenInterest, -- 开仓量
       PreOpenInterest -- 前日开仓量
     FROM %s ORDER BY Id DESC -- 按照插入数据库的序号进行倒序排列，最新数据位于前头
@@ -17,19 +17,19 @@ getdata <- \(tbl) tbl |> sprintf(fmt = " -- 数据查询的SQL语句
 # 自定义参数
 curdate <- Sys.Date() # 当前时间.例如：2025-05-23
 contract <- "rb2510" # 期货合约, 候选项目：ma509,v2509,i2509,c2507
-times <- c("13:30", "15:00") # 时间范围: "09:00/11:30", "13:30/15:00", "21:00/23:00", selected = "13:30/15:00"
+times <- c("13:30", "15:00") # 时间范围: 09:00/11:30;13:30/15:00;21:00/23:00, selected =13:30/15:00
 k <- 30 # 时间间隔数量，number of periods each endpoint should cover.
 on <- "mins" # 候选项目 us,ms,secs,mins,hours,days,weeks,months,quarters,years
 
-# 转杯交易数据
+# 获取&转换交易数据
 tickdata <- paste0("t_", contract, "_", curdate |> gsub(pat = "-", rep = "")) |> 
-  getdata() |> transform(volume=diff(Volume) |> as.vector()) # 提取交易数据 并 计算 分笔成交量
+  getdata() |> transform(volume=diff(Volume) |> as.vector()) # 提取交易数据并计算分笔成交量
 period <- paste(curdate, times, collapse = "/") # 指定交易时段的时间范围
 tickdata <- tickdata[period, ] # 提取指定交易时段范围中的数据
 
 # 统计开平仓数量
 tickdata |> with(OpenInterest |> as.numeric() |> diff() %>% tapply(sign(.), sum)) |> barplot()
-breaks <- endpoints(tickdata, on = "mins", k) |> (\(x) c(1, x[-1]))() # 提取n min分隔点
+breaks <- endpoints(tickdata, on = "mins", k) |> (\(x) c(1, x[-1]))() # 提取min级别的分隔点
 labels <- index(tickdata)[breaks] |> strftime(format="%H:%M") # 时间格式化
 scale_factor <- with(tickdata, max(LastPrice) / max(OpenInterest)) # 计算 OpenInterest 的缩放比例（根据需要调整）
 
