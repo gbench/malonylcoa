@@ -1,0 +1,114 @@
+library(shiny)
+library(ggplot2)
+library(xts)
+
+# 定义数据库函数
+sqlquery.adhoc <- function(...) {
+  sqlquery(..., dbname = "ctp", port = 3372)
+}
+
+getdata <- function(tbl) {
+  tbl |> sprintf(fmt = "
+    SELECT
+      concat(TradingDay, ' ' ,UpdateTime, '.', UpdateMillisec) Time,
+      LastPrice,
+      AveragePrice,
+      Volume,
+      OpenInterest,
+      PreOpenInterest
+    FROM %s ORDER BY Id DESC
+  ") |> sqlquery.adhoc() |> transform(Time = as.POSIXct(Time, format = "%Y%m%d %H:%M:%OS")) %>% 
+    with(xts(.[, -1], order.by = Time))
+}
+
+contracts <- sqlquery.adhoc("show tables") |> unlist()|> 
+  gsub(pattern="t_(\\w+)_\\d{8}", replace="\\1") |> unique()
+
+# UI定义
+ui <- fluidPage(
+  titlePanel("期货合约分时图分析"),
+  sidebarLayout(
+    sidebarPanel(
+      dateInput("curdate", "日期", value = Sys.Date()),
+      selectInput("contract", "期货合约", choices = contracts, selected = "rb2510"),
+      selectInput("times", "交易时段", choices = c("09:00-11:30", "13:30-15:00", "21:00-23:00"),
+                  selected = "13:30-15:00"),
+      numericInput("k", "时间间隔数量", value = 30, min = 1),
+      selectInput("on", "时间单位",
+                  choices = c("微秒" = "us", "毫秒" = "ms", "秒" = "secs", 
+                              "分钟" = "mins", "小时" = "hours", "天" = "days",
+                              "周" = "weeks", "月" = "months", "季" = "quarters", 
+                              "年" = "years"),
+                  selected = "mins")
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("价格与持仓量", plotOutput("priceOiPlot")),
+        tabPanel("开平仓统计", plotOutput("oiBarPlot")))
+    )
+  )
+)
+
+# Server逻辑
+server <- function(input, output) {
+  # 响应式数据加载
+  processedData <- reactive({
+    req(input$contract, input$curdate)
+    
+    tickdata <- paste0("t_", input$contract, "_", gsub("-", "", input$curdate)) |> 
+      getdata() |> transform(volume = diff(Volume) |> as.vector())
+    
+    period <- paste(input$curdate, unlist(strsplit(input$times, "-")), collapse = "/")
+    tickdata <- tickdata[period, ]
+    
+    breaks <- endpoints(tickdata, on = input$on, input$k) |> (\(x) c(1, x[-1]))()
+    labels <- index(tickdata)[breaks] |> strftime(format = "%H:%M")
+    
+    scale_factor <- with(tickdata, max(LastPrice) / max(OpenInterest))
+    
+    list(
+      tickdata = tickdata,
+      breaks = breaks,
+      labels = labels,
+      scale_factor = scale_factor
+    )
+  })
+  
+  # 双坐标轴价格持仓量分时图
+  output$priceOiPlot <- renderPlot({
+    data <- processedData()
+    req(data$tickdata)
+    
+    ggplot(data$tickdata, aes(x = 1:nrow(data$tickdata))) +
+      geom_line(aes(y = LastPrice, color = "LastPrice"), linewidth = 1) +
+      geom_line(aes(y = OpenInterest * data$scale_factor, color = "OpenInterest"), linewidth = 1) +
+      scale_y_continuous(
+        name = "Price",
+        sec.axis = sec_axis(~ ./data$scale_factor, name = "OpenInterest")
+      ) +
+      scale_x_continuous(breaks = data$breaks, labels = data$labels) +
+      scale_color_manual(values = c(LastPrice = "red", OpenInterest = "blue")) +
+      labs(x = "时间", title = "价格与持仓量走势") +
+      theme_minimal() +
+      theme(legend.position = "top")
+  })
+  
+  # 开平仓数量统计图
+  output$oiBarPlot <- renderPlot({
+    data <- processedData()
+    req(data$tickdata)
+    
+    oi_changes <- data$tickdata |> with(OpenInterest |> as.numeric() |> diff())
+    oi_data <- tapply(oi_changes, sign(oi_changes), sum)
+    
+    barplot(oi_data,
+            main = "开平仓数量统计",
+            xlab = "方向 (1=开仓, -1=平仓)",
+            ylab = "数量",
+            col = c("#FF6B6B", "#4ECDC4"),
+            border = NA)
+  })
+}
+
+# 运行应用
+shinyApp(ui = ui, server = server)
