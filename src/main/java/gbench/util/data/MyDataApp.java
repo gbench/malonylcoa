@@ -258,7 +258,7 @@ public class MyDataApp extends DataApp {
 			final var join = Collectors.joining(", ");
 			final String keys = rec.keyS().collect(join);
 			final String values = rs.stream()
-					.map(r -> rec.valueS()
+					.map(r -> r.valueS()
 							.map(e -> e == null ? null
 									: "'%s'".formatted(!flag ? e
 											: (e instanceof Map ? MyJson.toJson(e) : e.toString()).replace("'", "\\'")))
