@@ -6,7 +6,7 @@ batch_load()
 
 # 定义数据库函数
 sqlquery.adhoc <- function(...) {
-  sqlquery(..., dbname = "ctp", port = 3372)
+  sqlquery(..., host="192.168.1.4", dbname = "ctp", port = 3372)
 }
 
 getdata <- function(tbl) {
@@ -34,7 +34,7 @@ ui <- fluidPage(
       dateInput("curdate", "日期", value = Sys.Date()),
       selectInput("contract", "期货合约", choices = contracts, selected = "rb2510"),
       selectInput("times", "交易时段", choices = c("09:00-11:30", "13:30-15:00", "21:00-23:00"),
-        selected = "13:30-15:00"),
+        selected = "09:00-11:30"),
       numericInput("k", "时间间隔数量", value = 30, min = 1),
       selectInput("on", "时间单位",
         choices = c("微秒" = "us", "毫秒" = "ms", "秒" = "secs", "分钟" = "mins", 
@@ -46,7 +46,8 @@ ui <- fluidPage(
     mainPanel(
       tabsetPanel(
         tabPanel("价格与持仓量", plotOutput("priceOiPlot")),
-        tabPanel("开平仓统计", plotOutput("oiBarPlot")))
+        tabPanel("开平仓统计", plotOutput("oiBarPlot")),
+        tabPanel("交易量统计", plotOutput("volBarPlot")))
     ) # mainPanel
   ) # sidebarLayout
 ) # fluidPage
@@ -118,6 +119,18 @@ server <- function(input, output) {
       xlab = "方向 (1=开仓,0=不变, -1=平仓)", ylab = "数量", 
       col = c("#FF6B6B", "#4E67C4", "#4ECDC4"), ylim=range(oi_data)*1.5)
     text(x = bp, y = oi_data, labels = round(oi_data, 2), pos=3) # 显示持仓量
+  })
+  
+  # 交易量统计图
+  output$volBarPlot <- renderPlot({
+    data <- processedData()
+    req(data$tickdata)
+    
+    tickdata <- data$tickdata
+    breaks <- data$breaks
+    volume <- tickdata$Volume
+    vol <- volume[breaks] |> diff()
+    plot.xts(vol)
   })
 }
 

@@ -203,7 +203,9 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		final var ids = updates.keySet().stream().map(String::valueOf).collect(Collectors.joining(","));
 		final var ps = updates.entrySet().stream().map(e -> "WHEN %s THEN %s ".formatted(e.getKey(), e.getValue()))
 				.collect(Collectors.joining(" "));
-		final var sql = "UPDATE t_order SET UNMATCHED = CASE ID %s END WHERE ID IN ( %s )".formatted(ps, ids);
+		final var now = LocalDateTime.now();
+		final var sql = "UPDATE t_order SET UNMATCHED = CASE ID %s END, REVISION = REVISION + 1, UPDATE_TIME = '%s' WHERE ID IN ( %s )"
+				.formatted(ps, now, ids);
 
 		Optional.ofNullable(sql).map(Output::println).map(dataClient::sqlexecute)
 				.ifPresent(mono -> mono.subscribe(r -> println("Updated %s orders:\n%s".formatted(updates.size(), r))));
