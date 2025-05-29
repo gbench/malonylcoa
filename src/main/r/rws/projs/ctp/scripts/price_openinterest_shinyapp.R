@@ -6,7 +6,7 @@ batch_load()
 
 # 定义数据库函数
 sqlquery.adhoc <- function(...) {
-  sqlquery(..., host="192.168.1.4", dbname = "ctp", port = 3372)
+  sqlquery(..., host="127.0.0.1", dbname = "ctp", port = 3372)
 }
 
 getdata <- function(tbl) {
