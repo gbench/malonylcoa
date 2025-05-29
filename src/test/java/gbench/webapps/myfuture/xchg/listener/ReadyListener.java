@@ -29,6 +29,7 @@ import gbench.util.lisp.IRecord;
 import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
 import jakarta.annotation.PreDestroy;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Component
 public class ReadyListener implements ApplicationListener<ApplicationReadyEvent> {
@@ -143,8 +144,10 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 			} // while
 		} // for
 
-		batchInsertMatchOrders(matches);
-		batchUpdateDirtyOrders(dirties, longs, shorts);
+		// 批量更新与插入
+		batchInsertMatchOrders(matches).map(r -> println("Match %s records inserted:\n%s".formatted(r.nrows(), r)))
+				.flatMap(e -> batchUpdateDirtyOrders(dirties, longs, shorts))
+				.subscribe((r -> println("Updated %s orders:\n%s".formatted(r.nrows(), r))));
 	}
 
 	/**
@@ -175,28 +178,29 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	}
 
 	/**
+	 * 批量插入
 	 * 
-	 * @param matches
+	 * @param matches 撮合单
 	 */
-	private void batchInsertMatchOrders(final List<IRecord> matches) {
+	private Mono<DFrame> batchInsertMatchOrders(final List<IRecord> matches) {
 		if (matches.isEmpty())
-			return;
+			return Mono.empty();
 
 		final var recs = matches.stream().map(IRecord::toMap).map(MyDataApp.IRecord::REC).toList();
 
-		Optional.ofNullable(MyDataApp.insert_sql("t_match_order", recs)).map(Output::println)
-				.map(dataClient::sqlexecute).ifPresent(
-						mono -> mono.subscribe(r -> println("Match %s records inserted:\n%s".formatted(r.nrows(), r))));
+		return Optional.ofNullable(MyDataApp.insert_sql("t_match_order", recs)).map(Output::println)
+				.map(dataClient::sqlexecute).orElse(Mono.empty());
 	}
 
 	/**
+	 * 批量更新
 	 * 
-	 * @param dirties
-	 * @param frames
+	 * @param dirties 有变动的订单
+	 * @param frames  订单队列
 	 */
-	private void batchUpdateDirtyOrders(final Set<Integer> dirties, final DFrame... frames) {
+	private Mono<DFrame> batchUpdateDirtyOrders(final Set<Integer> dirties, final DFrame... frames) {
 		if (dirties.isEmpty())
-			return;
+			return Mono.empty();
 
 		final var updates = Stream.of(frames).flatMap(DFrame::rowS).filter(r -> dirties.contains(r.i4("ID")))
 				.collect(Collectors.toMap(r -> r.i4("ID"), r -> r.i4("UNMATCHED")));
@@ -207,8 +211,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 		final var sql = "UPDATE t_order SET UNMATCHED = CASE ID %s END, REVISION = REVISION + 1, UPDATE_TIME = '%s' WHERE ID IN ( %s )"
 				.formatted(ps, now, ids);
 
-		Optional.ofNullable(sql).map(Output::println).map(dataClient::sqlexecute)
-				.ifPresent(mono -> mono.subscribe(r -> println("Updated %s orders:\n%s".formatted(updates.size(), r))));
+		return Optional.ofNullable(sql).map(Output::println).map(dataClient::sqlexecute).orElse(Mono.empty());
 	}
 
 	@PreDestroy
