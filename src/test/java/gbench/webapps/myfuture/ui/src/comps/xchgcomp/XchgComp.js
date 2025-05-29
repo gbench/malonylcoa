@@ -178,6 +178,8 @@ const XchgComp = {
 							ROUND(o.PRICE, 2) PRICE, -- 价格
 							o.QUANTITY, -- 数量
 							o.UNMATCHED, -- 为匹配数量
+							o.REVISION, -- 版本
+							o.UPDATE_TIME, -- 变更时间
 							o.CREATE_TIME -- 下单时间
 							-- o.DESCRIPTION -- 说明
 						from (select * from t_order -- 交易单

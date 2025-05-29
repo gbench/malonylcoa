@@ -144,7 +144,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 			} // while
 		} // for
 
-		// 批量更新与插入
+		// 批量插入&更新
 		batchInsertMatchOrders(matches).map(r -> println("Match %s records inserted:\n%s".formatted(r.nrows(), r)))
 				.flatMap(e -> batchUpdateDirtyOrders(dirties, longs, shorts))
 				.subscribe(r -> println("Updated %s orders:\n%s".formatted(r.nrows(), r)));
