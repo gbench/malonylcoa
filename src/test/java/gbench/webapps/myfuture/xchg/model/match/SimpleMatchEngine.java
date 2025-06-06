@@ -54,6 +54,4 @@ public class SimpleMatchEngine extends AbstractMatchModel {
 
 	private final ConcurrentHashMap<Integer, Object> securityLocks = new ConcurrentHashMap<>();
 	private ExecutorService es = Executors.newFixedThreadPool(10);
-
-	final static String DIRTY_ORDER_SQL = "update t_order set UNMATCHED=%s where ID=%s";
 }
