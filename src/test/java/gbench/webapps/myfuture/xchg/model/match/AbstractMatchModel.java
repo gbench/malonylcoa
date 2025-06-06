@@ -3,6 +3,7 @@ package gbench.webapps.myfuture.xchg.model.match;
 import static gbench.util.io.Output.println;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import gbench.util.data.MyDataApp;
 import gbench.util.io.Output;
 import gbench.util.lisp.DFrame;
 import gbench.util.lisp.IRecord;
+import gbench.util.lisp.Tuple2;
 import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -74,6 +76,45 @@ public abstract class AbstractMatchModel implements IMatchModel {
 				.map(dfm -> dfm.colOpt(0).map(List::stream).orElse(Stream.empty()).map(IRecord.obj2int()))
 				.flatMapMany(Flux::fromStream)
 				.flatMap(securityid -> dataClient.sqldframe(IRecord.FT(UNMATCHED_ORDER_SQL, securityid)));
+	}
+
+	/**
+	 * 
+	 * @param orders
+	 * @return
+	 */
+	public Tuple2<DFrame, DFrame> split(final DFrame orders) {
+		final var groups = orders.groupBy(e -> e.i4("POSITION")); // 依据订单的头寸（多头:1,空头:-1)
+		final var longs = DFrame.of(groups.getOrDefault(LONG_POSITION, EMPTY))
+				.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
+		final var shorts = DFrame.of(groups.getOrDefault(SHORT_POSITION, EMPTY))
+				.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true)); // 价格正，时间正序列
+		println("-- LONGS(%d):%s".formatted(longs.nrows(), longs));
+		println("-- SHORTS(%d):%s".formatted(shorts.nrows(), shorts));
+		return Tuple2.of(longs, shorts);
+	}
+
+	/**
+	 * 
+	 * @param orders
+	 */
+	public void process(final DFrame orders) {
+		final var securityid = orders.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1);
+
+		try {
+			println("-------------------------------------------");
+			println("-- securityid:%s".formatted(securityid));
+			println("-- time:%s".formatted(LocalTime.now()));
+
+			final var ps = this.split(orders);
+
+			if (ps._1.nrows() > 0 && ps._2.nrows() > 0) {
+				matchOrders(ps._1, ps._2);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			println("-- ERROR match for securityid:%s".formatted(securityid));
+		}
 	}
 
 	/**

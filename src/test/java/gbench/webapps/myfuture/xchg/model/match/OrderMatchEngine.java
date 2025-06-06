@@ -2,7 +2,6 @@ package gbench.webapps.myfuture.xchg.model.match;
 
 import static gbench.util.io.Output.println;
 
-import java.time.LocalTime;
 import java.util.concurrent.Executors;
 
 import com.lmax.disruptor.BlockingWaitStrategy;
@@ -12,7 +11,6 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 
 import gbench.util.lisp.DFrame;
-import gbench.util.lisp.IRecord;
 import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
 
 /**
@@ -110,31 +108,10 @@ public class OrderMatchEngine extends AbstractMatchModel implements IMatchModel 
 	public class OrderEventHandler implements EventHandler<OrderEvent> {
 		@Override
 		public void onEvent(final OrderEvent event, final long sequence, final boolean endOfBatch) {
-			final DFrame orderFrame = event.getOrders();
-			final var securityid = orderFrame.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1);
-
-			try {
-				println("-------------------------------------------");
-				println("-- securityid:%s".formatted(securityid));
-				println("-- time:%s".formatted(LocalTime.now()));
-				println("-- sequence:%s".formatted(sequence));
-				println("-- endOfBatch:%s".formatted(endOfBatch));
-
-				final var groups = orderFrame.groupBy(e -> e.i4("POSITION"));
-				final var longs = DFrame.of(groups.getOrDefault(LONG_POSITION, EMPTY))
-						.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true));
-				final var shorts = DFrame.of(groups.getOrDefault(SHORT_POSITION, EMPTY))
-						.sorted(IRecord.cmp("PRICE,CREATE_TIME", true, true));
-				println("-- LONGS(%d):%s".formatted(longs.nrows(), longs));
-				println("-- SHORTS(%d):%s".formatted(shorts.nrows(), shorts));
-
-				if (longs.nrows() > 0 && shorts.nrows() > 0) {
-					matchOrders(longs, shorts);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				println("-- ERROR match for securityid:%s".formatted(securityid));
-			}
+			final DFrame orders = event.getOrders();
+			println("** sequence:%s".formatted(sequence));
+			println("** endOfBatch:%s".formatted(endOfBatch));
+			OrderMatchEngine.this.process(orders);
 		}
 	}
 
