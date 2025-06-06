@@ -59,12 +59,13 @@ public class OrderMatchEngine extends AbstractMatchModel implements IMatchModel 
 	/**
 	 * Publish order data to Disruptor ring buffer with partition-based routing
 	 */
-	public void handleOrders(final DFrame orderFrame) {
-		if (orderFrame.nrows() < 1) {
+	@Override
+	public void handleOrders(final DFrame orders) {
+		if (orders.nrows() < 1) {
 			return;
 		}
 
-		final int securityId = orderFrame.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1);
+		final int securityId = orders.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1);
 
 		// Determine partition based on security ID
 		final int partition = Math.abs(securityId) % numPartitions;
@@ -72,7 +73,7 @@ public class OrderMatchEngine extends AbstractMatchModel implements IMatchModel 
 		long sequence = ringBuffer.next();
 		try {
 			OrderEvent event = ringBuffer.get(sequence);
-			event.setOrders(orderFrame);
+			event.setOrders(orders);
 			event.setPartition(partition);
 		} finally {
 			ringBuffer.publish(sequence);

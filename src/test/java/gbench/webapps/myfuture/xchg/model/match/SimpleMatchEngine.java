@@ -39,14 +39,15 @@ public class SimpleMatchEngine extends AbstractMatchModel {
 	/**
 	 * 订单处理
 	 * 
-	 * @param ordfrm
+	 * @param orders
 	 */
-	public void handleOrders(final DFrame ordfrm) {
-		if (ordfrm.nrows() < 1)
+	@Override
+	public void handleOrders(final DFrame orders) {
+		if (orders.nrows() < 1)
 			return;
 
 		es.execute(() -> {
-			final var securityid = ordfrm.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1); // 获取证券ID
+			final var securityid = orders.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1); // 获取证券ID
 			try {
 				// 使用ConcurrentHashMap管理证券ID对应的锁，确保同一个证券的撮合任务串行执行，避免并发冲突
 				synchronized (securityLocks.computeIfAbsent(securityid, k -> new Object())) {
@@ -54,7 +55,7 @@ public class SimpleMatchEngine extends AbstractMatchModel {
 					println("-- securityid:%s".formatted(securityid));
 					println("-- time:%s".formatted(LocalTime.now()));
 
-					final var groups = ordfrm.groupBy(e -> e.i4("POSITION")); // 依据订单的头寸（多头:1,空头:-1)
+					final var groups = orders.groupBy(e -> e.i4("POSITION")); // 依据订单的头寸（多头:1,空头:-1)
 					final var longs = DFrame.of(groups.getOrDefault(LONG_POSITION, EMPTY))
 							.sorted(IRecord.cmp("PRICE,CREATE_TIME", false, true)); // 价格倒序，时间正序列
 					final var shorts = DFrame.of(groups.getOrDefault(SHORT_POSITION, EMPTY))
