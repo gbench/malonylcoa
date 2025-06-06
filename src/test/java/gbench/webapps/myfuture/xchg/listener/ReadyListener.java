@@ -17,16 +17,32 @@ import jakarta.annotation.PreDestroy;
 @Component
 public class ReadyListener implements ApplicationListener<ApplicationReadyEvent> {
 
+	/**
+	 * 
+	 * @param interval
+	 * @param engine:    simple,disruptor,disruptor 目前有问题：会重复处理
+	 * @param dataClient
+	 */
 	public ReadyListener(@Value("${xchg.matchorder.interval:5000}") Integer interval,
-			@Value("${xchg.matchorder.engine:disruptor}") String engine, final DataApiClient dataClient) {
+			@Value("${xchg.matchorder.engine:simple}") String engine, final DataApiClient dataClient) {
 		this.matchEngine = this.buildMatchEngine(interval, engine, dataClient);
 	}
 
+	/**
+	 * 
+	 */
 	@Override
 	public void onApplicationEvent(final ApplicationReadyEvent event) {
 		matchEngine.start();
 	}
 
+	/**
+	 * 
+	 * @param interval
+	 * @param engine
+	 * @param dataClient
+	 * @return
+	 */
 	public IMatchModel buildMatchEngine(final Integer interval, final String engine, final DataApiClient dataClient) {
 		return switch (String.valueOf(engine).toLowerCase()) {
 		case "disruptor" -> {
