@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import gbench.webapps.myfuture.xchg.model.match.IMatchModel;
+import gbench.webapps.myfuture.xchg.model.match.OrderMatchingEngine;
 import gbench.webapps.myfuture.xchg.model.match.SimpleMatchModel;
 import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
 import jakarta.annotation.PreDestroy;
@@ -26,7 +27,7 @@ public class ReadyListener implements ApplicationListener<ApplicationReadyEvent>
 	@Bean
 	public IMatchModel matchModel(@Value("${xchg.matchorder.interval:5000}") Integer interval,
 			final DataApiClient dataClient) {
-		return new SimpleMatchModel(interval, dataClient);
+		return new OrderMatchingEngine(interval, dataClient);
 	}
 
 	@PreDestroy
