@@ -25,14 +25,14 @@ import reactor.core.publisher.Mono;
 /**
  * 
  */
-public class SimpleMatchModel extends AbstractMatchModel {
+public class SimpleMatchEngine extends AbstractMatchModel {
 
 	/**
 	 * 
 	 * @param interval
 	 * @param dataClient
 	 */
-	public SimpleMatchModel(final Integer interval, final DataApiClient dataClient) {
+	public SimpleMatchEngine(final Integer interval, final DataApiClient dataClient) {
 		super(interval, dataClient);
 	}
 

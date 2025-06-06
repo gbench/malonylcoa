@@ -18,7 +18,7 @@ import gbench.webapps.myfuture.xchg.msclient.DataApiClient;
 /**
  * High-performance order matching engine using LMAX Disruptor
  */
-public class OrderMatchingEngine extends AbstractMatchModel implements IMatchModel {
+public class OrderMatchEngine extends AbstractMatchModel implements IMatchModel {
 	private final Disruptor<OrderEvent> disruptor;
 	private final RingBuffer<OrderEvent> ringBuffer;
 	private final int numPartitions;
@@ -29,12 +29,12 @@ public class OrderMatchingEngine extends AbstractMatchModel implements IMatchMod
 	 * @param interval
 	 * @param dataClient
 	 */
-	public OrderMatchingEngine(final Integer interval, DataApiClient dataClient) {
+	public OrderMatchEngine(final Integer interval, DataApiClient dataClient) {
 		this(interval, dataClient, 1024 * 4, 10);
 	}
 
 	@SuppressWarnings("unchecked")
-	public OrderMatchingEngine(final Integer interval, DataApiClient dataClient, int bufferSize, int numPartitions) {
+	public OrderMatchEngine(final Integer interval, DataApiClient dataClient, int bufferSize, int numPartitions) {
 		super(interval, dataClient);
 		this.numPartitions = numPartitions;
 
