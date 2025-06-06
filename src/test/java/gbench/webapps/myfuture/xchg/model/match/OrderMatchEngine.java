@@ -29,12 +29,13 @@ public class OrderMatchEngine extends AbstractMatchModel implements IMatchModel 
 	 * @param interval
 	 * @param dataClient
 	 */
-	public OrderMatchEngine(final Integer interval, DataApiClient dataClient) {
+	public OrderMatchEngine(final Integer interval, final DataApiClient dataClient) {
 		this(interval, dataClient, 1024 * 4, 10);
 	}
 
 	@SuppressWarnings("unchecked")
-	public OrderMatchEngine(final Integer interval, DataApiClient dataClient, int bufferSize, int numPartitions) {
+	public OrderMatchEngine(final Integer interval, final DataApiClient dataClient, final int bufferSize,
+			final int numPartitions) {
 		super(interval, dataClient);
 		this.numPartitions = numPartitions;
 
@@ -107,14 +108,16 @@ public class OrderMatchEngine extends AbstractMatchModel implements IMatchModel 
 	 */
 	public class OrderEventHandler implements EventHandler<OrderEvent> {
 		@Override
-		public void onEvent(OrderEvent event, long sequence, boolean endOfBatch) {
-			DFrame orderFrame = event.getOrders();
+		public void onEvent(final OrderEvent event, final long sequence, final boolean endOfBatch) {
+			final DFrame orderFrame = event.getOrders();
 			final var securityid = orderFrame.headOpt().map(e -> e.i4("SECURITY_ID")).orElse(-1);
 
 			try {
 				println("-------------------------------------------");
 				println("-- securityid:%s".formatted(securityid));
 				println("-- time:%s".formatted(LocalTime.now()));
+				println("-- sequence:%s".formatted(sequence));
+				println("-- endOfBatch:%s".formatted(endOfBatch));
 
 				final var groups = orderFrame.groupBy(e -> e.i4("POSITION"));
 				final var longs = DFrame.of(groups.getOrDefault(LONG_POSITION, EMPTY))
