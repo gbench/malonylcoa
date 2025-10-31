@@ -14,7 +14,8 @@ const XchgComp = {
 				@change="refresh_matchorders(securityid)"> 
 				<option v-for="sec in securities" :value="sec.ID">{{sec.NAME}}</option>
 			</select> &nbsp
-		<button @click="match_order()">撮合</button>
+		<button @click="match_order()">撮合</button> &nbsp;
+		<button @click="refresh_orders(securityid)"> 刷新 </button>
 		<hr>
 		<div style="height:200px;overflow:auto;border:solid 1px red;">
 			<data-table :data="orders" 
@@ -177,6 +178,8 @@ const XchgComp = {
 							ROUND(o.PRICE, 2) PRICE, -- 价格
 							o.QUANTITY, -- 数量
 							o.UNMATCHED, -- 为匹配数量
+							o.REVISION, -- 版本
+							o.UPDATE_TIME, -- 变更时间
 							o.CREATE_TIME -- 下单时间
 							-- o.DESCRIPTION -- 说明
 						from (select * from t_order -- 交易单

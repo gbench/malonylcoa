@@ -23,8 +23,9 @@ const TraderComp = {
 		价格: <input v-model="orderfrm.price" style='width:100px;' /> &nbsp;
 		数量: <input v-model="orderfrm.quantity" style='width:100px;' /> &nbsp;
 		描述: <input v-model="orderfrm.description" style='width:80px;' /> &nbsp;
-		<button @click="create_order(orderfrm)"> 挂单</button> &nbsp;
-		<button @click="remove_order()"> 删除</button>
+		<button @click="create_order(orderfrm)"> 挂单 </button> &nbsp;
+		<button @click="remove_order()"> 删除 </button> &nbsp;
+		<button @click="refresh_orders(current.traderid, current.securityid)"> 刷新 </button>
 		<hr>
 		<div style="height:180px;overflow:auto;border:solid 1px red;">
 			<data-table :data="orders" 
@@ -199,6 +200,8 @@ const TraderComp = {
 					ROUND(o.PRICE, 2) PRICE, -- 价格
 					o.QUANTITY, -- 数量
 					o.UNMATCHED, -- 数量
+					o.REVISION, -- 版本
+					o.UPDATE_TIME, -- 变更时间
 					o.CREATE_TIME -- 下单时间
 					-- o.DESCRIPTION -- 说明
 				from (select * from t_order where POSITION=${position} and SECURITY_ID=${securityid}) o -- 检索指定头寸单
@@ -210,7 +213,7 @@ const TraderComp = {
 			const ask_sql = `${positions(-1)} order by o.PRICE desc, CREATE_TIME desc`; // 卖单 - 空头
 			const bid_sql = `${positions(1)} order by o.PRICE desc, CREATE_TIME`; // 买单 - 多头
 
-			sqlquery(`(${ask_sql}) union all (${bid_sql})`).then(res => {
+			sqlquery(`select * from  ((${ask_sql}) union all (${bid_sql})) t order by t.ID desc `).then(res => {
 				this.orders = res.data.data.map(e => {
 					e.POSITION = e.POSITION == 1 ? "LONG" : "SHORT";
 					return e;

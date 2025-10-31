@@ -249,13 +249,37 @@ public class MyDataApp extends DataApp {
 	 * @param flag 是否单引号'进行转义, true 转义,false 不转义
 	 * @return insert SQL 语句 流
 	 */
-	public static String insert_sql(final String name, final IRecord rec, final boolean flag) {
-		final String keys = rec.keyS().collect(Collectors.joining(","));
-		final String values = rec.valueS().map(e -> e == null ? null
-				: IRecord.FT("'$0'", !flag ? e : (e instanceof Map ? MyJson.toJson(e) : e.toString() //
-				).replace("'", "\\'"))) //
-				.collect(Collectors.joining(","));
-		return IRecord.FT("insert into $0 ($1) values ($2);", name, keys, values);
+	public static String insert_sql(final String name, final Iterable<IRecord> recs, final boolean flag) {
+		final List<IRecord> rs = recs instanceof List ? (List<IRecord>) recs
+				: StreamSupport.stream(recs.spliterator(), false).toList();
+
+		if (rs.size() > 0) {
+			final var rec = rs.get(0);
+			final var join = Collectors.joining(", ");
+			final String keys = rec.keyS().collect(join);
+			final String values = rs.stream()
+					.map(r -> r.valueS()
+							.map(e -> e == null ? null
+									: "'%s'".formatted(!flag ? e
+											: (e instanceof Map ? MyJson.toJson(e) : e.toString()).replace("'", "\\'")))
+							.collect(join))
+					.map("(%s)"::formatted).collect(join);
+			return IRecord.FT("insert into $0 ($1) values $2", name, keys, values);
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * insert SQL 语句
+	 *
+	 * @param name 表名
+	 * @param rec  数据元素
+	 * @param flag 是否单引号'进行转义, true 转义,false 不转义
+	 * @return insert SQL 语句 流
+	 */
+	public static String insert_sql(final String name, final Iterable<IRecord> recs) {
+		return insert_sql(name, recs, true);
 	}
 
 	/**
@@ -265,8 +289,8 @@ public class MyDataApp extends DataApp {
 	 * @param rec  数据元素
 	 * @return insert SQL 语句 流
 	 */
-	public static String insert_sql(final String name, final IRecord rec) {
-		return insert_sql(name, rec, true);
+	public static String insert_sql(final String name, final IRecord... recs) {
+		return insert_sql(name, Arrays.asList(recs));
 	}
 
 	/**
@@ -277,9 +301,8 @@ public class MyDataApp extends DataApp {
 	 * @param kvs  表定义元数据: 列1名称,列1的类型,列2名称,列2的类型, ...
 	 * @return insert SQL 语句 流
 	 */
-	@SafeVarargs
-	public static <T> String insert_sql(final String name, final T... kvs) {
-		return insert_sql(name, IRecord.REC(kvs), true);
+	public static <T> String insert_sql(final String name, final Map<?, ?> kvs) {
+		return insert_sql(name, Arrays.asList(IRecord.REC(kvs)), true);
 	}
 
 	/**
