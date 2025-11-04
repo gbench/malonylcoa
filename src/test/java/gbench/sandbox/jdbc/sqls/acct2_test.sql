@@ -74,6 +74,6 @@ from (
 		else '-' end position, -- 核算主体持有的会计科目头寸
 		id, -- 付款凭证id
 		details, -- 产品明细
-		-1 warehouse_id, -- 仓库id,-1代表无效仓库
+		-1 warehouse_id -- 仓库id,-1代表无效仓库
 		from t_payment where payer_id=##company_id or payee_id=##company_id
 ) tbls where position in ('short', 'long') order by id
