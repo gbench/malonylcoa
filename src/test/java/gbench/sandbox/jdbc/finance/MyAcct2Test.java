@@ -49,7 +49,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			final var cpdfm = sess.sql2dframe("select * from t_company_product") // 公司产品表
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
-			final var bldfm = sess.sql2dframe("#GJVs", "company_id", company_id) // 读取指定的记账单据凭证信息
+			final var bldfm = sess.sql2dframe("#GJVs2", "company_id", company_id) // 读取指定的记账单据凭证信息
 					.forEachBy(h2_json_processor("details"));
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
@@ -73,15 +73,16 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 
 			// 单据凭证行项目日记账
 			linedfm.rowS().forEach(line -> { // 依次处理各个单据凭证行项目
+				final var channel = this.getClass().getSimpleName(); // 业务渠道 
 				final var bill_type = line.str("bill_type"); // 订单类型
 				final var position = line.str("position"); // 交易的产品头寸
 				final var product_id = line.i4("product_id"); // 产品id
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
 				final var amount = line.dbl("price") * line.dbl("quantity"); // 交易金额
 				final var path = String.format("%s/%s", bill_type, position); // 会计测录路径
-				final var mykeys = "bill_type,product_id,warehouse_id"; // 自定义属性的键名序列
+				final var mykeys = "bill_type,product_id,warehouse_id,channel"; // 自定义属性的键名序列
 				final var vars = REC("bill_type", bill_type, "product_id", product_id, //
-						"warehouse_id", warehouse_id, "mykeys", mykeys);
+						"warehouse_id", warehouse_id, "channel", channel, "mykeys", mykeys);
 				// 账目誊写
 				ledger.handle(path, amount, vars); // 写入分类账
 			}); // forEach
@@ -94,7 +95,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 				entry.add("product", product, "warehouse", warehouse);
 			}); // forEach
 
-			println(fa.dump(fa.trialBalance("ledger_id,acctnum,warehouse,product,drcr".split(","))));
+			println(fa.dump(fa.trialBalance("ledger_id,channel,acctnum,warehouse,product,drcr".split(","))));
 			println(fa.getEntrieS().collect(DFrame.dfmclc));
 		});
 	}

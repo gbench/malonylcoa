@@ -139,7 +139,7 @@ public class Ledger {
 	 * @param action    会话处理过程
 	 * @return 日记账分录
 	 */
-	public List<IRecord> withTransaction(final IRecord variables, final Consumer<IJournalSession> action) {
+	public synchronized List<IRecord> withTransaction(final IRecord variables, final Consumer<IJournalSession> action) {
 		final var path = variables.str("path"); // 策略路径
 		final var policy = fa.getPolicies().path2rec(path);
 		final var journalId = UUID.randomUUID().toString(); // 日记账会话的交易id，或者说是 独立日记账簿ID

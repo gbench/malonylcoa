@@ -77,3 +77,89 @@ from (
 		-1 warehouse_id -- 仓库id,-1代表无效仓库
 		from t_payment where payer_id=##company_id or payee_id=##company_id
 ) tbls where position in ('short', 'long') order by id
+
+-- ------------------------------------------------------------------------------
+--
+-- 计算出产品粒度的会计科目(资产负债权益)分录的持有方式
+-- 总账凭证 General Journal Vouchers
+-- # GJVs2
+-- #company_id 核算主体id，本质是一个公司id这也是围城叫他为company_id的原因
+-- ------------------------------------------------------------------------------
+WITH order_vouchers AS ( -- 订单凭证
+    SELECT 
+        't_order' AS bill_type,
+        CASE ##company_id
+            WHEN partb_id THEN 'short'
+            WHEN parta_id THEN 'long'
+        END AS position,
+        id,
+        details,
+        -1 AS warehouse_id
+    FROM t_order
+    WHERE ##company_id IN (parta_id, partb_id)
+),
+bill_vouchers AS ( -- 产品/商品凭证
+    SELECT 
+        b.bill_type,
+        CASE b.bill_type
+            WHEN 'invoice' THEN -- 发票
+                CASE WHEN ##company_id = o.partb_id THEN 'short'
+                     WHEN ##company_id = o.parta_id THEN 'long'
+                END
+            WHEN 'receipt' THEN -- 收据
+                CASE WHEN ##company_id = o.parta_id THEN 'long'
+                     WHEN ##company_id = o.partb_id THEN 'short'
+                END
+        ELSE 'unknown' END AS position,
+        b.id,
+        b.details,
+        b.warehouse_id,
+        b.freight_order_id
+    FROM (SELECT * FROM t_billof_product WHERE bill_type IN ('invoice', 'receipt')) b -- 产品/商品单据
+    LEFT JOIN (SELECT * FROM t_order WHERE ##company_id IN (parta_id, partb_id)) o -- 订单数据
+    ON b.order_id = o.id 
+),
+bill_vouchers_with_warehouse AS ( -- 仓库凭证
+    SELECT 
+        b.bill_type,
+        b.position,
+        b.id,
+        b.details,
+        CASE b.bill_type
+            WHEN 'invoice' THEN 
+                CASE WHEN b.position = 'long' AND f.id IS NOT NULL THEN f.shipping_to
+                     ELSE b.warehouse_id
+                END
+            WHEN 'receipt' THEN 
+                CASE WHEN b.position = 'short' THEN b.warehouse_id
+                     ELSE f.shipping_to
+                END
+        END AS warehouse_id
+    FROM bill_vouchers b
+    LEFT JOIN t_freight_order f ON b.freight_order_id = f.id
+),
+payment_vouchers AS ( -- 支付凭证
+    SELECT 
+        't_payment' AS bill_type,
+        CASE ##company_id
+            WHEN payee_id THEN 'short'
+            WHEN payer_id THEN 'long'
+        END AS position,
+        id,
+        details,
+        -1 AS warehouse_id
+    FROM t_payment
+    WHERE ##company_id IN (payer_id, payee_id)
+)
+SELECT bill_type, position, id, details, warehouse_id
+FROM order_vouchers
+WHERE position IN ('short', 'long')
+UNION ALL
+SELECT bill_type, position, id, details, warehouse_id
+FROM bill_vouchers_with_warehouse
+WHERE position IN ('short', 'long')
+UNION ALL
+SELECT bill_type, position, id, details, warehouse_id
+FROM payment_vouchers
+WHERE position IN ('short', 'long')
+ORDER BY id;
