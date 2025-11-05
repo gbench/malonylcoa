@@ -1,15 +1,16 @@
 package gbench.sandbox.jdbc.finance;
 
+import org.junit.jupiter.api.Test;
+
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
+import static java.time.LocalDateTime.now;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
 
 import gbench.global.Globals;
 import gbench.sandbox.jdbc.finance.acct.AbstractAcct;
@@ -139,27 +140,32 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 							from t_billof_inventory -- 库存出入明细
 						) t where rn = 1 for update -- 锁住台账行
 					"""); // 刷新台账
-			final var billofinv = (ExceptionalFunction<IRecord, ExceptionalBiFunction<String, Integer, String>>) // 库存操作sql
-			rec -> (action, quantity) -> { // rec:模板对象,action:操作名称,quantity:操作数量
-				final var dtm = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSSS"); // 实践
-				final var batch_no = "BATCH%s".formatted(LocalDateTime.now().format(dtm)); // 批号
-				final var qty = Math.abs(quantity); // 调整数量
-				final var drcr = quantity > 0 ? 1 : -1; // 借贷方向
-				final var p = rec.derive("batch_no", batch_no, "bill_type", action, "drcr", drcr, "quantity", qty, //
-						"balance_qty", rec.i4("balance_qty") + qty, "version", rec.i4("version") + 1// 新版本好
-				);
-				return SQL.of("t_billof_inventory", p.filterNot("id,rn")).insql();
+			final var billofinv = (ExceptionalFunction<List<IRecord>, ExceptionalBiFunction<String, Integer, String>>) // 库存操作sql
+			recs -> (action, quantity) -> { // rec:模板对象,action:操作名称,quantity:操作数量
+				final var lines = recs.stream().map(rec -> {
+					final var dtm = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSSS"); // 实践
+					final var dtm2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"); // 实践
+					final var batch_no = "BATCH%s".formatted(now().format(dtm)); // 批号
+					final var qty = Math.abs(quantity); // 调整数量
+					final var drcr = quantity > 0 ? 1 : -1; // 借贷方向
+					final var balance_qty = rec.i4("balance_qty") + quantity; // 库存雨量
+					final var version = rec.i4("version") + 1; // 版本号
+					final var line = rec.derive("batch_no", batch_no, "bill_type", action, "drcr", drcr, "quantity",
+							qty, "balance_qty", balance_qty, "version", version, "time", now().format(dtm2));
+					return line.filterNot("id,rn");
+				}).toArray(IRecord[]::new);
+
+				return SQL.of("t_billof_inventory", lines).insql();
 			};
 			final var balancedfm = balancesup.get();
 			println("旧-库存操作明细", balancedfm);
-			final var title = "id,bill_type,product_id,price,quantity,balance_qty,version";
-			final var baldfm = balancedfm.cols(title);
+			final var header = "id,bill_type,product_id,price,quantity,balance_qty,version,time";
+			final var baldfm = balancedfm.cols(header);
 			println("旧-库存台账", baldfm);
-			for (int i = 1; i < balancedfm.height(); i++) { // 为所有产品库存增加100
-				final var billofinv_sql = billofinv.apply(balancedfm.row(i)).apply("import", 100);
-				println(sess.sql2execute(billofinv_sql));
-			}
-			println("新-库存操作明细", balancesup.get().cols(title));
+			final var billofinv_sql = billofinv.apply(balancedfm.tail().rows()).apply("import", 100);
+			println(sess.sql2execute(billofinv_sql));
+
+			println("新-库存操作明细", balancesup.get().cols(header));
 		});
 	}
 }
