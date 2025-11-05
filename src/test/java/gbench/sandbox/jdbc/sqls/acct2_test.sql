@@ -115,10 +115,9 @@ bill_vouchers AS (
         b.details,
         b.warehouse_id,
         b.freight_order_id
-    FROM t_billof_product b
-    INNER JOIN t_order o ON b.order_id = o.id
-    WHERE b.bill_type IN ('invoice', 'receipt')
-      AND ##company_id IN (o.parta_id, o.partb_id)
+    FROM (SELECT * FROM t_billof_product WHERE bill_type IN ('invoice', 'receipt')) b
+    LEFT JOIN (SELECT * FROM t_order WHERE ##company_id IN (parta_id, partb_id)) o 
+    ON b.order_id = o.id 
 ),
 bill_vouchers_with_warehouse AS (
     SELECT 

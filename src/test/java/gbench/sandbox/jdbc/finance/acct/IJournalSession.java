@@ -162,7 +162,7 @@ public interface IJournalSession {
 		// 分录写入
 		this.getJournalEntries().add(_line); // 写入journalItem
 
-		return line;
+		return _line;
 	};
 
 	/**
