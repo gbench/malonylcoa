@@ -140,7 +140,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 							from t_billof_inventory -- 库存出入明细
 						) t where rn = 1 for update -- 锁住台账行
 					"""); // 刷新台账
-			final var billofinv = (ExceptionalFunction<List<IRecord>, ExceptionalBiFunction<String, Integer, String>>) // 库存操作sql
+			final var batch_update = (ExceptionalFunction<List<IRecord>, ExceptionalBiFunction<String, Integer, List<IRecord>>>) // 批量更新库存
 			recs -> (action, quantity) -> { // rec:模板对象,action:操作名称,quantity:操作数量
 				final var lines = recs.stream().map(rec -> {
 					final var dtm = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSSS"); // 实践
@@ -152,19 +152,18 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 					final var version = rec.i4("version") + 1; // 版本号
 					final var line = rec.derive("batch_no", batch_no, "bill_type", action, "drcr", drcr, "quantity",
 							qty, "balance_qty", balance_qty, "version", version, "time", now().format(dtm2));
-					return line.filterNot("id,rn");
+					return line.filterNot("id,rn"); // 移除主键字段与rn row_number列
 				}).toArray(IRecord[]::new);
+				final var sql = SQL.of("t_billof_inventory", lines).insql(); // 批量更新sql
 
-				return SQL.of("t_billof_inventory", lines).insql();
+				return sess.sql2execute(sql); // 匹狼更新
 			};
 			final var balancedfm = balancesup.get();
 			println("旧-库存操作明细", balancedfm);
 			final var header = "id,bill_type,product_id,price,quantity,balance_qty,version,time";
 			final var baldfm = balancedfm.cols(header);
 			println("旧-库存台账", baldfm);
-			final var billofinv_sql = billofinv.apply(balancedfm.tail().rows()).apply("import", 100);
-			println(sess.sql2execute(billofinv_sql));
-
+			println("批量更新", batch_update.apply(balancedfm.tail().rows()).apply("import", 100));
 			println("新-库存操作明细", balancesup.get().cols(header));
 		});
 	}
