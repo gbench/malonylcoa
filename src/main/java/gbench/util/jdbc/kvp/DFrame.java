@@ -96,6 +96,26 @@ public class DFrame extends LinkedRecord {
 
 		return this.filterBy(key, rhsId);
 	}
+	
+	/**
+	 * 这是按照keys 所指定的键名进行字段过滤。默认过滤空值字段（该字段的值value为null) <br>
+	 * 
+	 * @param keys 提取的字段的键值名称数据,keys 为null 表示不进行过滤。
+	 * @return DFrame。
+	 */
+	public DFrame cols(final String[] keys) {
+		return new DFrame(this.filter(keys).toMap());
+	}
+	
+	/**
+	 * 这是按照keys 所指定的键名进行字段过滤。默认过滤空值字段（该字段的值value为null) <br>
+	 * 
+	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。注意分隔符号之间不能留有空格
+	 * @return DFrame
+	 */
+	public DFrame cols(final String keys) {
+		return Optional.ofNullable(this.cols(keys.split("[,]+"))).orElse(null);
+	}
 
 	/**
 	 * lhs.many2one(rhsId) <br>

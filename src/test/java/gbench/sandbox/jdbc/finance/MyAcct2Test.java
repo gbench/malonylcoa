@@ -73,7 +73,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 
 			// 单据凭证行项目日记账
 			linedfm.rowS().forEach(line -> { // 依次处理各个单据凭证行项目
-				final var channel = this.getClass().getSimpleName(); // 业务渠道 
+				final var channel = this.getClass().getSimpleName(); // 业务渠道
 				final var bill_type = line.str("bill_type"); // 订单类型
 				final var position = line.str("position"); // 交易的产品头寸
 				final var product_id = line.i4("product_id"); // 产品id
@@ -111,5 +111,29 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 
 		// 模拟各个公司的运行
 		Stream.of(1, 2).forEach(executor(fa));
+	}
+
+	/**
+	 * 模拟一个平台下的商户间的收发货交易
+	 */
+	@Test
+	public void bar() {
+
+		// 财务会计
+		final var fa = new FinAcct("policy0001").intialize(); // 初始化财务会计
+
+		this.jdbcApp.withTransaction(sess -> {
+			final var baldfm = sess.sql2dframe("""
+						select * from (  -- 产品台账
+							select
+								*, -- 出入明细字段
+								row_number() over(partition by product_id -- 根据产品分组
+									order by version desc) rn -- version 最大值为当前
+							from t_billof_inventory -- 库存出入明细
+						) t where rn = 1
+					""").rcollect(DFrame.dfmclc);
+			println(baldfm);
+			println(baldfm.cols("product_id,price,quantity"));
+		});
 	}
 }

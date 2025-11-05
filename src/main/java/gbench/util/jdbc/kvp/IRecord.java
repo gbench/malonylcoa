@@ -5116,7 +5116,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 这是按照flds 所指定的键名进行字段过滤。默认过滤空值字段（该字段的值value为null)<br>
 	 * 
-	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号 之间不能留有空格
+	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号之间不能留有空格
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
 	default IRecord filter(final String flds) {
