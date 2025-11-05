@@ -3354,14 +3354,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param collector 行归集器
 	 * @return R类型的结果
 	 */
-	default <R> R rcollect(final Collector<IRecord, List<IRecord>, R> collector) {
+	default <R> R rcollect(final Collector<IRecord, ?, R> collector) {
 		return IRecord.ROWSCLC(collector).apply(this);
 	}
 
 	/**
-	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本） <br>
+	 * DFrame 函数 (rcollect2 的后缀2表示这是一个对KVPair进行归集的版本） <br>
 	 * Row KVPair 的 collect <br>
-	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用key_idx,value_idx标定键名与键值，最后使用
+	 * 把IRecord视为一个DFrame dfm,而后把dfm转换成个一个行流KVPair用key_idx,value_idx标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * 
 	 * @param key_idx   key 索引 从0开始
@@ -3375,9 +3375,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本） <br>
+	 * DFrame 函数 (rcollect2 的后缀2表示这是一个对KVPair进行归集的版本） <br>
 	 * Row KVPair 的 collect <br>
-	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用key_name,value_name标定键名与键值，最后使用
+	 * 把IRecord视为一个DFrame dfm,而后把dfm转换成个一个行流KVPair用key_name,value_name标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * 
 	 * @param key_name   key 键名
@@ -3391,9 +3391,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本）<br>
+	 * DFrame 函数 (rcollect2 的后缀2表示这是一个对KVPair 进行归集的版本）<br>
 	 * Row KVPair 的 collect <br>
-	 * 把把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用0,1标定键名与键值，最后使用
+	 * 把把IRecord视为一个DFrame dfm,而后把dfm转换成个一个行流KVPair用0,1标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * rcollect（0,1,collector)的别名函数
 	 * 
@@ -9032,7 +9032,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param collector 行归集器
 	 * @return 一个 rec->R 的函数
 	 */
-	static <R> Function<IRecord, R> ROWSCLC(final Collector<IRecord, List<IRecord>, R> collector) {
+	static <R> Function<IRecord, R> ROWSCLC(final Collector<IRecord, ?, R> collector) {
 		return rec -> rec.rowS().collect(collector);
 	}
 
