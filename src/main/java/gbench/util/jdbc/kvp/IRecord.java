@@ -11453,6 +11453,27 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		}
 
 		/**
+		 * 构造函数
+		 * 
+		 * @param keys 字段键名 列表, 键名之间采用逗号分隔, 当 keys 为 null 值的时候, 采取 excelname 方式进行
+		 *             字段命名，即依次命名为 : A,B,C,...
+		 */
+		public Builder(final Keys keys) {
+			this.keys = keys;
+		}
+
+		/**
+		 * 创建一个复制品
+		 * 
+		 * @return 复制品
+		 */
+		public Builder duplicate() {
+			final var rb = new Builder(this.keys);
+			rb.stubcache.putAll(this.stubcache);
+			return rb;
+		}
+
+		/**
 		 * 构造函数 <br>
 		 * 
 		 * 采取 excelname 方式进行 字段命名，即依次命名为 : A,B,C,...

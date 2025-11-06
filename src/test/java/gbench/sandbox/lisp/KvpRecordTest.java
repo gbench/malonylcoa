@@ -24,8 +24,8 @@ public class KvpRecordTest {
 		final var prefix = REC("id", 1);
 		final var suffix = REC("creator", "gbench", "create_time", LocalDateTime.now());
 		final var rb = IRecord.rb("name,age").prepend(prefix).append(suffix);
-		println(rb.get("gbench", 34));
-		println(rb.get("kelinw", 23));
+		println(rb.duplicate().get("gbench", 34));
+		println(rb.duplicate().get("kelinw", 23));
 	}
 
 }

@@ -184,10 +184,10 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		// 卖方-销售产品记账
 		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> { // 产品
 			Arrays.asList("北京,上海,广州".split(",")).forEach(warehouse -> { // 仓库
-				final var p = IRecord.rb(mykeys).get(product, warehouse); // 产品对象明细 <br>
-				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入", 1000)); // 卖方-使用科目名称
-				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).add(6001, 1000)); // 卖方-使用科目代码
-				ledger.handle(rb.get("invoice/short", 500, mykeys).add(p)); // 卖方-开出发票
+				final var _rb = rb.duplicate().append(IRecord.rb(mykeys).get(product, warehouse)); // rb带有产品对象明细
+				ledger.handle(_rb.get("t_order/long", 1170, mykeys).derive("主营业务收入", 1000)); // 卖方-使用科目名称
+				ledger.handle(_rb.get("t_order/long", 1170, mykeys).add(6001, 1000)); // 卖方-使用科目代码
+				ledger.handle(_rb.get("invoice/short", 500, mykeys)); // 卖方-开出发票
 			}); // warehouse
 		}); // forEach product
 
