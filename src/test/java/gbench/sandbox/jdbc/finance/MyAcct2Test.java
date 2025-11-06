@@ -177,10 +177,10 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			println("%s%s %s".formatted(" | ".repeat(e.level()), e.getName(), e.attrvalOpt().orElse("")));
 		}); // forEach
 		final var ledger = fa.getLedger("LEDGER001"); // 分类账
-		final var rb = IRecord.rb("path,amount,mykeys");// 基本分录结构
-		final var mykeys = "product,warehouse"; // 自定义分录键名
+		final var rb = IRecord.rb("path,amount,mykeys"); // 标准分录构建器 <br>
+		final var mykeys = "product,warehouse"; // 自定义分录键名结构：会计对象明细结构 <br>
 		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> {
-			final var p = IRecord.rb(mykeys).get(product, "北京");
+			final var p = IRecord.rb(mykeys).get(product, "北京"); // 产品对象明细 <br>
 			ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入", 1000)); // 使用科目名称
 			ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001, 1000)); // 使用科目代码
 			ledger.handle(rb.get("invoice/short", 500, mykeys).add(p)); // 使用科目代码
