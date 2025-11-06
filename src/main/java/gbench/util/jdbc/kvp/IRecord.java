@@ -178,7 +178,29 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			final var value = kvs[i + 1];
 			this.add(key, value);
 		} // for
+
+		if (kvs.length == 1) {
+			if (kvs[0] instanceof Map<?, ?> mm) {
+				mm.forEach((k, v) -> this.add(k, v));
+			} else if (kvs[0] instanceof IRecord rec) {
+				this.add(rec);
+			} else if (kvs[0] instanceof Iterable<?> os) {
+				this.add(StreamSupport.stream(os.spliterator(), false).toArray());
+			}
+		}
+
 		return this;
+	}
+
+	/**
+	 * 把rec的所有在kvs值添加自身的kvs 之中，采用的是rec的add 方法。<br>
+	 * 等效为：union(this, rec, true);
+	 * 
+	 * @param rec 等待添加的record
+	 * @return 自身对象
+	 */
+	default IRecord add(final IRecord rec) {
+		return union(this, rec, true);
 	}
 
 	/**
@@ -2530,17 +2552,6 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default IRecord merge(final IRecord rec) {
 		return this.merge(rec, false);
-	}
-
-	/**
-	 * 把rec的所有在kvs值添加自身的kvs 之中，采用的是rec的add 方法。<br>
-	 * 等效为：union(this, rec, true);
-	 * 
-	 * @param rec 等待添加的record
-	 * @return 自身对象
-	 */
-	default IRecord add(final IRecord rec) {
-		return union(this, rec, true);
 	}
 
 	/**
@@ -11524,6 +11535,28 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		}
 
 		/**
+		 * 添加头前stub
+		 * 
+		 * @param kvs 键,值序列:key0,value0,key1,value1,....
+		 * @return Builder
+		 */
+		public final Builder prepend(final Object... kvs) {
+			this.stubcache.computeIfAbsent(PREPEND_KEY, k -> REC()).add(kvs);
+			return this;
+		}
+
+		/**
+		 * 添加后置stub
+		 * 
+		 * @param kvs 键,值序列:key0,value0,key1,value1,....
+		 * @return Builder
+		 */
+		public final Builder append(final Object... kvs) {
+			this.stubcache.computeIfAbsent(APPEND_KEY, k -> REC()).add(kvs);
+			return this;
+		}
+
+		/**
 		 * 根据值序列建立一个IRecord记录结构 (get的 别名函数),非多态只有一个build,以方便使用lambda
 		 *
 		 * @param <T>     参数数组的 元素类型
@@ -11586,7 +11619,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * @return IRecord 记录对象
 		 */
 		private IRecord internal_get(final Object[] objects) {
-			return internal_build(keys, objects);
+			return internal_build(keys, objects, stubcache);
 		}
 
 		/**
@@ -11603,7 +11636,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 				return SQL.parseFieldName(key).str("name");
 			});
 
-			return internal_build(_keys, objects);
+			return internal_build(_keys, objects, stubcache);
 		}
 
 		/**
@@ -11613,7 +11646,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * @param objects 值序列，与键名按次序一一对应,对于 不足keys长度的值采用类似于R语言的循环遍历objects的方式进行重复利用
 		 * @return IRecord 记录对象
 		 */
-		private static IRecord internal_build(final Keys keys, final Object[] objects) {
+		private static IRecord internal_build(final Keys keys, final Object[] objects, Map<String, IRecord> stubs) {
 
 			final var rec = REC(); // 返回值
 			if (objects == null || objects.length < 1) {
@@ -11631,7 +11664,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 				rec.add(key, value);
 			});
 
-			return rec;
+			return stubs.size() < 1 ? rec
+					: stubs.computeIfAbsent(PREPEND_KEY, k -> REC()).add(rec)
+							.add(stubs.computeIfAbsent(APPEND_KEY, k -> REC()));
+
 		}
 
 		/**
@@ -11706,6 +11742,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * 键名序列
 		 */
 		private final Keys keys;
+
+		/**
+		 * 键名序列
+		 */
+		private final Map<String, IRecord> stubcache = new HashMap<String, IRecord>();
+
+		private static String PREPEND_KEY = "PRPEND";
+		private static String APPEND_KEY = "APPEND";
 	} // Builder
 
 	String SHARP_VARIABLE_PATTERN = "#([a-zA-Z_][a-zA-Z0-9_]*)";// sharp 变量的此法模式
