@@ -2549,7 +2549,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @return 所有字段名集合列表
 	 */
 	default List<String> keys() {
-		return this.tupleS().map(Tuple2::_1).collect(Collectors.toList());
+		return this.keyS().collect(Collectors.toList());
 	}
 
 	/**
@@ -2559,6 +2559,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default List<String> ks() {
 		return this.keys();
+	}
+
+	/**
+	 * 表头:所有字段名集合
+	 * 
+	 * @return 所有字段名集合流
+	 */
+	default Stream<String> keyS() {
+		return this.tupleS().map(Tuple2::_1);
 	}
 
 	/**

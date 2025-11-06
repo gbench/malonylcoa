@@ -122,7 +122,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 	}
 
 	/**
-	 * 模拟一个平台下的商户间的收发货交易
+	 * 库存交易模拟测试
 	 */
 	@Test
 	public void bar() {
@@ -132,7 +132,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 
 		this.jdbcApp.withTransaction(sess -> {
 			final var balancesup = (ExceptionalSupplier<DFrame>) () -> sess.sql2dframe("""
-							select * from (  -- 产品台账
+						select * from (  -- 产品台账
 							select
 								*, -- 出入明细字段
 								row_number() over(partition by product_id -- 根据产品分组
@@ -143,28 +143,31 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			final var batch_update = (ExceptionalFunction<List<IRecord>, ExceptionalBiFunction<String, Integer, List<IRecord>>>) // 批量更新库存
 			recs -> (action, quantity) -> { // rec:模板对象,action:操作名称,quantity:操作数量
 				final var lines = recs.stream().map(rec -> {
-					final var dtm = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSSS"); // 实践
-					final var dtm2 = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"); // 实践
-					final var batch_no = "BATCH%s".formatted(now().format(dtm)); // 批号
-					final var qty = Math.abs(quantity); // 调整数量
+					final var stampdtm = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSSS"); // 实践
+					final var ymdhmsdtm = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"); // 实践
+					final var batch_no = "BATCH%s".formatted(now().format(stampdtm)); // 批号
+					final var qty = Math.abs(quantity); // 调整数量为正值
 					final var drcr = quantity > 0 ? 1 : -1; // 借贷方向
 					final var balance_qty = rec.i4("balance_qty") + quantity; // 库存雨量
 					final var version = rec.i4("version") + 1; // 版本号
-					final var line = rec.derive("batch_no", batch_no, "bill_type", action, "drcr", drcr, "quantity",
-							qty, "balance_qty", balance_qty, "version", version, "time", now().format(dtm2));
-					return line.filterNot("id,rn"); // 移除主键字段与rn row_number列
+					final var description = rec.i4("version") + 1; // 版本号
+					final var rb = IRecord.rb("batch_no,bill_type,drcr,quantity,balance_qty,version,time,description");
+					final var line = rec.derive(rb.get(batch_no, action, drcr, qty, balance_qty, version,
+							now().format(ymdhmsdtm), description));
+					return line.filterNot("id,rn"); // 移除主键字段与rn(row_number)列
 				}).toArray(IRecord[]::new);
 				final var sql = SQL.of("t_billof_inventory", lines).insql(); // 批量更新sql
 
 				return sess.sql2execute(sql); // 匹狼更新
 			};
 			final var balancedfm = balancesup.get();
+			final var keys = "id,bill_type,product_id,price,quantity,balance_qty,version,time";
+			final var baldfm = balancedfm.cols(keys);
 			println("旧-库存操作明细", balancedfm);
-			final var header = "id,bill_type,product_id,price,quantity,balance_qty,version,time";
-			final var baldfm = balancedfm.cols(header);
 			println("旧-库存台账", baldfm);
-			println("批量更新", batch_update.apply(balancedfm.tail().rows()).apply("import", 100));
-			println("新-库存操作明细", balancesup.get().cols(header));
+			println("批量更新", batch_update.apply(balancedfm.tails()).apply("import", 100));
+			println("新-库存操作明细", balancesup.get().cols(keys)); // 列名负向过滤
+			println("新-库存操作明细2", balancesup.get().colsNot(keys));// 列名负向过滤
 		});
 	}
 }
