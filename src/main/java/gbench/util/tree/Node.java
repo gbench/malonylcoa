@@ -980,6 +980,16 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	}
 
 	/**
+	 * getLevel()-1 的 简化版本<br>
+	 * 获取节点所在的层级(空节点层级为0) <br>
+	 *
+	 * @return 节点的层级, 根节点为0层, 根节点的子节点层级为1, 以此类推, 即 子节点的层级为父节点的层级+1
+	 */
+	public Integer level() {
+		return this.getLevel() - 1;
+	}
+
+	/**
 	 * 获取指定节点所在的层级(空节点层级为0) 节点的层级,根节点为1层,根节点的子节点层级为2,以此类推, 即 子节点的层级为父节点的层级+1
 	 *
 	 * @param node 节点数据

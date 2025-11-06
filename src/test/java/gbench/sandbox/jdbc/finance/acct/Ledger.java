@@ -140,8 +140,9 @@ public class Ledger {
 	}
 
 	/**
+	 * 分录列表
 	 * 
-	 * @return
+	 * @return 分录表
 	 */
 	public DFrame getEntries() {
 		return fa.getEntries(id).stream().collect(DFrame.dfmclc);

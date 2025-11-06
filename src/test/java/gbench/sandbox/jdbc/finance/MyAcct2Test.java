@@ -129,13 +129,6 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 
 		// 财务会计
 		final var fa = new FinAcct("policy0002").intialize(); // 初始化财务会计
-		fa.getPolicies().treeNode("/").flatS().forEach(e -> {
-			println("%s%s %s".formatted(" | ".repeat(e.getLevel()), e.getName(), e.attrvalOpt().orElse("")));
-		});
-		final var ledger = fa.getLedger("a");
-		ledger.handle(REC("path", "t_order/long", "amount", 1170, "主营业务收入", 1000)); // 使用科目名称
-		ledger.handle(REC("path", "t_order/long", "amount", 1170, 6001, 1000)); // 使用科目代码
-		println(ledger.getEntries());
 
 		this.jdbcApp.withTransaction(sess -> {
 			final var balancesup = (ExceptionalSupplier<DFrame>) () -> sess.sql2dframe("""
@@ -166,7 +159,8 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 				final var sql = SQL.of("t_billof_inventory", lines).insql(); // 批量更新sql
 
 				return sess.sql2execute(sql); // 匹狼更新
-			};
+			}; // batch_update 批量更新
+
 			final var balancedfm = balancesup.get();
 			final var keys = "id,bill_type,product_id,price,quantity,balance_qty,version,time";
 			final var baldfm = balancedfm.cols(keys);
@@ -175,7 +169,15 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			println("批量更新", batch_update.apply(balancedfm.tails()).apply("import", 100));
 			println("新-库存操作明细", balancesup.get().cols(keys)); // 列名负向过滤
 			println("新-库存操作明细2", balancesup.get().colsNot(keys));// 列名负向过滤
+		}); // withTransaction
+
+		fa.getPolicies().treeNode("记账策略").flatS().forEach(e -> {
+			println("%s%s %s".formatted(" | ".repeat(e.level()), e.getName(), e.attrvalOpt().orElse("")));
 		});
+		final var ledger = fa.getLedger("LEDGER001"); // 分类账
+		ledger.handle(REC("path", "t_order/long", "amount", 1170, "主营业务收入", 1000)); // 使用科目名称
+		ledger.handle(REC("path", "t_order/long", "amount", 1170, 6001, 1000)); // 使用科目代码
+		println("分录表", ledger.getEntries());
 	}
 
 }
