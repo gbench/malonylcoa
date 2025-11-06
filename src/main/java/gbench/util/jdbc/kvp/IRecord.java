@@ -6706,6 +6706,17 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * 把 一个IRecord节点 更换成 Node &lt; String &gt;
 	 * 
 	 * @param rootName 根节点名称，默认为:"root" <br>
+	 *                 valueKey KVPair的value 在 Node props中的键值名 ，默认为:"value"<br>
+	 * @return 根节点 Node &lt; String &gt;
+	 */
+	default Node<String> treeNode(final String rootName) {
+		return TREENODE(this, rootName, null);
+	}
+
+	/**
+	 * 把 一个IRecord节点 更换成 Node &lt; String &gt;
+	 * 
+	 * @param rootName 根节点名称，默认为:"root" <br>
 	 * @param valueKey KVPair的value 在 Node props中的键值名 ，默认为:"value"<br>
 	 * @return 根节点 Node &lt; String &gt;
 	 */

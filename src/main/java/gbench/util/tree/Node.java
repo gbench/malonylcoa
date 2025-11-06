@@ -1185,7 +1185,7 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 * @return 节点流程
 	 */
 	public synchronized List<Node<T>> flatNodes() {
-		return this.flatMap(e -> e);
+		return this.flatMaps(e -> e);
 	}
 
 	/**
@@ -1206,12 +1206,26 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 * @param <U>    列表元素类型
 	 * @param mapper 节点的处理函数 把 &lt;T&gt; 类型转换成 &lt;U&gt; 类型。
 	 */
-	public synchronized <U> List<U> flatMap(final Function<Node<T>, U> mapper) {
+	public synchronized <U> List<U> flatMaps(final Function<Node<T>, U> mapper) {
 		if (mapper == null) {
 			return null;
 		}
 
 		return this.flatNodeS().map(mapper).collect(Collectors.toList());
+	}
+
+	/**
+	 * 以该节点为起始节点，进行树形结构遍历
+	 * 
+	 * @param <U>    列表元素类型
+	 * @param mapper 节点的处理函数 把 &lt;T&gt; 类型转换成 &lt;U&gt; 类型。
+	 */
+	public synchronized <U> Stream<U> flatMap(final Function<Node<T>, U> mapper) {
+		if (mapper == null) {
+			return null;
+		}
+
+		return this.flatNodeS().map(mapper);
 	}
 
 	/**
@@ -1232,6 +1246,16 @@ public class Node<T> implements INodeWriter<Node<T>> {
 	 */
 	public synchronized <U> Stream<U> flatStream(final Function<Node<T>, U> mapper) {
 		return this.flatNodeS().map(mapper);
+	}
+
+	/**
+	 * 树形结构的节点。扁平化成序列列表 以该节点为起始节点，进行树形结构遍历
+	 * <p>
+	 * 示例： MAP(root.flatMap(),f-&gt;f.val(g-&gt;g.str("name")));//
+	 * 生成一个树形结构的额各个节点名称序列。 这里是一个Node&lt;IRecord&gt; 结构，并且IRecord中包含了name字段
+	 */
+	public synchronized Stream<Node<T>> flatS() {
+		return this.flatStream();
 	}
 
 	/**

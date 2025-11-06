@@ -88,10 +88,26 @@ public class Ledger {
 	/**
 	 * 会计记账
 	 * 
+	 * 记账策略 <br>
+	 * / <br>
+	 * | t_order <br>
+	 * | | long <br>
+	 * | | | BL [应交税费] <br>
+	 * | | | DR [银行存款] <br>
+	 * | | | CR [主营业务收入] <br>
+	 * 
+	 * eg. <br>
+	 * // 使用科目名称 <br>
+	 * ledger.handle(REC("path", "t_order/long", "amount", 1170, "主营业务收入", 1000));
+	 * <br>
+	 * // 使用科目代码 <br>
+	 * ledger.handle(REC("path", "t_order/long", "amount", 1170, 6001, 1000));
+	 * 
+	 * 
 	 * @param variables 变量列表，variables 必须包含,path和amount字段,其余字段根据单据类型自行设置。<br>
 	 *                  path:是会计策略中的单据类型和会计主体的头寸位置,是由t_acct_policy的bill_type与position连个字段拼接成的字符串<br>
 	 *                  比如：交易性金融资产-初始确认/LONG <br>
-	 *                  amount:默认金额，也就是借贷记账时候写入账户的金额,如果variables没有没有明确给出但再会计策略中又又要求提供的时候，所使用的金额。<br>
+	 *                  amount:默认金额，也就是借贷记账时候写入账户的金额,如果variables没有没有明确给出但再会计策略中又要求提供的时候，所使用的金额。<br>
 	 *                  variables的其余变量，则是 根据会计策略的记账要求，需要给与专门提供的金额。比如：<br>
 	 *                  交易性金融资产-初始确认/LONG 里面的 应收股利，投资收益(即交易费用),银行存款等。<br>
 	 *                  变量名需要使用中文名称进行标记，

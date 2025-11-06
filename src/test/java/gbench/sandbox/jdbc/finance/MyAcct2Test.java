@@ -128,7 +128,14 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 	public void bar() {
 
 		// 财务会计
-		final var fa = new FinAcct("policy0001").intialize(); // 初始化财务会计
+		final var fa = new FinAcct("policy0002").intialize(); // 初始化财务会计
+		fa.getPolicies().treeNode("/").flatS().forEach(e -> {
+			println("%s%s %s".formatted(" | ".repeat(e.getLevel()), e.getName(), e.attrvalOpt().orElse("")));
+		});
+		final var ledger = fa.getLedger("a");
+		ledger.handle(REC("path", "t_order/long", "amount", 1170, "主营业务收入", 1000)); // 使用科目名称
+		ledger.handle(REC("path", "t_order/long", "amount", 1170, 6001, 1000)); // 使用科目代码
+		println(ledger.getEntries());
 
 		this.jdbcApp.withTransaction(sess -> {
 			final var balancesup = (ExceptionalSupplier<DFrame>) () -> sess.sql2dframe("""
@@ -170,4 +177,5 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			println("新-库存操作明细2", balancesup.get().colsNot(keys));// 列名负向过滤
 		});
 	}
+
 }
