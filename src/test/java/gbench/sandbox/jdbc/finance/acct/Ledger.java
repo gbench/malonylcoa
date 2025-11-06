@@ -104,15 +104,13 @@ public class Ledger {
 	 * 
 	 * final var ledger = fa.getLedger("LEDGER001"); // 分类账 <br>
 	 * final var rb = IRecord.rb("path,amount,mykeys"); // 标准分录构建器 <br>
-	 * final var p = IRecord.rb(mykeys).get("苹果", "北京"); // 产品对象明细 <br>
-	 * // 卖方-使用科目名称 <br>
-	 * ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入",
-	 * 1000)); <br>
+	 * final var pct = IRecord.rb(mykeys).get("苹果", "北京"); // 产品对象明细 <br>
+	 * final var rb_ = rb.append(pct); // 带有产品对象明细的rb构建器 // 卖方-使用科目名称 <br>
+	 * ledger.handle(rb_.get("t_order/long", 1170).derive("主营业务收入", 1000)); <br>
 	 * // 卖方-使用科目代码,使用科目代码的时候需使用add因为derive很可能把6001识别键名索引 <br>
-	 * ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).add(6001, 1000));
-	 * <br>
+	 * ledger.handle(rb_.get("t_order/long", 1170).add(6001, 1000)); <br>
 	 * // 卖方-开出发票 <br>
-	 * ledger.handle(rb.get("invoice/short", 500, mykeys).add(p));
+	 * ledger.handle(rb_.get("invoice/short", 500));
 	 * 
 	 * 
 	 * @param variables 变量列表，variables 必须包含,path和amount字段,其余字段根据单据类型自行设置。<br>
