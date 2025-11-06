@@ -151,7 +151,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 					final var drcr = quantity > 0 ? 1 : -1; // 借贷方向
 					final var balance_qty = rec.i4("balance_qty") + quantity; // 库存雨量
 					final var version = rec.i4("version") + 1; // 版本号
-					final var description = rec.i4("version") + 1; // 版本号
+					final var description = "[%s]".formatted(action); // 版本号
 					final var rb = IRecord.rb("batch_no,bill_type,drcr,quantity,balance_qty,version,time,description");
 					final var line = rec.derive(rb.get(batch_no, action, drcr, qty, balance_qty, version,
 							now().format(ymdhmsdtm), description));
@@ -179,15 +179,17 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		final var ledger = fa.getLedger("LEDGER001"); // 分类账
 		final var rb = IRecord.rb("path,amount,mykeys"); // 标准分录构建器 <br>
 		final var mykeys = "product,warehouse"; // 自定义分录键名结构：会计对象明细结构 <br>
-		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> {
-			final var p = IRecord.rb(mykeys).get(product, "北京"); // 产品对象明细 <br>
-			ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入", 1000)); // 使用科目名称
-			ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001, 1000)); // 使用科目代码
-			ledger.handle(rb.get("invoice/short", 500, mykeys).add(p)); // 使用科目代码
-		}); // forEach
+		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> { // 分别为各个产品
+			Arrays.asList("北京,上海,广州".split(",")).forEach(warehouse -> {
+				final var p = IRecord.rb(mykeys).get(product, warehouse); // 产品对象明细 <br>
+				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入", 1000)); // 使用科目名称
+				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001, 1000)); // 使用科目代码
+				ledger.handle(rb.get("invoice/short", 500, mykeys).add(p)); // 使用科目代码
+			}); // warehouse
+		}); // forEach product
 
 		println("分录表", ledger.getEntries());
-		println(fa.dump(fa.trialBalance("ledger_id,acctnum,drcr,product".split(","))));
+		println(fa.dump(fa.trialBalance("ledger_id,product,warehouse,acctnum,drcr,".split(","))));
 	}
 
 }
