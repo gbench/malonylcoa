@@ -178,8 +178,8 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		}); // forEach
 
 		final var ledger = fa.getLedger("LEDGER001"); // 分类账
-		final var rb = IRecord.rb("path,amount,mykeys"); // 标准分录构建器 <br>
-		final var mykeys = "product,warehouse"; // 自定义分录键名结构：会计对象明细结构 <br>
+		final var mykeys = "product,warehouse"; // 自定义分录键名结构：会计对象明细结构
+		final var rb = IRecord.rb("path,amount").append("mykeys", mykeys); // 标准分录构建器
 
 		// 卖方-销售产品记账
 		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> { // 产品

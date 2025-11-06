@@ -100,18 +100,21 @@ public class Ledger {
 	 * | | | DR [发出商品] <br>
 	 * | | | CR [库存商品] <br>
 	 * 
-	 * eg. <br>
+	 * eg.
 	 * 
-	 * final var ledger = fa.getLedger("LEDGER001"); // 分类账 <br>
-	 * final var rb = IRecord.rb("path,amount,mykeys"); // 标准分录构建器 <br>
-	 * final var pct = IRecord.rb(mykeys).get("苹果", "北京"); // 产品对象明细 <br>
-	 * final var rb_ = rb.append(pct); // 带有产品对象明细的rb构建器 // 卖方-使用科目名称 <br>
-	 * ledger.handle(rb_.get("t_order/long", 1170).derive("主营业务收入", 1000)); <br>
-	 * // 卖方-使用科目代码,使用科目代码的时候需使用add因为derive很可能把6001识别键名索引 <br>
-	 * ledger.handle(rb_.get("t_order/long", 1170).add(6001, 1000)); <br>
-	 * // 卖方-开出发票 <br>
+	 * <pre>{@code
+	 * final var ledger = fa.getLedger("LEDGER001"); // 分类账
+	 * final var mykeys = "product,warehouse"; // 自定义分录键名结构：会计对象明细结构
+	 * final var rb = IRecord.rb("path,amount").append("mykeys", mykeys); // 标准分录构建器
+	 * final var pct = IRecord.rb(mykeys).get("苹果", "北京"); // 产品对象明细
+	 * final var rb_ = rb.append(pct); // 带有产品对象明细的rb构建器
+	 * // 卖方-使用科目名称 
+	 * ledger.handle(rb_.get("t_order/long", 1170).derive("主营业务收入", 1000));
+	 * // 卖方-使用科目代码,使用科目代码的时候需使用add因为derive很可能把6001识别键名索引 
+	 * ledger.handle(rb_.get("t_order/long", 1170).add(6001, 1000));
+	 * // 卖方-开出发票 
 	 * ledger.handle(rb_.get("invoice/short", 500));
-	 * 
+	 * }</pre>
 	 * 
 	 * @param variables 变量列表，variables 必须包含,path和amount字段,其余字段根据单据类型自行设置。<br>
 	 *                  path:是会计策略中的单据类型和会计主体的头寸位置,是由t_acct_policy的bill_type与position连个字段拼接成的字符串<br>
