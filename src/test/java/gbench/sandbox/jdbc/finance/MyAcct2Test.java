@@ -8,6 +8,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import static java.time.LocalDateTime.now;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -128,7 +129,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 	public void bar() {
 
 		// 财务会计
-		final var fa = new FinAcct("policy0002").intialize(); // 初始化财务会计
+		final var fa = new FinAcct("policy0002").intialize(); // 初始化财务会计, 使用policy0002记账策略
 
 		this.jdbcApp.withTransaction(sess -> {
 			final var balancesup = (ExceptionalSupplier<DFrame>) () -> sess.sql2dframe("""
@@ -171,13 +172,22 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 			println("新-库存操作明细2", balancesup.get().colsNot(keys));// 列名负向过滤
 		}); // withTransaction
 
+		// 打印记账策略
 		fa.getPolicies().treeNode("记账策略").flatS().forEach(e -> {
 			println("%s%s %s".formatted(" | ".repeat(e.level()), e.getName(), e.attrvalOpt().orElse("")));
-		});
+		}); // forEach
 		final var ledger = fa.getLedger("LEDGER001"); // 分类账
-		ledger.handle(REC("path", "t_order/long", "amount", 1170, "主营业务收入", 1000)); // 使用科目名称
-		ledger.handle(REC("path", "t_order/long", "amount", 1170, 6001, 1000)); // 使用科目代码
+		final var rb = IRecord.rb("path,amount,mykeys");// 基本分录结构
+		final var mykeys = "product,warehouse"; // 自定义分录键名
+		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> {
+			final var p = IRecord.rb(mykeys).get(product, "北京");
+			ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入", 1000)); // 使用科目名称
+			ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001, 1000)); // 使用科目代码
+			ledger.handle(rb.get("invoice/short", 500, mykeys).add(p)); // 使用科目代码
+		}); // forEach
+
 		println("分录表", ledger.getEntries());
+		println(fa.dump(fa.trialBalance("ledger_id,acctnum,drcr,product".split(","))));
 	}
 
 }
