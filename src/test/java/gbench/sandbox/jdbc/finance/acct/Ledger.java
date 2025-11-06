@@ -108,9 +108,9 @@ public class Ledger {
 	 * // 卖方-使用科目名称 <br>
 	 * ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入",
 	 * 1000)); <br>
-	 * // 卖方-使用科目代码 <br>
-	 * ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001,
-	 * 1000)); <br>
+	 * // 卖方-使用科目代码,使用科目代码的时候需使用add因为derive很可能把6001识别键名索引 <br>
+	 * ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).add(6001, 1000));
+	 * <br>
 	 * // 卖方-开出发票 <br>
 	 * ledger.handle(rb.get("invoice/short", 500, mykeys).add(p));
 	 * 
