@@ -185,9 +185,9 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> { // 产品
 			Arrays.asList("北京,上海,广州".split(",")).forEach(warehouse -> { // 仓库
 				final var rb_ = rb.duplicate().append(IRecord.rb(mykeys).get(product, warehouse)); // rb带有产品对象明细后缀
-				ledger.handle(rb_.get("t_order/long", 1170, mykeys).derive("主营业务收入", 1000)); // 卖方-使用科目名称
-				ledger.handle(rb_.get("t_order/long", 1170, mykeys).add(6001, 1000)); // 卖方-使用科目代码
-				ledger.handle(rb_.get("invoice/short", 500, mykeys)); // 卖方-开出发票
+				ledger.handle(rb_.get("t_order/long", 1170).derive("主营业务收入", 1000)); // 卖方-使用科目名称
+				ledger.handle(rb_.get("t_order/long", 1170).add(6001, 1000)); // 卖方-使用科目代码
+				ledger.handle(rb_.get("invoice/short", 500)); // 卖方-开出发票
 			}); // warehouse
 		}); // forEach product
 
