@@ -95,18 +95,24 @@ public class Ledger {
 	 * | | | BL [应交税费] <br>
 	 * | | | DR [银行存款] <br>
 	 * | | | CR [主营业务收入] <br>
+	 * | invoice <br>
+	 * | | short <br>
+	 * | | | DR [发出商品] <br>
+	 * | | | CR [库存商品] <br>
 	 * 
 	 * eg. <br>
 	 * 
 	 * final var ledger = fa.getLedger("LEDGER001"); // 分类账 <br>
 	 * final var rb = IRecord.rb("path,amount,mykeys"); // 标准分录构建器 <br>
 	 * final var p = IRecord.rb(mykeys).get("苹果", "北京"); // 产品对象明细 <br>
-	 * // 使用科目名称 <br>
+	 * // 卖方-使用科目名称 <br>
 	 * ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入",
 	 * 1000)); <br>
-	 * // 使用科目代码 <br>
+	 * // 卖方-使用科目代码 <br>
 	 * ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001,
 	 * 1000)); <br>
+	 * // 卖方-开出发票 <br>
+	 * ledger.handle(rb.get("invoice/short", 500, mykeys).add(p));
 	 * 
 	 * 
 	 * @param variables 变量列表，variables 必须包含,path和amount字段,其余字段根据单据类型自行设置。<br>

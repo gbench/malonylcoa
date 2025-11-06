@@ -176,20 +176,23 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		fa.getPolicies().treeNode("记账策略").flatS().forEach(e -> {
 			println("%s%s %s".formatted(" | ".repeat(e.level()), e.getName(), e.attrvalOpt().orElse("")));
 		}); // forEach
+
 		final var ledger = fa.getLedger("LEDGER001"); // 分类账
 		final var rb = IRecord.rb("path,amount,mykeys"); // 标准分录构建器 <br>
 		final var mykeys = "product,warehouse"; // 自定义分录键名结构：会计对象明细结构 <br>
-		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> { // 分别为各个产品
-			Arrays.asList("北京,上海,广州".split(",")).forEach(warehouse -> {
+
+		// 卖方-销售产品记账
+		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> { // 产品
+			Arrays.asList("北京,上海,广州".split(",")).forEach(warehouse -> { // 仓库
 				final var p = IRecord.rb(mykeys).get(product, warehouse); // 产品对象明细 <br>
-				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入", 1000)); // 使用科目名称
-				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001, 1000)); // 使用科目代码
-				ledger.handle(rb.get("invoice/short", 500, mykeys).add(p)); // 使用科目代码
+				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive("主营业务收入", 1000)); // 卖方-使用科目名称
+				ledger.handle(rb.get("t_order/long", 1170, mykeys).add(p).derive(6001, 1000)); // 卖方-使用科目代码
+				ledger.handle(rb.get("invoice/short", 500, mykeys).add(p)); // 卖方-开出发票
 			}); // warehouse
 		}); // forEach product
 
 		println("分录表", ledger.getEntries());
-		println(fa.dump(fa.trialBalance("ledger_id,product,warehouse,acctnum,drcr,".split(","))));
+		println(fa.dump(fa.trialBalance("ledger_id,acctnum,product,warehouse,drcr,".split(","))));
 	}
 
 }
