@@ -178,7 +178,29 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 			final var value = kvs[i + 1];
 			this.add(key, value);
 		} // for
+
+		if (kvs.length == 1) {
+			if (kvs[0] instanceof Map<?, ?> mm) {
+				mm.forEach((k, v) -> this.add(k, v));
+			} else if (kvs[0] instanceof IRecord rec) {
+				this.add(rec);
+			} else if (kvs[0] instanceof Iterable<?> os) {
+				this.add(StreamSupport.stream(os.spliterator(), false).toArray());
+			}
+		}
+
 		return this;
+	}
+
+	/**
+	 * 把rec的所有在kvs值添加自身的kvs 之中，采用的是rec的add 方法。<br>
+	 * 等效为：union(this, rec, true);
+	 * 
+	 * @param rec 等待添加的record
+	 * @return 自身对象
+	 */
+	default IRecord add(final IRecord rec) {
+		return union(this, rec, true);
 	}
 
 	/**
@@ -2533,23 +2555,12 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * 把rec的所有在kvs值添加自身的kvs 之中，采用的是rec的add 方法。<br>
-	 * 等效为：union(this, rec, true);
-	 * 
-	 * @param rec 等待添加的record
-	 * @return 自身对象
-	 */
-	default IRecord add(final IRecord rec) {
-		return union(this, rec, true);
-	}
-
-	/**
 	 * 表头:所有字段名集合
 	 * 
 	 * @return 所有字段名集合列表
 	 */
 	default List<String> keys() {
-		return this.tupleS().map(Tuple2::_1).collect(Collectors.toList());
+		return this.keyS().collect(Collectors.toList());
 	}
 
 	/**
@@ -2559,6 +2570,15 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default List<String> ks() {
 		return this.keys();
+	}
+
+	/**
+	 * 表头:所有字段名集合
+	 * 
+	 * @return 所有字段名集合流
+	 */
+	default Stream<String> keyS() {
+		return this.tupleS().map(Tuple2::_1);
 	}
 
 	/**
@@ -3354,14 +3374,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param collector 行归集器
 	 * @return R类型的结果
 	 */
-	default <R> R rcollect(final Collector<IRecord, List<IRecord>, R> collector) {
+	default <R> R rcollect(final Collector<IRecord, ?, R> collector) {
 		return IRecord.ROWSCLC(collector).apply(this);
 	}
 
 	/**
-	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本） <br>
+	 * DFrame 函数 (rcollect2 的后缀2表示这是一个对KVPair进行归集的版本） <br>
 	 * Row KVPair 的 collect <br>
-	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用key_idx,value_idx标定键名与键值，最后使用
+	 * 把IRecord视为一个DFrame dfm,而后把dfm转换成个一个行流KVPair用key_idx,value_idx标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * 
 	 * @param key_idx   key 索引 从0开始
@@ -3375,9 +3395,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本） <br>
+	 * DFrame 函数 (rcollect2 的后缀2表示这是一个对KVPair进行归集的版本） <br>
 	 * Row KVPair 的 collect <br>
-	 * 把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用key_name,value_name标定键名与键值，最后使用
+	 * 把IRecord视为一个DFrame dfm,而后把dfm转换成个一个行流KVPair用key_name,value_name标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * 
 	 * @param key_name   key 键名
@@ -3391,9 +3411,9 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	}
 
 	/**
-	 * DFrame 函数 (rcollect2 的后缀2表示这是一个队KVPair 进行归集的版本）<br>
+	 * DFrame 函数 (rcollect2 的后缀2表示这是一个对KVPair 进行归集的版本）<br>
 	 * Row KVPair 的 collect <br>
-	 * 把把IRecord视为一个DFrame dfm,而后 把dfm转换成个一个行流KVPair用0,1标定键名与键值，最后使用
+	 * 把把IRecord视为一个DFrame dfm,而后把dfm转换成个一个行流KVPair用0,1标定键名与键值，最后使用
 	 * collector进行归集。<br>
 	 * rcollect（0,1,collector)的别名函数
 	 * 
@@ -5116,7 +5136,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	/**
 	 * 这是按照flds 所指定的键名进行字段过滤。默认过滤空值字段（该字段的值value为null)<br>
 	 * 
-	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号 之间不能留有空格
+	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号之间不能留有空格
 	 * @return 一个SimpleRecord 以保证空值字段也可以保持顺序。
 	 */
 	default IRecord filter(final String flds) {
@@ -6691,6 +6711,17 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 */
 	default Node<String> treeNode() {
 		return this.treeNode(null, null);
+	}
+
+	/**
+	 * 把 一个IRecord节点 更换成 Node &lt; String &gt;
+	 * 
+	 * @param rootName 根节点名称，默认为:"root" <br>
+	 *                 valueKey KVPair的value 在 Node props中的键值名 ，默认为:"value"<br>
+	 * @return 根节点 Node &lt; String &gt;
+	 */
+	default Node<String> treeNode(final String rootName) {
+		return TREENODE(this, rootName, null);
 	}
 
 	/**
@@ -9032,7 +9063,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param collector 行归集器
 	 * @return 一个 rec->R 的函数
 	 */
-	static <R> Function<IRecord, R> ROWSCLC(final Collector<IRecord, List<IRecord>, R> collector) {
+	static <R> Function<IRecord, R> ROWSCLC(final Collector<IRecord, ?, R> collector) {
 		return rec -> rec.rowS().collect(collector);
 	}
 
@@ -11422,6 +11453,27 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		}
 
 		/**
+		 * 构造函数
+		 * 
+		 * @param keys 字段键名 列表, 键名之间采用逗号分隔, 当 keys 为 null 值的时候, 采取 excelname 方式进行
+		 *             字段命名，即依次命名为 : A,B,C,...
+		 */
+		public Builder(final Keys keys) {
+			this.keys = keys;
+		}
+
+		/**
+		 * 创建一个复制品
+		 * 
+		 * @return 复制品
+		 */
+		public Builder duplicate() {
+			final var rb = new Builder(this.keys);
+			rb.stubcache.putAll(this.stubcache);
+			return rb;
+		}
+
+		/**
 		 * 构造函数 <br>
 		 * 
 		 * 采取 excelname 方式进行 字段命名，即依次命名为 : A,B,C,...
@@ -11504,6 +11556,28 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		}
 
 		/**
+		 * 添加头前stub
+		 * 
+		 * @param kvs 键,值序列:key0,value0,key1,value1,....
+		 * @return Builder
+		 */
+		public final Builder prepend(final Object... kvs) {
+			this.stubcache.computeIfAbsent(PREPEND_KEY, k -> REC()).add(kvs);
+			return this;
+		}
+
+		/**
+		 * 添加后置stub
+		 * 
+		 * @param kvs 键,值序列:key0,value0,key1,value1,....
+		 * @return Builder
+		 */
+		public final Builder append(final Object... kvs) {
+			this.stubcache.computeIfAbsent(APPEND_KEY, k -> REC()).add(kvs);
+			return this;
+		}
+
+		/**
 		 * 根据值序列建立一个IRecord记录结构 (get的 别名函数),非多态只有一个build,以方便使用lambda
 		 *
 		 * @param <T>     参数数组的 元素类型
@@ -11566,7 +11640,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * @return IRecord 记录对象
 		 */
 		private IRecord internal_get(final Object[] objects) {
-			return internal_build(keys, objects);
+			return internal_build(keys, objects, stubcache);
 		}
 
 		/**
@@ -11583,7 +11657,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 				return SQL.parseFieldName(key).str("name");
 			});
 
-			return internal_build(_keys, objects);
+			return internal_build(_keys, objects, stubcache);
 		}
 
 		/**
@@ -11593,7 +11667,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * @param objects 值序列，与键名按次序一一对应,对于 不足keys长度的值采用类似于R语言的循环遍历objects的方式进行重复利用
 		 * @return IRecord 记录对象
 		 */
-		private static IRecord internal_build(final Keys keys, final Object[] objects) {
+		private static IRecord internal_build(final Keys keys, final Object[] objects, Map<String, IRecord> stubs) {
 
 			final var rec = REC(); // 返回值
 			if (objects == null || objects.length < 1) {
@@ -11611,7 +11685,10 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 				rec.add(key, value);
 			});
 
-			return rec;
+			return stubs.size() < 1 ? rec
+					: stubs.computeIfAbsent(PREPEND_KEY, k -> REC()).add(rec)
+							.add(stubs.computeIfAbsent(APPEND_KEY, k -> REC()));
+
 		}
 
 		/**
@@ -11686,6 +11763,14 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		 * 键名序列
 		 */
 		private final Keys keys;
+
+		/**
+		 * 键名序列
+		 */
+		private final Map<String, IRecord> stubcache = new HashMap<String, IRecord>();
+
+		private static String PREPEND_KEY = "PRPEND";
+		private static String APPEND_KEY = "APPEND";
 	} // Builder
 
 	String SHARP_VARIABLE_PATTERN = "#([a-zA-Z_][a-zA-Z0-9_]*)";// sharp 变量的此法模式

@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -36,7 +37,7 @@ public class DFrame extends LinkedRecord {
 	 * 构造函数
 	 */
 	public DFrame() {
-
+		// do nothing
 	}
 
 	/**
@@ -80,7 +81,20 @@ public class DFrame extends LinkedRecord {
 	 */
 	@Override
 	public IRecord row(final int rowid) {
-		return this.rows().get(rowid);
+
+		return this.rowOpt(rowid).orElse(null);
+	}
+
+	/**
+	 * 第rowid 所在的行记录
+	 * 
+	 * @param rowid 行号索引：从0开始
+	 * @return rowid所标记行记录
+	 */
+	public Optional<IRecord> rowOpt(final int rowid) {
+
+		final var rows = this.rows();
+		return Optional.ofNullable(rows.size() > rowid ? rows.get(rowid) : null);
 	}
 
 	/**
@@ -95,6 +109,77 @@ public class DFrame extends LinkedRecord {
 	public DFrame many2one(final String key, final Object rhsId) {
 
 		return this.filterBy(key, rhsId);
+	}
+
+	/**
+	 * 这是按照keys 所指定的键名进行字段过滤。默认过滤空值字段（该字段的值value为null) <br>
+	 * 
+	 * @param keys 提取的字段的键值名称数据,keys为null 表示不进行过滤。
+	 * @return DFrame。
+	 */
+	public DFrame cols(final String[] keys) {
+
+		return Optional.ofNullable(keys).map(kk -> new DFrame(this.filter(kk).toMap())).orElse(this);
+	}
+
+	/**
+	 * 这是按照keys 所指定的键名进行字段过滤。默认过滤空值字段（该字段的值value为null) <br>
+	 * 
+	 * @param keys 否定提取的字段的键值名称数据,keys为null 表示不进行过滤。
+	 * @return DFrame
+	 */
+	public DFrame cols(final String keys) {
+
+		return Optional.ofNullable(this.cols(keys.split("[,]+"))).orElse(this);
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> List<T> col(final int colid) {
+
+		return (List<T>) this.col(colid, e -> e);
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<T> col(final String key) {
+
+		return this.col(this.indexOfKey(key));
+	}
+
+	/**
+	 * 这是按照keys 所指定的键名进行字段否定过滤。默认过滤空值字段（该字段的值value为null) <br>
+	 * 
+	 * @param keys 否定提取的字段集合用逗号分割,keys为null表示不进行过滤。注意分隔符号之间不能留有空格
+	 * @return DFrame。
+	 */
+	public DFrame colsNot(final String[] keys) {
+
+		return Optional.ofNullable(keys).map(Arrays::asList)
+				.map(ks -> this.keyS().filter(k -> ks.indexOf(k) > 0).toArray(String[]::new))
+				.map(kk -> new DFrame(this.filter(kk).toMap())).orElse(this);
+	}
+
+	/**
+	 * 这是按照keys 所指定的键名进行字段否定过滤。默认过滤空值字段（该字段的值value为null) <br>
+	 * 
+	 * @param keys 否定键值名称数据,keys为null 表示不进行过滤。
+	 * @return DFrame。
+	 */
+	public DFrame colsNot(final String keys) {
+
+		return Optional.ofNullable(keys).map(ks -> ks.split("[,]+")).map(Arrays::asList)
+				.map(ks -> this.keyS().filter(k -> ks.indexOf(k) < 0).toArray(String[]::new))
+				.map(kk -> new DFrame(this.filter(kk).toMap())).orElse(this);
 	}
 
 	/**
@@ -253,7 +338,7 @@ public class DFrame extends LinkedRecord {
 	/**
 	 * 尾部元素(除掉第一个元素后的剩余)
 	 * 
-	 * @return 尾部元素
+	 * @return 尾部元素DFrame
 	 */
 	public DFrame tail() {
 
@@ -264,7 +349,7 @@ public class DFrame extends LinkedRecord {
 	 * 尾部元素
 	 * 
 	 * @param n 提取n个尾部元素,当n大于整个长度的时候，返回整个元素
-	 * @return 尾部元素
+	 * @return 尾部元素DFrame
 	 */
 	public DFrame tail(final int n) {
 
@@ -277,6 +362,16 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 尾部元素(除掉第一个元素后的剩余)
+	 * 
+	 * @return 尾部元素列表
+	 */
+	public List<IRecord> tails() {
+
+		return this.tail().rows();
+	}
+
+	/**
 	 * 拆分头前n个元素和所有后续元素
 	 * 
 	 * @return (head,tail)
@@ -284,6 +379,26 @@ public class DFrame extends LinkedRecord {
 	public Tuple2<IRecord, DFrame> carcdr() {
 
 		return Tuple2.of(this.rowS().limit(1).findAny().orElse(null), this.rowS().skip(1).collect(DFrame.dfmclc));
+	}
+
+	/**
+	 * 提取最后一个元素
+	 * 
+	 * @return 提取最后一个元素
+	 */
+	public IRecord last() {
+		return this.lastOpt().orElse(null);
+	}
+
+	/**
+	 * 提取最后一个元素
+	 * 
+	 * @return 提取最后一个元素
+	 */
+	public Optional<IRecord> lastOpt() {
+
+		final var rows = this.rows();
+		return Optional.ofNullable(rows.size() > 0 ? rows.get(rows.size() - 1) : null);
 	}
 
 	/**

@@ -1,18 +1,27 @@
 package gbench.sandbox.jdbc.finance;
 
+import org.junit.jupiter.api.Test;
+
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.Jdbcs.h2_json_processor;
 import static gbench.util.jdbc.kvp.IRecord.REC;
+import static java.time.LocalDateTime.now;
 
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import org.junit.jupiter.api.Test;
 
 import gbench.global.Globals;
 import gbench.sandbox.jdbc.finance.acct.AbstractAcct;
 import gbench.sandbox.jdbc.finance.acct.FinAcct;
+import gbench.util.jdbc.function.ExceptionalSupplier;
+import gbench.util.jdbc.function.ExceptionalBiFunction;
+import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrame;
+import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.jdbc.sql.SQL;
 
 /**
  * 简单的会计记账法(模拟一个平台下的商户间的收发货交易),示例<br>
@@ -73,7 +82,7 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 
 			// 单据凭证行项目日记账
 			linedfm.rowS().forEach(line -> { // 依次处理各个单据凭证行项目
-				final var channel = this.getClass().getSimpleName(); // 业务渠道 
+				final var channel = this.getClass().getSimpleName(); // 业务渠道
 				final var bill_type = line.str("bill_type"); // 订单类型
 				final var position = line.str("position"); // 交易的产品头寸
 				final var product_id = line.i4("product_id"); // 产品id
@@ -112,4 +121,78 @@ public class MyAcct2Test extends AbstractAcct<MyAcct2Test> {
 		// 模拟各个公司的运行
 		Stream.of(1, 2).forEach(executor(fa));
 	}
+
+	/**
+	 * 库存交易模拟测试
+	 */
+	@Test
+	public void bar() {
+
+		// 财务会计
+		final var fa = new FinAcct("policy0002").intialize(); // 初始化财务会计, 使用policy0002记账策略
+
+		this.jdbcApp.withTransaction(sess -> {
+			final var balancesup = (ExceptionalSupplier<DFrame>) () -> sess.sql2dframe("""
+						select * from (  -- 产品台账
+							select
+								*, -- 出入明细字段
+								row_number() over(partition by product_id -- 根据产品分组
+									order by version desc) rn -- version 最大值为当前
+							from t_billof_inventory -- 库存出入明细
+						) t where rn = 1 for update -- 锁住台账行
+					"""); // 刷新台账
+			final var batch_update = (ExceptionalFunction<List<IRecord>, ExceptionalBiFunction<String, Integer, List<IRecord>>>) // 批量更新库存
+			recs -> (action, quantity) -> { // rec:模板对象,action:操作名称,quantity:操作数量
+				final var lines = recs.stream().map(rec -> {
+					final var stampdtm = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSSS"); // 实践
+					final var ymdhmsdtm = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"); // 实践
+					final var batch_no = "BATCH%s".formatted(now().format(stampdtm)); // 批号
+					final var qty = Math.abs(quantity); // 调整数量为正值
+					final var drcr = quantity > 0 ? 1 : -1; // 借贷方向
+					final var balance_qty = rec.i4("balance_qty") + quantity; // 库存雨量
+					final var version = rec.i4("version") + 1; // 版本号
+					final var description = "[%s]".formatted(action); // 版本号
+					final var rb = IRecord.rb("batch_no,bill_type,drcr,quantity,balance_qty,version,time,description");
+					final var line = rec.derive(rb.get(batch_no, action, drcr, qty, balance_qty, version,
+							now().format(ymdhmsdtm), description));
+					return line.filterNot("id,rn"); // 移除主键字段与rn(row_number)列
+				}).toArray(IRecord[]::new);
+				final var sql = SQL.of("t_billof_inventory", lines).insql(); // 批量更新sql
+
+				return sess.sql2execute(sql); // 匹狼更新
+			}; // batch_update 批量更新
+
+			final var balancedfm = balancesup.get();
+			final var keys = "id,bill_type,product_id,price,quantity,balance_qty,version,time";
+			final var baldfm = balancedfm.cols(keys);
+			println("旧-库存操作明细", balancedfm);
+			println("旧-库存台账", baldfm);
+			println("批量更新", batch_update.apply(balancedfm.tails()).apply("import", 100));
+			println("新-库存操作明细", balancesup.get().cols(keys)); // 列名负向过滤
+			println("新-库存操作明细2", balancesup.get().colsNot(keys));// 列名负向过滤
+		}); // withTransaction
+
+		// 打印记账策略
+		fa.getPolicies().treeNode("记账策略").flatS().forEach(e -> {
+			println("%s%s %s".formatted(" | ".repeat(e.level()), e.getName(), e.attrvalOpt().orElse("")));
+		}); // forEach
+
+		final var ledger = fa.getLedger("LEDGER001"); // 分类账
+		final var mykeys = "product,warehouse"; // 自定义分录键名结构：会计对象明细结构
+		final var rb = IRecord.rb("path,amount").append("mykeys", mykeys); // 标准分录构建器
+
+		// 卖方-销售产品记账
+		Arrays.asList("苹果,葡萄,鸭梨".split(",")).forEach(product -> { // 产品
+			Arrays.asList("北京,上海,广州".split(",")).forEach(warehouse -> { // 仓库
+				final var rb_ = rb.duplicate().append(IRecord.rb(mykeys).get(product, warehouse)); // rb带有产品对象明细后缀
+				ledger.handle(rb_.get("t_order/long", 1170).derive("主营业务收入", 1000)); // 卖方-使用科目名称
+				ledger.handle(rb_.get("t_order/long", 1170).add(6001, 1000)); // 卖方-使用科目代码
+				ledger.handle(rb_.get("invoice/short", 500)); // 卖方-开出发票
+			}); // warehouse
+		}); // forEach product
+
+		println("分录表", ledger.getEntries());
+		println(fa.dump(fa.trialBalance("ledger_id,acctnum,product,warehouse,drcr,".split(","))));
+	}
+
 }

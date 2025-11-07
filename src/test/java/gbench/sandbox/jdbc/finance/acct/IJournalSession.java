@@ -230,7 +230,7 @@ public interface IJournalSession {
 		final var balance = entries.stream().collect(DFrame.dfmclc).pivotTable(_keys,
 				ss -> ss.collect(Collectors.summarizingDouble(e -> e.dbl("amount"))).getSum());
 		final var root = balance.treeNode();
-		final var kk = String.format("root,%s", _keys).split(","); // 补充根节点键名
+		final var kk = String.format("root,%s", _keys).split("[,]+"); // 补充根节点键名
 
 		root.forEach(node -> { // 设置分层key
 			final var i = node.getLevel() - 1;
