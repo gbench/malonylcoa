@@ -23,22 +23,23 @@ pmn <- \(m, n) expand.grid(seq(m), seq(n)) |> apply(1, \(p, # 多项式的项目
 >
 a * x + b * x + a * y + b * y + a * z + b * z
 
-#' 建立一个q阶移动平均的过程：形式结构 的 理论模型
-#' as.numeric()是为了把数据整形转成double类型，因给整形的数字后面会增加以L后缀,比如1L
-#' quote(nu + eps[t]) 当前表达式
-#' bquote(theta[.(j)] * eps[t - .(j)]) 历届冲击eps的今日影响（阴影）,
+#' 建立一个q阶的MA移动平均过程：形式结构 的 理论模型
+#' as.numeric()是为了把整型数据转成double类型，因为当参数q采用整型的数字给出时，生成的表达式里的数字会含有L后缀
+#' 即当j取1时，bquote(theta[.(j)] * eps[t - .(j)]) 生成"theta[1L] * eps[t - 1L]" 而非我们需要的"theta[1] * eps[t - 1]"
+#' quote(nu + eps[t]) 表示当前时刻t，是表达式里的第一项。t 就是当前
+#' bquote(theta[.(j)] * eps[t - .(j)]) 表示历届冲击eps对当前时刻即今日影响（心理阴影）,
 #' @param q 移动平均 阶数， 大于等于1的整数，q阶表示一个冲击eps可持续影响的后继的时期数目，
 #           或是当前时期可以感受到曾经冲击的最远的数量（记忆的数量）
 ma <- \(q) seq(0,  q) |> as.numeric() |>
   lapply( \(i) # 时刻索引从1开始
-    if(i==0) quote(nu + eps[t]) # 当期
-    else bquote(theta[.(i)] * eps[t - .(i)])  # 历届前期
-  ) |> Reduce(f=\(acc, a) bquote(.(acc) + .(a)))
+    if(i==0) quote(nu + eps[t]) # 当期t
+    else bquote(theta[.(i)] * eps[t - .(i)])  # t的历届前期
+  ) |> Reduce(f=\(acc, a) bquote(.(acc) + .(a))) # 把所有项给连起来，acc：累加结果,a：当前项
 
 # ma(4)的表达式
 ma(4)
 
-# 生成 t=10时刻的ma(4)的表达式，指定当时刻为10
+# 生成t=10时刻的ma(4)的表达式，指定当时刻t为10
 bquote(substitute(.(ma(4)), list(t=10))) |> eval()
 
 # 为4阶ma过程指定当前时刻, 使用substitute的实现: 由于substitute不会计算它的第一参数，
