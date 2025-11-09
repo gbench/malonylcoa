@@ -241,7 +241,7 @@ library(data.table)
 # 以规约的形式去构造源码层级上的演绎效果的元编程模式（辩证关系：高阶的Reduce规约实现了低阶的演绎，
 # 代码层级生成宏替换式的嵌套组合）。由此就实现了让程序以组织代码片段（代码功能模块）的形式去指挥源码（最终程序）的生成。
 # 
-# 生成函数复合表达式,逆向管道，之所以使用逆向管道，是为了让打印出的生成的中间代码数学传统的f.g.h的顺序的思维习惯相一致
+# 生成函数复合表达式,逆向管道，之所以使用逆向管道，是为了让打印出的生成的中间代码 与 数学传统的f.g.h的顺序的思维习惯相一致
 expression( hist(), getElement('LastPrice'), rbindlist(), lapply(FUN=read.csv), head(n=3), sort(decreasing=T), grep(pattern="\\.csv$", value=T) ) |> # 管道代码
   Reduce(\(f, x, keys=names(formals(get(f[[1]]))), k=setdiff(keys, names(f[-1]))[1] ) {
        f[[k]]<-x; print(f); f # 编辑表达式;生成程序代码;打印代码表达式&返回生成的表达式
