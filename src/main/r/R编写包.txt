@@ -36,7 +36,6 @@ character(0)
 
 # 将文件夹转换成包对象
 > mypkg2 <- as.package('mypkg2'); mypkg2
-> mypkg2 <- as.package('mypkg2'); mypkg2
 $package
 [1] "mypkg2"
 
