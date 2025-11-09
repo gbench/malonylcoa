@@ -396,8 +396,8 @@ attr(,"name")
 # 而包环境则是系统设定让开发者指定符号查找顺序的环境。所有的包环境都有个<environment: base>的祖先。
 # 可以理解为library加载一个包只有一个函数foo的pkg时，他的实际过程时：
 # 1) 创建一个命名空间环境 ns_env, 然后把foo的定义写入 ns_env$foo<-\() print("hello")， parent.env(ns_env) <- .GlobalEnv
-#  其实 以 （environment: namespace:jsonlite）为例，实际上 ns_env的设置父环境 顺序是：
-# ns_env -> imports:jsonlite -> namespace:base -> R_GlobalEnv
+#  这是一种简化，实际是如此的结构：ns_pkg → imports:pkg → namespace:base → R_GlobalEnv → ...
+#  以（environment: namespace:jsonlite）为例，ns_env的父环境设置顺序是：ns_env -> imports:jsonlite -> namespace:base -> R_GlobalEnv
 # [[10]]
 # <environment: R_GlobalEnv>
 #
