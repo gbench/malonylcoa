@@ -16,11 +16,14 @@ if (!require(purrr, quietly = TRUE)) {
 # @param k 指定的分类即聚类中心的数量。注意,这个需要根据观测数据分布特点而后给出，也就是KMean
 #          不能自行发现出分类数，需要人为的给出相应提示，有KMean自行确定聚类中心的细节（具体坐标）
 # @param eps 收敛验证的误差限度，最大容许偏差，大于0的实数
-# @return list列表{centroids::矩阵类型的聚类中心点集合(一行代表一个点集合, 列为数据点在各个维度轴向的索引坐标),
+# @return list列表{
+#         centroids: 矩阵类型的聚类中心点集合(一行代表一个点集合, 列为数据点在各个维度轴向的索引坐标),
+#         dimnames: 维度名称
 #         cluster_ids: 聚类中心id, 即数据点的分类编码, cluster_id就是未给予正式的命名的概念或者说
-#         是机器分析出的概念，一旦为cluster_id即分类id进行了命名,给出了带有人类文化&经验色彩的名称,
-#         cluster_id或者说分类id就就变成了我们通常使用的概念了，它的意义将由该分类的下的数据元素的
-#         共性所承载,classifier:数据分类器}
+#           是机器分析出的概念，一旦为cluster_id即分类id进行了命名,给出了带有人类文化&经验色彩的名称,
+#           cluster_id或者说分类id就就变成了我们通常使用的概念了，它的意义将由该分类的下的数据元素的
+#           共性所承载,
+#         classifier: 数据分类器}
 km <- function (data, k, eps = 0.01) {
   # -------------------------------------------------------
   # 数据类型验证
@@ -105,7 +108,7 @@ km <- function (data, k, eps = 0.01) {
 
   # 分类器
   classifier <- function(data) cluster_ids(data, centroids) # 将cluster_ids 作为数据点的分类器
-  # 返回结果，{centroids: :矩阵类型的聚类中心点, cluster_ids: 聚类中心点ids, 其实聚类中心id就是数据点的分类编码}
+  # 返回结果，{centroids:矩阵类型的聚类中心点, dimnames:维度名称，cluster_ids: 聚类中心点ids, 其实聚类中心id就是数据点的分类编码}
   list(centroids = structure(centroids, dimnames=list(1:nrow(centroids), names(data))), cluster_ids = classifier(data), classifier = classifier)
 }
 
