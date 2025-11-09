@@ -385,6 +385,39 @@ attr(,"name")
 
 # library: 就是将 package 中的 符号 以 searchpaths节点/元素 的 形式 添加/attach 到 运行环境(运行时） 中。
 # library 构建了 命名空间环境（依据NAMESPCE文件） 与 包环境（依据DESCRIPTION文件）
+# 命名空间环境 中 含有就是包的导出函数的默认环境。比如：
+> environment(geom_point)
+<environment: 0x0000016b5f52f5f0>
+> environment(reshape)
+<environment: namespace:stats>
+> environment(ls)
+<environment: namespace:base>
+# 所有命名空间环境 都有一个.GlobalEnv环境 作为其祖先（这就保证了包中的函数计算的时候可以获得.GlobalEnv中的数据内容）
+# 而包环境则是系统设定让开发者指定符号查找顺序的环境。所有的包环境都有个<environment: base>的祖先。
+# 可以理解为library加载一个包只有一个函数foo的pkg时，他的实际过程时：
+# 1) 创建一个命名空间环境 ns_env, 然后把foo的定义写入 ns_env$foo<-\() print("hello")， parent.env(ns_env) <- .GlobalEnv
+#  其实 以 （environment: namespace:jsonlite）为例，实际上 ns_env的设置父环境 顺序是：
+# ns_env -> imports:jsonlite -> namespace:base -> R_GlobalEnv
+# [[10]]
+# <environment: R_GlobalEnv>
+#
+# [[11]]
+# <environment: namespace:base>
+# 
+# [[12]]
+# <environment: 0x0000016b5bfac7b8>
+# attr(,"name")
+# [1] "imports:jsonlite"
+# 
+# [[13]]
+# <environment: namespace:jsonlite>
+# 
+# 2) 创建一个包环境pkg_env, 然后引用 ns_env 中的符号 pkg_env$<-ns_env$foo
+# 3) 把pkg_env插入到 searchpaths() 中的第二个位置即pos=2的默认值：
+#   3.1) parent.env(pkg_env)<-parent.env(.GlobalEnv)
+#   3.2) parent.env(.GlobalEnv)<-pkg_env
+#
+
 # when you attach another package with library(), the parent environment of the global environment changes
 #
 # The package environment is the external interface to the package. 
