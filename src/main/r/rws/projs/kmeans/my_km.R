@@ -12,15 +12,19 @@ if (!require(purrr, quietly = TRUE)) {
 #
 # 求取聚类中心点，即对data数据进行聚类分类：核心原理。
 # 聚类分析的关键思想就是用聚类中心作为区分各个点属于何种的类别的分类依据
+#
 # @param data 数据点集合:数据框或是矩阵,行为点所列，列为该点在各个维度轴向上的索引坐标
 # @param k 指定的分类即聚类中心的数量。注意,这个需要根据观测数据分布特点而后给出，也就是KMean
 #          不能自行发现出分类数，需要人为的给出相应提示，有KMean自行确定聚类中心的细节（具体坐标）
 # @param eps 收敛验证的误差限度，最大容许偏差，大于0的实数
-# @return list列表{centeroids::矩阵类型的聚类中心点集合(一行代表一个点集合, 列为数据点在各个维度轴向的索引坐标),
+# @return list列表 {
+#         centroids: 矩阵类型的聚类中心点集合(一行代表一个点集合, 列为数据点在各个维度轴向的索引坐标),
+#         dimnames: 维度名称,
 #         cluster_ids: 聚类中心id, 即数据点的分类编码, cluster_id就是未给予正式的命名的概念或者说
-#         是机器分析出的概念，一旦为cluster_id即分类id进行了命名,给出了带有人类文化&经验色彩的名称,
-#         cluster_id或者说分类id就就变成了我们通常使用的概念了，它的意义将由该分类的下的数据元素的
-#         共性所承载,classifier:数据分类器}
+#             是机器分析出的概念，一旦为cluster_id即分类id进行了命名,给出了带有人类文化&经验色彩的名称,
+#             cluster_id或者说分类id就就变成了我们通常使用的概念了，它的意义将由该分类的下的数据元素的
+#             共性所承载,
+#         classifier: 数据分类器 }
 km <- function (data, k, eps = 0.01) {
   # -------------------------------------------------------
   # 数据类型验证
@@ -101,12 +105,12 @@ km <- function (data, k, eps = 0.01) {
                 else .cs ) # 不收敛则再次循环, 继续调整
   } # loop
 
-  centeroids <- loop() # 计算出最优的中心点位置
+  centroids <- loop() # 计算出最优的中心点位置
 
   # 分类器
-  classifier <- function(data) cluster_ids(data, centeroids) # 将cluster_ids 作为数据点的分类器
-  # 返回结果，{centeroids: :矩阵类型的聚类中心点, cluster_ids: 聚类中心点ids, 其实聚类中心id就是数据点的分类编码}
-  list(centeroids = structure(centeroids, dimnames=list(1:nrow(centeroids), names(data))), cluster_ids = classifier(data), classifier = classifier)
+  classifier <- function(data) cluster_ids(data, centroids) # 将cluster_ids 作为数据点的分类器
+  # 返回结果，{centroids:矩阵类型的聚类中心点, dimnames:维度名称, cluster_ids:聚类中心点ids, 其实聚类中心id就是数据点的分类编码}
+  list(centroids = structure(centroids, dimnames = list(1:nrow(centroids), names(data))), cluster_ids = classifier(data), classifier = classifier)
 }
 
 # ---------------------------------------------------------------------
@@ -148,9 +152,9 @@ ggplot(data, aes(x = Sepal.Width, y = Petal.Width, color = Cluster)) + # 属于�
 # ---------------------------------------------------------------------
 # 合并成一个绘图中进行显示
 # ---------------------------------------------------------------------
-species_est <- append(as.factor(km.res$cluster_ids), as.factor(rep("centeroids", 3)))
-species_act <- append(iris$Species, as.factor(rep("centeroids", 3)))
-data2 <- with(rbind(iris[, -5], km.res$centeroids), rbind( # 分组 组织数据
+species_est <- append(as.factor(km.res$cluster_ids), as.factor(rep("centroids", 3)))
+species_act <- append(iris$Species, as.factor(rep("centroids", 3)))
+data2 <- with(rbind(iris[, -5], km.res$centroids), rbind( # 分组 组织数据
   # -- 估计值
   data.frame(x = Sepal.Length, y = Petal.Length, species = species_est, label = "Length.Estimate"),
   data.frame(x = Sepal.Width, y = Petal.Width, species = species_est, label = "Width.Estimate"),
@@ -159,14 +163,14 @@ data2 <- with(rbind(iris[, -5], km.res$centeroids), rbind( # 分组 组织数据
   data.frame(x = Sepal.Width, y = Petal.Width, species = species_act, label = "Width.Actual")
 )) # with
 
-# 获取除 centeroids 外的唯一类别
-other_species <- with(data2, unique(species)[unique(species) != "centeroids"])
-# 生成除 centeroids 外其他类别使用 scale_color_hue 生成的颜色
+# 获取除 centroids 外的唯一类别
+other_species <- with(data2, unique(species)[unique(species) != "centroids"])
+# 生成除 centroids 外其他类别使用 scale_color_hue 生成的颜色
 hue_colors <- hue_pal()(length(other_species))
 names(hue_colors) <- other_species
-# 构建包含 centeroids 为红色以及其他类别对应颜色的颜色向量
-color_vector <- c("centeroids" = "darkred", hue_colors)
-size <- ifelse(data2$species == "centeroids", 2, 1)
+# 构建包含 centroids 为红色以及其他类别对应颜色的颜色向量
+color_vector <- c("centroids" = "darkred", hue_colors)
+size <- ifelse(data2$species == "centroids", 2, 1)
 
 # 数据绘图
 ggplot(data2, aes(x = x, y = y, color = species)) +
