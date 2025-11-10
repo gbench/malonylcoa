@@ -65,11 +65,20 @@ file <- file.choose() # 读取数据文件
 # 注意：这里把文本文件当成了只有一列的表格，因此sep="\n" 即把列分割符作为行分隔符,  cat 默认file就是标准输出
 read.table(file, sep="\n") |> apply(1, \(x) x) |> cat(sep="\n")
 
+# 读取数据所有行
+readLines(file) |> cat(sep="\n")
+
 # 拼接文件成一行文本并写入文件，带有文件行的处理
 read.table(file, sep="\n") |> apply(1, \(x) x) |> cat(sep="\n", file="b.txt")
 
 # 拼接文件成一行文本并写入文件，不进行文件处理
-read.table(file, sep="\n") |> unlist() |> cat(sep="\n", file="b.txt")
+read.table(file, sep="\n") |> unlist() |> cat(sep="\n", file="c.txt")
+
+# 读取数据所有行
+readLines(file) |> cat(sep="\n", file="d.txt")
+
+# 读取数据所有行，并且写出所有行
+readLines(file) |> writeLines(sep="\n", con="e.txt")
 
 # 显示文件
 file.show("b.txt")
