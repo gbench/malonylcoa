@@ -250,9 +250,11 @@ ls()
 # -------------------------------------------------------------------------------------------------------------
 #' 导出指定函数符号到文件，以方便查看代码
 #' @param x  函数符号或是字符串名称
-export <- \(x) {
+#' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
+export <- \(x, dir=".") {
+  if(!dir.exists(dir)) dir.create(dir, recursive=T)
   nm <- if(is.character(x)) x else substitute(x) |> deparse() # 符号名称
-  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(paste0(nm, '.R'), 'w')) {
+  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(file.path(dir, paste0(nm, '.R')), 'w')) {
     on.exit(close(f)) # 退出时候关闭文件
     cat(paste(x, collapse='\n'), file=f) # 把符号表达式写入文件
   }) ()
