@@ -578,17 +578,19 @@ export <- \(x, dir=".") {
 # 导出源码文件
 export(library, "R") # library
 export(loadNamespace, "R") # loadNamespace
+
 #查看导出文件
 list.files("R")
 
-# 然后把导入文件交给AI取分析
-"R" |> list.files(pattern="*.R$", full.name=T) |> lapply(\(f) file.rename(f, paste0(f, ".txt"))) # 改名增加txt后缀方便文件上传
-"R" |> list.files(pattern="*.R.txt$", full.name=T) |> lapply(\(f) file.copy(f, sub(pattern="(*.R).txt$", "\\1", f))) # 再把原来文件名改回来
+# 然后把导出的R文件交给AI取分析
+# 资料预处理
+"R" |> list.files(pattern="*.R$", full.name=T) |> lapply(\(f) file.rename(f, paste0(f, ".txt"))) # 改名增加txt后缀方便文件上传，AI通常会限制文件扩展名
+"R" |> list.files(pattern="*.R.txt$", full.name=T) |> lapply(\(f) file.copy(f, sub(pattern="(*.R).txt$", "\\1", f))) # 再把原来的文件名改回来，用来本地阅读
 
-# DS https://chat.deepseek.com/
-# PROMPT 提示词
+# AI(DeepSeek) 网址： https://chat.deepseek.com/
+# PROMPT 提示词:
 请根据所给的源码文件，分析R语言library函数的工作流程，描述其原理机制！
-特别是，它是如何组织与建立四大环境之间的结构关系（定义环境，命名空间环境，包环境，运行环境）。
+特别是：library是如何组织与建立四大环境之间的结构关系（定义环境，命名空间环境，包环境，运行环境）。
 
 # ------------------------------------------------------------------------------
 通过分析`library.R`和`loadNamespace.R`源码，我可以详细描述R语言中`library()`函数的工作流程和四大环境的结构关系。
