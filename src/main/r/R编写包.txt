@@ -1,6 +1,33 @@
 library(devtools) # as.package  函数依赖的库
 library(roxygen2) # 生成帮助文档
 
+# 移除 程序包
+"mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
+  lapply(\(pkg) tryCatch(remove.packages(pkg, lib=.libPaths()), error=\(e) e))
+
+# 确保系统处于如下状态
+> "mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
++   lapply(\(pkg) tryCatch(remove.packages(pkg, lib=.libPaths()), error=\(e) e))
+[[1]]
+<packageNotFoundError in find.package(pkgs, lib): there is no package called ‘mypkg2’>
+
+[[2]]
+<packageNotFoundError in find.package(pkgs, lib): there is no package called ‘mypkg3’>
+
+# 检查包文件DESCRIPTION是否存在
+"mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
+  lapply(\(pkg) system.file("DESCRIPTION", package=pkg))
+
+# 确保包文件不存在
+> "mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
++   lapply(\(pkg) system.file("DESCRIPTION", package=pkg))
+[[1]]
+[1] ""
+
+[[2]]
+[1] ""
+
+
 # ------------------------------------------------------------------------------------
 # 创建一个测试包：只有一个函数对象foo
 # ------------------------------------------------------------------------------------
@@ -175,7 +202,7 @@ $ R CMD INSTALL mypkg2_1.0.tar.gz
 [1] "mypkg2"
 
 # DESCRIPTION 文件已经生成了 
-> system.file("DESCRIPTION",package="mypkg2")
+> system.file("DESCRIPTION", package="mypkg2")
 [1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg2/DESCRIPTION"
 
 # 重新启动R环境加载包文件
