@@ -55,8 +55,38 @@ list.files(path='.', all.files=T, recursive=T, include.dirs=T)
 clear()
 
 # -------------------------------------------------------------------------------------------------------------
-# 数据文件
+# txt 文件读取
 # -------------------------------------------------------------------------------------------------------------
+
+# 选定文件
+file <- file.choose() # 读取数据文件
+
+# 拼接文件成一行文本
+# 注意：这里把文本文件当成了只有一列的表格，因此sep="\n" 即把列分割符作为行分隔符,  cat 默认file就是标准输出
+read.table(file, sep="\n") |> apply(1, \(x) x) |> cat(sep="\n")
+
+# 读取数据所有行
+readLines(file) |> cat(sep="\n")
+
+# 拼接文件成一行文本并写入文件，带有文件行的处理
+read.table(file, sep="\n") |> apply(1, \(x) x) |> cat(sep="\n", file="b.txt")
+
+# 拼接文件成一行文本并写入文件，不进行文件处理
+read.table(file, sep="\n") |> unlist() |> cat(sep="\n", file="c.txt")
+
+# 读取数据所有行
+readLines(file) |> cat(sep="\n", file="d.txt")
+
+# 读取数据所有行，并且写出所有行
+readLines(file) |> writeLines(sep="\n", con="e.txt")
+
+# 显示文件
+file.show("b.txt")
+
+# -------------------------------------------------------------------------------------------------------------
+# 数据文件 CSV 的读取
+# -------------------------------------------------------------------------------------------------------------
+
 # 创建文件夹
 "a/b/c"|>strsplit("/")|>unlist()|>Reduce(x=_,\(acc,a)paste0(acc,"/",a),accumulate=T)|>lapply(dir.create)
 
@@ -83,6 +113,22 @@ unlink("a",recursive=T) # 递归删除
 list.files()
 
 # -------------------------------------------------------------------------------------------------------------
+# R的常见数据文件格式概述
+# https://www.thecoatlessprofessor.com/programming/r/saving-and-reading-r-objects/
+# -------------------------------------------------------------------------------------------------------------
+Formats :  Overview of the different kinds of R binary files that are available.
+
+.rda/.RData is  "R Data"
+  Description: Save and restore one or more named objects into an environment.
+  Notes: Useful for storing workspaces and multiple R objects as-is. As an example, see the save.image() function called upon closing every R session.
+.rds is a “R Data Single”
+  Description: Save and load a single R object to a binary file.
+  Notes: Great for exporting a single result and loading it into a new variable.
+.rdx and .rdb
+  Description: .rdx contains the index while .rdb stores objects for an R Database used in Lazy Loading
+  Notes: Primarily for R's internal usage. Though, benefits exist around delayed assignment by the use of promises for large data.
+
+# -------------------------------------------------------------------------------------------------------------
 # RDS（R对象文件） 文件的读取
 # saveRDS and readRDS provide the means to save a single R object to a connection (typically a file) and to restore the object
 # -------------------------------------------------------------------------------------------------------------
@@ -99,44 +145,74 @@ list.files()
   lapply( list.files(x, pattern="\\.rds$", full.names=T), \(file, name=sub(".+[/\\]([^/\\]+)\\.rds$", "\\1", file)) assign(name, readRDS(file), env) )
 }) ()
 
+# ######################################
+# RDS  文件按读取 包文件信息 "ggplot2"
+# Description: Save and load a single R object to a binary file.
+# ######################################
+
+# 读取ggplot2的命名空间文件
+nsinfo <- find.package("ggplot2") |> file.path("Meta", "nsInfo.rds")  |> readRDS()
+# 读取ggplot2的包名文件
+pkginfo <- find.package("ggplot2") |> file.path("Meta", "package.rds")  |> readRDS()
+
+# 查看命名空间信息
+> names(nsinfo)
+ [1] "imports"             "exports"             "exportPatterns"      "importClasses"       "importMethods"       "exportClasses"      
+ [7] "exportMethods"       "exportClassPatterns" "dynlibs"             "nativeRoutines"      "S3methods" 
+
+# 查看包信息         
+> names(pkginfo)
+[1] "DESCRIPTION" "Built"       "Rdepends"    "Rdepends2"   "Depends"     "Suggests"    "Imports"     "LinkingTo"  
+
+# 查看符号信息
+> nsinfo$exports |> length()
+[1] 643
+
+> ls(getNamespace("ggplot2"))|>length()
+[1] 1175
+
+> ls(as.environment("package:ggplot2"))|>length()
+[1] 649
+
 # -------------------------------------------------------------------------------------------------------------
-# RDA文件的读取
+# RDA文件的读取 ALL INONE 格式
+# Description: Save and restore one or more named objects into an environment.
 # -------------------------------------------------------------------------------------------------------------
+
+# 进入创建rda文件目录
+(\(x) if(!dir.exists(x))dir.create(x)else NA)("rda")
+
 
 # 删除工作区中的数据文件
-list.files()|>lapply(unlink)
+list.files("rda")|>lapply(unlink)
 
 # 把当前会话中的对象，导出到文件
-save(list=ls(), file="allinone.rda")
+save(list=ls(), file="rda/allinone.rda")
 
 # 清空当前工作会话
 rm(list=ls())
 
-# 在重新导入进来
-load(file="allinone.rda")
+# 查看工作区，没有对象了
+ls()
 
-# 查看会话中的对象
+# 再重新导入进来
+load(file="rda/allinone.rda")
+
+# 查看会话中的对象，对象又回来了
 ls()
 
 # 查看工作区中的文件
-list.files()
+list.files("rda")
+
+# #####################################
+# 执行返回结果
+> list.files("rda")
+[1] "allinone.rda"
+# #####################################
 
 # -------------------------------------------------------------------------------------------------------------
-# RDA文件的读取
-# https://www.thecoatlessprofessor.com/programming/r/saving-and-reading-r-objects/
+# .rdx and .rdb 文件的创建于读写
 # -------------------------------------------------------------------------------------------------------------
-Formats :  Overview of the different kinds of R binary files that are available.
-
-.rda/.RData is  "R Data"
-  Description: Save and restore one or more named objects into an environment.
-  Notes: Useful for storing workspaces and multiple R objects as-is. As an example, see the save.image() function called upon closing every R session.
-.rds is a “R Data Single”
-  Description: Save and load a single R object to a binary file.
-  Notes: Great for exporting a single result and loading it into a new variable.
-.rdx and .rdb
-  Description: .rdx contains the index while .rdb stores objects for an R Database used in Lazy Loading
-  Notes: Primarily for R's internal usage. Though, benefits exist around delayed assignment by the use of promises for large data.
-
 # 清空目录
 list.files() |> lapply(unlink, recursive=T)
 
@@ -164,14 +240,21 @@ lazyLoad(filebase)
 #查看当前空间中的数据对象
 ls()
 
+# 查看写出的文件路径
+> list.files("data-db")
+[1] "my_lazyload_db.rdb" "my_lazyload_db.rdx"
+
+
 # -------------------------------------------------------------------------------------------------------------
 # 导出函数源文件
 # -------------------------------------------------------------------------------------------------------------
 #' 导出指定函数符号到文件，以方便查看代码
 #' @param x  函数符号或是字符串名称
-export <- \(x) {
+#' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
+export <- \(x, dir=".") {
+  if(!dir.exists(dir)) dir.create(dir, recursive=T)
   nm <- if(is.character(x)) x else substitute(x) |> deparse() # 符号名称
-  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(paste0(nm, '.R'), 'w')) {
+  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(file.path(dir, paste0(nm, '.R')), 'w')) {
     on.exit(close(f)) # 退出时候关闭文件
     cat(paste(x, collapse='\n'), file=f) # 把符号表达式写入文件
   }) ()

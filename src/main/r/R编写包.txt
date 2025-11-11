@@ -1,6 +1,33 @@
 library(devtools) # as.package  函数依赖的库
 library(roxygen2) # 生成帮助文档
 
+# 移除 程序包
+"mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
+  lapply(\(pkg) tryCatch(remove.packages(pkg, lib=.libPaths()), error=\(e) e))
+
+# 确保系统处于如下状态
+> "mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
++   lapply(\(pkg) tryCatch(remove.packages(pkg, lib=.libPaths()), error=\(e) e))
+[[1]]
+<packageNotFoundError in find.package(pkgs, lib): there is no package called ‘mypkg2’>
+
+[[2]]
+<packageNotFoundError in find.package(pkgs, lib): there is no package called ‘mypkg3’>
+
+# 检查包文件DESCRIPTION是否存在
+"mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
+  lapply(\(pkg) system.file("DESCRIPTION", package=pkg))
+
+# 确保包文件不存在
+> "mypkg2,mypkg3" |> strsplit(",") |> unlist() |> 
++   lapply(\(pkg) system.file("DESCRIPTION", package=pkg))
+[[1]]
+[1] ""
+
+[[2]]
+[1] ""
+
+
 # ------------------------------------------------------------------------------------
 # 创建一个测试包：只有一个函数对象foo
 # ------------------------------------------------------------------------------------
@@ -9,14 +36,22 @@ library(roxygen2) # 生成帮助文档
 > ls()
 character(0)
 
-# 在这个干净的环境里 编写一个测试函数，foo
+# 在此干净环境中编写一个功能测试函数：foo
 > foo <- function(x) x+1
+
+# 再编写一个函数源码查看的工具函数：my_dump
+> my_dump <- \(f) sprintf("%s <- %s",substitute(f) |> as.character(), deparse(f) |> paste0(collapse=""))
+
 
 # 查看环境内容
 > ls()
-[1] "foo"
+[1] "foo"     "my_dump"
 
-# 创建一个测试包mypkg2：当前环境中的对象，写入包程序中
+# 此时工作空间为空
+> list.files()
+character(0)
+
+# 创建一个测试包mypkg2：它会自动把当前环境中的对象写入到包程序中
 > package.skeleton('mypkg2', environment = .GlobalEnv)
 Creating directories ...
 Creating DESCRIPTION ...
@@ -27,6 +62,24 @@ Making help files ...
 Done.
 Further steps are described in './mypkg2/Read-and-delete-me'.
 
+# 此时文件内容
+> list.files(recursive=T)
+[1] "mypkg2/DESCRIPTION"           "mypkg2/man/my_dump.Rd"          
+[3] "mypkg2/man/foo.Rd"            "mypkg2/man/mypkg2-package.Rd"
+[5] "mypkg2/NAMESPACE"             "mypkg2/R/my_dump.R"             
+[7] "mypkg2/R/foo.R"               "mypkg2/Read-and-delete-me"   
+
+# 使用my_dump函数模拟手工编辑函数文件
+my_dump(foo) |> writeLines(con="mypkg2/R/foo.R")
+my_dump(my_dump) |> writeLines(con="mypkg2/R/my_dump.R")
+
+# 此时文件内容
+> list.files(recursive=T)
+[1] "mypkg2/DESCRIPTION"           "mypkg2/man/my_dump.Rd"          
+[3] "mypkg2/man/foo.Rd"            "mypkg2/man/mypkg2-package.Rd"
+[5] "mypkg2/NAMESPACE"             "mypkg2/R/my_dump.R"             
+[7] "mypkg2/R/foo.R"               "mypkg2/Read-and-delete-me"   
+
 # ------------------------------------------------------------------------------------
 # 包加载测试
 # ------------------------------------------------------------------------------------
@@ -35,7 +88,6 @@ Further steps are described in './mypkg2/Read-and-delete-me'.
 character(0)
 
 # 将文件夹转换成包对象
-> mypkg2 <- as.package('mypkg2'); mypkg2
 > mypkg2 <- as.package('mypkg2'); mypkg2
 $package
 [1] "mypkg2"
@@ -50,7 +102,7 @@ $version
 [1] "1.0"
 
 $date
-[1] "2025-01-02"
+[1] "2025-11-11"
 
 $author
 [1] "Who wrote it"
@@ -65,90 +117,48 @@ $license
 [1] "What license is it under?"
 
 $path
-F:/slicef/ws/rws/dwk/2025-01-02/mypkg2
+F:/slicef/ws/rws/dwk/2025-11-11/mypkg2
 
 attr(,"class")
 [1] "package"
 > 
 
+
 # 查看包路径：mypkg2 不在检索路径
 > searchpaths()
  [1] ".GlobalEnv"                                   
- [2] "D:/sliced/develop/r/R-4.4.2/library/roxygen2" 
- [3] "D:/sliced/develop/r/R-4.4.2/library/devtools" 
- [4] "D:/sliced/develop/r/R-4.4.2/library/usethis"  
- [5] "D:/sliced/develop/r/R-4.4.2/library/graphics" 
- [6] "D:/sliced/develop/r/R-4.4.2/library/grDevices"
- [7] "D:/sliced/develop/r/R-4.4.2/library/utils"    
- [8] "D:/sliced/develop/r/R-4.4.2/library/datasets" 
- [9] "D:/sliced/develop/r/R-4.4.2/library/jsonlite" 
-[10] "D:/sliced/develop/r/R-4.4.2/library/quantmod" 
-[11] "D:/sliced/develop/r/R-4.4.2/library/TTR"      
-[12] "D:/sliced/develop/r/R-4.4.2/library/xts"      
-[13] "D:/sliced/develop/r/R-4.4.2/library/zoo"      
-[14] "D:/sliced/develop/r/R-4.4.2/library/stats"    
-[15] "D:/sliced/develop/r/R-4.4.2/library/lubridate"
-[16] "D:/sliced/develop/r/R-4.4.2/library/forcats"  
-[17] "D:/sliced/develop/r/R-4.4.2/library/stringr"  
-[18] "D:/sliced/develop/r/R-4.4.2/library/dplyr"    
-[19] "D:/sliced/develop/r/R-4.4.2/library/purrr"    
-[20] "D:/sliced/develop/r/R-4.4.2/library/readr"    
-[21] "D:/sliced/develop/r/R-4.4.2/library/tidyr"    
-[22] "D:/sliced/develop/r/R-4.4.2/library/tibble"   
-[23] "D:/sliced/develop/r/R-4.4.2/library/ggplot2"  
-[24] "D:/sliced/develop/r/R-4.4.2/library/tidyverse"
-[25] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"   
-[26] "D:/sliced/develop/r/R-4.4.2/library/DBI"      
-[27] "D:/sliced/develop/r/R-4.4.2/library/methods"  
-[28] "Autoloads"                                    
-[29] "D:/sliced/develop/r/R-4.4.2/library/base"   
+ [2] "D:/sliced/develop/r/R-4.5.2/library/roxygen2" 
+ [3] "D:/sliced/develop/r/R-4.5.2/library/devtools" 
+ [4] "D:/sliced/develop/r/R-4.5.2/library/usethis"  
+ [5] "D:/sliced/develop/r/R-4.5.2/library/stats"    
+ [6] "D:/sliced/develop/r/R-4.5.2/library/graphics" 
+ [7] "D:/sliced/develop/r/R-4.5.2/library/grDevices"
+ [8] "D:/sliced/develop/r/R-4.5.2/library/utils"    
+ [9] "D:/sliced/develop/r/R-4.5.2/library/datasets" 
+[10] "D:/sliced/develop/r/R-4.5.2/library/methods"  
+[11] "Autoloads"                                    
+[12] "D:/sliced/develop/r/R-4.5.2/library/base"     
 
+# 装载包文件
 > load_all(mypkg2)
 ℹ Loading mypkg2
-Warning message:
-Objects listed as exports, but not present in namespace:
-• mypkg 
+
 
 # 再次查看检索路径，mypkg2 已经进入了searchpaths
-> searchpaths()
- [1] ".GlobalEnv"                                   
- [2] "devtools_shims"                               
- [3] "F:/slicef/ws/rws/dwk/2025-01-02/mypkg2"       
- [4] "D:/sliced/develop/r/R-4.4.2/library/roxygen2" 
- [5] "D:/sliced/develop/r/R-4.4.2/library/devtools" 
- [6] "D:/sliced/develop/r/R-4.4.2/library/usethis"  
- [7] "D:/sliced/develop/r/R-4.4.2/library/graphics" 
- [8] "D:/sliced/develop/r/R-4.4.2/library/grDevices"
- [9] "D:/sliced/develop/r/R-4.4.2/library/utils"    
-[10] "D:/sliced/develop/r/R-4.4.2/library/datasets" 
-[11] "D:/sliced/develop/r/R-4.4.2/library/jsonlite" 
-[12] "D:/sliced/develop/r/R-4.4.2/library/quantmod" 
-[13] "D:/sliced/develop/r/R-4.4.2/library/TTR"      
-[14] "D:/sliced/develop/r/R-4.4.2/library/xts"      
-[15] "D:/sliced/develop/r/R-4.4.2/library/zoo"      
-[16] "D:/sliced/develop/r/R-4.4.2/library/stats"    
-[17] "D:/sliced/develop/r/R-4.4.2/library/lubridate"
-[18] "D:/sliced/develop/r/R-4.4.2/library/forcats"  
-[19] "D:/sliced/develop/r/R-4.4.2/library/stringr"  
-[20] "D:/sliced/develop/r/R-4.4.2/library/dplyr"    
-[21] "D:/sliced/develop/r/R-4.4.2/library/purrr"    
-[22] "D:/sliced/develop/r/R-4.4.2/library/readr"    
-[23] "D:/sliced/develop/r/R-4.4.2/library/tidyr"    
-[24] "D:/sliced/develop/r/R-4.4.2/library/tibble"   
-[25] "D:/sliced/develop/r/R-4.4.2/library/ggplot2"  
-[26] "D:/sliced/develop/r/R-4.4.2/library/tidyverse"
-[27] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"   
-[28] "D:/sliced/develop/r/R-4.4.2/library/DBI"      
-[29] "D:/sliced/develop/r/R-4.4.2/library/methods"  
-[30] "Autoloads"                                    
-[31] "D:/sliced/develop/r/R-4.4.2/library/base" 
+> searchpaths() |> grep(pattern="mypkg2", value =T)
+[1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg2"
+
 
 # 调用包函数
 > sapply(1:10, foo)
  [1]  2  3  4  5  6  7  8  9 10 11
 
+> my_dump(foo)
+[1] "foo <- function (x) x + 1"
+
+
 # 进入mypkg2所在目录（工作空间）：F:/slicef/ws/rws/dwk/2025-01-02
-cd F:/slicef/ws/rws/dwk/2025-01-02
+cd /d F:/slicef/ws/rws/dwk/2025-11-11/
 
 # ------------------------------------------------------------------------------------
 # 编译包文件
@@ -156,6 +166,8 @@ cd F:/slicef/ws/rws/dwk/2025-01-02
 # 打开命令行，编译包：获得包文件 mypkg2_1.0.tar.gz
 Rcmd build mypkg2
 ...
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/rws/dwk/2025-11-11
+$ Rcmd build mypkg2
 * checking for file 'mypkg2/DESCRIPTION' ... OK
 * preparing 'mypkg2':
 * checking DESCRIPTION meta-information ... OK
@@ -171,12 +183,29 @@ Rcmd build mypkg2
 # 安装包文件
 R CMD INSTALL mypkg2_1.0.tar.gz
 ...
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/rws/dwk/2025-11-11
+$ R CMD INSTALL mypkg2_1.0.tar.gz
+* installing to library 'D:/sliced/develop/r/R-4.5.2/library'
+* installing *source* package 'mypkg2' ...
+** this is package 'mypkg2' version '1.0'
+** using staged installation
+** R
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
 ** testing if installed package keeps a record of temporary installation path
 * DONE (mypkg2)
 
 # 此时，mypkg2 已经加入.libPaths 路径了
 > list.files(.libPaths()) |> grep(pattern='mypkg2', value=T)
 [1] "mypkg2"
+
+# DESCRIPTION 文件已经生成了 
+> system.file("DESCRIPTION", package="mypkg2")
+[1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg2/DESCRIPTION"
 
 # 重新启动R环境加载包文件
 > library(mypkg2)
@@ -188,4 +217,167 @@ R CMD INSTALL mypkg2_1.0.tar.gz
 starting httpd help server ... done
 
 
+
+# ------------------------------------------------------------------------------------
+# 使用 devtools+testthat 辨析 R包
+# ------------------------------------------------------------------------------------
+
+# 包开发工具
+library(devtools)
+
+# 包名设置
+pkgname <- 'mypkg3' # 设置包名
+
+# 创建R包项目工程
+create_package(path=pkgname) 
+
+# 进入 R包项目工程目录
+setwd(file.path(getwd(), pkgname ))
+
+
+## optional 可选操作 开始标记
+
+# 创建一个README.md文件
+use_readme_rmd() 
+
+# 创建License（default MIT）和License.md文件
+use_mit_license() 
+
+## optional 可选操作 结束标记
+
+
+# 编写一个导出函数，这就是包mypkg3的功能实现
+
+#' 导出指定函数符号到文件，以方便查看代码
+#' @param x  函数符号或是字符串名称
+#' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
+#' @return Void
+#' @export
+export <- \(x, dir=".") {
+  if(!dir.exists(dir)) dir.create(dir, recursive=T)
+  nm <- if(is.character(x)) x else substitute(x) |> deparse() # 符号名称
+  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(file.path(dir, paste0(nm, '.R')), 'w')) {
+    on.exit(close(f)) # 退出时候关闭文件
+    cat(paste(x, collapse='\n'), file=f) # 把符号表达式写入文件
+  }) ()
+}
+
+#' 计算起始环境对象x的各个环境闭包
+#' @param x 起始的环境对象
+#' @param ret 放回值，上一阶调用的返回值
+#' @return 起始环境对象x的各个环境闭包
+#' @export
+envclos <- \(x=sys.frame(sys.nframe()), ret=list()) if(identical(emptyenv(), x)) ret else parent.env(x) |> envclos(append(x, ret));
+
+#' 数据descartes product
+#' @param ps points点集合 
+#' @param gn group numer 分组阶数 
+#' @return 笛卡尔乘积的数据框
+#' @export
+pgn <- \(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( rep(paste0("x", seq(gn)), rep(length(ps), gn)) ) |> expand.grid()
+
+# 导出函数到R目录，形成源码文件
+export(export, "./R")
+export(envclos, "./R")
+export(pgn, "./R")
+
+# 编写export.R文件加入roxygen2的注释：
+
+# 注意，这里需要把 匿名 function (x, dir = ".")  变成 实名函数  export <- function (x, dir = ".")  以便函数可以通过符号"export"导出
+
+#' 导出指定函数符号到文件，以方便查看代码
+#' @param x  函数符号或是字符串名称
+#' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
+#' @return Void
+#' @export
+
+# 同理，编辑envclos、pgn的函数文件
+
+# roxygen2 的注释说明：
+# 函数注释以 "#' "开头（井号+单引号+空格），普通注释以”#”开头。 第一行Title 换成函数的一句话说明，更详细的说明可以空一行 "#' " 后接着写更多说明。
+# @param 空格+参数名称+空格+参数解释；其中**“...”**通常表示可变参数或扩展运算符（spread operator），允许函数接收任意数量的参数，并将其作为数组进行处理。
+# @return 必须在后面写返回值类型说明; @return Void 常用于说明函数不返回特定值或是返回值为NULL
+# @export 表明该函数是公开导出，用户library()该包后可直接使用。 若无此行，使用 包名::函数名() 会找不到该函数，必须使用 包名:::函数名() 才可。
+# @examples 的下一行要至少给出一个可执行的例子，如果存在的话是真的会试运行的，运行不通过就报错，不确定宁愿不写
+# @description 描述段落，以”.”结尾，换行要4个空格开头; @details用法相似
+
+# 项目目录路径
+# Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/rws/dwk/2025-11-11/mypkg3
+# $ tree
+# .
+# ├── DESCRIPTION
+# ├── LICENSE
+# ├── LICENSE.md
+# ├── NAMESPACE
+# ├── R
+# │   ├── envclos.R
+# │   ├── export.R
+# │   └── pgn.R
+# └── README.Rmd
+# 
+# 2 directories, 8 files
+
+
+# 生产&更新 帮助文档与NAMSPACE文件
+document()
+
+# ℹ Updating mypkg3 documentation
+# ℹ Loading mypkg3
+# Writing 'NAMESPACE'
+# Writing 'envclos.Rd'
+# Writing 'export.Rd'
+# Writing 'pgn.Rd'
+
+# 确保 NAMESPACE 中 包含一下内容：
+# export(envclos)
+# export(export)
+# export(pgn)
+
+# 再次检查
+check()
+
+# 打包生成
+build()
+
+# [1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
+
+## 安装包并使用
+
+# 清空工作空间
+rm(list=ls())
+
+# 确保空间内容为空
+# > ls()
+# character(0)
+# > 
+
+# 包文件 路径
+pkgfile <- "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
+
+# 设置工作空间
+setwd(dirname(pkgfile))
+
+# 安装包文件
+install.packages(pkgfile, repos=NULL, type="source")
+
+# 确保mypkg3被正确安装
+# > system.file("DESCRIPTION", package="mypkg3")
+# [1] "D:/sliced/develop/r/R-4.5.2/library/mypkg3/DESCRIPTION"
+# > 
+
+
+# 加载包文件
+library(mypkg3)
+
+# 查看库函数文档
+?export
+
+# 功能测试
+export(export)
+
+# 笛卡尔积
+pgn()
+
+# 查看环境路径
+envclos()
 

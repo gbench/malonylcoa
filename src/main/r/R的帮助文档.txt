@@ -8,27 +8,78 @@ library库：Thus a library is a directory containing installed packages; 存放
                 for example by setting the environment variable R_LIBS or using the R function .libPaths().
 默认包文件：getOption("defaultPackages")
 
+R是以主题来进行组织起帮助文档。比如，命令
+?library
+会打开一个URL 类似于 http://127.0.0.1:31846/library/base/html/library.html 的帮助页面（R启动了一个帮助网站来提供帮助信息）：
+
+# --------------------------------------------------------------------------------------------------------------------------
+library and require load and attach add-on packages.
+
+Usage
+library(package, help, pos = 2, lib.loc = NULL,
+        character.only = FALSE, logical.return = FALSE,
+        warn.conflicts, quietly = FALSE,
+        verbose = getOption("verbose"),
+        mask.ok, exclude, include.only,
+        attach.required = missing(include.only))
+
+require(package, lib.loc = NULL, quietly = FALSE,
+        warn.conflicts,
+        character.only = FALSE,
+        mask.ok, exclude, include.only,
+        attach.required = missing(include.only))
+
+conflictRules(pkg, mask.ok = NULL, exclude = NULL)
+
+Arguments
+package, help	
+the name of a package, given as a name or literal character string, or a character string, depending on whether character.only is FALSE (default) or TRUE.
 
 
-R是以主题来进行组织起帮助文档。
-比如：
-？libraray 
-打开的 http://127.0.0.1:31846/library/base/html/library.html 页面中
-Description：library and require load and attach add-on packages.
-就时同时包含有library，require 两个API，而不是向一般程序语言那样的指一个函数，一个函数的写。
+package, help	
+the name of a package, given as a name or literal character string, or a character string, depending on whether character.only is FALSE (default) or TRUE.
 
-另外R语言时函数式语言，所以理论上，R语言所有变量符号，都是概念，这些概念将以Arguments参数的形式
-去组合成函数策略进而去控制与处理数据。例如：
+pos	
+the position on the search list at which to attach the loaded namespace. Can also be the name of a position on the current search list as given by search().
+
+lib.loc	
+a character vector describing the location of R library trees to search through, or NULL. The default value of NULL corresponds to all libraries currently known to .libPaths(). Non-existent library trees are silently ignored.
+
+character.only	
+a logical indicating whether package or help can be assumed to be character strings.
+
+logical.return	
+logical. If it is TRUE, FALSE or TRUE is returned to indicate success.
+
+...
+# --------------------------------------------------------------------------------------------------------------------------
+
+就同时包含有 library、require、conflictRules 三个API，这是R语言的特色，需要特别注意！
+R不像一般程序语言那样的一个函数、一个函数的分别，写函数的使用说明，而是一个主题，一个主题的进行介绍，
+同一主题下的各个函数会共享参数于相关概念语义！
+
+另外，R语言是函数式语言，所以理论上，R语言所有变量符号都是概念，而这些概念将以Arguments参数的形式
+去组合成为函数策略，进而去控制&处理数据。例如：
 Arguments: 
 package, help：the name of a package, given as a name or literal character string, or a character string, 
                          depending on whether character.only is FALSE (default) or TRUE.
-由于R语言时非强类型语言，于是他的API文档会为每个参数都提供一组参数类型的说明。比如此处：就说明了
-package参数的意义 name of a package， 他的类型 可以是 name、字符串（literal character string）和与变量，
+这里 package, help 就是 共享了相同的参数语义。它们都是对应于一个package的名字，
+并且 可以采用 符号，文本常量(如："ggplot2")，文本字符串变量（pkg <- "ggplot2"）三种类型。
+还有各个参数的意义的解释会依据依据 character.only 的状态来进行解释。
+默认 character.only 为 FALSE，即名称可以是符号或是常量字符串，library(ggplot2) 会被视为 library("ggplot2") 
+好处就是ggplot2不必加上括号了，这样书写比较简单；
+但当 character.only 为 TRUE时，参数只能使用使用字符串。不可以是常量字符串或是变量字符串：
+特别当你把符号ggplot2 绑定到"stats"上时，语义区别就相当明显
+> ggplot2 <- "stats"; library(help=ggplot2, character.only=T) # 将开包stats的中的函数列表
+> library(help=ggplot2, character.only=F) # 将开包ggplot2的中的函数列表。
+
+这是因为，R语言是非强类型语言，于是，它的API文档会为每个参数都提供一组参数类型的说明。比如此处，就说明了
+package参数的意义 name of a package， 它的类型 可以是 name符号、文本字符串（literal character string）与字符串变量，
 并且由参数character.only来标注实际类型:F时为name, T为字符串常量
 于是：
 > lib <- "doParallel"
 > library(lib, character.only=T) # 此处加载的是doParallel
-> library(lib, character.only=F) # 此处加载的是lib
+> library(lib, character.only=F) # 此处加载的是lib, 由于没有 lib包所以会报错
 
 将doParallel插入到search()列表的第10项
 >  library(doParallel, pos=10) 
@@ -62,7 +113,7 @@ Loading required package: parallel
 lib.loc： a character vector describing the location of R library trees to search through, or NULL. 
              The default value of NULL corresponds to all libraries currently known to .libPaths(). 
               Non-existent library trees are silently ignored.
-# 冲突告警，A conflict 即使 一个函数masking掩盖了另一个函数，或是一个非函数掩盖了一个非函数，即变量重名。
+# 冲突告警，A conflict 即 一个函数masking掩盖了另一个函数，或是一个非函数掩盖了一个非函数，即变量重名。
 # 默认是warn.conflict是TRUE，除非conflicts.policy被指定为F
 warn.conflicts：logical. If TRUE, warnings are printed about conflicts from attaching the new package. 
                         A conflict is a function masking a function, or a non-function masking a non-function. 
@@ -70,7 +121,13 @@ warn.conflicts：logical. If TRUE, warnings are printed about conflicts from att
 # 是否将包的依赖项（required packages）进行加载的标记：依赖项 是指DESCRIPTION file 里 Depends clause 中标明的那些包名。
 attach.required：logical specifying whether required packages listed in the Depends clause of the DESCRIPTION file should be attached automatically.
 
-# 只能将 nstalled package的 进行，load/attach， 原理就是 通过 DESCRIPTION 文件里面的Built字段 
+# 只能将intalled package的进行load/attach ，是否安装的检测依据就是对应包的安装位置上，要有一个DESCRIPTION文件并且其中包含Built字段。
 library and require can only load/attach an installed package, and this is detected by having a ‘DESCRIPTION’ file containing a ‘Built:’ field.
+例如，文件D:\sliced\develop\r\R-4.5.2\library\ggplot2\DESCRIPTION 的尾部：
+... 
+Maintainer: Thomas Lin Pedersen <thomas.pedersen@posit.co>
+Repository: CRAN
+Date/Publication: 2025-09-11 07:10:02 UTC
+Built: R 4.5.2; ; 2025-11-01 02:01:38 UTC; windows
 
 
