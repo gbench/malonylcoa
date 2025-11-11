@@ -40,12 +40,12 @@ character(0)
 > foo <- function(x) x+1
 
 # 再编写一个函数源码查看的工具函数：my_dump
-> my_dump <- \(f) sprintf("%s <- %s",substitute(f) |> as.character(),deparse(f) |> paste0(collapse=""))
+> my_dump <- \(f) sprintf("%s <- %s",substitute(f) |> as.character(), deparse(f) |> paste0(collapse=""))
 
 
 # 查看环境内容
 > ls()
-[1] "my_dump" "foo" 
+[1] "foo"     "my_dump"
 
 # 此时工作空间为空
 > list.files()
@@ -154,9 +154,11 @@ attr(,"class")
  [1]  2  3  4  5  6  7  8  9 10 11
 
 > my_dump(foo)
+[1] "foo <- function (x) x + 1"
+
 
 # 进入mypkg2所在目录（工作空间）：F:/slicef/ws/rws/dwk/2025-01-02
-cd F:/slicef/ws/rws/dwk/2025-11-11/
+cd /d F:/slicef/ws/rws/dwk/2025-11-11/
 
 # ------------------------------------------------------------------------------------
 # 编译包文件
@@ -301,19 +303,19 @@ export(pgn, "./R")
 
 # 项目目录路径
 # Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/rws/dwk/2025-11-11/mypkg3
-#  $ tree
-#  .
+# $ tree
+# .
 # ├── DESCRIPTION
 # ├── LICENSE
 # ├── LICENSE.md
 # ├── NAMESPACE
 # ├── R
-# │   └── export.R
-# ├── README.Rmd
-# └── man
-#     └── export.Rd
+# │   ├── envclos.R
+# │   ├── export.R
+# │   └── pgn.R
+# └── README.Rmd
 # 
-# 3 directories, 7 files
+# 2 directories, 8 files
 
 
 # 生产&更新 帮助文档与NAMSPACE文件
@@ -356,7 +358,7 @@ pkgfile <- "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
 setwd(dirname(pkgfile))
 
 # 安装包文件
-install.packages(pkgfile, repos = NULL, type = "source")
+install.packages(pkgfile, repos=NULL, type="source")
 
 # 确保mypkg3被正确安装
 # > system.file("DESCRIPTION", package="mypkg3")
