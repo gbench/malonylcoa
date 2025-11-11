@@ -12,9 +12,13 @@ character(0)
 # 在这个干净的环境里 编写一个测试函数，foo
 > foo <- function(x) x+1
 
+# 再编写一个函数源码查看函数
+> dump <- \(f) sprintf("%s <- %s",substitute(f) |> as.character(),deparse(f) |> paste0(collapse=""))
+
+
 # 查看环境内容
 > ls()
-[1] "foo"
+[1] "dump" "foo" 
 
 # 创建一个测试包mypkg2：当前环境中的对象，写入包程序中
 > package.skeleton('mypkg2', environment = .GlobalEnv)
@@ -26,6 +30,11 @@ Saving functions and data ...
 Making help files ...
 Done.
 Further steps are described in './mypkg2/Read-and-delete-me'.
+
+# 写入包文件
+
+dump (foo) |> writeLines(con="mypkg2/R/foo.R")
+dump (dump) |> writeLines(con="mypkg2/R/dump.R")
 
 # ------------------------------------------------------------------------------------
 # 包加载测试
@@ -49,7 +58,7 @@ $version
 [1] "1.0"
 
 $date
-[1] "2025-01-02"
+[1] "2025-11-11"
 
 $author
 [1] "Who wrote it"
@@ -64,11 +73,12 @@ $license
 [1] "What license is it under?"
 
 $path
-F:/slicef/ws/rws/dwk/2025-01-02/mypkg2
+F:/slicef/ws/rws/dwk/2025-11-11/mypkg2
 
 attr(,"class")
 [1] "package"
 > 
+
 
 # 查看包路径：mypkg2 不在检索路径
 > searchpaths()
@@ -104,50 +114,21 @@ attr(,"class")
 
 > load_all(mypkg2)
 ℹ Loading mypkg2
-Warning message:
-Objects listed as exports, but not present in namespace:
-• mypkg 
+
 
 # 再次查看检索路径，mypkg2 已经进入了searchpaths
-> searchpaths()
- [1] ".GlobalEnv"                                   
- [2] "devtools_shims"                               
- [3] "F:/slicef/ws/rws/dwk/2025-01-02/mypkg2"       
- [4] "D:/sliced/develop/r/R-4.4.2/library/roxygen2" 
- [5] "D:/sliced/develop/r/R-4.4.2/library/devtools" 
- [6] "D:/sliced/develop/r/R-4.4.2/library/usethis"  
- [7] "D:/sliced/develop/r/R-4.4.2/library/graphics" 
- [8] "D:/sliced/develop/r/R-4.4.2/library/grDevices"
- [9] "D:/sliced/develop/r/R-4.4.2/library/utils"    
-[10] "D:/sliced/develop/r/R-4.4.2/library/datasets" 
-[11] "D:/sliced/develop/r/R-4.4.2/library/jsonlite" 
-[12] "D:/sliced/develop/r/R-4.4.2/library/quantmod" 
-[13] "D:/sliced/develop/r/R-4.4.2/library/TTR"      
-[14] "D:/sliced/develop/r/R-4.4.2/library/xts"      
-[15] "D:/sliced/develop/r/R-4.4.2/library/zoo"      
-[16] "D:/sliced/develop/r/R-4.4.2/library/stats"    
-[17] "D:/sliced/develop/r/R-4.4.2/library/lubridate"
-[18] "D:/sliced/develop/r/R-4.4.2/library/forcats"  
-[19] "D:/sliced/develop/r/R-4.4.2/library/stringr"  
-[20] "D:/sliced/develop/r/R-4.4.2/library/dplyr"    
-[21] "D:/sliced/develop/r/R-4.4.2/library/purrr"    
-[22] "D:/sliced/develop/r/R-4.4.2/library/readr"    
-[23] "D:/sliced/develop/r/R-4.4.2/library/tidyr"    
-[24] "D:/sliced/develop/r/R-4.4.2/library/tibble"   
-[25] "D:/sliced/develop/r/R-4.4.2/library/ggplot2"  
-[26] "D:/sliced/develop/r/R-4.4.2/library/tidyverse"
-[27] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"   
-[28] "D:/sliced/develop/r/R-4.4.2/library/DBI"      
-[29] "D:/sliced/develop/r/R-4.4.2/library/methods"  
-[30] "Autoloads"                                    
-[31] "D:/sliced/develop/r/R-4.4.2/library/base" 
+> searchpaths() |> grep(pattern="mypkg2", value =T)
+[1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg2"
+
 
 # 调用包函数
 > sapply(1:10, foo)
  [1]  2  3  4  5  6  7  8  9 10 11
 
+> dump(foo)
+
 # 进入mypkg2所在目录（工作空间）：F:/slicef/ws/rws/dwk/2025-01-02
-cd F:/slicef/ws/rws/dwk/2025-01-02
+cd F:/slicef/ws/rws/dwk/2025-11-11/
 
 # ------------------------------------------------------------------------------------
 # 编译包文件
@@ -155,6 +136,8 @@ cd F:/slicef/ws/rws/dwk/2025-01-02
 # 打开命令行，编译包：获得包文件 mypkg2_1.0.tar.gz
 Rcmd build mypkg2
 ...
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/rws/dwk/2025-11-11
+$ Rcmd build mypkg2
 * checking for file 'mypkg2/DESCRIPTION' ... OK
 * preparing 'mypkg2':
 * checking DESCRIPTION meta-information ... OK
@@ -170,12 +153,29 @@ Rcmd build mypkg2
 # 安装包文件
 R CMD INSTALL mypkg2_1.0.tar.gz
 ...
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/rws/dwk/2025-11-11
+$ R CMD INSTALL mypkg2_1.0.tar.gz
+* installing to library 'D:/sliced/develop/r/R-4.5.2/library'
+* installing *source* package 'mypkg2' ...
+** this is package 'mypkg2' version '1.0'
+** using staged installation
+** R
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
 ** testing if installed package keeps a record of temporary installation path
 * DONE (mypkg2)
 
 # 此时，mypkg2 已经加入.libPaths 路径了
 > list.files(.libPaths()) |> grep(pattern='mypkg2', value=T)
 [1] "mypkg2"
+
+# DESCRIPTION 文件已经生成了 
+> system.file("DESCRIPTION",package="mypkg2")
+[1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg2/DESCRIPTION"
 
 # 重新启动R环境加载包文件
 > library(mypkg2)
@@ -331,12 +331,12 @@ setwd(dirname(pkgfile))
 install.packages(pkgfile, repos = NULL, type = "source")
 
 # 确保mypkg3被正确安装
-# > system.file(package="mypkg3")
-# [1] "D:/sliced/develop/r/R-4.5.2/library/mypkg3"
+# > system.file("DESCRIPTION", package="mypkg3")
+# [1] "D:/sliced/develop/r/R-4.5.2/library/mypkg3/DESCRIPTION"
 # > 
 
 
-# 安装包文件
+# 加载包文件
 library(mypkg3)
 
 # 查看库函数文档
