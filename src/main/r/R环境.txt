@@ -591,8 +591,8 @@ list.files("R")
 
 # 然后把导出的R文件交给AI取分析
 # 资料预处理
-"R" |> list.files(pattern="*.R$", full.name=T) |> lapply(\(f) file.rename(f, paste0(f, ".txt"))) # 改名增加txt后缀方便文件上传，AI通常会限制文件扩展名
-"R" |> list.files(pattern="*.R.txt$", full.name=T) |> lapply(\(f) file.copy(f, sub(pattern="(*.R).txt$", "\\1", f))) # 再把原来的文件名改回来，用来本地阅读
+"R" |> list.files(pattern="*\\.R$", full.name=T) |> lapply(\(f) file.rename(f, paste0(f, ".txt"))) # 改名增加txt后缀方便文件上传，AI通常会限制文件扩展名
+"R" |> list.files(pattern="*\\.R.txt$", full.name=T) |> lapply(\(f) file.copy(f, sub(pattern="(*\\.R).txt$", "\\1", f))) # 再把原来的文件名改回来，用来本地阅读
 
 # AI(DeepSeek) 网址： https://chat.deepseek.com/
 # PROMPT 提示词:
