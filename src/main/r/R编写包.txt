@@ -9,18 +9,22 @@ library(roxygen2) # 生成帮助文档
 > ls()
 character(0)
 
-# 在这个干净的环境里 编写一个测试函数，foo
+# 在此干净环境中编写一个功能测试函数：foo
 > foo <- function(x) x+1
 
-# 再编写一个函数源码查看函数
-> dump <- \(f) sprintf("%s <- %s",substitute(f) |> as.character(),deparse(f) |> paste0(collapse=""))
+# 再编写一个函数源码查看的工具函数：my_dump
+> my_dump <- \(f) sprintf("%s <- %s",substitute(f) |> as.character(),deparse(f) |> paste0(collapse=""))
 
 
 # 查看环境内容
 > ls()
-[1] "dump" "foo" 
+[1] "my_dump" "foo" 
 
-# 创建一个测试包mypkg2：当前环境中的对象，写入包程序中
+# 此时工作空间为空
+> list.files()
+character(0)
+
+# 创建一个测试包mypkg2：它会自动把当前环境中的对象写入到包程序中
 > package.skeleton('mypkg2', environment = .GlobalEnv)
 Creating directories ...
 Creating DESCRIPTION ...
@@ -31,10 +35,23 @@ Making help files ...
 Done.
 Further steps are described in './mypkg2/Read-and-delete-me'.
 
-# 写入包文件
+# 此时文件内容
+> list.files(recursive=T)
+[1] "mypkg2/DESCRIPTION"           "mypkg2/man/my_dump.Rd"          
+[3] "mypkg2/man/foo.Rd"            "mypkg2/man/mypkg2-package.Rd"
+[5] "mypkg2/NAMESPACE"             "mypkg2/R/my_dump.R"             
+[7] "mypkg2/R/foo.R"               "mypkg2/Read-and-delete-me"   
 
-dump (foo) |> writeLines(con="mypkg2/R/foo.R")
-dump (dump) |> writeLines(con="mypkg2/R/dump.R")
+# 使用my_dump函数模拟手工编辑函数文件
+my_dump(foo) |> writeLines(con="mypkg2/R/foo.R")
+my_dump(my_dump) |> writeLines(con="mypkg2/R/my_dump.R")
+
+# 此时文件内容
+> list.files(recursive=T)
+[1] "mypkg2/DESCRIPTION"           "mypkg2/man/my_dump.Rd"          
+[3] "mypkg2/man/foo.Rd"            "mypkg2/man/mypkg2-package.Rd"
+[5] "mypkg2/NAMESPACE"             "mypkg2/R/my_dump.R"             
+[7] "mypkg2/R/foo.R"               "mypkg2/Read-and-delete-me"   
 
 # ------------------------------------------------------------------------------------
 # 包加载测试
@@ -83,35 +100,19 @@ attr(,"class")
 # 查看包路径：mypkg2 不在检索路径
 > searchpaths()
  [1] ".GlobalEnv"                                   
- [2] "D:/sliced/develop/r/R-4.4.2/library/roxygen2" 
- [3] "D:/sliced/develop/r/R-4.4.2/library/devtools" 
- [4] "D:/sliced/develop/r/R-4.4.2/library/usethis"  
- [5] "D:/sliced/develop/r/R-4.4.2/library/graphics" 
- [6] "D:/sliced/develop/r/R-4.4.2/library/grDevices"
- [7] "D:/sliced/develop/r/R-4.4.2/library/utils"    
- [8] "D:/sliced/develop/r/R-4.4.2/library/datasets" 
- [9] "D:/sliced/develop/r/R-4.4.2/library/jsonlite" 
-[10] "D:/sliced/develop/r/R-4.4.2/library/quantmod" 
-[11] "D:/sliced/develop/r/R-4.4.2/library/TTR"      
-[12] "D:/sliced/develop/r/R-4.4.2/library/xts"      
-[13] "D:/sliced/develop/r/R-4.4.2/library/zoo"      
-[14] "D:/sliced/develop/r/R-4.4.2/library/stats"    
-[15] "D:/sliced/develop/r/R-4.4.2/library/lubridate"
-[16] "D:/sliced/develop/r/R-4.4.2/library/forcats"  
-[17] "D:/sliced/develop/r/R-4.4.2/library/stringr"  
-[18] "D:/sliced/develop/r/R-4.4.2/library/dplyr"    
-[19] "D:/sliced/develop/r/R-4.4.2/library/purrr"    
-[20] "D:/sliced/develop/r/R-4.4.2/library/readr"    
-[21] "D:/sliced/develop/r/R-4.4.2/library/tidyr"    
-[22] "D:/sliced/develop/r/R-4.4.2/library/tibble"   
-[23] "D:/sliced/develop/r/R-4.4.2/library/ggplot2"  
-[24] "D:/sliced/develop/r/R-4.4.2/library/tidyverse"
-[25] "D:/sliced/develop/r/R-4.4.2/library/RMySQL"   
-[26] "D:/sliced/develop/r/R-4.4.2/library/DBI"      
-[27] "D:/sliced/develop/r/R-4.4.2/library/methods"  
-[28] "Autoloads"                                    
-[29] "D:/sliced/develop/r/R-4.4.2/library/base"   
+ [2] "D:/sliced/develop/r/R-4.5.2/library/roxygen2" 
+ [3] "D:/sliced/develop/r/R-4.5.2/library/devtools" 
+ [4] "D:/sliced/develop/r/R-4.5.2/library/usethis"  
+ [5] "D:/sliced/develop/r/R-4.5.2/library/stats"    
+ [6] "D:/sliced/develop/r/R-4.5.2/library/graphics" 
+ [7] "D:/sliced/develop/r/R-4.5.2/library/grDevices"
+ [8] "D:/sliced/develop/r/R-4.5.2/library/utils"    
+ [9] "D:/sliced/develop/r/R-4.5.2/library/datasets" 
+[10] "D:/sliced/develop/r/R-4.5.2/library/methods"  
+[11] "Autoloads"                                    
+[12] "D:/sliced/develop/r/R-4.5.2/library/base"     
 
+# 装载包文件
 > load_all(mypkg2)
 ℹ Loading mypkg2
 
@@ -125,7 +126,7 @@ attr(,"class")
 > sapply(1:10, foo)
  [1]  2  3  4  5  6  7  8  9 10 11
 
-> dump(foo)
+> my_dump(foo)
 
 # 进入mypkg2所在目录（工作空间）：F:/slicef/ws/rws/dwk/2025-01-02
 cd F:/slicef/ws/rws/dwk/2025-11-11/
