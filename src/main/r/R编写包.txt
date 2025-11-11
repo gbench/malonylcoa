@@ -220,6 +220,7 @@ starting httpd help server ... done
 
 # ------------------------------------------------------------------------------------
 # 使用 devtools+testthat 辨析 R包
+# 参考文档 https://r-pkgs.org/whole-game.html
 # ------------------------------------------------------------------------------------
 
 # 包开发工具
@@ -277,13 +278,13 @@ envclos <- \(x=sys.frame(sys.nframe()), ret=list()) if(identical(emptyenv(), x))
 pgn <- \(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( rep(paste0("x", seq(gn)), rep(length(ps), gn)) ) |> expand.grid()
 
 # 导出函数到R目录，形成源码文件
-export(export, "./R")
-export(envclos, "./R")
-export(pgn, "./R")
+"export,envclos,pgn" |> strsplit(",") |> unlist() |> lapply(\(x)  export(x, "./R") ) # 不带有注释的匿名函数
+# 或者：
+"export,envclos,pgn" |> strsplit(",") |> unlist() |> lapply(use_r, open=F) # 只是创建了空白文件
 
-# 编写export.R文件加入roxygen2的注释：
-
-# 注意，这里需要把 匿名 function (x, dir = ".")  变成 实名函数  export <- function (x, dir = ".")  以便函数可以通过符号"export"导出
+# 编辑 export.R, envclos.R, pgn.R 文件，并为相应函数补充roxygen2注释：
+# 注意，这里需要把 匿名 function (x, dir = ".")  变成 实名函数  export <- function (x, dir = ".")， 以便函数可以通过符号"export"导出！
+# 文档注释参考如下(以export为例)：
 
 #' 导出指定函数符号到文件，以方便查看代码
 #' @param x  函数符号或是字符串名称
@@ -291,7 +292,7 @@ export(pgn, "./R")
 #' @return Void
 #' @export
 
-# 同理，编辑envclos、pgn的函数文件
+# 同理，编辑其余的函数文件。
 
 # roxygen2 的注释说明：
 # 函数注释以 "#' "开头（井号+单引号+空格），普通注释以”#”开头。 第一行Title 换成函数的一句话说明，更详细的说明可以空一行 "#' " 后接着写更多说明。
@@ -317,6 +318,21 @@ export(pgn, "./R")
 # 
 # 2 directories, 8 files
 
+## 添加测试文档
+
+# 导出文档
+"export,envclos,pgn" |> strsplit(",") |> unlist() |> lapply(\(x) use_test(x, F))
+
+# 清空
+rm(list=ls()); list();
+
+# 加载函数文件
+load_all()
+# 或者 手动加载，特别是，当R代码中含有文件子文件夹的情况；load_all是不能加载子文件夹的！
+list.files("R", recursive=T, full.name=T) |> lapply(source)
+
+# 开始测试
+test()
 
 # 生产&更新 帮助文档与NAMSPACE文件
 document()
