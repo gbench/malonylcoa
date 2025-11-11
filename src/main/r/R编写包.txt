@@ -191,18 +191,21 @@ starting httpd help server ... done
 # ------------------------------------------------------------------------------------
 # 使用 devtools+testthat 辨析 R包
 # ------------------------------------------------------------------------------------
+
+# 价值开发工具
 library(devtools)
 
-# pkg
+# 包名设计
 pkgname <- 'mypkg3' # 设置包名
 
 # 创建R包项目工程
 create_package(path='mypkg3') 
 
-## optional 可选操作 开始标记
-
 # 进入 R包项目工程目录
 setwd(file.path(getwd(), pkgname ))
+
+
+## optional 可选操作 开始标记
 
 # 创建一个README.md文件
 use_readme_rmd() 
@@ -212,12 +215,14 @@ use_mit_license()
 
 ## optional 可选操作 结束标记
 
-# 编写一个导出函数
+
+# 编写一个导出函数，这就是包mypkg3的功能实现
 
 #' 导出指定函数符号到文件，以方便查看代码
 #' @param x  函数符号或是字符串名称
 #' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
 #' @return Void
+#' @export
 export <- \(x, dir=".") {
   if(!dir.exists(dir)) dir.create(dir, recursive=T)
   nm <- if(is.character(x)) x else substitute(x) |> deparse() # 符号名称
@@ -227,28 +232,42 @@ export <- \(x, dir=".") {
   }) ()
 }
 
+#' 计算起始环境对象x的各个环境闭包
+#' @param x 起始的环境对象
+#' @param ret 放回值，上一阶调用的返回值
+#' @return 起始环境对象x的各个环境闭包
+#' @export
+envclos <- \(x=sys.frame(sys.nframe()), ret=list()) if(identical(emptyenv(), x)) ret else parent.env(x) |> envclos(append(x, ret));
+
+#' 数据descartes product
+#' @param ps points点集合 
+#' @param gn group numer 分组阶数 
+#' @return 笛卡尔乘积的数据框
+#' @export
+pgn <- \(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( rep(paste0("x", seq(gn)), rep(length(ps), gn)) ) |> expand.grid()
+
 # 导出函数到R目录，形成源码文件
 export(export, "./R")
+export(envclos, "./R")
+export(pgn, "./R")
 
-# > list.files("./R")
-# [1] "export.R"
+# 编写export.R文件加入roxygen2的注释：
 
-# tree
-
-
-# 编写 export.R 文件加入roxygen2的注释
+# 注意，这里需要把 匿名 function (x, dir = ".")  变成 实名函数  export <- function (x, dir = ".")  以便函数可以通过符号"export"导出
 
 #' 导出指定函数符号到文件，以方便查看代码
-#' @name 导出export符号定义至外部文件函数
 #' @param x  函数符号或是字符串名称
 #' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
 #' @return Void
 #' @export
 
+# 同理，编辑envclos、pgn的函数文件
+
+# roxygen2 的注释说明：
 # 函数注释以 "#' "开头（井号+单引号+空格），普通注释以”#”开头。 第一行Title 换成函数的一句话说明，更详细的说明可以空一行 "#' " 后接着写更多说明。
 # @param 空格+参数名称+空格+参数解释；其中**“...”**通常表示可变参数或扩展运算符（spread operator），允许函数接收任意数量的参数，并将其作为数组进行处理。
 # @return 必须在后面写返回值类型说明; @return Void 常用于说明函数不返回特定值或是返回值为NULL
-# @export 这一行表明该函数是公开出去的，用户library()该包后直接使用该函数。 如果没有这一行，用户 使用 包名::函数名() 找不到该函数，必须使用 包名:::函数名() 才能找到。
+# @export 表明该函数是公开导出，用户library()该包后可直接使用。 若无此行，使用 包名::函数名() 会找不到该函数，必须使用 包名:::函数名() 才可。
 # @examples 的下一行要至少给出一个可执行的例子，如果存在的话是真的会试运行的，运行不通过就报错，不确定宁愿不写
 # @description 描述段落，以”.”结尾，换行要4个空格开头; @details用法相似
 
@@ -269,8 +288,13 @@ export(export, "./R")
 # 3 directories, 7 files
 
 
-# 生产文档
+# 生产&更新 帮助文档与NAMSPACE文件
 document()
+
+# 确保 包含一下内容：
+# export(envclos)
+# export(export)
+# export(pgn)
 
 # 再次检查
 check()
@@ -281,7 +305,29 @@ build()
 # [1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
 
 
+## 安装包并使用
 
+# 包文件 路径
+pkgfile <- "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
 
+# 设置工作空间
+setwd(dirname(pkgfile))
 
+# 安装包文件
+install.packages(pkgfile, repos = NULL, type = "source")
+
+# 安装包文件
+library(mypkg3)
+
+# 查看库函数文档
+?export
+
+# 功能测试
+export(export)
+
+# 笛卡尔积
+pgn()
+
+# 查看环境路径
+envclos()
 
