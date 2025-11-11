@@ -223,7 +223,7 @@ starting httpd help server ... done
 
 
 # ------------------------------------------------------------------------------------
-# 使用 devtools+testthat 辨析 R包
+# 使用devtools+testthat创建R包
 # 参考文档： https://r-pkgs.org/whole-game.html
 # rtools工具网址：https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html
 # ------------------------------------------------------------------------------------

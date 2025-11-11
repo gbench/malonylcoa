@@ -75,15 +75,23 @@ structure(1:16)[8]
 > structure(1:16,dim=c(2,2,2,2))[1,1,2,2]
 [1] 13
 
-# 分组处理，c(1,2,3) 输出结果的数据结构（形状）:c(1,2,3) 表示按照第一个第二第三维度度进行展开。
-# 相当于 for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,])
-X=structure(1:16,dim=c(2,2,2,2))
-dim = c(2,2,2,2)
-FUN=\(x) range(x) |> cat(paste(collapse=",",";"))
-for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,])
+#  apply函数的维度应用原理
+# 分组处理，c(1, 2, 3) 输出结果的数据结构（形状）:c(1, 2, 3) 表示按照第一个第二第三维度度进行展开。
+# 相当于 for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i, j, k, ])
+
+# apply的模拟示例
+dim = c(2, 2, 2, 2) # 定义维度
+X=structure(1:16, dim=dim) # 定义数据结构
+FUN=\(x) range(x) |> paste(collapse=",") |> cat(";") # 处理函数
+for (i in seq(dim[1])) for(j in seq(dim[2])) {
+  cat(gettextf("[%s, %s]：", i, j))
+  for (k in seq(dim[3])) FUN(X[i, j, k, ])
+  cat("\n")
+}
+
 
 #apply的使用
-> apply(X=structure(1:16,dim=c(2,2,2,2)),c(1,2,3),FUN=\(x) range(x)|>paste(collapse=","))
+> apply(X=structure(1:16, dim=c(2, 2, 2, 2)), c(1, 2, 3),FUN=\(x) range(x) |> paste(collapse=","))
 , , 1
 
      [,1]   [,2]  
@@ -97,7 +105,7 @@ for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,
 [2,] "6,14" "8,16"
 
 # 数据结构
-> X<-structure(1:24,dim=c(4,3,2));X
+> X <- structure(1:24, dim=c(4, 3, 2)); X
 , , 1
 
      [,1] [,2] [,3]
@@ -114,14 +122,22 @@ for (i in seq(dim[1])) for(j in seq(dim[2])) for (k in seq(dim[3])) FUN(X[i,j,k,
 [3,]   15   19   23
 [4,]   16   20   24
 
-# 3 列两行
-> apply(X,c(3,2),paste,collapse=",")
+# apply指参数MARGIN的说明
+# MARGIN 定义 结果的数据维度结构与原数据X数据维度之间 的 映射/对应关系！
+# MARGIN = c(结果行维度对应原数据X维度，结果列维度对应原数据X维度)
+
+# 两行三列：关于MARGIN参数的 c([3], {2}) 
+# [3] 第三维度，长度为2， 决定：返回结果二行
+# {2} 第二维度，长度为3，决定：返回结果三列
+> apply(X, c(3, 2), paste, collapse=",")
      [,1]          [,2]          [,3]         
 [1,] "1,2,3,4"     "5,6,7,8"     "9,10,11,12" 
 [2,] "13,14,15,16" "17,18,19,20" "21,22,23,24"
 
-# 两行3列
-> apply(X,c(2,3),paste,collapse=",")
+# 三行两列：关于MARGIN参数的 c([2], {3}) 
+# {2} 第二维度，长度为3，决定：返回结果三行
+# [3] 第三维度，长度为2， 决定：返回结果二列
+> apply(X, c(2, 3), paste, collapse=",")
      [,1]         [,2]         
 [1,] "1,2,3,4"    "13,14,15,16"
 [2,] "5,6,7,8"    "17,18,19,20"
