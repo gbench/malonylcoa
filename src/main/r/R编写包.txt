@@ -317,8 +317,9 @@ build()
 rm(list=ls())
 
 # 确保空间内容为空
-ls()
+# > ls()
 # character(0)
+# > 
 
 # 包文件 路径
 pkgfile <- "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
@@ -328,6 +329,12 @@ setwd(dirname(pkgfile))
 
 # 安装包文件
 install.packages(pkgfile, repos = NULL, type = "source")
+
+# 确保mypkg3被正确安装
+# > system.file(package="mypkg3")
+# [1] "D:/sliced/develop/r/R-4.5.2/library/mypkg3"
+# > 
+
 
 # 安装包文件
 library(mypkg3)
