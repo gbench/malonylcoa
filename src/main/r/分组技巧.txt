@@ -7,17 +7,24 @@
 # 形式化定义，即 创造&应用实际概念， 这就是 分析的结构性逻辑本质。
 # --------------------------------------------------------------------------------------------------------------
 
+# 因子分组
+(\(x, n) { # gl(n, length(x)) <=> rep(seq(n), rep(length(x), n)) <=> 数据分为n组，每组中包含元素length(x)个！
+  rep(x, n) |> split(gl(n, length(x))) |> expand.grid() |> print()
+  print("--------------------------------------------------------")
+  rep(x, n) |> split(rep(seq(n), rep(length(x), n))) |> expand.grid() |> print()
+}) (c(-1, 0, 1), 3)
+
 # 读取数据
 data <- read.csv(file.choose())
 
 # 提取最新的价格数据，10天一个分组
-tail(data,100)|>split((\(x) (x-1)%/%10+1)(1:100))
+tail(data,100) |> split((\(x) (x-1)%/%10+1)(1:100))
 
 # 提取最新的价格数据，10天一个分组
 tail(data,100) |> split(rep(1:10, rep(10,10)))
 
 # 提取收盘价格
-tail(data,100) |> split(rep(1:10,rep(10,10))) |> sapply(\(p) p['c']) 
+tail(data,100) |> split(rep(1:10, rep(10,10))) |> sapply(\(p) p['c']) 
 
 # 任意次绘图
 plots <- function(...) {
@@ -27,8 +34,9 @@ plots <- function(...) {
   par(op) # 恢复图形参数
 }
 
-# melt 技巧, nrow(x) 行数目,length(x) 列数目,gl(nrow(x), 1, nrow(x)*length(x), labels=row.names(x)) 把x的行名称复制length(x)次数
-( \(x) gl(nrow(x), 1, nrow(x)*length(x), labels=row.names(x)) |> cbind(id=_, stack(mtcars)) ) (mtcars)
+# melt 技巧: nrow(x) 行数目, length(x) 列数目
+# gl(nrow(x), 1, nrow(x)*length(x), labels=row.names(x)) 把x的行名称每行复制length(x)次数生成长度nrow(x)*length(x)的向量
+( \(x) gl(nrow(x), 1, nrow(x)*length(x), labels=row.names(x)) |> cbind(id=_, stack(x)) ) (mtcars)
 
 # 收盘价格绘图
 tail(data,100) |> split(rep(1:10,rep(10,10))) |> lapply(\(p) \() plot(p[['c']])) |> tail(2) |> do.call(plots,args=_)
@@ -66,7 +74,7 @@ pgn(-1:1, 5) |> (\(x) transform(x, sum=apply(x, 1, sum))) () |> (\(x) split(x, x
 split(iris[, -5], iris$Species) |> # 中心点，依据物种进行分类并获取对应分类中心点(维度坐标分组的均值向量）
   lapply(partial(apply, MARGIN=2, FUN=mean)) |> # 分组计算每种物种分类的均值
   Reduce(rbind, init=data.frame(), x=_) |> # 把各个分组进行连接，参见haskell的foldl
-  transform(Species=paste0(rep("centeroids", compose(length, levels)(iris$Species)), "-", levels(iris$Species)) ) |> 
+  transform(Species=paste0(rep("centroids", compose(length, levels)(iris$Species)), "-", levels(iris$Species)) ) |> 
   structure(names=names(iris)) 
 
 # iris-分组统计
