@@ -1,3 +1,7 @@
+# ------------------------------------------------------------------------------------
+# R包文件的构建方法
+# ------------------------------------------------------------------------------------
+
 library(devtools) # as.package  函数依赖的库
 library(roxygen2) # 生成帮助文档
 
@@ -220,7 +224,8 @@ starting httpd help server ... done
 
 # ------------------------------------------------------------------------------------
 # 使用 devtools+testthat 辨析 R包
-# 参考文档 https://r-pkgs.org/whole-game.html
+# 参考文档： https://r-pkgs.org/whole-game.html
+# rtools工具网址：https://cran.r-project.org/bin/windows/Rtools/rtools45/rtools.html
 # ------------------------------------------------------------------------------------
 
 # 包开发工具
@@ -352,10 +357,22 @@ document()
 # 再次检查
 check()
 
+# ...
+# ❯ checking for future file timestamps ... NOTE
+#  unable to verify current time
+#
+# 0 errors ✔ | 1 warning ✖ | 1 note ✖
+# > 
+
 # 打包生成
 build()
 
+# ...
+# ─  checking for empty or unneeded directories
+# ─  building 'mypkg3_0.0.0.9000.tar.
+#
 # [1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
+# > 
 
 ## 安装包并使用
 
@@ -375,6 +392,13 @@ setwd(dirname(pkgfile))
 
 # 安装包文件
 install.packages(pkgfile, repos=NULL, type="source")
+
+# ...
+# ** testing if installed package can be loaded from temporary location
+# ** testing if installed package can be loaded from final location
+# ** testing if installed package keeps a record of temporary installation path
+# * DONE (mypkg3)
+# > 
 
 # 确保mypkg3被正确安装
 # > system.file("DESCRIPTION", package="mypkg3")
