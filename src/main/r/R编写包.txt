@@ -188,3 +188,100 @@ starting httpd help server ... done
 
 
 
+# ------------------------------------------------------------------------------------
+# 使用 devtools+testthat 辨析 R包
+# ------------------------------------------------------------------------------------
+library(devtools)
+
+# pkg
+pkgname <- 'mypkg3' # 设置包名
+
+# 创建R包项目工程
+create_package(path='mypkg3') 
+
+## optional 可选操作 开始标记
+
+# 进入 R包项目工程目录
+setwd(file.path(getwd(), pkgname ))
+
+# 创建一个README.md文件
+use_readme_rmd() 
+
+# 创建License（default MIT）和License.md文件
+use_mit_license() 
+
+## optional 可选操作 结束标记
+
+# 编写一个导出函数
+
+#' 导出指定函数符号到文件，以方便查看代码
+#' @param x  函数符号或是字符串名称
+#' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
+#' @return Void
+export <- \(x, dir=".") {
+  if(!dir.exists(dir)) dir.create(dir, recursive=T)
+  nm <- if(is.character(x)) x else substitute(x) |> deparse() # 符号名称
+  (if(is.character(x)) eval(as.symbol(x)) else x) |> deparse() |> (\(x, f=file(file.path(dir, paste0(nm, '.R')), 'w')) {
+    on.exit(close(f)) # 退出时候关闭文件
+    cat(paste(x, collapse='\n'), file=f) # 把符号表达式写入文件
+  }) ()
+}
+
+# 导出函数到R目录，形成源码文件
+export(export, "./R")
+
+# > list.files("./R")
+# [1] "export.R"
+
+# tree
+
+
+# 编写 export.R 文件加入roxygen2的注释
+
+#' 导出指定函数符号到文件，以方便查看代码
+#' @name 导出export符号定义至外部文件函数
+#' @param x  函数符号或是字符串名称
+#' @param dir  导出文件的所在目录名称字符串，默认为当前目录"."
+#' @return Void
+#' @export
+
+# 函数注释以 "#' "开头（井号+单引号+空格），普通注释以”#”开头。 第一行Title 换成函数的一句话说明，更详细的说明可以空一行 "#' " 后接着写更多说明。
+# @param 空格+参数名称+空格+参数解释；其中**“...”**通常表示可变参数或扩展运算符（spread operator），允许函数接收任意数量的参数，并将其作为数组进行处理。
+# @return 必须在后面写返回值类型说明; @return Void 常用于说明函数不返回特定值或是返回值为NULL
+# @export 这一行表明该函数是公开出去的，用户library()该包后直接使用该函数。 如果没有这一行，用户 使用 包名::函数名() 找不到该函数，必须使用 包名:::函数名() 才能找到。
+# @examples 的下一行要至少给出一个可执行的例子，如果存在的话是真的会试运行的，运行不通过就报错，不确定宁愿不写
+# @description 描述段落，以”.”结尾，换行要4个空格开头; @details用法相似
+
+# 项目目录路径
+# Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/rws/dwk/2025-11-11/mypkg3
+#  $ tree
+#  .
+# ├── DESCRIPTION
+# ├── LICENSE
+# ├── LICENSE.md
+# ├── NAMESPACE
+# ├── R
+# │   └── export.R
+# ├── README.Rmd
+# └── man
+#     └── export.Rd
+# 
+# 3 directories, 7 files
+
+
+# 生产文档
+document()
+
+# 再次检查
+check()
+
+# 打包生成
+build()
+
+# [1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
+
+
+
+
+
+
