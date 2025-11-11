@@ -192,14 +192,14 @@ starting httpd help server ... done
 # 使用 devtools+testthat 辨析 R包
 # ------------------------------------------------------------------------------------
 
-# 价值开发工具
+# 包开发工具
 library(devtools)
 
-# 包名设计
+# 包名设置
 pkgname <- 'mypkg3' # 设置包名
 
 # 创建R包项目工程
-create_package(path='mypkg3') 
+create_package(path=pkgname) 
 
 # 进入 R包项目工程目录
 setwd(file.path(getwd(), pkgname ))
@@ -291,7 +291,14 @@ export(pgn, "./R")
 # 生产&更新 帮助文档与NAMSPACE文件
 document()
 
-# 确保 包含一下内容：
+# ℹ Updating mypkg3 documentation
+# ℹ Loading mypkg3
+# Writing 'NAMESPACE'
+# Writing 'envclos.Rd'
+# Writing 'export.Rd'
+# Writing 'pgn.Rd'
+
+# 确保 NAMESPACE 中 包含一下内容：
 # export(envclos)
 # export(export)
 # export(pgn)
@@ -304,8 +311,14 @@ build()
 
 # [1] "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
 
-
 ## 安装包并使用
+
+# 清空工作空间
+rm(list=ls())
+
+# 确保空间内容为空
+ls()
+# character(0)
 
 # 包文件 路径
 pkgfile <- "F:/slicef/ws/rws/dwk/2025-11-11/mypkg3_0.0.0.9000.tar.gz"
