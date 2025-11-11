@@ -7,17 +7,24 @@
 # 形式化定义，即 创造&应用实际概念， 这就是 分析的结构性逻辑本质。
 # --------------------------------------------------------------------------------------------------------------
 
+# 因子分组
+(\(x, n) { # gl(n, length(x)) <=> rep(seq(n), rep(length(x), n)) <=> 数据分为n组，每组中包含元素length(x)个！
+  rep(x, n) |> split(gl(n, length(x))) |> expand.grid() |> print()
+  print("--------------------------------------------------------")
+  rep(x, n) |> split(rep(seq(n), rep(length(x), n))) |> expand.grid() |> print()
+}) (c(-1, 0, 1), 3)
+
 # 读取数据
 data <- read.csv(file.choose())
 
 # 提取最新的价格数据，10天一个分组
-tail(data,100)|>split((\(x) (x-1)%/%10+1)(1:100))
+tail(data,100) |> split((\(x) (x-1)%/%10+1)(1:100))
 
 # 提取最新的价格数据，10天一个分组
 tail(data,100) |> split(rep(1:10, rep(10,10)))
 
 # 提取收盘价格
-tail(data,100) |> split(rep(1:10,rep(10,10))) |> sapply(\(p) p['c']) 
+tail(data,100) |> split(rep(1:10, rep(10,10))) |> sapply(\(p) p['c']) 
 
 # 任意次绘图
 plots <- function(...) {
