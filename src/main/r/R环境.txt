@@ -581,9 +581,9 @@ export(loadNamespace, "R") # loadNamespace 创建命名空间函数
 export(attachNamespace, "R") # attachNamespace 创建包环境的函数
 export(importIntoEnv, "R") # importIntoEnv，把命名空间的函数导入到包环境的函数
 
-# 注意阅读源码的失手请注，attachNamespace 中有一句：
-# env <- attach(NULL, pos = pos, name = attname)  表示再pos位置上创建、插入一个新环境的空环境！
-# One useful ‘trick’ is to use what = NULL (or equivalently a length-zero list) to create a new environment on 
+# 注意，阅读源码的时候，请留心：attachNamespace中有一句：
+# env <- attach(NULL, pos = pos, name = attname)  表示在pos位置上创建、插入一个新环境的空环境！
+# One useful‘trick’is to use what = NULL (or equivalently a length-zero list) to create a new environment on 
 # the search path into which objects can be assigned by assign or load or sys.source.
 
 #查看导出文件
