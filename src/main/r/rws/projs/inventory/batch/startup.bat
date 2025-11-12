@@ -7,7 +7,7 @@ set "parent_dir=%current_dir:~0,-1%"
 for %%A in ("%parent_dir%") do set "parent_dir=%%~dpA"
 
 @rem 目录显示  
-echo Current Directory: %current_di%
+echo Current Directory: %current_dir%
 echo Parent Directory: %parent_dir%
 
 @rem 
