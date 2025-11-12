@@ -11,6 +11,6 @@ echo Current Directory: %current_di%
 echo Parent Directory: %parent_dir%
 
 @rem 
-set cmd="source(\"%parent_dir:\=/%/main.R\")"
+set cmd="source(\"%parent_dir:\=/%main.R\")"
 echo %cmd%
 R -e %cmd%
