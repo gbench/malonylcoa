@@ -9,7 +9,7 @@
 "RMySQL,tibble,dplyr,purrr,readxl" |> strsplit(",") |> unlist() |> lapply(\(p) {
   if (!require(p, character.only = T)) {
     install.packages(p)
-    library(readxl, character.only = T)
+    library(p, character.only = T)
   } # if
 }) # lapply
 
