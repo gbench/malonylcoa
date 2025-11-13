@@ -173,7 +173,7 @@ dfm |> filter(x1>1, x2==1) |> select(LA, LE)
 # table分组计数技巧
 # -----------------------------------------------------------------------------------------------------------------
 local({ # 期货成交价格的能量能量分布
-# tably依赖库
+# tably依赖库janitor以及相关操作函数的依赖
 "purrr,dplyr,janitor,snakecase,RMySQL"|>strsplit(",") |> unlist() |> 
     lapply(\(pkg) if(!require(pkg, character.only = T)) {install.packages(pkg); require(pkg)} else T) 
 
@@ -181,19 +181,19 @@ local({ # 期货成交价格的能量能量分布
 ds10ctp <- partial(sqlquery, dbname="ctp", port=3371, host="192.168.1.10") # 数据查询方法
 curtbl <- "t_rb2601_20251113" # 数据表名，current table 当前表
 
-# 数据SQL，LastPrice：最新成交价格；Volume：日内累计的撮合成交数量 。
+# 数据SQL，LastPrice：最新成交价格；Volume：日内累计的撮合成交数量
 sql <- "select Id, LastPrice, Volume, Volume - lag(Volume) over(order by Id) Vol, UpdateTime from %s" |> sprintf(curtbl) # 数据SQL
 nlevel <- 3 # （撮合）成交量的区间分组分数量
 
-# table 统计计数，把第一行去除因为 Vol的第一项为 NA
+# table 统计计数，把第一行去除因为Vol的第一项为NA
 ds10ctp(sql)[-1, ] |> mutate(Level=cut(Vol, nlevel)) |> select(LastPrice, Level) |> # 价格与成交量关系数据
    table() |> prop.table() |> addmargins() |> # 计算百分比并添加margin统计
-   (\(x) {attr(x, "dimnames") <- attr(x, "dimnames") |> within(Level <- gsub("e\\+03", "K", Level)); x}) () |> round(3) # 保留3位小数
+   (\(x) {attr(x, "dimnames") <- attr(x, "dimnames") |> within(Level <- gsub("e\\+03", "K", Level)); x}) () |> round(3) # 标题美化并保留3位小数
 
-# adjust 格式，把第一行去除因为 Vol的第一项为 NA
+# adjust 格式，把第一行去除因为Vol的第一项为NA
 ds10ctp(sql)[-1, ] |> mutate(Level=cut(Vol, nlevel)) |> tabyl(LastPrice, Level) |> # 价格与成交量关系数据
   adorn_percentages("row") |> adorn_pct_formatting(digits=1) |> # 价格在具体成交量区间上的分布
-  (\(dfm) {names(dfm)<-gsub(x=names(dfm),"e\\+03","K"); dfm}) ()
+  (\(x) {names(x) <- gsub(x=names(x), "e\\+03", "K"); x}) ()
 })
 
 
