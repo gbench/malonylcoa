@@ -174,7 +174,7 @@ dfm |> filter(x1>1, x2==1) |> select(LA, LE)
 # -----------------------------------------------------------------------------------------------------------------
 local({ # 期货成交价格的能量能量分布
 # tably依赖库janitor以及相关操作函数的依赖
-"purrr,dplyr,janitor,snakecase,RMySQL"|>strsplit(",") |> unlist() |> 
+"purrr,dplyr,janitor,snakecase,RMySQL" |> strsplit(",") |> unlist() |> 
     lapply(\(pkg) if(!require(pkg, character.only = T)) {install.packages(pkg); require(pkg)} else T) 
 
 # datasource of {host:10, db:ctp, port:3371}
@@ -183,9 +183,9 @@ curtbl <- "t_rb2601_20251113" # 数据表名，current table 当前表
 
 # 数据SQL，LastPrice：最新成交价格；Volume：日内累计的撮合成交数量
 sql <- "select Id, LastPrice, Volume, Volume - lag(Volume) over(order by Id) Vol, UpdateTime from %s" |> sprintf(curtbl) # 数据SQL
-nlevel <- 3 # （撮合）成交量的区间分组分数量
+nlevel <- 3 # （撮合）成交量的区间分组数量
 
-# table 统计计数，把第一行去除因为Vol的第一项为NA
+# table 交叉表的统计计数（频数/频率其实就是定位数据的位置分布坐标，创造出"值是多少,值在哪里/概率"的数据分布统计），把第一行去除因为Vol的第一项为NA
 ds10ctp(sql)[-1, ] |> mutate(Level=cut(Vol, nlevel)) |> select(LastPrice, Level) |> # 价格与成交量关系数据
    table() |> prop.table() |> addmargins() |> # 计算百分比并添加margin统计
    (\(x) {attr(x, "dimnames") <- attr(x, "dimnames") |> within(Level <- gsub("e\\+03", "K", Level)); x}) () |> round(3) # 标题美化并保留3位小数
