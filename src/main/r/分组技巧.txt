@@ -138,5 +138,38 @@ $`4`
 
 $`5`
 [1]  9 10
+
 # -----------------------------------------------------------------------------------------------------------------
+# dplyr 的使用技巧
+# -----------------------------------------------------------------------------------------------------------------
+library(dplyr)
+
+# 准备数据："%>%"与"|>"的一个关键区别就是"%>%"的"."可以深入嵌套，但"|>"的"_"只能位于第一层。大量使用"|>"是因为它输入简单"少一个字符"而这对于交互式极为关键
+dfm <- (\(x, n) rep(x, n) |> split(gl(n, length(x))) |> expand.grid() %>% structure(names=paste0("x", 1:dim(.)[2])) |> mutate(LA=lag(x2), LE=lead(x2))) (1:3, 2) 
+
+# 数据分组：按照行分组
+dfm %>% group_by(k=gl(dim(.)[1], 1)) |> mutate(s=paste(x1, x2, LA, LE, k, sep="=>")) # 保持了分组结构标记
+dfm %>% group_by(k=gl(dim(.)[1], 1)) |> mutate(s=paste(x1, x2, LA, LE, k, sep="=>")) |> ungroup() # 消除了分组结构标记
+
+# 行计算：rowwise() 相当于 group_by(k=gl(dim(.)[1], 1)) 的语法糖
+dfm %>% group_by(k=gl(dim(.)[1], 1)) |> mutate(s=sum(x1, x2)) |> ungroup()
+# 行计算
+dfm %>% rowwise() |> mutate(s=sum(x1, x2))
+
+# 分组排序
+dfm |> group_by(x1) |> arrange(desc(x2))
+dfm |> group_by(x1) |> arrange(desc(x2), by_group=T)
+dfm |> arrange(desc(x1))
+
+# 行选择
+dfm |> filter(x1>1)
+dfm |> filter(x1>1, x2==1)
+
+# 列选择
+dfm |> select(LA, LE)
+dfm |> filter(x1>1, x2==1) |> select(LA, LE)
+
+
+
+
 
