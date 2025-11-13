@@ -184,12 +184,12 @@ sql <- "select Id, LastPrice, Volume, Volume-lag(Volume) over(order by Id) Vol, 
 nlevel <- 3 # （撮合）成交量的区间分组分数量
 
 # table 统计计数，把第一行去除因为 Vol的第一项为 NA
-ctp3371_query(s1)[-1, ] |> mutate(Level=cut(Vol, nlevel )) |> select(LastPrice, Level) |> table() |> # 维度计数
+ctp3371_query(sql)[-1, ] |> mutate(Level=cut(Vol, nlevel )) |> select(LastPrice, Level) |> table() |> # 维度计数
    prop.table() |> addmargins()  |> # 计算百分比并添加
    round(3) # 保留3位小数
 
 # adjust 格式，把第一行去除因为 Vol的第一项为 NA
-ctp3371_query(s1)[-1, ] |> mutate(Level=cut(Vol, 5)) |> tabyl(LastPrice, Level) |> 
+ctp3371_query(sql)[-1, ] |> mutate(Level=cut(Vol, 5)) |> tabyl(LastPrice, Level) |> 
   adorn_percentages("row") |> adorn_pct_formatting(digits=1) |>
   (\(dfm) {names(dfm)<-gsub(x=names(dfm),"e\\+03","K"); dfm} )()
 })
