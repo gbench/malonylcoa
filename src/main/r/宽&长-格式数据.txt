@@ -2,7 +2,7 @@
 # Wide 宽格式是一种记录的的数据格式
 # Long 长格式是一种数据核算（统计）的数据格式
 #
-# 宽格式示例(iris)， 非第一范式即列是非原子性的结构性变量，如:Sepal(Length, Width)，Petal(Length, Width) 。
+# 宽格式示例(iris)， 非（关系数据库）第一范式即列是非原子性的结构性变量，如:Sepal(Length, Width)，Petal(Length, Width) 。
 # Id(idvar)	Sepal(类型1,times）	 	 	Petal(类型2,times）		    	Species
 # -	Sepal.Length(值1.1)	Sepal.Width(值1.2)	 Petal.Length(值2.1) 	Petal.Width(值2.2)     Species
 # 1	5.1         		3.5          		1.4         		0.2     		setosa
@@ -10,11 +10,14 @@
 # ...
 #
 # 长格式示例：Species 将跟随Id进行照抄Part(timevar依据高层级进行展开)
-#        	Species	Id(idvar)  	Part(timevar) 	Length(v.names) 	Width(v.names)
-# 1.Petal  setosa  	1 	Petal    		5.1   		3.5
-# 2.Petal  setosa  	2 	Petal    		4.9   		3.0
-# 1.Sepal  setosa  	1 	Sepal    		1.4   		0.2
-# 2.Sepal  setosa  	2 	Sepal    		1.4   		0.2
+# ... 		Species	Id(idvar)  	Part(timevar) 	Length(v.names) 	Width(v.names)
+# 1.Length  	setosa  	1 	Length   		5.1   		1.4
+# 2.Length  	setosa  	2 	Length   		4.9   		1.4
+# 3.Length  	setosa  	3 	Length   		4.7   		1.3
+# 4.Length  	setosa  	4 	Length   		4.6   		1.5
+# 5.Length  	setosa  	5 	Length   		5.0   		1.4
+# 6.Length  	setosa  	6 	Length   		5.4   		1.7
+# 
 # ...
 #
 # 典型的长格式的数据就是Indometh
@@ -114,32 +117,37 @@ guess <- function(nms, re = split$regexp, drop = !split$include, fixed = split$f
 
 # 注意：这里是采用 v.names 去定位区分 varying元素的中的数据的（特别是times省略的情况)。
 # 需要注意，varying，times  的字段顺序需要保持一致。否则生成的数据的顺序会发生错乱。
-# 即：varying=c("Sepal.Length", "Sepal.Width","Petal.Length", "Petal.Width") 与 times=c("Petal","Sepal") 一起使用
-# 标准模式：varying：(x1,y1,x2,y2,x3,y3), times: (1,2,3,4), v.names(x,y), 简单的说
-# 是采用 varying <- split(varying, rep(v.names, ntimes)) 对 varying时间格式分组的。
-# 本文示例的Sepal.Length 相当于 x1, Sepal.Width 相当于y1, 即 Sepal:1，Length:x, Width: y,  此处注意体会。
-# 这种{times}.{v.names}的模式结构
+# 标准模式：varying：(x1, y1, x2, y2, x3, y3, x4, y4), v.names(x, y), times: (1, 2, 3, 4), 简单的说
+# varying <- outer(v.names,time),  如：
+# > outer(c("x", "y"), 1:4, \(a,b) paste(a, b, sep=""))
+#      [,1] [,2] [,3] [,4]
+# [1,] "x1" "x2" "x3" "x4"
+# [2,] "y1" "y2" "y3" "y4"
+# 由此：
+# varying<-c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width") ; 
+# nn <- do.call("rbind", strsplit(varying, "\\."));  v.names <- unique(nn[, 1]); times <- unique(nn[, 2]);
+#  一起使用： v.names=c("Sepal","Petal"); time=c("Length", "Width")
+# 本文示例的 Sepal.Length相当于x1, Sepal.Width相当于x2, 即Sepal:x, Petal:y,Length:1,Width: 2,  
+# 此处注意体会:{v.names}.{times}的这种模式结构。
 data <- reshape( # 数据格式变换
   direction="long", # 数据变换方式
   data=iris |> transform(Id=1:150), #  Wide  数据名称
   idvar="Id", # 记录Id，用于唯一标识一条数据记录
   # 宽格式 varying是一种复合结构的列（非原子形列）给与扁平化后列序列，同一层级的列拥有着共同的路径
-  # 例如：iris 的 varying: {Sepal:{Length, Width}, Petal:{Length, Width}} 就这如此的JSON式样的层级结构
-  varying=c("Sepal.Length", "Sepal.Width","Petal.Length", "Petal.Width"), # {times}.{v.names}的数据结构
+  # 例如: iris 的 varying: {Sepal:{Length, Width}, Petal:{Length, Width}} 就这如此的JSON式样的层级结构
+  varying=c("Sepal.Length", "Sepal.Width","Petal.Length", "Petal.Width"), # {v.names}.{times}的数据结构
   timevar="Part", # 返回结果即长格式里标识
-  times=c("Sepal","Petal"), # 高层级(类型层级：中间节点）
-  v.names=c("Length","Width"), # 低层级(值层级：叶子节点）
   sep="."
 )
 
 > head(data)
-        Species Id  Part Length Width
-1.Sepal  setosa  1 Sepal    5.1   3.5
-2.Sepal  setosa  2 Sepal    4.9   3.0
-3.Sepal  setosa  3 Sepal    4.7   3.2
-4.Sepal  setosa  4 Sepal    4.6   3.1
-5.Sepal  setosa  5 Sepal    5.0   3.6
-6.Sepal  setosa  6 Sepal    5.4   3.9
+         Species Id   Part Sepal Petal
+1.Length  setosa  1 Length   5.1   1.4
+2.Length  setosa  2 Length   4.9   1.4
+3.Length  setosa  3 Length   4.7   1.3
+4.Length  setosa  4 Length   4.6   1.5
+5.Length  setosa  5 Length   5.0   1.4
+6.Length  setosa  6 Length   5.4   1.7
 
 # 数据统计
 statdata <- aggregate(cbind(Length, Width)~ Species + Part, FUN=mean, data=data)
@@ -153,28 +161,51 @@ statdata <- aggregate(cbind(Length, Width)~ Species + Part, FUN=mean, data=data)
 5 versicolor Sepal  4.260 1.326
 6  virginica Sepal  5.552 2.026
 
-# 注意，当不指定times时timevar指的生成逻辑不是不是去拆解varying而生成的，而是采用数字编号
+# 注意，当不指定times时， timevar生成逻辑就不再是去分析&拆解varying了，而是采用数字编号！
 data0 <- reshape( # 数据格式变换
   direction="long", # 数据变换方式
   data=iris |> transform(Id=1:150), #  Wide  数据名称
   idvar="Id", # 记录Id，用于唯一标识一条数据记录
   # 宽格式 varying是一种复合结构的列（非原子形列）给与扁平化后列序列，同一层级的列拥有着共同的路径
   # 例如：iris 的 varying: {Sepal:{Length, Width}, Petal:{Length, Width}} 就这如此的JSON式样的层级结构
-  varying=c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"), # {times}.{v.names}的数据结构
+  varying=c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"), # {v.names}.{times}的数据结构
   timevar="Part", # 返回结果即长格式里标识
-  # times=c("Sepal", "Petal"), # 高层级(类型层级：中间节点）# 关闭times Part 中出现了编号，row.names 也是Part里的编号
-  v.names=c("Length", "Width"), # 低层级(值层级：叶子节点）
+  v.names=c("SepalX", "PetalX"), # 低层级(值层级：叶子节点）
   sep="."
 )
 
 > head(data0)
-    Species Id Part Length Width
-1.1  setosa  1    1    5.1   3.5
-2.1  setosa  2    1    4.9   3.0
-3.1  setosa  3    1    4.7   3.2
-4.1  setosa  4    1    4.6   3.1
-5.1  setosa  5    1    5.0   3.6
-6.1  setosa  6    1    5.4   3.9
+    Species Id Part SepalX PetalX
+1.1  setosa  1    1    3.5    5.1
+2.1  setosa  2    1    3.0    4.9
+3.1  setosa  3    1    3.2    4.7
+4.1  setosa  4    1    3.1    4.6
+5.1  setosa  5    1    3.6    5.0
+6.1  setosa  6    1    3.9    5.4
+
+# ** 给定单独给出times是没有意义的 **, times 是不能随便替换的。
+data1 <- reshape( # 数据格式变换
+  direction="long", # 数据变换方式
+  data=iris |> transform(Id=1:150), #  Wide  数据名称
+  idvar="Id", # 记录Id，用于唯一标识一条数据记录
+  # 宽格式 varying是一种复合结构的列（非原子形列）给与扁平化后列序列，同一层级的列拥有着共同的路径
+  # 例如：iris 的 varying: {Sepal:{Length, Width}, Petal:{Length, Width}} 就这如此的JSON式样的层级结构
+  varying=c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"), # {v.names}.{times}的数据结构
+  timevar="Part", # 返回结果即长格式里标识
+  times=c("Length0", "Width0"), # 这是无效的！
+  sep="."
+)
+
+> head(data1)
+         Species Id   Part Sepal Petal
+1.Length  setosa  1 Length   5.1   1.4
+2.Length  setosa  2 Length   4.9   1.4
+3.Length  setosa  3 Length   4.7   1.3
+4.Length  setosa  4 Length   4.6   1.5
+5.Length  setosa  5 Length   5.0   1.4
+6.Length  setosa  6 Length   5.4   1.7
+...
+> 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # 注意：reshape 会把 处理的属性信息标记在结果result之中
@@ -182,27 +213,30 @@ data0 <- reshape( # 数据格式变换
 'data.frame':   300 obs. of  5 variables:
  $ Species: Factor w/ 3 levels "setosa","versicolor",..: 1 1 1 1 1 1 1 1 1 1 ...
  $ Id     : int  1 2 3 4 5 6 7 8 9 10 ...
- $ Part   : chr  "Sepal" "Sepal" "Sepal" "Sepal" ...
- $ Length : num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
- $ Width  : num  3.5 3 3.2 3.1 3.6 3.9 3.4 3.4 2.9 3.1 ...
+ $ Part   : chr  "Length" "Length" "Length" "Length" ...
+ $ Sepal  : num  5.1 4.9 4.7 4.6 5 5.4 4.6 5 4.4 4.9 ...
+ $ Petal  : num  1.4 1.4 1.3 1.5 1.4 1.7 1.4 1.5 1.4 1.5 ...
  - attr(*, "reshapeLong")=List of 4
   ..$ varying:List of 2
-  .. ..$ Length: chr [1:2] "Sepal.Length" "Petal.Length"
-  .. ..$ Width : chr [1:2] "Sepal.Width" "Petal.Width"
-  .. ..- attr(*, "v.names")= chr [1:2] "Length" "Width"
-  .. ..- attr(*, "times")= chr [1:2] "Sepal" "Petal"
-  ..$ v.names: chr [1:2] "Length" "Width"
+  .. ..$ Sepal: chr [1:2] "Sepal.Length" "Sepal.Width"
+  .. ..$ Petal: chr [1:2] "Petal.Length" "Petal.Width"
+  .. ..- attr(*, "v.names")= chr [1:2] "Sepal" "Petal"
+  .. ..- attr(*, "times")= chr [1:2] "Length" "Width"
+  ..$ v.names: chr [1:2] "Sepal" "Petal"
   ..$ idvar  : chr "Id"
   ..$ timevar: chr "Part"
 
 # 对于 由reshape转换后的数据可以再次执行reshape而无需指定参数而完成相应的逆操作,即 X == reshape(reshape(X))
 > reshape(data)
-             Species  Id Sepal.Length Sepal.Width Petal.Length Petal.Width
-1.Sepal       setosa   1          5.1         3.5          1.4         0.2
-2.Sepal       setosa   2          4.9         3.0          1.4         0.2
-3.Sepal       setosa   3          4.7         3.2          1.3         0.2
-4.Sepal       setosa   4          4.6         3.1          1.5         0.2
-5.Sepal       setosa   5          5.0         3.6          1.4         0.2
+         Species Id Sepal.Length Petal.Length Sepal.Width Petal.Width
+1.Length  setosa  1          5.1          1.4         3.5         0.2
+2.Length  setosa  2          4.9          1.4         3.0         0.2
+3.Length  setosa  3          4.7          1.3         3.2         0.2
+4.Length  setosa  4          4.6          1.5         3.1         0.2
+5.Length  setosa  5          5.0          1.4         3.6         0.2
+6.Length  setosa  6          5.4          1.7         3.9         0.4
+...
+> 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 # 长格式
@@ -211,38 +245,56 @@ longdata <- lapply(data, identity) |> as.data.frame() # 去除掉data由reshape�
 # 把长格式转为宽格式，主要特点就是生成宽格式的varing列集合
 # varing 列集合的生成规则为：是由v.names与timevar字段的项目参数项目进行组合使用sep进行连接生成
 # 默认的 varing 列名生成逻辑为：{v.names}.{timevar}, 如果需要生成 {timevar}.{v.names}结构需要手工指定
-widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Length", "Width"), timevar="Part", sep="_") 
+# 省略：varying  由 v.names 与 timevar 推导
+widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Sepal", "Petal"), timevar="Part", sep="_") 
 
-# 需要注意：Length_Petal Width_Petal Length_Sepal Width_Sepal 这种变量名称的生成顺序是{v.names}_{times}的结构
+# 需要注意：Sepal_Length Petal_Length Sepal_Width Petal_Width 这种变量名称的生成顺序是{v.names}_{times}的结构
 #
 > head(widedata)
-  Species Id Length_Sepal Width_Sepal Length_Petal Width_Petal
-1  setosa  1          5.1         3.5          1.4         0.2
-2  setosa  2          4.9         3.0          1.4         0.2
-3  setosa  3          4.7         3.2          1.3         0.2
-4  setosa  4          4.6         3.1          1.5         0.2
-5  setosa  5          5.0         3.6          1.4         0.2
-6  setosa  6          5.4         3.9          1.7         0.4
-
+  Species Id Sepal_Length Petal_Length Sepal_Width Petal_Width
+1  setosa  1          5.1          1.4         3.5         0.2
+2  setosa  2          4.9          1.4         3.0         0.2
+3  setosa  3          4.7          1.3         3.2         0.2
+4  setosa  4          4.6          1.5         3.1         0.2
+5  setosa  5          5.0          1.4         3.6         0.2
+6  setosa  6          5.4          1.7         3.9         0.4
+...
+> 
 
 # 手工指定， 需要注意：varying 与 v.names 的一致性（Length在前，Width在后）,varying中Length,Width出现以保持,[x1,y1,...x2,y2,...]的标准模式
-widedata <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Length", "Width"), timevar="Part",
-  varying=c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width"))
+# v.names与timevar的外积与varying 相匹配:varying 沦为指定结果列顺序！
+widedata0 <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Petal", "Sepal"), timevar="Part", 
+  varying=c("Petal.Length", "Petal.Width", "Sepal.Length", "Sepal.Width"))
+head(widedata0)
 
-> widedata
-       Species  Id Sepal.Length Sepal.Width Petal.Length Petal.Width
-1       setosa   1          5.1         3.5          1.4         0.2
-2       setosa   2          4.9         3.0          1.4         0.2
-3       setosa   3          4.7         3.2          1.3         0.2
-4       setosa   4          4.6         3.1          1.5         0.2
-5       setosa   5          5.0         3.6          1.4         0.2
-6       setosa   6          5.4         3.9          1.7         0.4
-7       setosa   7          4.6         3.4          1.4         0.3
-8       setosa   8          5.0         3.4          1.5         0.2
-9       setosa   9          4.4         2.9          1.4         0.2
-10      setosa  10          4.9         3.1          1.5         0.1
-11      setosa  11          5.4         3.7          1.5         0.2
+> head(widedata0)
+  Species Id Petal.Length Petal.Width Sepal.Length Sepal.Width
+1  setosa  1          1.4         5.1          0.2         3.5
+2  setosa  2          1.4         4.9          0.2         3.0
+3  setosa  3          1.3         4.7          0.2         3.2
+4  setosa  4          1.5         4.6          0.2         3.1
+5  setosa  5          1.4         5.0          0.2         3.6
+6  setosa  6          1.7         5.4          0.4         3.9
+...
+> 
 
+# v.names与timevar的外积与varying **不相匹配**时 ，此时 数据是**错误的**！
+widedata1 <- reshape(data=longdata, direction="wide", idvar="Id",  v.names=c("Petal", "Sepal"), timevar="Part",
+    varying=c("Petal.Length", "Petal.Width", "Sepal.Length"))
+Warning message:
+In matrix(varying, nrow = length(v.names)) :
+  data length [3] is not a sub-multiple or multiple of the number of rows [2]
+
+> head(widedata1)
+  Species Id Petal.Length Petal.Width Sepal.Length
+1  setosa  1          3.5         5.1          0.2
+2  setosa  2          3.0         4.9          0.2
+3  setosa  3          3.2         4.7          0.2
+4  setosa  4          3.1         4.6          0.2
+5  setosa  5          3.6         5.0          0.2
+6  setosa  6          3.9         5.4          0.4
+...
+> 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
 tidyverse 与  reshape 的概念名称（参数）对比
@@ -330,6 +382,7 @@ long_data_reshape <- reshape(wide_data,
 # 打印值
 long_data_reshape
 ```
+
 # 注意：
 #   当把wide数据转换为long时候，reshape 会自动的采用的把idvar与times(默认为varying)相组合来后成row.names
 #   此时如果, varying 的名称还有特殊字符，会导致结构数据无法而出现错误，例如：relig_income {tidyr}
