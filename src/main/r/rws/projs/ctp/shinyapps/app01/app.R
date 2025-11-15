@@ -131,6 +131,12 @@ ui <- fluidPage(
             tabPanel("成交量",
                      div(class = "compact-row",
                          numericInput("nlev", "分组数", value = 3, min = 2, max = 10, width = "100%")
+                     ),
+                     div(class = "compact-row",
+                         radioButtons("group_mode", "分组模式",
+                                      choices = c("等频分组(ntile)" = "ntile", 
+                                                  "等距分组(cut)" = "cut"),
+                                      selected = "ntile")
                      )
             )
           )
@@ -381,6 +387,31 @@ server <- function(input, output, session) {
     sql_display(generate_sql())
   })
   
+  # ========== 分组处理函数 ==========
+  
+  # 创建分组标签
+  create_levels <- function(df, nlev, mode) {
+    req(df, nlev > 0)
+    
+    if (mode == "ntile") {
+      # 等频分组
+      df <- df %>%
+        mutate(Level = as.factor(ntile(Vol, nlev)))
+    } else {
+      # 等距分组
+      breaks <- seq(min(df$Vol), max(df$Vol), length.out = nlev + 1)
+      labels <- sprintf("(%.1f, %.1f]", head(breaks, -1), tail(breaks, -1))
+      
+      # 美化标签：将科学计数法转换为K格式
+      labels <- gsub("e\\+03", "K", labels)
+      
+      df <- df %>%
+        mutate(Level = cut(Vol, breaks = breaks, labels = labels, include.lowest = TRUE))
+    }
+    
+    return(df)
+  }
+  
   # ========== 输出渲染 ==========
   
   # SQL显示
@@ -426,9 +457,8 @@ server <- function(input, output, session) {
     df_clean <- df[!is.na(df$Vol), ]
     
     tryCatch({
-      # 使用 ntile 进行等频分组
-      df_clean <- df_clean %>%
-        mutate(Level = as.factor(ntile(Vol, input$nlev)))
+      # 使用选择的分组模式
+      df_clean <- create_levels(df_clean, input$nlev, input$group_mode)
       
       xs <- df_clean |> 
         select(LastPrice, Level) |> 
@@ -477,6 +507,7 @@ server <- function(input, output, session) {
     
     cat("价格档位:", length(unique(df_clean$LastPrice)), "\n")
     cat("成交量组:", input$nlev, "\n")
+    cat("分组模式:", ifelse(input$group_mode == "ntile", "等频分组(ntile)", "等距分组(cut)"), "\n")
     cat("观测数:", nrow(df_clean))
   })
   
@@ -488,8 +519,7 @@ server <- function(input, output, session) {
     df_clean <- df[!is.na(df$Vol), ]
     
     tryCatch({
-      df_clean <- df_clean %>%
-        mutate(Level = as.factor(ntile(Vol, input$nlev)))
+      df_clean <- create_levels(df_clean, input$nlev, input$group_mode)
       
       xs <- df_clean |> 
         select(LastPrice, Level) |> 
@@ -497,9 +527,14 @@ server <- function(input, output, session) {
         prop.table() |> 
         addmargins() 
       
-      as.data.frame(xs) %>%
+      result_table <- as.data.frame(xs) %>%
         pivot_wider(names_from = Level, values_from = Freq) %>%
         arrange(LastPrice)
+      
+      # 美化列名：将科学计数法转换为K格式
+      colnames(result_table) <- gsub("e\\+03", "K", colnames(result_table))
+      
+      result_table
       
     }, error = function(e) {
       data.frame(错误 = paste("表格错误:", e$message))
