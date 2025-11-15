@@ -375,7 +375,7 @@ server <- function(input, output, session) {
       lm_model <- lm(LastPrice ~ Id, data = df)
       ggplot(df, aes(Id, LastPrice)) + 
         geom_point(alpha = 0.1, color = "#3498db", size = 0.5) + 
-        geom_smooth(color = "#e74c3c", se = TRUE, size = 0.8) +
+        geom_smooth(color = "#e74c3c", se = TRUE, linewidth = 0.8) +
         geom_hline(yintercept = mean(df$LastPrice) + c(-2, 0, 2) * sd(df$LastPrice),
                    linewidth = c(1, 0.5, 1), color = c("#c0392b", "#95a5a6", "#e74c3c")) +
         geom_abline(slope = coef(lm_model)[2], intercept = coef(lm_model)[1], 
