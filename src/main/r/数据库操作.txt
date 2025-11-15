@@ -188,11 +188,11 @@ sqlquery.h10ctp("select database()") |> unlist()
 # 首先在mysql数据库中创建数据库test: create database test default character set utf8mb4;
 local({ # 数据库写入测试
   # test 数据库查询函数
-  sqlquery.test <- partial(sqlquery, dbname="test")
-  sqlexecute.test <- partial(sqlexecute, dbname="test")
+  sqlquery.test <- partial(sqlquery, dbname="test") # 自定义数据库查询
+  sqlexecute.test <- partial(sqlexecute, dbname="test") # 自定义数据库执行
 
   # 准备表数据
-  dfm <- cbind(id=1:dim(mtcars)[1], mtcars)
+  dfm <- cbind(id=1:dim(mtcars)[1], mtcars) # 把mtcars转成数据表结构,添加一个ID结构。
 
   # 查询库表（建表前）
   sqlquery.test("show tables") |> unlist() |> grep(pattern="t_mtcars", value=T)
