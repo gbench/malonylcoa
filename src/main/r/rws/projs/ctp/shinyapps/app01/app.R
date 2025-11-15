@@ -239,6 +239,7 @@ server <- function(input, output, session) {
     if (input$auto_refresh) auto_trigger(auto_trigger() + 1)
   }
   
+  # 在 server 函数中修改 create_levels 函数
   create_levels <- function(df, nlev, mode) {
     req(df, nlev > 0)
     
@@ -247,16 +248,23 @@ server <- function(input, output, session) {
       level_ranges <- df %>%
         group_by(Level_ntile) %>%
         summarise(min_vol = min(Vol), max_vol = max(Vol), .groups = 'drop') %>%
+        arrange(min_vol) %>%  # 按最小值排序
         mutate(Level = sprintf("(%.1f, %.1f]", min_vol, max_vol))
       
       df <- df %>% 
         left_join(level_ranges %>% select(Level_ntile, Level), by = "Level_ntile") %>%
         select(-Level_ntile)
+      
+      # 设置因子水平以保持排序
+      df$Level <- factor(df$Level, levels = level_ranges$Level)
     } else {
       breaks <- seq(min(df$Vol), max(df$Vol), length.out = nlev + 1)
       labels <- sprintf("(%.1f, %.1f]", head(breaks, -1), tail(breaks, -1))
       labels <- gsub("e\\+03", "K", labels)
+      
+      # 创建有序因子
       df <- df %>% mutate(Level = cut(Vol, breaks = breaks, labels = labels, include.lowest = TRUE))
+      df$Level <- factor(df$Level, levels = labels)
     }
     return(df)
   }
@@ -437,6 +445,7 @@ server <- function(input, output, session) {
     cat("观测数:", nrow(df_clean))
   })
   
+  # 修改 volTable2 的输出部分
   output$volTable2 <- renderTable({
     df <- volume_data()
     req(df, nrow(df) > 0, input$nlev > 0)
@@ -449,6 +458,19 @@ server <- function(input, output, session) {
       result_table <- as.data.frame(xs) %>%
         pivot_wider(names_from = Level, values_from = Freq) %>%
         arrange(LastPrice)
+      
+      # 确保列按正确的数值顺序排列
+      level_cols <- setdiff(names(result_table), c("LastPrice", "Sum"))
+      
+      # 提取最小值用于排序
+      get_min_value <- function(col_name) {
+        as.numeric(gsub(".*\\(([0-9.-]+).*", "\\1", col_name))
+      }
+      
+      sorted_cols <- level_cols[order(sapply(level_cols, get_min_value))]
+      
+      # 重新排列列顺序
+      result_table <- result_table %>% select(LastPrice, all_of(sorted_cols), Sum)
       
       colnames(result_table) <- gsub("e\\+03", "K", colnames(result_table))
       result_table
