@@ -190,6 +190,20 @@ local({ # 数据库写入测试
   # test 数据库查询函数
   sqlquery.test <- partial(sqlquery, dbname="test") # 自定义数据库查询
   sqlexecute.test <- partial(sqlexecute, dbname="test") # 自定义数据库执行
+  
+  # 安装必要的使用工具包：janitor用于创建clean_name
+  "janitor,RMySQL" |> strsplit(",") |> unlist() |> lapply(\(pkg) {
+     if(!require(pkg, character.only=T)) { 
+       install.packages(pkg); 
+       library(pkg, character.only=T)
+     } else T
+  })
+
+  # 把 iris数据导入数据库
+  df <- cbind(id=1:dim(iris)[1], iris) # 增加主键数据
+  names(df) <- make_clean_names(names(df)) # 美化字段名
+  c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+  sqlquery.test("select * from t_iris") # 查询数据
 
   # 准备表数据
   dfm <- cbind(id=1:dim(mtcars)[1], mtcars) # 把mtcars转成数据表结构,添加一个ID结构。
