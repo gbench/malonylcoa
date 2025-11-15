@@ -26,9 +26,9 @@ ui <- fluidPage(
       .small-plot{font-size:11px;}
       .trading-session-btn{font-size:10px; padding:4px 6px;}
       .slider-value{font-size:10px; color:#666; text-align:center; margin-top:-5px;}
-      .lock-checkbox{margin-bottom:0;}
       .time-input-group{display:flex;align-items:center;gap:4px;}
       .time-input-group .form-group{flex:1;margin-bottom:0;}
+      .radio-group{display:flex;gap:8px;margin-bottom:4px;}
     "))
   ),
   
@@ -37,19 +37,17 @@ ui <- fluidPage(
       width = 3,
       style = "padding: 8px;",
       
-      # 操作按钮
       div(class = "well-panel",
           actionButton("update", "更新数据", class = "btn-primary btn-sm", width = "100%"),
           br(), 
           actionButton("close", "关闭应用", class = "btn-danger btn-sm", width = "100%")
       ),
       
-      # 侧边栏tab标签页
       div(class = "sidebar-tabs",
           tabsetPanel(
             tabPanel("数据源",
                      div(class = "compact-row",
-                         textInput("tbl", "数据表", value = "t_rb2601_20251117", width = "100%", placeholder = "输入表名")
+                         textInput("tbl", "数据表", value = "t_rb2601_20251117", width = "100%")
                      ),
                      div(class = "inline-group",
                          textInput("db", "数据库", value = "ctp", width = "100%"),
@@ -65,26 +63,27 @@ ui <- fluidPage(
                          h5("时间范围选择", style = "margin: 0 0 8px 0; font-size: 12px;")
                      ),
                      
-                     # 开始时间 + 锁定复选框
                      div(class = "time-input-group",
-                         checkboxInput("lock_start", "锁定", value = FALSE, width = "auto"),
                          textInput("start_time", "开始时间", 
                                    value = format(now() - hours(2), "%H:%M:%S"),
-                                   width = "100%", placeholder = "HH:MM:SS")
+                                   width = "100%")
                      ),
-                     
-                     # 结束时间 + 锁定复选框
                      div(class = "time-input-group",
-                         checkboxInput("lock_end", "锁定", value = TRUE, width = "auto"),
                          textInput("end_time", "结束时间", 
                                    value = format(now(), "%H:%M:%S"),
-                                   width = "100%", placeholder = "HH:MM:SS")
+                                   width = "100%")
                      ),
                      
-                     # 滑动条选择前置时间范围
-                     div(class = "compact-row",
-                         h5("时间范围调整", style = "margin: 8px 0 4px 0; font-size: 11px; color: #666;")
+                     div(class = "radio-group",
+                         radioButtons("lock_type", "锁定", 
+                                      choices = c("开始时间" = "start", "结束时间" = "end"),
+                                      selected = "end", inline = TRUE)
                      ),
+                     
+                     div(class = "compact-row",
+                         actionButton("reset_time", "重置当前时间", class = "btn-warning btn-sm", width = "100%")
+                     ),
+                     
                      div(class = "compact-row",
                          sliderInput("time_range", "时长(分钟)", 
                                      min = 5, max = 480, value = 120, step = 5,
@@ -94,7 +93,6 @@ ui <- fluidPage(
                          textOutput("time_range_text")
                      ),
                      
-                     # 期货交易时间段
                      div(class = "compact-row",
                          h5("交易时间段", style = "margin: 8px 0 4px 0; font-size: 11px; color: #666;")
                      ),
@@ -107,7 +105,6 @@ ui <- fluidPage(
                          actionButton("set_full_day", "全天", class = "trading-session-btn btn-success", width = "100%")
                      ),
                      
-                     # 快速设置按钮
                      div(class = "compact-row",
                          h5("快速设置", style = "margin: 8px 0 4px 0; font-size: 11px; color: #666;")
                      ),
@@ -115,11 +112,6 @@ ui <- fluidPage(
                          actionButton("set_1h", "1小时", class = "btn-info btn-sm", width = "100%"),
                          actionButton("set_2h", "2小时", class = "btn-info btn-sm", width = "100%"),
                          actionButton("set_3h", "3小时", class = "btn-info btn-sm", width = "100%")
-                     ),
-                     
-                     div(class = "compact-row",
-                         helpText("锁定开始时间: 调整时长会改变结束时间", style = "font-size:10px; margin:0; color:#666;"),
-                         helpText("锁定结束时间: 调整时长会改变开始时间", style = "font-size:10px; margin:0; color:#666;")
                      )
             ),
             
@@ -156,13 +148,13 @@ ui <- fluidPage(
                  fluidRow(
                    column(6, 
                           div(class = "stat-card",
-                              h5("成交量统计", style = "margin: 0 0 8px 0; font-size: 12px;"),
+                              h5("成交量统计"),
                               tableOutput("volTable")
                           )
                    ),
                    column(6,
                           div(class = "stat-card",
-                              h5("分布信息", style = "margin: 0 0 8px 0; font-size: 12px;"),
+                              h5("分布信息"),
                               verbatimTextOutput("volSummary")
                           )
                    )
@@ -170,7 +162,7 @@ ui <- fluidPage(
                  fluidRow(
                    column(12,
                           div(class = "stat-card",
-                              h5("价格-成交量分布表", style = "margin: 0 0 8px 0; font-size: 12px;"),
+                              h5("价格-成交量分布表"),
                               div(style = "max-height: 200px; overflow-y: auto;",
                                   tableOutput("volTable2")
                               )
@@ -184,7 +176,7 @@ ui <- fluidPage(
                      verbatimTextOutput("dataSummary")
                  ),
                  div(class = "stat-card",
-                     h5("数据预览 (前10行)", style = "margin: 0 0 8px 0; font-size: 12px;"),
+                     h5("数据预览 (前10行)"),
                      div(style = "max-height: 200px; overflow-y: auto;",
                          tableOutput("dataPreview")
                      )
@@ -203,40 +195,44 @@ server <- function(input, output, session) {
   
   sqlText <- reactiveVal("点击更新数据查看SQL")
   
-  # 时间字符串转换为完整的时间对象
+  # 解析时间字符串
   parseTime <- function(time_str) {
-    if (validateTimeFormat(time_str)) {
+    if (grepl("^\\d{1,2}:\\d{2}:\\d{2}$", time_str)) {
       today <- as.Date(now())
       return(ymd_hms(paste(today, time_str)))
     }
-    return(NULL)
+    NULL
   }
   
-  # 滑动条值变化时根据锁定状态更新时间
+  # 滑动条调整时间
   observeEvent(input$time_range, {
-    # 解析开始和结束时间
     start_time <- parseTime(input$start_time)
     end_time <- parseTime(input$end_time)
     
     if (!is.null(start_time) && !is.null(end_time)) {
-      if (input$lock_start && !input$lock_end) {
+      if (input$lock_type == "start") {
         # 锁定开始时间，调整结束时间
         new_end_time <- start_time + minutes(input$time_range)
         updateTextInput(session, "end_time", value = format(new_end_time, "%H:%M:%S"))
-      } else if (input$lock_end && !input$lock_start) {
+      } else {
         # 锁定结束时间，调整开始时间
         new_start_time <- end_time - minutes(input$time_range)
         updateTextInput(session, "start_time", value = format(new_start_time, "%H:%M:%S"))
-      } else if (!input$lock_start && !input$lock_end) {
-        # 都不锁定，基于结束时间调整开始时间（默认行为）
-        new_start_time <- end_time - minutes(input$time_range)
-        updateTextInput(session, "start_time", value = format(new_start_time, "%H:%M:%S"))
       }
-      # 如果都锁定，则不进行任何操作
     }
   })
   
-  # 显示滑动条对应的时间范围文本
+  # 重置当前时间
+  observeEvent(input$reset_time, {
+    current_time <- format(now(), "%H:%M:%S")
+    if (input$lock_type == "start") {
+      updateTextInput(session, "start_time", value = current_time)
+    } else {
+      updateTextInput(session, "end_time", value = current_time)
+    }
+  })
+  
+  # 显示时间范围文本
   output$time_range_text <- renderText({
     if (input$time_range < 60) {
       paste(input$time_range, "分钟")
@@ -250,85 +246,54 @@ server <- function(input, output, session) {
       paste("2小时", input$time_range - 120, "分钟")
     } else if (input$time_range == 180) {
       "3小时"
-    } else if (input$time_range < 240) {
-      paste("3小时", input$time_range - 180, "分钟")
     } else {
       paste(round(input$time_range / 60, 1), "小时")
     }
   })
   
-  # 期货交易时间段设置函数
+  # 交易时间段设置
   observeEvent(input$set_morning, {
     updateTextInput(session, "start_time", value = "09:00:00")
     updateTextInput(session, "end_time", value = "12:00:00")
-    updateSliderInput(session, "time_range", value = 180) # 3小时
+    updateSliderInput(session, "time_range", value = 180)
   })
   
   observeEvent(input$set_afternoon, {
     updateTextInput(session, "start_time", value = "13:00:00")
     updateTextInput(session, "end_time", value = "15:00:00")
-    updateSliderInput(session, "time_range", value = 120) # 2小时
+    updateSliderInput(session, "time_range", value = 120)
   })
   
   observeEvent(input$set_night, {
     updateTextInput(session, "start_time", value = "21:00:00")
     updateTextInput(session, "end_time", value = "23:00:00")
-    updateSliderInput(session, "time_range", value = 120) # 2小时
+    updateSliderInput(session, "time_range", value = 120)
   })
   
   observeEvent(input$set_full_day, {
     updateTextInput(session, "start_time", value = "09:00:00")
     updateTextInput(session, "end_time", value = "15:00:00")
-    updateSliderInput(session, "time_range", value = 360) # 6小时
+    updateSliderInput(session, "time_range", value = 360)
   })
   
-  # 快速设置函数 - 根据锁定状态设置时间范围
-  observeEvent(input$set_1h, {
-    updateSliderInput(session, "time_range", value = 60)
-  })
+  # 快速设置
+  observeEvent(input$set_1h, { updateSliderInput(session, "time_range", value = 60) })
+  observeEvent(input$set_2h, { updateSliderInput(session, "time_range", value = 120) })
+  observeEvent(input$set_3h, { updateSliderInput(session, "time_range", value = 180) })
   
-  observeEvent(input$set_2h, {
-    updateSliderInput(session, "time_range", value = 120)
-  })
-  
-  observeEvent(input$set_3h, {
-    updateSliderInput(session, "time_range", value = 180)
-  })
-  
-  # 验证时间格式
-  validateTimeFormat <- function(time_str) {
-    if (grepl("^\\d{1,2}:\\d{2}:\\d{2}$", time_str)) {
-      return(TRUE)
-    }
-    return(FALSE)
-  }
-  
+  # 数据查询
   priceData <- eventReactive(input$update, {
     req(input$tbl, input$start_time, input$end_time)
     
-    # 验证时间格式
-    if (!validateTimeFormat(input$start_time)) {
-      sqlText("错误: 开始时间格式应为 HH:MM:SS")
-      return(NULL)
-    }
-    
-    if (!validateTimeFormat(input$end_time)) {
-      sqlText("错误: 结束时间格式应为 HH:MM:SS")
-      return(NULL)
-    }
-    
-    # 构建SQL查询 - 使用时间范围
     sql <- sprintf("select * from %s where UpdateTime between '%s' and '%s'", 
-                   input$tbl, 
-                   input$start_time,
-                   input$end_time)
+                   input$tbl, input$start_time, input$end_time)
     
     sqlText(sql)
     
     tryCatch({
       result <- ds()(sql)
       if (is.null(result) || nrow(result) == 0) {
-        sqlText(paste(sql, "\n\n查询结果为空，请检查时间范围"))
+        sqlText(paste(sql, "\n\n查询结果为空"))
         return(NULL)
       }
       result
@@ -341,16 +306,9 @@ server <- function(input, output, session) {
   volData <- eventReactive(input$update, {
     req(input$tbl, input$start_time, input$end_time)
     
-    # 验证时间格式
-    if (!validateTimeFormat(input$start_time) || !validateTimeFormat(input$end_time)) {
-      return(NULL)
-    }
-    
     sql <- sprintf(
       "select Id, LastPrice, Volume, Volume - lag(Volume) over(order by Id) as Vol, UpdateTime from %s where UpdateTime between '%s' and '%s'", 
-      input$tbl,
-      input$start_time,
-      input$end_time
+      input$tbl, input$start_time, input$end_time
     )
     
     tryCatch({ ds()(sql) }, error = function(e) { NULL })
@@ -358,19 +316,23 @@ server <- function(input, output, session) {
   
   output$priceSql <- renderText({ sqlText() })
   
+  # 价格趋势图 - 优化计算效率
   output$pricePlot <- renderPlot({
     df <- priceData()
     req(df, nrow(df) > 0)
     
     tryCatch({
+      # 预先计算回归模型
+      lm_model <- lm(LastPrice ~ Id, data = df)
+      lm_coef <- coef(lm_model)
+      
       with(df, {
         ggplot(df, aes(Id, LastPrice)) + 
-          geom_point(alpha = 0.01, color = "#3498db", size = 0.5) + 
+          geom_point(alpha = 0.1, color = "#3498db", size = 0.5) + 
           geom_smooth(color = "#e74c3c", se = TRUE, size = 0.8) +
           geom_hline(yintercept = mean(LastPrice) + c(-2, 0, 2) * sd(LastPrice),
                      linewidth = c(1, 0.5, 1), color = c("#c0392b", "#95a5a6", "#e74c3c")) +
-          geom_abline(slope = coef(lm(LastPrice ~ Id))[2], 
-                      intercept = coef(lm(LastPrice ~ Id))[1], 
+          geom_abline(slope = lm_coef[2], intercept = lm_coef[1], 
                       linewidth = 1, color = "#9b59b6") +
           scale_x_continuous(
             breaks = seq(min(Id), max(Id), length.out = input$n), 
@@ -382,11 +344,12 @@ server <- function(input, output, session) {
                 axis.text = element_text(size = 8))
       })
     }, error = function(e) {
-      plot(1, 1, type = "n", main = "绘图错误", cex.main = 0.8)
+      plot(1, 1, type = "n", main = "绘图错误")
       text(1, 1, paste("错误:", e$message), col = "red", cex = 0.7)
     })
   })
   
+  # 成交量分析图
   output$volPlot <- renderPlot({
     df <- volData()
     req(df, nrow(df) > 0, input$nlev > 0)
@@ -414,18 +377,16 @@ server <- function(input, output, session) {
         scale_fill_brewer(palette = "Set3") +
         labs(title = NULL, x = "价格", y = "频率") +
         theme_minimal() +
-        theme(text = element_text(size = 10),
-              axis.text = element_text(size = 8),
-              axis.text.x = element_text(angle = 45, hjust = 1),
-              legend.position = "bottom",
-              legend.text = element_text(size = 8))
+        theme(axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "bottom")
       
     }, error = function(e) {
-      plot(1, 1, type = "n", main = "分析错误", cex.main = 0.8)
+      plot(1, 1, type = "n", main = "分析错误")
       text(1, 1, paste("错误:", e$message), col = "red", cex = 0.7)
     })
   })
   
+  # 统计表格
   output$volTable <- renderTable({
     df <- volData()
     req(df, nrow(df) > 0)
@@ -500,7 +461,6 @@ server <- function(input, output, session) {
     req(df)
     
     result <- head(df, 10)
-    
     simple_cols <- names(result)[sapply(result, function(x) is.numeric(x) | is.character(x))]
     result <- result[simple_cols]
     
@@ -520,7 +480,7 @@ server <- function(input, output, session) {
       "确定关闭应用吗？",
       footer = tagList(
         actionButton("confirm_close", "确定", class = "btn-danger btn-sm"),
-        modalButton("取消", class = "btn-sm")
+        modalButton("取消")
       )
     ))
   })
