@@ -136,6 +136,19 @@ insql <- function( dfm ) {
   sprintf( "insert into %s (%s) values \n  %s\n", tbl, keys, values ) # SQL 插入语句
 }
 
+#' 表数据更新SQL
+#' @param dfm 数据框数据
+#' @param tbl 数据表名
+#' @param pk 数据主键
+upsql <- \(dfm, tbl, pk="id") { # 数据更新
+    nms <- names(dfm) # 提取各个数据列名
+    idx <- match(pk, nms) #  主键pk在名称nms中的索引位置
+    stopifnot("dfm的名称nms中必须包含主键名pk" = !is.na(idx)) # pk名字的有效性检测
+    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''",x=_))) |> 
+      apply(1, \(line) paste(line[-idx], collapse=",\n  ")) # 字段拼接
+    sprintf("update %s set\n  %s \nwhere %s='%s'\n", tbl, flds, pk, dfm[, pk]) # 数据更新的SQL语句
+}
+
 # ----------------------------------------------------------------------------------------------------------------
 # 基本使用示例
 # ----------------------------------------------------------------------------------------------------------------
@@ -170,6 +183,70 @@ sqlquery.h10ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp") # 自定
 # 可以用 unlist() 把只有一行数据数据的的结果变成一个单值向量，这个对于利用SQL函数比database()这样的结果是很方便的，但是对于多行多列的情况
 # 结果就可能有点混乱（不同行相同里列的名称会添加一个数字序号），所以需要根据情况适当使用
 sqlquery.h10ctp("select database()") |> unlist()
+
+# 数据库的增删改查 (以test数据库为例)
+# 首先在mysql数据库中创建数据库test: create database test default character set utf8mb4;
+local({ # 数据库写入测试
+  # sqlquery(查询), sqlexecute(执行), ctsql(创建), insql(插入), upsql(更新) 等关系数据库的基础工具函数载入！
+  # 此类基础工具函数默认关系数据表拥有一个带有自增长结构的主键id！
+  batch_load() # 基础工具的批量载入
+  
+  # test 数据库查询函数
+  sqlquery.test <- partial(sqlquery, dbname="test") # 自定义数据库查询
+  sqlexecute.test <- partial(sqlexecute, dbname="test") # 自定义数据库执行
+  
+  # 安装必要的使用工具包：janitor用于创建clean_name
+  "janitor,RMySQL" |> strsplit(",") |> unlist() |> lapply(\(pkg) {
+     if(!require(pkg, character.only=T)) { 
+       install.packages(pkg); 
+       library(pkg, character.only=T)
+     } else T
+  })
+
+  # 把 iris数据导入数据库
+  df <- cbind(id=1:dim(iris)[1], iris) # 增加主键数据
+  names(df) <- make_clean_names(names(df)) # 美化字段名
+  c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+  sqlquery.test("select * from t_iris") # 查询数据
+
+  # 准备表数据
+  dfm <- cbind(id=1:dim(mtcars)[1], mtcars) # 把mtcars转成数据表结构,添加一个ID结构。
+
+  # 查询库表（建表前）
+  sqlquery.test("show tables") |> unlist() |> grep(pattern="t_mtcars", value=T)
+  # 创建数据表
+  ctsql(dfm, "t_mtcars") |> sqlexecute.test() |> print()
+  # 查询库表（建表后）
+  sqlquery.test("show tables") |> unlist() |> grep(pattern="t_mtcars", value=T)
+ 
+  # 插入表数据
+  insql(dfm, "t_mtcars") |> sqlexecute.test() |> print()
+  # 查询表数据（修改前）
+  sqlquery.test("select * from t_mtcars")
+
+  # 更新表数据
+  dfm$cyl <- dfm$cyl + 2 # 增加一对儿气缸
+  upsql(dfm, "t_mtcars") |> sqlexecute.test() |> print()
+  # 查询表数据（修改后）
+  sqlquery.test("select * from t_mtcars")
+
+  # 删除表数据（删除第一条）
+  sqlexecute.test("delete from t_mtcars where id=1")
+  # 查询表数据（删除后）
+  sqlquery.test("select * from t_mtcars")
+
+  # 删除整个数据数据
+  sqlquery.test("truncate t_mtcars")
+  # 查询表数据（删除后）
+  sqlquery.test("select * from t_mtcars")
+
+  # 查询库表（删表前）
+  sqlquery.test("show tables") |> unlist() |> grep(pattern="t_mtcars", value=T)
+  # 删除整个表
+  sqlquery.test("drop table t_mtcars")
+  # 查询库表（删表后）
+  sqlquery.test("show tables") |> unlist() |> grep(pattern="t_mtcars", value=T)
+})
 
 # 本地测试
 local({ # 数据库写入测试

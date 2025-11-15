@@ -141,11 +141,12 @@ insql <- function( dfm, tbl ) {
 #' @param pk 数据主键
 upsql <- \(dfm, tbl, pk="id") { # 数据更新
     nms <- names(dfm) # 提取各个数据列名
-    stopifnot(!is.na(match(pk, nms))) # dfm的名称中必须包含主键名pk
+    idx <- match(pk, nms) #  主键pk在名称nms中的索引位置
+    stopifnot("dfm的名称nms中必须包含主键名pk" = !is.na(idx)) # pk名字的有效性检测
     flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''",x=_))) |> 
-      apply(1, \(line) paste(line[-match(pk, nms)], collapse=",\n  ")) # 字段拼接
+      apply(1, \(line) paste(line[-idx], collapse=",\n  ")) # 字段拼接
     sprintf("update %s set\n  %s \nwhere %s='%s'\n", tbl, flds, pk, dfm[, pk]) # 数据更新的SQL语句
-} # upsql
+}
 
 # 自定义主机与数据库
 sqlquery.h10ctp2 <- partial(sqlquery, host="192.168.1.10", dbname="ctp2")
