@@ -24,7 +24,11 @@ ui <- fluidPage(
       .nav-tabs>li>a{padding:8px 12px;font-size:12px;}
       .small-table{font-size:11px;}
       .small-plot{font-size:11px;}
-      .time-input{font-size:11px;}
+      .trading-session-btn{font-size:10px; padding:4px 6px;}
+      .slider-value{font-size:10px; color:#666; text-align:center; margin-top:-5px;}
+      .lock-checkbox{margin-bottom:0;}
+      .time-input-group{display:flex;align-items:center;gap:4px;}
+      .time-input-group .form-group{flex:1;margin-bottom:0;}
     "))
   ),
   
@@ -60,24 +64,68 @@ ui <- fluidPage(
                      div(class = "compact-row",
                          h5("时间范围选择", style = "margin: 0 0 8px 0; font-size: 12px;")
                      ),
-                     div(class = "compact-row",
+                     
+                     # 开始时间 + 锁定复选框
+                     div(class = "time-input-group",
+                         checkboxInput("lock_start", "锁定", value = FALSE, width = "auto"),
                          textInput("start_time", "开始时间", 
-                                   value = format(now() - minutes(120), "%H:%M:%S"),
+                                   value = format(now() - hours(2), "%H:%M:%S"),
                                    width = "100%", placeholder = "HH:MM:SS")
                      ),
-                     div(class = "compact-row",
+                     
+                     # 结束时间 + 锁定复选框
+                     div(class = "time-input-group",
+                         checkboxInput("lock_end", "锁定", value = TRUE, width = "auto"),
                          textInput("end_time", "结束时间", 
                                    value = format(now(), "%H:%M:%S"),
                                    width = "100%", placeholder = "HH:MM:SS")
                      ),
+                     
+                     # 滑动条选择前置时间范围
                      div(class = "compact-row",
-                         actionButton("set_default", "默认范围", class = "btn-info btn-sm", width = "100%")
+                         h5("时间范围调整", style = "margin: 8px 0 4px 0; font-size: 11px; color: #666;")
+                     ),
+                     div(class = "compact-row",
+                         sliderInput("time_range", "时长(分钟)", 
+                                     min = 5, max = 480, value = 120, step = 5,
+                                     width = "100%")
+                     ),
+                     div(class = "slider-value",
+                         textOutput("time_range_text")
+                     ),
+                     
+                     # 期货交易时间段
+                     div(class = "compact-row",
+                         h5("交易时间段", style = "margin: 8px 0 4px 0; font-size: 11px; color: #666;")
+                     ),
+                     div(class = "inline-group",
+                         actionButton("set_morning", "早盘", class = "trading-session-btn btn-warning", width = "100%"),
+                         actionButton("set_afternoon", "午盘", class = "trading-session-btn btn-warning", width = "100%")
+                     ),
+                     div(class = "inline-group",
+                         actionButton("set_night", "夜盘", class = "trading-session-btn btn-info", width = "100%"),
+                         actionButton("set_full_day", "全天", class = "trading-session-btn btn-success", width = "100%")
+                     ),
+                     
+                     # 快速设置按钮
+                     div(class = "compact-row",
+                         h5("快速设置", style = "margin: 8px 0 4px 0; font-size: 11px; color: #666;")
+                     ),
+                     div(class = "inline-group",
+                         actionButton("set_1h", "1小时", class = "btn-info btn-sm", width = "100%"),
+                         actionButton("set_2h", "2小时", class = "btn-info btn-sm", width = "100%"),
+                         actionButton("set_3h", "3小时", class = "btn-info btn-sm", width = "100%")
+                     ),
+                     
+                     div(class = "compact-row",
+                         helpText("锁定开始时间: 调整时长会改变结束时间", style = "font-size:10px; margin:0; color:#666;"),
+                         helpText("锁定结束时间: 调整时长会改变开始时间", style = "font-size:10px; margin:0; color:#666;")
                      )
             ),
             
             tabPanel("价格",
-                     div(class = "inline-group",
-                         numericInput("n", "时间点", value = 10, min = 5, max = 50, width = "100%")
+                     div(class = "compact-row",
+                         numericInput("n", "时间点数", value = 10, min = 5, max = 50, width = "100%")
                      )
             ),
             
@@ -155,19 +203,104 @@ server <- function(input, output, session) {
   
   sqlText <- reactiveVal("点击更新数据查看SQL")
   
-  # 设置默认时间范围
-  observeEvent(input$set_default, {
-    updateTextInput(session, "start_time", value = format(now() - minutes(120), "%H:%M:%S"))
-    updateTextInput(session, "end_time", value = format(now(), "%H:%M:%S"))
+  # 时间字符串转换为完整的时间对象
+  parseTime <- function(time_str) {
+    if (validateTimeFormat(time_str)) {
+      today <- as.Date(now())
+      return(ymd_hms(paste(today, time_str)))
+    }
+    return(NULL)
+  }
+  
+  # 滑动条值变化时根据锁定状态更新时间
+  observeEvent(input$time_range, {
+    # 解析开始和结束时间
+    start_time <- parseTime(input$start_time)
+    end_time <- parseTime(input$end_time)
+    
+    if (!is.null(start_time) && !is.null(end_time)) {
+      if (input$lock_start && !input$lock_end) {
+        # 锁定开始时间，调整结束时间
+        new_end_time <- start_time + minutes(input$time_range)
+        updateTextInput(session, "end_time", value = format(new_end_time, "%H:%M:%S"))
+      } else if (input$lock_end && !input$lock_start) {
+        # 锁定结束时间，调整开始时间
+        new_start_time <- end_time - minutes(input$time_range)
+        updateTextInput(session, "start_time", value = format(new_start_time, "%H:%M:%S"))
+      } else if (!input$lock_start && !input$lock_end) {
+        # 都不锁定，基于结束时间调整开始时间（默认行为）
+        new_start_time <- end_time - minutes(input$time_range)
+        updateTextInput(session, "start_time", value = format(new_start_time, "%H:%M:%S"))
+      }
+      # 如果都锁定，则不进行任何操作
+    }
+  })
+  
+  # 显示滑动条对应的时间范围文本
+  output$time_range_text <- renderText({
+    if (input$time_range < 60) {
+      paste(input$time_range, "分钟")
+    } else if (input$time_range == 60) {
+      "1小时"
+    } else if (input$time_range < 120) {
+      paste("1小时", input$time_range - 60, "分钟")
+    } else if (input$time_range == 120) {
+      "2小时"
+    } else if (input$time_range < 180) {
+      paste("2小时", input$time_range - 120, "分钟")
+    } else if (input$time_range == 180) {
+      "3小时"
+    } else if (input$time_range < 240) {
+      paste("3小时", input$time_range - 180, "分钟")
+    } else {
+      paste(round(input$time_range / 60, 1), "小时")
+    }
+  })
+  
+  # 期货交易时间段设置函数
+  observeEvent(input$set_morning, {
+    updateTextInput(session, "start_time", value = "09:00:00")
+    updateTextInput(session, "end_time", value = "12:00:00")
+    updateSliderInput(session, "time_range", value = 180) # 3小时
+  })
+  
+  observeEvent(input$set_afternoon, {
+    updateTextInput(session, "start_time", value = "13:00:00")
+    updateTextInput(session, "end_time", value = "15:00:00")
+    updateSliderInput(session, "time_range", value = 120) # 2小时
+  })
+  
+  observeEvent(input$set_night, {
+    updateTextInput(session, "start_time", value = "21:00:00")
+    updateTextInput(session, "end_time", value = "23:00:00")
+    updateSliderInput(session, "time_range", value = 120) # 2小时
+  })
+  
+  observeEvent(input$set_full_day, {
+    updateTextInput(session, "start_time", value = "09:00:00")
+    updateTextInput(session, "end_time", value = "15:00:00")
+    updateSliderInput(session, "time_range", value = 360) # 6小时
+  })
+  
+  # 快速设置函数 - 根据锁定状态设置时间范围
+  observeEvent(input$set_1h, {
+    updateSliderInput(session, "time_range", value = 60)
+  })
+  
+  observeEvent(input$set_2h, {
+    updateSliderInput(session, "time_range", value = 120)
+  })
+  
+  observeEvent(input$set_3h, {
+    updateSliderInput(session, "time_range", value = 180)
   })
   
   # 验证时间格式
   validateTimeFormat <- function(time_str) {
-    if (grepl("^\\d{2}:\\d{2}:\\d{2}$", time_str)) {
+    if (grepl("^\\d{1,2}:\\d{2}:\\d{2}$", time_str)) {
       return(TRUE)
-    } else {
-      return(FALSE)
     }
+    return(FALSE)
   }
   
   priceData <- eventReactive(input$update, {
@@ -206,9 +339,9 @@ server <- function(input, output, session) {
   })
   
   volData <- eventReactive(input$update, {
-    req(input$tbl)
+    req(input$tbl, input$start_time, input$end_time)
     
-    # 使用相同的时间范围
+    # 验证时间格式
     if (!validateTimeFormat(input$start_time) || !validateTimeFormat(input$end_time)) {
       return(NULL)
     }
@@ -349,7 +482,7 @@ server <- function(input, output, session) {
     
     cat("数据概览\n")
     cat("记录数:", nrow(df), "\n")
-    cat("时间范围:", input$start_time, "至", input$end_time, "\n")
+    cat("选择时间:", input$start_time, "至", input$end_time, "\n")
     cat("实际时间:", format(min(df$UpdateTime)), "至", format(max(df$UpdateTime)), "\n")
     cat("价格: 均值", round(mean(df$LastPrice), 2), 
         "标准差", round(sd(df$LastPrice), 2))
