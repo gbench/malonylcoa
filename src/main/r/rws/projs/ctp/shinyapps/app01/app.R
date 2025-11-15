@@ -4,202 +4,298 @@ library(dplyr)
 library(purrr)
 library(magrittr)
 library(lubridate)
+library(tidyr)
 
-# 加载必要的函数
 batch_load()
 
-# UI部分
 ui <- fluidPage(
   titlePanel("金融数据分析仪表板"),
   tags$head(
-    tags$script(HTML("
-      // 关闭窗口函数
-      function closeWindow() {
-        window.close();
-      }
+    tags$script(HTML("function closeWindow(){window.close();}")),
+    tags$style(HTML("
+      .well-panel{padding:10px;margin-bottom:10px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;}
+      .sql-display{padding:8px;margin:8px 0;background:#e9ecef;border:1px solid #ced4da;border-radius:4px;font-family:monospace;}
+      .stat-card{padding:8px;margin:6px 0;background:white;border:1px solid #dee2e6;border-radius:4px;}
+      .compact-row{margin-bottom:8px;}
+      .compact-row .form-group{margin-bottom:8px;}
+      .inline-group{display:flex;gap:10px;align-items:flex-end;}
+      .inline-group .form-group{flex:1;margin-bottom:0;}
     "))
   ),
+  
   sidebarLayout(
     sidebarPanel(
-      actionButton("update", "更新数据"),
-      # 关闭程序按钮
-      actionButton("close", "关闭应用", class = "btn-danger"),
-
-      # -------------------------------------------------------------
-
-      # 数据源配置
-      h4("数据源配置"),
-      textInput("dbname", "数据库名", value = "ctp"),
-      numericInput("port", "端口", value = 3371),
-      textInput("host", "主机地址", value = "127.0.0.1"),
-      textInput("curtbl", "数据表名", value = "t_rb2601_20251117"),
+      width = 3,
+      div(class = "well-panel",
+          actionButton("update", "更新数据", class = "btn-primary", width = "100%"),
+          br(), actionButton("close", "关闭应用", class = "btn-danger", width = "100%")
+      ),
       
-      # 价格绘图参数
-      h4("价格绘图参数"),
-      numericInput("n", "时间分割点数量", value = 10, min = 5, max = 50),
-      numericInput("span", "分析时长(分钟)", value = 30, min = 1, max = 120),
+      div(class = "well-panel",
+          h4("📊 数据源"),
+          div(class = "compact-row",
+              textInput("tbl", "数据表", value = "t_rb2601_20251117", width = "100%")
+          ),
+          div(class = "inline-group",
+              textInput("db", "数据库", value = "ctp", width = "100%"),
+              numericInput("port", "端口", value = 3371, width = "100%"),
+              textInput("host", "主机", value = "127.0.0.1", width = "100%")
+          )
+      ),
       
-      # 成交量分组参数
-      h4("成交量分析参数"),
-      numericInput("nlevel", "成交量区间分组数量", value = 3, min = 2, max = 10),
-
-      # -------------------------------------------------------------
-            
-      width = 3
+      div(class = "well-panel",
+          h4("📈 价格参数"),
+          div(class = "inline-group",
+              numericInput("n", "时间点数", value = 10, min = 5, max = 50, width = "100%"),
+              numericInput("span", "时长(分)", value = 30, min = 1, max = 120, width = "100%")
+          )
+      ),
+      
+      div(class = "well-panel",
+          h4("📊 成交量参数"),
+          div(class = "compact-row",
+              numericInput("nlev", "分组数", value = 3, min = 2, max = 10, width = "100%")
+          )
+      )
     ),
     
     mainPanel(
+      width = 9,
       tabsetPanel(
-        tabPanel("价格趋势分析", 
-                 plotOutput("pricePlot", height = "600px")),
-        tabPanel("成交量分析",
-                 plotOutput("volumePlot", height = "600px"),
-                 tableOutput("volumeTable"),
-		 tableOutput("volumeTable2")),
-        tabPanel("数据概览",
+        tabPanel("📈 价格趋势", 
+                 plotOutput("pricePlot", height = "500px"),
+                 h4("SQL查询:"),
+                 verbatimTextOutput("priceSql")
+        ),
+        
+        tabPanel("📊 成交量分析",
+                 plotOutput("volPlot", height = "400px"),
+                 fluidRow(
+                   column(6, tableOutput("volTable")),
+                   column(6, verbatimTextOutput("volSummary"))
+                 ),
+                 tableOutput("volTable2")
+        ),
+        
+        tabPanel("📋 数据概览",
                  verbatimTextOutput("dataSummary"),
-                 tableOutput("dataPreview"))
+                 h5("数据预览 (前10行)"),
+                 tableOutput("dataPreview")
+        )
       )
     )
   )
 )
 
-# Server部分
 server <- function(input, output, session) {
   
-  # 反应式数据源函数
-  ds00ctp <- reactive({
-    partial(sqlquery, dbname = input$dbname, port = input$port, host = input$host)
+  ds <- reactive({
+    partial(sqlquery, dbname = input$db, port = input$port, host = input$host)
   })
   
-  # 获取价格数据
+  sqlText <- reactiveVal("点击更新数据查看SQL")
+  
   priceData <- eventReactive(input$update, {
-    req(input$curtbl, input$span)
+    req(input$tbl, input$span)
     
-    # 构建SQL查询 - 价格数据
-    sql <- "select * from %s where UpdateTime>'%s'" |> 
-      sprintf(input$curtbl, (now()-dminutes(input$span)) |> strftime("%H:%M:%S"))
+    sql <- sprintf("select * from %s where UpdateTime>'%s'", 
+                   input$tbl, 
+                   format(now() - minutes(input$span), "%H:%M:%S"))
     
-    # 执行查询
-    ds00ctp()(sql)
+    sqlText(sql)
+    
+    tryCatch({
+      ds()(sql)
+    }, error = function(e) {
+      sqlText(paste("SQL错误:", e$message))
+      NULL
+    })
   })
   
-  # 获取成交量数据
-  volumeData <- eventReactive(input$update, {
-    req(input$curtbl)
+  volData <- eventReactive(input$update, {
+    req(input$tbl)
     
-    # 构建SQL查询 - 成交量数据
-    sql <- "select Id, LastPrice, Volume, Volume - lag(Volume) over(order by Id) Vol, UpdateTime from %s" |> 
-      sprintf(input$curtbl)
+    sql <- sprintf(
+      "select Id, LastPrice, Volume, Volume - lag(Volume) over(order by Id) as Vol, UpdateTime from %s", 
+      input$tbl
+    )
     
-    # 执行查询
-    ds00ctp()(sql)
+    tryCatch({ ds()(sql) }, error = function(e) { NULL })
   })
   
-  # 价格趋势图
+  output$priceSql <- renderText({ sqlText() })
+  
   output$pricePlot <- renderPlot({
     df <- priceData()
     req(df, nrow(df) > 0)
     
-    with(df, # 打开成交数据&暴露元素以方便直接引用：{Id:序列索引，LastPrice:成交价格}
-      ggplot(df, aes(Id, LastPrice)) + geom_point(alpha=0.01) + geom_smooth() +
-        geom_hline(yintercept=2*(1:3-2)*sd(LastPrice)+mean(LastPrice), # 均线与2倍数标准差
-          linewidth=c(1.5, 1, 1.5), color=c("darkred", "gray", "red")) + with(lm(LastPrice~Id), # 趋势回归的成交价格vs序列Id索引模型
-            geom_abline(slope=coefficients[2], intercept=coefficients[1], linewidth=1.5, color="purple")) + # 绘制趋势线
-	scale_x_continuous(breaks=\(xs) seq(min(Id), max(Id), length.out=input$n), labels=\(xs) UpdateTime[xs-min(Id)+1]) + # 索引刻度翻译成时间
-        labs( title = "价格趋势分析", x = "时间", y = "最新成交价格") +
-        theme_minimal()
-    )
+    tryCatch({
+      with(df, {
+        p <- ggplot(df, aes(Id, LastPrice)) + 
+          geom_point(alpha = 0.01, color = "#3498db") + 
+          geom_smooth(color = "#e74c3c", se = TRUE) +
+          geom_hline(yintercept = mean(LastPrice) + c(-2, 0, 2) * sd(LastPrice),
+                     linewidth = c(1.5, 1, 1.5), color = c("#c0392b", "#95a5a6", "#e74c3c")) +
+          geom_abline(slope = coef(lm(LastPrice ~ Id))[2], 
+                      intercept = coef(lm(LastPrice ~ Id))[1], 
+                      linewidth = 1.5, color = "#9b59b6") +
+          scale_x_continuous(
+            breaks = seq(min(Id), max(Id), length.out = input$n), 
+            labels = function(x) UpdateTime[x - min(Id) + 1]
+          ) +
+          labs(title = "价格趋势分析", x = "时间", y = "价格") +
+          theme_minimal()
+        print(p)
+      })
+    }, error = function(e) {
+      plot(1, 1, type = "n", main = "绘图错误")
+      text(1, 1, paste("错误:", e$message), col = "red")
+    })
   })
   
-  # 成交量分析图
-  output$volumePlot <- renderPlot({
-    df <- volumeData()
-    req(df, nrow(df) > 0, input$nlevel > 0)
+  output$volPlot <- renderPlot({
+    df <- volData()
+    req(df, nrow(df) > 0, input$nlev > 0)
     
-    # 移除NA值
     df_clean <- df[!is.na(df$Vol), ]
     
-    xs <- df_clean |> mutate(Level=cut(Vol, input$nlevel)) |> 
-        select(LastPrice, Level) |> # 价格与成交量关系数据
-	table() |> prop.table() |> addmargins() |> # 计算百分比并添加margin统计
-	(\(x) {
-	  attr(x, "dimnames") <- attr(x, "dimnames") |> 
-	  within(Level <- gsub("e\\+03", "K", Level)); 
-	  x
-        }) () |> round(3) # 标题美化并保留3位小数
-     output$volumeTable2 <- renderTable(xs)
-     plot(row.names(xs), xs[,"Sum"], xlab="price", ylab="density")
+    tryCatch({
+      xs <- df_clean |> 
+        mutate(Level = cut(Vol, input$nlev)) |> 
+        select(LastPrice, Level) |> 
+        table() |> 
+        prop.table() |> 
+        addmargins() 
+      
+      attr(xs, "dimnames")$Level <- gsub("e\\+03", "K", attr(xs, "dimnames")$Level)
+      xs <- round(xs, 3)
+      
+      plot_data <- as.data.frame(xs) %>%
+        filter(Level != "Sum" & LastPrice != "Sum") %>%
+        mutate(LastPrice = as.numeric(as.character(LastPrice)),
+               Frequency = ifelse(Freq > 0, Freq, NA))
+      
+      ggplot(plot_data, aes(x = LastPrice, y = Frequency, fill = Level)) +
+        geom_col(position = "stack", alpha = 0.8) +
+        scale_fill_brewer(palette = "Set3") +
+        labs(title = "价格档位 vs 成交量分布", x = "价格", y = "频率") +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
+    }, error = function(e) {
+      plot(1, 1, type = "n", main = "分析错误")
+      text(1, 1, paste("错误:", e$message), col = "red")
+    })
   })
   
-  # 成交量统计表
-  output$volumeTable <- renderTable({
-    df <- volumeData()
+  output$volTable <- renderTable({
+    df <- volData()
     req(df, nrow(df) > 0)
     
     df_clean <- df[!is.na(df$Vol), ]
     
     data.frame(
-      统计量 = c("平均成交量变化", "最大成交量变化", "最小成交量变化", "成交量变化标准差"),
-      数值 = c(
-        round(mean(df_clean$Vol, na.rm = TRUE), 2),
-        round(max(df_clean$Vol, na.rm = TRUE), 2),
-        round(min(df_clean$Vol, na.rm = TRUE), 2),
-        round(sd(df_clean$Vol, na.rm = TRUE), 2)
-      )
+      统计量 = c("均值", "最大值", "最小值", "标准差"),
+      数值 = round(c(mean(df_clean$Vol), max(df_clean$Vol), 
+                   min(df_clean$Vol), sd(df_clean$Vol)), 2)
     )
+  }, bordered = TRUE)
+  
+  output$volSummary <- renderPrint({
+    df <- volData()
+    req(df, nrow(df) > 0)
+    
+    df_clean <- df[!is.na(df$Vol), ]
+    
+    cat("分布统计:\n")
+    cat("价格档位:", length(unique(df_clean$LastPrice)), "\n")
+    cat("成交量组:", input$nlev, "\n")
+    cat("观测数:", nrow(df_clean), "\n")
   })
   
-  # 数据概览
+  output$volTable2 <- renderTable({
+    df <- volData()
+    req(df, nrow(df) > 0, input$nlev > 0)
+    
+    df_clean <- df[!is.na(df$Vol), ]
+    
+    tryCatch({
+      xs <- df_clean |> 
+        mutate(Level = cut(Vol, input$nlev)) |> 
+        select(LastPrice, Level) |> 
+        table() |> 
+        prop.table() |> 
+        addmargins() 
+      
+      attr(xs, "dimnames")$Level <- gsub("e\\+03", "K", attr(xs, "dimnames")$Level)
+      xs <- round(xs, 3)
+      
+      as.data.frame(xs) %>%
+        pivot_wider(names_from = Level, values_from = Freq) %>%
+        arrange(LastPrice)
+      
+    }, error = function(e) {
+      data.frame(Error = paste("错误:", e$message))
+    })
+  }, bordered = TRUE, digits = 3)
+  
   output$dataSummary <- renderPrint({
     df <- priceData()
     req(df)
     
-    cat("价格数据概览:\n")
+    cat("数据概览\n")
     cat("记录数:", nrow(df), "\n")
-    cat("时间范围:", format(min(df$UpdateTime)), "至", format(max(df$UpdateTime)), "\n")
-    cat("价格统计 - 均值:", round(mean(df$LastPrice), 2), "标准差:", round(sd(df$LastPrice), 2), "\n")
+    cat("时间:", format(min(df$UpdateTime)), "至", format(max(df$UpdateTime)), "\n")
+    cat("价格: 均值", round(mean(df$LastPrice), 2), 
+        "标准差", round(sd(df$LastPrice), 2), "\n")
     
-    vol_df <- volumeData()
-    cat("\n成交量数据概览:\n")
-    cat("记录数:", nrow(vol_df), "\n")
-    if ("Vol" %in% names(vol_df)) {
+    vol_df <- volData()
+    if(!is.null(vol_df) && nrow(vol_df) > 0 && "Vol" %in% names(vol_df)) {
       vol_clean <- vol_df[!is.na(vol_df$Vol), ]
-      cat("成交量变化统计 - 均值:", round(mean(vol_clean$Vol), 2), "标准差:", round(sd(vol_clean$Vol), 2), "\n")
+      cat("成交量: 均值", round(mean(vol_clean$Vol), 2), 
+          "标准差", round(sd(vol_clean$Vol), 2), "\n")
     }
   })
   
-  # 数据预览
+  # 修复数据预览
   output$dataPreview <- renderTable({
     df <- priceData()
     req(df)
-    head(df, 10)
-  })
+    
+    # 安全地选择列并处理数据
+    result <- head(df, 10)
+    
+    # 只选择数值和字符列，避免复杂对象
+    simple_cols <- names(result)[sapply(result, function(x) is.numeric(x) | is.character(x))]
+    result <- result[simple_cols]
+    
+    # 安全格式化时间列
+    if("UpdateTime" %in% names(result)) {
+      if(inherits(result$UpdateTime, "POSIXt")) {
+        result$UpdateTime <- format(result$UpdateTime, "%H:%M:%S")
+      } else if(is.character(result$UpdateTime)) {
+        # 如果是字符，提取时间部分
+        result$UpdateTime <- substr(result$UpdateTime, 1, 8)
+      }
+    }
+    
+    result
+  }, bordered = TRUE)
   
-  # 关闭应用逻辑
   observeEvent(input$close, {
-    # 确认对话框
     showModal(modalDialog(
-      title = "确认关闭",
-      "确定要关闭应用吗？",
+      "确定关闭应用吗？",
       footer = tagList(
-        actionButton("confirm_close", "确定", class = "btn-danger"), modalButton("取消")
+        actionButton("confirm_close", "确定", class = "btn-danger"),
+        modalButton("取消")
       )
     ))
   })
   
-  # 确认关闭
   observeEvent(input$confirm_close, {
-    # 移除确认对话框
     removeModal()
-    
-    # 停止Shiny应用
     stopApp()
-    
-    # 尝试关闭浏览器窗口（如果适用）
-    session$sendCustomMessage(type = "closeWindow", list())
   })
 }
 
-# 运行应用
 shinyApp(ui, server)
