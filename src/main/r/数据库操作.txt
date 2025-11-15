@@ -187,6 +187,10 @@ sqlquery.h10ctp("select database()") |> unlist()
 # 数据库的增删改查 (以test数据库为例)
 # 首先在mysql数据库中创建数据库test: create database test default character set utf8mb4;
 local({ # 数据库写入测试
+  # sqlquery(查询), sqlexecute(执行), ctsql(创建), insql(插入), upsql(更新) 等关系数据库的基础工具函数载入！
+  # 此类基础工具函数默认关系数据表拥有一个带有自增长结构的主键id！
+  batch_load() # 基础工具的批量载入
+  
   # test 数据库查询函数
   sqlquery.test <- partial(sqlquery, dbname="test") # 自定义数据库查询
   sqlexecute.test <- partial(sqlexecute, dbname="test") # 自定义数据库执行
