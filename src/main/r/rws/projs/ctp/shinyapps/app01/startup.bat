@@ -1,1 +1,1 @@
-R -e "source('app.R');runApp('.')"
+R -e "source('app.R');runApp('%cd:\=/%')"
