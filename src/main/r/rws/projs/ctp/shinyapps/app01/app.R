@@ -49,7 +49,7 @@ ui <- fluidPage(
           tabsetPanel(
             tabPanel("数据源",
                      div(class = "compact-row",
-                         textInput("tbl", "数据表", value = "t_rb2601_20251117", width = "100%")
+                         textInput("tbl", "数据表", value = "t_rb2601_20251113", width = "100%")
                      ),
                      div(class = "inline-group",
                          textInput("db", "数据库", value = "ctp", width = "100%"),
@@ -148,7 +148,7 @@ ui <- fluidPage(
       style = "padding: 8px;",
       tabsetPanel(
         tabPanel("价格趋势", 
-                 plotOutput("pricePlot", height = "300px"),
+                 plotOutput("pricePlot", height = "450px"),
                  div(class = "sql-display",
                      verbatimTextOutput("priceSql")
                  )
@@ -202,32 +202,30 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # 数据库连接函数
-  ds <- reactive({
-    partial(sqlquery, dbname = input$db, port = input$port, host = input$host)
-  })
-  
   # ========== 核心状态管理 ==========
-  
-  # 1. 手动刷新触发器
   manual_trigger <- reactiveVal(0)
-  
-  # 2. 自动刷新触发器
   auto_trigger <- reactiveVal(0)
-  
-  # 3. SQL显示状态
   sql_display <- reactiveVal("设置时间范围后点击手动刷新查看数据")
   
-  # ========== 工具函数 ==========
+  # ========== 配置常量 ==========
+  trading_sessions <- list(
+    set_morning = list(start = "09:00:00", end = "12:00:00", range = 180),
+    set_afternoon = list(start = "13:00:00", end = "15:00:00", range = 120),
+    set_night = list(start = "21:00:00", end = "23:00:00", range = 120),
+    set_full_day = list(start = "09:00:00", end = "15:00:00", range = 360)
+  )
   
-  # 生成SQL语句
+  quick_settings <- list(set_1h = 60, set_2h = 120, set_3h = 180)
+  
+  # ========== 工具函数 ==========
+  ds <- reactive(partial(sqlquery, dbname = input$db, port = input$port, host = input$host))
+  
   generate_sql <- function() {
     req(input$tbl, input$start_time, input$end_time)
     sprintf("select * from %s where UpdateTime between '%s' and '%s'", 
             input$tbl, input$start_time, input$end_time)
   }
   
-  # 解析时间字符串
   parse_time <- function(time_str) {
     if (grepl("^\\d{1,2}:\\d{2}:\\d{2}$", time_str)) {
       today <- as.Date(now())
@@ -236,119 +234,96 @@ server <- function(input, output, session) {
     NULL
   }
   
-  # 更新时间显示文本
-  output$time_range_text <- renderText({
-    if (input$time_range < 60) {
-      paste(input$time_range, "分钟")
-    } else if (input$time_range == 60) {
-      "1小时"
-    } else if (input$time_range < 120) {
-      paste("1小时", input$time_range - 60, "分钟")
-    } else if (input$time_range == 120) {
-      "2小时"
-    } else if (input$time_range < 180) {
-      paste("2小时", input$time_range - 120, "分钟")
-    } else if (input$time_range == 180) {
-      "3小时"
+  update_sql_and_trigger <- function() {
+    sql_display(generate_sql())
+    if (input$auto_refresh) auto_trigger(auto_trigger() + 1)
+  }
+  
+  create_levels <- function(df, nlev, mode) {
+    req(df, nlev > 0)
+    
+    if (mode == "ntile") {
+      df <- df %>% mutate(Level_ntile = ntile(Vol, nlev))
+      level_ranges <- df %>%
+        group_by(Level_ntile) %>%
+        summarise(min_vol = min(Vol), max_vol = max(Vol), .groups = 'drop') %>%
+        mutate(Level = sprintf("(%.1f, %.1f]", min_vol, max_vol))
+      
+      df <- df %>% 
+        left_join(level_ranges %>% select(Level_ntile, Level), by = "Level_ntile") %>%
+        select(-Level_ntile)
     } else {
-      paste(round(input$time_range / 60, 1), "小时")
+      breaks <- seq(min(df$Vol), max(df$Vol), length.out = nlev + 1)
+      labels <- sprintf("(%.1f, %.1f]", head(breaks, -1), tail(breaks, -1))
+      labels <- gsub("e\\+03", "K", labels)
+      df <- df %>% mutate(Level = cut(Vol, breaks = breaks, labels = labels, include.lowest = TRUE))
     }
+    return(df)
+  }
+  
+  # ========== 统一观察者设置 ==========
+  # SQL更新触发器
+  sql_update_inputs <- c("tbl", "db", "port", "host", "start_time", "end_time")
+  lapply(sql_update_inputs, function(input_id) {
+    observeEvent(input[[input_id]], {
+      if (input_id %in% c("tbl", "start_time", "end_time") && input$auto_refresh) {
+        update_sql_and_trigger()
+      } else {
+        sql_display(generate_sql())
+      }
+    })
   })
   
-  # ========== 时间控制逻辑 ==========
-  
-  # 滑动条调整时间
+  # 时间范围控制
   observeEvent(input$time_range, {
     start_time <- parse_time(input$start_time)
     end_time <- parse_time(input$end_time)
     
     if (!is.null(start_time) && !is.null(end_time)) {
-      if (input$lock_type == "start") {
-        new_end_time <- start_time + minutes(input$time_range)
-        updateTextInput(session, "end_time", value = format(new_end_time, "%H:%M:%S"))
+      new_time <- if (input$lock_type == "start") {
+        list(end_time = format(start_time + minutes(input$time_range), "%H:%M:%S"))
       } else {
-        new_start_time <- end_time - minutes(input$time_range)
-        updateTextInput(session, "start_time", value = format(new_start_time, "%H:%M:%S"))
+        list(start_time = format(end_time - minutes(input$time_range), "%H:%M:%S"))
       }
+      updateTextInput(session, names(new_time), value = new_time[[1]])
     }
-    
-    # 更新SQL显示
-    sql_display(generate_sql())
-    
-    # 如果自动刷新启用，触发自动刷新
-    if (input$auto_refresh) {
-      auto_trigger(auto_trigger() + 1)
-    }
+    update_sql_and_trigger()
   })
   
-  # 手动输入时间时更新SQL
-  observeEvent(input$start_time, {
-    sql_display(generate_sql())
-    if (input$auto_refresh) auto_trigger(auto_trigger() + 1)
-  })
-  
-  observeEvent(input$end_time, {
-    sql_display(generate_sql())
-    if (input$auto_refresh) auto_trigger(auto_trigger() + 1)
-  })
-  
-  # 重置当前时间
-  observeEvent(input$reset_time, {
-    current_time <- format(now(), "%H:%M:%S")
-    if (input$lock_type == "start") {
-      updateTextInput(session, "start_time", value = current_time)
-    } else {
-      updateTextInput(session, "end_time", value = current_time)
-    }
-  })
-  
-  # 交易时间段设置
-  trading_session_handlers <- list(
-    set_morning = list(start = "09:00:00", end = "12:00:00", range = 180),
-    set_afternoon = list(start = "13:00:00", end = "15:00:00", range = 120),
-    set_night = list(start = "21:00:00", end = "23:00:00", range = 120),
-    set_full_day = list(start = "09:00:00", end = "15:00:00", range = 360)
-  )
-  
-  # 为每个交易时间段按钮创建观察者
-  lapply(names(trading_session_handlers), function(btn_id) {
+  # 按钮组设置
+  lapply(names(trading_sessions), function(btn_id) {
     observeEvent(input[[btn_id]], {
-      config <- trading_session_handlers[[btn_id]]
+      config <- trading_sessions[[btn_id]]
       updateTextInput(session, "start_time", value = config$start)
       updateTextInput(session, "end_time", value = config$end)
       updateSliderInput(session, "time_range", value = config$range)
-      sql_display(generate_sql())
-      if (input$auto_refresh) auto_trigger(auto_trigger() + 1)
+      update_sql_and_trigger()
     })
   })
   
-  # 快速设置按钮
-  quick_set_handlers <- list(
-    set_1h = 60,
-    set_2h = 120,
-    set_3h = 180
-  )
-  
-  lapply(names(quick_set_handlers), function(btn_id) {
+  lapply(names(quick_settings), function(btn_id) {
     observeEvent(input[[btn_id]], {
-      updateSliderInput(session, "time_range", value = quick_set_handlers[[btn_id]])
+      updateSliderInput(session, "time_range", value = quick_settings[[btn_id]])
     })
   })
   
-  # ========== 数据查询逻辑 ==========
-  
-  # 统一的查询触发器
-  query_trigger <- reactive({
-    list(
-      manual = manual_trigger(),
-      auto = auto_trigger()
-    )
+  # ========== 事件处理 ==========
+  observeEvent(input$reset_time, {
+    current_time <- format(now(), "%H:%M:%S")
+    updateTextInput(session, ifelse(input$lock_type == "start", "start_time", "end_time"), 
+                    value = current_time)
   })
   
-  # 价格数据查询
+  observeEvent(input$update, {
+    manual_trigger(manual_trigger() + 1)
+    sql_display(generate_sql())
+  })
+  
+  # ========== 数据查询 ==========
+  query_trigger <- reactive(list(manual = manual_trigger(), auto = auto_trigger()))
+  
   price_data <- eventReactive(query_trigger(), {
     sql <- sql_display()
-    
     tryCatch({
       result <- ds()(sql)
       if (is.null(result) || nrow(result) == 0) {
@@ -362,60 +337,26 @@ server <- function(input, output, session) {
     })
   })
   
-  # 成交量数据查询
   volume_data <- eventReactive(query_trigger(), {
     req(input$tbl, input$start_time, input$end_time)
-    
     sql <- sprintf(
       "select Id, LastPrice, Volume, Volume - lag(Volume) over(order by Id) as Vol, UpdateTime from %s where UpdateTime between '%s' and '%s'", 
       input$tbl, input$start_time, input$end_time
     )
-    
-    tryCatch({ 
-      result <- ds()(sql)
-      result
-    }, error = function(e) { 
-      NULL 
-    })
+    tryCatch({ ds()(sql) }, error = function(e) { NULL })
   })
-  
-  # ========== 用户操作处理 ==========
-  
-  # 手动刷新按钮
-  observeEvent(input$update, {
-    manual_trigger(manual_trigger() + 1)
-    sql_display(generate_sql())
-  })
-  
-  # ========== 分组处理函数 ==========
-  
-  # 创建分组标签
-  create_levels <- function(df, nlev, mode) {
-    req(df, nlev > 0)
-    
-    if (mode == "ntile") {
-      # 等频分组
-      df <- df %>%
-        mutate(Level = as.factor(ntile(Vol, nlev)))
-    } else {
-      # 等距分组
-      breaks <- seq(min(df$Vol), max(df$Vol), length.out = nlev + 1)
-      labels <- sprintf("(%.1f, %.1f]", head(breaks, -1), tail(breaks, -1))
-      
-      # 美化标签：将科学计数法转换为K格式
-      labels <- gsub("e\\+03", "K", labels)
-      
-      df <- df %>%
-        mutate(Level = cut(Vol, breaks = breaks, labels = labels, include.lowest = TRUE))
-    }
-    
-    return(df)
-  }
   
   # ========== 输出渲染 ==========
+  output$time_range_text <- renderText({
+    hours <- floor(input$time_range / 60)
+    minutes <- input$time_range %% 60
+    
+    if (hours == 0) paste(input$time_range, "分钟")
+    else if (minutes == 0) paste(hours, "小时")
+    else paste(hours, "小时", minutes, "分钟")
+  })
   
-  # SQL显示
-  output$priceSql <- renderText({ sql_display() })
+  output$priceSql <- renderText(sql_display())
   
   # 价格趋势图
   output$pricePlot <- renderPlot({
@@ -424,47 +365,35 @@ server <- function(input, output, session) {
     
     tryCatch({
       lm_model <- lm(LastPrice ~ Id, data = df)
-      lm_coef <- coef(lm_model)
-      
-      with(df, {
-        ggplot(df, aes(Id, LastPrice)) + 
-          geom_point(alpha = 0.01, color = "#3498db", size = 0.5) + 
-          geom_smooth(color = "#e74c3c", se = TRUE, size = 0.8) +
-          geom_hline(yintercept = mean(LastPrice) + c(-2, 0, 2) * sd(LastPrice),
-                     linewidth = c(1, 0.5, 1), color = c("#c0392b", "#95a5a6", "#e74c3c")) +
-          geom_abline(slope = lm_coef[2], intercept = lm_coef[1], 
-                      linewidth = 1, color = "#9b59b6") +
-          scale_x_continuous(
-            breaks = seq(min(Id), max(Id), length.out = input$n), 
-            labels = function(x) UpdateTime[x - min(Id) + 1]
-          ) +
-          labs(title = NULL, x = "时间", y = "价格") +
-          theme_minimal() +
-          theme(text = element_text(size = 10),
-                axis.text = element_text(size = 8))
-      })
+      ggplot(df, aes(Id, LastPrice)) + 
+        geom_point(alpha = 0.1, color = "#3498db", size = 0.5) + 
+        geom_smooth(color = "#e74c3c", se = TRUE, size = 0.8) +
+        geom_hline(yintercept = mean(df$LastPrice) + c(-2, 0, 2) * sd(df$LastPrice),
+                   linewidth = c(1, 0.5, 1), color = c("#c0392b", "#95a5a6", "#e74c3c")) +
+        geom_abline(slope = coef(lm_model)[2], intercept = coef(lm_model)[1], 
+                    linewidth = 1, color = "#9b59b6") +
+        scale_x_continuous(
+          breaks = seq(min(df$Id), max(df$Id), length.out = input$n), 
+          labels = function(x) df$UpdateTime[x - min(df$Id) + 1]
+        ) +
+        labs(x = "时间", y = "价格") +
+        theme_minimal() +
+        theme(text = element_text(size = 10), axis.text = element_text(size = 8))
     }, error = function(e) {
       plot(1, 1, type = "n", main = "绘图错误")
       text(1, 1, paste("错误:", e$message), col = "red", cex = 0.7)
     })
   })
   
-  # 成交量分析图
-  output$volPlot <- renderPlot({
+  # 成交量分析
+  render_volume_analysis <- function() {
     df <- volume_data()
     req(df, nrow(df) > 0, input$nlev > 0)
     
     df_clean <- df[!is.na(df$Vol), ]
-    
     tryCatch({
-      # 使用选择的分组模式
       df_clean <- create_levels(df_clean, input$nlev, input$group_mode)
-      
-      xs <- df_clean |> 
-        select(LastPrice, Level) |> 
-        table() |> 
-        prop.table() |> 
-        addmargins() 
+      xs <- df_clean |> select(LastPrice, Level) |> table() |> prop.table() |> addmargins()
       
       plot_data <- as.data.frame(xs) %>%
         filter(Level != "Sum" & LastPrice != "Sum") %>%
@@ -474,28 +403,26 @@ server <- function(input, output, session) {
       ggplot(plot_data, aes(x = LastPrice, y = Frequency, fill = Level)) +
         geom_col(position = "stack", alpha = 0.8, width = 0.8) +
         scale_fill_brewer(palette = "Set3") +
-        labs(title = NULL, x = "价格", y = "频率", fill = "成交量分组") +
+        labs(x = "价格", y = "频率", fill = "成交量分组") +
         theme_minimal() +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1),
-              legend.position = "bottom")
-      
+        theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
     }, error = function(e) {
       plot(1, 1, type = "n", main = "分析错误")
       text(1, 1, paste("错误:", e$message), col = "red", cex = 0.7)
     })
-  })
+  }
   
-  # 统计表格
+  output$volPlot <- renderPlot(render_volume_analysis())
+  
   output$volTable <- renderTable({
     df <- volume_data()
     req(df, nrow(df) > 0)
     
     df_clean <- df[!is.na(df$Vol), ]
-    
+    stats <- c(mean(df_clean$Vol), max(df_clean$Vol), min(df_clean$Vol), sd(df_clean$Vol))
     data.frame(
       统计项 = c("均值", "最大值", "最小值", "标准差"),
-      数值 = round(c(mean(df_clean$Vol), max(df_clean$Vol), 
-                   min(df_clean$Vol), sd(df_clean$Vol)), 2)
+      数值 = round(stats, 2)
     )
   }, bordered = TRUE, align = 'c', width = "100%")
   
@@ -504,38 +431,27 @@ server <- function(input, output, session) {
     req(df, nrow(df) > 0)
     
     df_clean <- df[!is.na(df$Vol), ]
-    
     cat("价格档位:", length(unique(df_clean$LastPrice)), "\n")
     cat("成交量组:", input$nlev, "\n")
     cat("分组模式:", ifelse(input$group_mode == "ntile", "等频分组(ntile)", "等距分组(cut)"), "\n")
     cat("观测数:", nrow(df_clean))
   })
   
-  # 价格-成交量分布表
   output$volTable2 <- renderTable({
     df <- volume_data()
     req(df, nrow(df) > 0, input$nlev > 0)
     
     df_clean <- df[!is.na(df$Vol), ]
-    
     tryCatch({
       df_clean <- create_levels(df_clean, input$nlev, input$group_mode)
-      
-      xs <- df_clean |> 
-        select(LastPrice, Level) |> 
-        table() |> 
-        prop.table() |> 
-        addmargins() 
+      xs <- df_clean |> select(LastPrice, Level) |> table() |> prop.table() |> addmargins()
       
       result_table <- as.data.frame(xs) %>%
         pivot_wider(names_from = Level, values_from = Freq) %>%
         arrange(LastPrice)
       
-      # 美化列名：将科学计数法转换为K格式
       colnames(result_table) <- gsub("e\\+03", "K", colnames(result_table))
-      
       result_table
-      
     }, error = function(e) {
       data.frame(错误 = paste("表格错误:", e$message))
     })
@@ -545,18 +461,15 @@ server <- function(input, output, session) {
     df <- price_data()
     req(df)
     
-    cat("数据概览\n")
-    cat("记录数:", nrow(df), "\n")
+    cat("数据概览\n记录数:", nrow(df), "\n")
     cat("选择时间:", input$start_time, "至", input$end_time, "\n")
     cat("实际时间:", format(min(df$UpdateTime)), "至", format(max(df$UpdateTime)), "\n")
-    cat("价格: 均值", round(mean(df$LastPrice), 2), 
-        "标准差", round(sd(df$LastPrice), 2))
+    cat("价格: 均值", round(mean(df$LastPrice), 2), "标准差", round(sd(df$LastPrice), 2))
     
     vol_df <- volume_data()
     if(!is.null(vol_df) && nrow(vol_df) > 0 && "Vol" %in% names(vol_df)) {
       vol_clean <- vol_df[!is.na(vol_df$Vol), ]
-      cat("\n成交量: 均值", round(mean(vol_clean$Vol), 2), 
-          "标准差", round(sd(vol_clean$Vol), 2))
+      cat("\n成交量: 均值", round(mean(vol_clean$Vol), 2), "标准差", round(sd(vol_clean$Vol), 2))
     }
   })
   
@@ -569,13 +482,12 @@ server <- function(input, output, session) {
     result <- result[simple_cols]
     
     if("UpdateTime" %in% names(result)) {
-      if(inherits(result$UpdateTime, "POSIXt")) {
-        result$UpdateTime <- format(result$UpdateTime, "%H:%M:%S")
-      } else if(is.character(result$UpdateTime)) {
-        result$UpdateTime <- substr(result$UpdateTime, 1, 8)
+      result$UpdateTime <- if(inherits(result$UpdateTime, "POSIXt")) {
+        format(result$UpdateTime, "%H:%M:%S")
+      } else {
+        substr(result$UpdateTime, 1, 8)
       }
     }
-    
     result
   }, bordered = TRUE, width = "100%")
   
