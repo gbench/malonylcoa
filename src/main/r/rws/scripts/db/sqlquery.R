@@ -135,6 +135,17 @@ insql <- function( dfm, tbl ) {
   sprintf( "insert into %s (%s) values \n  %s\n", tbl, keys, values ) # SQL 插入记录行数据（多行）语句
 }
 
+#' 表数据更新SQL
+#' @param dfm 数据框数据
+#' @param tbl 数据表名
+#' @param pk 数据主键
+upsql <- \(dfm, tbl, pk="id") { # 数据更新
+    nms <- names(dfm) # 提取各个数据列名
+    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''",x=_))) |> 
+      apply(1, \(line) paste(line[-match(pk, nms)], collapse=",\n  ")) # 字段拼接
+    sprintf("update %s set\n  %s \nwhere id=%s\n", tbl, flds, dfm$id) # 数据更新的SQL语句
+} # upsql
+
 # 自定义主机与数据库
 sqlquery.h10ctp2 <- partial(sqlquery, host="192.168.1.10", dbname="ctp2")
 sqlquery.ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp")

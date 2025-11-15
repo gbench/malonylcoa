@@ -1,0 +1,1 @@
+R -e "source('app.R');runApp('%cd:\=/%', port=10000)"

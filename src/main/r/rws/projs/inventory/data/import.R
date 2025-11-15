@@ -9,7 +9,7 @@
 "RMySQL,tibble,dplyr,purrr,readxl" |> strsplit(",") |> unlist() |> lapply(\(p) {
   if (!require(p, character.only = T)) {
     install.packages(p)
-    library(readxl, character.only = T)
+    library(p, character.only = T)
   } # if
 }) # lapply
 
@@ -76,11 +76,11 @@ regexec("(.+)\\.xlsx", files) |> regmatches(files, m=_) |> Reduce(rbind, x=_) |>
 
 # 修改products数据表的 code 字段
 change_product_code <- \() {
-  sqlquery.inv("alter table t_products modify column code varchar(100)") # 列字段长度扩增
-  sqlquery.inv("select * from t_products") |> 
+  sqlquery.inv("alter table t_product modify column code varchar(100)") # 列字段长度扩增
+  sqlquery.inv("select * from t_product") |> 
     mutate(code = sprintf(fmt="%s%03d", gsub("\\s", "_", tolower(ename)), 1)) |> # 将 code 设置为{ename}001的版本样式
-    update("t_products") # 批量更新
-  sqlquery.inv("select * from t_products")
+    update("t_product") # 批量更新
+  sqlquery.inv("select * from t_product")
 }
 
 # 修改code

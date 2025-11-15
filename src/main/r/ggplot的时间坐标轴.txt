@@ -69,3 +69,61 @@ labels <- ifelse(minute(breaks)==0, format(breaks, "%H:00"), sprintf("%02d", min
 # 时间绘图
 ggplot(data, aes(UpdateTime, LastPrice)) + geom_line() +
   scale_x_datetime(breaks=breaks, limits=range(breaks), labels=labels)
+# -------------------------------------------------------------------------------------------------------------------
+
+# 版本1
+local({
+  # datasource of {host:00, db:ctp, port:3371}
+  n <- 10 # 分割点
+  ds00ctp <- partial(sqlquery, dbname="ctp", port=3371, host="127.0.0.1") # 数据查询方法之定义数据源:ds{host}{db}
+  curtbl <- "t_rb2601_20251114" # 成交数据tickdata的数据表名，current table 当前表
+  "select * from %s" |> sprintf(curtbl) |> ds00ctp() %>% with( # 打开成交数据&暴露元素，方便直接引用，{Id:序列索引，LastPrice:成交价格}
+    ggplot(., aes(Id, LastPrice)) + geom_point(alpha=0.01) + geom_smooth() +
+      geom_hline(yintercept=2*(1:3-2)*sd(LastPrice)+mean(LastPrice), # 均线与2倍数标准差
+        linewidth=c(1.5, 1, 1.5), color=c("darkred", "gray", "red")) + with(lm(LastPrice~Id), # 趋势回归的成交价格vs序列Id索引模型
+      geom_abline(slope=coefficients[2], intercept=coefficients[1], linewidth=1.5, color="purple")) + # 趋势线
+      scale_x_continuous(# 自定义时间轴 将 对应的Id值转换成时间刻度
+        breaks=\(xs) seq(xs[1], xs[2], length.out=n) |> round(0), # 范围xs中的n个均分点,考虑scales::extended_breaks原因，首尾两Id无效
+        labels=\(bs, index=match(bs[bs %in% Id], Id)) UpdateTime[append(range(seq(Id)), index, 1)] # 时间刻度
+      ) # scale_x_continuous
+  ) # with 打开成交数据&暴露元素
+})
+
+# 版本2：检测分点bs与Id之间最近的距离：sapply(bs, \(x) which.min(abs(Id - x)))
+local({
+  # datasource of {host:00, db:ctp, port:3371}
+  n <- 10 # 分割点
+  ds00ctp <- partial(sqlquery, dbname="ctp", port=3371, host="127.0.0.1") # 数据查询方法之定义数据源:ds{host}{db}
+  curtbl <- "t_rb2601_20251114" # 成交数据tickdata的数据表名，current table 当前表
+  "select * from %s" |> sprintf(curtbl) |> ds00ctp() %>% with( # 打开成交数据&暴露元素，方便直接引用，{Id:序列索引，LastPrice:成交价格}
+    ggplot(., aes(Id, LastPrice)) + geom_point(alpha=0.01) + geom_smooth() +
+      geom_hline(yintercept=2*(1:3-2)*sd(LastPrice)+mean(LastPrice), # 均线与2倍数标准差
+        linewidth=c(1.5, 1, 1.5), color=c("darkred", "gray", "red")) + with(lm(LastPrice~Id), # 趋势回归的成交价格vs序列Id索引模型
+      geom_abline(slope=coefficients[2], intercept=coefficients[1], linewidth=1.5, color="purple")) + # 趋势线
+      scale_x_continuous(# 自定义时间轴 将 对应的Id值转换成时间刻度
+        breaks=\(xs) seq(xs[1], xs[2], length.out=n) |> round(0), # 范围xs中的n个均分点,考虑scales::extended_breaks原因，首尾两Id无效
+        # 对于不在Id中的断点，使用findInterval找到最近的位置。并将结果为0的情况转换为1
+        # labels=\(bs,  xs=match(bs, Id), indices=ifelse(is.na(xs), findInterval(bs, Id), xs)) UpdateTime[ifelse(0==indices,1, indices)] # 时间刻度
+        # 手动检测：通过which.min(abs(Id - x)) 找到最接近分点x的Id，并获对应于此Id记录所在整个tickdata中的索引偏移
+        labels=\(bs) UpdateTime[sapply(bs, \(x) which.min(abs(Id - x)))] # 翻译成时间刻度
+      ) # scale_x_continuous
+  ) # with 打开成交数据&暴露元素
+})
+
+# 版本3：直接均分Id索引 breaks=\(xs) seq(min(Id), max(Id), length.out=n) 
+# 注意：scale_x_continuous(breaks=\(xs) seq(1, length(Id), length.out=n), labels=\(xs) UpdateTime[xs]) # 这是错的  !
+# 因为 当Id不是从1开始的时候，breaks就不是Id（坐标轴的aes图型映射）的有效值范围，因此它就是不是有效分点, labels收不到非法breaks
+# 即 ggplot会把非法breaks给强制转换成NA，进而坐标轴为空白！
+local({
+  n <- 10 # 时间分割点数量
+  # datasource of {host:00, db:ctp, port:3371}
+  ds00ctp <- partial(sqlquery, dbname="ctp", port=3371, host="127.0.0.1") # 数据查询方法之定义数据源:ds{host}{db}
+  curtbl <- "t_rb2601_20251114" # 成交数据tickdata的数据表名，current table 当前表
+  "select * from %s" |> sprintf(curtbl) |> ds00ctp() %>% with( # 打开成交数据&暴露元素以方便直接引用：{Id:序列索引，LastPrice:成交价格}
+    ggplot(., aes(Id, LastPrice)) + geom_point(alpha=0.01) + geom_smooth() +
+      geom_hline(yintercept=2*(1:3-2)*sd(LastPrice)+mean(LastPrice), # 均线与2倍数标准差
+        linewidth=c(1.5, 1, 1.5), color=c("darkred", "gray", "red")) + with(lm(LastPrice~Id), # 趋势回归的成交价格vs序列Id索引模型
+      geom_abline(slope=coefficients[2], intercept=coefficients[1], linewidth=1.5, color="purple")) + # 绘制趋势线
+      scale_x_continuous(breaks=\(xs) seq(min(Id), max(Id), length.out=n), labels=\(xs) UpdateTime[xs-min(Id)+1]) # 索引刻度转时间标签
+  ) # with 打开成交数据&暴露元素
+})

@@ -26,11 +26,11 @@ opts2 <- \(tbls, default, n=-1) match(tbls, sqlquery.inv("show tables") |> unlis
   (\(.) if(length(.)<2) .[[1]] else .) () # 对于只有一行数据的情况，进行简化处理
 
 # 产品列表
-products <- opts2("t_products", c("苹果" = "apple001", "香蕉" = "banana001", "草莓" = "strawberry001"), 10)
+products <- opts2("t_product", c("苹果" = "apple001", "香蕉" = "banana001", "草莓" = "strawberry001"), 10)
 # 公司列表
-companies <- opts2("t_companies", c("沃尔玛" = "CMPN001", "亚马逊" = "CMPN002"), 10)
+companies <- opts2("t_company", c("沃尔玛" = "CMPN001", "亚马逊" = "CMPN002"), 10)
 # 仓库列表
-warehouses <- opts2("t_warehouses", c("北京京邦达贸易有限公司" = "WRHS001", "顺丰控股股份有限公司" = "WRHS002"), 10)
+warehouses <- opts2("t_warehouse", c("北京京邦达贸易有限公司" = "WRHS001", "顺丰控股股份有限公司" = "WRHS002"), 10)
 
 # 默认统计公式
 default_path <- "cbind(total_in, total_out, qty, times) ~ name + date + company_id + warehouse_id"
