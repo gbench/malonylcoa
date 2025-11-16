@@ -125,6 +125,13 @@ ui <- fluidPage(
             tabPanel("价格",
                      div(class = "compact-row",
                          numericInput("n", "时间点数", value = 10, min = 5, max = 50, width = "100%")
+                     ),
+                     div(class = "compact-row",
+                         selectInput("kline_interval", "K线图时间间隔",
+                                     choices = c("1分钟" = "1min", "3分钟" = "3min", "5分钟" = "5min",
+                                                 "10分钟" = "10min", "15分钟" = "15min", "30分钟" = "30min",
+                                                 "60分钟" = "60min"),
+                                     selected = "5min", width = "100%")
                      )
             ),
             
@@ -151,6 +158,13 @@ ui <- fluidPage(
                  plotOutput("pricePlot", height = "450px"),
                  div(class = "sql-display",
                      verbatimTextOutput("priceSql")
+                 )
+        ),
+        
+        tabPanel("K线图",
+                 plotOutput("klinePlot", height = "450px"),
+                 div(class = "sql-display",
+                     verbatimTextOutput("klineSql")
                  )
         ),
         
@@ -269,6 +283,44 @@ server <- function(input, output, session) {
     return(df)
   }
   
+  # K线图数据处理函数
+  create_kline_data <- function(df, interval) {
+    req(df, nrow(df) > 0, interval)
+    
+    # 将时间转换为POSIXct格式
+    df <- df %>%
+      mutate(DateTime = ymd_hms(paste(as.Date(now()), UpdateTime)))
+    
+    # 根据间隔计算时间分组
+    interval_minutes <- as.numeric(gsub("min", "", interval))
+    
+    df_kline <- df %>%
+      mutate(TimeGroup = floor_date(DateTime, unit = paste(interval_minutes, "min"))) %>%
+      group_by(TimeGroup) %>%
+      summarise(
+        Open = first(LastPrice),
+        High = max(LastPrice),
+        Low = min(LastPrice),
+        Close = last(LastPrice),
+        Volume = sum(Volume - lag(Volume, default = first(Volume)), na.rm = TRUE),
+        Count = n(),
+        .groups = 'drop'
+      ) %>%
+      filter(!is.na(TimeGroup)) %>%
+      arrange(TimeGroup)
+    
+    # 计算涨跌和颜色
+    df_kline <- df_kline %>%
+      mutate(
+        Change = Close - Open,
+        Color = ifelse(Change >= 0, "red", "green"),
+        HL_Range = High - Low,
+        OC_Range = abs(Change)
+      )
+    
+    return(df_kline)
+  }
+  
   # ========== 统一观察者设置 ==========
   # SQL更新触发器
   sql_update_inputs <- c("tbl", "db", "port", "host", "start_time", "end_time")
@@ -354,6 +406,13 @@ server <- function(input, output, session) {
     tryCatch({ ds()(sql) }, error = function(e) { NULL })
   })
   
+  # K线图数据
+  kline_data <- reactive({
+    df <- price_data()
+    req(df, nrow(df) > 0, input$kline_interval)
+    create_kline_data(df, input$kline_interval)
+  })
+  
   # ========== 输出渲染 ==========
   output$time_range_text <- renderText({
     hours <- floor(input$time_range / 60)
@@ -365,6 +424,10 @@ server <- function(input, output, session) {
   })
   
   output$priceSql <- renderText(sql_display())
+  
+  output$klineSql <- renderText({
+    paste("K线图数据 - 间隔:", input$kline_interval, "\n", sql_display())
+  })
   
   # 价格趋势图
   output$pricePlot <- renderPlot({
@@ -389,6 +452,55 @@ server <- function(input, output, session) {
         theme(text = element_text(size = 10), axis.text = element_text(size = 8))
     }, error = function(e) {
       plot(1, 1, type = "n", main = "绘图错误")
+      text(1, 1, paste("错误:", e$message), col = "red", cex = 0.7)
+    })
+  })
+  
+  # K线图 - 修复版本
+  output$klinePlot <- renderPlot({
+    kline_df <- kline_data()
+    req(kline_df, nrow(kline_df) > 0)
+    
+    tryCatch({
+      # 计算合适的宽度（基于时间间隔和K线数量）
+      n_bars <- nrow(kline_df)
+      interval_minutes <- as.numeric(gsub("min", "", input$kline_interval))
+      
+      # 使用数值计算宽度，避免使用minutes()函数
+      bar_width_seconds <- interval_minutes * 60 * 0.4  # 40%的间隔宽度
+      
+      ggplot(kline_df, aes(x = TimeGroup)) +
+        # 绘制影线（最高到最低）
+        geom_segment(aes(xend = TimeGroup, y = Low, yend = High), 
+                     color = "black", linewidth = 0.5) +
+        # 绘制实体（开盘到收盘）- 修复版本
+        geom_rect(aes(xmin = TimeGroup - bar_width_seconds,
+                      xmax = TimeGroup + bar_width_seconds,
+                      ymin = pmin(Open, Close), 
+                      ymax = pmax(Open, Close),
+                      fill = Color),
+                  alpha = 0.8) +
+        scale_fill_manual(values = c("red" = "#e74c3c", "green" = "#2ecc71")) +
+        labs(
+          title = paste("K线图 -", input$kline_interval, "间隔"),
+          x = "时间",
+          y = "价格",
+          fill = "涨跌"
+        ) +
+        theme_minimal() +
+        theme(
+          text = element_text(size = 10),
+          axis.text = element_text(size = 8),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "none"
+        ) +
+        scale_x_datetime(
+          date_labels = "%H:%M", 
+          date_breaks = ifelse(interval_minutes <= 5, "30 min", 
+                               ifelse(interval_minutes <= 15, "1 hour", "2 hours"))
+        )
+    }, error = function(e) {
+      plot(1, 1, type = "n", main = "K线图绘制错误")
       text(1, 1, paste("错误:", e$message), col = "red", cex = 0.7)
     })
   })
