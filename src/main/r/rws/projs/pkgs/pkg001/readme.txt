@@ -2,7 +2,8 @@
 # 环境准备
 # -----------------------------------------------------------------------------------
 
-# 启动R程序，选择sqlquery.R等资料文件所在位置
+# 启动R程序，选择sqlquery.R等资料文件所在位置(这个目录不能包含DESCRIPTION文件
+# 否则devtools会提示在其他项目内项目
 > file.choose() |> dirname() |> setwd()
 > getwd()
 [1] "F:/slicef/ws/rws/dwk/2025-11-16/0942"
@@ -61,6 +62,10 @@ rm(list=ls())
 
 # 移除程序包
 "malonylcoa" |> strsplit(",") |> unlist() |> lapply(\(pkg) tryCatch(remove.packages(pkg, lib=.libPaths()), error=\(e) e))
+
+# 却没没有包文件
+# > library(malonylcoa)
+# Error in library(malonylcoa) : there is no package called ‘malonylcoa’
 
 # 安装包文件
 install.packages("0942/malonylcoa_1.0.0.tar.gz", repos=NULL, type="source")
@@ -192,8 +197,8 @@ sqlquery("select Id, LastPrice, Volume,  avg(LastPrice) over(rows between 9 prec
 # LastPrice: 100, 102, 105, 108, 110, 115, 120
 # 对于 LastPrice = 110 的记录：计算价格在 [101, 119] 区间内（110±9）的记录数量
 # 业务意义：
-# 识别价格密集区 - Num值大的区域表示交易活跃
-# 支撑阻力位分析 - 高Num值可能表示重要的价格水平
+# 识别价格密集区 - Num值大的区域表示特定价格区间的交易活跃
+# 支撑阻力位分析 - 高Num值可能表示特定价格区间的重要的价格水平
 # 市场流动性分析 - 观察在不同价格区间的交易集中程度
 #
 sqlquery("select Id, LastPrice, Volume,  count(LastPrice) over(order by LastPrice range between 9 preceding and current row) Num , 
@@ -216,5 +221,5 @@ sqlquery("select Id, LastPrice, Volume,  count(LastPrice) over(order by LastPric
 # # ℹ Use `print(n = ...)` to see more rows
 # > 
 
-# 价格密度绘图
+# 绘图价格强度
 with(dfm, plot(LastPrice, Num))
