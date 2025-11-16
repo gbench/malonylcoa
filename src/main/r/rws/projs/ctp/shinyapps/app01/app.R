@@ -283,7 +283,7 @@ server <- function(input, output, session) {
     return(df)
   }
   
-  # K线图数据处理函数
+  # K线图数据处理函数 - 为箱线图准备数据
   create_kline_data <- function(df, interval) {
     req(df, nrow(df) > 0, interval)
     
@@ -294,6 +294,7 @@ server <- function(input, output, session) {
     # 根据间隔计算时间分组
     interval_minutes <- as.numeric(gsub("min", "", interval))
     
+    # 计算箱线图统计量
     df_kline <- df %>%
       mutate(TimeGroup = floor_date(DateTime, unit = paste(interval_minutes, "min"))) %>%
       group_by(TimeGroup) %>%
@@ -302,6 +303,10 @@ server <- function(input, output, session) {
         High = max(LastPrice),
         Low = min(LastPrice),
         Close = last(LastPrice),
+        Q1 = quantile(LastPrice, 0.25),  # 第一四分位数
+        Q3 = quantile(LastPrice, 0.75),  # 第三四分位数
+        Median = median(LastPrice),      # 中位数
+        Mean = mean(LastPrice),          # 均值
         Volume = sum(Volume - lag(Volume, default = first(Volume)), na.rm = TRUE),
         Count = n(),
         .groups = 'drop'
@@ -456,33 +461,72 @@ server <- function(input, output, session) {
     })
   })
   
-  # K线图 - 修复版本
+  # K线图 - 箱线图风格
   output$klinePlot <- renderPlot({
     kline_df <- kline_data()
     req(kline_df, nrow(kline_df) > 0)
     
     tryCatch({
-      # 计算合适的宽度（基于时间间隔和K线数量）
-      n_bars <- nrow(kline_df)
+      # 为每个时间区间创建完整的价格数据用于boxplot
+      df <- price_data()
+      req(df, nrow(df) > 0)
+      
+      # 将时间转换为POSIXct格式并创建时间分组
       interval_minutes <- as.numeric(gsub("min", "", input$kline_interval))
+      df_boxplot <- df %>%
+        mutate(
+          DateTime = ymd_hms(paste(as.Date(now()), UpdateTime)),
+          TimeGroup = floor_date(DateTime, unit = paste(interval_minutes, "min"))
+        ) %>%
+        filter(!is.na(TimeGroup))
       
-      # 使用数值计算宽度，避免使用minutes()函数
-      bar_width_seconds <- interval_minutes * 60 * 0.4  # 40%的间隔宽度
+      # 计算每个时间组的颜色（基于涨跌）
+      group_colors <- df_boxplot %>%
+        group_by(TimeGroup) %>%
+        summarise(
+          FirstPrice = first(LastPrice),
+          LastPrice = last(LastPrice),
+          .groups = 'drop'
+        ) %>%
+        mutate(
+          Change = LastPrice - FirstPrice,
+          Color = ifelse(Change >= 0, "red", "green")
+        )
       
-      ggplot(kline_df, aes(x = TimeGroup)) +
-        # 绘制影线（最高到最低）
-        geom_segment(aes(xend = TimeGroup, y = Low, yend = High), 
-                     color = "black", linewidth = 0.5) +
-        # 绘制实体（开盘到收盘）- 修复版本
-        geom_rect(aes(xmin = TimeGroup - bar_width_seconds,
-                      xmax = TimeGroup + bar_width_seconds,
-                      ymin = pmin(Open, Close), 
-                      ymax = pmax(Open, Close),
-                      fill = Color),
-                  alpha = 0.8) +
+      # 合并颜色信息
+      df_boxplot <- df_boxplot %>%
+        left_join(group_colors %>% select(TimeGroup, Color), by = "TimeGroup")
+      
+      ggplot(df_boxplot, aes(x = TimeGroup, y = LastPrice, group = TimeGroup)) +
+        # 使用geom_boxplot绘制箱线图
+        geom_boxplot(
+          aes(fill = Color),
+          alpha = 0.7,
+          outlier.size = 0.8,
+          outlier.alpha = 0.5,
+          lwd = 0.3
+        ) +
+        # 添加开盘收盘标记
+        geom_point(
+          data = kline_df,
+          aes(x = TimeGroup, y = Open),
+          shape = 124, size = 2, color = "blue", alpha = 0.8
+        ) +
+        geom_point(
+          data = kline_df,
+          aes(x = TimeGroup, y = Close),
+          shape = 124, size = 2, color = "purple", alpha = 0.8
+        ) +
+        # 添加趋势线（中位数连线）
+        geom_line(
+          data = kline_df,
+          aes(x = TimeGroup, y = Median, group = 1),
+          color = "orange", linewidth = 0.5, alpha = 0.7
+        ) +
         scale_fill_manual(values = c("red" = "#e74c3c", "green" = "#2ecc71")) +
         labs(
-          title = paste("K线图 -", input$kline_interval, "间隔"),
+          title = paste("K线图 -", input$kline_interval, "间隔 (箱线图风格)"),
+          subtitle = "蓝色竖线: 开盘价 | 紫色竖线: 收盘价 | 橙色线: 中位数趋势",
           x = "时间",
           y = "价格",
           fill = "涨跌"
@@ -492,7 +536,8 @@ server <- function(input, output, session) {
           text = element_text(size = 10),
           axis.text = element_text(size = 8),
           axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.position = "none"
+          legend.position = "none",
+          plot.subtitle = element_text(size = 9, color = "gray40")
         ) +
         scale_x_datetime(
           date_labels = "%H:%M", 
