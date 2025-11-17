@@ -41,7 +41,7 @@
 #'
 #' @export
 sqlfile <- function(input) {
-  lines <- if (file.exists(input)) readLines(input, warn = FALSE) else
+  lines <- if (length(input)==1 && file.exists(input)) readLines(input, warn = FALSE) else
     if (is.character(input)) input else stop("无效输入")
   
   result <- Reduce(\(acc, line) {
@@ -55,4 +55,60 @@ sqlfile <- function(input) {
   
   if (!is.null(result$title)) result$stmts[[result$title]] <- paste(result$buffer, collapse = "\n")
   result$stmts
+}
+
+
+#' Fill SQL Template with Parameters
+#'
+#' Replaces parameter placeholders in SQL templates with actual values.
+#' Supports different formatting based on parameter prefix:
+#' - `##param` parameters are inserted without quotes (for table/column names)
+#' - `#param` parameters are wrapped in quotes (for string values)
+#'
+#' @param template Character string containing the SQL template with parameter placeholders
+#' @param params Named list of parameters where names are parameter placeholders and values are replacements
+#'
+#' @return Character string with parameters substituted
+#'
+#' @examples
+#' \dontrun{
+#' # SQL template with parameters
+#' sql_template <- "SELECT * FROM ##table WHERE date >= #start_date AND status = #status"
+#' 
+#' # Parameters
+#' params <- list(
+#'   "##table" = "users",
+#'   "#start_date" = "2024-01-01", 
+#'   "#status" = "active"
+#' )
+#' 
+#' # Fill template
+#' filled_sql <- fill(sql_template, params)
+#' cat(filled_sql)
+#' # Output: SELECT * FROM users WHERE date >= '2024-01-01' AND status = 'active'
+#' }
+#'
+#' @export
+fill <- function(template, params) {
+  if (length(params) == 0) {
+    return(template)
+  }
+  
+  Reduce(
+    f = function(acc, kv) {
+      pattern <- kv[1]
+      replacement <- kv[2]
+      
+      # Determine formatting based on parameter prefix
+      format_spec <- switch(
+        sub("^\\s*(#+)[^#]+", "\\1", pattern),
+        "##" = "%s",  # No quotes for table/column names
+        "'%s'"        # Quotes for string values
+      )
+      
+      gsub(pattern, sprintf(format_spec, replacement), acc, fixed = TRUE)
+    },
+    x = mapply(c, names(params), params, SIMPLIFY = FALSE),
+    init = template
+  )
 }
