@@ -30,9 +30,10 @@ use_readme_rmd()
 use_mit_license() 
 
 # 源码与资料编辑准备
-# 修改sqlquery.R文件（把sqlquery.R文件移动到R目录）
-# 修改sqlfile.R文件（把sqlfile.R文件移动到R目录）
-# 修改DESCRIPTION文件(把DESCRIPTION文件移动到根目录）
+# 修改sqlquery.R文件（把./R/sqlquery.R文件移动到malonylcoa/R目录）
+# 修改sqlfile.R文件（把./R/sqlfile.R文件移动到malonylcoa/R目录）
+# 添加sql模板的实例文件 (把./inst/sql/kline.sql移动到malonylcoa/根目录)
+# 修改DESCRIPTION文件(把./DESCRIPTION文件移动到malonylcoa/根目录）
 
 # 编写测试文档
 "dbfun,sqlquery,sqlexecute,ctsql,insql,upsql,sqlquery_h10ctp2,sqlquery_ctp,sqlfile,fill" |> 
@@ -91,7 +92,7 @@ rm(list=ls())
 # 移除程序包
 "malonylcoa" |> strsplit(",") |> unlist() |> lapply(\(pkg) tryCatch(remove.packages(pkg, lib=.libPaths()), error=\(e) e))
 
-# 却没没有包文件
+# 确认没有包文件
 # > library(malonylcoa)
 # Error in library(malonylcoa) : there is no package called ‘malonylcoa’
 
