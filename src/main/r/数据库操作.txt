@@ -294,12 +294,71 @@ sqlquery.h10ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp") # 自定
 # 结果就可能有点混乱（不同行相同里列的名称会添加一个数字序号），所以需要根据情况适当使用
 sqlquery.h10ctp("select database()") |> unlist()
 
+# ----------------------------------------------------------------------------------------------------------------
+# sqlfile 使用示例
+# ----------------------------------------------------------------------------------------------------------------
+
+# sqlfile文件示例
+# shell 生成 kline.sql 文件
+cat >> kline.sql << EOF 
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据
+-- # 1min
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
+WITH MinuteKLine AS (
+    SELECT 
+        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
+        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
+        MAX(LastPrice) OVER w as HighPrice,
+        MIN(LastPrice) OVER w as LowPrice,
+        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
+        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        COUNT(*) OVER w as TradeCount
+    FROM ##tbl
+    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
+)
+SELECT DISTINCT *
+FROM MinuteKLine
+ORDER BY MinuteTime; 
+
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据
+-- # 1min_maxcnt
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
+WITH MinuteKLine AS (
+    SELECT 
+        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
+        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
+        MAX(LastPrice) OVER w as HighPrice,
+        MIN(LastPrice) OVER w as LowPrice,
+        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
+        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        COUNT(*) OVER w as TradeCount
+    FROM ##tbl
+    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
+)
+SELECT DISTINCT *
+FROM MinuteKLine
+ORDER BY MinuteTime
+LIMIT ##maxcnt; 
+
+EOF
+
 # sql 语句模板的读取与处理
 local({
+   # sqlfile模板测试
   cat("-----------------------------------------\n")
   cat("# SQL语句模板的填充示例\n")
   cat("-----------------------------------------\n")
-  input <- c(
+  lines <- c( # 文本行向量
       "-- # 用户查询",
       "SELECT user_id, username, email",
       "FROM users",
@@ -310,11 +369,36 @@ local({
       "FROM orders",
       "WHERE order_date BETWEEN #begtime AND #endtime",
       "LIMIT ##maxcnt")
-  sqls <- sqlfile(input) # 读取语句模板
+   
+  sqls <- sqlfile( lines) # 读取语句模板
   fill(sqls[["用户查询"]], list("#status"="active")) |> cat("\n")
-  cat("----------------\n")
+  cat("-----------------------------------------\n")
   fill(sqls[["订单统计"]], list("#begtime"="9:00:00", "#endtime"="18:00:00", "##maxcnt"=100))  |> cat("\n")
+  cat("-----------------------------------------\n")
+  cat("# K线读取示例\n")
+  cat("-----------------------------------------\n")
+  # sqlfile文件读取测试
+  params <- list("##tbl"="t_rb2601_20251117", "#startime"="13:00", "#endtime"="15:00", "##maxcnt"=5) # sql参数
+  sql <- fill(sqlfile("kline.sql")[["1min_maxcnt"]], params) ; cat(sql, "\n") # sql语句
+  ds00ctp <- partial(sqlquery, dbname="ctp") # ds:datasource, 00:本机ip, ctp:数据名称
+  kldata <- ds00ctp(sql) ; kldata # K线数据
 })
+
+# 返回结果示例
+# # A tibble: 5 × 7
+#   MinuteTime OpenPrice HighPrice LowPrice ClosePrice MinuteVolume TradeCount
+#   <chr>          <dbl>     <dbl>    <dbl>      <dbl>        <dbl>      <dbl>
+# 1 13:30           3079      3084     3079       3083         7123        120
+# 2 13:31           3083      3089     3082       3089        24068        120
+# 3 13:32           3089      3089     3087       3087         9654        120
+# 4 13:33           3087      3089     3087       3088         3968        120
+# 5 13:34           3088      3089     3087       3088         4990        120
+# >
+
+# ----------------------------------------------------------------------------------------------------------------
+# 数据库读取示例
+# ----------------------------------------------------------------------------------------------------------------
+
 
 # 数据库的增删改查 (以test数据库为例)
 # 首先在mysql数据库中创建数据库test: create database test default character set utf8mb4;
