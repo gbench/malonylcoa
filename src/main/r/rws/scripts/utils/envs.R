@@ -70,3 +70,180 @@ REC <- function(...) {
   
   setNames(values, keys)
 }
+
+#' 创建REC函数构建器
+#'
+#' 该函数返回一个专门用于生成特定键名REC调用的函数。
+#' 主要用于创建具有固定键名的数据记录构造函数。
+#'
+#' @param keys 字符向量或逗号分隔的字符串，指定REC函数的键名
+#' @param .func_name 可选参数，指定生成的函数名称（用于错误消息）
+#'
+#' @return 返回一个函数，该函数接受与键名数量相等的值参数，
+#'         并返回对应的REC函数调用
+#'
+#' @examples
+#' \dontrun{
+#' # 创建具有固定键名的REC构建器
+#' rb <- rec.rb("a,b,c")
+#' rb(1, 2, 3)  # 返回 REC(a, 1, b, 2, c, 3)
+#'
+#' # 使用字符向量
+#' rb2 <- rec.rb(c("name", "age", "city"))
+#' rb2("John", 25, "New York")
+#'
+#' # 生成的函数可以重复使用
+#' person_rb <- rec.rb("name,age,gender")
+#' person1 <- person_rb("Alice", 30, "F")
+#' person2 <- person_rb("Bob", 25, "M")
+#' }
+#'
+#' @seealso \code{\link{REC}} 基础REC函数
+#' @export
+rec.rb <- function(keys, .func_name = NULL) {
+  # 参数验证和处理
+  if (is.character(keys) && length(keys) == 1) {
+    # 如果是逗号分隔的字符串，分割为字符向量
+    keys <- strsplit(keys, ",")[[1]]
+    keys <- trimws(keys)  # 去除前后空格
+  }
+  
+  if (!is.character(keys) || length(keys) == 0) {
+    stop("keys参数必须是字符向量或逗号分隔的字符串")
+  }
+  
+  # 移除空字符串
+  keys <- keys[keys != ""]
+  
+  if (length(keys) == 0) {
+    stop("keys参数不能为空")
+  }
+  
+  # 检查键名有效性
+  invalid_keys <- keys[!grepl("^[#a-zA-Z_][#a-zA-Z0-9_]*$", keys)]
+  if (length(invalid_keys) > 0) {
+    stop("无效的键名: ", paste(invalid_keys, collapse = ", "), 
+         "。键名必须以#、字母或下划线开头，只能包含#、字母、数字和下划线。")
+  }
+  
+  func_name <- .func_name %||% paste("REC", paste(keys, collapse = "_"), sep = "_")
+  
+  # 创建并返回构建器函数
+  function(...) {
+    values <- list(...)
+    
+    # 验证参数数量
+    if (length(values) != length(keys)) {
+      stop("函数 ", func_name, " 需要 ", length(keys), " 个参数，但提供了 ", length(values), " 个")
+    }
+    
+    # 构建REC调用表达式
+    args <- vector("list", length(keys) * 2)
+    
+    # 交替放置键和值
+    for (i in seq_along(keys)) {
+      args[[2 * i - 1]] <- as.symbol(keys[i])
+      args[[2 * i]] <- values[[i]]
+    }
+    
+    # 创建REC调用
+    rec_call <- as.call(c(list(as.symbol("REC")), args))
+    
+    # 评估并返回结果
+    eval(rec_call, envir = parent.frame())
+  }
+}
+
+#' 便捷的REC构建器创建函数
+#'
+#' rec.rb的别名，提供更简洁的命名
+#'
+#' @inheritParams rec.rb
+#' @return 返回一个REC构建器函数
+#'
+#' @examples
+#' \dontrun{
+#' # 使用record_builder创建构建器
+#' rb <- record_builder("x,y,z")
+#' rb(10, 20, 30)
+#' }
+#'
+#' @export
+record_builder <- rec.rb
+
+#' 创建具有类型检查的REC构建器
+#'
+#' 增强版本的REC构建器，支持参数类型验证
+#'
+#' @param keys 字符向量或逗号分隔的字符串，指定键名
+#' @param types 可选的类型规范，用于参数类型检查
+#' @param .func_name 可选参数，指定生成的函数名称
+#'
+#' @return 返回一个具有类型检查的REC构建器函数
+#'
+#' @examples
+#' \dontrun{
+#' # 创建具有类型检查的构建器
+#' typed_rb <- rec.rb.typed("name,age,active", c("character", "numeric", "logical"))
+#' typed_rb("John", 25, TRUE)  # 正确
+#' typed_rb("John", "25", TRUE)  # 错误：age应该是numeric
+#' }
+#'
+#' @export
+rec.rb.typed <- function(keys, types = NULL, .func_name = NULL) {
+  # 处理键名（与rec.rb相同）
+  if (is.character(keys) && length(keys) == 1) {
+    keys <- strsplit(keys, ",")[[1]]
+    keys <- trimws(keys)
+  }
+  
+  if (!is.character(keys) || length(keys) == 0) {
+    stop("keys参数必须是字符向量或逗号分隔的字符串")
+  }
+  
+  keys <- keys[keys != ""]
+  
+  # 类型检查逻辑
+  if (!is.null(types)) {
+    if (length(types) != length(keys)) {
+      stop("types参数的长度必须与keys参数相同")
+    }
+    
+    # 类型验证函数
+    validate_type <- function(value, type, key) {
+      type_ok <- switch(
+        type,
+        "character" = is.character(value),
+        "numeric" = is.numeric(value),
+        "integer" = is.integer(value),
+        "logical" = is.logical(value),
+        "factor" = is.factor(value),
+        "list" = is.list(value),
+        "any" = TRUE,
+        TRUE  # 默认情况下不进行严格检查
+      )
+      
+      if (!type_ok) {
+        stop("参数 '", key, "' 应该是 ", type, " 类型，但得到的是 ", class(value)[1])
+      }
+    }
+  }
+  
+  # 创建基础构建器
+  base_builder <- rec.rb(keys, .func_name)
+  
+  # 返回增强的构建器函数
+  function(...) {
+    values <- list(...)
+    
+    # 类型检查
+    if (!is.null(types)) {
+      for (i in seq_along(values)) {
+        validate_type(values[[i]], types[i], keys[i])
+      }
+    }
+    
+    # 调用基础构建器
+    base_builder(...)
+  }
+}
