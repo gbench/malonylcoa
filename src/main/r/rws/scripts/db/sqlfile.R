@@ -42,7 +42,7 @@
 #' @export
 sqlfile <- function(input) {
   lines <- if (length(input)==1 && file.exists(input)) readLines(input, warn = FALSE) else
-    if (is.character(input)) input else stop("无效输入")
+    if (is.character(input)) input else stop("Input must be a valid file path or character vector")
   
   result <- Reduce(\(acc, line) {
     if (grepl("^\\s*--\\s*#\\s+([^#\\s].*?)\\s*$", line)) {
