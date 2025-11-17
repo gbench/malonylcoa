@@ -149,6 +149,116 @@ upsql <- \(dfm, tbl, pk="id") { # 数据更新
     sprintf("update %s set\n  %s \nwhere %s='%s'\n", tbl, flds, pk, dfm[, pk]) # 数据更新的SQL语句
 }
 
+#' 解析SQL脚本文件为命名SQL语句列表
+#'
+#' 该函数读取SQL脚本文件，将其解析为命名SQL语句的列表。SQL脚本使用特殊注释格式来标识不同的SQL语句块。
+#'
+#' @param input 字符向量，可以是文件路径或包含SQL脚本内容的字符向量
+#' @return 一个命名列表，其中名称是SQL语句的标题，值是相应的SQL语句内容
+#'
+#' @details
+#' SQL脚本格式说明：
+#' - 使用 `-- # 标题名` 格式来标识SQL语句块的开始
+#' - `-- #参数名` 或 `-- ##参数名` 格式被视为参数注释，不会被识别为标题
+#' - 支持行尾注释（使用 `--` 或 `//`）
+#' - 自动过滤空行和纯注释行
+#'
+#' @examples
+#' \dontrun{
+#' # 从文件读取
+#' sql_list <- script_file("path/to/sql_scripts.sql")
+#'
+#' # 从字符向量读取
+#' sql_content <- c(
+#'   "-- # 用户查询",
+#'   "SELECT * FROM users",
+#'   "WHERE active = TRUE",
+#'   "",
+#'   "-- # 产品统计",
+#'   "SELECT category, COUNT(*) as count",
+#'   "FROM products",
+#'   "GROUP BY category"
+#' )
+#' sql_list <- script_file(sql_content)
+#'
+#' # 使用解析后的SQL语句
+#' users_sql <- sql_list[["用户查询"]]
+#' products_sql <- sql_list[["产品统计"]]
+#' }
+#'
+#' @export
+sqlfile <- function(input) {
+  lines <- if (length(input)==1 && file.exists(input)) readLines(input, warn = FALSE) else
+    if (is.character(input)) input else stop("无效输入")
+  
+  result <- Reduce(\(acc, line) {
+    if (grepl("^\\s*--\\s*#\\s+([^#\\s].*?)\\s*$", line)) {
+      if (!is.null(acc$title)) acc$stmts[[acc$title]] <- paste(acc$buffer, collapse = "\n")
+      list(stmts = acc$stmts, title = sub("^\\s*--\\s*#\\s+([^#\\s].*?)\\s*$", "\\1", line), buffer = character())
+    } else if (!grepl("^\\s*--", line) && nchar(trimws(line)) > 0) {
+      list(stmts = acc$stmts, title = acc$title, buffer = c(acc$buffer, sub("\\s*((--)|(//)).*$", "", line)))
+    } else acc
+  }, lines, init = list(stmts = list(), title = NULL, buffer = character()))
+  
+  if (!is.null(result$title)) result$stmts[[result$title]] <- paste(result$buffer, collapse = "\n")
+  result$stmts
+}
+
+#' Fill SQL Template with Parameters
+#'
+#' Replaces parameter placeholders in SQL templates with actual values.
+#' Supports different formatting based on parameter prefix:
+#' - `##param` parameters are inserted without quotes (for table/column names)
+#' - `#param` parameters are wrapped in quotes (for string values)
+#'
+#' @param template Character string containing the SQL template with parameter placeholders
+#' @param params Named list of parameters where names are parameter placeholders and values are replacements
+#'
+#' @return Character string with parameters substituted
+#'
+#' @examples
+#' \dontrun{
+#' # SQL template with parameters
+#' sql_template <- "SELECT * FROM ##table WHERE date >= #start_date AND status = #status"
+#' 
+#' # Parameters
+#' params <- list(
+#'   "##table" = "users",
+#'   "#start_date" = "2024-01-01", 
+#'   "#status" = "active"
+#' )
+#' 
+#' # Fill template
+#' filled_sql <- fill(sql_template, params)
+#' cat(filled_sql)
+#' # Output: SELECT * FROM users WHERE date >= '2024-01-01' AND status = 'active'
+#' }
+#'
+#' @export
+fill <- function(template, params) {
+  if (length(params) == 0) {
+    return(template)
+  }
+  
+  Reduce(
+    f = function(acc, kv) {
+      pattern <- kv[1]
+      replacement <- kv[2]
+      
+      # Determine formatting based on parameter prefix
+      format_spec <- switch(
+        sub("^\\s*(#+)[^#]+", "\\1", pattern),
+        "##" = "%s",  # No quotes for table/column names
+        "'%s'"        # Quotes for string values
+      )
+      
+      gsub(pattern, sprintf(format_spec, replacement), acc, fixed = TRUE)
+    },
+    x = mapply(c, names(params), params, SIMPLIFY = FALSE),
+    init = template
+  )
+}
+
 # ----------------------------------------------------------------------------------------------------------------
 # 基本使用示例
 # ----------------------------------------------------------------------------------------------------------------
@@ -183,6 +293,112 @@ sqlquery.h10ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp") # 自定
 # 可以用 unlist() 把只有一行数据数据的的结果变成一个单值向量，这个对于利用SQL函数比database()这样的结果是很方便的，但是对于多行多列的情况
 # 结果就可能有点混乱（不同行相同里列的名称会添加一个数字序号），所以需要根据情况适当使用
 sqlquery.h10ctp("select database()") |> unlist()
+
+# ----------------------------------------------------------------------------------------------------------------
+# sqlfile 使用示例
+# ----------------------------------------------------------------------------------------------------------------
+
+# sqlfile文件示例
+# shell 生成 kline.sql 文件
+cat >> kline.sql << EOF 
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据
+-- # 1min
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
+WITH MinuteKLine AS (
+    SELECT 
+        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
+        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
+        MAX(LastPrice) OVER w as HighPrice,
+        MIN(LastPrice) OVER w as LowPrice,
+        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
+        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        COUNT(*) OVER w as TradeCount
+    FROM ##tbl
+    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
+)
+SELECT DISTINCT *
+FROM MinuteKLine
+ORDER BY MinuteTime; 
+
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据
+-- # 1min_maxcnt
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
+WITH MinuteKLine AS (
+    SELECT 
+        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
+        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
+        MAX(LastPrice) OVER w as HighPrice,
+        MIN(LastPrice) OVER w as LowPrice,
+        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
+        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        COUNT(*) OVER w as TradeCount
+    FROM ##tbl
+    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
+)
+SELECT DISTINCT *
+FROM MinuteKLine
+ORDER BY MinuteTime
+LIMIT ##maxcnt; 
+
+EOF
+
+# sql 语句模板的读取与处理
+local({
+   # sqlfile模板测试
+  cat("-----------------------------------------\n")
+  cat("# SQL语句模板的填充示例\n")
+  cat("-----------------------------------------\n")
+  lines <- c( # 文本行向量
+      "-- # 用户查询",
+      "SELECT user_id, username, email",
+      "FROM users",
+      "WHERE status = #status -- 只查询活跃用户",
+      "",
+      "-- # 订单统计",
+      "SELECT COUNT(*) as order_count, SUM(amount) as total_amount",
+      "FROM orders",
+      "WHERE order_date BETWEEN #begtime AND #endtime",
+      "LIMIT ##maxcnt")
+   
+  sqls <- sqlfile( lines) # 读取语句模板
+  fill(sqls[["用户查询"]], list("#status"="active")) |> cat("\n")
+  cat("-----------------------------------------\n")
+  fill(sqls[["订单统计"]], list("#begtime"="9:00:00", "#endtime"="18:00:00", "##maxcnt"=100))  |> cat("\n")
+  cat("-----------------------------------------\n")
+  cat("# K线读取示例\n")
+  cat("-----------------------------------------\n")
+  # sqlfile文件读取测试
+  params <- list("##tbl"="t_rb2601_20251117", "#startime"="13:00", "#endtime"="15:00", "##maxcnt"=5) # sql参数
+  sql <- fill(sqlfile("kline.sql")[["1min_maxcnt"]], params) ; cat(sql, "\n") # sql语句
+  ds00ctp <- partial(sqlquery, dbname="ctp") # ds:datasource, 00:本机ip, ctp:数据名称
+  kldata <- ds00ctp(sql) ; kldata # K线数据
+})
+
+# 返回结果示例
+# # A tibble: 5 × 7
+#   MinuteTime OpenPrice HighPrice LowPrice ClosePrice MinuteVolume TradeCount
+#   <chr>          <dbl>     <dbl>    <dbl>      <dbl>        <dbl>      <dbl>
+# 1 13:30           3079      3084     3079       3083         7123        120
+# 2 13:31           3083      3089     3082       3089        24068        120
+# 3 13:32           3089      3089     3087       3087         9654        120
+# 4 13:33           3087      3089     3087       3088         3968        120
+# 5 13:34           3088      3089     3087       3088         4990        120
+# >
+
+# ----------------------------------------------------------------------------------------------------------------
+# 数据库读取示例
+# ----------------------------------------------------------------------------------------------------------------
+
 
 # 数据库的增删改查 (以test数据库为例)
 # 首先在mysql数据库中创建数据库test: create database test default character set utf8mb4;

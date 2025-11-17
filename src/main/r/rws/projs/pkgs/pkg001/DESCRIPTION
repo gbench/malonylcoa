@@ -1,0 +1,33 @@
+Package: malonylcoa
+Type: Package
+Title: Database Utilities for MySQL Operations
+Version: 1.0.0
+Author: gbench
+Maintainer: gbench <gbench@sina.com>
+Description: A collection of database utility functions for MySQL operations including
+    query execution, table creation, data insertion and updates. Provides convenient
+    wrappers for common database operations with support for connection management,
+    transaction handling, and SQL generation from data frames.
+License: MIT + file LICENSE
+URL: https://github.com/gbench/malonylcoa
+BugReports: https://github.com/gbench/malonylcoa/issues
+Depends: R (>= 4.1.0)
+Imports: 
+    RMySQL,
+    DBI,
+    dplyr,
+    tibble,
+    jsonlite,
+    purrr,
+    rlang,
+    utils
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Config/testthat/edition: 3

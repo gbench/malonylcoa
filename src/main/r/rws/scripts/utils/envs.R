@@ -1,6 +1,6 @@
 #' 计算起始环境对象x的各个环境闭包
 #' @param x 起始的环境对象
-#' @param ret 放回值，上一阶调用的返回值
+#' @param ret 返回值，上一阶调用的返回值
 #' @return 起始环境对象x的各个环境闭包
 envclos <- \(x=sys.frame(sys.nframe()), ret=list()) if(identical(emptyenv(), x)) ret else parent.env(x) |> envclos(append(x, ret));
 
