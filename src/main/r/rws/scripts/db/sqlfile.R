@@ -1,39 +1,42 @@
-#' 解析SQL脚本文件为命名SQL语句列表
+#' Parse SQL Script File into Named SQL Statements List
 #'
-#' 该函数读取SQL脚本文件，将其解析为命名SQL语句的列表。SQL脚本使用特殊注释格式来标识不同的SQL语句块。
+#' This function reads a SQL script file and parses it into a named list of SQL statements.
+#' SQL scripts use special comment formats to identify different SQL statement blocks.
 #'
-#' @param input 字符向量，可以是文件路径或包含SQL脚本内容的字符向量
+#' @param input Character vector, either a file path or a character vector containing SQL script content
 #'
-#' @return 一个命名列表，其中名称是SQL语句的标题，值是相应的SQL语句内容
+#' @return A named list where names are SQL statement titles and values are corresponding SQL statement content
 #'
 #' @details
-#' SQL脚本格式说明：
-#' - 使用 `-- # 标题名` 格式来标识SQL语句块的开始
-#' - `-- #参数名` 或 `-- ##参数名` 格式被视为参数注释，不会被识别为标题
-#' - 支持行尾注释（使用 `--` 或 `//`）
-#' - 自动过滤空行和纯注释行
+#' SQL script format specification:
+#' - Use `-- # Title Name` format to identify the start of SQL statement blocks
+#' - `-- #param` or `-- ##param` formats are treated as parameter comments and not recognized as titles
+#' - Supports inline comments (using `--` or `//`)
+#' - Automatically filters empty lines and pure comment lines
+#'
+#' The function uses functional programming with `Reduce` for efficient processing and state management.
 #'
 #' @examples
 #' \dontrun{
-#' # 从文件读取
+#' # Read from file
 #' sql_list <- script_file("path/to/sql_scripts.sql")
 #'
-#' # 从字符向量读取
+#' # Read from character vector
 #' sql_content <- c(
-#'   "-- # 用户查询",
+#'   "-- # User Query",
 #'   "SELECT * FROM users",
 #'   "WHERE active = TRUE",
 #'   "",
-#'   "-- # 产品统计",
+#'   "-- # Product Stats",
 #'   "SELECT category, COUNT(*) as count",
 #'   "FROM products",
 #'   "GROUP BY category"
 #' )
 #' sql_list <- script_file(sql_content)
 #'
-#' # 使用解析后的SQL语句
-#' users_sql <- sql_list[["用户查询"]]
-#' products_sql <- sql_list[["产品统计"]]
+#' # Use parsed SQL statements
+#' users_sql <- sql_list[["User Query"]]
+#' products_sql <- sql_list[["Product Stats"]]
 #' }
 #'
 #' @export
