@@ -31,16 +31,44 @@ use_mit_license()
 
 # 源码与资料编辑准备
 # 修改sqlquery.R文件（把sqlquery.R文件移动到R目录）
+# 修改sqlfile.R文件（把sqlfile.R文件移动到R目录）
 # 修改DESCRIPTION文件(把DESCRIPTION文件移动到根目录）
 
 # 编写测试文档
-"dbfun,sqlquery,sqlexecute,ctsql,insql,upsql,sqlquery_h10ctp2,sqlquery_ctp" |> 
+"dbfun,sqlquery,sqlexecute,ctsql,insql,upsql,sqlquery_h10ctp2,sqlquery_ctp,sqlfile,fill" |> 
   strsplit(",") |> unlist() |> lapply(\(x) use_test(x, F))
+
+# 测试文件编写示例
+cat >> F:/slicef/ws/rws/dwk/2025-11-16/0942/malonylcoa/tests/testthat/test-fill.R << EOF
+test_that("fill works", {
+  expect_equal(
+    fill("select * from ##tbl where status=#status", 
+      list("##tbl"="t_user", "#status"="active")), 
+    "select * from t_user where status='active'")
+})
+EOF
+
+# 执行测试&检验，直至完全通过检查
+test()
+
+# ℹ Testing malonylcoa
+# ✔ | F W  S  OK | Context                                                                         
+# ✔ |          1 | ctsql                                                                                      
+# ✔ |          1 | dbfun
+# ✔ |          1 | fill
+# ✔ |          1 | insql
+# ✔ |          1 | sqlexecute
+# ✔ |          1 | sqlfile
+# ✔ |          1 | sqlquery
+# ✔ |          1 | sqlquery_ctp
+# ✔ |          1 | sqlquery_h10ctp2
+# ══ Results ══════════════════
+# [ FAIL 0 | WARN 0 | SKIP 0 | PASS 10 ]
 
 # 生产&更新 帮助文档与NAMSPACE文件
 document()
 
-# 再次检查
+# 再次检查(test之后的portable检查）
 check()
 
 # 打包生成
