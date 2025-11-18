@@ -32,6 +32,7 @@ use_mit_license()
 # 源码与资料编辑准备
 # 修改sqlquery.R文件（把./R/sqlquery.R文件移动到malonylcoa/R目录）
 # 修改sqlfile.R文件（把./R/sqlfile.R文件移动到malonylcoa/R目录）
+# 修改envs.R文件（把./R/envs.R文件移动到malonylcoa/R目录）
 # 添加sql模板的实例文件 (把./inst/sql/kline.sql移动到malonylcoa/根目录)
 # 修改DESCRIPTION文件(把./DESCRIPTION文件移动到malonylcoa/根目录）
 
