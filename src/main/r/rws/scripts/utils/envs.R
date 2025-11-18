@@ -110,17 +110,17 @@ pgn <- function(ps = 1:3, gn = length(ps)) {
 #' @export
 #'
 #' @examples
-#' # Basic usage with simple values
-#' REC(a = 1, b = 2, c = 3)
+#' # Basic usage with key-value pairs
+#' REC(a, 1, b, 2, c, 3)
 #'
 #' # With expressions that need evaluation
-#' REC(x = 1 + 1, y = mean(1:10), z = paste("hello", "world"))
+#' REC(x, 1 + 1, y, mean(1:10), z, paste("hello", "world"))
 #'
 #' # With undefined variables (falls back to character)
-#' REC(name = undefined_var, value = "safe_string")
+#' REC(name, undefined_var, value, "safe_string")
 #'
 #' # Mixed types
-#' REC(number = 42, text = "hello", flag = TRUE, vector = 1:5)
+#' REC(number, 42, text, "hello", flag, TRUE, vector, 1:5)
 #'
 #' @seealso \code{\link{list}} for creating simple lists,
 #'   \code{\link{setNames}} for naming list elements,
@@ -308,7 +308,7 @@ create_builder_function <- function(keys, types) {
     values <- list(...)
     validate_argument_count(values, keys)
     
-    result <- setNames(values, keys)
+    result <- stats::setNames(values, keys)
     
     if (!is.null(types)) {
       result <- apply_type_validation(result, types, keys)
@@ -339,7 +339,7 @@ validate_argument_count <- function(values, keys) {
 #' @keywords internal
 apply_type_validation <- function(values, types, keys) {
   Map(validate_and_convert_type, values, types, keys) |> 
-    setNames(keys)
+    stats::setNames(keys)
 }
 
 #' Core type validation and conversion function
@@ -488,5 +488,5 @@ validate_symbol <- function(value) {
 # record.builder(name = xxx)(1) |> jsonlite::toJSON()
 # # character键名 {"character":[1]} 
 # record.builder(name = character)(1) |> jsonlite::toJSON()
-# char 为 类型约束 {"name":["1"]} 
+# # char 为 类型约束 {"name":["1"]} 
 # record.builder(name = char)(1) |> jsonlite::toJSON()
