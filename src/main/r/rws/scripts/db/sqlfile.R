@@ -118,169 +118,337 @@ fill <- function(template, params) {
 #'
 #' Internal function to get the path to SQL template files included in the package.
 #'
+#' @param recursive logical. Should the listing recurse into directories?
 #' @return Character vector of file paths to package SQL templates
 #' @keywords internal
-.get_package_sql_files <- function() {
+.get_package_sql_files <- function(recursive = FALSE) {
   package_dir <- system.file("sql", package = "malonylcoa")
-  if (nchar(package_dir) > 0 && dir.exists(package_dir)) {
-    list.files(package_dir, pattern = "\\.sql$", full.names = TRUE)
+  
+  if (nchar(package_dir) > 0L && dir.exists(package_dir)) {
+    list.files(
+      package_dir,
+      pattern = "\\.sql$",
+      full.names = TRUE,
+      recursive = recursive,
+      ignore.case = TRUE
+    )
   } else {
-    character(0)
+    character(0L)
   }
 }
 
-
-#' Execute Parameterized SQL Query and Return Data Frame
+#' Find SQL Files in Working Directory
 #'
-#' This function searches for SQL templates in workspace files, parses them, 
-#' replaces parameters, and executes the query returning results as a data frame.
-#' When `name` is a SQL statement (starting with SQL keywords), it directly 
-#' processes the SQL without file lookup.
+#' Internal function to find SQL files in working directory with flexible input handling.
 #'
-#' @param name Character string specifying either:
-#'   - Name of SQL statement in template files, or
-#'   - Actual SQL statement (if it starts with SQL keywords like SELECT, INSERT, etc.)
-#' @param params Named list of parameters for template substitution (optional for direct SQL)
-#' @param files SQL template file scope, can be file list or regex pattern (default: "*.sql")
-#' @param ... Additional arguments passed to `sqlquery` function
-#'
-#' @return A data frame containing query results
-#'
-#' @details
-#' The function automatically detects if `name` is a SQL statement by checking 
-#' if it starts with common SQL keywords using the pattern:
-#' ^\\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|WITH|MERGE|
-#' BEGIN|COMMIT|ROLLBACK|GRANT|REVOKE|EXPLAIN|DESC|SHOW)
-#'
-#' When using direct SQL mode (when `name` is a SQL statement), the `params` 
-#' argument is optional. If no parameters are provided, the SQL is executed as-is.
-#'
-#' The function searches for SQL templates in the following order:
-#' 1. Current working directory (files matching the pattern)
-#' 2. Package-installed SQL template files
-#'
-#' @examples
-#' \dontrun{
-#' # Using SQL statement name from template files
-#' result <- sqldframe("User Query", list("#status" = "active"), "*.sql")
-#'
-#' # Using direct SQL statement without parameters
-#' result <- sqldframe("SHOW TABLES")
-#'
-#' # Using direct SQL statement with parameters
-#' result <- sqldframe("SELECT * FROM users WHERE status = #status",
-#'                    list("#status" = "active"))
-#'
-#' # Using INSERT statement directly
-#' result <- sqldframe("INSERT INTO logs (message) VALUES (#msg)",
-#'                    list("#msg" = "test message"))
-#'
-#' # Real-world example: query 1-minute kline data with specific time range
-#' result <- sqldframe("1min.kline", 
-#'                    list("##tbl" = "t_rb2601_20251117", 
-#'                         "#startime" = "09:00", 
-#'                         "#endtime" = "09:30"), 
-#'                    dbname = "ctp")
-#' }
-#'
-#' @importFrom purrr map flatten pluck
-#' @export
-sqldframe <- function(name, params = list(), files = "*.sql", ...) {
-  # Enhanced SQL detection pattern covering all major SQL commands
-  sql_pattern <- paste0(
-    "^\\s*(", 
-    "SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|",
-    "WITH|MERGE|BEGIN|COMMIT|ROLLBACK|GRANT|REVOKE|",
-    "EXPLAIN|DESC|SHOW|CALL|EXECUTE|DECLARE|SET",
-    ")\\s"
-  )
-  
-  is_sql <- grepl(sql_pattern, name, ignore.case = TRUE)
-  
-  if (is_sql) {
-    # Direct SQL processing
-    sql <- name
-  } else {
-    # Template-based SQL processing - search in multiple locations
-    sql_files <- if (is.character(files) && length(files) == 1 && grepl("\\*", files)) {
-      # Search in working directory first
-      wd_files <- list.files(pattern = files, full.names = TRUE)
-      # Then search in package SQL files
-      pkg_files <- .get_package_sql_files()
-      c(wd_files, pkg_files)
-    } else {
-      # Use provided file list
+#' @param files SQL template file scope
+#' @param recursive logical. Should the listing recurse into directories?
+#' @return Character vector of SQL file paths from working directory
+#' @keywords internal
+.find_local_sql_files <- function(files = "\\.sql$", recursive = FALSE) {
+  # Handle different input types for local files
+  local_files <- if (is.character(files) && length(files) == 1L) {
+    if (file.exists(files) && !dir.exists(files)) {
+      # Direct file path
       files
+    } else if (dir.exists(files)) {
+      # Directory - find all SQL files within
+      list.files(
+        path = files,
+        pattern = "\\.sql$",
+        full.names = TRUE,
+        recursive = recursive,
+        ignore.case = TRUE
+      )
+    } else {
+      # Regex pattern - search in working directory
+      list.files(
+        pattern = files,
+        full.names = TRUE,
+        recursive = recursive,
+        ignore.case = TRUE
+      )
     }
-    
-    # Remove duplicates and non-existent files
-    sql_files <- unique(sql_files)
-    sql_files <- sql_files[file.exists(sql_files)]
-    
-    if (length(sql_files) == 0) {
-      stop("No matching SQL files found: ", files)
-    }
-    
-    # Extract SQL from templates using purrr
-    all_sql_templates <- sql_files |>
-      purrr::map(sqlfile) |>
-      purrr::flatten()
-    
-    sql <- purrr::pluck(all_sql_templates, name)
-    
-    if (is.null(sql)) {
-      available_templates <- names(all_sql_templates)
-      if (length(available_templates) > 0) {
-        stop("SQL statement '", name, "' not found in specified files. ",
-             "Available templates: ", paste(available_templates, collapse = ", "))
-      } else {
-        stop("SQL statement '", name, "' not found and no templates available")
-      }
-    }
+  } else {
+    # Multiple files provided
+    files
   }
   
-  # Parameter substitution and query execution
-  if (length(params) > 0) {
-    sql <- fill(sql, params)
-  }
-  
-  sqlquery(sql, ...)
+  # Filter valid SQL files
+  local_files |>
+    as.character() |>
+    purrr::keep(file.exists) |>
+    purrr::keep(~ !dir.exists(.x)) |>
+    purrr::keep(~ grepl("\\.sql$", .x, ignore.case = TRUE))
 }
 
+#' Unified SQL Files Finder
+#'
+#' Internal function to find all SQL files with correct override priority.
+#'
+#' @param files SQL template file scope
+#' @param recursive logical. Should the listing recurse into directories?
+#' @return Character vector of SQL file paths with local files first
+#' @keywords internal
+.find_sql_files <- function(files = "\\.sql$", recursive = FALSE) {
+  # Get files from both sources
+  local_files <- .find_local_sql_files(files, recursive)
+  pkg_files <- .get_package_sql_files(recursive)
+  
+  # Combine with local files first for override priority
+  unique(c(local_files, pkg_files))
+}
+
+#' Load SQL Templates from Single File
+#'
+#' Internal function to safely load templates from a single SQL file.
+#'
+#' @param file_path Path to SQL file
+#' @return List with templates and source info, or NULL on error
+#' @keywords internal
+.load_sql_file_templates <- function(file_path) {
+  tryCatch({
+    if (file.exists(file_path) && file.info(file_path)$size > 0L) {
+      templates <- sqlfile(file_path)
+      if (length(templates) > 0L) {
+        list(
+          templates = templates,
+          source = if (grepl(system.file(package = "malonylcoa"), file_path, fixed = TRUE)) "package" else "local",
+          file = file_path
+        )
+      } else {
+        NULL
+      }
+    } else {
+      NULL
+    }
+  }, error = function(e) {
+    warning("Failed to load SQL file '", basename(file_path), "': ", e$message)
+    NULL
+  })
+}
+
+#' Merge Templates with Override Logic
+#'
+#' Internal function to merge templates ensuring local overrides package.
+#'
+#' @param acc Accumulator list with templates and sources
+#' @param file_info File info list with templates and source
+#' @return Updated accumulator
+#' @keywords internal
+.merge_templates <- function(acc, file_info) {
+  file_info$templates |>
+    purrr::imap(function(template_sql, template_name) {
+      # Local files override package files
+      # Package files only added if no local version exists
+      current_source <- acc$sources[[template_name]]
+      if (is.null(current_source) || file_info$source == "local") {
+        acc$templates[[template_name]] <<- template_sql
+        acc$sources[[template_name]] <<- file_info$source
+      }
+    })
+  acc
+}
+
+#' Load All SQL Templates with Override
+#'
+#' Internal function to load all SQL templates with correct override logic.
+#'
+#' @param sql_files Character vector of SQL file paths
+#' @return Named list of SQL templates
+#' @keywords internal
+.load_sql_templates <- function(sql_files) {
+  # Load templates from all files
+  all_file_info <- sql_files |>
+    purrr::map(.load_sql_file_templates) |>
+    purrr::compact()
+  
+  if (length(all_file_info) == 0L) {
+    warning("No SQL templates loaded from provided files")
+    return(list())
+  }
+  
+  # Merge templates with override logic
+  result <- all_file_info |>
+    purrr::reduce(.merge_templates, .init = list(templates = list(), sources = list()))
+  
+  result$templates
+}
 
 #' List Available SQL Templates
 #'
 #' Lists all available SQL templates in the current working directory and package.
+#' Local templates override package templates with the same name.
 #'
-#' @param files SQL template file scope, can be file list or regex pattern (default: "*.sql")
+#' @param files SQL template file scope, can be file list, directory, or regex pattern (default: "\\.sql$")
+#' @param recursive logical. Should the listing recurse into directories? (default: FALSE)
+#' @param verbose logical. Should override information be shown? (default: TRUE)
 #'
-#' @return A named list of available SQL templates
+#' @return A named list of available SQL templates with source information as attribute
 #'
 #' @examples
 #' \dontrun{
 #' # List all available SQL templates
 #' templates <- list_sql_templates()
-#' print(names(templates))
+#' 
+#' # List from specific directory
+#' templates <- list_sql_templates(files = "sql", recursive = TRUE)
+#' 
+#' # List with detailed information
+#' templates <- list_sql_templates(verbose = TRUE)
 #' }
 #'
 #' @export
-list_sql_templates <- function(files = "*.sql") {
-  sql_files <- if (is.character(files) && length(files) == 1 && grepl("\\*", files)) {
-    wd_files <- list.files(pattern = files, full.names = TRUE)
-    pkg_files <- .get_package_sql_files()
-    c(wd_files, pkg_files)
-  } else {
-    files
+list_sql_templates <- function(files = "\\.sql$", recursive = FALSE, verbose = TRUE) {
+  # Input validation
+  if (!is.character(files)) {
+    stop("Files must be a character vector")
   }
   
-  sql_files <- unique(sql_files)
-  sql_files <- sql_files[file.exists(sql_files)]
+  if (!is.logical(recursive) || length(recursive) != 1L) {
+    stop("Recursive must be a single logical value")
+  }
   
-  if (length(sql_files) == 0) {
+  if (!is.logical(verbose) || length(verbose) != 1L) {
+    stop("Verbose must be a single logical value")
+  }
+  
+  # Find all SQL files
+  sql_files <- .find_sql_files(files, recursive)
+  
+  if (length(sql_files) == 0L) {
+    if (verbose) message("No SQL files found")
     return(list())
   }
   
-  sql_files |>
-    purrr::map(sqlfile) |>
-    purrr::flatten()
+  if (verbose) {
+    message("Found ", length(sql_files), " SQL files")
+  }
+  
+  # Load all file info for detailed reporting
+  all_file_info <- sql_files |>
+    purrr::map(.load_sql_file_templates) |>
+    purrr::compact()
+  
+  if (length(all_file_info) == 0L) {
+    if (verbose) message("No SQL templates loaded from files")
+    return(list())
+  }
+  
+  # Merge templates
+  result <- all_file_info |>
+    purrr::reduce(.merge_templates, .init = list(templates = list(), sources = list()))
+  
+  # Add sources as attribute
+  final_templates <- result$templates
+  attr(final_templates, "sources") <- result$sources
+  
+  # Verbose output
+  if (verbose) {
+    template_sources <- result$sources
+    local_count <- sum(template_sources == "local")
+    package_count <- sum(template_sources == "package")
+    
+    message("Loaded ", length(final_templates), " SQL templates:")
+    message("  - Local: ", local_count, " (overrides package templates)")
+    message("  - Package: ", package_count)
+    
+    if (length(final_templates) > 0L) {
+      local_names <- names(template_sources)[template_sources == "local"]
+      package_names <- names(template_sources)[template_sources == "package"]
+      
+      if (length(local_names) > 0L) {
+        message("Local templates (", length(local_names), "): ", 
+                paste(utils::head(local_names, 10), collapse = ", "),
+                if (length(local_names) > 10L) paste0("... (", length(local_names), " total)") else "")
+      }
+      
+      if (length(package_names) > 0L) {
+        message("Package templates (", length(package_names), "): ", 
+                paste(utils::head(package_names, 10), collapse = ", "),
+                if (length(package_names) > 10L) paste0("... (", length(package_names), " total)") else "")
+      }
+    }
+  }
+  
+  final_templates
+}
+
+#' Execute Parameterized SQL Query and Return Data Frame
+#'
+#' This function searches for SQL templates and executes queries with parameter substitution.
+#' Local SQL templates override package templates with the same name.
+#'
+#' @param name Character string specifying either SQL template name or direct SQL statement
+#' @param params Named list of parameters for template substitution
+#' @param files SQL template file scope
+#' @param recursive logical. Should the listing recurse into directories?
+#' @param ... Additional arguments passed to `sqlquery` function
+#'
+#' @return A data frame containing query results
+#'
+#' @export
+sqldframe <- function(name, params = list(), files = "\\.sql$", recursive = FALSE, ...) {
+  # Input validation
+  if (!is.character(name) || length(name) != 1L || nchar(trimws(name)) == 0L) {
+    stop("Parameter 'name' must be a non-empty character string")
+  }
+  
+  if (!is.list(params)) {
+    stop("Parameter 'params' must be a list")
+  }
+  
+  name <- trimws(name)
+  
+  # Check if input is direct SQL statement
+  if (.is_sql_statement(name)) {
+    sql <- name
+  } else {
+    # Template-based SQL processing
+    sql_files <- .find_sql_files(files, recursive)
+    
+    if (length(sql_files) == 0L) {
+      stop("No SQL files found matching: ", files)
+    }
+    
+    templates <- .load_sql_templates(sql_files)
+    sql <- purrr::pluck(templates, name)
+    
+    if (is.null(sql)) {
+      available <- names(templates)
+      available_msg <- if (length(available) > 0L) {
+        paste("Available templates: ", paste(utils::head(available, 10), collapse = ", "),
+              if (length(available) > 10L) paste0("... (", length(available), " total)") else "")
+      } else {
+        "No templates available"
+      }
+      stop("SQL template '", name, "' not found. ", available_msg)
+    }
+  }
+  
+  # Parameter substitution and execution
+  sql_with_params <- if (length(params) > 0L) {
+    tryCatch(fill(sql, params), error = function(e) stop("Parameter substitution failed: ", e$message))
+  } else {
+    sql
+  }
+  
+  tryCatch(sqlquery(sql_with_params, ...), error = function(e) stop("SQL query execution failed: ", e$message))
+}
+
+#' Check if String is a SQL Statement
+#'
+#' Internal function to detect if a string is a direct SQL statement.
+#'
+#' @param text Character string to check
+#' @return Logical indicating if text is a SQL statement
+#' @keywords internal
+.is_sql_statement <- function(text) {
+  sql_keywords <- c(
+    "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", 
+    "TRUNCATE", "WITH", "MERGE", "BEGIN", "COMMIT", "ROLLBACK", "GRANT", 
+    "REVOKE", "EXPLAIN", "DESC", "SHOW", "CALL", "EXECUTE", "DECLARE", "SET"
+  )
+  pattern <- paste0("^\\s*(", paste(sql_keywords, collapse = "|"), ")\\s")
+  grepl(pattern, text, ignore.case = TRUE)
 }
