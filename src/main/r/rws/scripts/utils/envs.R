@@ -1,249 +1,431 @@
-#' 计算起始环境对象x的各个环境闭包
-#' @param x 起始的环境对象
-#' @param ret 返回值，上一阶调用的返回值
-#' @return 起始环境对象x的各个环境闭包
-envclos <- \(x=sys.frame(sys.nframe()), ret=list()) if(identical(emptyenv(), x)) ret else parent.env(x) |> envclos(append(x, ret));
+#' Recursively Collect Environment Closures
+#'
+#' Traverses up the environment hierarchy starting from a given environment
+#' and collects all environments in the chain until the empty environment
+#' is reached. This function is useful for inspecting the environment
+#' structure of R objects and closures.
+#'
+#' @param x Starting environment object. Default is the calling environment
+#'   (`sys.frame(sys.nframe())`).
+#' @param ret Accumulator for the result. Used internally for recursion.
+#'   Users should not modify this parameter.
+#'
+#' @return A list of environments in order from the starting environment
+#'   up to the empty environment. The list represents the environment chain.
+#'
+#' @export
+#'
+#' @examples
+#' # Get the environment chain from current environment
+#' env_chain <- envclos()
+#' str(env_chain)
+#'
+#' # Get environment chain from a specific environment
+#' my_env <- new.env()
+#' parent.env(my_env) <- globalenv()
+#' env_chain <- envclos(my_env)
+#' str(env_chain)
+#'
+#' # Inspect function closure environments
+#' f <- function(x) {
+#'   y <- 10
+#'   function(z) x + y + z
+#' }
+#' closure_fn <- f(5)
+#' env_chain <- envclos(environment(closure_fn))
+#' str(env_chain)
+#'
+#' @seealso \code{\link{environment}} for getting function environments,
+#'   \code{\link{parent.env}} for accessing parent environments,
+#'   \code{\link{sys.frame}} for call frame environments,
+#'   \code{\link{emptyenv}} for the empty environment
+#'
+#' @keywords utilities environment
+envclos <- function(x = sys.frame(sys.nframe()), ret = list()) {
+  if (identical(emptyenv(), x)) {
+    ret
+  } else {
+    parent.env(x) |> envclos(append(list(x), ret))
+  }
+}
 
 #' 查看所有变量符号所在的环境名称，当which='path'的时候就是查看符号所在的库文件路径，可以通过R.home() 查看R_HOME即R的的根安装位置目录
 # envclos() |> (\(xs, nms=lapply(xs, partial(attr, which='name'))) structure(lapply(xs, names), names=nms)) ()
 
-#' 数据descartes product
-#' @param ps: points点集合 
-#' @param gn: group numer 分组阶数 
-pgn <- function(ps=1:3, gn=length(ps)) rep(ps, gn) |> split( rep(paste0("x", seq(gn)), rep(length(ps), gn)) ) |> expand.grid()
-
-#' 创建键值对列表
+#' Cartesian Product for Data Points
 #'
-#' 该函数接受不定数量的参数，以键值对的形式创建命名列表。
-#' 这是一个简单可靠的实现，要求所有键名都必须带引号。
+#' Generates the Cartesian product (all possible combinations) of a set of points
+#' grouped by a specified dimension. This is useful for creating grid-like
+#' structures from a set of values.
 #'
-#' @param ... 键值对参数，格式为"key1", value1, "key2", value2, ...
-#'            键名必须是带引号的字符串，值可以是任意R对象。
+#' @param ps A vector of points (values) to combine. Default is 1:3.
+#' @param gn Group number specifying the dimension of the Cartesian product.
+#'   Default is `length(ps)`.
 #'
-#' @return 一个命名列表，其中键作为列表元素的名称，对应的值作为元素内容。
-#'         返回的列表结构与`list(key1 = value1, key2 = value2)`相同。
+#' @return A data frame where each row represents one combination from the
+#'   Cartesian product. The columns are named "x1", "x2", ..., "xgn" indicating
+#'   the dimension of each coordinate.
+#'
+#' @export
 #'
 #' @examples
-#' # 基本用法
-#' REC("name", "zhangsan", "age", 13, "address", "shanghai changning")
+#' # Default usage: 3 points in 3 dimensions
+#' pgn()
 #'
-#' # 包含各种数据类型的值
-#' REC(
-#'   "name", "lisi", 
-#'   "score", 95.5, 
-#'   "passed", TRUE, 
-#'   "courses", c("math", "english")
-#' )
+#' # 2 points in 2 dimensions
+#' pgn(ps = 1:2, gn = 2)
 #'
-#' # 访问生成的列表
-#' my_list <- REC("x", 1:5, "y", letters[1:3])
-#' my_list$x
-#' my_list$y
+#' # Character points in 2 dimensions
+#' pgn(ps = c("A", "B"), gn = 2)
 #'
-#' @seealso 
-#' \code{\link{list}} 基础列表构造函数
-#' \code{\link{setNames}} 设置对象名称的函数
-#' 
+#' # 4 points in 2 dimensions
+#' pgn(ps = 1:4, gn = 2)
+#'
+#' # Create a 3D grid with custom points
+#' pgn(ps = c(0, 0.5, 1), gn = 3)
+#'
+#' @seealso \code{\link{expand.grid}} for the base R function that creates
+#'   Cartesian products, \code{\link{rep}} for repeating vectors,
+#'   \code{\link{split}} for splitting vectors into groups
+#'
+#' @keywords utilities combinatorics
+pgn <- function(ps = 1:3, gn = length(ps)) {
+  rep(ps, gn) |>
+    split(rep(paste0("x", seq(gn)), rep(length(ps), gn))) |>
+    expand.grid()
+}
+
+#' Create a Named List from Key-Value Pairs
+#'
+#' Builds a named list from alternating key-value arguments. This function
+#' evaluates the value expressions in the parent frame and creates a list
+#' where keys are taken from the odd-position arguments and values from
+#' the even-position arguments.
+#'
+#' @param ... Alternating key-value pairs. Keys should be unquoted names,
+#'   values can be any R expressions. The function expects an even number
+#'   of arguments in the pattern: key1, value1, key2, value2, ...
+#'
+#' @return A named list where names are the key arguments and values are
+#'   the evaluated value arguments. If evaluation of a value fails,
+#'   the function returns the unevaluated expression as a character string.
+#'
 #' @export
+#'
+#' @examples
+#' # Basic usage with simple values
+#' REC(a = 1, b = 2, c = 3)
+#'
+#' # With expressions that need evaluation
+#' REC(x = 1 + 1, y = mean(1:10), z = paste("hello", "world"))
+#'
+#' # With undefined variables (falls back to character)
+#' REC(name = undefined_var, value = "safe_string")
+#'
+#' # Mixed types
+#' REC(number = 42, text = "hello", flag = TRUE, vector = 1:5)
+#'
+#' @seealso \code{\link{list}} for creating simple lists,
+#'   \code{\link{setNames}} for naming list elements,
+#'   \code{\link{eval}} for expression evaluation
+#'
+#' @keywords utilities list
 REC <- function(...) {
-  # 捕获表达式而不是值
   dots <- match.call(expand.dots = FALSE)$...
   n <- length(dots)
   
-  if (n %% 2 != 0) stop("参数个数必须为偶数")
+  if (n %% 2 != 0) stop("Number of arguments must be even")
   
-  keys <- character(n/2)
-  values <- vector("list", n/2)
-  
-  for (i in seq_len(n/2)) {
-    # 键：直接转换为字符
-    key_expr <- dots[[2*i - 1]]
-    keys[i] <- as.character(key_expr)
-    
-    # 值：尝试评估，如果失败则使用原表达式
-    value_expr <- dots[[2*i]]
-    values[[i]] <- tryCatch(
-      eval(value_expr, parent.frame()),
-      error = function(e) as.character(value_expr)
+  Reduce(\(acc, i) {
+    key <- as.character(dots[[2*i-1]])
+    value <- tryCatch(
+      eval(dots[[2*i]], parent.frame()),
+      error = function(e) as.character(dots[[2*i]])
     )
-  }
-  
-  setNames(values, keys)
+    acc[[key]] <- value
+    acc
+  }, x = seq_len(n/2), init = list())
 }
 
-#' 创建REC函数构建器
+
+
+#' Create a Record Builder Function
 #'
-#' 该函数返回一个专门用于生成特定键名REC调用的函数。
-#' 主要用于创建具有固定键名的数据记录构造函数。
+#' Generates a specialized constructor function that creates named lists
+#' with predefined keys and optional type checking. Supports both traditional
+#' and NSE (Non-Standard Evaluation) syntax.
 #'
-#' @param keys 字符向量或逗号分隔的字符串，指定REC函数的键名
-#' @param .func_name 可选参数，指定生成的函数名称（用于错误消息）
+#' @param ... Key-type pairs using NSE syntax: key = type (without quotes),
+#'   or traditional character keys
+#' @param types Optional character vector specifying types for each key
+#'   (for traditional syntax)
 #'
-#' @return 返回一个函数，该函数接受与键名数量相等的值参数，
-#'         并返回对应的REC函数调用
+#' @return A function that takes values as arguments and returns a named list
+#'
+#' @export
 #'
 #' @examples
-#' \dontrun{
-#' # 创建具有固定键名的REC构建器
-#' rb <- rec.rb("a,b,c")
-#' rb(1, 2, 3)  # 返回 REC(a, 1, b, 2, c, 3)
+#' # Traditional style - string keys
+#' person_builder <- record.builder("name,age,score")
+#' person <- person_builder("Alice", 25, 95.5)
+#' print(person)
 #'
-#' # 使用字符向量
-#' rb2 <- rec.rb(c("name", "age", "city"))
-#' rb2("John", 25, "New York")
+#' # NSE style - no quotes needed for types
+#' person_builder2 <- record.builder(name = character, age = integer, score = numeric)
+#' person2 <- person_builder2("Alice", 25L, 95.5)
+#' print(person2)
 #'
-#' # 生成的函数可以重复使用
-#' person_rb <- rec.rb("name,age,gender")
-#' person1 <- person_rb("Alice", 30, "F")
-#' person2 <- person_rb("Bob", 25, "M")
-#' }
-#'
-#' @seealso \code{\link{REC}} 基础REC函数
-#' @export
-rec.rb <- function(keys, .func_name = NULL) {
-  # 参数验证和处理
-  if (is.character(keys) && length(keys) == 1) {
-    # 如果是逗号分隔的字符串，分割为字符向量
-    keys <- strsplit(keys, ",")[[1]]
-    keys <- trimws(keys)  # 去除前后空格
+#' # Mixed usage
+#' builder <- record.builder(name = character, sex = logical)("zhangsan", TRUE)
+#' print(builder)
+record.builder <- function(..., types = NULL) {
+  dots <- match.call(expand.dots = FALSE)$...
+  
+  # 检测输入模式：如果所有参数都是命名参数且值是类型符号，就是NSE模式
+  if (is_nse_mode(dots)) {
+    config <- process_nse_input(dots)
+  } else {
+    config <- process_traditional_input(dots, types)
   }
   
-  if (!is.character(keys) || length(keys) == 0) {
-    stop("keys参数必须是字符向量或逗号分隔的字符串")
-  }
-  
-  # 移除空字符串
-  keys <- keys[keys != ""]
-  
-  if (length(keys) == 0) {
-    stop("keys参数不能为空")
-  }
-  
-  # 检查键名有效性
-  invalid_keys <- keys[!grepl("^[#a-zA-Z_][#a-zA-Z0-9_]*$", keys)]
-  if (length(invalid_keys) > 0) {
-    stop("无效的键名: ", paste(invalid_keys, collapse = ", "), 
-         "。键名必须以#、字母或下划线开头，只能包含#、字母、数字和下划线。")
-  }
-  
-  func_name <- .func_name %||% paste("REC", paste(keys, collapse = "_"), sep = "_")
-  
-  # 创建并返回构建器函数
-  function(...) {
-    values <- list(...)
-    
-    # 验证参数数量
-    if (length(values) != length(keys)) {
-      stop("函数 ", func_name, " 需要 ", length(keys), " 个参数，但提供了 ", length(values), " 个")
-    }
-    
-    # 构建REC调用表达式
-    args <- vector("list", length(keys) * 2)
-    
-    # 交替放置键和值
-    for (i in seq_along(keys)) {
-      args[[2 * i - 1]] <- as.symbol(keys[i])
-      args[[2 * i]] <- values[[i]]
-    }
-    
-    # 创建REC调用
-    rec_call <- as.call(c(list(as.symbol("REC")), args))
-    
-    # 评估并返回结果
-    eval(rec_call, envir = parent.frame())
-  }
+  # Create the builder function
+  create_builder_function(config$keys, config$types)
 }
 
-#' 便捷的REC构建器创建函数
-#'
-#' rec.rb的别名，提供更简洁的命名
-#'
-#' @inheritParams rec.rb
-#' @return 返回一个REC构建器函数
-#'
-#' @examples
-#' \dontrun{
-#' # 使用record_builder创建构建器
-#' rb <- record_builder("x,y,z")
-#' rb(10, 20, 30)
-#' }
-#'
-#' @export
-record_builder <- rec.rb
+#' Detect if input is in NSE mode
+#' @keywords internal
+is_nse_mode <- function(dots) {
+  if (length(dots) == 0) return(FALSE)
+  
+  # 检查是否有命名参数
+  if (is.null(names(dots)) || any(names(dots) == "")) {
+    return(FALSE)
+  }
+  
+  # 检查值是否是类型符号（character, integer, logical等）
+  is_type_symbol <- function(expr) {
+    if (!is.symbol(expr)) return(FALSE)
+    type_name <- as.character(expr)
+    type_name %in% get_valid_types()
+  }
+  
+  all(sapply(dots, is_type_symbol))
+}
 
-#' 创建具有类型检查的REC构建器
-#'
-#' 增强版本的REC构建器，支持参数类型验证
-#'
-#' @param keys 字符向量或逗号分隔的字符串，指定键名
-#' @param types 可选的类型规范，用于参数类型检查
-#' @param .func_name 可选参数，指定生成的函数名称
-#'
-#' @return 返回一个具有类型检查的REC构建器函数
-#'
-#' @examples
-#' \dontrun{
-#' # 创建具有类型检查的构建器
-#' typed_rb <- rec.rb.typed("name,age,active", c("character", "numeric", "logical"))
-#' typed_rb("John", 25, TRUE)  # 正确
-#' typed_rb("John", "25", TRUE)  # 错误：age应该是numeric
-#' }
-#'
-#' @export
-rec.rb.typed <- function(keys, types = NULL, .func_name = NULL) {
-  # 处理键名（与rec.rb相同）
-  if (is.character(keys) && length(keys) == 1) {
-    keys <- strsplit(keys, ",")[[1]]
-    keys <- trimws(keys)
+#' Process NSE input
+#' @keywords internal
+process_nse_input <- function(dots) {
+  keys <- names(dots)
+  types <- extract_types_from_dots(dots)
+  
+  list(keys = keys, types = types)
+}
+
+#' Process traditional input
+#' @keywords internal
+process_traditional_input <- function(dots, types) {
+  # 传统模式下，dots 包含的是键名字符串
+  if (length(dots) == 1 && is.character(dots[[1]])) {
+    # 单个字符串："a,b,c"
+    keys <- parse_keys_string(dots[[1]])
+  } else {
+    # 多个参数：c("a", "b", "c") 或 "a", "b", "c"
+    keys <- sapply(dots, as.character)
   }
   
-  if (!is.character(keys) || length(keys) == 0) {
-    stop("keys参数必须是字符向量或逗号分隔的字符串")
-  }
-  
-  keys <- keys[keys != ""]
-  
-  # 类型检查逻辑
+  # Validate types if provided
   if (!is.null(types)) {
     if (length(types) != length(keys)) {
-      stop("types参数的长度必须与keys参数相同")
+      stop("Length of types (", length(types), ") must match length of keys (", 
+           length(keys), ")")
     }
-    
-    # 类型验证函数
-    validate_type <- function(value, type, key) {
-      type_ok <- switch(
-        type,
-        "character" = is.character(value),
-        "numeric" = is.numeric(value),
-        "integer" = is.integer(value),
-        "logical" = is.logical(value),
-        "factor" = is.factor(value),
-        "list" = is.list(value),
-        "any" = TRUE,
-        TRUE  # 默认情况下不进行严格检查
-      )
-      
-      if (!type_ok) {
-        stop("参数 '", key, "' 应该是 ", type, " 类型，但得到的是 ", class(value)[1])
-      }
-    }
+    validate_types(types)
   }
   
-  # 创建基础构建器
-  base_builder <- rec.rb(keys, .func_name)
+  list(keys = keys, types = types)
+}
+
+#' Parse keys from string input
+#' @keywords internal
+parse_keys_string <- function(keys_str) {
+  strsplit(keys_str, "[,[:blank:]]+")[[1]] |> 
+    Filter(\(x) x != "", x = _)
+}
+
+#' Extract types from NSE dots
+#' @keywords internal
+extract_types_from_dots <- function(dots) {
+  sapply(dots, as.character)
+}
+
+#' Validate types against allowed types
+#' @keywords internal
+validate_types <- function(types) {
+  valid_types <- get_valid_types()
+  invalid_types <- setdiff(types, valid_types)
   
-  # 返回增强的构建器函数
-  function(...) {
-    values <- list(...)
-    
-    # 类型检查
-    if (!is.null(types)) {
-      for (i in seq_along(values)) {
-        validate_type(values[[i]], types[i], keys[i])
-      }
-    }
-    
-    # 调用基础构建器
-    base_builder(...)
+  if (length(invalid_types) > 0) {
+    stop("Invalid types: ", paste(invalid_types, collapse = ", "), 
+         ". Valid types are: ", paste(valid_types, collapse = ", "))
   }
 }
+
+#' Get list of valid type names
+#' @keywords internal
+get_valid_types <- function() {
+  c(
+    "logical", "integer", "numeric", "double", "complex", "character", "raw",
+    "list", "vector", "matrix", "array", "data.frame", "factor",
+    "function", "closure", "builtin", "special",
+    "environment", "expression", "call", "name", "symbol", "language",
+    "null", "na", "any"
+  )
+}
+
+#' Create the final builder function
+#' @keywords internal
+create_builder_function <- function(keys, types) {
+  function(...) {
+    values <- list(...)
+    validate_argument_count(values, keys)
+    
+    result <- setNames(values, keys)
+    
+    if (!is.null(types)) {
+      result <- apply_type_validation(result, types, keys)
+    }
+    
+    result
+  }
+}
+
+#' Validate argument count matches key count
+#' @keywords internal
+validate_argument_count <- function(values, keys) {
+  if (length(values) != length(keys)) {
+    stop("Number of arguments (", length(values), ") doesn't match number of keys (", 
+         length(keys), ")")
+  }
+}
+
+#' Apply type validation to all values
+#' @keywords internal
+apply_type_validation <- function(values, types, keys) {
+  Map(validate_and_convert_type, values, types, keys) |> 
+    setNames(keys)
+}
+
+#' Core type validation and conversion function
+#' @keywords internal
+validate_and_convert_type <- function(value, type, key_name) {
+  # Handle special types
+  if (type %in% c("any", "na", "null")) {
+    return(handle_special_types(value, type, key_name))
+  }
+  
+  # Dispatch to appropriate type handler
+  type_handlers <- list(
+    logical = \(v) convert_atomic(v, is.logical, as.logical, "logical"),
+    integer = \(v) convert_atomic(v, is.integer, as.integer, "integer"),
+    numeric = \(v) convert_atomic(v, is.numeric, as.numeric, "numeric"),
+    double = \(v) convert_atomic(v, is.double, as.double, "double"),
+    complex = \(v) convert_atomic(v, is.complex, as.complex, "complex"),
+    character = \(v) convert_atomic(v, is.character, as.character, "character"),
+    raw = \(v) convert_atomic(v, is.raw, as.raw, "raw"),
+    list = \(v) if (!is.list(v)) as.list(v) else v,
+    vector = \(v) if (!is.vector(v)) as.vector(v) else v,
+    matrix = \(v) convert_structure(v, is.matrix, as.matrix, "matrix"),
+    array = \(v) convert_structure(v, is.array, as.array, "array"),
+    data.frame = \(v) convert_structure(v, is.data.frame, as.data.frame, "data.frame"),
+    factor = \(v) convert_structure(v, is.factor, as.factor, "factor"),
+    "function" = validate_function,
+    closure = validate_function,
+    builtin = validate_function,
+    special = validate_function,
+    environment = validate_environment,
+    expression = \(v) convert_structure(v, is.expression, as.expression, "expression"),
+    call = validate_language,
+    language = validate_language,
+    name = validate_symbol,
+    symbol = validate_symbol
+  )
+  
+  handler <- type_handlers[[type]]
+  if (is.null(handler)) return(value)
+  
+  tryCatch(
+    handler(value),
+    error = function(e) stop("Value for '", key_name, "' - ", e$message)
+  )
+}
+
+#' Handle special types (any, na, null)
+#' @keywords internal
+handle_special_types <- function(value, type, key_name) {
+  switch(type,
+    any = value,
+    na = if (any(is.na(value))) value else stop("must be NA"),
+    null = if (is.null(value)) value else stop("must be NULL")
+  )
+}
+
+#' Helper for atomic type conversion
+#' @keywords internal
+convert_atomic <- function(value, check_fun, convert_fun, type_name) {
+  if (check_fun(value)) value else convert_fun(value)
+}
+
+#' Helper for structure type conversion
+#' @keywords internal
+convert_structure <- function(value, check_fun, convert_fun, type_name) {
+  if (check_fun(value)) value else convert_fun(value)
+}
+
+#' Validate function type
+#' @keywords internal
+validate_function <- function(value) {
+  if (!is.function(value)) stop("must be a function")
+  value
+}
+
+#' Validate environment type
+#' @keywords internal
+validate_environment <- function(value) {
+  if (!is.environment(value)) stop("must be an environment")
+  value
+}
+
+#' Validate language type
+#' @keywords internal
+validate_language <- function(value) {
+  if (!is.language(value)) stop("must be a language object")
+  value
+}
+
+#' Validate symbol type
+#' @keywords internal
+validate_symbol <- function(value) {
+  if (!is.name(value) && !is.symbol(value)) stop("must be a name/symbol")
+  value
+}
+
+# # 传统风格 - 单个字符串 {"name":["zhangsan"],"sex":[true]} 
+#  record.builder("name,sex")("zhangsan", TRUE) |> jsonlite::toJSON()
+# # 传统风格 - 多个参数  {"name":["lisi"],"sex":[false]}
+#  record.builder("name", "sex")("lisi", FALSE) |> jsonlite::toJSON()
+# # 传统风格 - 带类型检查 {"name":["lisi"],"sex":[false]} 
+# record.builder("name,sex", types = c("character", "logical"))("wangwu", TRUE) |> jsonlite::toJSON()
+# # NSE风格 {"character":["zhaoliu"],"logical":[false]} 
+# record.builder(name = character, sex = logical)("zhaoliu", FALSE) |> jsonlite::toJSON()
+# # NSE风格 - 使用别名  {"name":["lisi"],"sex":[false]}
+# record.builder(name = char, sex = bool)("lisi", FALSE) |> jsonlite::toJSON()
+# # 链式调用 {"character":["zhangsan"],"logical":[true]}
+# record.builder(name = character, sex = logical)("zhangsan", TRUE) |> jsonlite::toJSON()
+# # 键名定义采用符号名 {"b":[1],"d":[2]} 
+# record.builder(a = b, c = d)(1, 2) |> jsonlite::toJSON()
+# # character键名 {"xxx":[1]} 
+# record.builder(name = xxx)(1) |> jsonlite::toJSON()
+# # character键名 {"character":[1]} 
+# record.builder(name = character)(1) |> jsonlite::toJSON()
+# # char 为 类型约束 {"name":["1"]} 
+# record.builder(name = char)(1) |> jsonlite::toJSON()
