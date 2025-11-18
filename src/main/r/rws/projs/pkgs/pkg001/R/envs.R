@@ -469,24 +469,3 @@ validate_symbol <- function(value) {
   if (!is.name(value) && !is.symbol(value)) stop("must be a name/symbol")
   value
 }
-
-# # 传统风格 - 单个字符串 {"name":["zhangsan"],"sex":[true]} 
-#  record.builder("name,sex")("zhangsan", TRUE) |> jsonlite::toJSON()
-# # 传统风格 - 多个参数  {"name":["lisi"],"sex":[false]}
-#  record.builder("name", "sex")("lisi", FALSE) |> jsonlite::toJSON()
-# # 传统风格 - 带类型检查 {"name":["wangwu"],"sex":[true]} 
-# record.builder("name,sex", types = c("character", "logical"))("wangwu", TRUE) |> jsonlite::toJSON()
-# # NSE风格 {"character":["zhaoliu"],"logical":[false]} 
-# record.builder(name = character, sex = logical)("zhaoliu", FALSE) |> jsonlite::toJSON()
-# # NSE风格 - 使用别名  {"name":["lisi"],"sex":[false]}
-# record.builder(name = char, sex = bool)("lisi", FALSE) |> jsonlite::toJSON()
-# # 链式调用 {"character":["zhangsan"],"logical":[true]}
-# record.builder(name = character, sex = logical)("zhangsan", TRUE) |> jsonlite::toJSON()
-# # 键名定义采用符号名 {"b":[1],"d":[2]} 
-# record.builder(a = b, c = d)(1, 2) |> jsonlite::toJSON()
-# # character键名 {"xxx":[1]} 
-# record.builder(name = xxx)(1) |> jsonlite::toJSON()
-# # character键名 {"character":[1]} 
-# record.builder(name = character)(1) |> jsonlite::toJSON()
-# # char 为 类型约束 {"name":["1"]} 
-# record.builder(name = char)(1) |> jsonlite::toJSON()

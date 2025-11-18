@@ -395,6 +395,199 @@ local({
 # 5 13:34           3088      3089     3087       3088         4990        120
 # >
 
+#  创建一个本地的sql文件
+mkdir sql
+cat >> sql/mykline.sql <<EOF
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据(带有tickdata源数据)
+-- # tickdata.1min.kline
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
+WITH MinuteKLine AS (
+    SELECT 
+        Id,
+        LastPrice,
+        UpdateTime,
+        Volume,
+        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
+        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
+        MAX(LastPrice) OVER w as HighPrice,
+        MIN(LastPrice) OVER w as LowPrice,
+        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
+        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        COUNT(*) OVER w as TradeCount
+    FROM ##tbl
+    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
+)
+SELECT 
+    Id,
+    LastPrice,
+    UpdateTime,
+    Volume,
+    MinuteTime,
+    OpenPrice,
+    HighPrice,
+    LowPrice,
+    ClosePrice,
+    MinuteVolume,
+    TradeCount
+FROM MinuteKLine
+ORDER BY UpdateTime, Id;
+
+EOF
+
+# sqldframe读取sql模板文件
+# 1min.kline 为sql模板名称，如果本地目录(getwd())没有指定。
+# sqldframe 会在包malonylcoa安装目录下的sql文件夹里寻找
+# 1min.kline,1min_maxcnt.kline 为malonylcoa所自带的示例！
+local({
+    # 创建 参数列表构建器
+    rb <- record.builder("##tbl,#startime,#endtime")
+    # params设置为{"##tbl":["t_rb2601_20251118"],"#startime":["09:00"],"#endtime":["21:00"]} 
+    params <- rb("t_rb2601_20251118", '09:00', "21:00")
+    
+    # 使用指定sql文件
+    params |> sqldframe(params=_, "tickdata.1min.kline", files="./sql/mykline.sql", dbname="ctp", host="192.168.1.10")
+    # 指定文件名模式
+    params |> sqldframe(params=_, "tickdata.1min.kline", files="\\.sql$", dbname="ctp", host="192.168.1.10", recursive=T)
+    # 使用包自带模板
+    params |> sqldframe(params=_, "1min.kline", dbname="ctp", host="192.168.1.10")
+   
+   # 构建ds数据源:10号主机上的ctp数据库
+   ds10ctp <- partial(sqldframe, dbname="ctp", host="192.168.1.10")
+   ds10ctp("1min.kline", params)
+   
+   # 创建 参数列表构建器(带有maxcnt参数)
+   rb2 <- record.builder("##tbl,#startime,#endtime,##maxcnt") 
+   # 使用包默认
+   rb2("t_rb2601_20251118", '09:00', "21:00", 5) |> sqldframe(params=_, "1min_maxcnt.kline", dbname="ctp", host="192.168.1.10")
+   # 1min_maxcnt.kline 本地覆盖包文件
+   rb2("t_rb2601_20251118", '09:00', "21:00", 5) |> sqldframe(params=_, "1min_maxcnt.kline", dbname="ctp", host="192.168.1.10", files="sql", recursive=T)
+   
+   # 创建 参数列表构建器(带有maxcnt参数)
+   rb2 <- record.builder("##tbl,#startime,#endtime,##maxcnt") 
+   rb2("t_rb2601_20251118", '09:00', "21:00", 5) |> sqldframe(params=_, "1min_maxcnt.kline", dbname="ctp")  # 本地检索
+})
+
+# 返回结果示例
+# # A tibble: 5 × 7
+#   MinuteTime OpenPrice HighPrice LowPrice ClosePrice MinuteVolume TradeCount
+#   <chr>          <dbl>     <dbl>    <dbl>      <dbl>        <dbl>      <dbl>
+# 1 09:01           3082      3084     3082       3083         2173         66
+# 2 09:02           3082      3083     3081       3082         3272        120
+# 3 09:03           3081      3083     3081       3082         3557        120
+# 4 09:04           3082      3083     3081       3081         2382        120
+# 5 09:05           3081      3082     3081       3082         2173        120
+
+# #############################################
+# 显示默认SQL模板， 默认是不进行文件夹的递归检索的
+# 于是 当前目录下的sql文件夹的文件不予显示只罗列包默认
+# function(files = "\\.sql$", recursive = FALSE, verbose = TRUE) 
+# #############################################
+
+> list_sql_templates()
+Found 1 SQL files
+Loaded 2 SQL templates:
+  - Local: 0 (overrides package templates)
+  - Package: 2
+Package templates (2): 1min.kline, 1min_maxcnt.kline
+$`1min.kline`
+[1] "WITH MinuteKLine AS ( ...
+
+$`1min_maxcnt.kline`
+[1] "WITH MinuteKLine AS ( ...
+
+attr(,"sources")
+attr(,"sources")$`1min.kline`
+[1] "package"
+
+attr(,"sources")$`1min_maxcnt.kline`
+[1] "package"
+
+# #############################################
+# 尝试将"sql"即files进行sql比对！（不做递归）
+# 做直接文件名测试：file.exists(files) ，
+# 如果失败，直接文件夹名测试dir.exists(files）, 
+# （由于此例中含有sql文件夹，因此与下文的设置了递归参数
+#     一样的效果，但这不是递归而是文件夹搜索）
+# 如果直接读取失败，最后做正则表达式匹配！
+# 注意：合法的sql模板文件需要以.sql作为后缀名！结果会经过
+# purrr::keep(~ grepl("\\.sql$", .x, ignore.case = TRUE))过滤的
+# #############################################
+> list_sql_templates("sql")
+Found 3 SQL files
+Loaded 4 SQL templates:
+  - Local: 3 (overrides package templates)
+  - Package: 1
+Local templates (3): 1min.kline2, 1min_maxcnt.kline, tickdata.1min.kline
+Package templates (1): 1min.kline
+$`1min.kline2`
+[1] "WITH MinuteKLine AS (.. ...
+
+$`1min_maxcnt.kline`
+[1] "WITH MinuteKLine AS (.. 
+
+$tickdata.1min.kline
+[1] "WITH MinuteKLine AS ( ...
+
+$`1min.kline`
+[1] "WITH MinuteKLine AS (...
+
+attr(,"sources")
+attr(,"sources")$`1min.kline2`
+[1] "local"
+
+attr(,"sources")$`1min_maxcnt.kline`
+[1] "local"
+
+attr(,"sources")$tickdata.1min.kline
+[1] "local"
+
+attr(,"sources")$`1min.kline`
+[1] "package"
+
+# #############################################
+# 递归查询 
+# #############################################
+# 本地文件sql/mykline.sql:{tickdata.1min.kline}, kline.sql:{1min.kline2,  *1min_maxcnt.kline}
+# 包默认  sql/kline.sql:{kline.sql:{1min.kline, 1min_maxcnt.kline}}
+
+> list_sql_templates("sql", recursive=T)
+Found 3 SQL files
+Loaded 4 SQL templates:
+  - Local: 3 (overrides package templates)
+  - Package: 1
+Local templates (3): 1min.kline2, 1min_maxcnt.kline, tickdata.1min.kline
+Package templates (1): 1min.kline
+$`1min.kline2`
+[1] "WITH MinuteKLine AS ( ...
+
+$`1min_maxcnt.kline`
+[1] "WITH MinuteKLine AS ( ...
+
+$tickdata.1min.kline
+[1] "WITH MinuteKLine AS ( ...
+
+$`1min.kline`
+[1] "WITH MinuteKLine AS ( ...
+
+attr(,"sources")
+attr(,"sources")$`1min.kline2`
+[1] "local"
+
+attr(,"sources")$`1min_maxcnt.kline`
+[1] "local"
+
+attr(,"sources")$tickdata.1min.kline
+[1] "local"
+
+attr(,"sources")$`1min.kline`
+[1] "package"
+
+
 # ----------------------------------------------------------------------------------------------------------------
 # 数据库读取示例
 # ----------------------------------------------------------------------------------------------------------------
