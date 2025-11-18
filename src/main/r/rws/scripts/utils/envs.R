@@ -49,9 +49,6 @@ envclos <- function(x = sys.frame(sys.nframe()), ret = list()) {
   }
 }
 
-#' 查看所有变量符号所在的环境名称，当which='path'的时候就是查看符号所在的库文件路径，可以通过R.home() 查看R_HOME即R的的根安装位置目录
-# envclos() |> (\(xs, nms=lapply(xs, partial(attr, which='name'))) structure(lapply(xs, names), names=nms)) ()
-
 #' Cartesian Product for Data Points
 #'
 #' Generates the Cartesian product (all possible combinations) of a set of points
@@ -147,8 +144,6 @@ REC <- function(...) {
   }, x = seq_len(n/2), init = list())
 }
 
-
-
 #' Create a Record Builder Function
 #'
 #' Generates a specialized constructor function that creates named lists
@@ -181,7 +176,7 @@ REC <- function(...) {
 record.builder <- function(..., types = NULL) {
   dots <- match.call(expand.dots = FALSE)$...
   
-  # 检测输入模式：如果所有参数都是命名参数且值是类型符号，就是NSE模式
+  # Detect input mode: if all arguments are named and values are type symbols, use NSE mode
   if (is_nse_mode(dots)) {
     config <- process_nse_input(dots)
   } else {
@@ -193,16 +188,19 @@ record.builder <- function(..., types = NULL) {
 }
 
 #' Detect if input is in NSE mode
+#' 
+#' @param dots The dots argument from match.call
+#' @return Logical indicating if input is in NSE mode
 #' @keywords internal
 is_nse_mode <- function(dots) {
   if (length(dots) == 0) return(FALSE)
   
-  # 检查是否有命名参数
+  # Check if there are named arguments
   if (is.null(names(dots)) || any(names(dots) == "")) {
     return(FALSE)
   }
   
-  # 检查值是否是类型符号（character, integer, logical等）
+  # Check if values are type symbols (character, integer, logical, etc.)
   is_type_symbol <- function(expr) {
     if (!is.symbol(expr)) return(FALSE)
     type_name <- as.character(expr)
@@ -213,6 +211,9 @@ is_nse_mode <- function(dots) {
 }
 
 #' Process NSE input
+#' 
+#' @param dots The dots argument from match.call
+#' @return List with keys and types
 #' @keywords internal
 process_nse_input <- function(dots) {
   keys <- names(dots)
@@ -222,14 +223,18 @@ process_nse_input <- function(dots) {
 }
 
 #' Process traditional input
+#' 
+#' @param dots The dots argument from match.call
+#' @param types Optional types vector
+#' @return List with keys and types
 #' @keywords internal
 process_traditional_input <- function(dots, types) {
-  # 传统模式下，dots 包含的是键名字符串
+  # In traditional mode, dots contains key name strings
   if (length(dots) == 1 && is.character(dots[[1]])) {
-    # 单个字符串："a,b,c"
+    # Single string: "a,b,c"
     keys <- parse_keys_string(dots[[1]])
   } else {
-    # 多个参数：c("a", "b", "c") 或 "a", "b", "c"
+    # Multiple arguments: c("a", "b", "c") or "a", "b", "c"
     keys <- sapply(dots, as.character)
   }
   
@@ -246,6 +251,9 @@ process_traditional_input <- function(dots, types) {
 }
 
 #' Parse keys from string input
+#' 
+#' @param keys_str String containing comma-separated keys
+#' @return Character vector of keys
 #' @keywords internal
 parse_keys_string <- function(keys_str) {
   strsplit(keys_str, "[,[:blank:]]+")[[1]] |> 
@@ -253,12 +261,17 @@ parse_keys_string <- function(keys_str) {
 }
 
 #' Extract types from NSE dots
+#' 
+#' @param dots The dots argument from match.call
+#' @return Character vector of types
 #' @keywords internal
 extract_types_from_dots <- function(dots) {
   sapply(dots, as.character)
 }
 
 #' Validate types against allowed types
+#' 
+#' @param types Types to validate
 #' @keywords internal
 validate_types <- function(types) {
   valid_types <- get_valid_types()
@@ -271,6 +284,8 @@ validate_types <- function(types) {
 }
 
 #' Get list of valid type names
+#' 
+#' @return Character vector of valid type names
 #' @keywords internal
 get_valid_types <- function() {
   c(
@@ -283,6 +298,10 @@ get_valid_types <- function() {
 }
 
 #' Create the final builder function
+#' 
+#' @param keys Character vector of keys
+#' @param types Character vector of types
+#' @return A function that builds records with type validation
 #' @keywords internal
 create_builder_function <- function(keys, types) {
   function(...) {
@@ -300,6 +319,9 @@ create_builder_function <- function(keys, types) {
 }
 
 #' Validate argument count matches key count
+#' 
+#' @param values List of values
+#' @param keys Character vector of keys
 #' @keywords internal
 validate_argument_count <- function(values, keys) {
   if (length(values) != length(keys)) {
@@ -309,6 +331,11 @@ validate_argument_count <- function(values, keys) {
 }
 
 #' Apply type validation to all values
+#' 
+#' @param values List of values
+#' @param types Character vector of types
+#' @param keys Character vector of keys
+#' @return List with validated and converted values
 #' @keywords internal
 apply_type_validation <- function(values, types, keys) {
   Map(validate_and_convert_type, values, types, keys) |> 
@@ -316,6 +343,11 @@ apply_type_validation <- function(values, types, keys) {
 }
 
 #' Core type validation and conversion function
+#' 
+#' @param value Value to validate
+#' @param type Type to validate against
+#' @param key_name Name of the key for error messages
+#' @return Validated and potentially converted value
 #' @keywords internal
 validate_and_convert_type <- function(value, type, key_name) {
   # Handle special types
@@ -360,6 +392,11 @@ validate_and_convert_type <- function(value, type, key_name) {
 }
 
 #' Handle special types (any, na, null)
+#' 
+#' @param value Value to check
+#' @param type Type to check against
+#' @param key_name Name of the key for error messages
+#' @return The value if valid
 #' @keywords internal
 handle_special_types <- function(value, type, key_name) {
   switch(type,
@@ -370,18 +407,33 @@ handle_special_types <- function(value, type, key_name) {
 }
 
 #' Helper for atomic type conversion
+#' 
+#' @param value Value to convert
+#' @param check_fun Function to check if value is already of correct type
+#' @param convert_fun Function to convert value to correct type
+#' @param type_name Name of the type for error messages
+#' @return Converted value
 #' @keywords internal
 convert_atomic <- function(value, check_fun, convert_fun, type_name) {
   if (check_fun(value)) value else convert_fun(value)
 }
 
 #' Helper for structure type conversion
+#' 
+#' @param value Value to convert
+#' @param check_fun Function to check if value is already of correct type
+#' @param convert_fun Function to convert value to correct type
+#' @param type_name Name of the type for error messages
+#' @return Converted value
 #' @keywords internal
 convert_structure <- function(value, check_fun, convert_fun, type_name) {
   if (check_fun(value)) value else convert_fun(value)
 }
 
 #' Validate function type
+#' 
+#' @param value Value to validate
+#' @return The value if it's a function
 #' @keywords internal
 validate_function <- function(value) {
   if (!is.function(value)) stop("must be a function")
@@ -389,6 +441,9 @@ validate_function <- function(value) {
 }
 
 #' Validate environment type
+#' 
+#' @param value Value to validate
+#' @return The value if it's an environment
 #' @keywords internal
 validate_environment <- function(value) {
   if (!is.environment(value)) stop("must be an environment")
@@ -396,6 +451,9 @@ validate_environment <- function(value) {
 }
 
 #' Validate language type
+#' 
+#' @param value Value to validate
+#' @return The value if it's a language object
 #' @keywords internal
 validate_language <- function(value) {
   if (!is.language(value)) stop("must be a language object")
@@ -403,6 +461,9 @@ validate_language <- function(value) {
 }
 
 #' Validate symbol type
+#' 
+#' @param value Value to validate
+#' @return The value if it's a name/symbol
 #' @keywords internal
 validate_symbol <- function(value) {
   if (!is.name(value) && !is.symbol(value)) stop("must be a name/symbol")
@@ -413,7 +474,7 @@ validate_symbol <- function(value) {
 #  record.builder("name,sex")("zhangsan", TRUE) |> jsonlite::toJSON()
 # # 传统风格 - 多个参数  {"name":["lisi"],"sex":[false]}
 #  record.builder("name", "sex")("lisi", FALSE) |> jsonlite::toJSON()
-# # 传统风格 - 带类型检查 {"name":["lisi"],"sex":[false]} 
+# # 传统风格 - 带类型检查 {"name":["wangwu"],"sex":[true]} 
 # record.builder("name,sex", types = c("character", "logical"))("wangwu", TRUE) |> jsonlite::toJSON()
 # # NSE风格 {"character":["zhaoliu"],"logical":[false]} 
 # record.builder(name = character, sex = logical)("zhaoliu", FALSE) |> jsonlite::toJSON()
@@ -427,5 +488,5 @@ validate_symbol <- function(value) {
 # record.builder(name = xxx)(1) |> jsonlite::toJSON()
 # # character键名 {"character":[1]} 
 # record.builder(name = character)(1) |> jsonlite::toJSON()
-# # char 为 类型约束 {"name":["1"]} 
+# char 为 类型约束 {"name":["1"]} 
 # record.builder(name = char)(1) |> jsonlite::toJSON()
