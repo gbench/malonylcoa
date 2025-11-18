@@ -49,14 +49,37 @@ ui <- fluidPage(
           tabsetPanel(
             tabPanel("数据源",
                      div(class = "compact-row",
-                         textInput("tbl", "数据表", value = "t_rb2601_20251113", width = "100%")
+                         textInput("tbl", "数据表", value = "t_rb2601_20251118", width = "100%")
                      ),
                      div(class = "inline-group",
                          textInput("db", "数据库", value = "ctp", width = "100%"),
                          numericInput("port", "端口", value = 3371, width = "100%")
                      ),
                      div(class = "compact-row",
-                         textInput("host", "主机", value = "127.0.0.1", width = "100%")
+                         # 单选按钮切换输入方式
+                         radioButtons("host_input_type", "主机输入方式:",
+                                      choices = c("下拉选择" = "select", "手动输入" = "text"),
+                                      selected = "select",
+                                      inline = TRUE),
+                         
+                         # 条件面板：当下拉选择被选中时显示
+                         conditionalPanel(
+                           condition = "input.host_input_type == 'select'",
+                           selectInput("host_select_option", "主机", 
+                                       choices = list(
+                                         "本地主机" = "127.0.0.1",
+                                         "04服务器" = "192.168.1.4",
+                                         "10服务器" = "192.168.1.10"
+                                       ),
+                                       selected = "192.168.1.10",
+                                       width = "100%")
+                         ),
+                         
+                         # 条件面板：当手动输入被选中时显示
+                         conditionalPanel(
+                           condition = "input.host_input_type == 'text'",
+                           textInput("host_text_line", "主机", value = "192.168.1.10", width = "100%")
+                         )
                      )
             ),
             
@@ -226,13 +249,22 @@ server <- function(input, output, session) {
     set_morning = list(start = "09:00:00", end = "12:00:00", range = 180),
     set_afternoon = list(start = "13:00:00", end = "15:00:00", range = 120),
     set_night = list(start = "21:00:00", end = "23:00:00", range = 120),
-    set_full_day = list(start = "09:00:00", end = "15:00:00", range = 360)
+    set_full_day = list(start = "09:00:00", end = "23:00:00", range = 360)
   )
   
   quick_settings <- list(set_1h = 60, set_2h = 120, set_3h = 180)
   
   # ========== 工具函数 ==========
-  ds <- reactive(partial(sqlquery, dbname = input$db, port = input$port, host = input$host))
+  # 在服务器逻辑中
+  host <- reactive({
+    if (input$host_input_type == "select") {
+      return(input$host_select_option)
+    } else {
+      return(input$host_text_line)
+    }
+  })
+  # 数据源定义
+  ds <- reactive(partial(sqlquery, dbname = input$db, port = input$port, host = host()))
   
   generate_sql <- function() {
     req(input$tbl, input$start_time, input$end_time)
@@ -504,7 +536,9 @@ server <- function(input, output, session) {
           alpha = 0.7,
           outlier.size = 0.8,
           outlier.alpha = 0.5,
-          lwd = 0.3
+          lwd = 0.3,
+          notch=T,
+          notchwidth = 0.3
         ) +
         # 添加开盘收盘标记
         geom_point(
@@ -523,6 +557,10 @@ server <- function(input, output, session) {
           aes(x = TimeGroup, y = Median, group = 1),
           color = "orange", linewidth = 0.5, alpha = 0.7
         ) +
+        geom_smooth(data = kline_df, 
+            aes(x = TimeGroup, y = Close, group = 1), 
+            color = "red", linewidth = 0.5, alpha = 0.7
+        ) + 
         scale_fill_manual(values = c("red" = "#e74c3c", "green" = "#2ecc71")) +
         labs(
           title = paste("K线图 -", input$kline_interval, "间隔 (箱线图风格)"),
