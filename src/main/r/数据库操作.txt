@@ -395,6 +395,41 @@ local({
 # 5 13:34           3088      3089     3087       3088         4990        120
 # >
 
+# sqldframe读取sql模板文件
+# 1min.kline 为sql模板名称，如果本地目录(getwd())没有指定。
+# sqldframe 会在包malonylcoa安装目录下的sql文件夹里寻找
+# 1min.kline,1min_maxcnt.kline 为malonylcoa所自带的示例！
+local({
+    # 创建 参数列表构建器
+    rb <- record.builder("##tbl,#startime,#endtime")
+    # params设置为{"##tbl":["t_rb2601_20251118"],"#startime":["09:00"],"#endtime":["21:00"]} 
+    params <- rb("t_rb2601_20251118", '09:00', "21:00")
+    params |> sqldframe(params=_, "1min.kline", dbname="ctp", host="192.168.1.10")
+   
+   # 构建ds数据源:10号主机上的ctp数据库
+   ds10ctp <- partial(sqldframe, dbname="ctp", host="192.168.1.10")
+   ds10ctp("1min.kline", params)
+   
+   # 创建 参数列表构建器(带有maxcnt参数)
+   rb2 <- record.builder("##tbl,#startime,#endtime,##maxcnt") 
+   rb2("t_rb2601_20251118", '09:00', "21:00", 5) |> sqldframe(params=_, "1min_maxcnt.kline", dbname="ctp", host="192.168.1.10")
+
+   # 创建 参数列表构建器(带有maxcnt参数)
+   rb2 <- record.builder("##tbl,#startime,#endtime,##maxcnt") 
+   rb2("t_rb2601_20251118", '09:00', "21:00", 5) |> sqldframe(params=_, "1min_maxcnt.kline", dbname="ctp")  # 本地检索
+})
+
+# 返回结果示例
+# # A tibble: 5 × 7
+#   MinuteTime OpenPrice HighPrice LowPrice ClosePrice MinuteVolume TradeCount
+#   <chr>          <dbl>     <dbl>    <dbl>      <dbl>        <dbl>      <dbl>
+# 1 09:01           3082      3084     3082       3083         2173         66
+# 2 09:02           3082      3083     3081       3082         3272        120
+# 3 09:03           3081      3083     3081       3082         3557        120
+# 4 09:04           3082      3083     3081       3081         2382        120
+# 5 09:05           3081      3082     3081       3082         2173        120
+
+
 # ----------------------------------------------------------------------------------------------------------------
 # 数据库读取示例
 # ----------------------------------------------------------------------------------------------------------------
