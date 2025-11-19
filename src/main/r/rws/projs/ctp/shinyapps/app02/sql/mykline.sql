@@ -1,6 +1,10 @@
--- -----------------------------------------------------------------------------------------
--- # 1min.keline.weighted
--- -----------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据(带有tickdata源数据)
+-- # 1min.kline.weighted
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
 WITH TickData AS (
     -- 第一步：计算单次成交量Vol（当前累计Volume - 上一笔累计Volume）
     SELECT 
@@ -40,3 +44,45 @@ MinuteKLine AS (
 SELECT DISTINCT *
 FROM MinuteKLine
 ORDER BY MinuteTime;
+
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据(带有tickdata源数据)
+-- # tickdata.1min.kline
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
+WITH MinuteKLine AS (
+    SELECT 
+        Id,
+        LastPrice,
+        UpdateTime,
+        Volume,
+        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
+        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
+        MAX(LastPrice) OVER w as HighPrice,
+        MIN(LastPrice) OVER w as LowPrice,
+        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
+        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        COUNT(*) OVER w as TradeCount
+    FROM ##tbl
+    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
+)
+SELECT 
+    Id,
+    LastPrice,
+    UpdateTime,
+    Volume,
+    MinuteTime,
+    OpenPrice,
+    HighPrice,
+    LowPrice,
+    ClosePrice,
+    MinuteVolume,
+    TradeCount
+FROM MinuteKLine
+ORDER BY UpdateTime, Id;
+
+
+

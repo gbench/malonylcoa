@@ -10,6 +10,7 @@ library(zoo)
 ui <- fluidPage(
   # 添加自定义CSS美化界面
   tags$head(
+    tags$title("CTP 数据可视化分析平台"),
     tags$style(HTML("
       .well {
         background-color: #f8f9fa;
@@ -79,7 +80,7 @@ ui <- fluidPage(
                           choices = c("10服务器" = "192.168.1.10", 
                                       "04服务器" = "192.168.1.4", 
                                       "本地主机" = "127.0.0.1"),
-                          selected = "192.168.1.10")
+                          selected = "127.0.0.1")
             ),
             conditionalPanel(
               condition = "input.host_mode == false",
