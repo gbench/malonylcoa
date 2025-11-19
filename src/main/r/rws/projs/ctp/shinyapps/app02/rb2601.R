@@ -57,23 +57,26 @@
 batch_load()
 
 # 定义本地数据源
-ds10ctp <- partial(sqldframe,dbname = "ctp", host = "192.168.1.10", port=3371) # ds数据源10主机ctp数据库
+ds10ctp <- partial(sqldframe,dbname = "ctp", host = "192.168.1.4", port=3371) # ds数据源10主机ctp数据库
 rb <- record.builder("##tbl,#startime,#endtime") # 表格-时间构建器
-f <- \() ds10ctp("select * from t_rb2601_20251119 where UpdateTime<'09:16'") # 读取测试函数
+f <- \() ds10ctp("select * from t_rb2601_20251119 where UpdateTime < '09:16'") # 读取测试函数
 
 # 读取实验
-f()|> mutate(Wt=diff(Volume)|>append(0,0)) |> select(LastPrice,Wt) |> with(weighted.mean(LastPrice, Wt))
+f()|> mutate(Wt=diff(Volume)|>append(0,0)) |> select(LastPrice, Wt) |> with(weighted.mean(LastPrice, Wt))
 
 # 使用表格-时间参数填充本地文件夹"./sql" 中SQL模板"tickdata.1min.kline"并获取查询结果数据
-rb('t_ma601_20251119','09:00','09:16') |> ds10ctp("tickdata.1min.kline", params=_, files="./sql")
+rb('t_ma601_20251119','09:00','15:00') |> ds10ctp("tickdata.1min.kline", params=_, files="./sql")
 
 # 使用表格-时间参数填充本地文件夹"./sql" 中SQL模板"1min.kline.weighted"并进行绘图
-rb('t_ma601_20251119','10:15','10:41') |> 
-  ds10ctp(params=_, "1min.kline.weighted", files="./sql") |>
-  ggplot(aes(MinuteTime|>substr(4,5))) +  # 原始x轴仍用MinuteTime（用于线条和标签）
+rb('t_ma601_20251119', '14:30', '15:00') |> 
+  ds10ctp(params=_, "1min.kline.weighted", files="./sql") |> last(100) |>
+  ggplot(aes(MinuteTime)) +  # 原始x轴仍用MinuteTime（用于线条和标签）
   geom_line(aes(y = ClosePrice, group = 1)) +
   geom_line(aes(y = WeightedAvgPrice, group = 2), color = "red") +
-  geom_line(aes(y = HighPrice, group = 1),color="purple") +
-  geom_line(aes(y = LowPrice, group = 1),color="navy") +
+  geom_line(aes(y = HighPrice, group = 1), color="purple") +
+  geom_line(aes(y = LowPrice, group = 1), color="navy") +
   # 在geom_smooth内部转换x为POSIXct（带日期）
-  geom_smooth(aes(seq(MinuteTime),WeightedAvgPrice),color="blue")
+  geom_smooth(aes(seq(MinuteTime), WeightedAvgPrice), color="blue") +
+  geom_smooth(aes(seq(MinuteTime), HighPrice), color="sienna1", se=F) + 
+  geom_smooth(aes(seq(MinuteTime), LowPrice), color="sienna3", se=F) 
+
