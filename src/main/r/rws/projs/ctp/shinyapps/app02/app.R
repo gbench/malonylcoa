@@ -427,7 +427,7 @@ server <- function(input, output, session) {
       params <- rb(input$tbl, input$startime, input$endtime)
       
       # 使用响应式的 ds10ctp 函数执行查询
-      data <- ds10ctp()(params = params, "1min.keline.weighted", files = "sql")
+      data <- ds10ctp()(params = params, "1min.kline.weighted", files = "sql")
       
       # 数据验证和清理
       if (!is.null(data) && nrow(data) > 0) {
