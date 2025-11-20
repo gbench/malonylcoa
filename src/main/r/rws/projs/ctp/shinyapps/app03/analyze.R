@@ -45,15 +45,22 @@ identify_support_resistance <- function(data, span = 2) {
     n <- length(price_series)
     if (n <= 2 * span) return(rep(FALSE, n))  # Insufficient data
     
-    # Build comparison logic dynamically
-    expr <- quote(TRUE)
-    for (i in 1:span) {
-      if (type == "high") {
-        expr <- bquote(.(expr) & price_series > lag(price_series, .(i)) & price_series > lead(price_series, .(i)))
-      } else if (type == "low") {
-        expr <- bquote(.(expr) & price_series < lag(price_series, .(i)) & price_series < lead(price_series, .(i)))
-      }
-    }
+    # Define comparison operator
+    compare_op <- if (type == "high") `>` else `<`
+    
+    # Build comparison logic with Reduce (replace loop)
+    expr <- Reduce(
+      function(acc, i) {
+        # Dynamic comparison for lag(i) and lead(i)
+        bquote(
+          .(acc) & 
+            .(compare_op)(price_series, lag(price_series, .(i))) & 
+            .(compare_op)(price_series, lead(price_series, .(i)))
+        )
+      },
+      x = 1:span,  # Iterate over span values
+      init = quote(TRUE)  # Initial value for accumulation
+    )
     
     # Evaluate and clean NA values
     result <- eval(expr, envir = environment())
