@@ -13,28 +13,38 @@ library(TTR)
 library(tidyr)
 library(lubridate)
 
+# 加载sqldframe数据库工具
 batch_load()
 
-# 定义数据源
-ds10ctp <- partial(sqldframe, dbname = "ctp", host = "127.0.0.1", port = 3371)
+# 定义数据源:ds, host:00, 数据库名:ctp
+ds00ctp <- partial(sqldframe, dbname = "ctp", host = "127.0.0.1", port = 3371)
 
 # 数据读取函数
-load_data <- function(tbl, span="UpdateTime<'12:00' and UpdateTime>'09:00'") {
-  ds10ctp(gettextf("select * from %s %s", tbl, ifelse(!is.na(paste0("where ", span)),"")))
+load_data <- function(tbl, begtime, endtime) {
+  rb <- record.builder("##tbl,#begtime,#endtime")
+  params <- rb(tbl, begtime, endtime)
+  "select * from ##tbl where UpdateTime between #begtime and #endtime" |> fill(params) |> ds00ctp()
+  
 }
 
 # 工具函数
 instrument <- \(tbl) {
+  
   regexpr("(?<=t_)[[:alnum:]]+(?=_[[:digit:]]{8})", tbl, perl=T) |> regmatches(x=tbl)
+  
 }
 
+# 提取时间
 date_of <- \(tbl) {
+  
   m <- regexpr("t_[[:alnum:]]+_([[:digit:]]{8})", tbl, perl = TRUE)
   regmatches(tbl, m) |> sub("t_[[:alnum:]]+_([[:digit:]]{8})", "\\1", x = _) |> ymd()
+  
 }
 
 # 技术分析函数 - 支撑压力位识别
 identify_support_resistance <- function(data) {
+  
   # 数据预处理
   data_clean <- data %>%
     arrange(UpdateTime, UpdateMillisec) %>%
@@ -73,10 +83,12 @@ identify_support_resistance <- function(data) {
     )
   
   return(data_tech)
+  
 }
 
 # 修复后的关键价格水平识别函数
 find_key_levels_simple <- function(data_tech) {
+  
   # 使用价格聚类方法识别支撑阻力位
   price_levels <- data_tech %>%
     mutate(price_rounded = round(price)) %>%
@@ -125,10 +137,12 @@ find_key_levels_simple <- function(data_tech) {
     支撑位 = support_candidates,
     阻力位 = resistance_candidates
   ))
+  
 }
 
 # 斐波那契回撤分析
 fibonacci_retracement <- function(data_tech) {
+  
   # 计算当日最高价和最低价
   day_high <- max(data_tech$price, na.rm = TRUE)
   day_low <- min(data_tech$price, na.rm = TRUE)
@@ -144,10 +158,12 @@ fibonacci_retracement <- function(data_tech) {
   )
   
   return(fib_data)
+  
 }
 
 # 成交量密集区分析
 analyze_volume_clusters <- function(data_tech) {
+  
   # 按价格区间分析成交量分布
   price_range <- range(data_tech$price, na.rm = TRUE)
   price_breaks <- seq(floor(price_range[1]), ceiling(price_range[2]), by = 2)  # 每2元一个区间
@@ -168,10 +184,12 @@ analyze_volume_clusters <- function(data_tech) {
     )
   
   return(volume_clusters)
+  
 }
 
 # 移动平均线支撑压力分析
 analyze_ma_support_resistance <- function(data_tech) {
+  
   ma_levels <- data_tech %>%
     select(full_timestamp, ma5, ma10, ma20) %>%
     tidyr::pivot_longer(cols = c(ma5, ma10, ma20), 
@@ -189,10 +207,12 @@ analyze_ma_support_resistance <- function(data_tech) {
     filter(!is.na(current_value))
   
   return(ma_levels)
+  
 }
 
 # 可视化函数生成器
 plot_support_resistance_generator <- function(tbl) {
+  
   function(data_tech, key_levels, fib_levels, volume_clusters, ma_levels) {
     # 基础价格图表
     p_base <- ggplot(data_tech, aes(x = full_timestamp, y = price)) +
@@ -290,10 +310,12 @@ plot_support_resistance_generator <- function(tbl) {
     
     return(p_final)
   }
+  
 }
 
 # 生成交易建议
 generate_trading_recommendations <- function(key_levels, current_price, day_high, day_low) {
+  
   recommendations <- list()
   
   # 寻找最近的支撑和阻力
@@ -377,10 +399,12 @@ generate_trading_recommendations <- function(key_levels, current_price, day_high
   }
   
   return(recommendations)
+  
 }
 
 # 主分析函数 - 统一入口
-analyze <- function(tbl, home=".") {
+analyze <- function(tbl, begtime="09:00", endtime="12:00", home=".") {
+  
   # 创建对应的instrument文件夹
   inst <- instrument(tbl)
   date_str <- format(date_of(tbl), "%Y%m%d")
@@ -392,7 +416,7 @@ analyze <- function(tbl, home=".") {
   }
   
   cat(gettextf("正在加载%s %s日数据...\n", inst, date_of(tbl)))
-  data <- load_data(tbl)
+  data <- load_data(tbl, begtime, endtime)
   
   cat("进行技术指标计算...\n")
   data_tech <- identify_support_resistance(data)
@@ -491,13 +515,14 @@ analyze <- function(tbl, home=".") {
   # 保存分析结果到CSV文件
   cat("\n保存分析结果到CSV文件...\n")
   
-  # 使用统一命名格式：xxxx_instrument_date.csv
-  support_file <- file.path(dir_name, gettextf("support_%s_%s.csv", inst, date_str))
-  resistance_file <- file.path(dir_name, gettextf("resistance_%s_%s.csv", inst, date_str))
-  fibonacci_file <- file.path(dir_name, gettextf("fibonacci_%s_%s.csv", inst, date_str))
-  volume_file <- file.path(dir_name, gettextf("volume_%s_%s.csv", inst, date_str))
-  ma_file <- file.path(dir_name, gettextf("ma_%s_%s.csv", inst, date_str))
-  plot_file <- file.path(dir_name, gettextf("chart_%s_%s.png", inst, date_str))
+  # 使用统一命名格式：prefix_instrument_date.suffix
+  f <- \(prefix, suffix="csv") file.path(dir_name, gettextf("%s_%s_%s.%s", prefix, inst, date_str, suffix))
+  support_file <- f("support")
+  resistance_file <- f("resistance")
+  fibonacci_file <- f("fibonacci")
+  volume_file <- f("fibonacci")
+  ma_file <- f("fibonacci")
+  plot_file <- f("chart","png")
   
   write.csv(key_levels$支撑位, support_file, row.names = FALSE)
   write.csv(key_levels$阻力位, resistance_file, row.names = FALSE)
@@ -541,10 +566,12 @@ analyze <- function(tbl, home=".") {
     图表 = plot_result,
     建议 = recommendations
   ))
+  
 }
 
-# 使用示例
-# analysis_result <- analyze("t_rb2601_20251120")
+# 使用示例， 默认路径
+analysis_result <- analyze("t_rb2601_20251120", "09:00", "12:00")
 
-# 批量生成报告
-# sqldframe("show tables",dbname="ctp") |> unlist() |> grep(pattern="20251120", value=T) |> lapply(partial(analyze, home="reports"))
+# 批量生成报告，把ctp库中的tickdata所有
+# sqldframe("show tables", dbname="ctp") |> unlist() |> grep(pattern="20251120", value=T) |>
+#   lapply(partial(analyze, begtime="09:00", "12:00", home="reports"))
