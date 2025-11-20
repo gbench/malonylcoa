@@ -442,7 +442,10 @@ EOF
 # sqldframe读取sql模板文件
 # 1min.kline为sql模板名称，如果本地目录(getwd())没有指定。
 # 有效的模板pattern不能不能以sql关键字+" "为名称开头[不能满足以下模式:grepl(pattern, text, ignore.case = TRUE)]
-# "^\\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|WITH|MERGE|BEGIN|COMMIT|ROLLBACK|GRANT|REVOKE|EXPLAIN|DESC|SHOW|CALL|EXECUTE|DECLARE|SET)\\s"
+# "^\\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|WITH|MERGE|BEGIN|COMMIT|
+#   ROLLBACK|GRANT|REVOKE|EXPLAIN|DESC|SHOW|CALL|EXECUTE|DECLARE|SET)\\s" 这里的ROLLBACK换行只是美观的换行！
+# sql模板名称 可以是字符串也可以是符号，sqldframe(xxx, ...) <==>sqldframe("xxx", ...), 但是符号需要时有效的R标识符
+# 但对于“1min.kline”这种非法以数字开头的名称时一定需要用引号字符串的！
 # sqldframe会在包malonylcoa安装目录下的sql文件夹里寻找
 # 1min.kline,1min_maxcnt.kline为malonylcoa所自带的示例！
 local({
