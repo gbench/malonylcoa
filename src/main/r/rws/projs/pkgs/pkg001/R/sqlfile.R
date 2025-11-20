@@ -379,7 +379,7 @@ list_sql_templates <- function(files = "\\.sql$", recursive = FALSE, verbose = T
 #' This function searches for SQL templates and executes queries with parameter substitution.
 #' Local SQL templates override package templates with the same name.
 #'
-#' @param name Character string specifying either SQL template name or direct SQL statement
+#' @param x Character string specifying either SQL template name or direct SQL statement
 #' @param params Named list of parameters for template substitution
 #' @param files SQL template file scope
 #' @param recursive logical. Should the listing recurse into directories?
@@ -388,7 +388,10 @@ list_sql_templates <- function(files = "\\.sql$", recursive = FALSE, verbose = T
 #' @return A data frame containing query results
 #'
 #' @export
-sqldframe <- function(name, params = list(), files = "\\.sql$", recursive = FALSE, ...) {
+sqldframe <- function(x, params = list(), files = "\\.sql$", recursive = FALSE, ...) {
+  # Capture original expression of 'x' → convert to string → remove leading/trailing double/single quotes (retain pure name only)
+  name <- deparse(substitute(x)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+  
   # Input validation
   if (!is.character(name) || length(name) != 1L || nchar(trimws(name)) == 0L) {
     stop("Parameter 'name' must be a non-empty character string")
