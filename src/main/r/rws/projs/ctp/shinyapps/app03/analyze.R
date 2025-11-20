@@ -38,7 +38,29 @@ extract_date <- \(tbl) {
 }
 
 # Technical analysis function - Support/Resistance Identification
-identify_support_resistance <- function(data) {
+identify_support_resistance <- function(data, span = 2) {
+  # Generic local extreme detection (high/low)
+  # span: Number of bars to check before/after (default: 2)
+  is_local_extreme <- function(price_series, type = "high", span = 2) {
+    n <- length(price_series)
+    if (n <= 2 * span) return(rep(FALSE, n))  # Insufficient data
+    
+    # Build comparison logic dynamically
+    expr <- quote(TRUE)
+    for (i in 1:span) {
+      if (type == "high") {
+        expr <- bquote(.(expr) & price_series > lag(price_series, .(i)) & price_series > lead(price_series, .(i)))
+      } else if (type == "low") {
+        expr <- bquote(.(expr) & price_series < lag(price_series, .(i)) & price_series < lead(price_series, .(i)))
+      }
+    }
+    
+    # Evaluate and clean NA values
+    result <- eval(expr, envir = environment())
+    result[is.na(result)] <- FALSE
+    result
+  }
+  
   # Data preprocessing
   data_clean <- data %>%
     arrange(UpdateTime, UpdateMillisec) %>%
@@ -52,31 +74,29 @@ identify_support_resistance <- function(data) {
   # Calculate technical indicators
   data_tech <- data_clean %>%
     mutate(
-      # Moving averages
+      # Moving averages (5/10/20 periods)
       ma5 = rollmean(price, 5, fill = NA, align = "right"),
       ma10 = rollmean(price, 10, fill = NA, align = "right"),
       ma20 = rollmean(price, 20, fill = NA, align = "right"),
       
-      # Bollinger Bands
+      # Bollinger Bands (20-period, 2 SD)
       bbands = BBands(price, n = 20, sd = 2),
       bb_upper = bbands[, "up"],
       bb_middle = bbands[, "mavg"],
       bb_lower = bbands[, "dn"],
       
-      # RSI
+      # RSI (14-period)
       rsi = RSI(price, n = 14),
       
-      # Volume Weighted Average Price
+      # VWAP (Volume Weighted Average Price)
       vwap = cumsum(price * (volume - lag(volume, default = 0))) / cumsum(volume - lag(volume, default = 0)),
       
-      # Identify local highs and lows
-      is_local_high = price > lag(price, 1) & price > lag(price, 2) & 
-        price > lead(price, 1) & price > lead(price, 2),
-      is_local_low = price < lag(price, 1) & price < lag(price, 2) & 
-        price < lead(price, 1) & price < lead(price, 2)
+      # Local highs/lows via generic function
+      is_local_high = is_local_extreme(price, type = "high", span = span),
+      is_local_low = is_local_extreme(price, type = "low", span = span)
     )
   
-  return(data_tech)
+  data_tech
 }
 
 # Fixed key price level identification function
@@ -548,7 +568,7 @@ analyze <- function(tbl, begtime="09:00", endtime="12:00", home=".") {
 }
 
 # Example usage with default path
-analysis_result <- analyze("t_rb2601_20251120", "09:00", "12:00")
+analysis_result <- analyze("t_rb2601_20251120", "13:30", "15:00")
 
 # Batch generate reports for all tables in ctp database
 # sqldframe("show tables", dbname="ctp") |> unlist() |> grep(pattern="20251120", value=T) |>
