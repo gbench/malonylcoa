@@ -27,12 +27,12 @@ load_data <- function(tbl, begtime, endtime) {
 }
 
 # Utility function to extract instrument name
-instrument <- \(tbl) {
+extract_instrument <- \(tbl) {
   regexpr("(?<=t_)[[:alnum:]]+(?=_[[:digit:]]{8})", tbl, perl=T) |> regmatches(x=tbl)
 }
 
 # Extract date from table name
-date_of <- \(tbl) {
+extract_date <- \(tbl) {
   m <- regexpr("t_[[:alnum:]]+_([[:digit:]]{8})", tbl, perl = TRUE)
   regmatches(tbl, m) |> sub("t_[[:alnum:]]+_([[:digit:]]{8})", "\\1", x = _) |> ymd()
 }
@@ -196,11 +196,12 @@ analyze_ma_support_resistance <- function(data_tech) {
 
 # Visualization function generator
 plot_support_resistance_generator <- function(tbl) {
+  
   function(data_tech, key_levels, fib_levels, volume_clusters, ma_levels) {
     # Base price chart
     p_base <- ggplot(data_tech, aes(x = full_timestamp, y = price)) +
       geom_line(color = "blue", alpha = 0.7, linewidth = 0.8) +
-      labs(title = gettextf("%s Support/Resistance Analysis - %s", instrument(tbl), date_of(tbl)),
+      labs(title = gettextf("%s Support/Resistance Analysis - %s", extract_instrument(tbl), extract_date(tbl)),
            x = "Time", y = "Price") +
       theme_minimal() +
       theme(plot.title = element_text(hjust = 0.5, face = "bold"))
@@ -367,7 +368,7 @@ generate_trading_recommendations <- function(key_levels, current_price, day_high
       recommendations$action_recommendation <- "Price near strong resistance, consider selling on rallies with stop above resistance"
       recommendations$risk_level <- "Low risk"
     } else if(position_in_range >= 0.3 && position_in_range <= 0.7) {
-      recommendations$action_recommendation <- "Price in middle of range, consider观望 or range trading"
+      recommendations$action_recommendation <- "Price in middle of range, consider wait&see or conduct range-bound range trading"
       recommendations$risk_level <- "Medium risk"
     }
     
@@ -384,16 +385,16 @@ generate_trading_recommendations <- function(key_levels, current_price, day_high
 # Main analysis function - Unified entry
 analyze <- function(tbl, begtime="09:00", endtime="12:00", home=".") {
   # Create corresponding instrument folder
-  inst <- instrument(tbl)
-  date_str <- format(date_of(tbl), "%Y%m%d")
-  dir_name <- gettextf("%s/%s/%s", home, inst, date_of(tbl))
+  inst <- extract_instrument(tbl)
+  date_str <- format(extract_date(tbl), "%Y%m%d")
+  dir_name <- gettextf("%s/%s/%s", home, inst, date_str)
   
   if (!dir.exists(dir_name)) {
     dir.create(dir_name, recursive = T)
     cat(gettextf("Created directory: %s\n", dir_name))
   }
   
-  cat(gettextf("Loading %s %s data...\n", inst, date_of(tbl)))
+  cat(gettextf("Loading %s %s data...\n", inst, date_str))
   data <- load_data(tbl, begtime, endtime)
   
   cat("Calculating technical indicators...\n")
@@ -428,7 +429,7 @@ analyze <- function(tbl, begtime="09:00", endtime="12:00", home=".") {
   cat(paste0(rep("=", 60), collapse = ""), "\n")
   cat(gettextf("%s Support/Resistance Analysis Report\n", inst))
   cat(paste0(rep("=", 60), collapse = ""), "\n")
-  cat(gettextf("Analysis Date: %s\n", date_of(tbl)))
+  cat(gettextf("Analysis Date: %s\n", date_str))
   cat("Current Price:", current_price, "\n")
   cat("Daily High:", day_high, "\n")
   cat("Daily Low:", day_low, "\n")
@@ -550,5 +551,5 @@ analyze <- function(tbl, begtime="09:00", endtime="12:00", home=".") {
 analysis_result <- analyze("t_rb2601_20251120", "09:00", "12:00")
 
 # Batch generate reports for all tables in ctp database
-sqldframe("show tables", dbname="ctp") |> unlist() |> grep(pattern="20251120", value=T) |>
-  lapply(partial(analyze, begtime="09:00", endtime="12:00", home="reports"))
+# sqldframe("show tables", dbname="ctp") |> unlist() |> grep(pattern="20251120", value=T) |>
+#   lapply(partial(analyze, begtime="09:00", endtime="12:00", home="reports"))
