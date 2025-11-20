@@ -1,5 +1,8 @@
+# -----------------------------------------------------------------------------------
 # 支撑压力位分析完整脚本
-# 用于分析RB2601期货合约的支撑位和压力位
+# 
+# 用于分析期货合约的支撑位和压力位
+# -----------------------------------------------------------------------------------
 
 # 加载必要的包
 library(dplyr)
@@ -12,6 +15,14 @@ library(lubridate)
 
 batch_load()
 
+# 定义数据源
+ds10ctp <- partial(sqldframe, dbname = "ctp", host = "127.0.0.1", port = 3371)
+
+# 数据读取函数
+load_data <- function(tbl, span="UpdateTime<'12:00' and UpdateTime>'09:00'") {
+  ds10ctp(gettextf("select * from %s %s", tbl, ifelse(!is.na(paste0("where ", span)),"")))
+}
+
 # 工具函数
 instrument <- \(tbl) {
   regexpr("(?<=t_)[[:alnum:]]+(?=_[[:digit:]]{8})", tbl, perl=T) |> regmatches(x=tbl)
@@ -20,14 +31,6 @@ instrument <- \(tbl) {
 date_of <- \(tbl) {
   m <- regexpr("t_[[:alnum:]]+_([[:digit:]]{8})", tbl, perl = TRUE)
   regmatches(tbl, m) |> sub("t_[[:alnum:]]+_([[:digit:]]{8})", "\\1", x = _) |> ymd()
-}
-
-# 定义数据源
-ds10ctp <- partial(sqldframe, dbname = "ctp", host = "127.0.0.1", port = 3371)
-
-# 数据读取函数
-load_data <- function(tbl) {
-  ds10ctp(gettextf("select * from %s where UpdateTime<'12:00'",tbl))
 }
 
 # 技术分析函数 - 支撑压力位识别
@@ -381,7 +384,7 @@ analyze <- function(tbl, home=".") {
   # 创建对应的instrument文件夹
   inst <- instrument(tbl)
   date_str <- format(date_of(tbl), "%Y%m%d")
-  dir_name <- gettextf("%s/%s", home, inst)
+  dir_name <- gettextf("%s/%s/%s", home, inst, date_of(tbl))
   
   if (!dir.exists(dir_name)) {
     dir.create(dir_name, recursive = T)
@@ -542,3 +545,6 @@ analyze <- function(tbl, home=".") {
 
 # 使用示例
 # analysis_result <- analyze("t_rb2601_20251120")
+
+# 批量生成报告
+# sqldframe("show tables",dbname="ctp") |> unlist() |> grep(pattern="20251120", value=T) |> lapply(partial(analyze, home="reports"))
