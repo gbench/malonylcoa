@@ -101,7 +101,7 @@ sqlexecute <- function(sql, simplify=T, ...) {
 #' @param tbl  数据表名
 #' @return 创建数据表SQL
 ctsql <- function( dfm, tbl ) {
-  tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
   dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
       n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
       default_type=sprintf('varchar(%s)', n) # 默认类型
@@ -112,7 +112,7 @@ ctsql <- function( dfm, tbl ) {
         `list`='json', # 列表类型
         default_type # 默认类型 
     )) |> (\(x) # 获取字段定义
-      sprintf("create table %s (\n  %s \n)\n", tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
+      sprintf("create table %s (\n  %s \n)\n", .tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
     ) () # SQL 创建表语句
 }
 
@@ -121,7 +121,7 @@ ctsql <- function( dfm, tbl ) {
 #' @param tbl  数据表名
 #' @return 表数据插入SQL
 insql <- function( dfm, tbl ) {
-  tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "") #  提取数据表名
   keys <- names( dfm ) |> paste(collapse=", ") # 列名列表
   values <- dfm |> lapply(\(e, t=typeof(e), cls=class(e)) # 记录值列表的各个字段值处理：
     switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
@@ -132,7 +132,7 @@ insql <- function( dfm, tbl ) {
       sprintf("'%s'", gsub("'", "''", e)) # 默认类型，使用单引号'给括起来, 并对单引号进行转义
     )) |> do.call(\(...) mapply(\(...) paste(..., sep=', ', collapse=','), ...), args=_) |> # 行映射,此处\(...)有层级差异,内为字段外为数据行是两个不同变量
     sprintf(fmt='( %s )') |> paste(collapse=',\n  ') # 值列表
-  sprintf( "insert into %s (%s) values \n  %s\n", tbl, keys, values ) # SQL 插入记录行数据（多行）语句
+  sprintf( "insert into %s (%s) values \n  %s\n", .tbl, keys, values ) # SQL 插入记录行数据（多行）语句
 }
 
 #' 表数据更新SQL
@@ -140,12 +140,14 @@ insql <- function( dfm, tbl ) {
 #' @param tbl 数据表名
 #' @param pk 数据主键
 upsql <- \(dfm, tbl, pk="id") { # 数据更新
+    .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
     nms <- names(dfm) # 提取各个数据列名
-    idx <- match(pk, nms) #  主键pk在名称nms中的索引位置
+    .pk <- deparse( substitute( pk ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+    idx <- match(.pk, nms) #  主键pk在名称nms中的索引位置
     stopifnot("dfm的名称nms中必须包含主键名pk" = !is.na(idx)) # pk名字的有效性检测
-    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''",x=_))) |> 
+    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''", x=_))) |> 
       apply(1, \(line) paste(line[-idx], collapse=",\n  ")) # 字段拼接
-    sprintf("update %s set\n  %s \nwhere %s='%s'\n", tbl, flds, pk, dfm[, pk]) # 数据更新的SQL语句
+    sprintf("update %s set\n  %s \nwhere %s='%s'\n", .tbl, flds, .pk, dfm[, .pk]) # 数据更新的SQL语句
 }
 
 # 自定义主机与数据库
