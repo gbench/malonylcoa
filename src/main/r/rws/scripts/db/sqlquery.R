@@ -140,12 +140,14 @@ insql <- function( dfm, tbl ) {
 #' @param tbl 数据表名
 #' @param pk 数据主键
 upsql <- \(dfm, tbl, pk="id") { # 数据更新
+    tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
     nms <- names(dfm) # 提取各个数据列名
-    idx <- match(pk, nms) #  主键pk在名称nms中的索引位置
+    .pk <- deparse( substitute( pk ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+    idx <- match(.pk, nms) #  主键pk在名称nms中的索引位置
     stopifnot("dfm的名称nms中必须包含主键名pk" = !is.na(idx)) # pk名字的有效性检测
-    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''",x=_))) |> 
+    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''", x=_))) |> 
       apply(1, \(line) paste(line[-idx], collapse=",\n  ")) # 字段拼接
-    sprintf("update %s set\n  %s \nwhere %s='%s'\n", tbl, flds, pk, dfm[, pk]) # 数据更新的SQL语句
+    sprintf("update %s set\n  %s \nwhere %s='%s'\n", tbl, flds, .pk, dfm[, .pk]) # 数据更新的SQL语句
 }
 
 # 自定义主机与数据库
