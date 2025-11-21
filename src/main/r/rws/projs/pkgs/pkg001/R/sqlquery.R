@@ -50,7 +50,7 @@ NULL
 #' query_func("SELECT 1")
 #' }
 dbfun <- function(f, ...) {
-  dbcfg <- list(...)
+  dbcfg <- match.call(expand.dots=F)$... |> lapply(\(x) tryCatch(eval(x), error=\(e) deparse(x)))
   defaultcfg <- list(
     drv = RMySQL::MySQL(),
     host = "localhost",

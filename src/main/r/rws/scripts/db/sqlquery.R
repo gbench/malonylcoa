@@ -32,7 +32,7 @@ if(!all(flags)) { # 存在没有安装的程序包
 #' @param f 连接执行函数
 #' @param 执行SQL语句 的函数
 dbfun <- function(f, ...) {
-  dbcfg <- match.call(expand.dots=F)$... |> lapply(\(x) tryCatch(eval(x), error=\(e) deparse(x)))# 数据库连接参数配置(尝试求值，失败则解释符号名为字符串)
+  dbcfg <- match.call(expand.dots=F)$... |> lapply(\(x) tryCatch(eval(x), error=\(e) deparse(x))) # 数据库连接参数配置(尝试求值，失败则解释符号名为字符串)
   defaultcfg <- list(drv=MySQL(), host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认连接参数
   readcfg <- \(key) dbcfg[[key]] %||% defaultcfg[[key]] #  带有默认值的配置参数key的值读取 
 
