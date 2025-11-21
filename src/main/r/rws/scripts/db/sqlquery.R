@@ -62,7 +62,7 @@ dbfun <- function(f, ...) {
 sqlquery <- function(sql, simplify=T, n=-1, ...) {
   # 连接使用函数
   dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql)# 执行数据查询
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
@@ -151,3 +151,63 @@ upsql <- \(dfm, tbl, pk="id") { # 数据更新
 # 自定义主机与数据库
 sqlquery.h10ctp2 <- partial(sqlquery, host="192.168.1.10", dbname="ctp2")
 sqlquery.ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp")
+
+#' 带有动态参数计算能力：sqlexecute2(sql, dbname=test), 即dbname=test相当于dbname="test"，合法标识符名可以不打引号而直接获得符号名!
+#' 但是"eval.parent(substitute(... ...))"与partial的固定参数机制相冲突：
+#' 这种自定义数据库的定义SQL查询方式是不可以的：sqlquery.test <- partial(sqlquery2, dbname="test") 
+#' 需要写成确定参数形式：sqlquery.test <- \(sql) sqlquery2(sql, dbname="test")
+#' 对于静态SQL这两种范式没有区别，但是对于动态生成的sql语句的dynamic_sql() 就差别很大了！
+#' 即partial方式定义的sqlquery.test不能用于这种形式：dynamic_sql() |> sqlquery.test()， dynamic_sql() 会生成一场！
+#' 
+#' 执行SQL语句查询数据结果（dbGetQuery模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @param n 查询结果的返回最大数量
+#' @return 返回结果数据集
+sqlquery2 <- function(sql, simplify=T, n=-1, ...) {
+  # 连接使用函数:使用"eval.parent(substitute(... ...)) 去封装dbfun调用，可以避免R把实际"..."给改写"..1, ..2"的形式：
+  # 否则，sqlquery(sql, dbname=ctp) 会被翻译成 sqlexecute(sql, ..1=ctp) 而改掉了参数名
+  eval.parent(substitute(dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
+    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  }, ...)(sql))) # 连接使用函数
+}
+
+#' 带有动态参数计算能力：sqlexecute2(sql, dbname=test), 即dbname=test相当于dbname="test"，合法标识符名可以不打引号而直接获得符号名!
+#' 但是"eval.parent(substitute(... ...))"与partial的固定参数机制相冲突：
+#' 这这种自定义数据库的定义SQL执行方式是不可以的：sqlexecute.test <- partial(sqlexecute2, dbname=test) # 
+#' 需要写成确定参数形式：sqlexecute.test <- \(sql) sqlexecute2(sql, dbname=test)
+#' 对于静态SQL这两种范式没有区别，但是对于动态生成的sql语句的dynamic_sql() 就差别很大了！
+#' 即partial方式定义的sqlquery.test不能用于这种形式：dynamic_sql() |> sqlexecute.test()， dynamic_sql() 会生成一场！
+#' 
+#' 执行SQL语句（dbExecute模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @return 返回结果是 affected_rows, last_insert_id 两列的数据框，对于
+#'    insert into t_user(name) values('name_1'),('name_2'),...,('name_n') 一条语句插入多条数据
+#'    的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
+#'    其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
+#'    返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
+sqlexecute2 <- function(sql, simplify=T, ...) {
+    # 连接使用函数:使用"eval.parent(substitute(... ...)) 去封装dbfun调用，可以避免R把实际"..."给改写"..1, ..2"的形式：
+    # 否则，sqlexecute(sql, dbname=ctp) 会被翻译成 sqlexecute(sql, ..1=ctp) 而改掉了参数名
+    eval.parent(substitute(dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+      tryCatch({ # try 运行结果
+        dbBegin(con) # 开启事务
+        dataset <- c(list(), sql) |> lapply(\(.sql){
+          affected_rows <- dbExecute(con, .sql); # 影响数据行数
+          last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
+          list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
+        }) |> do.call(rbind, args=_) |> tibble() # 执行数据查询
+        dbCommit(con) # 提交事务
+        if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+      }, error=\(err) { # 错误处理
+        dbRollback(con) # 回滚错误
+        stop(err) # 重新抛出错误
+      }) # try 运行结果
+    }, ...)(sql))) # 连接使用函数
+}
