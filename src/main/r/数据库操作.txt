@@ -260,6 +260,76 @@ fill <- function(template, params) {
 }
 
 # ----------------------------------------------------------------------------------------------------------------
+# 动态参数计算，sqlquery vs sqlquery2 以及 sqlexecute  vs sqlexecute2
+# ----------------------------------------------------------------------------------------------------------------
+
+# sqlquery没有动态参数计算能力
+> sqlquery("show tables", dbname=test)
+[1] "sql:show tables"
+Error in .local(drv, ...) : 
+  Failed to connect to database: Error: Unknown database '..1'
+> 
+
+# sqlquery2拥有动态参数能力
+> sqlquery2("show tables", dbname=test)
+# A tibble: 1 × 1
+  Tables_in_test
+  <chr>         
+1 t_iris        
+
+# 可以使用partial 函数进行sqlquery.test
+# sqlquery.test <- partial(sqlquery, dbname="test") # 自定义数据库查询
+# sqlexecute.test <- partial(sqlexecute, dbname="test") # 自定义数据库执行
+
+local({ # 数据库写入测试
+  # sqlquery(查询), sqlexecute(执行), ctsql(创建), insql(插入), upsql(更新) 等关系数据库的基础工具函数载入！
+  # 此类基础工具函数默认关系数据表拥有一个带有自增长结构的主键id！
+  batch_load() # 基础工具的批量载入
+  
+  # test 数据库查询函数
+  sqlquery.test <- partial(sqlquery, dbname="test") # 自定义数据库查询
+  sqlexecute.test <- partial(sqlexecute, dbname="test") # 自定义数据库执行
+  
+  # 安装必要的使用工具包：janitor用于创建clean_name
+  "janitor,RMySQL" |> strsplit(",") |> unlist() |> lapply(\(pkg) {
+     if(!require(pkg, character.only=T)) { 
+       install.packages(pkg); 
+       library(pkg, character.only=T)
+     } else T
+  })
+  sqlexecute.test("drop table if exists t_iris") # 查询数据
+  
+  # 把 iris数据导入数据库
+  df <- cbind(id=1:dim(iris)[1], iris) # 增加主键数据
+  names(df) <- make_clean_names(names(df)) # 美化字段名
+  c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+  sqlquery.test("select * from t_iris") # 查询数据
+})
+
+###### 
+sqlexecute.test <- partial(sqlexecute, dbname="test") # 自定义数据库执行
+sqlexecute.test("drop table if exists t_iris") # 查询数据
+c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+
+> c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+[[1]]
+     affected_rows last_insert_id
+[1,] 0             0             
+
+[[2]]
+     affected_rows last_insert_id
+[1,] 150           0          
+
+# 动态参数：错误执行
+sqlexecute.test <- partial(sqlexecute2, dbname="test") # 自定义数据库执行
+sqlexecute.test("drop table if exists t_iris") # 查询数据
+c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+
+> c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+Error in f(df, "t_iris") : could not find function "f"
+
+
+# ----------------------------------------------------------------------------------------------------------------
 # 基本使用示例
 # ----------------------------------------------------------------------------------------------------------------
 
