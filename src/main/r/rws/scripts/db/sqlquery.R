@@ -124,13 +124,14 @@ insql <- function( dfm, tbl ) {
   .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "") #  提取数据表名
   keys <- names( dfm ) |> paste(collapse=", ") # 列名列表
   values <- dfm |> lapply(\(e, t=typeof(e), cls=class(e)) # 记录值列表的各个字段值处理：
-    switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
-      `logical`=e, # 逻辑类型，保持原值不变
-      `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
-      `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) sprintf("'%s'", e) else e, # 双精度，保持原值不变
-      `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
-      sprintf("'%s'", gsub("'", "''", e)) # 默认类型，使用单引号'给括起来, 并对单引号进行转义
-    )) |> do.call(\(...) mapply(\(...) paste(..., sep=', ', collapse=','), ...), args=_) |> # 行映射,此处\(...)有层级差异,内为字段外为数据行是两个不同变量
+      switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
+         `logical`=e, # 逻辑类型，保持原值不变
+         `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
+         `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) sprintf("'%s'", e) else e, # 双精度，保持原值不变
+         `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
+         sprintf("'%s'", gsub("'", "''", e)) # 默认类型，使用单引号'给括起来, 并对单引号进行转义
+      ) |> (\(x) ifelse(is.na(x), "NULL", x))() # NA值转NULL值
+    ) |> do.call(\(...) mapply(\(...) paste(..., sep=', ', collapse=','), ...), args=_) |> # 行映射，此处\(...)有层级差异,内为字段外为数据行是两个不同变量
     sprintf(fmt='( %s )') |> paste(collapse=',\n  ') # 值列表
   sprintf( "insert into %s (%s) values \n  %s\n", .tbl, keys, values ) # SQL 插入记录行数据（多行）语句
 }

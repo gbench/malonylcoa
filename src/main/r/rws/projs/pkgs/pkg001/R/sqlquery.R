@@ -221,7 +221,7 @@ insql <- function(dfm, tbl) {
         sprintf("'%s'", gsub("'", "''", jsonlite::toJSON(x)))
       }),
       sprintf("'%s'", gsub("'", "''", as.character(col)))
-    )
+    ) |> (\(x) ifelse(is.na(x), "NULL", x))() 
   }) |>
     do.call(function(...) mapply(paste, ..., sep = ", "), args = _) |>
     sapply(function(x) sprintf("(%s)", x)) |>
