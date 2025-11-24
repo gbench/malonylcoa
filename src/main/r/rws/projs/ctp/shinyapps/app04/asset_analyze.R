@@ -35,7 +35,7 @@ batch_load()
 tickdata <- \(ratio=c(0.3, 0.5), instrument="t_rb2601_20251124", dbname="ctp", 
               host="127.0.0.1", begtime="09:00", endtime="12:00") {
   
-  .ratio <- sort(c(0,0.3,0.9,1)) |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> na.omit()    # 占比排序
+  .ratio <- ratio |> sort() |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> na.omit()    # 占比排序
   # 数据分组的标签生成
   lbls <- .ratio |> append(values=_, x=c(0, 1), after=1) |> (\(xt, x0=lag(xt)) cbind(x0, xt)[-1, ])()|> 
     apply(1, paste, collapse=", ") |> sprintf(fmt="(%s]") # 绘制区间式样
