@@ -32,7 +32,7 @@ if(!all(flags)) { # 存在没有安装的程序包
 #' @param f 连接执行函数
 #' @param 执行SQL语句 的函数
 dbfun <- function(f, ...) {
-  dbcfg <- list(...) # 数据库连接参数配置
+  dbcfg <- match.call(expand.dots=F)$... |> lapply(\(x) tryCatch(eval(x), error=\(e) deparse(x))) # 数据库连接参数配置(尝试求值，失败则解释符号名为字符串)
   defaultcfg <- list(drv=MySQL(), host="localhost", user="root", password="123456", port=3371, dbname="ctp2") # 默认连接参数
   readcfg <- \(key) dbcfg[[key]] %||% defaultcfg[[key]] #  带有默认值的配置参数key的值读取 
 
@@ -62,7 +62,7 @@ dbfun <- function(f, ...) {
 sqlquery <- function(sql, simplify=T, n=-1, ...) {
   # 连接使用函数
   dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql)# 执行数据查询
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
@@ -101,7 +101,7 @@ sqlexecute <- function(sql, simplify=T, ...) {
 #' @param tbl  数据表名
 #' @return 创建数据表SQL
 ctsql <- function( dfm, tbl ) {
-  tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
   dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
       n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
       default_type=sprintf('varchar(%s)', n) # 默认类型
@@ -112,7 +112,7 @@ ctsql <- function( dfm, tbl ) {
         `list`='json', # 列表类型
         default_type # 默认类型 
     )) |> (\(x) # 获取字段定义
-      sprintf("create table %s (\n  %s \n)\n", tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
+      sprintf("create table %s (\n  %s \n)\n", .tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
     ) () # SQL 创建表语句
 }
 
@@ -121,18 +121,19 @@ ctsql <- function( dfm, tbl ) {
 #' @param tbl  数据表名
 #' @return 表数据插入SQL
 insql <- function( dfm, tbl ) {
-  tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "") #  提取数据表名
   keys <- names( dfm ) |> paste(collapse=", ") # 列名列表
   values <- dfm |> lapply(\(e, t=typeof(e), cls=class(e)) # 记录值列表的各个字段值处理：
-    switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
-      `logical`=e, # 逻辑类型，保持原值不变
-      `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
-      `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) sprintf("'%s'", e) else e, # 双精度，保持原值不变
-      `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
-      sprintf("'%s'", gsub("'", "''", e)) # 默认类型，使用单引号'给括起来, 并对单引号进行转义
-    )) |> do.call(\(...) mapply(\(...) paste(..., sep=', ', collapse=','), ...), args=_) |> # 行映射,此处\(...)有层级差异,内为字段外为数据行是两个不同变量
+      switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
+         `logical`=e, # 逻辑类型，保持原值不变
+         `integer`=if(cls=='factor') sprintf("'%s'", e) else e, # 整数类型，保持原值不变
+         `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) sprintf("'%s'", e) else e, # 双精度，保持原值不变
+         `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
+         sprintf("'%s'", gsub("'", "''", e)) # 默认类型，使用单引号'给括起来, 并对单引号进行转义
+      ) |> (\(x) ifelse(is.na(x), "NULL", x))() # NA值转NULL值
+    ) |> do.call(\(...) mapply(\(...) paste(..., sep=', ', collapse=','), ...), args=_) |> # 行映射，此处\(...)有层级差异,内为字段外为数据行是两个不同变量
     sprintf(fmt='( %s )') |> paste(collapse=',\n  ') # 值列表
-  sprintf( "insert into %s (%s) values \n  %s\n", tbl, keys, values ) # SQL 插入记录行数据（多行）语句
+  sprintf( "insert into %s (%s) values \n  %s\n", .tbl, keys, values ) # SQL 插入记录行数据（多行）语句
 }
 
 #' 表数据更新SQL
@@ -140,14 +141,76 @@ insql <- function( dfm, tbl ) {
 #' @param tbl 数据表名
 #' @param pk 数据主键
 upsql <- \(dfm, tbl, pk="id") { # 数据更新
+    .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
     nms <- names(dfm) # 提取各个数据列名
-    idx <- match(pk, nms) #  主键pk在名称nms中的索引位置
+    .pk <- deparse( substitute( pk ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+    idx <- match(.pk, nms) #  主键pk在名称nms中的索引位置
     stopifnot("dfm的名称nms中必须包含主键名pk" = !is.na(idx)) # pk名字的有效性检测
-    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''",x=_))) |> 
+    flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''", x=_))) |> 
       apply(1, \(line) paste(line[-idx], collapse=",\n  ")) # 字段拼接
-    sprintf("update %s set\n  %s \nwhere %s='%s'\n", tbl, flds, pk, dfm[, pk]) # 数据更新的SQL语句
+    sprintf("update %s set\n  %s \nwhere %s='%s'\n", .tbl, flds, .pk, dfm[, .pk]) # 数据更新的SQL语句
 }
 
 # 自定义主机与数据库
 sqlquery.h10ctp2 <- partial(sqlquery, host="192.168.1.10", dbname="ctp2")
 sqlquery.ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp")
+
+#' 带有动态参数计算能力：sqlexecute2(sql, dbname=test), 即dbname=test相当于dbname="test"，合法标识符名可以不打引号而直接获得符号名!
+#' 但是"eval.parent(substitute(... ...))"与partial的固定参数机制相冲突：
+#' 这种自定义数据库的定义SQL查询方式是不可以的：sqlquery.test <- partial(sqlquery2, dbname="test") 
+#' 需要写成确定参数形式：sqlquery.test <- \(sql) sqlquery2(sql, dbname="test")
+#' 对于静态SQL这两种范式没有区别，但是对于动态生成的sql语句的dynamic_sql() 就差别很大了！
+#' 即partial方式定义的sqlquery.test不能用于这种形式：dynamic_sql() |> sqlquery.test()， dynamic_sql() 会生成一场！
+#' 
+#' 执行SQL语句查询数据结果（dbGetQuery模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @param n 查询结果的返回最大数量
+#' @return 返回结果数据集
+sqlquery2 <- function(sql, simplify=T, n=-1, ...) {
+  # 连接使用函数:使用"eval.parent(substitute(... ...)) 去封装dbfun调用，可以避免R把实际"..."给改写"..1, ..2"的形式：
+  # 否则，sqlquery(sql, dbname=ctp) 会被翻译成 sqlexecute(sql, ..1=ctp) 而改掉了参数名
+  eval.parent(substitute(dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
+    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  }, ...)(sql))) # 连接使用函数
+}
+
+#' 带有动态参数计算能力：sqlexecute2(sql, dbname=test), 即dbname=test相当于dbname="test"，合法标识符名可以不打引号而直接获得符号名!
+#' 但是"eval.parent(substitute(... ...))"与partial的固定参数机制相冲突：
+#' 这这种自定义数据库的定义SQL执行方式是不可以的：sqlexecute.test <- partial(sqlexecute2, dbname=test) # 
+#' 需要写成确定参数形式：sqlexecute.test <- \(sql) sqlexecute2(sql, dbname=test)
+#' 对于静态SQL这两种范式没有区别，但是对于动态生成的sql语句的dynamic_sql() 就差别很大了！
+#' 即partial方式定义的sqlquery.test不能用于这种形式：dynamic_sql() |> sqlexecute.test()， dynamic_sql() 会生成一场！
+#' 
+#' 执行SQL语句（dbExecute模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @return 返回结果是 affected_rows, last_insert_id 两列的数据框，对于
+#'    insert into t_user(name) values('name_1'),('name_2'),...,('name_n') 一条语句插入多条数据
+#'    的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
+#'    其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
+#'    返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
+sqlexecute2 <- function(sql, simplify=T, ...) {
+    # 连接使用函数:使用"eval.parent(substitute(... ...)) 去封装dbfun调用，可以避免R把实际"..."给改写"..1, ..2"的形式：
+    # 否则，sqlexecute(sql, dbname=ctp) 会被翻译成 sqlexecute(sql, ..1=ctp) 而改掉了参数名
+    eval.parent(substitute(dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+      tryCatch({ # try 运行结果
+        dbBegin(con) # 开启事务
+        dataset <- c(list(), sql) |> lapply(\(.sql){
+          affected_rows <- dbExecute(con, .sql); # 影响数据行数
+          last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
+          list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
+        }) |> do.call(rbind, args=_) |> tibble() # 执行数据查询
+        dbCommit(con) # 提交事务
+        if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+      }, error=\(err) { # 错误处理
+        dbRollback(con) # 回滚错误
+        stop(err) # 重新抛出错误
+      }) # try 运行结果
+    }, ...)(sql))) # 连接使用函数
+}

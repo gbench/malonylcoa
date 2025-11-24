@@ -50,7 +50,7 @@ NULL
 #' query_func("SELECT 1")
 #' }
 dbfun <- function(f, ...) {
-  dbcfg <- list(...)
+  dbcfg <- match.call(expand.dots=F)$... |> lapply(\(x) tryCatch(eval(x), error=\(e) deparse(x)))
   defaultcfg <- list(
     drv = RMySQL::MySQL(),
     host = "localhost",
@@ -165,9 +165,7 @@ sqlexecute <- function(sql, simplify = TRUE, ...) {
 #' print(create_sql)
 #' }
 ctsql <- function(dfm, tbl) {
-  if (missing(tbl)) {
-    tbl <- deparse(substitute(dfm))
-  }
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
   
   col_defs <- dfm |> lapply(function(col) {
     col_type <- typeof(col)
@@ -185,7 +183,7 @@ ctsql <- function(dfm, tbl) {
   })
   
   col_specs <- paste(names(col_defs), col_defs, collapse = ",\n  ")
-  sprintf("CREATE TABLE %s (\n  %s\n)", tbl, col_specs)
+  sprintf("CREATE TABLE %s (\n  %s\n)", .tbl, col_specs)
 }
 
 #' Generate INSERT SQL
@@ -203,9 +201,7 @@ ctsql <- function(dfm, tbl) {
 #' print(insert_sql)
 #' }
 insql <- function(dfm, tbl) {
-  if (missing(tbl)) {
-    tbl <- deparse(substitute(dfm))
-  }
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
   
   keys <- names(dfm) |> paste(collapse = ", ")
   
@@ -225,13 +221,13 @@ insql <- function(dfm, tbl) {
         sprintf("'%s'", gsub("'", "''", jsonlite::toJSON(x)))
       }),
       sprintf("'%s'", gsub("'", "''", as.character(col)))
-    )
+    ) |> (\(x) ifelse(is.na(x), "NULL", x))() 
   }) |>
     do.call(function(...) mapply(paste, ..., sep = ", "), args = _) |>
     sapply(function(x) sprintf("(%s)", x)) |>
     paste(collapse = ",\n  ")
   
-  sprintf("INSERT INTO %s (%s) VALUES\n  %s", tbl, keys, values)
+  sprintf("INSERT INTO %s (%s) VALUES\n  %s", .tbl, keys, values)
 }
 
 #' Generate UPDATE SQL
@@ -250,8 +246,10 @@ insql <- function(dfm, tbl) {
 #' print(update_sql)
 #' }
 upsql <- function(dfm, tbl, pk = "id") {
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
   nms <- names(dfm)
-  idx <- match(pk, nms)
+  .pk <- deparse( substitute( pk ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+  idx <- match(.pk, nms)
   stopifnot("Data frame must contain primary key column" = !is.na(idx))
   
   flds <- sapply(nms, function(col) {
@@ -259,7 +257,7 @@ upsql <- function(dfm, tbl, pk = "id") {
   }) |>
     apply(1, function(row) paste(row[-idx], collapse = ",\n  "))
   
-  sprintf("UPDATE %s SET\n  %s\nWHERE %s = '%s'", tbl, flds, pk, dfm[[pk]])
+  sprintf("UPDATE %s SET\n  %s\nWHERE %s = '%s'", .tbl, flds, .pk, dfm[[.pk]])
 }
 
 #' Pre-configured SQL Query Function for CTP2 Database
