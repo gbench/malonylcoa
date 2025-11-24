@@ -15,11 +15,15 @@
 # 首先我们需要定义一个收益率周期（比如1分钟，5min,1h, 1d,1month) 等。
 period<- "1min"
 
+# ------------------------------------------------------------------------------
 # 定义&获取的价格数据
+# 建立资产行为模型
+# ------------------------------------------------------------------------------
 
 # 批量加载工具函数（包括sqlquery的期货交易数据的读取函数）
 batch_load()
 
+# 定义&获取的价格数据
 #' 获取分组数据
 #' @param ratio 分组比率
 #' @param instrument 合约工具
@@ -34,13 +38,13 @@ tickdata <- \(ratio=c(0.3, 0.5), instrument="t_rb2601_20251124", dbname="ctp", h
     sqlquery(dbname=dbname, host=host); 
     
   # 数据分组的标签生成
-  lbls <- ratio |> append(values=_, x=c(0, 1), 1) |> (\(x,lx=lag(x)) cbind(lx, x)[-1,])()|> 
-    apply(1, paste, collapse=", ") |> sprintf(fmt="(%s]")
+  lbls <- ratio |> append(values=_, x=c(0, 1), after=1) |> (\(x, lx=lag(x)) cbind(lx, x)[-1,])()|> 
+    apply(1, paste, collapse=", ") |> sprintf(fmt="(%s]") # 绘制区间式样
   
   with(price_data, { # 依据Id(数据主键)进行分组处理
     Id |> (\(x) range(x) |> append(quantile(x, ratio), 1))() |> 
       cut(Id, breaks=_, include.lowest=T, labels=lbls) |> 
-      split(price_data, f=_)
+      split(price_data, f=_) # 区间分组
   });
   
 }; 
