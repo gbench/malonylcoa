@@ -37,21 +37,24 @@ tryCatch(batch_load(), error=\(e) {cat("请检查本地环境种的batch_load！
 tickdata <- \(ratio=c(0.3, 0.5), instrument="t_rb2601_20251124", dbname="ctp", 
               host="127.0.0.1", begtime="09:00", endtime="12:00") {
   
-  .ratio <- ratio |> sort() |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> na.omit()  # 生成中间的百分比式的数据分位点
+  # 生成中间的百分比式的数据分位点
+  .ratio <- ratio |> sort() |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> na.omit() 
   # 数据分组的标签生成
   lbls <- .ratio |> append(values=_, x=c(0, 1), after=1) |> (\(xt, x0=lag(xt)) cbind(x0, xt)[-1, ])()|> 
     apply(1, paste, collapse=", ") |> sprintf(fmt="(%s]") # 绘制区间式样
   
   # 获取价格数据，Id:数据主键，LastPrice：最新成交价格，Volume：当日累计成交量，Vol:期间成交量，UpdateTime：时分秒结构的数据更新时间
-  "select Id, LastPrice, Volume, Volume-lag(Volume) over() Vol, UpdateTime from %s where UpdateTime between '%s' and '%s'" |>
-    sprintf(fmt=_, instrument, begtime, endtime) |> # 拼接成有效的SQL
+  "SELECT -- tickdata 检索
+    Id, LastPrice, Volume, COALESCE(Volume-lag(Volume) OVER(), 0) Vol, UpdateTime -- 列变量定义
+  FROM %s WHERE UpdateTime BETWEEN '%s' AND '%s'" |> # 数据表检索
+  sprintf(fmt=_, instrument, begtime, endtime) |> # 拼接成有效的SQL
     sqlquery(dbname=dbname, host=host) %>% with(., { # 依据Id(自增长的数据主键)来进行分组处理
     Id |> (\(x) range(x) |> append(quantile(x, .ratio), 1))() |> # 拼接成完整的数据百分比分点
-      cut(Id, breaks=_, include.lowest=T, labels=lbls) |> # 把数据该找百分比分点进行分组
+      cut(Id, breaks=_, include.lowest=T, labels=lbls) |> # 把数据按照百分比分点进行分组
       split(., f=_) # 区间分组
   });
   
-}; 
+}
 
 # 数据分组, 一半用于分析：一半用于测试，
 parts <- tickdata(c(0.5));
