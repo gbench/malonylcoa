@@ -38,7 +38,7 @@ tickdata <- \(ratio=c(0.3, 0.5), instrument="t_rb2601_20251124", dbname="ctp",
               host="127.0.0.1", begtime="09:00", endtime="12:00") {
   
   # 生成中间的百分比式的数据分位点
-  .ratio <- ratio |> sort() |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> na.omit() 
+  .ratio <- ratio |> sort() |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> unique() |> na.omit() 
   # 数据分组的标签生成
   lbls <- .ratio |> append(values=_, x=c(0, 1), after=1) |> (\(xt, x0=lag(xt)) cbind(x0, xt)[-1, ])()|> 
     apply(1, paste, collapse=", ") |> sprintf(fmt="(%s]") # 绘制区间式样
