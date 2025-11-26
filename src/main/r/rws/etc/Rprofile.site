@@ -21,9 +21,18 @@
 #  if (interactive()) 
 #    fortunes::fortune()
 
-
 # --------------------------------------------------------------------------------------
 
+# 本地环境设置:
+options( # sqlquery的数据库参数预先设置
+#  sqlquery.drv=MySQL(),
+  sqlquery.host="localhost", 
+  sqlquery.user="root", 
+  sqlquery.password="123456", 
+  sqlquery.port=3371, 
+  sqlquery.dbname="ctp")
+
+# --------------------------------------------------------------------------------------
 
 #' 创建一个目标目录
 #' 

@@ -23,7 +23,6 @@ period<- "1min"
 # 批量加载工具函数（包括sqlquery的期货交易数据的读取函数）
 tryCatch(batch_load(), error=\(e) {cat("请检查本地环境种的batch_load！\n");e})
 
-
 #' 定义&获取的价格数据
 #' 用法示例，非标准的库的R函数sqlquery由batch_load提供，不必自己实现！（你的实现式多余的，因为获得不了动态数据）
 #' 获取分组数据
@@ -38,15 +37,15 @@ tickdata <- \(ratio=c(0.3, 0.5), instrument="t_rb2601_20251124", dbname="ctp",
               host="127.0.0.1", begtime="09:00", endtime="12:00") {
   
   # 生成中间的百分比式的数据分位点
-  .ratio <- ratio |> sort() |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> na.omit() 
+  .ratio <- ratio |> sort() |> (\(x) ifelse(x>=1 | x<=0, NA, x))() |> unique() |> na.omit() 
   # 数据分组的标签生成
   lbls <- .ratio |> append(values=_, x=c(0, 1), after=1) |> (\(xt, x0=lag(xt)) cbind(x0, xt)[-1, ])()|> 
     apply(1, paste, collapse=", ") |> sprintf(fmt="(%s]") # 绘制区间式样
   
   # 获取价格数据，Id:数据主键，LastPrice：最新成交价格，Volume：当日累计成交量，Vol:期间成交量，UpdateTime：时分秒结构的数据更新时间
-  "SELECT -- tickdata 检索
-    Id, LastPrice, Volume, COALESCE(Volume-lag(Volume) OVER(), 0) Vol, UpdateTime -- 列变量定义
-  FROM %s WHERE UpdateTime BETWEEN '%s' AND '%s'" |> # 数据表检索
+  "SELECT -- Tick Data 检索
+     Id, LastPrice, Volume, COALESCE(Volume-LAG(Volume) OVER(), 0) Vol, UpdateTime -- 列变量定义
+   FROM %s WHERE UpdateTime BETWEEN '%s' AND '%s'" |> # 数据表检索
   sprintf(fmt=_, instrument, begtime, endtime) |> # 拼接成有效的SQL
     sqlquery(dbname=dbname, host=host) %>% with(., { # 依据Id(自增长的数据主键)来进行分组处理
     Id |> (\(x) range(x) |> append(quantile(x, .ratio), 1))() |> # 拼接成完整的数据百分比分点
