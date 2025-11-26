@@ -34,7 +34,7 @@ if(!all(flags)) { # 存在没有安装的程序包
 dbfun <- function(f, ...) {
   dbcfg <- match.call(expand.dots=F)$... |> lapply(\(x) tryCatch(eval(x), error=\(e) deparse(x))) # 数据库连接参数配置(尝试求值，失败则解释符号名为字符串)
   defaultcfg <- list( # 从 global options 中提取默认连接参数
-    drv = getOption("sqlquery.host", MySQL()), 
+    drv = getOption("sqlquery.drv", MySQL()), 
     host = getOption("sqlquery.host", "localhost"), 
     user = getOption("sqlquery.user", "root"), 
     password = getOption("sqlquery.password", "123456"), 
