@@ -745,6 +745,41 @@ attr(,"sources")$tickdata.1min.kline
 attr(,"sources")$`1min.kline`
 [1] "package"
 
+# ----------------------------------------------------------------------------------------------------------------
+# 多表计算
+# ----------------------------------------------------------------------------------------------------------------
+
+# 进入 R.home()/library/malonylcoa/sql/ 的 全局包路径
+# 比如，D:/sliced/develop/r/R-4.5.2/library/malonylcoa/sql，然后启动 bash shell 写入以下SQL模板文件
+# 写入SQL模板 tickdata, 注意 'EOF' ， 这里EOF被打上了双引号：
+# 将<< EOF改为<< 'EOF'（单引号包裹分界符），Shell 会原样保留内容（不解析任何转义字符）：
+# 如此的话，正则表达式才能能够保留原样输出：  REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)' ) symbol  
+cat >> tickdata.sql << 'EOF' 
+-- ---------------------------------------------------------------
+-- 根据指定表名提取交易源数据
+-- # tickdata
+-- ##tbl 表名
+-- ---------------------------------------------------------------
+SELECT
+    Id id, -- 主键索引
+    CAST(unix_timestamp(time(UpdateTime)) as UNSIGNED) x, -- 时间索引
+    LastPrice y, -- 价格
+    COALESCE(Volume-LAG(VOLUME) OVER(), 0)  vol, -- 成交量
+    STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  date, -- 日期
+    UpdateTime time, -- 更新日期
+    REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)' ) symbol -- 合约代码
+FROM ##tbl
+
+EOF
+
+# 模板文件读写
+local({
+  rb <- record.builder("##tbl") # 记录构建器，将表名添加到sql模板tickdata之中
+  .data <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[12][0-9]", value=T) |> # 指定数据表模式
+               lapply(\(tbl) tickdata |> sqldframe(rb(tbl))) # 执行SQL模板查询数据
+  data <- .data |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
+  ggplot(data, aes(id, y, group=date)) + geom_line(aes(color=date)) # 数据绘图
+})
 
 # ----------------------------------------------------------------------------------------------------------------
 # 数据库读取示例
