@@ -18,14 +18,14 @@ library(quantmod) # chartSeries 函数所在库
 library(xts) # xts 函数所在库
 # library(data.table) # rbindlist,fwrite,fread 函数所在库
 
-# 本地环境设置:
+# 本地环境设置: 通常需要在 R.home()/etc/Rprofile.site 文件中进行全局配置！
 options( # sqlquery的数据库参数预先设置
 #  sqlquery.drv=MySQL(),
   sqlquery.host="localhost", 
   sqlquery.user="root", 
   sqlquery.password="123456", 
   sqlquery.port=3371, 
-  sqlquery.dbname="ctp2")
+  sqlquery.dbname="ctp2") # sqlquery的数据库参数预先设置
 
 #' 数据库函数
 #' @param f 连接执行函数
