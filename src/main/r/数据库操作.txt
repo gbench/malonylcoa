@@ -814,7 +814,13 @@ local({
 	yhat <- lm(y~x) |> predict() # 线性回归
 	t <- as.POSIXct(x/1000) # 时间
 	h <- strftime(t, "%d/%H") # 小时名称
-  }) |> ggplot(aes(h, y))  + geom_point(aes(y=mean(yhat)), color="red")
+  }) |> ggplot(aes(h, y))  + geom_boxplot(aes(y=y)) +
+ 	geom_line(aes(y=mean(yhat), group=1), color="red") +
+	geom_line(aes(y=max(yhat), group=2), color="blue") +
+	geom_line(aes(y=min(yhat), group=3), color="green") +
+	geom_line(aes(y=mean(y), group=11), color="red", linewidth=2) +
+	geom_line(aes(y=max(y), group=12), color="blue", linewidth=2) +
+	geom_line(aes(y=min(y), group=13), color="green", linewidth=2) 
 
 })
 
