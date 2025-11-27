@@ -832,10 +832,20 @@ local({
         geom_line(aes(y=y, group=12), stat="summary", fun="max", color="blue", linewidth=2) + # 实际值最大
         geom_line(aes(y=y, group=13), stat="summary", fun="min", color="green", linewidth=2)  # 实际值最小
 
-    library(magrittr)
-    # sql 修改注释
-    data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][78]", value=T) |> # 指定数据表模式
-        lapply(\(tbl) list_sql_templates()["tickdata2"] |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> paste0(collapse="\nUNION\n") %T>% cat("\n") |> sqlquery()
+    # SQL 语句查询
+    rb2 <- record.builder("##tbl,#startime,#endtime")
+    library(magrittr) # 引入三通算符 "%T>%"以dump过程中生成的SQL
+    tradespans <- "09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00" |> strsplit("[,;]") |> unlist() |> hm() # 交易时段
+    is.trading <- \(points) points |> (\(x) (if(is.period(x)) x else hms(x)))() |> findInterval(tradespans) %% 2 !=0 # 判断是否交易时间
+    testpoints <- tradespans + rep(0:2, rep(length(tradespans), 3)) # 测试时点
+    data.frame(testpoints, flags=is.trading(testpoints)) # 测试时点位置
+    # 数据处理
+    data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[1][789]", value=T) |> # 指定数据表模式
+        lapply(\(tbl) list_sql_templates(verbose=F) |> with(tickdata2) |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> # tickdata2模板填充
+        paste0(collapse="\nUNION\n") |> sprintf(fmt="%s ORDER BY date, time, id") %T>% cat("\n") |> sqlquery() |> filter(is.trading(time)) # 交易时段过滤
+    # 数据绘图
+    data3 |> ggplot(aes(seq(x), y)) + geom_point() + 
+        scale_x_continuous(labels=\(i) {j <- ifelse(i==0, 1, i); with(data3,sprintf("%s %s(%s)", date[j], time[j], j))})
 
 })
 
