@@ -796,25 +796,28 @@ EOF
 
 # 模板文件读写
 local({
-  # 全数据
-  rb <- record.builder("##tbl") # 记录构建器，将表名添加到sql模板tickdata之中
-  .data <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[12][0-9]", value=T) |> # 指定数据表模式
+    # 基础库加载
+    batch_load()
+
+    # 全数据
+    rb <- record.builder("##tbl") # 记录构建器，将表名添加到sql模板tickdata之中
+    .data <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[12][0-9]", value=T) |> # 指定数据表模式
   	lapply(\(tbl) tickdata |> sqldframe(rb(tbl))) # 执行SQL模板查询数据
-  data <- .data |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
-  #  整体绘图
-  ggplot(data, aes(id, y, group=date)) + geom_line(aes(color=date)) # 数据绘图
+    data <- .data |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
+    #  整体绘图
+    ggplot(data, aes(id, y, group=date)) + geom_line(aes(color=date)) # 数据绘图
   
-  # 提取指定时间范围(进行串联）
-  rb2<-record.builder("##tbl,#startime,#endtime")
-  .data2 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][4-7]", value=T) |> # 指定数据表模式
+    # 提取指定时间范围(进行串联）
+    rb2<-record.builder("##tbl,#startime,#endtime")
+    .data2 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][4-7]", value=T) |> # 指定数据表模式
  	lapply(\(tbl) tickdata2 |> sqldframe(rb2(tbl, "09:00", "23:00"))) # 执行SQL模板查询数据
-  data2 <- .data2 |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
-  # 分组绘图
-  data2 %>% within({ # 加入预测数据
+    data2 <- .data2 |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
+    # 分组绘图
+    data2 %>% within({ # 加入预测数据
 	yhat <- lm(y~x) |> predict() # 线性回归
 	t <- as.POSIXct(x/1000) # 时间
 	h <- strftime(t, "%d/%H") # 小时名称
-  }) |> ggplot(aes(h, y))  + geom_boxplot(aes(y=y)) +
+    }) |> ggplot(aes(h, y))  + geom_boxplot(aes(y=y)) +
  	geom_line(aes(y=mean(yhat), group=1), color="red") +
 	geom_line(aes(y=max(yhat), group=2), color="blue") +
 	geom_line(aes(y=min(yhat), group=3), color="green") +
