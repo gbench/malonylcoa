@@ -83,13 +83,13 @@ sqlfile <- function(input) {
 #' )
 #' 
 #' # Fill template
-#' filled_sql <- fill(sql_template, params)
+#' filled_sql <- sqlfill(sql_template, params)
 #' cat(filled_sql)
 #' # Output: SELECT * FROM users WHERE date >= '2024-01-01' AND status = 'active'
 #' }
 #'
 #' @export
-fill <- function(template, params) {
+sqlfill <- function(template, params) {
   if (length(params) == 0) {
     return(template)
   }
@@ -431,7 +431,7 @@ sqldframe <- function(x, params = list(), files = "\\.sql$", recursive = FALSE, 
   
   # Parameter substitution and execution
   sql_with_params <- if (length(params) > 0L) {
-    tryCatch(fill(sql, params), error = function(e) stop("Parameter substitution failed: ", e$message))
+    tryCatch(sqlfill(sql, params), error = function(e) stop("Parameter substitution failed: ", e$message))
   } else {
     sql
   }

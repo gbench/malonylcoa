@@ -312,13 +312,13 @@ sqlfile <- function(input) {
 #' )
 #' 
 #' # Fill template
-#' filled_sql <- fill(sql_template, params)
+#' filled_sql <- sqlfill(sql_template, params)
 #' cat(filled_sql)
 #' # Output: SELECT * FROM users WHERE date >= '2024-01-01' AND status = 'active'
 #' }
 #'
 #' @export
-fill <- function(template, params) {
+sqlfill <- function(template, params) {
   if (length(params) == 0) {
     return(template)
   }
@@ -524,15 +524,15 @@ local({
       "LIMIT ##maxcnt")
    
   sqls <- sqlfile( lines) # 读取语句模板
-  fill(sqls[["用户查询"]], list("#status"="active")) |> cat("\n")
+  sqlfill(sqls[["用户查询"]], list("#status"="active")) |> cat("\n")
   cat("-----------------------------------------\n")
-  fill(sqls[["订单统计"]], list("#begtime"="9:00:00", "#endtime"="18:00:00", "##maxcnt"=100))  |> cat("\n")
+  sqlfill(sqls[["订单统计"]], list("#begtime"="9:00:00", "#endtime"="18:00:00", "##maxcnt"=100))  |> cat("\n")
   cat("-----------------------------------------\n")
   cat("# K线读取示例\n")
   cat("-----------------------------------------\n")
   # sqlfile文件读取测试
   params <- list("##tbl"="t_rb2601_20251117", "#startime"="13:00", "#endtime"="15:00", "##maxcnt"=5) # sql参数
-  sql <- fill(sqlfile("kline.sql")[["1min_maxcnt"]], params) ; cat(sql, "\n") # sql语句
+  sql <- sqlfill(sqlfile("kline.sql")[["1min_maxcnt"]], params) ; cat(sql, "\n") # sql语句
   ds00ctp <- partial(sqlquery, dbname="ctp") # ds:datasource, 00:本机ip, ctp:数据名称
   kldata <- ds00ctp(sql) ; kldata # K线数据
 })
@@ -809,7 +809,7 @@ local({
   
     # 提取指定时间范围(进行串联）
     rb2 <- record.builder("##tbl,#startime,#endtime")
-    .data2 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][4-7]", value=T) |> # 指定数据表模式
+    .data2 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][78]", value=T) |> # 指定数据表模式
         lapply(\(tbl) tickdata2 |> sqldframe(rb2(tbl, "09:00", "23:00"))) # 执行SQL模板查询数据
     data2 <- .data2 |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
     # 分组绘图
@@ -831,6 +831,11 @@ local({
         geom_line(aes(y=y, group=11), stat="summary", fun="mean", color="red", linewidth=2) + # 实际值均值
         geom_line(aes(y=y, group=12), stat="summary", fun="max", color="blue", linewidth=2) + # 实际值最大
         geom_line(aes(y=y, group=13), stat="summary", fun="min", color="green", linewidth=2)  # 实际值最小
+
+    library(magrittr)
+    # sql 修改注释
+    data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][78]", value=T) |> # 指定数据表模式
+        lapply(\(tbl) list_sql_templates()["tickdata2"] |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> paste0(collapse="\nUNION\n") %T>% cat("\n") |> sqlquery()
 
 })
 
