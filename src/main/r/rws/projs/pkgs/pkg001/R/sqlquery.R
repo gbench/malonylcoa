@@ -52,13 +52,12 @@ NULL
 dbfun <- function(f, ...) {
   dbcfg <- match.call(expand.dots=F)$... |> lapply(\(x) tryCatch(eval(x), error=\(e) deparse(x)))
   defaultcfg <- list(
-    drv = RMySQL::MySQL(),
-    host = "localhost",
-    user = "root",
-    password = "123456",
-    port = 3371,
-    dbname = "ctp2"
-  )
+    drv = getOption("sqlquery.drv", MySQL()), 
+    host = getOption("sqlquery.host", "localhost"), 
+    user = getOption("sqlquery.user", "root"), 
+    password = getOption("sqlquery.password", "123456"), 
+    port = getOption("sqlquery.port", 3371), 
+    dbname = getOption("sqlquery.dbname", "ctp2"))
   
   readcfg <- function(key) dbcfg[[key]] %||% defaultcfg[[key]]
   

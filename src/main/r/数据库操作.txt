@@ -843,9 +843,9 @@ local({
     data.frame(testpoints, flags=is.trading(testpoints)) # 测试时点是否位于交易时段
 
     # 数据处理
-    data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][789]", value=T) |> # 指定数据表模式
+    data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[1][789]", value=T) |> # 指定数据表模式
         lapply(\(tbl) list_sql_templates(verbose=F) |> with(tickdata2) |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> # tickdata2模板填充
-        paste0(collapse="\nUNION\n") |> sprintf(fmt="%s ORDER BY date, time, id") %T>% cat("\n") |> # 模板组织，UNION会打乱顺序故需重新排序
+        paste0(collapse="\nUNION\n") |> sprintf(fmt="%s ORDER BY date, time, id") %T>% cat("\n") |> # 模板组织，UNION会打乱顺序，故需重新排序
         sqlquery() |> filter(is.trading(time)) # 数据查询并交易时段过滤
 
     # 数据绘图
