@@ -746,39 +746,92 @@ attr(,"sources")$`1min.kline`
 [1] "package"
 
 # ----------------------------------------------------------------------------------------------------------------
-# 多表计算
+# 多表计算示例
 # ----------------------------------------------------------------------------------------------------------------
 
-# 进入 R.home()/library/malonylcoa/sql/ 的 全局包路径
-# 比如，D:/sliced/develop/r/R-4.5.2/library/malonylcoa/sql，然后启动 bash shell 写入以下SQL模板文件
-# 写入SQL模板 tickdata, 注意 'EOF' ， 这里EOF被打上了双引号：
-# 将<< EOF改为<< 'EOF'（单引号包裹分界符），Shell 会原样保留内容（不解析任何转义字符）：
-# 如此的话，正则表达式才能能够保留原样输出：  REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)' ) symbol  
+# 进入R.home()/library/malonylcoa/sql/的全局包路径（即.libPaths()中的malonylcoa/sql目录）
+# 比如WINDOWS的D:/sliced/develop/r/R-4.5.2/library/malonylcoa/sql
+# CTRL+R 在 运行框 里 输入上述路径，打开文件夹窗口，再然后右键菜单"Git Bash here"，启动bash shell！ 
+# 写入SQL模板文件(tickdata, tickdata2)
+#
+# 注意 'EOF' 在这里被打上了单引号！(还有，复制下文的文本结尾处的EOF后边不能多空格，否则终结不了输入！）
+# 将<< EOF改为<< 'EOF'（单引号包裹分界符），Shell 会原样保留内容（不解析任何转义字符）。因为，只有如此
+# 正则表达式"REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)' ) symbol "才能原样输出，不然其中的'\\'会被转义成'\'
 cat >> tickdata.sql << 'EOF' 
 -- ---------------------------------------------------------------
--- 根据指定表名提取交易源数据
+-- 根据指定表名提取交易原数据
 -- # tickdata
 -- ##tbl 表名
 -- ---------------------------------------------------------------
 SELECT
     Id id, -- 主键索引
-    CAST(unix_timestamp(time(UpdateTime)) as UNSIGNED) x, -- 时间索引
+    -- 计算毫秒级时间戳：秒级时间戳*1000 + 毫秒数
+    UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(TradingDay, " ", UpdateTime), '%Y%m%d %H:%i:%s')) * 1000 + UpdateMillisec AS x, -- 毫秒级时间戳
     LastPrice y, -- 价格
     COALESCE(Volume-LAG(VOLUME) OVER(), 0)  vol, -- 成交量
     STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  date, -- 日期
     UpdateTime time, -- 更新日期
-    REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)' ) symbol -- 合约代码
+    REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') symbol -- 合约代码
 FROM ##tbl
+
+-- ---------------------------------------------------------------
+-- 根据指定表名提取交易原数据
+-- # tickdata2
+-- ##tbl 表名
+-- ##startime  开始时间
+-- ##endtime 结束时间
+-- ---------------------------------------------------------------
+SELECT
+    Id id, -- 主键索引
+    -- 计算毫秒级时间戳：秒级时间戳*1000 + 毫秒数
+    UNIX_TIMESTAMP(STR_TO_DATE(CONCAT(TradingDay, " ", UpdateTime), '%Y%m%d %H:%i:%s')) * 1000 + UpdateMillisec AS x, -- 毫秒级时间戳
+    LastPrice y, -- 价格
+    COALESCE(Volume-LAG(VOLUME) OVER(), 0)  vol, -- 成交量
+    STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  date, -- 日期
+    UpdateTime time, -- 更新日期
+    REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') symbol -- 合约代码
+FROM ##tbl WHERE UpdateTime BETWEEN #startime AND #endtime
 
 EOF
 
 # 模板文件读写
 local({
-  rb <- record.builder("##tbl") # 记录构建器，将表名添加到sql模板tickdata之中
-  .data <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[12][0-9]", value=T) |> # 指定数据表模式
-               lapply(\(tbl) tickdata |> sqldframe(rb(tbl))) # 执行SQL模板查询数据
-  data <- .data |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
-  ggplot(data, aes(id, y, group=date)) + geom_line(aes(color=date)) # 数据绘图
+    # 基础库加载
+    batch_load()
+
+    # 全数据
+    rb <- record.builder("##tbl") # 记录构建器，将表名添加到sql模板tickdata之中
+    .data <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[12][0-9]", value=T) |> # 指定数据表模式
+        lapply(\(tbl) tickdata |> sqldframe(rb(tbl))) # 执行SQL模板查询数据
+    data <- .data |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
+    #  整体绘图
+    ggplot(data, aes(id, y, group=date)) + geom_line(aes(color=date)) # 数据绘图
+  
+    # 提取指定时间范围(进行串联）
+    rb2 <- record.builder("##tbl,#startime,#endtime")
+    .data2 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][4-7]", value=T) |> # 指定数据表模式
+        lapply(\(tbl) tickdata2 |> sqldframe(rb2(tbl, "09:00", "23:00"))) # 执行SQL模板查询数据
+    data2 <- .data2 |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
+    # 分组绘图
+    data2 |> within({ # 加入拟合数据（手动计算）
+         yhat <- lm(y~x) %>% { # 模型洞察: model系数dump
+            coefs <- coef(.) # 提取模型系数
+            .yhat <- predict(.) # 线性回归(拟合值）
+            yhat <- (\(b, k) k*x+b) (coefs[1], coefs[2]) # 手动计算拟合值（局部）
+            print(head(.yhat-yhat)) # 显示头前值
+            sprintf("{intercept:%s, slope:%s, diff:%s}\n", coefs[1], coefs[2],  sum(.yhat-yhat)) |> cat()
+            .yhat # 模型拟合值
+        } # 拟合值yhat 
+        t <- as.POSIXct(x/1000) # 时间类型值
+        h <- strftime(t, "%d/%H") # 时间名称
+    }) |> ggplot(aes(h, y))  + geom_boxplot(aes(y=y)) + # 价格箱线图
+        geom_line(aes(y=yhat, group=1), stat="summary", fun="mean", color="red") + # 拟合值均值
+        geom_line(aes(y=yhat, group=2), stat="summary", fun="max", color="blue") + # 拟合值最大
+        geom_line(aes(y=yhat, group=3), stat="summary", fun="min", color="green") + # 拟合值最小
+        geom_line(aes(y=y, group=11), stat="summary", fun="mean", color="red", linewidth=2) + # 实际值均值
+        geom_line(aes(y=y, group=12), stat="summary", fun="max", color="blue", linewidth=2) + # 实际值最大
+        geom_line(aes(y=y, group=13), stat="summary", fun="min", color="green", linewidth=2)  # 实际值最小
+
 })
 
 # ----------------------------------------------------------------------------------------------------------------
