@@ -833,8 +833,12 @@ local({
         geom_line(aes(y=y, group=13), stat="summary", fun="min", color="green", linewidth=2)  # 实际值最小
 
     # SQL 语句的组织&查询
+    rm(list=ls()) # 删除当前环境所有变量，清空环境！
     library(lubridate)   # 用于hm()、hms()等时间处理
+    library(dplyr) # 可以把filter(is.trading(time))中的time解释为数据框字段名而不是stats:time函数
+    library(ggplot2) #  数据绘图
     library(magrittr) # 引入三通算符 "%T>%"以dump过程中生成的SQL
+    library(malonylcoa) # 引入sqlquery函数
 
     rb2 <- record.builder("##tbl,#startime,#endtime")
     tradespans <- "09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00" |> strsplit("[,;]") |> unlist() |> hm() # 交易时段定义
@@ -846,10 +850,10 @@ local({
     data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[1][789]", value=T) |> # 指定数据表模式
         lapply(\(tbl) list_sql_templates(verbose=F) |> with(tickdata2) |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> # tickdata2模板填充
         paste0(collapse="\nUNION\n") |> sprintf(fmt="%s ORDER BY date, time, id") %T>% cat("\n") |> # 模板组织，UNION会打乱顺序，故需重新排序
-        sqlquery() |> filter(is.trading(time)) # 数据查询并交易时段过滤
+        sqlquery() |> filter(is.trading(time)) # 数据查询并交易时段过滤（需加载dplyr否则time会被视为函数报错：cannot coerce type 'closure' to vector of type 'character'）
 
     # 数据绘图
-    data3 |> ggplot(aes(seq(x), y)) + geom_point(aes(color=y)) + # 价格博通图
+    data3 |> ggplot(aes(seq(x), y)) + geom_point(aes(color=y))  + geom_line() + # 价格波动图
         with(data3, scale_x_continuous(labels=\(i, j=pmin(pmax(i,1), length(x))) sprintf("%s %s(%s)", date[j], time[j], j))) + # 保证索引j合理化
         labs(x="time", y="price", caption="合约价格", title="RB2601合约")
 })
