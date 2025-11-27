@@ -818,12 +818,12 @@ local({
 	t <- as.POSIXct(x/1000) # 时间
 	h <- strftime(t, "%d/%H") # 小时名称
     }) |> ggplot(aes(h, y))  + geom_boxplot(aes(y=y)) +
- 	geom_line(aes(y=mean(yhat), group=1), color="red") +
-	geom_line(aes(y=max(yhat), group=2), color="blue") +
-	geom_line(aes(y=min(yhat), group=3), color="green") +
-	geom_line(aes(y=mean(y), group=11), color="red", linewidth=2) +
-	geom_line(aes(y=max(y), group=12), color="blue", linewidth=2) +
-	geom_line(aes(y=min(y), group=13), color="green", linewidth=2) 
+ 	geom_line(aes(y=yhat, group=1), stat="summary", fun="mean", color="red") +
+  	geom_line(aes(y=yhat, group=2), stat="summary", fun="max", color="blue") +
+  	geom_line(aes(y=yhat, group=3), stat="summary", fun="min", color="green") +
+  	geom_line(aes(y=y, group=11), stat="summary", fun="mean", color="red", linewidth=2) +
+  	geom_line(aes(y=y, group=12), stat="summary", fun="max", color="blue", linewidth=2) +
+  	geom_line(aes(y=y, group=13), stat="summary", fun="min", color="green", linewidth=2) 
 
 })
 
