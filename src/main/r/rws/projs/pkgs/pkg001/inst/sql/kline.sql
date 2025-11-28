@@ -15,12 +15,12 @@ WITH MinuteKLine AS (
         MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
         COUNT(*) OVER w as TradeCount
     FROM ##tbl
-    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WHERE Volume > 0 AND UpdateTime BETWEEN #startime AND #endtime
     WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
 )
 SELECT DISTINCT *
 FROM MinuteKLine
-ORDER BY MinuteTime; 
+ORDER BY MinuteTime 
 
 -- ---------------------------------------------------------------
 -- 根据指定表名生成K线数据
@@ -39,10 +39,10 @@ WITH MinuteKLine AS (
         MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
         COUNT(*) OVER w as TradeCount
     FROM ##tbl
-    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WHERE Volume > 0 AND UpdateTime BETWEEN #startime AND #endtime
     WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
 )
 SELECT DISTINCT *
 FROM MinuteKLine
 ORDER BY MinuteTime
-LIMIT ##maxcnt; 
+LIMIT ##maxcnt 

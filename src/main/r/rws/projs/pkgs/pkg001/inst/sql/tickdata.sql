@@ -30,5 +30,6 @@ SELECT
     STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  date, -- 日期
     UpdateTime time, -- 更新日期
     REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') symbol -- 合约代码
-FROM ##tbl WHERE UpdateTime BETWEEN #startime AND #endtime
+FROM ##tbl 
+WHERE UpdateTime BETWEEN #startime AND #endtime
 
