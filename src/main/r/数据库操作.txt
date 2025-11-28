@@ -873,7 +873,7 @@ local({
     # 数据处理：分钟K线数据
     data4 <- sqldframe("show tables") |> unlist() |> grep(pattern="ma601_202511[2][5-8]", value=T) |> # 指定数据表模式
         lapply(\(tbl) list_sql_templates(verbose=F) |> with(`1min.kline`) |> sqlfill(rb2(tbl, "09:00", "15:00"))) |> # tickdata2模板填充
-        paste0(collapse=")\nUNION\n(") |> sprintf(fmt="(%s)") %T>% cat("\n") |> # 模板组织，UNION会打乱顺序，故需重新排序
+        paste0(collapse=")\nUNION\n(") |> sprintf(fmt="(%s)") %T>% cat("\n") |> # 模板组织，补充首尾的括号，以匹配UNION引入的括号
         sqlquery() |> filter(is.trading(paste0(MinuteTime, ":00"))) |> arrange(Date, MinuteTime) |> # 数据查询并交易时段过滤
         mutate(Key=paste(Date, MinuteTime), Id=seq(Key)) |> # 生成键名Key字段与索引Id字段
         tail(100) # 最新的数量
