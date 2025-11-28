@@ -312,13 +312,13 @@ sqlfile <- function(input) {
 #' )
 #' 
 #' # Fill template
-#' filled_sql <- fill(sql_template, params)
+#' filled_sql <- sqlfill(sql_template, params)
 #' cat(filled_sql)
 #' # Output: SELECT * FROM users WHERE date >= '2024-01-01' AND status = 'active'
 #' }
 #'
 #' @export
-fill <- function(template, params) {
+sqlfill <- function(template, params) {
   if (length(params) == 0) {
     return(template)
   }
@@ -462,31 +462,9 @@ cat >> kline.sql << EOF
 -- #endtime 结束时间
 -- ---------------------------------------------------------------
 WITH MinuteKLine AS (
-    SELECT 
-        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
-        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
-        MAX(LastPrice) OVER w as HighPrice,
-        MIN(LastPrice) OVER w as LowPrice,
-        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
-        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
-        COUNT(*) OVER w as TradeCount
-    FROM ##tbl
-    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
-    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
-)
-SELECT DISTINCT *
-FROM MinuteKLine
-ORDER BY MinuteTime; 
-
--- ---------------------------------------------------------------
--- 根据指定表名生成K线数据
--- # 1min_maxcnt
--- ##tbl 表名
--- #startime 开始时间
--- #endtime 结束时间
--- ---------------------------------------------------------------
-WITH MinuteKLine AS (
-    SELECT 
+    SELECT
+        REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') Symbol,
+        STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  Date,  
         DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
         FIRST_VALUE(LastPrice) OVER w as OpenPrice,
         MAX(LastPrice) OVER w as HighPrice,
@@ -501,7 +479,33 @@ WITH MinuteKLine AS (
 SELECT DISTINCT *
 FROM MinuteKLine
 ORDER BY MinuteTime
-LIMIT ##maxcnt; 
+
+-- ---------------------------------------------------------------
+-- 根据指定表名生成K线数据
+-- # 1min_maxcnt
+-- ##tbl 表名
+-- #startime 开始时间
+-- #endtime 结束时间
+-- ---------------------------------------------------------------
+WITH MinuteKLine AS (
+    SELECT
+        REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') Symbol,
+        STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  Date, 
+        DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
+        FIRST_VALUE(LastPrice) OVER w as OpenPrice,
+        MAX(LastPrice) OVER w as HighPrice,
+        MIN(LastPrice) OVER w as LowPrice,
+        FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
+        MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        COUNT(*) OVER w as TradeCount
+    FROM ##tbl
+    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
+)
+SELECT DISTINCT *
+FROM MinuteKLine
+ORDER BY MinuteTime
+LIMIT ##maxcnt
 
 EOF
 
@@ -524,15 +528,15 @@ local({
       "LIMIT ##maxcnt")
    
   sqls <- sqlfile( lines) # 读取语句模板
-  fill(sqls[["用户查询"]], list("#status"="active")) |> cat("\n")
+  sqlfill(sqls[["用户查询"]], list("#status"="active")) |> cat("\n")
   cat("-----------------------------------------\n")
-  fill(sqls[["订单统计"]], list("#begtime"="9:00:00", "#endtime"="18:00:00", "##maxcnt"=100))  |> cat("\n")
+  sqlfill(sqls[["订单统计"]], list("#begtime"="9:00:00", "#endtime"="18:00:00", "##maxcnt"=100))  |> cat("\n")
   cat("-----------------------------------------\n")
   cat("# K线读取示例\n")
   cat("-----------------------------------------\n")
   # sqlfile文件读取测试
   params <- list("##tbl"="t_rb2601_20251117", "#startime"="13:00", "#endtime"="15:00", "##maxcnt"=5) # sql参数
-  sql <- fill(sqlfile("kline.sql")[["1min_maxcnt"]], params) ; cat(sql, "\n") # sql语句
+  sql <- sqlfill(sqlfile("kline.sql")[["1min_maxcnt"]], params) ; cat(sql, "\n") # sql语句
   ds00ctp <- partial(sqlquery, dbname="ctp") # ds:datasource, 00:本机ip, ctp:数据名称
   kldata <- ds00ctp(sql) ; kldata # K线数据
 })
@@ -577,6 +581,8 @@ WITH MinuteKLine AS (
 )
 SELECT 
     Id,
+    REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') Symbol,
+    STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  Date,
     LastPrice,
     UpdateTime,
     Volume,
@@ -588,7 +594,7 @@ SELECT
     MinuteVolume,
     TradeCount
 FROM MinuteKLine
-ORDER BY UpdateTime, Id;
+ORDER BY UpdateTime, Id
 
 EOF
 
@@ -790,7 +796,8 @@ SELECT
     STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  date, -- 日期
     UpdateTime time, -- 更新日期
     REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') symbol -- 合约代码
-FROM ##tbl WHERE UpdateTime BETWEEN #startime AND #endtime
+FROM ##tbl 
+WHERE UpdateTime BETWEEN #startime AND #endtime
 
 EOF
 
@@ -809,7 +816,7 @@ local({
   
     # 提取指定时间范围(进行串联）
     rb2 <- record.builder("##tbl,#startime,#endtime")
-    .data2 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][4-7]", value=T) |> # 指定数据表模式
+    .data2 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][78]", value=T) |> # 指定数据表模式
         lapply(\(tbl) tickdata2 |> sqldframe(rb2(tbl, "09:00", "23:00"))) # 执行SQL模板查询数据
     data2 <- .data2 |> do.call(bind_rows, args=_) # 数据框合并成一个long格式数据
     # 分组绘图
@@ -831,6 +838,56 @@ local({
         geom_line(aes(y=y, group=11), stat="summary", fun="mean", color="red", linewidth=2) + # 实际值均值
         geom_line(aes(y=y, group=12), stat="summary", fun="max", color="blue", linewidth=2) + # 实际值最大
         geom_line(aes(y=y, group=13), stat="summary", fun="min", color="green", linewidth=2)  # 实际值最小
+
+    # SQL 语句的组织&查询
+    rm(list=ls()) # 删除当前环境所有变量，清空环境！
+    library(lubridate)   # 用于hm()、hms()等时间处理
+    library(dplyr) # 可以把filter(is.trading(time))中的time解释为数据框字段名而不是stats:time函数
+    library(ggplot2) #  数据绘图
+    library(magrittr) # 引入三通算符 "%T>%"以dump过程中生成的SQL
+    library(malonylcoa) # 引入record.builder,list_sql_templates,sqlfill,sqlquery等数据库操作函数
+
+    # 记录构建器
+    rb2 <- record.builder("##tbl,#startime,#endtime") # SQL模板参数的记录构建器
+
+    #' 判断一个时点向量points是否位于交易时段tradingbreaks之中
+    #' @param points 交易时点：hms 结构的时间值
+    #' @param tradingspans 交易时段分点（hms 结构）序列，或者说交易时段结构定义:[start1,end1;start2,end2;...;starti,endi;...;startn,endn]
+    #'  由于每个时段都是由两个分点(starti,endi)构成，因此，分点扁平化以后，偶数区间索引的位置（0,2,4,...）时段之间的间隔，即非交易时段！
+    is.trading <- \(points, tradingbreaks="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
+        .tradingbreaks <- (\(bs=tradingbreaks) if(is.character(bs)) bs |> strsplit("[,;]+") |> unlist() |> hm() else bs) () # 交易时段分点处理
+        points |> (\(x) (if(is.period(x)) x else hms(x))) () |> findInterval(.tradingbreaks) %% 2 !=0 # 判断是否交易时间（偶数区间索引乃非交易时段）
+     } # is.trading 时点是位于否交易时段
+
+    # 数据处理：TickData
+    data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[1][789]", value=T) |> # 指定数据表模式
+        lapply(\(tbl) list_sql_templates(verbose=F) |> with(tickdata2) |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> # tickdata2模板填充
+        paste0(collapse="\nUNION\n") |> sprintf(fmt="%s ORDER BY date, time, id") %T>% cat("\n") |> # 模板组织，UNION会打乱顺序，故需重新排序
+        sqlquery() |> filter(is.trading(time)) # 数据查询并交易时段过滤（需加载dplyr否则time会被视为函数报错：cannot coerce type 'closure' to vector of type 'character'）
+
+    # 数据绘图：TickData
+    data3 |> ggplot(aes(seq(x), y)) + geom_point(aes(color=y))  + geom_line() + # 价格波动图
+        with(data3, scale_x_continuous(labels=\(i, j=pmin(pmax(i,1), length(x))) sprintf("%s %s(%s)", date[j], time[j], j))) + # 保证索引j合理化
+        labs(x="Time", y="Price", caption="合约价格", title="RB2601合约")
+
+    # 数据处理：分钟K线数据
+    data4 <- sqldframe("show tables") |> unlist() |> grep(pattern="ma601_202511[2][5-8]", value=T) |> # 指定数据表模式
+        lapply(\(tbl) list_sql_templates(verbose=F) |> with(`1min.kline`) |> sqlfill(rb2(tbl, "09:00", "15:00"))) |> # tickdata2模板填充
+        paste0(collapse=")\nUNION\n(") |> sprintf(fmt="(%s)") %T>% cat("\n") |> # 模板组织，补充首尾的括号，以匹配UNION引入的括号
+        sqlquery() |> filter(is.trading(paste0(MinuteTime, ":00"))) |> arrange(Date, MinuteTime) |> # 数据查询并交易时段过滤
+        mutate(Key=paste(Date, MinuteTime), Id=seq(Key)) |> # 生成键名Key字段与索引Id字段
+        tail(100) # 最新的数量
+    
+    # 绘制K线图
+    with(data4, ggplot(data4, aes(Id, ClosePrice)) + geom_line() + # 绘制收盘价曲线
+        with(lm(ClosePrice~Id), geom_abline(intercept=coefficients[1], slope=coefficients[2], linewidth=2, color="blue")) + # 绘制趋势线
+        geom_boxplot(stat = "identity", # 手动指定 boxplot 参数
+            aes(group=Key, # 每个坐标点单独分组
+                ymin=LowPrice, ymax=HighPrice), middle=(OpenPrice+ClosePrice)/2, # 最低，最高价
+                lower=pmin(OpenPrice, ClosePrice), upper=pmax(OpenPrice, ClosePrice), # 开盘,收盘
+            fill=ifelse(OpenPrice>ClosePrice, "green", "red")) + # 使用box模拟K线
+        scale_x_continuous(labels=\(i, j=pmin(pmax(i, min(Id)), max(Id))) Key[match(j, Id)])) + # 保证索引j合理化(使用Id索引Key值)
+        labs(x="Time", y="Price", caption="合约价格", title="MA2601合约")
 
 })
 

@@ -6,7 +6,9 @@
 -- #endtime 结束时间
 -- ---------------------------------------------------------------
 WITH MinuteKLine AS (
-    SELECT 
+    SELECT
+        REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') Symbol,
+        STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  Date,
         DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
         FIRST_VALUE(LastPrice) OVER w as OpenPrice,
         MAX(LastPrice) OVER w as HighPrice,
@@ -15,12 +17,12 @@ WITH MinuteKLine AS (
         MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
         COUNT(*) OVER w as TradeCount
     FROM ##tbl
-    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WHERE Volume > 0 AND UpdateTime BETWEEN #startime AND #endtime
     WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
 )
 SELECT DISTINCT *
 FROM MinuteKLine
-ORDER BY MinuteTime; 
+ORDER BY MinuteTime
 
 -- ---------------------------------------------------------------
 -- 根据指定表名生成K线数据
@@ -28,9 +30,12 @@ ORDER BY MinuteTime;
 -- ##tbl 表名
 -- #startime 开始时间
 -- #endtime 结束时间
+-- #maxcnt 最大返回数量
 -- ---------------------------------------------------------------
 WITH MinuteKLine AS (
-    SELECT 
+    SELECT
+        REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') Symbol,
+        STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  Date,
         DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
         FIRST_VALUE(LastPrice) OVER w as OpenPrice,
         MAX(LastPrice) OVER w as HighPrice,
@@ -39,10 +44,10 @@ WITH MinuteKLine AS (
         MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
         COUNT(*) OVER w as TradeCount
     FROM ##tbl
-    WHERE Volume > 0 AND UpdateTime > #startime AND UpdateTime < #endtime
+    WHERE Volume > 0 AND UpdateTime BETWEEN #startime AND #endtime
     WINDOW w AS (PARTITION BY DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i'))
 )
 SELECT DISTINCT *
 FROM MinuteKLine
 ORDER BY MinuteTime
-LIMIT ##maxcnt; 
+LIMIT ##maxcnt
