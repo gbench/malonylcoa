@@ -838,14 +838,17 @@ local({
     library(dplyr) # 可以把filter(is.trading(time))中的time解释为数据框字段名而不是stats:time函数
     library(ggplot2) #  数据绘图
     library(magrittr) # 引入三通算符 "%T>%"以dump过程中生成的SQL
-    library(malonylcoa) # 引入sqlquery函数
+    library(malonylcoa) # 引入record.builder,list_sql_templates,sqlfill,sqlquery等数据库操作函数
 
-    rb2 <- record.builder("##tbl,#startime,#endtime")
-    #' 判断一个时点是否位于交易时段
+    rb2 <- record.builder("##tbl,#startime,#endtime") # SQL模板参数的记录构建器
+    #' 判断一个时点向量points是否位于交易时段tradingbreaks之中
     #' @param points 交易时点：hms 结构的时间值
-    #' @param tradingspans 交易时段分点（hms 结构）序列：交易时段的定义，偶数位置（0,2,4,...）都是非交易时段的索引。
-    is.trading <- \(points, tradingbreaks="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00" |> strsplit("[,;]") |> unlist() |> hm()) 
-        points |> (\(x) (if(is.period(x)) x else hms(x)))() |> findInterval(tradingbreaks) %% 2 !=0 # 判断是否交易时间
+    #' @param tradingspans 交易时段分点（hms 结构）序列，或者说交易时段结构定义:[start1,end1;start2,end2;...;starti,endi;...;startn,endn]
+    #'  由于每个时段都是由两个分点(starti,endi)构成，因此，分点扁平化以后，偶数区间索引的位置（0,2,4,...）时段之间的间隔，即非交易时段！
+    is.trading <- \(points, tradingbreaks="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
+        .tradingbreaks <- (\(bs=tradingbreaks) if(is.character(bs)) bs |> strsplit("[,;]+") |> unlist() |> hm() else bs) () # 交易时段分点处理
+        points |> (\(x) (if(is.period(x)) x else hms(x))) () |> findInterval(.tradingbreaks) %% 2 !=0 # 判断是否交易时间（偶数区间索引乃非交易时段）
+     } # is.trading 时点是位于否交易时段
 
     # 数据处理
     data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[1][789]", value=T) |> # 指定数据表模式
