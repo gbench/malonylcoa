@@ -841,10 +841,11 @@ local({
     library(malonylcoa) # 引入sqlquery函数
 
     rb2 <- record.builder("##tbl,#startime,#endtime")
-    tradespans <- "09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00" |> strsplit("[,;]") |> unlist() |> hm() # 交易时段定义
-    is.trading <- \(points) points |> (\(x) (if(is.period(x)) x else hms(x)))() |> findInterval(tradespans) %% 2 !=0 # 判断是否交易时间
-    testpoints <- tradespans + rep(0:2, rep(length(tradespans), 3)) # 测试时点
-    data.frame(testpoints, flags=is.trading(testpoints)) # 测试时点是否位于交易时段
+    tradingbreaks <- "09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00" |> strsplit("[,;]") |> unlist() |> hm() # 交易时段定义
+    # @param points 交易时点
+    #' @param tradingspans 交易时段分点的定义
+    is.trading <- \(points, tradingbreaks="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00" |> strsplit("[,;]") |> unlist() |> hm()) 
+        points |> (\(x) (if(is.period(x)) x else hms(x)))() |> findInterval(tradingbreaks) %% 2 !=0 # 判断是否交易时间
 
     # 数据处理
     data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[1][789]", value=T) |> # 指定数据表模式
