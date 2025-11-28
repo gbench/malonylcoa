@@ -22,7 +22,7 @@ WITH MinuteKLine AS (
 )
 SELECT DISTINCT *
 FROM MinuteKLine
-ORDER BY MinuteTime 
+ORDER BY MinuteTime
 
 -- ---------------------------------------------------------------
 -- 根据指定表名生成K线数据
@@ -30,6 +30,7 @@ ORDER BY MinuteTime
 -- ##tbl 表名
 -- #startime 开始时间
 -- #endtime 结束时间
+-- #maxcnt 最大返回数量
 -- ---------------------------------------------------------------
 WITH MinuteKLine AS (
     SELECT
@@ -49,4 +50,4 @@ WITH MinuteKLine AS (
 SELECT DISTINCT *
 FROM MinuteKLine
 ORDER BY MinuteTime
-LIMIT ##maxcnt 
+LIMIT ##maxcnt
