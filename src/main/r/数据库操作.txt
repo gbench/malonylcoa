@@ -841,7 +841,6 @@ local({
     library(malonylcoa) # 引入sqlquery函数
 
     rb2 <- record.builder("##tbl,#startime,#endtime")
-    tradingbreaks <- "09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00" |> strsplit("[,;]") |> unlist() |> hm() # 交易时段定义
     #' 判断一个时点是否位于交易时段
     #' @param points 交易时点：hms 结构的时间值
     #' @param tradingspans 交易时段分点（hms 结构）序列：交易时段的定义，偶数位置（0,2,4,...）都是非交易时段的索引。
