@@ -1011,6 +1011,57 @@ local({ # 数据库写入测试
  sqlquery.ctp("select * from t_user")
 })
 
+# 本地测试:PostgreSQL的使用
+local({ # 数据库写入测试
+  
+  # 安装数据库驱动
+  "RPostgres,purrr,dplyr" |> strsplit(",") |> unlist() |> lapply(\(pkg) {
+     if(!require(pkg, character.only=T)) {
+       install.packages(pkg)
+       library(pkg, character.only=T)
+     } else T # if
+  })  # \(pkg)
+  
+  # 配置数据库环境
+  options("sqlquery.drv"=Postgres(), "sqlquery.dbname"="latinus",
+    "sqlquery.host"="127.0.0.1", "sqlquery.port"=5432, 
+    "sqlquery.user"="postgres", "sqlquery.password"="123456")
+  
+  # 连接数据库
+  sqlquery("select version()") # 当前版本
+  
+  # 显示指定schema
+  sqlquery("select * from economics.t_company")
+  
+  #' 自定义查询函数 （手动设定shema）
+  #' @param sql 查询语句
+  #' @param search_path 检索路径
+  #' @param simplify 是否简化模式
+  #' @param verbose 信息冗余模式
+  sqlquery.pg <- \(sql, search_path = "public,economics", simplify = T, verbose = F) dbfun( \(con) { # 连接配置
+      .log <- \(x) { if(verbose) cat(" -- ", x, "\n"); x } # 日志输出
+      search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=", ") |> 
+          sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
+      (\(.sqls = c(sql)) .sqls |> .log() |> lapply(compose(tibble, dbGetQuery), conn=con) |> (\(res) # res 结果集简化
+          if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls)) ()
+      ) () # \(.sqls)
+  }) (sql) # dbfun \(con)
+
+ sqlquery.pg("select current_schema") # 当前schema是public
+ sqlquery.pg("select current_schema", "economics") # 当前schema是economics
+ sqlquery.pg("select * from economics.t_company") # 在 public,economics 中检索数据表
+ 
+ # 查询数据表
+ "economics" |> sprintf(fmt="
+    SELECT table_name FROM information_schema.tables 
+    WHERE table_schema='%s' AND table_type='BASE TABLE'") |> 
+    sqlquery.pg() -> tbls
+
+  # 查询所有数据表
+  tbls[[1]] |> sprintf(fmt="select * from %s")  |> sqlquery.pg(verbose=T)
+
+})
+
 # 指定时段，动态过滤数据
 local({
   library(rlang) # eval_tidy 的所在的库
