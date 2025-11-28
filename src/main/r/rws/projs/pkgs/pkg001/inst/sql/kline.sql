@@ -6,7 +6,9 @@
 -- #endtime 结束时间
 -- ---------------------------------------------------------------
 WITH MinuteKLine AS (
-    SELECT 
+    SELECT
+        REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') Symbol,
+        STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  Date,
         DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
         FIRST_VALUE(LastPrice) OVER w as OpenPrice,
         MAX(LastPrice) OVER w as HighPrice,
@@ -30,7 +32,9 @@ ORDER BY MinuteTime
 -- #endtime 结束时间
 -- ---------------------------------------------------------------
 WITH MinuteKLine AS (
-    SELECT 
+    SELECT
+        REGEXP_SUBSTR('##tbl', '(?<=t_).*?(?=_\\d{8}$)') Symbol,
+        STR_TO_DATE(REGEXP_SUBSTR('##tbl', '\\d{8}$'), '%Y%m%d')  Date,
         DATE_FORMAT(STR_TO_DATE(UpdateTime, '%H:%i:%s'), '%H:%i') as MinuteTime,
         FIRST_VALUE(LastPrice) OVER w as OpenPrice,
         MAX(LastPrice) OVER w as HighPrice,
