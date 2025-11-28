@@ -847,7 +847,9 @@ local({
     library(magrittr) # 引入三通算符 "%T>%"以dump过程中生成的SQL
     library(malonylcoa) # 引入record.builder,list_sql_templates,sqlfill,sqlquery等数据库操作函数
 
+    # 记录构建器
     rb2 <- record.builder("##tbl,#startime,#endtime") # SQL模板参数的记录构建器
+
     #' 判断一个时点向量points是否位于交易时段tradingbreaks之中
     #' @param points 交易时点：hms 结构的时间值
     #' @param tradingspans 交易时段分点（hms 结构）序列，或者说交易时段结构定义:[start1,end1;start2,end2;...;starti,endi;...;startn,endn]
@@ -857,16 +859,35 @@ local({
         points |> (\(x) (if(is.period(x)) x else hms(x))) () |> findInterval(.tradingbreaks) %% 2 !=0 # 判断是否交易时间（偶数区间索引乃非交易时段）
      } # is.trading 时点是位于否交易时段
 
-    # 数据处理
+    # 数据处理：TickData
     data3 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[1][789]", value=T) |> # 指定数据表模式
         lapply(\(tbl) list_sql_templates(verbose=F) |> with(tickdata2) |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> # tickdata2模板填充
         paste0(collapse="\nUNION\n") |> sprintf(fmt="%s ORDER BY date, time, id") %T>% cat("\n") |> # 模板组织，UNION会打乱顺序，故需重新排序
         sqlquery() |> filter(is.trading(time)) # 数据查询并交易时段过滤（需加载dplyr否则time会被视为函数报错：cannot coerce type 'closure' to vector of type 'character'）
 
-    # 数据绘图
+    # 数据绘图：TickData
     data3 |> ggplot(aes(seq(x), y)) + geom_point(aes(color=y))  + geom_line() + # 价格波动图
         with(data3, scale_x_continuous(labels=\(i, j=pmin(pmax(i,1), length(x))) sprintf("%s %s(%s)", date[j], time[j], j))) + # 保证索引j合理化
         labs(x="time", y="price", caption="合约价格", title="RB2601合约")
+
+    # 数据处理：分钟K线数据
+    data4 <- sqldframe("show tables") |> unlist() |> grep(pattern="rb2601_202511[2][5-8]", value=T) |> # 指定数据表模式
+        lapply(\(tbl) list_sql_templates(verbose=F) |> with(`1min.kline`) |> sqlfill(rb2(tbl, "09:00", "23:00"))) |> # tickdata2模板填充
+        paste0(collapse=")\nUNION\n(") |> sprintf(fmt="(%s)") %T>% cat("\n") |> # 模板组织，UNION会打乱顺序，故需重新排序
+        sqlquery() |> filter(is.trading(paste0(MinuteTime, ":00"))) |> arrange(Date, MinuteTime) |> # 数据查询并交易时段过滤
+        mutate(Key=paste(Date, MinuteTime), Id=seq(Key)) |> # 生成键名Key字段与索引Id字段
+        tail(100) # 最新的数量
+    
+    # 绘制K线图
+    with(data4, ggplot(data4, aes(Id, ClosePrice)) + geom_line() + # 绘制收盘价曲线
+        with(lm(ClosePrice~Id), geom_abline(intercept=coefficients[1], slope=coefficients[2], linewidth=2, color="blue")) + # 绘制趋势线
+        geom_boxplot(stat = "identity", # 手动指定 boxplot 参数
+            aes(group=Key, # 每个坐标点单独分组
+                ymin=LowPrice, ymax=HighPrice), middle=(OpenPrice+ClosePrice)/2, # 最低，最高价
+                lower=pmin(OpenPrice, ClosePrice), upper=pmax(OpenPrice, ClosePrice), # 开盘,收盘
+            fill=ifelse(OpenPrice>ClosePrice, "green", "red")) + #  使用box模拟K线
+        scale_x_continuous(labels=\(i, j=pmin(pmax(i,1), length(Key))) Key[j]))  # 保证索引j合理化
+
 })
 
 # ----------------------------------------------------------------------------------------------------------------
