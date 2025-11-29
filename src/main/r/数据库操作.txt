@@ -1020,6 +1020,7 @@ local({ # 数据库写入测试
    ) ) |> print()
  # 查看数据
  sqlquery.test("select * from t_user")
+
 })
 
 # 本地测试:PostgreSQL的使用
