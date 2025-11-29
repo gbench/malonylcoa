@@ -1074,19 +1074,17 @@ local({ # 数据库写入测试
                 rs <- lapply(sql, function(.sql) {
                     .sql <- .log(.sql)
                     is.ddl <- grepl("^CREATE\\s+TABLE|^ALTER|^DROP", .sql, ignore.case=T)
-                    is.insert <- grepl("^INSERT",.sql,ignore.case=T)
-                    affected_rows <- ifelse(is.ddl, {
-                        res <- dbSendStatement(con, .sql)
-                        n <- dbGetRowsAffected(res)
-                        dbClearResult(res); n
-                    }, dbExecute(con,.sql))
-                    last_insert_id <- if(is.insert) tryCatch({dbGetQuery(con,"SELECT LASTVAL()") |> unlist()},error=\(e) NA) else NA
-                    list(affected_rows=affected_rows,last_insert_id=last_insert_id)
+                    is.insert <- grepl("^INSERT", .sql, ignore.case=T)
+                    affected_rows <- ifelse(is.ddl, # 
+                          dbSendStatement(con, .sql) |> (\(res) {n=dbGetRowsAffected(res); dbClearResult(res); n}) (),  # ddl 
+                          dbExecute(con,.sql)) # not ddl(dml)
+                    last_insert_id <- if(is.insert) tryCatch({dbGetQuery(con, "SELECT LASTVAL()") |> unlist()}, error=\(e) NA) else NA
+                    list(affected_rows=affected_rows, last_insert_id=last_insert_id)
                 }) |> do.call(rbind, args=_) 
                 if(flag) dbCommit(con)  # 开启事务
                 if(simplify && nrow(rs)==1) as.list(rs[1, ]) else rs
             }, error=\(err) {if(flag)dbRollback(con); stop(err)})
-        }, ...)(sql)
+        }, ...) (sql)
     }
     
     # 数据表创造语句: postgresql 版本
