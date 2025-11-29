@@ -42,20 +42,21 @@ dbfun <- function(f, ...) {
     dbname = getOption("sqlquery.dbname", "ctp2")) # 默认连接参数
   readcfg <- \(key) dbcfg[[key]] %||% defaultcfg[[key]] #  带有默认值的配置参数key的值读取 
 
-  #' 执行SQL语句
+  #' 执行SQL语句（生成数据库的执行函数）
   #' @param sql  SQL语句
-  function (sql) {
+  function (sql, ...) {
     # 数据库连接
     tryCatch({
       keys <- "drv,host,user,password,port,dbname" |> strsplit(",") |> unlist() # 配置参数keys向量
       con <- structure(keys, names=keys) |> lapply(readcfg)  |> do.call(dbConnect, args=_ ) # 读取配置并获得数据库连接
       on.exit(dbDisconnect(con), add=TRUE) # 注册函数运行结束时关闭调该数据库连接con
-      f(con) # 执行sql
-    }, error=\(err) {
+      f(con, ...) # 执行sql
+    }, error = \ (err) {
       print(sprintf("sql:%s", sql)) # 打印错误sql
       stop(err) # 重新抛出错误
     }) # 数据库连接
   } # function (sql)
+
 } # dbfun
 
 #' 执行SQL语句查询数据结果（dbGetQuery模式)
@@ -65,11 +66,11 @@ dbfun <- function(f, ...) {
 #'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
 #' @param n 查询结果的返回最大数量
 #' @return 返回结果数据集
-sqlquery <- function(sql, simplify=T, n=-1, ...) {
+sqlquery <- function(sql, simplify = T, n = -1, ...) {
   # 连接使用函数
-  dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+  dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
     dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
-    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+    if(simplify & length(dataset) == 1)  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
 
@@ -83,12 +84,12 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
 #'    的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
 #'    其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
 #'    返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
-sqlexecute <- function(sql, simplify=T, ...) {
+sqlexecute <- function(sql, simplify = T, ...) {
     # 连接使用函数
-    dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+    dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
       tryCatch({ # try 运行结果
         dbBegin(con) # 开启事务
-        dataset <- c(list(), sql) |> lapply(\(.sql){
+        dataset <- c(sql) |> lapply(\(.sql){
           affected_rows <- dbExecute(con, .sql); # 影响数据行数
           last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
           list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
@@ -107,7 +108,7 @@ sqlexecute <- function(sql, simplify=T, ...) {
 #' @param tbl  数据表名
 #' @return 创建数据表SQL
 ctsql <- function( dfm, tbl ) {
-  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
+  .tbl <- if(missing(tbl)) deparse(substitute(dfm)) else deparse(substitute(tbl)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
   dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
       n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
       default_type=sprintf('varchar(%s)', n) # 默认类型
@@ -126,9 +127,9 @@ ctsql <- function( dfm, tbl ) {
 #' @param dfm 数据框数据
 #' @param tbl  数据表名
 #' @return 表数据插入SQL
-insql <- function( dfm, tbl ) {
-  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "") #  提取数据表名
-  keys <- names( dfm ) |> paste(collapse=", ") # 列名列表
+insql <- function(dfm, tbl) {
+  .tbl <- if(missing(tbl)) deparse(substitute(dfm)) else deparse(substitute(tbl)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "") #  提取数据表名
+  keys <- names(dfm) |> paste(collapse=", ") # 列名列表
   values <- dfm |> lapply(\(e, t=typeof(e), cls=class(e)) # 记录值列表的各个字段值处理：
       switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
          `logical`=e, # 逻辑类型，保持原值不变
@@ -146,10 +147,10 @@ insql <- function( dfm, tbl ) {
 #' @param dfm 数据框数据
 #' @param tbl 数据表名
 #' @param pk 数据主键
-upsql <- \(dfm, tbl, pk="id") { # 数据更新
-    .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else tbl #  提取数据表名
+upsql <- \(dfm, tbl, pk = "id") { # 数据更新
+    .tbl <- if(missing(tbl)) deparse(substitute(dfm)) else tbl #  提取数据表名
     nms <- names(dfm) # 提取各个数据列名
-    .pk <- deparse( substitute( pk ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+    .pk <- deparse(substitute(pk)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
     idx <- match(.pk, nms) #  主键pk在名称nms中的索引位置
     stopifnot("dfm的名称nms中必须包含主键名pk" = !is.na(idx)) # pk名字的有效性检测
     flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''", x=_))) |> 
@@ -175,11 +176,11 @@ sqlquery.ctp <- partial(sqlquery, host="192.168.1.10", dbname="ctp")
 #'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
 #' @param n 查询结果的返回最大数量
 #' @return 返回结果数据集
-sqlquery2 <- function(sql, simplify=T, n=-1, ...) {
+sqlquery2 <- function(sql, simplify = T, n = -1, ...) {
   # 连接使用函数:使用"eval.parent(substitute(... ...)) 去封装dbfun调用，可以避免R把实际"..."给改写"..1, ..2"的形式：
   # 否则，sqlquery(sql, dbname=ctp) 会被翻译成 sqlexecute(sql, ..1=ctp) 而改掉了参数名
-  eval.parent(substitute(dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
+  eval.parent(substitute(dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
+    dataset <- c(sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
     if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
   }, ...)(sql))) # 连接使用函数
 }
@@ -201,13 +202,13 @@ sqlquery2 <- function(sql, simplify=T, n=-1, ...) {
 #'    的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
 #'    其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
 #'    返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
-sqlexecute2 <- function(sql, simplify=T, ...) {
+sqlexecute2 <- function(sql, simplify = T, ...) {
     # 连接使用函数:使用"eval.parent(substitute(... ...)) 去封装dbfun调用，可以避免R把实际"..."给改写"..1, ..2"的形式：
     # 否则，sqlexecute(sql, dbname=ctp) 会被翻译成 sqlexecute(sql, ..1=ctp) 而改掉了参数名
-    eval.parent(substitute(dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
+    eval.parent(substitute(dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
       tryCatch({ # try 运行结果
         dbBegin(con) # 开启事务
-        dataset <- c(list(), sql) |> lapply(\(.sql){
+        dataset <- c(sql) |> lapply(\(.sql){
           affected_rows <- dbExecute(con, .sql); # 影响数据行数
           last_insert_id <-  dbGetQuery(con, "SELECT LAST_INSERT_ID()") |> unlist() # 获取插入的Id
           list(affected_rows=affected_rows, last_insert_id=last_insert_id) # 返回结果
@@ -222,19 +223,32 @@ sqlexecute2 <- function(sql, simplify=T, ...) {
 }
 
 #' PostgreSQL API 
+#' 数据库函数（对PostgreSQL的dbfun封装）
+#' @param f 连接执行函数
+#' @param 执行SQL语句 的函数
+dbfun.pg <- \(f, ...) {
+  with(list(...), dbfun(\(con, ...) { # 连接配置
+    .log <- \ (x) { if(verbose) cat(" -- ", x, "\n"); x } # 日志输出
+    search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=", ") |> 
+      sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
+    f(con, .log=.log) # 把.log注入到f函数
+  }))
+}
+
+#' PostgreSQL API 
 #' 自定义查询函数 （手动设定shema）
 #' @param sql 查询语句
 #' @param search_path 检索路径
 #' @param simplify 是否简化模式
 #' @param verbose 息详情模式
-sqlquery.pg <- \(sql, search_path = "public,economics", simplify = T, verbose = F, ...) dbfun( \(con) { # 连接配置
-    .log <- \(x) { if(verbose) cat(" -- ", x, "\n"); x } # 日志输出
-    search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=", ") |> 
-      sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
-    (\(.sqls = c(sql)) .sqls |> .log() |> lapply(compose(tibble, dbGetQuery), conn=con) |> (\(res) # res 结果集简化
+sqlquery.pg <- \(sql, search_path = "public,economics", simplify = T, verbose = F, ...) {
+  dbfun.pg(\ (con, ...) { # 连接配置（dbfun.pg 的参数f)
+    with(list(...), ( # 执行查询结果
+      \ (.sqls = c(sql)) .sqls |> .log() |> lapply(compose(tibble, dbGetQuery), conn = con) |> (\ (res) # res 结果集简化
       if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls)) ()
-    ) () # \(.sqls)
-}, ...) (sql) # dbfun \(con)
+    ) ()) # 从dbfun.pg中提取参数.log并执行
+  }, search_path = search_path, simplify = simplify, verbose = verbose, ...) (sql) 
+}
 
 #' PostgreSQL API  
 #' 自定义执行函数 （手动设定shema）
@@ -245,47 +259,45 @@ sqlquery.pg <- \(sql, search_path = "public,economics", simplify = T, verbose = 
 #' @param flag 事务开启标记, 需要注意PostgreSQL对于DML语句会自动进行提交，如果sql向量中同时包含有create,insert时
 #' 后面的语句就会跳出事务，语句执行了但是没有事务内结果且并不会报错。即，你不能在一个事务中先创建后插入，必须在非事务
 #' 环境中执行创建表与插入表的混合操作！
-sqlexecute.pg <- \(sql, search_path="public,economics", simplify=TRUE, verbose=F, flag=F, ...) {
-    dbfun(\(con) {
-        .log <- \(x) {if(verbose) cat(" -- ", x, "\n"); x}
-        search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=",") |> 
-        sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con,statement=_)
-        tryCatch({
-            if(flag) dbBegin(con) # 开启事务
-            rs <- lapply(c(sql), function(s) {
-                .sql <- .log(s) |> gsub(pattern="^\\s*|\\s*$", replacement="", x=_)
-                is.ddl <- grepl("^CREATE\\s+TABLE|^ALTER|^DROP", .sql, ignore.case=T)
-                is.insert <- grepl("^INSERT", .sql, ignore.case=T)
-                affected_rows <- ifelse(is.ddl, # 
-                  dbSendStatement(con, .sql) |> (\(res) {n=dbGetRowsAffected(res); dbClearResult(res); n}) (),  # ddl 
-                  dbExecute(con,.sql)) # not ddl(dml)
-                last_insert_id <- if(is.insert) tryCatch({dbGetQuery(con, "SELECT LASTVAL()") |> unlist()}, error=\(e) NA) else NA
-                list(affected_rows=affected_rows, last_insert_id=last_insert_id)
-            }) |> do.call(rbind, args=_) 
-            if(flag) dbCommit(con)  # 开启事务
-            if(simplify && nrow(rs)==1) as.list(rs[1, ]) else rs
-        }, error=\(err) {if(flag)dbRollback(con); stop(err)})
-    }, ...) (sql)
+sqlexecute.pg <- \ (sql, search_path = "public,economics", simplify = TRUE, verbose = F, flag = F, ...) {
+  dbfun.pg(\ (con, ...) {
+    with(list(...), tryCatch({ # 执行SQL执行过程（dbfun.pg 的参数f)
+      if(flag) dbBegin(con) # 开启事务
+      rs <- lapply(c(sql), function(s) {
+        .sql <- .log(s) |> gsub(pattern="^\\s*|\\s*$", replacement="", x=_)
+        is.ddl <- grepl("^CREATE\\s+TABLE|^ALTER|^DROP", .sql, ignore.case=T)
+        is.insert <- grepl("^INSERT", .sql, ignore.case=T)
+        affected_rows <- ifelse(is.ddl, # 
+          dbSendStatement(con, .sql) |> (\(res) {n=dbGetRowsAffected(res); dbClearResult(res); n}) (),  # ddl 
+          dbExecute(con,.sql)) # not ddl(dml)
+        last_insert_id <- if(is.insert) tryCatch({dbGetQuery(con, "SELECT LASTVAL()") |> unlist()}, error=\(e) NA) else NA
+        list(affected_rows=affected_rows, last_insert_id=last_insert_id)
+      }) |> do.call(rbind, args=_) 
+      if(flag) dbCommit(con)  # 开启事务
+      if(simplify && nrow(rs)==1) as.list(rs[1, ]) else rs
+    }, error=\(err) {if(flag) dbRollback(con); stop(err)})) # 从dbfun.pg中提取参数.log并执行
+  }, search_path = search_path, simplify = simplify, verbose = verbose, ...) (sql)
 }
+
 
 #' PostgreSQL API  
 #' PostgreSQL 自增长主键（serial）并不会你手动设置主键之后进行同步，需要你手动给与同步设定，这与MySQL有很大不同，提请注意一下！
 #' 数据表创造语句: postgresql 版本
-ctsql.pg <- function( dfm, tbl ) {
-    .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
-    dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
-        n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
-        default_type=sprintf('varchar(%s)', n) # 默认类型
-        ) switch(t, # 类型判断
-            `logical`='boolean', # PostgreSQL布尔类型
-            `integer`=if(cls=='factor') default_type else 'integer', # 整数类型
-            `double`=if(any(grepl(pattern="Date", x=cls))) "date" else if(any(grepl(pattern="POSIXct|POSIXt", x=cls))) "timestamp with time zone" else 'double precision', # PostgreSQL浮点类型
-            `character`=default_type, # 字符类型
-            `list`='jsonb', # PostgreSQL JSONB类型
-            `raw`='bytea', # 二进制类型
-            default_type # 默认类型 
-        )) |> (\(x) { # 获取字段定义
-            if('id' %in% names(x)) x['id'] <- if(grepl('integer', x['id'])) 'serial primary key' else x['id']; # 主键处理
-            sprintf("create table %s (\n  %s \n);\n", .tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
-        }) () # SQL 创建表语句
+ctsql.pg <- function(dfm, tbl) {
+  .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
+  dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
+    n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
+    default_type=sprintf('varchar(%s)', n) # 默认类型
+    ) switch(t, # 类型判断
+      `logical`='boolean', # PostgreSQL布尔类型
+      `integer`=if(cls=='factor') default_type else 'integer', # 整数类型
+      `double`=if(any(grepl(pattern="Date", x=cls))) "date" else if(any(grepl(pattern="POSIXct|POSIXt", x=cls))) "timestamp with time zone" else 'double precision', # PostgreSQL浮点类型
+      `character`=default_type, # 字符类型
+      `list`='jsonb', # PostgreSQL JSONB类型
+      `raw`='bytea', # 二进制类型
+      default_type # 默认类型 
+    )) |> (\(x) { # 获取字段定义
+      if('id' %in% names(x)) x['id'] <- if(grepl('integer', x['id'])) 'serial primary key' else x['id']; # 主键处理
+      sprintf("create table %s (\n  %s \n);\n", .tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
+    }) () # SQL 创建表语句
 }
