@@ -19,7 +19,7 @@
 # scriptlog <- sprintf(fmt="%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) 
 # --------------------------------------------------------------------------------------------------
 
-pkgs <- "RMySQL,tidyverse" |> # 程序包名称列表
+pkgs <- "RMySQL,RPostgres,tidyverse,janitor," |> # 程序包名称列表
   strsplit(",") |> unlist() # 程序包列表的拆解
 flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 生成程序包是否业已加载标志
   
@@ -219,4 +219,73 @@ sqlexecute2 <- function(sql, simplify=T, ...) {
         stop(err) # 重新抛出错误
       }) # try 运行结果
     }, ...)(sql))) # 连接使用函数
+}
+
+#' PostgreSQL API 
+#' 自定义查询函数 （手动设定shema）
+#' @param sql 查询语句
+#' @param search_path 检索路径
+#' @param simplify 是否简化模式
+#' @param verbose 息详情模式
+sqlquery.pg <- \(sql, search_path = "public,economics", simplify = T, verbose = F, ...) dbfun( \(con) { # 连接配置
+    .log <- \(x) { if(verbose) cat(" -- ", x, "\n"); x } # 日志输出
+    search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=", ") |> 
+      sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
+    (\(.sqls = c(sql)) .sqls |> .log() |> lapply(compose(tibble, dbGetQuery), conn=con) |> (\(res) # res 结果集简化
+      if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls)) ()
+    ) () # \(.sqls)
+}, ...) (sql) # dbfun \(con)
+
+#' PostgreSQL API  
+#' 自定义执行函数 （手动设定shema）
+#' @param sql 查询语句向量
+#' @param search_path 检索路径
+#' @param simplify 是否简化模式
+#' @param verbose 信息详情模式
+#' @param flag 事务开启标记, 需要注意PostgreSQL对于DML语句会自动进行提交，如果sql向量中同时包含有create,insert时
+#' 后面的语句就会跳出事务，语句执行了但是没有事务内结果且并不会报错。即，你不能在一个事务中先创建后插入，必须在非事务
+#' 环境中执行创建表与插入表的混合操作！
+sqlexecute.pg <- \(sql, search_path="public,economics", simplify=TRUE, verbose=F, flag=F, ...) {
+    dbfun(\(con) {
+        .log <- \(x) {if(verbose) cat(" -- ", x, "\n"); x}
+        search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=",") |> 
+        sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con,statement=_)
+        tryCatch({
+            if(flag) dbBegin(con) # 开启事务
+            rs <- lapply(c(sql), function(s) {
+                .sql <- .log(s) |> gsub(pattern="^\\s*|\\s*$", replacement="", x=_)
+                is.ddl <- grepl("^CREATE\\s+TABLE|^ALTER|^DROP", .sql, ignore.case=T)
+                is.insert <- grepl("^INSERT", .sql, ignore.case=T)
+                affected_rows <- ifelse(is.ddl, # 
+                  dbSendStatement(con, .sql) |> (\(res) {n=dbGetRowsAffected(res); dbClearResult(res); n}) (),  # ddl 
+                  dbExecute(con,.sql)) # not ddl(dml)
+                last_insert_id <- if(is.insert) tryCatch({dbGetQuery(con, "SELECT LASTVAL()") |> unlist()}, error=\(e) NA) else NA
+                list(affected_rows=affected_rows, last_insert_id=last_insert_id)
+            }) |> do.call(rbind, args=_) 
+            if(flag) dbCommit(con)  # 开启事务
+            if(simplify && nrow(rs)==1) as.list(rs[1, ]) else rs
+        }, error=\(err) {if(flag)dbRollback(con); stop(err)})
+    }, ...) (sql)
+}
+
+#' PostgreSQL API  
+#' PostgreSQL 自增长主键（serial）并不会你手动设置主键之后进行同步，需要你手动给与同步设定，这与MySQL有很大不同，提请注意一下！
+#' 数据表创造语句: postgresql 版本
+ctsql.pg <- function( dfm, tbl ) {
+    .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
+    dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
+        n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
+        default_type=sprintf('varchar(%s)', n) # 默认类型
+        ) switch(t, # 类型判断
+            `logical`='boolean', # PostgreSQL布尔类型
+            `integer`=if(cls=='factor') default_type else 'integer', # 整数类型
+            `double`=if(any(grepl(pattern="Date", x=cls))) "date" else if(any(grepl(pattern="POSIXct|POSIXt", x=cls))) "timestamp with time zone" else 'double precision', # PostgreSQL浮点类型
+            `character`=default_type, # 字符类型
+            `list`='jsonb', # PostgreSQL JSONB类型
+            `raw`='bytea', # 二进制类型
+            default_type # 默认类型 
+        )) |> (\(x) { # 获取字段定义
+            if('id' %in% names(x)) x['id'] <- if(grepl('integer', x['id'])) 'serial primary key' else x['id']; # 主键处理
+            sprintf("create table %s (\n  %s \n);\n", .tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
+        }) () # SQL 创建表语句
 }

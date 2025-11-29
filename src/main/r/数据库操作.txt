@@ -895,10 +895,10 @@ local({
 # 数据库读取示例
 # ----------------------------------------------------------------------------------------------------------------
 
-
 # 数据库的增删改查 (以test数据库为例)
 # 首先在mysql数据库中创建数据库test: create database test default character set utf8mb4;
 local({ # 数据库写入测试
+
   # sqlquery(查询), sqlexecute(执行), ctsql(创建), insql(插入), upsql(更新) 等关系数据库的基础工具函数载入！
   # 此类基础工具函数默认关系数据表拥有一个带有自增长结构的主键id！
   batch_load() # 基础工具的批量载入
@@ -918,7 +918,7 @@ local({ # 数据库写入测试
   # 把 iris数据导入数据库
   df <- cbind(id=1:dim(iris)[1], iris) # 增加主键数据
   names(df) <- make_clean_names(names(df)) # 美化字段名
-  c(ctsql, insql) |> lapply(\(f) f(df, "t_iris") |> sqlexecute.test()) # 创建表并插入数据
+  c(ctsql, insql) |> lapply(\(f) f(df, "t_iris")) |> sqlexecute.test() # 创建表并插入数据
   sqlquery.test("select * from t_iris") # 查询数据
 
   # 准备表数据
@@ -958,36 +958,47 @@ local({ # 数据库写入测试
   sqlquery.test("drop table t_mtcars")
   # 查询库表（删表后）
   sqlquery.test("show tables") |> unlist() |> grep(pattern="t_mtcars", value=T)
+
 })
 
 # 本地测试
 local({ # 数据库写入测试
-  # ctp 数据库查询函数
-  sqlquery.ctp <- partial(sqlquery, dbname="ctp")
+
+  # sqlquery(查询), sqlexecute(执行), ctsql(创建), insql(插入), upsql(更新) 等关系数据库的基础工具函数载入！
+  # 此类基础工具函数默认关系数据表拥有一个带有自增长结构的主键id！
+  batch_load() # 基础工具的批量载入
   
-  # ctp 数据库执行函数
-  sqlexecute.ctp <- partial(sqlexecute, dbname="ctp")
+  # test 数据库查询函数
+  sqlquery.test <- partial(sqlquery, dbname="test")
+  # test 数据库执行函数
+  sqlexecute.test <- partial(sqlexecute, dbname="test")
   
   # 删除数据表
-  "mtcars" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="drop table if exists  %s") |> sqlexecute.ctp()
-  ctsql(mtcars) |> (\(x) {cat(x); x}) () |> sqlexecute.ctp() |> print()
-  insql(mtcars) |> (\(x) {cat(x); x}) () |> sqlexecute.ctp() |> print()
-  'select * from mtcars' |> sqlquery.ctp () |> print()
+  "t_mtcars" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="drop table if exists  %s") |> sqlexecute.test()
+  # 创建表并插入数据
+  c(ctsql, insql) |> lapply(\(f) f(mtcars, "t_mtcars") |> (\(s) {cat(s, "\n"); s})()) |> sqlexecute.test() |> print()
+  # 查询结果数据 
+  'select * from t_mtcars' |> sqlquery.test () |> print()
+
 })
 
 # 本地测试
 local({ # 数据库写入测试
-  # ctp 数据库查询函数
-  sqlquery.ctp <- partial(sqlquery, dbname="ctp")
- 
-  # ctp 数据库执行函数
-  sqlexecute.ctp <- partial(sqlexecute, dbname="ctp")
+
+  # sqlquery(查询), sqlexecute(执行), ctsql(创建), insql(插入), upsql(更新) 等关系数据库的基础工具函数载入！
+  # 此类基础工具函数默认关系数据表拥有一个带有自增长结构的主键id！
+  batch_load() # 基础工具的批量载入
+
+  # test 数据库查询函数
+  sqlquery.test <- partial(sqlquery, dbname="test")
+  # test 数据库执行函数
+  sqlexecute.test <- partial(sqlexecute, dbname="test")
   
   # 删除数据表
-  "t_user" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="drop table if exists  %s") |> sqlexecute.ctp()
+  "t_user" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="drop table if exists  %s") |> sqlexecute.test()
   
   # 查看数据表
-  "show tables" |> sqlquery.ctp()
+  "show tables" |> sqlquery.test()
   
   # 创建用户数据
   "create table t_user ( 
@@ -999,16 +1010,128 @@ local({ # 数据库写入测试
      phone varchar(32) comment '电话', 
      weixin varchar(64) comment '微信', 
      description varchar(126) comment '说明'
-   )" |> sqlexecute.ctp() # 创建数据表
+   )" |> sqlexecute.test() # 创建数据表
   
   # 插入用户数据
-  "zhangsan,lisi,wangwu,zhaoliu" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="insert into t_user(name) values('%s')") |> sqlexecute.ctp() |> print()
-   sqlexecute.ctp( c( # SQL 插入语句
+  "zhangsan,lisi,wangwu,zhaoliu" |> strsplit("[,;]+") |> unlist() |> sprintf(fmt="insert into t_user(name) values('%s')") |> sqlexecute.test() |> print()
+   sqlexecute.test( c( # SQL 插入语句
      "insert into t_user(name,password) values('chenqi','123456'),('zhouba','123456'),('yangjiu','123456'),('lushi','123456')",
      "insert into t_user(name,password) values('tom','123456'),('jerry','123456'),('katty','123456'),('lucy','123456')"
    ) ) |> print()
  # 查看数据
- sqlquery.ctp("select * from t_user")
+ sqlquery.test("select * from t_user")
+})
+
+# 本地测试:PostgreSQL的使用
+local({ # 数据库写入测试
+  
+    # 安装数据库驱动&以及相关的工具库
+    "RPostgres,purrr,dplyr,janitor,tibble" |> strsplit(",") |> unlist() |> lapply(\(pkg) {
+        if(!require(pkg, character.only=T)) {
+            install.packages(pkg)
+            library(pkg, character.only=T)
+        } else T # if
+    })  # \(pkg)
+
+    # 配置PostgreSQL数据库环境参数
+    options("sqlquery.drv"=Postgres(), "sqlquery.dbname"="latinus",
+        "sqlquery.host"="127.0.0.1", "sqlquery.port"=5432, 
+        "sqlquery.user"="postgres", "sqlquery.password"="123456")
+
+    # 连接数据库
+    sqlquery("select version()") # 当前版本
+
+    # 显示指定schema
+    sqlquery("select * from economics.t_company")
+  
+    #' PostgreSQL API 
+    #' 自定义查询函数 （手动设定shema）
+    #' @param sql 查询语句
+    #' @param search_path 检索路径
+    #' @param simplify 是否简化模式
+    #' @param verbose 息详情模式
+    sqlquery.pg <- \(sql, search_path = "public,economics", simplify = T, verbose = F, ...) dbfun( \(con) { # 连接配置
+        .log <- \(x) { if(verbose) cat(" -- ", x, "\n"); x } # 日志输出
+        search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=", ") |> 
+            sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
+        (\(.sqls = c(sql)) .sqls |> .log() |> lapply(compose(tibble, dbGetQuery), conn=con) |> (\(res) # res 结果集简化
+            if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls)) ()
+        ) () # \(.sqls)
+    }, ...) (sql) # dbfun \(con)
+  
+    #' PostgreSQL API  
+    #' 自定义执行函数 （手动设定shema）
+    #' @param sql 查询语句向量
+    #' @param search_path 检索路径
+    #' @param simplify 是否简化模式
+    #' @param verbose 信息详情模式
+    #' @param flag 事务开启标记, 需要注意PostgreSQL对于DML语句会自动进行提交，如果sql向量中同时包含有create,insert时
+    #' 后面的语句就会跳出事务，语句执行了但是没有事务内结果且并不会报错。即，你不能在一个事务中先创建后插入，必须在非事务
+    #' 环境中执行创建表与插入表的混合操作！
+    sqlexecute.pg <- \(sql, search_path="public,economics", simplify=TRUE, verbose=F, flag=F, ...) {
+        dbfun(\(con) {
+            .log <- \(x) {if(verbose) cat(" -- ", x, "\n"); x}
+            search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=",") |> 
+            sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con,statement=_)
+            tryCatch({
+                if(flag) dbBegin(con) # 开启事务
+                rs <- lapply(c(sql), function(s) {
+                    .sql <- .log(s) |> gsub(pattern="^\\s*|\\s*$", replacement="", x=_)
+                    is.ddl <- grepl("^CREATE\\s+TABLE|^ALTER|^DROP", .sql, ignore.case=T)
+                    is.insert <- grepl("^INSERT", .sql, ignore.case=T)
+                    affected_rows <- ifelse(is.ddl, # 
+                          dbSendStatement(con, .sql) |> (\(res) {n=dbGetRowsAffected(res); dbClearResult(res); n}) (),  # ddl 
+                          dbExecute(con,.sql)) # not ddl(dml)
+                    last_insert_id <- if(is.insert) tryCatch({dbGetQuery(con, "SELECT LASTVAL()") |> unlist()}, error=\(e) NA) else NA
+                    list(affected_rows=affected_rows, last_insert_id=last_insert_id)
+                }) |> do.call(rbind, args=_) 
+                if(flag) dbCommit(con)  # 开启事务
+                if(simplify && nrow(rs)==1) as.list(rs[1, ]) else rs
+            }, error=\(err) {if(flag)dbRollback(con); stop(err)})
+        }, ...) (sql)
+    }
+    
+    #' PostgreSQL API  
+    #' PostgreSQL 自增长主键（serial）并不会你手动设置主键之后进行同步，需要你手动给与同步设定，这与MySQL有很大不同，提请注意一下！
+    #' 数据表创造语句: postgresql 版本
+    ctsql.pg <- function( dfm, tbl ) {
+        .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
+        dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
+            n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
+            default_type=sprintf('varchar(%s)', n) # 默认类型
+            ) switch(t, # 类型判断
+                `logical`='boolean', # PostgreSQL布尔类型
+                `integer`=if(cls=='factor') default_type else 'integer', # 整数类型
+                `double`=if(any(grepl(pattern="Date", x=cls))) "date" else if(any(grepl(pattern="POSIXct|POSIXt", x=cls))) "timestamp with time zone" else 'double precision', # PostgreSQL浮点类型
+                `character`=default_type, # 字符类型
+                `list`='jsonb', # PostgreSQL JSONB类型
+                `raw`='bytea', # 二进制类型
+                default_type # 默认类型 
+            )) |> (\(x) { # 获取字段定义
+                if('id' %in% names(x)) x['id'] <- if(grepl('integer', x['id'])) 'serial primary key' else x['id']; # 主键处理
+                sprintf("create table %s (\n  %s \n);\n", .tbl, paste(names(x), x, collapse=",\n  ")) # 数据表创建语句 
+            }) () # SQL 创建表语句
+    }
+
+    # 数据查询
+    sqlquery.pg("select current_schema") # 当前schema是public
+    sqlquery.pg("select current_schema", "economics") # 当前schema是economics
+    sqlquery.pg("select * from economics.t_company") # 在 public,economics 中检索数据表
+ 
+    # 查询数据表
+    "economics" |> sprintf(fmt=" SELECT table_name FROM information_schema.tables 
+        WHERE table_schema='%s' AND table_type='BASE TABLE'") |> 
+        sqlquery.pg() |> unlist() |> sprintf(fmt="select * from %s") |> sqlquery.pg(verbose=T)
+    
+    # 数据表删除
+    sqlexecute.pg("drop table if exists t_iris", search_path="economics") # 查询数据
+
+    # 把 iris数据导入数据库
+    df <- cbind(id=1:dim(iris)[1], iris) # 增加主键数据
+    names(df) <- make_clean_names(names(df)) # 美化字段名
+    c(ctsql.pg, insql) |> lapply(\(f) f(df, "t_iris")) |> sqlexecute.pg(search_path="economics") # 创建表并插入数据
+    sqlquery.pg("select * from t_iris", search_path="economics", verbose=T) # 查询数据
+
 })
 
 # 指定时段，动态过滤数据
