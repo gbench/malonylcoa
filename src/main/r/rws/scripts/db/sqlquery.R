@@ -19,7 +19,7 @@
 # scriptlog <- sprintf(fmt="%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(source) 
 # --------------------------------------------------------------------------------------------------
 
-pkgs <- "RMySQL,RPostgres,tidyverse,janitor," |> # 程序包名称列表
+pkgs <- "RMySQL,RPostgres,tidyverse,janitor" |> # 程序包名称列表
   strsplit(",") |> unlist() # 程序包列表的拆解
 flags <- sapply(pkgs, \(p) substitute(require(p), list(p=p)) |> eval()) # 生成程序包是否业已加载标志
   
