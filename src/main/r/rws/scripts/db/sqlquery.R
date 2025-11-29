@@ -230,9 +230,9 @@ sqlexecute2 <- function(sql, simplify=T, ...) {
 sqlquery.pg <- \(sql, search_path = "public,economics", simplify = T, verbose = F, ...) dbfun( \(con) { # 连接配置
     .log <- \(x) { if(verbose) cat(" -- ", x, "\n"); x } # 日志输出
     search_path |> strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=", ") |> 
-        sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
+      sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
     (\(.sqls = c(sql)) .sqls |> .log() |> lapply(compose(tibble, dbGetQuery), conn=con) |> (\(res) # res 结果集简化
-        if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls)) ()
+      if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls)) ()
     ) () # \(.sqls)
 }, ...) (sql) # dbfun \(con)
 
@@ -257,8 +257,8 @@ sqlexecute.pg <- \(sql, search_path="public,economics", simplify=TRUE, verbose=F
                 is.ddl <- grepl("^CREATE\\s+TABLE|^ALTER|^DROP", .sql, ignore.case=T)
                 is.insert <- grepl("^INSERT", .sql, ignore.case=T)
                 affected_rows <- ifelse(is.ddl, # 
-                      dbSendStatement(con, .sql) |> (\(res) {n=dbGetRowsAffected(res); dbClearResult(res); n}) (),  # ddl 
-                      dbExecute(con,.sql)) # not ddl(dml)
+                  dbSendStatement(con, .sql) |> (\(res) {n=dbGetRowsAffected(res); dbClearResult(res); n}) (),  # ddl 
+                  dbExecute(con,.sql)) # not ddl(dml)
                 last_insert_id <- if(is.insert) tryCatch({dbGetQuery(con, "SELECT LASTVAL()") |> unlist()}, error=\(e) NA) else NA
                 list(affected_rows=affected_rows, last_insert_id=last_insert_id)
             }) |> do.call(rbind, args=_) 
