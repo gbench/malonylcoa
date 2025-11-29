@@ -1044,6 +1044,7 @@ local({ # 数据库写入测试
     # 显示指定schema
     sqlquery("select * from economics.t_company")
   
+    #' PostgreSQL API 
     #' 自定义查询函数 （手动设定shema）
     #' @param sql 查询语句
     #' @param search_path 检索路径
@@ -1058,12 +1059,15 @@ local({ # 数据库写入测试
         ) () # \(.sqls)
     }, ...) (sql) # dbfun \(con)
   
+    #' PostgreSQL API  
     #' 自定义执行函数 （手动设定shema）
-    #' @param sql 查询语句
+    #' @param sql 查询语句向量
     #' @param search_path 检索路径
     #' @param simplify 是否简化模式
     #' @param verbose 信息详情模式
-    #' @param flag 事务开启标记
+    #' @param flag 事务开启标记, 需要注意PostgreSQL对于DML语句会自动进行提交，如果sql向量中同时包含有create,insert时
+    #' 后面的语句就会跳出事务，语句执行了但是没有事务内结果且并不会报错。即，你不能在一个事务中先创建后插入，必须在非事务
+    #' 环境中执行创建表与插入表的混合操作！
     sqlexecute.pg <- \(sql, search_path="public,economics", simplify=TRUE, verbose=F, flag=F, ...) {
         dbfun(\(con) {
             .log <- \(x) {if(verbose) cat(" -- ", x, "\n"); x}
@@ -1071,8 +1075,8 @@ local({ # 数据库写入测试
             sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con,statement=_)
             tryCatch({
                 if(flag) dbBegin(con) # 开启事务
-                rs <- lapply(sql, function(.sql) {
-                    .sql <- .log(.sql)
+                rs <- lapply(c(sql), function(s) {
+                    .sql <- .log(s) |> gsub(pattern="^\\s*|\\s*$", replacement="", x=_)
                     is.ddl <- grepl("^CREATE\\s+TABLE|^ALTER|^DROP", .sql, ignore.case=T)
                     is.insert <- grepl("^INSERT", .sql, ignore.case=T)
                     affected_rows <- ifelse(is.ddl, # 
@@ -1087,8 +1091,10 @@ local({ # 数据库写入测试
         }, ...) (sql)
     }
     
-    # 数据表创造语句: postgresql 版本
-    ctsql <- function( dfm, tbl ) {
+    #' PostgreSQL API  
+    #' PostgreSQL 自增长主键（serial）并不会你手动设置主键之后进行同步，需要你手动给与同步设定，这与MySQL有很大不同，提请注意一下！
+    #' 数据表创造语句: postgresql 版本
+    ctsql.pg <- function( dfm, tbl ) {
         .tbl <- if(missing(tbl)) deparse( substitute( dfm ) )  else deparse( substitute( tbl ) ) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")  #  提取数据表名
         dfm |> lapply(\(e, t=typeof(e), cls=class(e), # 基础类型与class包含高级类型list
             n=as.integer(Reduce(\(acc, a) max(acc, max(acc, nchar(a))), x=as.character(e), init=0) * 1.5), # 列数据宽度
@@ -1123,7 +1129,7 @@ local({ # 数据库写入测试
     # 把 iris数据导入数据库
     df <- cbind(id=1:dim(iris)[1], iris) # 增加主键数据
     names(df) <- make_clean_names(names(df)) # 美化字段名
-    c(ctsql, insql) |> lapply(\(f) f(df, "t_iris")) |> sqlexecute.pg(search_path="economics") # 创建表并插入数据
+    c(ctsql.pg, insql) |> lapply(\(f) f(df, "t_iris")) |> sqlexecute.pg(search_path="economics") # 创建表并插入数据
     sqlquery.pg("select * from t_iris", search_path="economics", verbose=T) # 查询数据
 
 })
