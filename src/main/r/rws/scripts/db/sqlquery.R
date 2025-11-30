@@ -108,13 +108,17 @@ sqlexecute <- function(sql, simplify = T, ...) {
 #' @param tbl  数据表名
 #' @return 创建数据表SQL
 ctsql <- function(dfm, tbl) {
+  # 获取原始参数表达式
+  .dfm <- substitute(dfm)
+  .tbl <- substitute(tbl)
+  # 根据驱动类型选择合适的SQL建表函数，并计算
   getOption("sqlquery.drv") |> (\ (x) # 根据驱动类型选择合适的SQL建表函数，并创建表格
-    (if(is.null(x) || (is.atomic(x) && is.na(x))) ctsql.mysql 
+    (if(is.null(x) || (is.atomic(x) && is.na(x))) ctsql.mysql # 非法统一指向，默认是 MySQL
       else switch(x |> class() |> attr("package"), # 根据驱动的爆属性决定当前连接的是什么数据库
       "RPostgres" = ctsql.pg, # PostgreSQL
       "RMySQL" = ctsql.mysql, # MySQL
       ctsql.mysql # 默认
-    )) (dfm, tbl)) () # 根据驱动类型选择合适的SQL建表函数
+    )) |> do.call(args=list(dfm=.dfm, tbl=.tbl))) () # x 根据驱动类型选择合适的SQL建表函数，并创建表格
 }
 
 #' 创建数据表SQL
