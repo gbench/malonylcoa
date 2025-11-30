@@ -3,8 +3,40 @@
 研究个毛线！！！
 warpbreaks：经线断裂数据
 
+#  数据概览
+> head(warpbreaks)
+  breaks wool tension
+1     26    A       L
+2     30    A       L
+3     54    A       L
+4     25    A       L
+5     70    A       L
+6     52    A       L
+
+# 数据结构（构成元素）
+> str(warpbreaks)
+'data.frame':   54 obs. of  3 variables:
+ $ breaks : num  26 30 54 25 70 52 51 26 67 18 ...
+ $ wool   : Factor w/ 2 levels "A","B": 1 1 1 1 1 1 1 1 1 1 ...
+ $ tension: Factor w/ 3 levels "L","M","H": 1 1 1 1 1 1 1 1 1 2 ...
+> 
+
+# 注意：'$ wool   : Factor w/ 2 levels "A","B"' 的 "w/ 2 levels" 表示 with 2 levels 即带有两个银子水平！“w/”是with的缩写！
+
+# 维度结构: wool X tension 所长成的空间！每个坐标点进9次试验！
+library(magrittr) # 加载extract
+
+# There are measurements on 9 looms for each of the six types of warp (AL, AM, AH, BL, BM, BH).
+# 经纱类型有6种，每种类型有9台纺织机器(looms)进行测试！
+>  warpbreaks |> extract(, 2:3) |> table()
+    tension
+wool L M H
+   A 9 9 9
+   B 9 9 9
+> 
+
 # 查看A型毛线的断裂情况：请注意“Median  51.00000 21 24.00000”， L张力下A类型的毛线，更加容易断！
-data <- (\(i=wool=="A") breaks[i] |> split(tension[i]) |> lapply(summary))() |> do.call(cbind,args=_)
+data <- with(warpbreaks, (\(i=wool=="A") breaks[i] |> split(tension[i]) |> lapply(summary))() |> do.call(cbind,args=_)); data;
                L  M        H
 Min.    25.00000 12 10.00000
 1st Qu. 26.00000 18 18.00000
@@ -30,6 +62,30 @@ H   10      18     24 24.55556      28   43
 [3,]  3.5  7.5 11.5 15.5 19.5 23.5
 
 # 在R中矩阵与向量的本质都是向量，只是矩阵得维度是二维，而向量的维度是1维度！可以采用c函数,来把矩阵给拉直（扁平化成按照列顺序展开的一维向量）
+
+# 54行，3列
+> dim(warpbreaks)
+[1] 54  3
+
+# 分组汇总
+> rs <- aggregate(breaks~wool+tension, warpbreaks, summary) ; rs # 统计结果！
+  wool tension breaks.Min. breaks.1st Qu. breaks.Median breaks.Mean breaks.3rd Qu. breaks.Max.
+1    A       L    25.00000       26.00000      51.00000    44.55556       54.00000    70.00000
+2    B       L    14.00000       20.00000      29.00000    28.22222       31.00000    44.00000
+3    A       M    12.00000       18.00000      21.00000    24.00000       30.00000    36.00000
+4    B       M    16.00000       21.00000      28.00000    28.77778       39.00000    42.00000
+5    A       H    10.00000       18.00000      24.00000    24.55556       28.00000    43.00000
+6    B       H    13.00000       15.00000      17.00000    18.77778       21.00000    28.00000
+
+# 注意！rs 是只有3格变量的数据库，他的第三列是一个变量breaks, 这个值是一个矩阵！
+> str(rs)
+'data.frame':   6 obs. of  3 variables:
+ $ wool   : Factor w/ 2 levels "A","B": 1 2 1 2 1 2
+ $ tension: Factor w/ 3 levels "L","M","H": 1 1 2 2 3 3
+ $ breaks : num [1:6, 1:6] 25 14 12 16 10 13 26 20 18 21 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : NULL
+  .. ..$ : chr [1:6] "Min." "1st Qu." "Median" "Mean" ...
 
 # local 结界测试 1（结界封锁）
 x<-10
