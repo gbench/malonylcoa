@@ -1,5 +1,6 @@
 数据阅读，就是将数据内容与业务场景进行关联，获取其中数据意义（专业洞察）
 
+研究个毛线！！！
 warpbreaks：经线断裂数据
 
 # 查看A型毛线的断裂情况：请注意“Median  51.00000 21 24.00000”， L张力下A类型的毛线，更加容易断！
@@ -29,11 +30,31 @@ H   10      18     24 24.55556      28   43
 
 在R中矩阵与向量的本质都是向量，只是矩阵得维度是二维，而向量的维度是1维度！可以采用c函数,来把矩阵给拉直（扁平化成按照列顺序展开的一维向量）
 
+# local 结界测试 1（结界封锁）
+x<-10
+cat("-- local 外查看 x（before）：", x, "\n")
+local({
+  cat("-- 访问外界x：", x, "\n");
+   x <- x+1; # 结界内部修改，不会改变外部x
+   cat("-- local 内部修改x：", x, "\n")
+}); 
+cat("-- local 外查看 x（after）：", x, "，local内部的修改没有影响到外侧\n")
+
+# local 结界测试 2（冲破结界）
+x<-10
+cat("-- local 外查看 x（before）：", x, "\n")
+local({
+  cat("-- 访问外界x：", x, "\n");
+   x <<- x+1; # 使用外界修改， 可以打破结界
+   cat("-- local 内部修改x：", x, "\n")
+}); 
+cat("-- local 外查看 x（after）：", x, "，local内部的修改可以影响到外侧\n")
+
 # 添加刻度的完整绘图
 
 # 拉长矩阵
-local({
-  attach(warpbreaks)
+local({ # 使用local 创建一个私人结界，data,data2这样的变量跑不出去，不会污染外部环境！
+  attach(warpbreaks); on.exit(detach(warpbreaks)) # 展开warpbreaks中变量到当前环境
   data <- (\(i=wool=="A") breaks[i]|>split(tension[i])|>lapply(summary))() |> do.call(cbind,args=_)
   data2 <- data |> t()
   data2 |> barplot(beside=T, col=c("red","green","blue"), legend.text = colnames(data)) -> bp
@@ -42,13 +63,29 @@ local({
 })
 
 # 编写矩阵
-local({
-  attach(warpbreaks)
-  data <- (\(i=wool=="A") breaks[i]|>split(tension[i])|>lapply(summary))() |> do.call(cbind,args=_)
-  data2 <- data |> t()
-  data2 |> barplot(beside=T, col=c("red","green","blue"), legend.text = colnames(data)) -> bp
-  c(bp, data2) |> matrix(ncol=2, dimnames=list(NULL, c("x", "y"))) |> apply(1, \(p) text(p[1],p[2]+2, round(p[2])))
-  detach(warpbreaks)
+local({ # 使用local 创建一个私人结界，data,data2这样的变量跑不出去，不会污染外部环境！
+    attach(warpbreaks); on.exit(detach(warpbreaks)) # 展开warpbreaks中变量到当前环境
+    # 加载染色
+    library(RColorBrewer)
+    # 从Set1配色中选3种（Set1共9种高对比色）
+    rcols <- sample(brewer.pal(8, "Set1"), 3)  # brewer.pal(n, 配色方案)
+    data <- (\(i=wool=="A") breaks[i]|>split(tension[i])|>lapply(summary))() |> do.call(cbind,args=_)
+    data2 <- data |> t()
+    data2 |> barplot(beside=T, col=rcols, legend.text = colnames(data), ylim=c(0, max(data)*1.5)) -> bp # 增加Y轴，以保证图例不与图形相互冲突
+    c(bp, data2) |> matrix(ncol=2, dimnames=list(NULL, c("x", "y"))) |> apply(1, \(p) text(p[1],p[2]+2, round(p[2])))
+})
+
+# viridis配色是色盲友好型，且颜色渐变均匀，适合随机选择：
+install.packages("viridis")
+# with 相当于自动调用，attach 与 detach 的 local，因此 with 更加优雅！本质
+with(warpbreaks,{ # 展开warpbreaks中变量到当前环境
+    library(viridis)
+    # set.seed(123) # 生成3种随机viridis颜色（可指定范围）
+    rcols <- viridis(3, alpha = 1, begin = 0, end = 1)  # begin/end控制颜色范围
+    data <- (\(i=wool=="A") breaks[i]|>split(tension[i])|>lapply(summary))() |> do.call(cbind,args=_)
+    data2 <- data |> t()
+    data2 |> barplot(beside=T, col=rcols, legend.text = colnames(data), args.legend=list(x="topleft"), ylim=c(0, max(data)*1.2)) -> bp # 指定Y轴范围
+    c(bp, data2) |> matrix(ncol=2, dimnames=list(NULL, c("x", "y"))) |> apply(1, \(p) text(p[1],p[2]+2, round(p[2])))
 })
 
 
