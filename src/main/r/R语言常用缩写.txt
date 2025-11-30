@@ -1,0 +1,34 @@
+1. 基础语法与输出中的缩写
+w/：即 “with”，如Factor w/ 10 levels表示 “带有 10 个水平的因子”。
+obs.：即 “observations”，如'data.frame': 10 obs. of 1 variable表示数据框有 10 个观测（行）。
+var.：即 “variable”，对应上述示例中的 “变量（列）”。
+chr：即 “character”，表示字符型向量（如str()输出中的chr [1:3]）。
+int：即 “integer”，表示整数型向量。
+num：即 “numeric”，表示数值型（含整数和浮点数）向量。
+logi：即 “logical”，表示逻辑型（TRUE/FALSE）向量。
+2. 函数名中的常见缩写
+R 的基础函数和扩展包函数常使用缩写简化命名，常见的有：
+arg：即 “argument”（参数），如args()函数用于查看函数参数。
+col：即 “column”（列），如colSums()（列求和）、colMeans()（列求均值）。
+row：即 “row”（行），如rowSums()（行求和）、rowMeans()（行求均值）。
+mat：即 “matrix”（矩阵），如as.mat()（部分包中用于转换为矩阵，基础包中为as.matrix()）。
+df：即 “data.frame”（数据框），社区中常用来命名数据框对象（如df <- data.frame(...)）。
+vec：即 “vector”（向量），常用于变量命名（如vec <- c(1,2,3)）。
+fun：即 “function”（函数），如apply()中的FUN参数（指定应用的函数）。
+stat：即 “statistic”（统计量），如 ggplot2 中的stat_summary()（统计汇总）。
+geom：即 “geometry”（几何对象），如 ggplot2 中的geom_point()（点图）、geom_line()（线图）。
+fit：即 “fit”（拟合），如lm.fit()（线性模型拟合的底层函数）。
+res：即 “residuals”（残差），如resid()（提取残差）。
+coef：即 “coefficients”（系数），如coef()（提取模型系数）。
+summ：即 “summary”（汇总），如summary()（生成汇总信息）。
+idx：即 “index”（索引），常用于变量命名（如idx <- which(x>0)）。
+tmp：即 “temporary”（临时），用于命名临时变量（如tmp <- x + y）。
+3. 包名与领域缩写
+dplyr：dplyr中的 “dplyr” 源自 “data plyr”，“plyr” 是 “split-apply-combine”（拆分 - 应用 - 合并）的缩写，而 “d” 代表 data frame。
+tidyr：“tidy”（整洁）+“r”，“tidy” 指代 “tidy data”（整洁数据）。
+ggplot2：“gg” 即 “grammar of graphics”（图形语法）。
+lm：即 “linear model”（线性模型），如lm(y~x)。
+glm：即 “generalized linear model”（广义线性模型），如glm(y~x, family=binomial)。
+lmer：即 “linear mixed-effects regression”（线性混合效应回归），lme4 包中的lmer()。
+pca：即 “principal component analysis”（主成分分析），如prcomp()的结果常称 “pca 结果”。
+
