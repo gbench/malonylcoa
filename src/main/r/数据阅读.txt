@@ -1,0 +1,55 @@
+数据阅读，就是将数据内容与业务场景进行关联，获取其中数据意义（专业洞察）
+
+warpbreaks：经线断裂数据
+
+# 查看A型毛线的断裂情况：请注意“Median  51.00000 21 24.00000”， L张力下A类型的毛线，更加容易断！
+data <- (\(i=wool=="A") breaks[i]|>split(tension[i])|>lapply(summary))() |> do.call(cbind,args=_)
+               L  M        H
+Min.    25.00000 12 10.00000
+1st Qu. 26.00000 18 18.00000
+Median  51.00000 21 24.00000
+Mean    44.55556 24 24.55556
+3rd Qu. 54.00000 30 28.00000
+Max.    70.00000 36 43.00000
+
+# cbind 会将结果绑定成矩阵，barplot 会绘制矩阵，矩阵的列名是绘图的横坐标（分组名），行名是每个对应分组的bar的名称。
+data2 <- data |> t() # 转置成 tension X summay 格式的矩阵。
+data2 |> barplot(beside=T, col=c("red","green","blue"), legend.text = colnames(data)) -> bp
+# 注意bp的本质是一个每个data2（矩阵）绘图的bar的横坐标矩阵。
+> data2
+  Min. 1st Qu. Median     Mean 3rd Qu. Max.
+L   25      26     51 44.55556      54   70
+M   12      18     21 24.00000      30   36
+H   10      18     24 24.55556      28   43
+> bp
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]  1.5  5.5  9.5 13.5 17.5 21.5
+[2,]  2.5  6.5 10.5 14.5 18.5 22.5
+[3,]  3.5  7.5 11.5 15.5 19.5 23.5
+
+在R中矩阵与向量的本质都是向量，只是矩阵得维度是二维，而向量的维度是1维度！可以采用c函数,来把矩阵给拉直（扁平化成按照列顺序展开的一维向量）
+
+# 添加刻度的完整绘图
+
+# 拉长矩阵
+local({
+  attach(warpbreaks)
+  data <- (\(i=wool=="A") breaks[i]|>split(tension[i])|>lapply(summary))() |> do.call(cbind,args=_)
+  data2 <- data |> t()
+  data2 |> barplot(beside=T, col=c("red","green","blue"), legend.text = colnames(data)) -> bp
+  cbind(x=c(bp), y=c(data2)) |> apply(1, \(p) text(p[1],p[2]+2, round(p[2])))
+  detach(warpbreaks)
+})
+
+# 编写矩阵
+local({
+  attach(warpbreaks)
+  data <- (\(i=wool=="A") breaks[i]|>split(tension[i])|>lapply(summary))() |> do.call(cbind,args=_)
+  data2 <- data |> t()
+  data2 |> barplot(beside=T, col=c("red","green","blue"), legend.text = colnames(data)) -> bp
+  c(bp, data2) |> matrix(ncol=2, dimnames=list(NULL, c("x", "y"))) |> apply(1, \(p) text(p[1],p[2]+2, round(p[2])))
+  detach(warpbreaks)
+})
+
+
+
