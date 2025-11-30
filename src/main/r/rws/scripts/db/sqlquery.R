@@ -110,7 +110,7 @@ sqlexecute <- function(sql, simplify = T, ...) {
 ctsql <- function(dfm, tbl) {
   # 获取原始参数表达式
   .dfm <- substitute(dfm)
-  .tbl <- substitute(tbl)
+  .tbl <- if(missing(tbl)) deparse(substitute(dfm)) else substitute(tbl)
   # 根据驱动类型选择合适的SQL建表函数，并计算
   getOption("sqlquery.drv") |> (\ (x) # 根据驱动类型选择合适的SQL建表函数，并创建表格
     (if(is.null(x) || (is.atomic(x) && is.na(x))) ctsql.mysql # 非法统一指向，默认是 MySQL
