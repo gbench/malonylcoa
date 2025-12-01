@@ -1,0 +1,38 @@
+# ---------------------------------------------------------------------
+# R 中结合匿名环境、callCC（续体传递风格）和Reduce实现的 “提前终止累加” 逻辑
+# R可以通过 Reduce 与 callCC来实现一个带有下标索引版本的for+break
+# callCC(\(k) ... ) k 参数就是 函数风格的break, 提前终止循环！
+# ---------------------------------------------------------------------
+
+# 基础数据
+xs <- seq(10) |> rev() # 源数据
+
+# 使用reduce 实现一个for 循环
+with((\(n=0) list(.i=\() n, .next=\() n<<-n+1))(), # 定义一个索引遍历器：{.i:当前索引读取器, .next:生成下一个索引}
+    callCC(\(k) Reduce(init=0, x=xs, f=\(acc, a, i=.i()) # 使用i遍历x值
+        if(.next()<10) {cat("#", i, ":", a, "\n"); acc+a} else k(acc))))
+
+# for 版本
+acc <- 0
+for( i in seq(9)) {
+  acc <- acc+xs[i]
+}
+
+acc
+
+# ---------------------------------------------------------------------
+嵌套循环
+# ---------------------------------------------------------------------
+# R版本
+matrix(1:5, nrow=5, ncol=2, dimnames=list(NULL,c("x","y"))) |> data.frame() |> 
+    expand.grid() |> apply(1,\(p)with(as.list(p),x+y)) |> matrix(ncol=5)
+
+# for 版本
+acc <- matrix(NA,nrow=5, ncol=5)
+for(i in seq(1:5)) {
+    for(j in seq(1:5)) {
+        acc[i, j] <- i+j
+    }
+}
+
+acc
