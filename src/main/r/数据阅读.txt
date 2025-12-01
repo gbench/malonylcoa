@@ -1,0 +1,337 @@
+数据阅读，就是将数据内容与业务场景进行关联，获取其中数据意义（专业洞察）
+
+研究个毛线！！！
+warpbreaks：经线断裂数据
+
+#  数据概览
+> head(warpbreaks)
+  breaks wool tension
+1     26    A       L
+2     30    A       L
+3     54    A       L
+4     25    A       L
+5     70    A       L
+6     52    A       L
+
+# 数据结构（构成元素），我们我们很容易看出这是一个由breaks,wool(种类因子),tension(程度因子)3个变量的构成关系数据
+# 可以简化成key-value结构：{key:(wool,tension), value:breaks}。 key是分组（维度），或者说value分组到key所张成的空间里
+> str(warpbreaks)
+'data.frame':   54 obs. of  3 variables:
+ $ breaks : num  26 30 54 25 70 52 51 26 67 18 ...
+ $ wool   : Factor w/ 2 levels "A","B": 1 1 1 1 1 1 1 1 1 1 ...
+ $ tension: Factor w/ 3 levels "L","M","H": 1 1 1 1 1 1 1 1 1 2 ...
+> 
+
+# 注意：'$ wool   : Factor w/ 2 levels "A","B"' 的 "w/ 2 levels" 表示 with 2 levels 即带有两个银子水平！“w/”是with的缩写！
+
+# 维度结构: wool X tension 所长成的空间！每个坐标点进9次试验！
+library(magrittr) # 加载extract
+
+# 看到因子（其实就是天然的分组bin，于是table的count它）
+# There are measurements on 9 looms for each of the six types of warp (AL, AM, AH, BL, BM, BH).
+# 经纱类型有6种，每种类型有9台纺织机器(looms)进行测试！
+>  warpbreaks |> extract(, 2:3) |> table()
+    tension
+wool L M H
+   A 9 9 9
+   B 9 9 9
+> 
+
+# 查看A型毛线的断裂情况：请注意“Median  51.00000 21 24.00000”， L张力下A类型的毛线，更加容易断！
+data <- with(warpbreaks, (\(i=wool=="A") breaks[i] |> split(tension[i]) |> lapply(summary))() |> do.call(cbind,args=_)); data;
+               L  M        H
+Min.    25.00000 12 10.00000
+1st Qu. 26.00000 18 18.00000
+Median  51.00000 21 24.00000
+Mean    44.55556 24 24.55556
+3rd Qu. 54.00000 30 28.00000
+Max.    70.00000 36 43.00000
+
+# cbind 会将结果绑定成矩阵，barplot 会绘制矩阵，矩阵的列名是绘图的横坐标（分组名），行名是每个对应分组的bar的名称。
+data2 <- data |> t() # 转置成 tension X summay 格式的矩阵。
+data2 |> barplot(beside=T, col=c("red","green","blue"), legend.text=colnames(data)) -> bp
+
+# 注意bp的本质是一个每个data2（矩阵）绘图的bar的横坐标矩阵。
+> data2
+  Min. 1st Qu. Median     Mean 3rd Qu. Max.
+L   25      26     51 44.55556      54   70
+M   12      18     21 24.00000      30   36
+H   10      18     24 24.55556      28   43
+> bp
+     [,1] [,2] [,3] [,4] [,5] [,6]
+[1,]  1.5  5.5  9.5 13.5 17.5 21.5
+[2,]  2.5  6.5 10.5 14.5 18.5 22.5
+[3,]  3.5  7.5 11.5 15.5 19.5 23.5
+
+# 在R中矩阵与向量的本质都是向量，只是矩阵得维度是二维，而向量的维度是1维度！可以采用c函数,来把矩阵给拉直（扁平化成按照列顺序展开的一维向量）
+
+# 54行，3列
+> dim(warpbreaks)
+[1] 54  3
+
+# 分组汇总
+> rs <- aggregate(breaks~wool+tension, warpbreaks, summary) ; rs # 统计结果！
+  wool tension breaks.Min. breaks.1st Qu. breaks.Median breaks.Mean breaks.3rd Qu. breaks.Max.
+1    A       L    25.00000       26.00000      51.00000    44.55556       54.00000    70.00000
+2    B       L    14.00000       20.00000      29.00000    28.22222       31.00000    44.00000
+3    A       M    12.00000       18.00000      21.00000    24.00000       30.00000    36.00000
+4    B       M    16.00000       21.00000      28.00000    28.77778       39.00000    42.00000
+5    A       H    10.00000       18.00000      24.00000    24.55556       28.00000    43.00000
+6    B       H    13.00000       15.00000      17.00000    18.77778       21.00000    28.00000
+
+# 注意！rs 是只有3格变量的数据库，他的第三列是一个变量breaks, 这个值是一个矩阵！
+> str(rs)
+'data.frame':   6 obs. of  3 variables:
+ $ wool   : Factor w/ 2 levels "A","B": 1 2 1 2 1 2
+ $ tension: Factor w/ 3 levels "L","M","H": 1 1 2 2 3 3
+ $ breaks : num [1:6, 1:6] 25 14 12 16 10 13 26 20 18 21 ...
+  ..- attr(*, "dimnames")=List of 2
+  .. ..$ : NULL
+  .. ..$ : chr [1:6] "Min." "1st Qu." "Median" "Mean" ...
+
+# local 结界测试 1（结界封锁）
+x<-10
+cat("-- local 外查看 x（before）：", x, "\n")
+local({
+  cat("-- 访问外界x：", x, "\n");
+   x <- x+1; # 结界内部修改，不会改变外部x
+   cat("-- local 内部修改x：", x, "\n")
+}); 
+cat("-- local 外查看 x（after）：", x, "，local内部的修改没有影响到外侧\n")
+
+# local 结界测试 2（冲破结界）
+x<-10
+cat("-- local 外查看 x（before）：", x, "\n")
+local({
+  cat("-- 访问外界x：", x, "\n");
+   x <<- x+1; # 使用外界修改， 可以打破结界
+   cat("-- local 内部修改x：", x, "\n")
+}); 
+cat("-- local 外查看 x（after）：", x, "，local内部的修改可以影响到外侧\n")
+
+# 添加刻度的完整绘图
+
+# 拉长矩阵
+local({ # 使用local 创建一个私人结界，data, data2这样的变量跑不出去，不会污染外部环境！
+  attach(warpbreaks); op <- par(mfrow=c(1, 2)); on.exit({detach(warpbreaks); par(op)}) # 展开warpbreaks中变量到当前环境
+  retrieve <- (\(level) (\(i=wool==level) breaks[i] |> split(tension[i]) |> lapply(summary))() |> do.call(rbind, args=_))  # tension X summary 的矩阵
+  levels(wool) |> lapply(\(level, data=retrieve(level)) { # 遍历wool的各个水平进行张力程度的分组绘图
+      bp <- data |> barplot(beside=T, col=c("red", "blue", "green"), legend.text=rownames(data), ylim=c(0, max(data)*1.5), main=gettextf("WOOL %s", level))
+      cbind(x=c(bp), y=c(data)) |> apply(1, \(p) with(as.list(p), text(x, y+3, round(y)))) # cbind, p:代表point
+  }) # levels(wool) 
+}) # local
+
+# 拉长矩阵
+local({ # 使用local 创建一个私人结界，data, data2这样的变量跑不出去，不会污染外部环境！
+  attach(warpbreaks); op <- par(mfrow=c(1, 2)); on.exit({detach(warpbreaks); par(op)}) # 展开warpbreaks中变量到当前环境
+  retrieve <- (\(level) (\(i=wool==level) breaks[i] |> split(tension[i]) |> lapply(summary))() |> do.call(rbind, args=_))  # tension X summary 的矩阵
+  levels(wool) |> lapply(\(level, data=retrieve(level)) { # 遍历wool的各个水平进行张力程度的分组绘图
+     clrs <- c("red", "green", "blue") # 基础颜色
+     plot(NA, xlim=c(1, ncol(data)), ylim=range(data), xlab="", ylab="", main=gettextf("WOOL %s", level), xaxt="n")  # 关闭默认X轴, 初始化空画布（仅设置坐标轴范围而无数据）
+     axis(side=1, at=1:ncol(data) , labels=colnames(data), las=1)  # las=2让标签垂直，避免重叠,  las=1 表示水平
+     legend("topleft",  legend=rownames(data), col=clrs, lty=1, lwd=2, title="Tension", bty="n")  # 添加图例
+     data |> apply(1, \(x, colgen) lines(x, col=colgen()), colgen=(\(n=0, cols=clrs) \() cols[((n<<-n+1)-1)%%3+1]) ()) # 绘制线形图, 使用匿名闭包创建颜色clr生成器
+  }) # levels(wool) 
+}) # local
+
+# 关闭图形文件
+dev.off()
+
+# 使用图像文件，打开绘图窗口，但是会创建绘图文件！
+# 编写矩阵
+local({ # 使用local 创建一个私人结界，data,data2这样的变量跑不出去，不会污染外部环境！
+    attach(warpbreaks); on.exit(detach(warpbreaks)) # 展开warpbreaks中变量到当前环境
+    # 加载染色
+    library(RColorBrewer)
+    # 从Set1配色中选3种（Set1共9种高对比色）
+    rcols <- sample(brewer.pal(8, "Set1"), 3)  # brewer.pal(n, 配色方案)
+    retrieve <- \(level, i=wool==level) breaks[i] |> split(tension[i]) |> lapply(summary) |> do.call(rbind, args=_) # tension X summary 的矩阵
+    assign("data", retrieve("A")) |> barplot(beside=T, col=rcols, legend.text=rownames(data), args.legend=list(x="topleft"), ylim=c(0, max(data)*1.2)) -> bp # 指定Y轴范围
+    c(bp, data) |> matrix(ncol=2, dimnames=list(NULL, c("x", "y"))) |> apply(1, \(p) with(as.list(p), text(x, y+3, round(y)))) # 绘制图数字
+})
+
+# 查看当前打开的绘图设备文件列表
+> dev.list()
+# windows 
+#      2 
+
+# 关闭所有绘图窗口
+dev.list() |> lapply(dev.off)
+
+# ----------------------------------------------------------------------------------------------------
+# R 的绘图需要 “设备” 作为载体：
+# 交互式设备：比如 RStudio 的 Plots 面板、RGui 的绘图窗口（默认打开的设备）；
+# 文件设备：比如用png()/pdf()打开的文件（需要手动创建和关闭）。
+# 当你用png()/pdf()等函数时，相当于打开了一个 “虚拟的文件绘图设备”，
+# 所有绘图命令都会输出到这个设备中；而dev.off()就是关闭这个设备并保存文件—— 如果不执行dev.off()，
+# 文件会一直处于 “占用状态”，无法正常打开或查看内容。
+# 
+# dev.off()的作用
+# 关闭文件设备：将绘图内容写入文件并释放资源；
+# 返回默认设备：如果之前有交互式设备（如 RStudio Plots），关闭文件设备后会切回默认设备；
+# 验证设备状态：返回关闭设备的编号（成功）或报错（无设备可关）
+# ----------------------------------------------------------------------------------------------------
+
+# 使用图像文件，不会打开绘图窗口，但是会创建绘图文件！
+# with 相当于自动调用，attach 与 detach 的 local，因此 with 更加优雅！本质
+with(warpbreaks,{ # 展开warpbreaks中变量到当前环境
+    # 打开pdf设备文件！
+    # pdf("warpbreaks_plot.pdf", width = 8, height = 6)  # 尺寸单位：英寸
+    png("warpbreaks_plot.png", width = 1024, height = 600)  # 尺寸单位：像素（pixel）
+    # dev.off()是文件绘图的 “收尾操作”—— 打开设备（png()/pdf()）→ 绘图 → 关闭设备（dev.off()），
+    on.exit(dev.off())
+    
+    # viridis配色是色盲友好型，且颜色渐变均匀，适合随机选择：
+    # install.packages("viridis")
+    # 加载颜色库
+    library(viridis)
+    # set.seed(123) # 生成3种随机viridis颜色（可指定范围）
+    rcols <- viridis(3, alpha=1, begin=0, end=1)  # begin/end控制颜色范围
+    
+    # 数据准备&绘图
+    retrieve <- \(level, i=wool==level) breaks[i] |> split(tension[i]) |> lapply(summary) |> do.call(rbind, args=_) # tension X summary 的矩阵
+    assign("data", retrieve("A")) |> barplot(beside=T, col=rcols, legend.text=rownames(data), args.legend=list(x="topleft"), ylim=c(0, max(data)*1.2)) -> bp # 指定Y轴范围
+    c(bp, data) |> matrix(ncol=2, dimnames=list(NULL, c("x", "y"))) |> apply(1, \(p) with(as.list(p), text(x, y+3, round(y)))) # 绘制图数字
+})
+
+# ---------------------------------------------------------------------
+# 空间分解
+# ---------------------------------------------------------------------
+af <- \(s) strsplit(s, "[,[:blank:]]+")|> unlist() |> as.factor() # 因子转换函数
+
+# 空间分解: R 中数据的存储是按照高维优先的顺序来进行存储（比如：列的维度要比行高级，因此，R矩阵的数据顺序就是列优先存放）
+# 观察warpbreaks中的数据可以发现，warpbreaks数据的排序方式是ORDER BY(wool,tension)的模式的
+# 因为，tension 是交替存放的
+# > warpbreaks$tension
+#  [1] L L L L L L L L L M M M M M M M M M H H H H H H H H H L L L L L L L L L M M M M M M M M M H H H H H H H H H
+# Levels: L M H
+#
+# 而，wool 是连续存放，wool比tension的维度要高级
+# > warpbreaks$wool
+#  [1] A A A A A A A A A A A A A A A A A A A A A A A A A A A B B B B B B B B B B B B B B B B B B B B B B B B B B B
+# Levels: A B
+# 
+# 因此当我们将其组织成连续数据结构时候:wool需要放在最高维度, 即按照下述方式进行组织：
+as <- with(warpbreaks, breaks |> structure(dim=c(9, 3, 2), dimnames=list(gl(9, 1), levels(tension), levels(wool))))
+# 或者，我们自己生成因子
+bs <- warpbreaks$breaks|>structure(dim=c(9, 3, 2), dimnames=list(gl(9, 1), af("L,M,H"), af("A,B")))
+cs <- warpbreaks$breaks|>structure(dim=c(9, 3, 2), dimnames=list(NULL, af("L,M,H"), af("A,B"))) # 低维的名称可以省略
+as==bs
+
+# , , A
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+# 
+# , , B
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+
+bs==cs
+
+# , , A
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+# 
+# , , B
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+
+# 提取BH数据
+with(warpbreaks, warpbreaks[wool=="B" & tension=="H", ])$breaks == bs[, "H", "B"]
+# [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+#
+# 提取AL数据
+with(warpbreaks, warpbreaks[wool=="B" & tension=="L", ])$breaks == bs[, "L", "B"]
+# [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+
+# 一旦我们把数据breaks维度分解成高维数组bs以后
+# 我们就可以使用apply函数对bs进行维度统计(统计的数据依次存在
+# c(3, 2) 是指按照 wool(3)与tension(2)的维度顺序进行遍历统计，
+# 可以理解为对路径模式是wool/tension的形式的树形结构进行深度遍历。
+# 即 先获得wool的A,然后把A在tension维度上(L,M,N)进行依次的递归展开，
+# 直至进入MARGIN的中点（叶子节点）
+rs1 <- bs |> apply(MARGIN=c(3, 2), FUN=summary); rs1
+
+# , , A
+# 
+#                L  M        H
+# Min.    25.00000 12 10.00000
+# 1st Qu. 26.00000 18 18.00000
+# Median  51.00000 21 24.00000
+# Mean    44.55556 24 24.55556
+# 3rd Qu. 54.00000 30 28.00000
+# Max.    70.00000 36 43.00000
+# 
+# , , B
+# 
+#                L        M        H
+# Min.    14.00000 16.00000 13.00000
+# 1st Qu. 20.00000 21.00000 15.00000
+# Median  29.00000 28.00000 17.00000
+# Mean    28.22222 28.77778 18.77778
+# 3rd Qu. 31.00000 39.00000 21.00000
+# Max.    44.00000 42.00000 28.00000
+
+# 使用aggregate进行分组统计
+rs2 <- aggregate(breaks~wool+tension, data=warpbreaks, FUN=summary); rs2
+# 
+#   wool tension breaks.Min. breaks.1st Qu. breaks.Median breaks.Mean breaks.3rd Qu. breaks.Max.
+# 1    A       L    25.00000       26.00000      51.00000    44.55556       54.00000    70.00000
+# 2    B       L    14.00000       20.00000      29.00000    28.22222       31.00000    44.00000
+# 3    A       M    12.00000       18.00000      21.00000    24.00000       30.00000    36.00000
+# 4    B       M    16.00000       21.00000      28.00000    28.77778       39.00000    42.00000
+# 5    A       H    10.00000       18.00000      24.00000    24.55556       28.00000    43.00000
+# 6    B       H    13.00000       15.00000      17.00000    18.77778       21.00000    28.00000
+
+# 此时你会发现：rs1[,"B","H"] 与 with(rs2, rs2[wool=="B" & tension=="H", ]) 一样
+# > rs1[,"B","H"]
+#     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+# 13.00000 15.00000 17.00000 18.77778 21.00000 28.00000 
+#
+# > with(rs2, rs2[wool=="B" & tension=="H", ])
+#   wool tension breaks.Min. breaks.1st Qu. breaks.Median breaks.Mean breaks.3rd Qu. breaks.Max.
+# 6    B       H    13.00000       15.00000      17.00000    18.77778       21.00000    28.00000
+# 
+# > rs1[, "B", "H"] == with(rs2, rs2[wool=="B" & tension=="H", ])[, -c(1,2)]
+#      Min. 1st Qu. Median Mean 3rd Qu. Max.
+# [1,] TRUE    TRUE   TRUE TRUE    TRUE TRUE
+
+
+
+

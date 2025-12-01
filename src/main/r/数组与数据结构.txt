@@ -565,3 +565,142 @@ sample(seq_along(iris), 3) |> # 随机生成中心点
      sweep(iris[, -5], 2, p) |> `^`(x=_, y=2) |> # 计算iris数据点与i号各个坐标差的平方， sweep 按照指定维度轴向2(第二维度，行方向）批量剔除中心点p坐标。(x-x0)
        apply(1, compose(sqrt, sum))) |> # 计算各iris数据点与i号点间的距离（按照行方向应用）,结果矩阵 (数据点（行方向）* 中心点（列方向))
    apply(1, which.min) # 获得距离最近的中心的编号
+
+
+# ---------------------------------------------------------------------
+# 空间分解
+# ---------------------------------------------------------------------
+af <- \(s) strsplit(s, "[,[:blank:]]+")|> unlist() |> as.factor() # 因子转换函数
+
+# 空间分解: R 中数据的存储是按照高维优先的顺序来进行存储（比如：列的维度要比行高级，因此，R矩阵的数据顺序就是列优先存放）
+# 观察warpbreaks中的数据可以发现，warpbreaks数据的排序方式是ORDER BY(wool,tension)的模式的
+# 因为，tension 是交替存放的
+# > warpbreaks$tension
+#  [1] L L L L L L L L L M M M M M M M M M H H H H H H H H H L L L L L L L L L M M M M M M M M M H H H H H H H H H
+# Levels: L M H
+#
+# 而，wool 是连续存放，wool比tension的维度要高级
+# > warpbreaks$wool
+#  [1] A A A A A A A A A A A A A A A A A A A A A A A A A A A B B B B B B B B B B B B B B B B B B B B B B B B B B B
+# Levels: A B
+# 
+# 因此当我们将其组织成连续数据结构时候:wool需要放在最高维度, 即按照下述方式进行组织：
+as <- with(warpbreaks, breaks |> structure(dim=c(9, 3, 2), dimnames=list(gl(9, 1), levels(tension), levels(wool))))
+# 或者，我们自己生成因子
+bs <- warpbreaks$breaks|>structure(dim=c(9, 3, 2), dimnames=list(gl(9, 1), af("L,M,H"), af("A,B")))
+cs <- warpbreaks$breaks|>structure(dim=c(9, 3, 2), dimnames=list(NULL, af("L,M,H"), af("A,B"))) # 低维的名称可以省略
+as==bs
+
+# , , A
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+# 
+# , , B
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+
+bs==cs
+
+# , , A
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+# 
+# , , B
+# 
+#      L    M    H
+# 1 TRUE TRUE TRUE
+# 2 TRUE TRUE TRUE
+# 3 TRUE TRUE TRUE
+# 4 TRUE TRUE TRUE
+# 5 TRUE TRUE TRUE
+# 6 TRUE TRUE TRUE
+# 7 TRUE TRUE TRUE
+# 8 TRUE TRUE TRUE
+# 9 TRUE TRUE TRUE
+
+# 提取BH数据
+with(warpbreaks, warpbreaks[wool=="B" & tension=="H", ])$breaks == bs[, "H", "B"]
+# [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+#
+# 提取AL数据
+with(warpbreaks, warpbreaks[wool=="B" & tension=="L", ])$breaks == bs[, "L", "B"]
+# [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+
+# 一旦我们把数据breaks维度分解成高维数组bs以后
+# 我们就可以使用apply函数对bs进行维度统计(统计的数据依次存在
+# c(3, 2) 是指按照 wool(3)与tension(2)的维度顺序进行遍历统计，
+# 可以理解为对路径模式是wool/tension的形式的树形结构进行深度遍历。
+# 即 先获得wool的A,然后把A在tension维度上(L,M,N)进行依次的递归展开，
+# 直至进入MARGIN的中点（叶子节点）
+rs1 <- bs |> apply(MARGIN=c(3, 2), FUN=summary); rs1
+
+# , , A
+# 
+#                L  M        H
+# Min.    25.00000 12 10.00000
+# 1st Qu. 26.00000 18 18.00000
+# Median  51.00000 21 24.00000
+# Mean    44.55556 24 24.55556
+# 3rd Qu. 54.00000 30 28.00000
+# Max.    70.00000 36 43.00000
+# 
+# , , B
+# 
+#                L        M        H
+# Min.    14.00000 16.00000 13.00000
+# 1st Qu. 20.00000 21.00000 15.00000
+# Median  29.00000 28.00000 17.00000
+# Mean    28.22222 28.77778 18.77778
+# 3rd Qu. 31.00000 39.00000 21.00000
+# Max.    44.00000 42.00000 28.00000
+
+# 使用aggregate进行分组统计
+rs2 <- aggregate(breaks~wool+tension, data=warpbreaks, FUN=summary); rs2
+# 
+#   wool tension breaks.Min. breaks.1st Qu. breaks.Median breaks.Mean breaks.3rd Qu. breaks.Max.
+# 1    A       L    25.00000       26.00000      51.00000    44.55556       54.00000    70.00000
+# 2    B       L    14.00000       20.00000      29.00000    28.22222       31.00000    44.00000
+# 3    A       M    12.00000       18.00000      21.00000    24.00000       30.00000    36.00000
+# 4    B       M    16.00000       21.00000      28.00000    28.77778       39.00000    42.00000
+# 5    A       H    10.00000       18.00000      24.00000    24.55556       28.00000    43.00000
+# 6    B       H    13.00000       15.00000      17.00000    18.77778       21.00000    28.00000
+
+# 此时你会发现：rs1[,"B","H"] 与 with(rs2, rs2[wool=="B" & tension=="H", ]) 一样
+# > rs1[,"B","H"]
+#     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+# 13.00000 15.00000 17.00000 18.77778 21.00000 28.00000 
+#
+# > with(rs2, rs2[wool=="B" & tension=="H", ])
+#   wool tension breaks.Min. breaks.1st Qu. breaks.Median breaks.Mean breaks.3rd Qu. breaks.Max.
+# 6    B       H    13.00000       15.00000      17.00000    18.77778       21.00000    28.00000
+# 
+# > rs1[, "B", "H"] == with(rs2, rs2[wool=="B" & tension=="H", ])[, -c(1,2)]
+#      Min. 1st Qu. Median Mean 3rd Qu. Max.
+# [1,] TRUE    TRUE   TRUE TRUE    TRUE TRUE

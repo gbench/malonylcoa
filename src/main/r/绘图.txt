@@ -1,3 +1,28 @@
+# ------------------------------------------------
+# R语言绘图概述
+# R的绘图是通过以下绘图设备文件的模型进行的
+# 1）创建绘图设备文件( pdf, png 等函数)
+# 2）写入绘图文件设备文件（plot，如果没有指定绘图设备文件, plot 会创建一个 窗口绘图设备文件！）
+# 3)  关闭绘图设备文件(dev.off)
+# 4）可以通过dev.list函数来进行绘图设备文件的管理（查看与关闭）
+# 绘图结构：
+# legend: 绘图图例(x,y:坐标位置（x可以关键字,如topleft），col:颜色, lty:线型, lwd=线宽, title:标题, bty:边框类型, legend:图例标签向量)
+# axis: 绘图坐标轴(side:坐标轴位置(1=下,2=左,3=上,4=右),at:坐标刻度,labels:坐标刻度名称,las:标签方向,tick:是否显示刻度线)
+# plot: 绘图数据写入(x:水平轴坐标,y:垂直轴坐标,xlim:水平轴范围,ylim:垂直轴范围,xlab:水平轴名称,ylab:垂直轴名称,
+#         type:绘图类型(p=点,l=线,b=点线),main:主标题,sub:副标题,pch:点样式,col:颜色,lwd:线宽,lty:线型)
+# par: 全局绘图参数设置(mfrow/mfcol:多图布局,mar:边距,oma:外边界,cex:字体缩放,mgp:坐标轴标签位置)
+# lines: 添加线条(x,y:坐标,col:颜色,lwd:线宽,lty:线型)
+# points: 添加散点(x,y:坐标,pch:点样式,col:颜色,cex:点大小)
+# text: 添加文本(x,y:坐标,labels:文本内容,cex:字体大小,col:颜色,pos:位置(1=下,2=左,3=上,4=右))
+# mtext: 边距文本(text:文本内容,side:位置,line:边距线数,cex:字体大小)
+# abline: 添加参考线(h=水平线,v=垂直线,a/b:斜率截距,col:颜色,lty:线型)
+# rect/polygon: 添加矩形/多边形(xleft/ybottom/xright/ytop:矩形坐标,x/y:多边形顶点,col:填充色,border:边框色)
+# hist: 直方图(x:数据,breaks:分组数,col:填充色,border:边框色,main:标题,xlab:轴标签)
+# boxplot: 箱线图(x:数据,col:颜色,main:标题,xlab/ylab:轴标签,horizontal:是否水平)
+# barplot: 条形图(height:高度,names.arg:类别标签,col:颜色,main:标题,xlab/ylab:轴标签)
+# pie: 饼图(x:数值,labels:标签,col:颜色,main:标题)
+# ------------------------------------------------
+
 # 迭代函数
 iterate <- function (init, f, n=10) if(n<1) c() else c(init, iterate(f(init), f, n-1))
 
@@ -20,3 +45,146 @@ plots(\() c(cos,sin) |> lapply(\(f) f(seq(-pi, pi, len=100))) |> do.call(plot, a
 
 # 线性回归散点图与回归线
 (\(mod=lm(mpg~wt, mtcars)) mtcars |> with({plot(wt, mpg); lines(wt, predict(mod, data.frame(wt)), type="b", col='red')})) ()
+
+# 拉长矩阵
+local({ # 使用local 创建一个私人结界，data, data2这样的变量跑不出去，不会污染外部环境！
+  attach(warpbreaks); op <- par(mfrow=c(1, 2)); on.exit({detach(warpbreaks); par(op)}) # 展开warpbreaks中变量到当前环境
+  retrieve <- (\(level) (\(i=wool==level) breaks[i] |> split(tension[i]) |> lapply(summary))() |> do.call(rbind, args=_))  # tension X summary 的矩阵
+  levels(wool) |> lapply(\(level, data=retrieve(level)) { # 遍历wool的各个水平进行张力程度的分组绘图
+     clrs <- c("red", "green", "blue") # 基础颜色
+     plot(NA, xlim=c(1, ncol(data)), ylim=range(data), xlab="", ylab="", main=gettextf("WOOL %s", level), xaxt="n")  # 关闭默认X轴, 初始化空画布（仅设置坐标轴范围而无数据）
+     axis(side=1, at=1:ncol(data) , labels=colnames(data), las=1)  # las=2让标签垂直，避免重叠,  las=1 表示水平
+     legend("topleft",  legend=rownames(data), col=clrs, lty=1, lwd=2, title="Tension", bty="n")  # 添加图例
+     data |> apply(1, \(x, colgen) lines(x, col=colgen()), colgen=(\(n=0, cols=clrs) \() cols[((n<<-n+1)-1)%%3+1]) ()) # 绘制线形图, 使用匿名闭包创建颜色clr生成器
+  }) # levels(wool) 
+}) # local
+
+# ------------------------------------------------
+# plot指定绘图设备的方法
+# R中可通过设备编号或激活状态控制plot的输出目标，实现多设备精准写入
+# ------------------------------------------------
+
+#  查看pdf字体！
+# > pdfFonts()|> names()
+#  [1] "serif"                "sans"                 "mono"                
+#  [4] "AvantGarde"           "Bookman"              "Courier"             
+#  [7] "Helvetica"            "Helvetica-Narrow"     "NewCenturySchoolbook"
+# [10] "Palatino"             "Times"                "URWGothic"           
+# [13] "URWBookman"           "NimbusMon"            "NimbusSan"           
+# [16] "URWHelvetica"         "NimbusSanCond"        "CenturySch"          
+# [19] "URWPalladio"          "NimbusRom"            "URWTimes"            
+# [22] "URW2Helvetica"        "URW2HelveticaItalic"  "URW2Times"           
+# [25] "NimbusMonoPS"         "ArialMT"              "Japan1"              
+# [28] "Japan1HeiMin"         "Japan1GothicBBB"      "Japan1Ryumin"        
+# [31] "Korea1"               "Korea1deb"            "CNS1"                
+# [34] "GB1"             
+
+# 1. 多设备创建与激活指定
+# > dev.list()
+# NULL
+# > 
+
+# 创建多个绘图设备并记录ID(创建设备的函数,pdf,png,win.graph都返回NULL,序号通过dev.cur()来获得设备号)
+pdf("a.pdf", family = "GB1")  # pdf 设备，默认(不支持中文）需要指定字体，GB1中文简体
+png("b.png")  # 图片设备
+win.graph()  # Windows系统得窗口文件！
+
+# > dev.list()
+#     pdf     png windows 
+#       2       3       4 
+# > 	
+
+# 激活指定设备后绘图
+dev.set(dev.list()[[2]])   # 激活设备2（PNG）
+plot(rnorm(50), main = "写入PNG设备")  # plot将写入设备2
+# 
+dev.set(dev.list()[[1]])  # 激活设备1（PDF）
+plot(1:10, main = "写入PDF设备")      # plot将写入设备1
+# 
+# > dev.list()
+#     pdf     png windows 
+#       2       3       4 
+# > 
+# > dev.cur()
+# pdf 
+#   2 
+# 回环
+# > dev.prev()
+# windows 
+#       4
+
+# 直接通过ID切换设备绘图
+dev.set(dev.prev())
+# windows 
+#      4 
+plot(mtcars$mpg, mtcars$disp, main = "设备1：PDF")
+
+# > dev.prev()
+# png 
+#   3 
+# 
+dev.set(dev.prev())
+# png 
+#   3 
+# 绘制直方图
+hist(rnorm(100), main = "设备2：PNG")
+
+# 关闭所有文件
+dev.list() |> lapply(dev.off)
+# $png
+# windows 
+#       4 
+
+# $windows
+# null device 
+#           1 
+
+# 3. 设备管理辅助函数
+dev.list()          # 查看所有打开的设备及ID
+dev.cur()           # 获取当前活动设备ID
+dev.next()/dev.prev() # 切换前后设备
+
+# 4. 实战示例：多设备分图绘制
+# 创建3个设备
+devs <- list()
+pdf("plot1.pdf", family = "GB1"); devs <- append(devs, dev.cur())  # 记录设备号
+png("plot2.png"); devs <- append(devs, dev.cur())  # 记录设备号
+svg("plot3.svg"); devs <- append(devs, dev.cur())  # 记录设备号
+
+# > devs
+# $pdf
+# [1] 2
+# 
+# $png
+[1] 3
+# 
+# $svg
+# [1] 4
+
+# 查看设备
+dev.list()  
+# pdf png svg 
+#   2   3   4 
+
+# 设备1绘图
+dev.set(devs[[1]])
+plot(1:5, col="red", main="PDF设备")
+
+# 设备2绘图
+dev.set(devs[[2]])
+plot(1:5, col="blue", main="PNG设备")
+
+# 设备3绘图
+dev.set(devs[[3]])
+plot(1:5, col="green", main="SVG设备")
+
+# 关闭所有设备(dev.off一次只能关闭一个文件）
+dev.list() |> lapply(dev.off)
+
+# ------------------------------------------------
+# 注意事项
+# 1. plot默认写入当前激活设备（dev.cur()返回的设备）
+# 2. 设备需先创建（未关闭）才能指定写入
+# 3. 建议用变量保存设备ID，避免硬编码数字
+# 4. 若设备未激活，可通过dev.set(设备ID)切换后再plot
+# ------------------------------------------------
