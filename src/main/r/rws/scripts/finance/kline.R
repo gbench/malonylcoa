@@ -91,12 +91,22 @@ compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
 #' @param nl 返回数量数量
 tickdata.genfun <- function(symbol=ma505, date=Sys.Date(), tbl=paste0('t_', symbol, '_', strftime(date, '%Y%m%d')), n=20){
   symbol <- substitute(symbol) |> deparse()
-  sql <- sprintf('select * from %s where Id > ( select max(Id)-%s from %s )', tbl, n, tbl)
+  sql <- sprintf('select * from %s where Id > (select max(Id)-%s from %s )', tbl, n, tbl)
   \(f) f( sql )
 }
 
 # 远程交易数据,192.168.1.10
-tickdata.h10ctp2 <- function(...) tickdata.genfun(...) ( sqlquery.h10ctp2 )
+tickdata.h10ctp2 <- function(...) tickdata.genfun(...) (sqlquery.h10ctp2)
 
 # 本地交易数据:localhost
-tickdata.lhctp2 <- function(...) tickdata.genfun(...) ( sqlquery )
+tickdata.lhctp2 <- function(...) tickdata.genfun(...) (sqlquery)
+
+# 获取ohlc数据
+ohlc <- \(tbl=NA, startime=NA, endtime=NA) {
+    params <- do.call(rbx.tse, args=list(substitute(tbl), substitute(startime), substitute(endtime)))
+    sqldframe(OHLCV, params) %>% with(xts(.[, -c(1, 2, 3, 8)], order.by=as.POSIXct(paste(Date, Time)))) 
+}
+
+# 提取ohlc数据
+ohlc(rb2601, 2100, 2300)
+
