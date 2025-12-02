@@ -490,3 +490,42 @@ validate_symbol <- function(value) {
 #  record.builder(name = character)(1) |> jsonlite::toJSON()
 # # char 为 类型约束 {"char":[1]} 
 #  record.builder(name = char)(1) |> jsonlite::toJSON()
+
+#' 对 record.builder生成的构建器 进行扩展
+#' @param rb record.builder生成的构建器
+#' @return the extended record.builder
+rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb的键名
+  flags <- "magrittr,lubridate" |> strsplit(",") |> unlist() |> (\(.) setNames(.,.))() |> sapply(require, character.only=T)
+  if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed") |> stop()
+  
+  # 生成键值序列的记录并进行调整
+  setNames(rep_len(., length(keys)), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
+      ftm <- \(tm) strftime(tm, "%H:%M:%S") # 时间格式化
+      Reduce(\(acc, k, v=acc[[k]]) { # 对记录值进行私人定制
+        if(identical("##tbl", k)) { # 表名字段处理
+          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, "rb2601", .)) () # 默认合约表
+          if(grepl("^[[:alnum:]]+$", .v)) { # 金融期货合约进行增广处理
+            acc[[k]] <- "t_%s_%s" |> sprintf(.v, strftime(Sys.time(),"%Y%m%d")) # 默认表
+          } # if
+        } else if(grepl("time$", k)) { # 时间字段调整，对开始时间与结束时间进行默认值处理
+          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(!is.null(.) && length(.)>0 && grepl("^\\d{2}:\\d{2}$", .), paste0(., ":00"), .)) ()
+          if(tryCatch(hms(.v, quiet=T)) |> is.na()) { # 时间非法值
+            acc[[k]] <- switch(k, "#startime"=ftm(Sys.time()-2*3600), "#endtime"=ftm(Sys.time()), .v) # 默认时间处理
+          } # if
+        } # if 时间字段
+        acc # 返回累计值
+      }, x=names(rec), init=rec) # 键值默认处理
+    }) () # rec 记录处理
+  }) () # keys
+
+#' 默认的合约表格时间记录构建器
+rb.tse <- record.builder("##tbl,#startime,#endtime")
+
+#' sqldframe("1min.kline",rbx.tse(rb2601)) 从数据库中查询出最近两小时的合约K线！
+#' 拓展合约表格时间TSE (Table,Startime,Endtime) 构建器
+rbx.tse <- \(...) { # 扩展表格时间
+  match.call(expand.dots = FALSE)$... |> # 展开参数
+    lapply(\(e) tryCatch(eval(e), error = \(err) deparse(e))) |>
+    do.call(rbx(rb.tse), args = _)
+}
+
