@@ -22,9 +22,11 @@
 #    fortunes::fortune()
 
 # --------------------------------------------------------------------------------------
-sqlqueryenv <- new.env()
-attr(sqlqueryenv , "name") <- "sqlqueryenv" # 创建sqlqueryenv
 
+.sqlqueryenv <- new.env() # 新建一个sqlqueryenv环境
+attr(.sqlqueryenv , "name") <- ".sqlqueryenv" # 创建命名sqlqueryenv这样我们ls的时候就会看到malonylca:sqlqueryenv的字样了
+
+# 在 .sqlqueryenv中执行
 eval(quote({
   
   # 本地环境设置:
@@ -118,19 +120,23 @@ eval(quote({
     if (flag) { # 根据指定模式加载数据文件
       # 自定义的预先加载的自定义函数文件列表
       myfiles <- list.files(path = Sys.getenv('RSCRIPT_HOME'), pattern="\\.R$", recursive = T) 
-      sprintf(fmt = "%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(sys.source, envir=sqlqueryenv) |> invisible()
-      mklzdb("malonylcoa", sqlqueryenv) # 创建/更新layloads malonylcoa
+      sprintf(fmt = "%s/%s", Sys.getenv("RSCRIPT_HOME"), myfiles) |> lapply(sys.source, envir=.sqlqueryenv) |> invisible()
+      mklzdb("malonylcoa", .sqlqueryenv) # 创建/更新layloads malonylcoa
     } else { # 延迟加载(.rdx, .rdb 文件)
       # 延迟数据库根目录 
       lazyloads_home <- paste0(Sys.getenv("RSCRIPT_HOME"), "/lazyloads")
       # 启用延迟加载
-      lazyloads_home |> list.files(pattern = "*.rdb", full.names = T) |> sub("\\.(rdb)$", "", x=_) |> lazyLoad(envir=sqlqueryenv) |> invisible()
+      lazyloads_home |> list.files(pattern = "*.rdb", full.names = T) |> sub("\\.(rdb)$", "", x=_) |> lazyLoad(envir=.sqlqueryenv) |> invisible()
     } # if
-  } # 环境启动
-}))
 
-# sqlquery环境构建
-rebuild_sqlquery(T)
+  } # 工作环境构建
 
-# 把加载sqlqueryenv加载到工作区
-attach(sqlqueryenv) # 加载sqlqueryenv
+}), envir=.sqlqueryenv) # 在.sqlqueryenv中增加函数
+
+# 执行环境构建
+.sqlqueryenv$rebuild_sqlquery(F)
+
+# 把sqlqueryenv加载到工作区
+attach(.sqlqueryenv, name=".sqlqueryenv") # 加载sqlqueryenv
+
+
