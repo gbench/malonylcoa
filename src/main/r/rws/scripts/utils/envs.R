@@ -490,3 +490,69 @@ validate_symbol <- function(value) {
 #  record.builder(name = character)(1) |> jsonlite::toJSON()
 # # char 为 类型约束 {"char":[1]} 
 #  record.builder(name = char)(1) |> jsonlite::toJSON()
+
+#' 对 record.builder生成的构建器 进行扩展
+#' （采用循环填充rep_len模式的构建以及与options的sqlquery.rb.xxx配置相关默认配置）
+#' 
+#' 使用sqlquery.rb.keys配置项目进行默认键名读取
+#' 1) sqlqeury.rb.tbl # rb构建器的默认合约数据表
+#' 2) sqlqeury.rb.interval # rb构建器的默认时间跨度时长（单位小时）
+#' @param rb record.builder生成的构建器
+#' @return the extended record.builder
+rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb的键名
+  flags <- "magrittr,lubridate" |> strsplit(",") |> unlist() |> (\(.) setNames(.,.))() |> sapply(require, character.only=T)
+  if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed!") |> stop()
+  
+  # 生成键值序列的记录并进行调整
+  setNames(rep_len(., length(keys)), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
+      ftm <- \(tm) strftime(tm, "%H:%M:%S") # 时间格式化
+      Reduce(\(acc, k, v=acc[[k]]) { # 对记录值进行私人定制
+        if(identical("##tbl", k)) { # 表名字段处理
+          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, # 判断tbl参数是合法有效
+            getOption("sqlquery.rb.instrument", "rb2605"), .)) () # 默认合约表
+          if(grepl("^[[:alnum:]]+$", .v)) { # 金融期货合约进行增广处理
+            acc[[k]] <- "t_%s_%s" |> sprintf(.v, strftime(Sys.time(), "%Y%m%d")) # 默认表
+          } # if
+        } else if(grepl("time$", k)) { # 时间字段调整，对开始时间与结束时间进行默认值处理
+          # 把".0930"格式化09:30:00;"150",格式化成15:30:00格式的简洁时间输入函数！命令行输入的API，长度少一个字符都有意义能短则短！
+          # “小时小于2位小数记录，因为小数可以保护首位0，小时大于2位整数记录”，其余形式保持原样
+          as.tm <- \(x, flag = is.numeric(x), n = as.integer(abs(x))) if(!flag) x else # 数据合法
+            ifelse(n<1, as.character(abs(x)) |> substring(3, 8), format(n, scientific=F)) |> # 若是小数去除正整数部分，若是整数取消科学数法获得完整数字
+              (\(k, h = nchar(k), pad = strrep("0", abs(6-h))) ifelse(h<6, paste0(k, pad), k)) () |> 
+                substr(1, 6) |> gsub("(..)(..)(..)", "\\1:\\2:\\3", x=_) # 时间格式化
+          # 把数字(从高到低截取前6位不足尾部补充0）转成%H:%M:%S格式的时间以方便时间输入
+          .v <- gsub("\\s*", "", ifelse(grepl("^[.[:digit:]]*$", v), as.tm(v), v)) |> 
+            (\(.) ifelse(!is.null(.) && length(.)>0 && grepl("^\\d{2}:\\d{2}$", .), paste0(., ":00"), .)) ()
+          acc[[k]] <- if(tryCatch(hms(.v, quiet = T)) |> is.na()) { # 时间非法值
+             switch(k, "#startime" = ftm(Sys.time() - getOption("sqlquery.rb.interval", 3) * 3600), "#endtime" = ftm(Sys.time()), .v) # 默认时间处理
+          } else .v # 采用格式文本  
+        } # if 时间字段
+        acc # 返回累计值
+      }, x = names(rec), init = rec) # 键值默认处理
+    }) () # rec 记录处理
+  }) () # keys
+
+#' 使用拓展构建器进行简洁查询（采用循环填充rep_len模式的构建以及与options的sqlquery.rb.xxx配置相关默认配置）
+#' sqldframe("1min.kline", rbx.tse(rb2605)) 从数据库中查询出最近两小时的合约K线！
+#' rbx.tse(ma601, 0930, 1547) |> sqldframe('1min.kline',params=_)
+#' 
+#' 拓展合约表格时间TSE (Table,Startime,Endtime) 构建器
+#' 使用sqlquery.rb.keys配置项目进行默认键名读取
+rbx.tse <- \(...) { # 扩展表格时间
+  .rb.tse <- do.call(record.builder, args=list(getOption("sqlquery.rb.keys", "##tbl,#startime,#endtime"))) # 动态创建标准构建器
+  match.call(expand.dots = FALSE)$... |> # 展开参数
+    lapply(\(e) tryCatch(eval(e), error = \(err) deparse(e))) |>
+    do.call(rbx(.rb.tse), args = _) # 将标准构建器封装成扩展构建器
+}
+
+#' 扁平切分（数据切分）
+#' @param x 字符串
+#' @param pattern 分隔符，默认为："[.,/[:blank:]\\]+"
+#' @return 返回值
+ss <- \(x, pattern="[.,/[:blank:]\\]+") strsplit(x, pattern) |> unlist()
+
+#' 扁平切分（数据切分）
+#' @param x 字符串
+#' @param pattern 分隔符, 默认为：""
+#' @return 返回值
+ss0 <- \(x, pattern="") ss(x, pattern)

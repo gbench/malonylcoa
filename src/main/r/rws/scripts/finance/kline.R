@@ -88,15 +88,49 @@ compute_kline <- function(tdfm, tdate=Sys.Date()) { # 计算K线
 #' @param symbol 证券代码
 #' @param date 日期
 #' @param tbl 数据表名
-#' @param nl 返回数量数量
+#' @param n 返回数量数量
 tickdata.genfun <- function(symbol=ma505, date=Sys.Date(), tbl=paste0('t_', symbol, '_', strftime(date, '%Y%m%d')), n=20){
   symbol <- substitute(symbol) |> deparse()
-  sql <- sprintf('select * from %s where Id > ( select max(Id)-%s from %s )', tbl, n, tbl)
+  sql <- sprintf('select * from %s where Id > (select max(Id)-%s from %s )', tbl, n, tbl)
   \(f) f( sql )
 }
 
-# 远程交易数据,192.168.1.10
-tickdata.h10ctp2 <- function(...) tickdata.genfun(...) ( sqlquery.h10ctp2 )
+#' 远程交易数据,192.168.1.10
+tickdata.h10ctp2 <- function(...) tickdata.genfun(...) (sqlquery.h10ctp2)
 
-# 本地交易数据:localhost
-tickdata.lhctp2 <- function(...) tickdata.genfun(...) ( sqlquery )
+#' 本地交易数据:localhost
+tickdata.lhctp2 <- function(...) tickdata.genfun(...) (sqlquery)
+
+#' 获取ohlc数据
+#' @param tbl 数据表
+#' @param startime 开始时间
+#' @param endtime 结束时间
+#' @param keys 提取键名（负数索引表示剔除的索引）, 0, NA, NULL 表示提取所有！
+ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
+  .tbl_expr <- substitute(tbl) # tbl表达式,必须在promise进行eval(tbl)求值之前进行获取，否则promise计算之后，表达式就获取不到了！
+  .tbl <- tryCatch(eval(tbl), error=\(e) .tbl_expr)
+  
+  .startime_expr <- substitute(startime)
+  .startime <- tryCatch(eval(startime), error=\(e) .startime_expr)
+
+  .endtime_expr <- substitute(endtime)
+  .endtime <- tryCatch(eval(endtime), error=\(e) .endtime_expr)
+
+  .keys <- \(.) if(is.null(keys) ||  all(is.na(keys)) || (length(keys)==1 && keys==0)) seq(ncol(.)) else keys # 过滤key名列表
+  params <- do.call(rbx.tse, args=list(.tbl, .startime, .endtime)) # 片姐参数
+  sqldframe(OHLCV, params) %>% with(xts(.[, .keys(.)], order.by=as.POSIXct(paste(Date, Time)))) 
+}
+
+# 使用符号变量 
+# symbol <- "rb2605"; ohlc(symbol, 2100, 2300, keys=0)
+# 提取ohlc数据：使用符号
+# ohlc(rb2601, 2100, 2300, keys=1:8)
+# K线图 1min
+# library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> chartSeries()
+# K线图 10min
+# library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes10() |> chartSeries()
+# K线图 11min(自定义)
+# library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes(11) |> chartSeries()
+
+
+
