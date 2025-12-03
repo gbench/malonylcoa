@@ -129,13 +129,11 @@ eval(quote({
       lazyloads_home |> list.files(pattern = "*.rdb", full.names = T) |> sub("\\.(rdb)$", "", x=_) |> lazyLoad(envir=.sqlqueryenv) |> invisible()
     } # if
     
-    .sqlqueryenv # 返回执行环境#
+    .sqlqueryenv # 返回执行环境
   } # 工作环境构建
 
 }), envir=.sqlqueryenv) # 在.sqlqueryenv中增加函数
 
 # 执行环境构建,并加载到当前工作区
 with(.sqlqueryenv, rebuild_sqlquery(F)) |> attach(name=".sqlqueryenv") # 加载sqlqueryenv
-
-
 
