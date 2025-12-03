@@ -131,6 +131,6 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
 # library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes10() |> chartSeries()
 # K线图 11min(自定义)
 # library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes(11) |> chartSeries()
-
-
+# 使用with+environment()结构构造的运算执行环境来打包生成时间序列：难受的就是 x不支持直接的环境参数需要：as.list() |> as.data.frame()过渡一下！
+# ohlcv |> sqldframe(rbx.tse(ma605, .0900, .1200)) |> with(environment() |> as.list() |> as.data.frame() |> xts(order.by=as.POSIXct(paste(date,time))))
 
