@@ -92,9 +92,12 @@ mklzdb <- function(dbname, env = environment(), lazyloads_home = file.path(Sys.g
 #' 批量加载包
 #' @param xs 包名序列,元素间用逗号','分隔
 #' @export
-batch_load <- function(xs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres") {
+batch_load <- function(xs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres", flag=T) {
   xs <- if(length(xs) == 1 & is.character(xs)) strsplit(xs, "[,]+") |> unlist() else xs
-  xs |> sapply(\(x) tryCatch(require(trimws(x), character.only=TRUE), error=\(e) e))
+  xs |> sapply(\(x) tryCatch({ #尝试加载&安装x包
+    if(!require(x, character.only=TRUE)) install.packages(x);
+    (if(flag) require else library)(x, character.only=TRUE)
+  }, error=\(e) e))
 }
 
 # --------------------------------------------------------------------------------------
