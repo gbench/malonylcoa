@@ -125,7 +125,12 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
 # symbol <- "rb2605"; ohlc(symbol, 2100, 2300, keys=0)
 # 提取ohlc数据：使用符号
 # ohlc(rb2601, 2100, 2300, keys=1:8)
-# K线图
+# K线图 1min
 # library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> chartSeries()
+# K线图 10min
+# library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes10() |> chartSeries()
+# K线图 11min(自定义)
+# library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes(11) |> chartSeries()
+
 
 
