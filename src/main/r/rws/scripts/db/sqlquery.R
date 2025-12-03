@@ -65,12 +65,14 @@ dbfun <- function(f, ...) {
 #'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
 #'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
 #' @param n 查询结果的返回最大数量
+#' @param pretty 结果美化函数，可以做一些数据R层面的后处理, 类型转换或是结果与当前执行环境的融合合并,do.call(x)等:
+#'    sqlquery("show tables") |> grep(pattern="rb2601", value=T) |> head(2) %>% sprintf(fmt="select '%s' symbol, t.* from %s t limit 2", ., .) |> sqlquery(prettify=\(x) do.call(rbind, x))
 #' @return 返回结果数据集
-sqlquery <- function(sql, simplify = T, n = -1, ...) {
+sqlquery <- function(sql, simplify = T, n = -1, prettify=\(x) if(1 == length(x)) x[[1]] else x, ...) {
   # 连接使用函数
   dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
     dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
-    if(simplify & length(dataset) == 1) dataset[[1]]  else  dataset  # 返回结果数据集
+    prettify(if(simplify & length(dataset) == 1) dataset[[1]] else dataset)  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
 
@@ -186,16 +188,18 @@ upsql <- \(dfm, tbl, pk = "id") { # 数据更新
 #' 执行SQL语句查询数据结果（dbGetQuery模式)
 #' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
 #' @param simplify 是否对查询结果做简化处理后再返回，
-#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
-#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#'    T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'    F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
 #' @param n 查询结果的返回最大数量
+#' @param pretty 结果美化函数，可以做一些数据R层面的后处理, 类型转换或是结果与当前执行环境的融合合并,do.call(x)等:
+#'    sqlquery2("show tables") |> grep(pattern="rb2601", value=T) |> head(2) %>% sprintf(fmt="select '%s' symbol, t.* from %s t limit 2", ., .) |> sqlquery2(prettify=\(x) do.call(rbind, x))
 #' @return 返回结果数据集
-sqlquery2 <- function(sql, simplify = T, n = -1, ...) {
+sqlquery2 <- function(sql, simplify = T, n = -1, prettify=\(x) if(1 == length(x)) x[[1]] else x, ...) {
   # 连接使用函数:使用"eval.parent(substitute(... ...)) 去封装dbfun调用，可以避免R把实际"..."给改写"..1, ..2"的形式：
   # 否则，sqlquery(sql, dbname=ctp) 会被翻译成 sqlexecute(sql, ..1=ctp) 而改掉了参数名
   eval.parent(substitute(dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
     dataset <- c(sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
-    if(simplify & length(dataset) == 1) dataset[[1]] else dataset # 返回结果数据集
+    prettify(if(simplify & length(dataset) == 1) dataset[[1]] else dataset) # 返回结果数据集
   }, ...)(sql))) # 连接使用函数
 }
 
@@ -209,8 +213,8 @@ sqlquery2 <- function(sql, simplify = T, n = -1, ...) {
 #' 执行SQL语句（dbExecute模式)
 #' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
 #' @param simplify 是否对查询结果做简化处理后再返回，
-#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
-#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#'    T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'    F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
 #' @return 返回结果是 affected_rows, last_insert_id 两列的数据框，对于
 #'    insert into t_user(name) values('name_1'),('name_2'),...,('name_n') 一条语句插入多条数据
 #'    的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
@@ -255,12 +259,14 @@ dbfun.pg <- \(f, ...) {
 #' @param sql 查询语句
 #' @param search_path 检索路径，默认值NA，表示尝试读取getOption("sqlquery.schema")
 #' @param simplify 是否简化模式，，默认T
+#' @param pretty 结果美化函数，可以做一些数据R层面的后处理, 类型转换或是结果与当前执行环境的融合合并,do.call(x)等:
+#'    sqlquery.pg("select table_name from information_schema.tables", prettify=head)
 #' @param verbose 息详情模式，， 默认F
-sqlquery.pg <- \(sql, search_path = NA, simplify = T, verbose = F, ...) {
+sqlquery.pg <- \(sql, search_path = NA, simplify = T, prettify=\(x) if(1 == length(x)) x[[1]] else x, verbose = F, ...) {
   dbfun.pg(\ (con, ...) { # 连接配置（dbfun.pg 的参数f)
     with(list(...), ( # 执行查询结果, 通过with(list(...), xxx xxx)从dbfun.pg的f函数的参数中提取.log函数
       \ (.sqls = c(sql)) .sqls |> .log() |> lapply(compose(tibble, dbGetQuery), conn = con) |> (\ (res) # res 结果集简化
-      if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls)) ()
+      prettify(if(simplify && 1 == length(res)) res[[1]] else structure(res, names=.sqls))) ()
     ) ()) # with 从dbfun.pg中提取参数.log并执行
   }, search_path = search_path, simplify = simplify, verbose = verbose, ...) (sql) 
 }

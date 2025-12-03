@@ -116,9 +116,9 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
   .endtime_expr <- substitute(endtime)
   .endtime <- tryCatch(eval(endtime), error=\(e) .endtime_expr)
 
-  .keys <- \(.) if( is.null(keys) ||  all(is.na(keys)) || (length(keys)==1 && keys==0)) seq(ncol(.)) else keys # 过滤key名列表
-  params <- do.call(rbx.tse, args=list(.tbl, .startime, .endtime))
-  sqldframe(OHLCV, params) %>% with(xts(.[,.keys(.)], order.by=as.POSIXct(paste(Date, Time)))) 
+  .keys <- \(.) if(is.null(keys) ||  all(is.na(keys)) || (length(keys)==1 && keys==0)) seq(ncol(.)) else keys # 过滤key名列表
+  params <- do.call(rbx.tse, args=list(.tbl, .startime, .endtime)) # 片姐参数
+  sqldframe(OHLCV, params) %>% with(xts(.[, .keys(.)], order.by=as.POSIXct(paste(Date, Time)))) 
 }
 
 # 使用符号变量 
