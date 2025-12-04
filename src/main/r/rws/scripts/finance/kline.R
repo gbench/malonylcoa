@@ -135,3 +135,7 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
 # ohlcv |> sqldframe(rbx.tse(ma605, .0900, .1200)) |> with(environment() |> as.list() |> as.data.frame() |> xts(order.by=as.POSIXct(paste(date,time))))
 # 添加移动均线的绘图
 # ohlc(ma601, endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))
+# 指定合约&添加移动均线的绘图(在options中设定合约代码，ohlc中就可以省略合约代码，这样的定默认合约代码是可以跨越ohlc的!)
+# options("sqlquery.db.instrument"="rb2601");ohlc(endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))
+# 默认合约&添加移动均线的绘图(从options中清除合约代码)
+# options("sqlquery.db.instrument"=NULL);ohlc(endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))
