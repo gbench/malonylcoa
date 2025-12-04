@@ -21,10 +21,10 @@ import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.Jdbcs;
 import gbench.util.jdbc.function.ExceptionalFunction;
 
-import static gbench.sandbox.jdbc.JdbcH2Test.Drcr.CR;
-import static gbench.sandbox.jdbc.JdbcH2Test.Drcr.DR;
-import static gbench.sandbox.jdbc.JdbcH2Test.Position.LONG;
-import static gbench.sandbox.jdbc.JdbcH2Test.Position.SHORT;
+import static gbench.sandbox.jdbc.JdbcIgniteTest.Drcr.CR;
+import static gbench.sandbox.jdbc.JdbcIgniteTest.Drcr.DR;
+import static gbench.sandbox.jdbc.JdbcIgniteTest.Position.LONG;
+import static gbench.sandbox.jdbc.JdbcIgniteTest.Position.SHORT;
 import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
@@ -46,7 +46,7 @@ import static java.util.stream.Stream.iterate;
 /**
  * H2数据库示例
  */
-public class JdbcH2Test {
+public class JdbcIgniteTest {
 
 	/**
 	 * 交易/订单头寸
