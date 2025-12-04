@@ -198,6 +198,13 @@
 		    <version>4.0.0</version>
 		    <scope>test</scope>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-jdbc -->
+		<dependency>
+		    <groupId>org.apache.ignite</groupId>
+		    <artifactId>ignite-jdbc</artifactId>
+		    <version>3.1.0</version>
+		    <scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
