@@ -118,7 +118,7 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
 
   .keys <- \(.) if(is.null(keys) ||  all(is.na(keys)) || (length(keys)==1 && keys==0)) seq(ncol(.)) else keys # 过滤key名列表
   params <- do.call(rbx.tse, args=list(.tbl, .startime, .endtime)) # 片姐参数
-  sqldframe(OHLCV, params) %>% with(xts(.[, .keys(.)], order.by=as.POSIXct(paste(Date, Time)))) 
+  sqldframe(OHLCV1M, params) %>% with(xts(.[, .keys(.)], order.by=as.POSIXct(paste(Date, Time)))) 
 }
 
 # 使用符号变量 
@@ -131,6 +131,11 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
 # library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes10() |> chartSeries()
 # K线图 11min(自定义)
 # library(quantmod);ohlc(rb2601, 2100, 2300, ss("Open,High,Low,Close,Volume")) |> to.minutes(11) |> chartSeries()
-
-
-
+# 使用with+environment()结构构造的运算执行环境来打包生成时间序列：难受的就是 x不支持直接的环境参数需要：as.list() |> as.data.frame()过渡一下！
+# ohlcv1m |> sqldframe(rbx.tse(rb2601, .0900, .1200)) |> with(environment() |> as.list() |> as.data.frame() |> xts(order.by=as.POSIXct(paste(date,time))))
+# 添加移动均线的绘图
+# ohlc(rb2601, startime=.0900, endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))
+# 指定合约&添加移动均线的绘图(在options中设定合约代码，ohlc中就可以省略合约代码，这样的定默认合约代码是可以跨越ohlc的!)
+# options("sqlquery.rb.instrument"="rb2601");ohlc(startime=.0900, endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))
+# 默认合约&添加移动均线的绘图(从options中清除合约代码)
+# options("sqlquery.rb.instrument"=NULL);ohlc(startime=.0900, endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))

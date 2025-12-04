@@ -511,7 +511,8 @@ rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb�
           .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, # 判断tbl参数是合法有效
             getOption("sqlquery.rb.instrument", "rb2605"), .)) () # 默认合约表
           if(grepl("^[[:alnum:]]+$", .v)) { # 金融期货合约进行增广处理
-            acc[[k]] <- "t_%s_%s" |> sprintf(.v, strftime(Sys.time(), "%Y%m%d")) # 默认表
+            timestamp <- (\(f) if(is.function(f)) strftime(f(), "%Y%m%d") else as.character(f)) (getOption("sqlquery.rb.timestamp", Sys.time))
+            acc[[k]] <- "t_%s_%s" |> sprintf(.v, timestamp) # 默认表
           } # if
         } else if(grepl("time$", k)) { # 时间字段调整，对开始时间与结束时间进行默认值处理
           # 把".0930"格式化09:30:00;"150",格式化成15:30:00格式的简洁时间输入函数！命令行输入的API，长度少一个字符都有意义能短则短！
