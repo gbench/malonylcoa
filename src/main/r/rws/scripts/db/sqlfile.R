@@ -390,7 +390,8 @@ list_sql_templates <- function(files = "\\.sql$", recursive = FALSE, verbose = T
 #' @export
 sqldframe <- function(x, params = list(), files = "\\.sql$", recursive = FALSE, ...) {
   # Capture original expression of 'x' → convert to string → remove leading/trailing double/single quotes (retain pure name only)
-  name <- deparse(substitute(x)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+  .name <- deparse(substitute(x)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
+  name <- tryCatch(x, error=\(e) .name)
   
   # Input validation
   if (!is.character(name) || length(name) != 1L || nchar(trimws(name)) == 0L) {
