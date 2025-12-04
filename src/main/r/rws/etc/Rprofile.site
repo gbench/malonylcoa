@@ -119,7 +119,6 @@ eval(quote({ # 自举构建具体过程逻辑
   #' @param F 是否读取RSCRIPT_HOME目录下的脚本资源文件来初始化
   #' @param envir 资源函数加载的环境位置
   rebuild_sqlquery <- \(flag=F, envir=.sqlqueryenv) {
-    print(.sqlqueryenv)
     if (!dir.exists(dailywork_home)) mkdir(dailywork_home) # 创建工作目录
     setwd(dailywork_home) # 设置工作去目录
 
