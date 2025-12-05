@@ -952,33 +952,28 @@ local({
     # 基础库加载(导入sqlfill,rbx.tse,sqlquery等自定义符号到工作空间,把其所在的相应环境attach到isearchpaths的包检索路径之中)
     batch_load()
 
-    # 预先计算交易时段过滤器（时段过滤生成器）
-    is.trading.gen <- \(tb="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
-        .breaks <- tb |> strsplit("[,;]+") |> unlist() |> hm()
-        # 返回交易时段过滤器
-        \(x) findInterval(if(is.period(x)) x else hm(x), .breaks) %% 2 != 0
+    # 预先计算交易时段过滤器（时段过滤生成器）, "trading breaks" : tbs
+    is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
+        breaks <- tbs |> strsplit("[,;]+") |> unlist() |> hm() # 生成时段分点
+        \(x) findInterval(if(is.period(x)) x else hm(x), breaks) %% 2 != 0 # 返回交易时段过滤器
     }
 
     # 默认交易时段过滤器
     is.trading <- is.trading.gen() # 生成交易函数
-    rb <- record.builder("##tbl,#startime,#endtime") # 模板参数构建器具
+    rb <- record.builder("##tbl,#startime,#endtime") # 模板参数构建器
+    tpls <- list_sql_templates() #  sql模板集合
 
     # 核心函数 - 3行搞定
-    ohlc.ctp <- \(s,f,t,v=is.trading) {
-        .tbls <- sprintf("t_%s_%s", s, format(seq(as.Date(f), as.Date(t)-1, "day"), "%Y%m%d")) # 区间表
-        tbls <- .tbls[.tbls %in% sqlquery("show tables")] # 数据库存在的表
+    ohlc.ctp <- \(symbol, from, to, validate=is.trading) {
+        tbls <- sprintf("t_%s_%s", symbol, format(seq(as.Date(from), as.Date(to)-1, "day"), "%Y%m%d")) |> (\(.) .[. %in% sqlquery("show tables")])()
         if(length(tbls) < 1)  tibble() # 数据表为空
-        else with(list_sql_templates(), lapply(tbls, \(tbl) sqlfill(OHLCV1M, rb(tbl,'00:00','23:59'))) |>
-            sqlquery() |> bind_rows() |> dplyr::filter(v(hm(Time)))) # 过滤验证
+        else lapply(tbls, \(tbl) sqlfill(tpls$OHLCV1M, rb(tbl, '00:00', '23:59'))) |> sqlquery() |> dplyr::bind_rows() |> dplyr::filter(validate(hm(Time))) # 过滤验证
     }
 
-    # 测试
-    ohlc.ctp('rb2601', '2025-11-13', '2025-11-20') |> head()
-
+    # 测试数据
+    ohlcs <- ohlc.ctp('rb2601', '2025-11-13', '2025-11-20') 
     # 绘图
-    ohlc.ctp('rb2601', '2025-11-13', '2025-11-20') |> # ohlc数据计算
-        with(xts(cbind(Open, High, Low, Close), as.POSIXct(paste(Date, Time)))) |> # 生成xts
-        chartSeries(theme='white') # quantmod绘图
+    ohlcs |> with(xts(cbind(Open, High, Low, Close, Volume), as.POSIXct(paste(Date, Time)))) |> chartSeries(theme='white') # quantmod绘图
 })
 
 # 模板与多表混合检索
