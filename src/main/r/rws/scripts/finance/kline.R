@@ -233,5 +233,5 @@ KDJ <- function(x, n = 9, nK = 3, nD = 3, maType, ...) {
 # 单合约的多周期式金融数据的处理
 # ohlc(rb2605,.00,.23) |> #读取指定时间范围的金融合约交易的OHLC数据
 #   with(xts(cbind(Open, High, Low, Close), index(Close))) |> # 提取ohlc数据并组装成xts格式数据
-#   list(periods=c(1, 5, 10), handler=\(i) to.minutes(xs, i) |> KDJ(), xs=_) |> # 组织成本地计算的资源环境包
-#   with(lapply(periods, handler)) # 开始多周期计算
+#   list(periods=c(1, 5, 10), handler=\(i, xs) to.minutes(xs, i) |> KDJ(), xs=_) |> # 组织成本地计算的资源环境包
+#   with(lapply(periods, handler, xs=xs)) # 开始多周期计算
