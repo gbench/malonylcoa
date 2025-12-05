@@ -352,37 +352,49 @@ sqlfill <- function(template, params) {
 #' @return the extended record.builder
 rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb的键名
   flags <- "magrittr,lubridate" |> strsplit(",") |> unlist() |> (\(.) setNames(.,.))() |> sapply(require, character.only=T)
-  if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed") |> stop()
+  if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed!") |> stop()
   
   # 生成键值序列的记录并进行调整
   setNames(rep_len(., length(keys)), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
       ftm <- \(tm) strftime(tm, "%H:%M:%S") # 时间格式化
       Reduce(\(acc, k, v=acc[[k]]) { # 对记录值进行私人定制
         if(identical("##tbl", k)) { # 表名字段处理
-          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, getOption("sqlquery.rb.instrument", "rb2605"), .)) () # 默认合约表
+          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, # 判断tbl参数是合法有效
+            getOption("sqlquery.rb.instrument", "rb2605"), .)) () # 默认合约表
           if(grepl("^[[:alnum:]]+$", .v)) { # 金融期货合约进行增广处理
-            acc[[k]] <- "t_%s_%s" |> sprintf(.v, strftime(Sys.time(),"%Y%m%d")) # 默认表
+            timestamp <- (\(f) if(is.function(f)) strftime(f(), "%Y%m%d") else as.character(f)) (getOption("sqlquery.rb.timestamp", Sys.time))
+            acc[[k]] <- "t_%s_%s" |> sprintf(.v, timestamp) # 默认表
           } # if
         } else if(grepl("time$", k)) { # 时间字段调整，对开始时间与结束时间进行默认值处理
-          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(!is.null(.) && length(.)>0 && grepl("^\\d{2}:\\d{2}$", .), paste0(., ":00"), .)) ()
-          if(tryCatch(hms(.v, quiet=T)) |> is.na()) { # 时间非法值
-            acc[[k]] <- switch(k, "#startime"=ftm(Sys.time()-getOption("sqlquery.rb.interval", 3)*3600), "#endtime"=ftm(Sys.time()), .v) # 默认时间处理
-          } # if
+          # 把".0930"格式化09:30:00;"150",格式化成15:30:00格式的简洁时间输入函数！命令行输入的API，长度少一个字符都有意义能短则短！
+          # “小时小于2位小数记录，因为小数可以保护首位0，小时大于2位整数记录”，其余形式保持原样
+          as.tm <- \(x, flag = is.numeric(x), n = as.integer(abs(x))) if(!flag) x else # 数据合法
+            ifelse(n<1, as.character(abs(x)) |> substring(3, 8), format(n, scientific=F)) |> # 若是小数去除正整数部分，若是整数取消科学数法获得完整数字
+              (\(k, h = nchar(k), pad = strrep("0", abs(6-h))) ifelse(h<6, paste0(k, pad), k)) () |> 
+                substr(1, 6) |> gsub("(..)(..)(..)", "\\1:\\2:\\3", x=_) # 时间格式化
+          # 把数字(从高到低截取前6位不足尾部补充0）转成%H:%M:%S格式的时间以方便时间输入
+          .v <- gsub("\\s*", "", ifelse(grepl("^[.[:digit:]]*$", v), as.tm(v), v)) |> 
+            (\(.) ifelse(!is.null(.) && length(.)>0 && grepl("^\\d{2}:\\d{2}$", .), paste0(., ":00"), .)) ()
+          acc[[k]] <- if(tryCatch(hms(.v, quiet = T)) |> is.na()) { # 时间非法值
+             switch(k, "#startime" = ftm(Sys.time() - getOption("sqlquery.rb.interval", 3) * 3600), "#endtime" = ftm(Sys.time()), .v) # 默认时间处理
+          } else .v # 采用格式文本  
         } # if 时间字段
         acc # 返回累计值
-      }, x=names(rec), init=rec) # 键值默认处理
+      }, x = names(rec), init = rec) # 键值默认处理
     }) () # rec 记录处理
   }) () # keys
 
 #' 使用拓展构建器进行简洁查询（采用循环填充rep_len模式的构建以及与options的sqlquery.rb.xxx配置相关默认配置）
 #' sqldframe("1min.kline", rbx.tse(rb2605)) 从数据库中查询出最近两小时的合约K线！
+#' rbx.tse(ma601, 0930, 1547) |> sqldframe('1min.kline',params=_)
 #' 
 #' 拓展合约表格时间TSE (Table,Startime,Endtime) 构建器
 #' 使用sqlquery.rb.keys配置项目进行默认键名读取
 rbx.tse <- \(...) { # 扩展表格时间
-  .rb.tse <- do.call(record.builder,args=list(getOption("sqlquery.rb.keys", "##tbl,#startime,#endtime"))) # 动态创建标准构建器
+  .rb.tse <- do.call(record.builder, args=list(getOption("sqlquery.rb.keys", "##tbl,#startime,#endtime"))) # 动态创建标准构建器
+  call_env <- parent.frame() # 调用者环境，以便eval(e, call_env)可正确算出rbx.tse的实际参数（展开...），parent.frame是类似于商品交易的上一家是相对为非固定的
   match.call(expand.dots = FALSE)$... |> # 展开参数
-    lapply(\(e) tryCatch(eval(e), error = \(err) deparse(e))) |>
+    lapply(\(e) tryCatch(eval(e, call_env), error = \(err) deparse(e))) |>
     do.call(rbx(.rb.tse), args = _) # 将标准构建器封装成扩展构建器
 }
 
@@ -934,6 +946,42 @@ local({
         labs(x="Time", y="Price", caption="合约价格", title="MA2601合约")
 
 })
+
+# 模板与多表混合检索
+local({
+    # 基础库加载(导入sqlfill,rbx.tse,sqlquery等自定义符号到工作空间,把其所在的相应环境attach到isearchpaths的包检索路径之中)
+    batch_load()
+    
+    # 自定义sql 模板
+    st <- "select PyctpCreateTime t, LastPrice x , coalesce(Volume-lag(Volume) over(), Volume) w from ##tbl" # 交易价格信息(x:price, w:weight)
+    sqlfill(st, rbx.tse()) |> sqlquery() |> with(xts(cbind(x, w), as.POSIXct(t))) # 使用rbx.tse模板进行默认的当日合约填充并转成时间序列
+
+    # 获取系统合约数据表
+    tbls <- sqlquery("show tables") |> grep(pat="rb", value=T) # 提取螺纹钢tickdata数据表 
+    symbols <- tbls %>%regmatches(x=., regexpr(text=., pattern="(?<=_)([^_]+)(?=_)", perl=T)) |> unique() # 从数据表名中提取合约符号
+
+    # 批量合约查询并汇总
+    tpls <- list_sql_templates() |> with(OHLCV1M) # 提取计算分钟K线的OHLCV的SQL模板
+    rb <- record.builder("##tbl,#startime,#endtime") # SQL模板的参数构建器
+    .tbls <- tbls |> sort() |> head(5) # 选择取前5个（数据很多，示例演示！）
+    mapply(sqlfill, tpls, lapply(.tbls, \(tbl) rb(tbl, '09:00', '23:00'))) |> sqlquery() |> do.call(rbind, args=_) # 检索并汇总
+})
+
+# 数据示例
+# >     mapply(sqlfill, tpls, lapply(.tbls, \(tbl) rb(tbl, '09:00', '23:00'))) |> sqlquery() |> do.call(rbind, args=_)
+# # A tibble: 9 × 8
+#   Symbol Date       Time   Open  High   Low Close Volume
+# * <chr>  <chr>      <chr> <dbl> <dbl> <dbl> <dbl>  <dbl>
+# 1 rb2505 2025-04-28 14:12  3060  3060  3059  3060    186
+# 2 rb2505 2025-04-28 14:13  3060  3060  3059  3059    123
+# 3 rb2505 2025-04-28 14:14  3059  3060  3058  3058     64
+# 4 rb2505 2025-04-28 14:15  3058  3059  3057  3057    106
+# 5 rb2505 2025-04-28 14:18  3057  3058  3057  3058    140
+# 6 rb2506 2025-04-28 14:18  3068  3068  3068  3068      0
+# 7 rb2507 2025-04-28 14:18  3103  3104  3103  3104     27
+# 8 rb2508 2025-04-28 14:18  3106  3106  3106  3106      0
+# 9 rb2509 2025-04-28 14:18  3113  3113  3113  3113      0
+
 
 # ----------------------------------------------------------------------------------------------------------------
 # 数据库读取示例
