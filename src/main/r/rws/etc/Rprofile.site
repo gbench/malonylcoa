@@ -132,19 +132,19 @@ eval(quote({ # 自举构建具体过程逻辑
       
       myfiles <- list.files(path = rscript_home, pattern="\\.R$", recursive = T) 
       sprintf(fmt = "%s/%s", rscript_home, myfiles) |> lapply(sys.source, envir=envir) |> invisible()
-      mklzdb("malonylcoa", .sqlqueryenv) # 创建/更新layloads malonylcoa
+      mklzdb("malonylcoa", envir) # 创建/更新layloads malonylcoa
     } else { # 延迟加载(.rdx, .rdb 文件)
       # 延迟数据库根目录 
       lazyloads_home <- paste0(rscript_home, "/lazyloads")
-      # 启用延迟加载
-      lazyloads_home |> list.files(pattern = "*.rdb", full.names = T) |> sub("\\.(rdb)$", "", x=_) |> lazyLoad(envir=envir) |> invisible()
+      # 启用延迟加载（lazyLoad只能加载一个文件所以使用lapply进行包装）
+      lazyloads_home |> list.files(pattern = "*.rdb", full.names = T) |> sub("\\.(rdb)$", "", x=_) |> lapply(lazyLoad, envir=envir) |> invisible()
     } # if
     
-    return(envir) # 返回执行环境
+    envir # 返回执行环境
   } # 工作环境构建
 
   # --------------------------------------------------------------------------------------
   # 返回自举环境
   
   .sqlqueryenv # 返回执行环境（eval的执行所在环境：new.env()的返回结果)!
-}), envir=new.env()) |> with(rebuild_sqlquery(F)) |> attach(name=".SqlQueryEnv") #  附加到工作区，命名.SqlQueryEnv以供工作使用（仿照.GlobalEnv）！
+}), envir=new.env()) |> with(rebuild_sqlquery(T)) |> attach(name=".SqlQueryEnv") #  附加到工作区，命名.SqlQueryEnv以供工作使用（仿照.GlobalEnv）！
