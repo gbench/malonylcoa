@@ -915,7 +915,8 @@ local({
     #'  由于每个时段都是由两个分点(starti,endi)构成，因此，分点扁平化以后，偶数区间索引的位置（0,2,4,...）时段之间的间隔，即非交易时段！
     is.trading <- \(points, tradingbreaks="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
         .tradingbreaks <- (\(bs=tradingbreaks) if(is.character(bs)) bs |> strsplit("[,;]+") |> unlist() |> hm() else bs) () # 交易时段分点处理
-        points |> (\(x) (if(is.period(x)) x else hm(x))) () |> findInterval(.tradingbreaks) %% 2 !=0 # 判断是否交易时间（偶数区间索引乃非交易时段）
+        points |> (\(x) (if(is.period(x)) x else (\(.) hm(gsub("^.*?(\\d{1,2}:\\d{1,2}).*$", "\\1", x=.))) (as.character(x)))) () |> (\(x) # 时间只提取小时与分钟！
+            ifelse(is.na(x), F, findInterval(x, .tradingbreaks) %% 2 !=0)) () # 判断是否交易时间（偶数区间索引乃非交易时段）
      } # is.trading 时点是位于否交易时段
 
     # 数据处理：TickData
@@ -930,7 +931,7 @@ local({
         labs(x="Time", y="Price", caption="合约价格", title="RB2601合约")
 
     # 数据处理：分钟K线数据
-    data4 <- sqldframe("show tables") |> unlist() |> grep(pattern="ma601_202511[2][5-8]", value=T) |> # 指定数据表模式
+    data4 <- sqldframe("show tables") |> unlist() |> grep(pattern="ma601_202511[2][5-6]", value=T) |> # 指定数据表模式
         lapply(\(tbl) list_sql_templates(verbose=F) |> with(`1min.kline`) |> sqlfill(rb2(tbl, "09:00", "15:00"))) |> # tickdata2模板填充
         paste0(collapse=")\nUNION\n(") |> sprintf(fmt="(%s)") %T>% cat("\n") |> # 模板组织，补充首尾的括号，以匹配UNION引入的括号
         sqlquery() |> filter(is.trading(paste0(MinuteTime, ":00"))) |> arrange(Date, MinuteTime) |> # 数据查询并交易时段过滤
