@@ -77,17 +77,20 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
   }, ...)(sql) # 连接使用函数
 }
 
-# 执行SQL语句查询数据结果（dbGetQuery模式)
-# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
-# simplify 是否对查询结果做简化处理后再返回，
-#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
-#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
-# n 查询结果的返回最大数量
-sqlquery <- function(sql, simplify=T, n=-1, ...) {
+#' 执行SQL语句查询数据结果（dbGetQuery模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @param n 查询结果的返回最大数量
+#' @param pretty 结果美化函数，可以做一些数据R层面的后处理, 类型转换或是结果与当前执行环境的融合合并,do.call(x)等:
+#'   sqlquery("show tables") |> head() %>% sprintf(fmt="select '%s' tbl, count(*) n from %s t limit 2", ., .) |> sqlquery(prettify=bind_rows)
+#' @return 返回结果数据集
+sqlquery <- function(sql, simplify = T, n = -1, prettify=\(x) if(1 == length(x)) x[[1]] else x, ...) {
   # 连接使用函数
-  dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 数据查询
-    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
+    prettify(if(simplify & length(dataset) == 1) dataset[[1]] else dataset)  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
 
@@ -485,13 +488,13 @@ sqlquery(c("select database()", "show tables"))
 sqlquery(c("select database()","show tables"), dbname="ctp")
 
 # 读取指定名称模式的数据表
-sqlquery("show tables") |> compose(sqlquery,partial(sprintf,fmt="select * from %s"),partial(grep,pattern="ma",value=T),unlist)()
+sqlquery("show tables") |> compose(sqlquery, partial(sprintf, fmt="select * from %s"), partial(grep, pattern="ma", value=T), unlist)()
 
 # 查看价格分布
 sqlquery('select * from t_ma501_20241218') |> with(boxplot(LastPrice~substr(UpdateTime,1,2)))
 
 # 查看指定数据库名称下面的数据表
-( \( x, dbnames=x |> strsplit(",") |> unlist() ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
+(\( x, dbnames=x |> strsplit(",") |> unlist()) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
 # 读取时间序列
@@ -952,28 +955,26 @@ local({
     # 基础库加载(导入sqlfill,rbx.tse,sqlquery等自定义符号到工作空间,把其所在的相应环境attach到isearchpaths的包检索路径之中)
     batch_load()
 
-    # 预先计算交易时段过滤器（时段过滤生成器）, "trading breaks" : tbs
+    # 计算交易时段验证的生成器, "trading breaks" : tbs
     is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
         breaks <- tbs |> strsplit("[,;]+") |> unlist() |> hm() # 生成时段分点
         \(x) findInterval(if(is.period(x)) x else hm(x), breaks) %% 2 != 0 # 返回交易时段过滤器
     }
-
-    # 默认交易时段过滤器
+    # 定义计算工具&资源对象
     is.trading <- is.trading.gen() # 生成交易函数
     rb <- record.builder("##tbl,#startime,#endtime") # 模板参数构建器
     tpls <- list_sql_templates() #  sql模板集合
-
-    # 核心函数 - 3行搞定
-    ohlc.ctp <- \(symbol, from, to, validate=is.trading) {
-        tbls <- sprintf("t_%s_%s", symbol, format(seq(as.Date(from), as.Date(to)-1, "day"), "%Y%m%d")) |> (\(.) .[. %in% sqlquery("show tables")])()
+    # 定义核心数据ohlcv的计算函数
+    ohlcv.ctp <- \(symbol, from, to, validate=is.trading) { #提取ctp的ohlc数据
+        tbls <- sprintf("t_%s_%s", symbol, format(seq(as.Date(from), as.Date(to)-1, "day"), "%Y%m%d")) |> (\(.) .[. %in% sqlquery("show tables")]) ()
         if(length(tbls) < 1)  tibble() # 数据表为空
         else lapply(tbls, \(tbl) sqlfill(tpls$OHLCV1M, rb(tbl, '00:00', '23:59'))) |> sqlquery() |> dplyr::bind_rows() |> dplyr::filter(validate(hm(Time))) # 过滤验证
     }
-
-    # 测试数据
-    ohlcs <- ohlc.ctp('rb2601', '2025-11-13', '2025-11-20') 
-    # 绘图
-    ohlcs |> with(xts(cbind(Open, High, Low, Close, Volume), as.POSIXct(paste(Date, Time)))) |> chartSeries(theme='white') # quantmod绘图
+    # 数据生成与绘图
+    system.time({ #生成过程计时（运算效率统计）
+        ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20') # 测试数据
+        ohlcvs |> with(xts(cbind(Open, High, Low, Close, Volume), as.POSIXct(paste(Date, Time)))) |> chartSeries(theme='white') # quantmod绘图
+    }) # 计时
 })
 
 # 模板与多表混合检索
