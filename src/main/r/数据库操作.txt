@@ -965,16 +965,24 @@ local({
     rb <- record.builder("##tbl,#startime,#endtime") # 模板参数构建器
     tpls <- list_sql_templates() #  sql模板集合
     # 定义核心数据ohlcv的计算函数
-    ohlcv.ctp <- \(symbol, from, to, validate=is.trading) { #提取ctp的ohlc数据
+    .ohlcv.ctp <- \(symbol, from, to, validate=is.trading) { #提取ctp的ohlc数据
         tbls <- sprintf("t_%s_%s", symbol, format(seq(as.Date(from), as.Date(to)-1, "day"), "%Y%m%d")) |> (\(.) .[. %in% sqlquery("show tables")]) ()
         if(length(tbls) < 1)  tibble() # 数据表为空
         else lapply(tbls, \(tbl) sqlfill(tpls$OHLCV1M, rb(tbl, '00:00', '23:59'))) |> sqlquery() |> dplyr::bind_rows() |> dplyr::filter(validate(hm(Time))) # 过滤验证
     }
+    # 带有缓存的ohlcv.ctp, 是否更新缓存:flag
+    ohlcv.ctp <- \(symbol, from, to, validate=is.trading, flag=F, home="./data/ctp/ohlcv") {
+        if(!dir.exists(home)) mkdir(home) # 创建数据缓存
+        fname <- do.call(sprintf, c(fmt=list("%s/%s_%s_%s.rds"), as.list(c(home, symbol, gsub("-", "", c(from, to)))))) # 缓存文件名称
+        ohlcvs <- if(!flag && file.exists(fname)) readRDS(fname) #非覆盖标志且存在缓存
+                        else .ohlcv.ctp(symbol, from, to) |> (\(x) {saveRDS(x, fname); x}) () #读取并缓存结果
+    }
+
     # 数据生成与绘图
     system.time({ #生成过程计时（运算效率统计）
-        ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20') # 测试数据
+        ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20', flag=F) # 测试数据
         ohlcvs |> with(xts(cbind(Open, High, Low, Close, Volume), as.POSIXct(paste(Date, Time)))) |> chartSeries(theme='white') # quantmod绘图
-    }) # 计时
+    }) # 生成过程计时（运算效率统计）
 })
 
 # 模板与多表混合检索
