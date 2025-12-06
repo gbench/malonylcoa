@@ -212,6 +212,43 @@ KDJ <- function(x, n = 9, nK = 3, nD = 3, maType, ...) {
   return(result)
 }
 
+#' 计算交易时段验证的生成器, "trading breaks" : tbs
+#' @param tbs 交易分点trading breaks序列
+#' @return 交易时段验证函数
+is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
+    breaks <- tbs |> strsplit("[,;]+") |> unlist() |> lubridate::hm() # 生成时段分点
+    #' 时间整理函数(剔除秒数,注意23:60==24:00，它们都是表示24个小时，这就像0.9999...==1是一个道理，不同记法而已！
+    #' 对于时长(Timespan)，这里使用period而非duration是因为period更接近日常时间的时分秒现象，而非duration的累计单位时长的容量的属性！
+    tidy <- \(x) sapply(as.character(x), USE.NAMES = FALSE,
+        \(t) regexpr("(\\d{1,2}:\\d{1,2})(?=:\\d{1,2})?", t, perl = TRUE) |> (\(m) if (is.na(m) || m == -1) NA_character_ else regmatches(t, m)) ())
+    
+    #' 判断时点x是否位于交易时段之内
+    #' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
+    #' 如此，记法上"23:60==24:00"是时长等价的，同理hm("23:60")==hms("23:59:60")、hms("23:59:60")==ddays(1)！
+    #' @param x 时点
+    \(x) {
+        # 统一转成 period（时长）
+        .x <-  if (lubridate::is.period(x)) x
+            else if (inherits(x, c("POSIXct", "POSIXlt"))) lubridate::hm(strftime(x, "%H:%M"))
+            else lubridate::hm(tidy(as.character(x)))
+
+        # 向量化判断
+        idx <- findInterval(.x, breaks)
+
+        # 返回结果
+        (idx %% 2 != 0) & !is.na(.x)
+    }
+}
+
+#' 判断时点x是否位于交易时段之内
+#' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
+#' 如此，记法上"23:60==24:00"是时长等价的，同理hm("23:60")==hms("23:59:60")、hms("23:59:60")==ddays(1)！
+#' 测试示例:
+#' c("08:60", "09:10", "10:20", "12:00", "21:30", "23:60", "25:00", NA) |> is.trading()
+#' (Sys.time()+(1:5)*60*60) |> is.trading() # 当前时间的结构判断
+#' @param x 时点 
+is.trading <- is.trading.gen()
+
 # 使用符号变量 
 # symbol <- "rb2605"; ohlc(symbol, 2100, 2300, keys=0)
 # 提取ohlc数据：使用符号

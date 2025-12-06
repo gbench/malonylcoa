@@ -915,7 +915,8 @@ local({
     #'  由于每个时段都是由两个分点(starti,endi)构成，因此，分点扁平化以后，偶数区间索引的位置（0,2,4,...）时段之间的间隔，即非交易时段！
     is.trading <- \(points, tradingbreaks="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
         .tradingbreaks <- (\(bs=tradingbreaks) if(is.character(bs)) bs |> strsplit("[,;]+") |> unlist() |> hm() else bs) () # 交易时段分点处理
-        points |> (\(x) (if(is.period(x)) x else hms(x))) () |> findInterval(.tradingbreaks) %% 2 !=0 # 判断是否交易时间（偶数区间索引乃非交易时段）
+        points |> (\(x) (if(is.period(x)) x else (\(.) hm(gsub("^.*?(\\d{1,2}:\\d{1,2}).*$", "\\1", x=.))) (as.character(x)))) () |> # 时间只提取小时与分钟！
+            (\(x) ifelse(is.na(x), F, findInterval(x, .tradingbreaks) %% 2 !=0)) () # 判断是否交易时间（偶数区间索引乃非交易时段）
      } # is.trading 时点是位于否交易时段
 
     # 数据处理：TickData
@@ -930,7 +931,7 @@ local({
         labs(x="Time", y="Price", caption="合约价格", title="RB2601合约")
 
     # 数据处理：分钟K线数据
-    data4 <- sqldframe("show tables") |> unlist() |> grep(pattern="ma601_202511[2][5-8]", value=T) |> # 指定数据表模式
+    data4 <- sqldframe("show tables") |> unlist() |> grep(pattern="ma601_202511[2][5-6]", value=T) |> # 指定数据表模式
         lapply(\(tbl) list_sql_templates(verbose=F) |> with(`1min.kline`) |> sqlfill(rb2(tbl, "09:00", "15:00"))) |> # tickdata2模板填充
         paste0(collapse=")\nUNION\n(") |> sprintf(fmt="(%s)") %T>% cat("\n") |> # 模板组织，补充首尾的括号，以匹配UNION引入的括号
         sqlquery() |> filter(is.trading(paste0(MinuteTime, ":00"))) |> arrange(Date, MinuteTime) |> # 数据查询并交易时段过滤
@@ -968,14 +969,14 @@ local({
     .ohlcv.ctp <- \(symbol, from, to, validate=is.trading) { #提取ctp的ohlc数据
         tbls <- sprintf("t_%s_%s", symbol, format(seq(as.Date(from), as.Date(to)-1, "day"), "%Y%m%d")) |> (\(.) .[. %in% sqlquery("show tables")]) ()
         if(length(tbls) < 1)  tibble() # 数据表为空
-        else lapply(tbls, \(tbl) sqlfill(tpls$OHLCV1M, rb(tbl, '00:00', '23:59'))) |> sqlquery() |> dplyr::bind_rows() |> dplyr::filter(validate(hm(Time))) # 过滤验证
+        else lapply(tbls, \(tbl) sqlfill(tpls$OHLCV1M, rb(tbl, '00:00', '23:60'))) |> sqlquery() |> dplyr::bind_rows() |> dplyr::filter(validate(hm(Time))) # 过滤验证(23:60是字符串比较的日内时间最大值)
     }
     # 带有缓存的ohlcv.ctp, 是否更新缓存:flag
     ohlcv.ctp <- \(symbol, from, to, validate=is.trading, flag=F, home="./data/ctp/ohlcv") {
         if(!dir.exists(home)) mkdir(home) # 创建数据缓存
         fname <- do.call(sprintf, c(fmt=list("%s/%s_%s_%s.rds"), as.list(c(home, symbol, gsub("-", "", c(from, to)))))) # 缓存文件名称
         ohlcvs <- if(!flag && file.exists(fname)) readRDS(fname) #非覆盖标志且存在缓存
-                        else .ohlcv.ctp(symbol, from, to) |> (\(x) {saveRDS(x, fname); x}) () #读取并缓存结果
+                  else .ohlcv.ctp(symbol, from, to) |> (\(x) {saveRDS(x, fname); x}) () #读取并缓存结果
     }
 
     # 数据生成与绘图
@@ -1046,7 +1047,7 @@ local({
 
     # 获取系统合约数据表
     tbls <- sqlquery("show tables") |> grep(pat="rb", value=T) # 提取螺纹钢tickdata数据表 
-    symbols <- tbls %>%regmatches(x=., regexpr(text=., pattern="(?<=_)([^_]+)(?=_)", perl=T)) |> unique() # 从数据表名中提取合约符号
+    symbols <- tbls |> gsub("t_([^_]+)_\\d{8}", "\\1", x=_) |> unique() # 从数据表名中提取合约符号
 
     # 批量合约查询并汇总
     tpls <- list_sql_templates() |> with(OHLCV1M) # 提取计算分钟K线的OHLCV的SQL模板
