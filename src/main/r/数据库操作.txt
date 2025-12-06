@@ -915,8 +915,8 @@ local({
     #'  由于每个时段都是由两个分点(starti,endi)构成，因此，分点扁平化以后，偶数区间索引的位置（0,2,4,...）时段之间的间隔，即非交易时段！
     is.trading <- \(points, tradingbreaks="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
         .tradingbreaks <- (\(bs=tradingbreaks) if(is.character(bs)) bs |> strsplit("[,;]+") |> unlist() |> hm() else bs) () # 交易时段分点处理
-        points |> (\(x) (if(is.period(x)) x else (\(.) hm(gsub("^.*?(\\d{1,2}:\\d{1,2}).*$", "\\1", x=.))) (as.character(x)))) () |> (\(x) # 时间只提取小时与分钟！
-            ifelse(is.na(x), F, findInterval(x, .tradingbreaks) %% 2 !=0)) () # 判断是否交易时间（偶数区间索引乃非交易时段）
+        points |> (\(x) (if(is.period(x)) x else (\(.) hm(gsub("^.*?(\\d{1,2}:\\d{1,2}).*$", "\\1", x=.))) (as.character(x)))) () |> # 时间只提取小时与分钟！
+            (\(x) ifelse(is.na(x), F, findInterval(x, .tradingbreaks) %% 2 !=0)) () # 判断是否交易时间（偶数区间索引乃非交易时段）
      } # is.trading 时点是位于否交易时段
 
     # 数据处理：TickData
