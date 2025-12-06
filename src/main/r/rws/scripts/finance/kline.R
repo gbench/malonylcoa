@@ -121,6 +121,97 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
   sqldframe(OHLCV1M, params) %>% with(xts(.[, .keys(.)], order.by=as.POSIXct(paste(Date, Time)))) 
 }
 
+#' KDJ指标计算（对标TTR包风格）
+#' 
+#' 计算随机指标KDJ（随机摆动指标），兼容xts/zoo对象，输出K、D、J三线，
+#' 逻辑对齐传统通达信/同花顺算法，参数可配置。
+#' 
+#' @param x 价格序列：可以是xts/zoo对象（需包含High/Low/Close列），或数值矩阵/数据框（第1列=最高价，第2列=最低价，第3列=收盘价）
+#' @param n KDJ周期（通常9），对应RSV的计算周期
+#' @param nK K值平滑周期（通常3），EMA平滑窗口
+#' @param nD D值平滑周期（通常3），EMA平滑窗口
+#' @param maType 平滑方法（默认EMA，兼容TTR包的maType参数风格）
+#' @param ... 传递给maType的额外参数
+#' @return 与输入同类型的对象（xts/zoo/矩阵/数据框），包含K、D、J三列
+#' @examples
+#' # 示例1：用TTR包的样例数据测试
+#' library(TTR)
+#' data(ttrc)
+#' kdj_result <- KDJ(ttrc[,c("High","Low","Close")], n=9, nK=3, nD=3)
+#' head(kdj_result)
+#' 
+#' # 示例2：纯数值向量测试
+#' high <- c(10,12,11,13,14,15)
+#' low <- c(8,9,8,10,11,12)
+#' close <- c(9,11,10,12,13,14)
+#' price_df <- data.frame(High=high, Low=low, Close=close)
+#' kdj_result2 <- KDJ(price_df)
+#' 
+#' # 示例3：纯数值向量测试
+#' ohlc(rb2605) |> KDJ(9,3,3) |>  plot()
+#' @export
+KDJ <- function(x, n = 9, nK = 3, nD = 3, maType, ...) {
+  # ------------- 第一步：参数校验（对标TTR包的严谨性） -------------
+  if (missing(x)) stop("必须提供价格序列x（High/Low/Close）")
+  # 统一输入格式：提取High/Low/Close
+  if (inherits(x, c("xts", "zoo"))) {
+    # 兼容xts/zoo对象（TTR包核心数据类型）
+    high <- x[, grep("High", colnames(x), ignore.case = TRUE)]
+    low <- x[, grep("Low", colnames(x), ignore.case = TRUE)]
+    close <- x[, grep("Close", colnames(x), ignore.case = TRUE)]
+  } else if (is.matrix(x) || is.data.frame(x)) {
+    # 矩阵/数据框：按列顺序取High(1)、Low(2)、Close(3)
+    if (ncol(x) < 3) stop("矩阵/数据框需至少3列：High/Low/Close")
+    high <- x[, 1]
+    low <- x[, 2]
+    close <- x[, 3]
+  } else {
+    stop("x必须是xts/zoo/矩阵/数据框类型")
+  }
+  # 转换为数值向量（避免类型错误）
+  high <- as.vector(high)
+  low <- as.vector(low)
+  close <- as.vector(close)
+  
+  # ------------- 第二步：核心计算（传统KDJ算法） -------------
+  # 1. 计算未成熟随机值RSV (Raw Stochastic Value)
+  # RSV = (当前收盘价 - n周期内最低价) / (n周期内最高价 - n周期内最低价) * 100
+  low_n <- TTR::runMin(low, n = n)  # n周期最低价（TTR包滑动最小值）
+  high_n <- TTR::runMax(high, n = n) # n周期最高价（TTR包滑动最大值）
+  rsv <- (close - low_n) / (high_n - low_n) * 100
+  # 处理分母为0的情况（避免Inf/NaN）
+  rsv[is.na(rsv) | is.infinite(rsv)] <- 50
+  
+  # 2. 计算K值（RSV的EMA平滑）
+  if (missing(maType)) {
+    # 默认用EMA平滑（对标TTR包默认风格）
+    maType <- TTR::EMA
+  } else {
+    # 兼容自定义平滑函数（TTR包核心特性）
+    maType <- match.fun(maType)
+  }
+  K <- maType(rsv, n = nK, ...)
+  
+  # 3. 计算D值（K值的EMA平滑）
+  D <- maType(K, n = nD, ...)
+  
+  # 4. 计算J值（J = 3*K - 2*D，传统公式）
+  J <- 3 * K - 2 * D
+  
+  # ------------- 第三步：结果整理（对标TTR包输出风格） -------------
+  result <- cbind(K, D, J)
+  colnames(result) <- c("K", "D", "J")
+  
+  # 还原输入类型（xts/zoo保持原有索引）
+  if (inherits(x, c("xts", "zoo"))) {
+    result <- xts::xts(result, order.by = index(x))
+  } else if (is.data.frame(x)) {
+    result <- as.data.frame(result)
+  }
+  
+  return(result)
+}
+
 # 使用符号变量 
 # symbol <- "rb2605"; ohlc(symbol, 2100, 2300, keys=0)
 # 提取ohlc数据：使用符号
@@ -139,3 +230,8 @@ ohlc <- \(tbl=NA, startime=NA, endtime=NA, keys=-c(1, 2, 3, 8)) {
 # options("sqlquery.rb.instrument"="rb2601");ohlc(startime=.0900, endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))
 # 默认合约&添加移动均线的绘图(从options中清除合约代码)
 # options("sqlquery.rb.instrument"=NULL);ohlc(startime=.0900, endtime=.1200, keys=4:8) |> chartSeries(theme="white"); addSMA(c(1, 3, 5, 10, 10, 20, 30, 60))
+# 单合约的多周期式金融数据的处理
+# ohlc(rb2605,.00,.23) |> #读取指定时间范围的金融合约交易的OHLC数据
+#   with(xts(cbind(Open, High, Low, Close), index(Close))) |> # 提取ohlc数据并组装成xts格式数据
+#   list(periods=c(1, 5, 10), handler=\(i, xs) to.minutes(xs, i) |> KDJ(), xs=_) |> # 组织成本地计算的资源环境包
+#   with(lapply(periods, handler, xs=xs) |> setNames(paste0(periods, "min"))) # 开始多周期计算

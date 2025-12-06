@@ -77,17 +77,20 @@ sqlquery <- function(sql, simplify=T, n=-1, ...) {
   }, ...)(sql) # 连接使用函数
 }
 
-# 执行SQL语句查询数据结果（dbGetQuery模式)
-# sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
-# simplify 是否对查询结果做简化处理后再返回，
-#   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
-#   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
-# n 查询结果的返回最大数量
-sqlquery <- function(sql, simplify=T, n=-1, ...) {
+#' 执行SQL语句查询数据结果（dbGetQuery模式)
+#' @param sql 语句是向量化的，当 sql长度大于1，返回一个 tibble 列表，否则 返回一个 tibble 对象
+#' @param simplify 是否对查询结果做简化处理后再返回，
+#'   T:  简化处理，即 对于只有单个元素的查询结果（单元素列表），直接返回该元素；
+#'   F：不做简化处理，直接返回 查询结果（列表），不论该结果是否为单元素列表
+#' @param n 查询结果的返回最大数量
+#' @param pretty 结果美化函数，可以做一些数据R层面的后处理, 类型转换或是结果与当前执行环境的融合合并,do.call(x)等:
+#'   sqlquery("show tables") |> head() %>% sprintf(fmt="select '%s' tbl, count(*) n from %s t limit 2", ., .) |> sqlquery(prettify=bind_rows)
+#' @return 返回结果数据集
+sqlquery <- function(sql, simplify = T, n = -1, prettify=\(x) if(1 == length(x)) x[[1]] else x, ...) {
   # 连接使用函数
-  dbfun(\ (con) { # 使用数据库连接进行查询结果数据集
-    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 数据查询
-    if( simplify & length(dataset) == 1 )  dataset[[1]]  else  dataset  # 返回结果数据集
+  dbfun(\ (con, ...) { # 使用数据库连接进行查询结果数据集
+    dataset <- c(list(), sql) |> lapply(compose(tibble, partial(dbGetQuery, con=con, n=n))) |> structure(names=sql) # 执行数据查询
+    prettify(if(simplify & length(dataset) == 1) dataset[[1]] else dataset)  # 返回结果数据集
   }, ...)(sql) # 连接使用函数
 }
 
@@ -352,37 +355,49 @@ sqlfill <- function(template, params) {
 #' @return the extended record.builder
 rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb的键名
   flags <- "magrittr,lubridate" |> strsplit(",") |> unlist() |> (\(.) setNames(.,.))() |> sapply(require, character.only=T)
-  if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed") |> stop()
+  if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed!") |> stop()
   
   # 生成键值序列的记录并进行调整
   setNames(rep_len(., length(keys)), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
       ftm <- \(tm) strftime(tm, "%H:%M:%S") # 时间格式化
       Reduce(\(acc, k, v=acc[[k]]) { # 对记录值进行私人定制
         if(identical("##tbl", k)) { # 表名字段处理
-          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, getOption("sqlquery.rb.instrument", "rb2605"), .)) () # 默认合约表
+          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, # 判断tbl参数是合法有效
+            getOption("sqlquery.rb.instrument", "rb2605"), .)) () # 默认合约表
           if(grepl("^[[:alnum:]]+$", .v)) { # 金融期货合约进行增广处理
-            acc[[k]] <- "t_%s_%s" |> sprintf(.v, strftime(Sys.time(),"%Y%m%d")) # 默认表
+            timestamp <- (\(f) if(is.function(f)) strftime(f(), "%Y%m%d") else as.character(f)) (getOption("sqlquery.rb.timestamp", Sys.time))
+            acc[[k]] <- "t_%s_%s" |> sprintf(.v, timestamp) # 默认表
           } # if
         } else if(grepl("time$", k)) { # 时间字段调整，对开始时间与结束时间进行默认值处理
-          .v <- gsub("\\s*", "", v) |> (\(.) ifelse(!is.null(.) && length(.)>0 && grepl("^\\d{2}:\\d{2}$", .), paste0(., ":00"), .)) ()
-          if(tryCatch(hms(.v, quiet=T)) |> is.na()) { # 时间非法值
-            acc[[k]] <- switch(k, "#startime"=ftm(Sys.time()-getOption("sqlquery.rb.interval", 3)*3600), "#endtime"=ftm(Sys.time()), .v) # 默认时间处理
-          } # if
+          # 把".0930"格式化09:30:00;"150",格式化成15:30:00格式的简洁时间输入函数！命令行输入的API，长度少一个字符都有意义能短则短！
+          # “小时小于2位小数记录，因为小数可以保护首位0，小时大于2位整数记录”，其余形式保持原样
+          as.tm <- \(x, flag = is.numeric(x), n = as.integer(abs(x))) if(!flag) x else # 数据合法
+            ifelse(n<1, as.character(abs(x)) |> substring(3, 8), format(n, scientific=F)) |> # 若是小数去除正整数部分，若是整数取消科学数法获得完整数字
+              (\(k, h = nchar(k), pad = strrep("0", abs(6-h))) ifelse(h<6, paste0(k, pad), k)) () |> 
+                substr(1, 6) |> gsub("(..)(..)(..)", "\\1:\\2:\\3", x=_) # 时间格式化
+          # 把数字(从高到低截取前6位不足尾部补充0）转成%H:%M:%S格式的时间以方便时间输入
+          .v <- gsub("\\s*", "", ifelse(grepl("^[.[:digit:]]*$", v), as.tm(v), v)) |> 
+            (\(.) ifelse(!is.null(.) && length(.)>0 && grepl("^\\d{2}:\\d{2}$", .), paste0(., ":00"), .)) ()
+          acc[[k]] <- if(tryCatch(hms(.v, quiet = T)) |> is.na()) { # 时间非法值
+             switch(k, "#startime" = ftm(Sys.time() - getOption("sqlquery.rb.interval", 3) * 3600), "#endtime" = ftm(Sys.time()), .v) # 默认时间处理
+          } else .v # 采用格式文本  
         } # if 时间字段
         acc # 返回累计值
-      }, x=names(rec), init=rec) # 键值默认处理
+      }, x = names(rec), init = rec) # 键值默认处理
     }) () # rec 记录处理
   }) () # keys
 
 #' 使用拓展构建器进行简洁查询（采用循环填充rep_len模式的构建以及与options的sqlquery.rb.xxx配置相关默认配置）
 #' sqldframe("1min.kline", rbx.tse(rb2605)) 从数据库中查询出最近两小时的合约K线！
+#' rbx.tse(ma601, 0930, 1547) |> sqldframe('1min.kline',params=_)
 #' 
 #' 拓展合约表格时间TSE (Table,Startime,Endtime) 构建器
 #' 使用sqlquery.rb.keys配置项目进行默认键名读取
 rbx.tse <- \(...) { # 扩展表格时间
-  .rb.tse <- do.call(record.builder,args=list(getOption("sqlquery.rb.keys", "##tbl,#startime,#endtime"))) # 动态创建标准构建器
+  .rb.tse <- do.call(record.builder, args=list(getOption("sqlquery.rb.keys", "##tbl,#startime,#endtime"))) # 动态创建标准构建器
+  call_env <- parent.frame() # 调用者环境，以便eval(e, call_env)可正确算出rbx.tse的实际参数（展开...），parent.frame是类似于商品交易的上一家是相对为非固定的
   match.call(expand.dots = FALSE)$... |> # 展开参数
-    lapply(\(e) tryCatch(eval(e), error = \(err) deparse(e))) |>
+    lapply(\(e) tryCatch(eval(e, call_env), error = \(err) deparse(e))) |>
     do.call(rbx(.rb.tse), args = _) # 将标准构建器封装成扩展构建器
 }
 
@@ -473,13 +488,13 @@ sqlquery(c("select database()", "show tables"))
 sqlquery(c("select database()","show tables"), dbname="ctp")
 
 # 读取指定名称模式的数据表
-sqlquery("show tables") |> compose(sqlquery,partial(sprintf,fmt="select * from %s"),partial(grep,pattern="ma",value=T),unlist)()
+sqlquery("show tables") |> compose(sqlquery, partial(sprintf, fmt="select * from %s"), partial(grep, pattern="ma", value=T), unlist)()
 
 # 查看价格分布
 sqlquery('select * from t_ma501_20241218') |> with(boxplot(LastPrice~substr(UpdateTime,1,2)))
 
 # 查看指定数据库名称下面的数据表
-( \( x, dbnames=x |> strsplit(",") |> unlist() ) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
+(\( x, dbnames=x |> strsplit(",") |> unlist()) # x 逗号分割的数据库名称字符串, dbnames数据库名称向量
   dbnames |> lapply( \(dbname, sql) sqlquery(sql, dbname=dbname) |> getElement(1), sql="show tables") |> structure(names=dbnames) ) ("ctp,ctp2")
 
 # 读取时间序列
@@ -934,6 +949,127 @@ local({
         labs(x="Time", y="Price", caption="合约价格", title="MA2601合约")
 
 })
+
+# quantmod OHLC绘图
+local({
+    # 基础库加载(导入sqlfill,rbx.tse,sqlquery等自定义符号到工作空间,把其所在的相应环境attach到isearchpaths的包检索路径之中)
+    batch_load()
+
+    # 计算交易时段验证的生成器, "trading breaks" : tbs
+    is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
+        breaks <- tbs |> strsplit("[,;]+") |> unlist() |> hm() # 生成时段分点
+        \(x) findInterval(if(is.period(x)) x else hm(x), breaks) %% 2 != 0 # 返回交易时段过滤器
+    }
+    # 定义计算工具&资源对象
+    is.trading <- is.trading.gen() # 生成交易函数
+    rb <- record.builder("##tbl,#startime,#endtime") # 模板参数构建器
+    tpls <- list_sql_templates() #  sql模板集合
+    # 定义核心数据ohlcv的计算函数
+    .ohlcv.ctp <- \(symbol, from, to, validate=is.trading) { #提取ctp的ohlc数据
+        tbls <- sprintf("t_%s_%s", symbol, format(seq(as.Date(from), as.Date(to)-1, "day"), "%Y%m%d")) |> (\(.) .[. %in% sqlquery("show tables")]) ()
+        if(length(tbls) < 1)  tibble() # 数据表为空
+        else lapply(tbls, \(tbl) sqlfill(tpls$OHLCV1M, rb(tbl, '00:00', '23:59'))) |> sqlquery() |> dplyr::bind_rows() |> dplyr::filter(validate(hm(Time))) # 过滤验证
+    }
+    # 带有缓存的ohlcv.ctp, 是否更新缓存:flag
+    ohlcv.ctp <- \(symbol, from, to, validate=is.trading, flag=F, home="./data/ctp/ohlcv") {
+        if(!dir.exists(home)) mkdir(home) # 创建数据缓存
+        fname <- do.call(sprintf, c(fmt=list("%s/%s_%s_%s.rds"), as.list(c(home, symbol, gsub("-", "", c(from, to)))))) # 缓存文件名称
+        ohlcvs <- if(!flag && file.exists(fname)) readRDS(fname) #非覆盖标志且存在缓存
+                        else .ohlcv.ctp(symbol, from, to) |> (\(x) {saveRDS(x, fname); x}) () #读取并缓存结果
+    }
+
+    # 数据生成与绘图
+    system.time({ #生成过程计时（运算效率统计）
+        ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20', flag=T) # 测试数据
+        ohlcvs |> with(xts(cbind(Open, High, Low, Close, Volume), as.POSIXct(paste(Date, Time)))) |> chartSeries(theme='white') # quantmod绘图
+    }) # 生成过程计时（运算效率统计）
+})
+
+# ==============================================================================
+# system.time的核心指标概念说明（技术+企业经营双视角类比）
+# ==============================================================================
+# user：R进程自身执行代码、处理核心逻辑的CPU耗时，
+#       技术本质：纯“自己干”的运算时间，无外部依赖；
+#       企业类比：团队内部梳理需求、处理数据、完成核心工作的实际干活时间，
+#                代表企业自身的工作能力（管理效率、执行效率、核心业务处理能力）。
+#
+# system：操作系统内核为R进程提供服务的CPU耗时，
+#         技术本质：系统级服务的运算时间（如IO、渲染、网络调用的内核处理）；
+#         企业类比：外包/后勤团队帮对接资源、打印文件、处理标准化流程的实际干活时间，
+#                  代表企业所在国内经济环境的基础治理效率（社会配套、行业基础设施、政企服务能力）。
+#
+# elapsed：代码从启动到结束的真实总耗时（包含所有干活+等待时间），
+#          技术本质：总时间 = user + system + 外部资源等待时间（网络/IO/硬件等待）；
+#          企业类比：从启动工作到最终交付成果的总时长 = 团队干活时间 + 外包干活时间 + 等待物流运输/外部资源的时间，
+#                   其中等待时间代表外部客观条件的效率（航运、气象、供应链、政策响应等物流/资源流通效率）。
+#
+# 关键补充：elapsed - (user + system) = 纯外部等待时间，
+#          技术层面：网络/数据库/硬件的等待耗时（核心性能瓶颈）；
+#          企业层面：外部环境的不确定性耗时（如物流延迟、供应链卡顿、政策审批等待等）。
+# ----------------------------------------------------------------------------------------------------------------------------------------
+#
+# 本地缓存读取（这是数据只在本地的执行情况，即没有物流采购，直接采用库存的OHLC的成品材料）
+# ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20', flag=F) # 测试数据
+#   user  system elapsed 
+#   0.45    0.87    1.33 
+# 
+# IO&DB企业的下单制造&执行（这是数据分布于外地/DB的执行情况，即包含物流采购，需要通过SQL给数据企业DB下单令其生产制造OHLC）
+# ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20', flag=T) # 测试数据
+# >
+#    user  system elapsed 
+#    0.63    0.78   15.62 
+#
+# 示例：结合场景的双视角解读
+system.time({
+  # flag=T：调用CTP接口（依赖外部网络/数据库，对应企业依赖外部供应链/物流）
+  ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20', flag=T)  
+  # 本地处理+绘图（企业内部核心工作+外包标准化工作）
+  ohlcvs |> with(xts(cbind(Open, High, Low, Close, Volume), as.POSIXct(paste(Date, Time)))) |> chartSeries(theme='white')  
+})
+# 耗时解读（技术+企业视角）：
+# user (~0.5s)：R核心数据处理 = 企业团队高效完成核心业务（自身能力强）；
+# system (~0.8s)：系统IO/渲染服务 = 外包/后勤高效完成配套工作（外部基础环境良好）；
+# elapsed (~15s)：总时长 = 1.3s干活时间 + 13.7s外部等待 = 企业自身+外包效率高，但物流/供应链延迟成为瓶颈。（因为OHLCV计算位于数据库端）
+#
+# 关键补充：elapsed - (user + system) 是纯等待时间，
+#          类比：团队等待物流运输（网络/数据库IO）、外部部门响应的时间，也是核心性能瓶颈来源，即为R程序执行的提供的国际环境/外贸服务的运行效率！
+# ==============================================================================
+
+# 模板与多表混合检索
+local({
+    # 基础库加载(导入sqlfill,rbx.tse,sqlquery等自定义符号到工作空间,把其所在的相应环境attach到isearchpaths的包检索路径之中)
+    batch_load()
+    
+    # 自定义sql 模板
+    st <- "select PyctpCreateTime t, LastPrice x , coalesce(Volume-lag(Volume) over(), Volume) w from ##tbl" # 交易价格信息(x:price, w:weight)
+    sqlfill(st, rbx.tse()) |> sqlquery() |> with(xts(cbind(x, w), as.POSIXct(t))) # 使用rbx.tse模板进行默认的当日合约填充并转成时间序列
+
+    # 获取系统合约数据表
+    tbls <- sqlquery("show tables") |> grep(pat="rb", value=T) # 提取螺纹钢tickdata数据表 
+    symbols <- tbls %>%regmatches(x=., regexpr(text=., pattern="(?<=_)([^_]+)(?=_)", perl=T)) |> unique() # 从数据表名中提取合约符号
+
+    # 批量合约查询并汇总
+    tpls <- list_sql_templates() |> with(OHLCV1M) # 提取计算分钟K线的OHLCV的SQL模板
+    rb <- record.builder("##tbl,#startime,#endtime") # SQL模板的参数构建器
+    .tbls <- tbls |> sort() |> head(5) # 选择取前5个（数据很多，示例演示！）
+    mapply(sqlfill, tpls, lapply(.tbls, \(tbl) rb(tbl, '09:00', '23:00'))) |> sqlquery() |> do.call(rbind, args=_) # 检索并汇总
+})
+
+# 数据示例
+# >     mapply(sqlfill, tpls, lapply(.tbls, \(tbl) rb(tbl, '09:00', '23:00'))) |> sqlquery() |> do.call(rbind, args=_)
+# # A tibble: 9 × 8
+#   Symbol Date       Time   Open  High   Low Close Volume
+# * <chr>  <chr>      <chr> <dbl> <dbl> <dbl> <dbl>  <dbl>
+# 1 rb2505 2025-04-28 14:12  3060  3060  3059  3060    186
+# 2 rb2505 2025-04-28 14:13  3060  3060  3059  3059    123
+# 3 rb2505 2025-04-28 14:14  3059  3060  3058  3058     64
+# 4 rb2505 2025-04-28 14:15  3058  3059  3057  3057    106
+# 5 rb2505 2025-04-28 14:18  3057  3058  3057  3058    140
+# 6 rb2506 2025-04-28 14:18  3068  3068  3068  3068      0
+# 7 rb2507 2025-04-28 14:18  3103  3104  3103  3104     27
+# 8 rb2508 2025-04-28 14:18  3106  3106  3106  3106      0
+# 9 rb2509 2025-04-28 14:18  3113  3113  3113  3113      0
+
 
 # ----------------------------------------------------------------------------------------------------------------
 # 数据库读取示例

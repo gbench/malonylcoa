@@ -541,8 +541,9 @@ rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb�
 #' 使用sqlquery.rb.keys配置项目进行默认键名读取
 rbx.tse <- \(...) { # 扩展表格时间
   .rb.tse <- do.call(record.builder, args=list(getOption("sqlquery.rb.keys", "##tbl,#startime,#endtime"))) # 动态创建标准构建器
+  call_env <- parent.frame() # 调用者环境，以便eval(e, call_env)可正确算出rbx.tse的实际参数（展开...），parent.frame是类似于商品交易的上一家是相对为非固定的
   match.call(expand.dots = FALSE)$... |> # 展开参数
-    lapply(\(e) tryCatch(eval(e), error = \(err) deparse(e))) |>
+    lapply(\(e) tryCatch(eval(e, call_env), error = \(err) deparse(e))) |>
     do.call(rbx(.rb.tse), args = _) # 将标准构建器封装成扩展构建器
 }
 
