@@ -980,7 +980,7 @@ local({
 
     # 数据生成与绘图
     system.time({ #生成过程计时（运算效率统计）
-        ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20', flag=T) # 测试数据
+        ohlcvs <- ohlcv.ctp('rb2601', '2025-11-13', '2025-11-20', flag=F) # 测试数据
         ohlcvs |> with(xts(cbind(Open, High, Low, Close, Volume), as.POSIXct(paste(Date, Time)))) |> chartSeries(theme='white') # quantmod绘图
     }) # 生成过程计时（运算效率统计）
 })

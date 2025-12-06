@@ -147,4 +147,4 @@ eval(quote({ # 自举构建具体过程逻辑
   # 返回自举环境
   
   .sqlqueryenv # 返回执行环境（eval的执行所在环境：new.env()的返回结果)!
-}), envir=new.env()) |> with(rebuild_sqlquery(T)) |> attach(name=".SqlQueryEnv") #  附加到工作区，命名.SqlQueryEnv以供工作使用（仿照.GlobalEnv）！
+}), envir=new.env()) |> with(rebuild_sqlquery(F)) |> attach(name=".SqlQueryEnv") #  附加到工作区，命名.SqlQueryEnv以供工作使用（仿照.GlobalEnv）！
