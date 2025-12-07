@@ -508,6 +508,7 @@ sqlquery.h10ctp("select database()") |> unlist()
 
 # 使用元编程（!!展开）分解表结构，将pick即p函数置于list可避免符号p避免污染到外部环境。p:  partition into parts and pick 裂解&甄选
 # 这其实就是用list创建了一个原型对象，是对OOP编程的封装的R的实现！换句话说R的list可以当成对象来使用它就相当于JS的Object可以挂载一切！
+# 我们通过"t_([^_]+)_(\\d{8})"定义表名模式"t_{symbol}_{date}"并设计一个成分提取函数p，最后在with所张开的隔离环境里，对表名tbl进行合约标识与交易日期的提取！
 list(p = \(i) expr(gsub("t_([^_]+)_(\\d{8})", !!paste0("\\", i), tbl))) |> with(sqlquery("show tables") |> tibble(tbl=_, symbol=!!p(1), date=!!p(2)))
 # >
 # A tibble: 409 × 3
