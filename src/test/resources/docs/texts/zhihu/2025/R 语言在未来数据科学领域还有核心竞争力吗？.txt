@@ -215,25 +215,24 @@ list(.p = \(pattern, i, x) expr(gsub(!!pattern, !!paste0("\\", i), !!x))) |> wit
 
 其实，元编程实际应用的情形，主要是用于生成DSL，即某些自定义的计算指令，比如：
 
-# 使用元编程进行自定义指令：aoc=average of change, soV=average of Volume等的计算
+# 使用元编程自定义指令：aoc=average of change, soV=sum of Volume, sdoV=sd of Volume, noC=number of Close等
 ss <- \(x, pattern="[.,/[:blank:]\\]+") unlist(strsplit(x, pattern)) # 字符串分解工具
 ops <- \(defs="aoc,sov,sdoV") list( # 操作指令解析器：defs指令定义的结构模式为:"{func}o{param}"
     fs=ss("mean,sum,sd,length") |> setNames(ss("a,s,sd,n")),# 函数名称列表
     xs=ss("chg,Close,Volume") |> setNames(ss("c,C,V")) # 参数名称列表
  ) |> with(strsplit(ss(defs), "o") |> lapply(\(ps) # 以of的"o"标记来解析指令片段
     substitute(f(x), env=list(f=as.symbol(fs[ps[1]]), x=as.symbol(xs[ps[2]]))) # 表达式生成
- ) |> setNames(ss(defs))) # ops 自定义操作指令
+ ) |> setNames(ss(defs))) # ops 自定义指令
 ohlc("rb2605", startime='09:00', endtime="12:00", keys=4:8) |> to.minutes(5) |> # 聚合5分钟K线
     setNames(ss("Open,High,Low,Close,Volume")) |> as_tibble(rownames='time') |> # 转成tibble以便非标计算NSE
-    mutate(chg=Close-Open) |> group_by(flag=ifelse(Close>Open, "Bullish", "Bearish")) |> # 根据上涨与下跌进行分组
-    summarise(!!!ops("aoc,soc,aoV,soV,sdoC,sdoV,noC")) # 使用自定义指令对涨跌分组进行结果统计
+    mutate(chg=Close-Open) |> group_by(flag=ifelse(Close>Open, "Bullish", "Bearish")) |> # 根据上涨跌进行分组
+    summarise(!!!ops("aoc,soc,aoV,soV,sdoC,sdoV,noC"), voc=sum(Volume)/sum(chg)) # 使用自定义指令对涨跌做分组统计
 # >
-# # A tibble: 2 × 7
-# # A tibble: 2 × 8
-#   flag    aoc   soc    aoV    soV  sdoC  sdoV   noC
-#   <lgl> <dbl> <dbl>  <dbl>  <dbl> <dbl> <dbl> <int>
-# 1 FALSE -1.75   -28  9160. 146565  2.71 5929.    16
-# 2 TRUE   2.38    31 12563  163319  2.68 6892.    13.
+# # A tibble: 2 × 9
+#   flag      aoc   soc    aoV    soV  sdoC  sdoV   noC    voc
+#   <chr>   <dbl> <dbl>  <dbl>  <dbl> <dbl> <dbl> <int>  <dbl>
+# 1 Bearish -1.75   -28  9160. 146565  2.71 5929.    16 -5234.
+# 2 Bullish  2.38    31 12563  163319  2.68 6892.    13  5268.
 还是要再提醒一下，那些认为 R 语法不够现代的人注意一点，上述示例代码没有使用一个关键字，全是标准库以及sqlquery、sqldframe、record.builder这 3 个从外界读取数据的自定义数据源 IO 符号。当我们把标准库与数据源 IO 符号通过Rprofile.site固化到 R 的会话（Session）环境中时，R 语言可以展现出一种几乎完全不用关键字来编码、近乎自然语言描述的能力，即代码在专业领域内是自解释的（DSL）！
 
 与过程式编程那种仿佛要操控一切的“时空主宰者”式“上帝思维”不同，函数式编程的思维更像是商人的信用契约模式：我们只需用合同（即函数）来明确合作方式与接口约定，接下来便完全遵循金融工程的逻辑，通过不断对基础合同进行衍生与递归操作，生成新的高阶合同（函数）即特征（金融）合约工具，最后再组合这些特征合约工具来构造&结构出最终目标的成果形式，这所有的一切都是一种 Promise 的执行约定。
