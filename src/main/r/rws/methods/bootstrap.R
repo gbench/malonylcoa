@@ -13,7 +13,7 @@ ohlc <- \(symbol="rb2605", startime="09:00", endtime="12:00", date=strftime(Sys.
   with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
 
 xs <- ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) 
-btrs.close <- xs |> with(boot(Close[1:30], \(x, indices) mean(x[indices]), R = 1000))
+btrs.close <- xs |> with(boot(Close[1:30], \(.xs, i) mean(.xs[i]), R = 1000))
 
 # 查看结果:前10分钟的收盘价均值分布
 print(btrs.close)
@@ -44,37 +44,44 @@ with(btrs.close, {
 
 # 提取数据
 ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> with({
-    # 假设检验：单样本均值检验（检验均值是高于特定值）
-    close.expected=3050 # 收盘价是否能站上3050
-    
-    # 根据前30min交易判断收盘价是否能站上close.expected
+    close.expected <- 3050
     xs <- Close[1:30]
-    observed_diff <- mean(xs) - close.expected
-    btest.close <- boot(xs, \(x, indices, mu0) mean(x[indices]) - mu0, mu0 = close.expected, R = 2000)
     
-    # 计算置信区间（百分位数法）
-    ci_lower <- quantile(btest.close$t, 0.05)
-    ci_upper <- quantile(btest.close$t, 0.95)
-    
-    # p值计算（单尾检验）
-    p_value <- mean(btest.close$t >= observed_diff)
-    
-    # 结果输出
-    cat("=== Bootstrap单样本均值检验结果 ===\n")
+    cat("样本大小:", length(xs), "\n")
     cat("样本均值:", mean(xs), "\n")
-    cat("检验值:", close.expected, "\n")
-    cat("均值差值:", observed_diff, "\n")
-    cat("90%置信区间:[", ci_lower, ",", ci_upper, "]\n")
-    cat("单尾检验p值:", p_value, "\n")
-   
-    # 效应量计算
-    effect_size <- observed_diff / sd(xs)
-    cat("效应量(Cohen's d):", effect_size, "\n")
-
-    # 决策
+    
+    # 1. 计算原始数据的bootstrap置信区间
+    boot_orig <- boot(xs, \(.xs, i) mean(.xs[i]), R = 2000)
+    ci <- quantile(boot_orig$t, c(0.05, 0.95))
+    
+    # 2. 假设检验：创建H₀分布(μ=3050)
+    shifted_xs <- xs - mean(xs) + close.expected
+    boot_h0 <- boot(shifted_xs, \(.xs, i) mean(.xs[i]), R = 2000)
+    
+    # 3. P值计算（右侧检验）
+    p_value <- mean(boot_h0$t >= mean(xs))
+    
+    # 4. 可视化（可选）
+    hist(boot_h0$t, main="H₀下的Bootstrap分布(μ=3050)", xlab="样本均值", col="lightblue")
+    abline(v=mean(xs), col="red", lwd=2, lty=2)
+    abline(v=close.expected, col="blue", lwd=2)
+    legend("topright", legend=c(paste("观测均值 =", round(mean(xs), 2)), paste("H₀均值 =", close.expected)), col=c("red", "blue"), lty=2:1)
+    
+    # 5. 结果输出
+    cat("\n=== Bootstrap单样本均值检验结果 ===\n")
+    cat("检验假设: H₀: μ ≤", close.expected, " vs H₁: μ >", close.expected, "\n")
+    cat("样本均值:", round(mean(xs), 2), "\n")
+    cat("90%置信区间:[", round(ci[1], 2), ",", round(ci[2], 2), "]\n")
+    cat("单尾检验p值:", round(p_value, 4), "\n")
+    
     if (p_value < 0.05) {
-        cat("结果: 拒绝H0，均值显著高于", close.expected, "\n")
+        cat("结论: 拒绝H₀，均值显著高于", close.expected, "(p =", round(p_value, 4), ")\n")
     } else {
-        cat("结果: 不能拒绝H0，没有足够证据表明均值高于", close.expected, "\n")
+        cat("结论: 不能拒绝H₀，没有足够证据表明均值高于", close.expected, "(p =", round(p_value, 4), ")\n")
+    }
+    
+    # 6. 附加决策建议
+    if (mean(xs) > close.expected && p_value < 0.1) {
+        cat("\n[交易建议] 收盘价站上3050的可能性较大\n")
     }
 })
