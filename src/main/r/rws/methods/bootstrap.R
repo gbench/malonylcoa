@@ -12,6 +12,10 @@ ohlc <- \(symbol="rb2605", startime="09:00", endtime="12:00", date=strftime(Sys.
   `OHLCV1M` |> sqldframe(rb(gettextf("t_%s_%s", symbol, date), startime, endtime)) %>% # 填充合约K线sql模板
   with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
 
+# 确定区间分布
+ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
+    with(boot(Close, compose(mean, `[`), R=1000)) |> with(quantile(t, c(0.1, 0.9)))
+
 xs <- ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) 
 btrs.close <- xs |> with(boot(Close[1:30], \(.xs, i) mean(.xs[i]), R = 1000))
 
