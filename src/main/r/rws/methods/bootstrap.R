@@ -63,7 +63,7 @@ ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
     boot_h0 <- boot(shifted_xs, \(.xs, i) mean(.xs[i]), R = 2000)
     
     # 3. P值计算（右侧检验）
-    p_value <- mean(boot_h0$t >= mean(xs))
+    p_value <- mean(boot_h0$t >= mean(xs)) # 使用H₀均值与实际试验值的有效差异度来计算差异度频率
     
     # 4. 可视化（可选）
     hist(boot_h0$t, main="H₀下的Bootstrap分布(μ=3050)", xlab="样本均值", col="lightblue")
