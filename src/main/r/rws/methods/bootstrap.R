@@ -1,5 +1,5 @@
 # 安装并加载必要的包
-install.packages("boot")
+if(!require(boot)) install.packages("boot")
 library(boot)
 batch_load()
 
@@ -55,12 +55,12 @@ ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
     cat("样本均值:", mean(xs), "\n")
     
     # 1. 计算原始数据的bootstrap置信区间
-    boot_orig <- boot(xs, \(.xs, i) mean(.xs[i]), R = 2000)
+    boot_orig <- boot(xs, compose(mean, `[`), R = 2000)
     ci <- quantile(boot_orig$t, c(0.05, 0.95))
     
     # 2. 假设检验：创建H₀分布(μ=3050)
     shifted_xs <- xs - mean(xs) + close.expected
-    boot_h0 <- boot(shifted_xs, \(.xs, i) mean(.xs[i]), R = 2000)
+    boot_h0 <- boot(shifted_xs, compose(mean, `[`), R = 2000)
     
     # 3. P值计算（右侧检验）
     p_value <- mean(boot_h0$t >= mean(xs)) # 使用H₀均值与实际试验值的有效差异度来计算差异度频率
