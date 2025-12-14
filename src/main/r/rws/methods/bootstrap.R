@@ -22,9 +22,14 @@ ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8
 } # 多日表K线的求值函数
 qux <- \(key, fn, probs = seq(0, 1, 0.25)) expr(xs |> # 生成四分位数表达式(采用bootstrap抽样生成5000个样本)
     with(boot(!!ensym(key), compose(!!ensym(fn), `[`), 5000)) |> with(quantile(t, !!probs))) # qu:quantile, x:统计量
-indgen.mean <- list(p=\(x) expr(qux(!!ensym(x), mean)) |> eval()) |> with(\(...) # 均值指标生成器
-    ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) expr(!!p(!!x))) %>% (\(.) expr(cbind(!!!.))) ()) # 指标生成器
-indgen.mean(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用均值生成器来计算指标分布形态
+indgen <- \(fn) list(p=\(x) expr(qux(!!ensym(x), !!ensym(fn))) |> eval()) |> with(\(...) # 指标生成器
+    ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) expr(!!p(!!x))) %>% (\(.) expr(cbind(!!!.))) ()) # 指标生成器IndicatorGenerator
+
+# 均值指标统计
+indgen(mean)(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(均值统计)来计算指标分布形态
+
+# 标准差指标统计
+indgen(sd)(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(标准差统计)来计算指标分布形态
 
 # 确定区间分布
 ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
