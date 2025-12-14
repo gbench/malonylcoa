@@ -20,6 +20,13 @@ ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8
         lapply(ohlc) |> (\(.) if(flag) do.call(rbind, args=.) else .) ()
 }
 
+# 生成四分位数表达式
+qux <- \(key, fn, probs = seq(0, 1, 0.25)) expr(xs |> with(boot(!!ensym(key), compose(!!ensym(fn),`[`), 5000)) |> with(quantile(t, !!probs)))
+# 批量生成表达式
+(list(p=\(x) expr(qux(!!ensym(x), sd)) |> eval()) |> with(\(...) ensyms(...) %>% setNames(., as.character(.)) |> 
+    lapply(\(x) expr(!!p(!!x))) %>% (\(.) expr(cbind(!!!.)))()
+)) (Close, Open, Volume) |> eval(list(xs=xs)) # 计算
+
 # 确定区间分布
 ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
     with(boot(Close, compose(mean, `[`), R=1000)) |> with(quantile(t, c(0.1, 0.9)))
