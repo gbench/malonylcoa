@@ -277,9 +277,11 @@ ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8
 } # 多日表K线的求值函数
 qux <- \(key, fn, probs = seq(0, 1, 0.25)) expr(xs |> # 生成四分位数表达式(采用bootstrap抽样生成5000个样本)
     with(boot(!!ensym(key), compose(!!ensym(fn), `[`), 5000)) |> with(quantile(t, !!probs))) # qu:quantile, x:统计量
-indgen.mean <- list(p=\(x) expr(qux(!!ensym(x), mean)) |> eval()) |> with(\(...) # 均值指标生成器
-    ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) expr(!!p(!!x))) %>% (\(.) expr(cbind(!!!.))) ()) # 指标生成器
-indgen.mean(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用均值生成器来计算指标分布形态
+indgen <- \(fn) list(p=\(x) expr(qux(!!ensym(x), !!ensym(fn))) |> eval()) |> with(\(...) # 指标生成器
+    ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) expr(!!p(!!x))) %>% (\(.) expr(cbind(!!!.))) ()) # 指标生成器IndicatorGenerator
+
+# 均值指标统计
+indgen(mean)(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(均值统计)来计算指标分布形态
 # >
 #          Open     High    Close      Low   Volume
 # 0%   3086.487 3087.320 3085.900 3085.218 3040.794
@@ -287,6 +289,17 @@ indgen.mean(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_202512
 # 50%  3088.486 3089.610 3088.499 3087.360 3555.689
 # 75%  3088.879 3090.015 3088.907 3087.781 3648.457
 # 100% 3090.568 3091.987 3090.858 3089.592 4064.042
+# >
+
+# 标准差指标统计
+indgen(sd)(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(标准差统计)来计算指标分布形态
+# >
+#          Open     High    Close      Low   Volume
+# 0%   18.00833 18.32910 18.30593 18.52507 3094.675
+# 25%  19.47144 19.49445 19.47025 19.43613 3896.707
+# 50%  19.71371 19.74270 19.72641 19.68090 4167.487
+# 75%  19.96665 20.00294 19.97133 19.92536 4443.329
+# 100% 20.94840 20.95716 21.14223 20.98043 5602.816
 
 
 还是要再提醒一下，那些认为 R 语法不够现代的人请注意：上述示例代码没使用一个R语法关键字，全是标准库以及sqlquery、sqldframe这 2 个从外界读取数据的自定义数据源 IO 符号。当我们把标准库与数据源 IO 符号通过Rprofile.site固化到 R 的会话（Session）环境之中，R 语言就可以展现出一种几乎完全不用关键字来编码、近乎自然语言的描述&表达能力，读写R代码可以使用与阅读&创作文学剧本&小说一样的思维：list(枚举&罗列关键概念&人物的定义&介绍) |> with(突出&刻画、组织&安排上述的关键概念&人物至特定形式的关系结构网络并将其锚定&捆绑至某种参数&配置的业务&事件与情节&冲突之上，精心演绎、推进&展开该专业情景中的故事逻辑&发展过程，从而表达出此程序的 目标&目的、主题&主旨、意义&价值)，即代码在专业领域内是自解释的（DSL）！
