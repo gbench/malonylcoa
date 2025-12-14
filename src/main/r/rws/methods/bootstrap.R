@@ -9,8 +9,16 @@ batch_load()
 rb <- record.builder("##tbl,#startime,#endtime")
 # 计算期货合约的收盘价的分布
 ohlc <- \(symbol="rb2605", startime="09:00", endtime="12:00", date=strftime(Sys.Date(), "%Y%m%d"), keys=4:8) 
-  `OHLCV1M` |> sqldframe(rb(gettextf("t_%s_%s", symbol, date), startime, endtime)) %>% # 填充合约K线sql模板
-  with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
+    `OHLCV1M` |> sqldframe(rb(gettextf("t_%s_%s", symbol, date), startime, endtime)) %>% # 填充合约K线sql模板
+    with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
+
+# 多表K线
+ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8, flag=T) {
+    rb <- record.builder("##tbl,#startime,#endtime")
+    ohlc <- \(tbl) `OHLCV1M` |> sqldframe(rb(tbl, startime, endtime)) %>% with(xts(.[, keys], as.POSIXct(paste(Date, Time))))
+    sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) %>% setNames(., .) |> 
+        lapply(ohlc) |> (\(.) if(flag) do.call(rbind, args=.) else .) ()
+}
 
 # 确定区间分布
 ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
