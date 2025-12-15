@@ -275,65 +275,68 @@ ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8
     sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) %>% setNames(., .) |> # 提取指定表名模式的tickdata交易数据表
         lapply(ohlc) |> (\(.) if(flag) do.call(rbind, args=.) else .) () # 根据flag标记进行多日K线数据的合并
 } # 多日表K线的求值函数
-btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1),`[`),5000) |> # bootrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
+btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric,`[`),5000) |> # bootrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
     with(eval(call(!!as.character(ensym(fn2)), t, !!!match.call(expand.dots=F)$...)))) # 自助法生成器BootstrapGenerator
-indgen <- \(fn) list(p=\(x) expr(btgen(!!ensym(x), !!ensym(fn)) (quantile, props=seq(0, 1, .25)))) |> with(\(...) # 指标生成器
+indgen <- \(fn) list(p=\(x) expr(btgen(!!ensym(x), !!ensym(fn)) (quantile, probs=seq(0, 1, .25)))) |> with(\(...) # 指标生成器
     ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) eval(p(!!ensym(x)))) %>% (\(.) expr(with(xs, cbind(!!!.)))) ()) # 指标生成器IndicatorGenerator
 
 # 均值统计量的分析器生成函数
 btgen(Close, mean) 
 # >
-# \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1),`[`),5000) |> # bootrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
+# \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric,`[`),5000) |> # bootrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
 #     with(eval(call(!!as.character(ensym(fn2)), t, !!!match.call(expand.dots=F)$...))))
-# <environment: 0x000001b84aa12a90>
+# <environment: 0x0000021e8f8b07f0>
 
 # 均值统计量&带有四分位数分析法的表达式
-btgen(Close, mean) (quantile, props=seq(0, 1, .25))
+btgen(Close, mean) (quantile, probs=seq(0, 1, .25))
 # > 
-# with(boot(Close, compose(mean, `[`), 5000), eval(call("quantile", 
-#     t, props = seq(0, 1, 0.25))))
+# with(boot(Close, compose(mean, as.numeric, `[`), 5000), eval(call("quantile", 
+#     t, probs = seq(0, 1, 0.25))))
 
 # 多指标混合的计算表达式
 indgen(mean)(Open, High, Low, Close, Volume)
 # > 
-# with(xs, cbind(Open = with(boot(Open, compose(mean, `[`), 5000), 
-#     eval(call("quantile", t, props = seq(0, 1, 0.25)))), High = with(boot(High, 
-#     compose(mean, `[`), 5000), eval(call("quantile", t, props = seq(0, 
-#     1, 0.25)))), Low = with(boot(Low, compose(mean, `[`), 5000), 
-#     eval(call("quantile", t, props = seq(0, 1, 0.25)))), Close = with(boot(Close, 
-#     compose(mean, `[`), 5000), eval(call("quantile", t, props = seq(0, 
-#     1, 0.25)))), Volume = with(boot(Volume, compose(mean, `[`), 
-#     5000), eval(call("quantile", t, props = seq(0, 1, 0.25))))))
+# with(xs, cbind(Open = with(boot(Open, compose(mean, as.numeric, 
+#     `[`), 5000), eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     High = with(boot(High, compose(mean, as.numeric, `[`), 5000), 
+#         eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     Low = with(boot(Low, compose(mean, as.numeric, `[`), 5000), 
+#         eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     Close = with(boot(Close, compose(mean, as.numeric, `[`), 
+#         5000), eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     Volume = with(boot(Volume, compose(mean, as.numeric, `[`), 
+#         5000), eval(call("quantile", t, probs = seq(0, 1, 0.25))))))
 
 # 均值指标统计
 indgen(mean)(Open, High, Low, Close, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(均值统计)来计算指标分布形态
 # >
 #          Open     High      Low    Close   Volume
-# 0%   3086.524 3087.414 3085.204 3086.254 3168.404
-# 25%  3088.083 3089.207 3086.962 3088.067 3473.859
-# 50%  3088.470 3089.617 3087.365 3088.484 3563.042
-# 75%  3088.900 3090.035 3087.781 3088.903 3651.783
-# 100% 3090.835 3092.430 3089.498 3090.851 4015.434
+# 0%   3086.129 3087.522 3084.996 3086.057 3132.222
+# 25%  3088.078 3089.214 3086.943 3088.062 3475.830
+# 50%  3088.485 3089.634 3087.378 3088.480 3561.047
+# 75%  3088.881 3090.053 3087.783 3088.883 3650.408
+# 100% 3091.102 3092.157 3089.905 3090.796 4046.951
+
 
 # 标准差指标统计
 indgen(sd)(Open, High, Low, Close, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(标准差统计)来计算指标分布形态
 # >
 #          Open     High      Low    Close   Volume
-# 0%   18.21089 18.31407 18.30807 18.35498 3086.407
-# 25%  19.46954 19.49842 19.42824 19.45861 3907.355
-# 50%  19.71510 19.75393 19.68004 19.71335 4166.874
-# 75%  19.96874 20.01223 19.93468 19.96444 4431.359
-# 100% 21.02339 21.05687 20.90186 20.96538 5803.370
+# 0%   18.46859 18.49315 18.47023 18.37209 3048.028
+# 25%  19.46811 19.49265 19.43249 19.47094 3913.760
+# 50%  19.72087 19.74353 19.67659 19.71951 4172.149
+# 75%  19.97971 19.99937 19.93360 19.96717 4445.593
+# 100% 20.99865 20.99349 20.84144 21.19670 5626.599
 
 # 中位绝对偏差指标统计
 indgen(mad)(Open, High, Low, Close, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(中位绝对偏差)来计算指标分布形态
 # >
 #         Open    High     Low   Close   Volume
-# 0%   17.7912 16.3086 16.3086 16.3086 1659.029
-# 25%  20.7564 20.7564 20.7564 20.7564 1891.798
-# 50%  20.7564 20.7564 22.2390 20.7564 1957.032
-# 75%  22.2390 22.2390 22.2390 22.2390 2037.092
-# 100% 25.2042 25.2042 26.6868 25.2042 2437.394
+# 0%   16.3086 16.3086 17.7912 16.3086 1604.173
+# 25%  20.7564 20.7564 20.7564 20.7564 1894.763
+# 50%  20.7564 20.7564 22.2390 20.7564 1961.480
+# 75%  22.2390 22.2390 22.2390 22.2390 2043.023
+# 100% 26.6868 25.2042 26.6868 25.2042 2346.956
 
 
 还是要再提醒一下，那些认为 R 语法不够现代的人请注意：上述示例代码没使用一个R语法关键字，全是标准库以及sqlquery、sqldframe这 2 个从外界读取数据的自定义数据源 IO 符号。当我们把标准库与数据源 IO 符号通过Rprofile.site固化到 R 的会话（Session）环境之中，R 语言就可以展现出一种几乎完全不用关键字来编码、近乎自然语言的描述&表达能力，读写R代码可以使用与阅读&创作文学剧本&小说一样的思维：list(枚举&罗列关键概念&人物的定义&介绍) |> with(突出&刻画、组织&安排上述的关键概念&人物至特定形式的关系结构网络并将其锚定&捆绑至某种参数&配置的业务&事件与情节&冲突之上，精心演绎、推进&展开该专业情景中的故事逻辑&发展过程，从而表达出此程序的 目标&目的、主题&主旨、意义&价值)，即代码在专业领域内是自解释的（DSL）！
@@ -372,7 +375,7 @@ indgen(mad)(Open, High, Low, Close, Volume) |> eval(list(xs=ohlcs("rb2605_202512
 
 函数式编程代码不会冗长的另一个原因是，它构建在类似交易平台的架构之上。就好比期货证券交易者无需去调试螺纹钢的直径，因为交易所（即语言平台）已经确保提供了相应的规范与保障。当然，交易所也存在崩溃的可能，不过这属于系统风险，而系统风险无法在系统内部解决，所以程序在设计时通常不考虑此类情况。即便出现崩溃，我们也可以准备多个后备方案来应对（比如建立多个异地异构异质平台）。
 
-总之，函数式编程+元编程通常是无需传统意义上的调试（跟踪debug），比如上文的：btgen(Close, mean) (quantile, props=seq(0, 1, .25)) ，本质上，它与C或LISP的宏展开一样，只是去生成了某个特定结构的表达式：with(boot(Close, compose(mean, `[`), 5000), eval(call("quantile", t, props = seq(0, 1, 0.25))))。可理解成，将此段较长的表达式给浓缩成较短的形式：“btgen(Close, mean) (quantile, props=seq(0, 1, .25))”，即缩写&简化！为何要调试缩写？由于完全没有状态，生成的不对，其实是不如意、未达预期，那就重写、重新设计一个！现实中没人调试“美国/US”（缩写符号）来测试它生成的”美利坚合众国/United States of America”也是如此！
+总之，函数式编程+元编程通常是无需传统意义上的调试（跟踪debug），比如上文的：btgen(Close, mean) (quantile, probs=seq(0, 1, .25)) ，本质上，它与C或LISP的宏展开一样，只是去生成了某个特定结构的表达式：with(boot(Close, compose(mean, as.numeric, `[`), 5000), eval(call("quantile", t, probs = seq(0, 1, 0.25))))。可理解成，将此段较长的表达式给浓缩成较短的形式：“btgen(Close, mean) (quantile, probs=seq(0, 1, .25))”，即缩写&简化！为何要调试缩写？由于完全没有状态，生成的不对，其实是不如意、未达预期，那就重写、重新设计一个！现实中没人调试“美国/US”（缩写符号）来测试它生成的”美利坚合众国/United States of America”也是如此！
 
 若你仍执着于过程式的可调试性来批判函数式编程的难维护，则很可能是你的思维还是没转换过来。其原因&本质，就像在发达国家里“人们从不修家电而只是换家电”一样。即，函数式编程更注重分析过程，将分析思路以及结论的生成逻辑用领域特定语言（DSL）来精准地描述出来，这便是编码的实质！不过，总有些人会坚持他们自己的认知习惯，认为&主张：“一切皆可调试！”，这其实是世界观&思维物种上的差异了，我们需要尊重；毕竟，过程式思维者也可反过来，认为函数式思维者主张：“一切皆可组合”！一般而言，这种不强调具体&实际之主体vs客体关系的绝对化思维是问题大于收益的：是不负责任的口号思维，是说风凉话的舆论思维，是指手画脚的干预&霸权思维！就像厌氧菌（Anaerobic bacteria）不能否定好氧菌（Aerobic bacteria）一样，根瘤菌（Rhizobium）好氧但它不能逼着厌氧的破伤风梭菌（Clostridium tetani）与它一样，因为这是害人，要命的那种！
 
@@ -385,5 +388,3 @@ PS：
 虽然，答主谈了大量的关于元编程与函数式思维的便捷和高效，但是它们极有可能是一只破伤风tetani的个人浅见，至少对于那些好氧菌的rhizobium是绝对有害的，还请读者根据自己的实际情况来认知判断，酌情选择！
 
 不过可以肯定，破伤风梭菌（Clostridium tetani）在未来依旧会存在，在其特定领域，R也将继续是它们的致命武器，其毒力不可忽视！
-
-
