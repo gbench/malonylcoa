@@ -275,7 +275,7 @@ ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8
     sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) %>% setNames(., .) |> # 提取指定表名模式的tickdata交易数据表
         lapply(ohlc) |> (\(.) if(flag) do.call(rbind, args=.) else .) () # 根据flag标记进行多日K线数据的合并
 } # 多日表K线的求值函数
-btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric,`[`),5000) |> # bootrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
+btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric, `[`), 5000) |> # bootstrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
     with(eval(call(!!as.character(ensym(fn2)), t, !!!match.call(expand.dots=F)$...)))) # 自助法生成器BootstrapGenerator
 indgen <- \(fn) list(p=\(x) expr(btgen(!!ensym(x), !!ensym(fn)) (quantile, probs=seq(0, 1, .25)))) |> with(\(...) # 指标生成器
     ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) eval(p(!!ensym(x)))) %>% (\(.) expr(with(xs, cbind(!!!.)))) ()) # 指标生成器IndicatorGenerator
@@ -292,6 +292,15 @@ btgen(Close, mean) (quantile, probs=seq(0, 1, .25))
 # > 
 # with(boot(Close, compose(mean, as.numeric, `[`), 5000), eval(call("quantile", 
 #     t, probs = seq(0, 1, 0.25))))
+
+# boostrap自助抽样的绘图
+ohlcs("rb2605_2025121[0-2]") |> with({ # 展开K线数据
+    old <- par(); on.exit(old) # 保证推出执行是恢复原来窗口布局
+    layout(matrix(c(1, 2, 3, 4, 5, 5), nrow=3, ncol=2, byrow=TRUE)) # Volume占据两列
+    lapply(ss("Open,High,Low,Close,Volume"), \(x) expr(btgen(!!ensym(x), mean)(hist, main=!!as.character(ensym(x)) , xlab=!!as.character(ensym(x)))) |> 
+        compose(eval, eval) ()) |> invisible() # 由于expr嵌套了btgen因此需要进行双层eval来先生成btgen的生成函数表达式而后再执行该表达式
+}) # K线数据绘图
+# >
 
 # 多指标混合的计算表达式
 indgen(mean)(Open, High, Low, Close, Volume)
@@ -388,3 +397,4 @@ PS：
 虽然，答主谈了大量的关于元编程与函数式思维的便捷和高效，但是它们极有可能是一只破伤风tetani的个人浅见，至少对于那些好氧菌的rhizobium是绝对有害的，还请读者根据自己的实际情况来认知判断，酌情选择！
 
 不过可以肯定，破伤风梭菌（Clostridium tetani）在未来依旧会存在，在其特定领域，R也将继续是它们的致命武器，其毒力不可忽视！
+
