@@ -33,6 +33,30 @@ system.time({
     cat("mad:\n"); indgen(mad)(Open, High, Low, Close, Volume) |> eval() |> print()  # 使用指标生成器(标准差统计)来计算指标分布形态
 })
 
+system.time({
+    # 直接使用元编程生成计算表达式expression:采用bootstrap方式来计算相应的指标统计量
+    if(!require(boot)) install.packages("boot"); library(boot) # 加载bootstrap包，以便采用自助法进行有放回的重复抽样
+    ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8, flag=T) {
+        rb <- record.builder("##tbl,#startime,#endtime") # 参数构建器
+        ohlc <- \(tbl) `OHLCV1M` |> sqldframe(rb(tbl, startime, endtime)) %>% with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
+        sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) %>% setNames(., .) |> # 提取指定表名模式的tickdata交易数据表
+            lapply(ohlc) |> (\(.) if(flag) do.call(rbind, args=.) else .) () # 根据flag标记进行多日K线数据的合并
+    } # 多日表K线的求值函数
+    btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric, `[`), 5000) |> # bootstrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
+        with(eval(call(!!as.character(ensym(fn2)), t, !!!match.call(expand.dots=F)$...)))) # 自助法生成器BootstrapGenerator
+    btgen2 <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric, `[`), 5000) |> # bootstrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
+        with(match.fun(!!ensym(fn2))( t, !!!match.call(expand.dots=F)$...))) # 自助法生成器BootstrapGenerator
+    indgen <- \(fn) list(p=\(x) expr(btgen2(!!ensym(x), !!ensym(fn)) (quantile, probs=seq(0, 1, .25)))) |> with(\(...) # 指标生成器
+        ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) eval(p(!!ensym(x)))) %>% (\(.) expr(with(xs, cbind(!!!.)))) ()) # 指标生成器IndicatorGenerator
+    xs <- ohlcs("rb2605_2025121")
+    
+    # 指标统计
+    cat("mean:\n"); indgen(mean)(Open, High, Low, Close,  Volume) |> eval() |> print() # 使用指标生成器(均值统计)来计算指标分布形态
+    cat("sd:\n"); indgen(sd)(Open, High, Low, Close, Volume) |> eval() |> print()  # 使用指标生成器(标准差统计)来计算指标分布形态
+    cat("mad:\n"); indgen(mad)(Open, High, Low, Close, Volume) |> eval() |> print()  # 使用指标生成器(标准差统计)来计算指标分布形态
+})
+
+
 # 确定区间分布
 ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
     with(boot(Close, compose(mean, `[`), R=1000)) |> with(quantile(t, c(0.1, 0.9)))
