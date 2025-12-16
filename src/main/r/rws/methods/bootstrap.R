@@ -45,7 +45,7 @@ system.time({
     btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric, `[`), 5000) |> # bootstrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
         with(eval(call(!!as.character(ensym(fn2)), t, !!!match.call(expand.dots=F)$...)))) # 自助法生成器BootstrapGenerator
     btgen2 <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric, `[`), 5000) |> # bootstrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
-        with(match.fun(!!ensym(fn2))( t, !!!match.call(expand.dots=F)$...))) # 自助法生成器BootstrapGenerator
+        with(match.fun(!!ensym(fn2))(t, !!!match.call(expand.dots=F)$...))) # 自助法生成器BootstrapGenerator
     indgen <- \(fn) list(p=\(x) expr(btgen2(!!ensym(x), !!ensym(fn)) (quantile, probs=seq(0, 1, .25)))) |> with(\(...) # 指标生成器
         ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) eval(p(!!ensym(x)))) %>% (\(.) expr(with(xs, cbind(!!!.)))) ()) # 指标生成器IndicatorGenerator
     xs <- ohlcs("rb2605_2025121")
