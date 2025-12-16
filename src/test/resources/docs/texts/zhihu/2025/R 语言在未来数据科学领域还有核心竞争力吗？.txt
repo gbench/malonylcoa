@@ -137,13 +137,13 @@ x[1:30]
 
 R的符号（symbol）与变量是两个独立的概念，它们之间的动态绑定让同一个符号在不同上下文中可以拥有截然不同的含义。这种设计，无疑是将数学思维与形式逻辑深度融入语法应用与编程实践中的典范。在R中，一个符号，比如S3类的lm函数，能够根据数据类型的不同（如矩阵、数据框、多维数组等）展现出类似面向对象编程（OOP）的多态行为。令人欣喜的是，公式中的符号（如y～x）能够动态地绑定到应用数据结构中的相应成分，实现了符号与变量值的彻底分离：符号负责形式逻辑&结构占位、表达信息基元&位点概念，仅担任意义抽象；而变量值则负责信息存储&记录、访问&控制，为符号装填价值意义；就像为气球充气一样，数据值的灌注会令符号充盈，令其具有了现实的质量感、体积感、空间感……，即实际的价值意义，最终实现了结构形式与内容意义的统一！
 
-环境environment正如其名字一样，它提供了实际资源与现实机会，正是R用来处理上述符号与数据值之间的辩证关系的实际结构。犹如月老一般，千里姻缘一线牵，环境绑定符号与数据值之间的逻辑“姻缘”！结果，操作环境，就是绑定“姻缘”，就是钦点鸳鸯谱，这可是关系到R世界的公序良俗、生存发展的大事情，必须认真对待！不过好消息是R默认给我们提供足够满意的环境结构，即.GlobalEnv，大多数情况下.GlobalEnv就足够我们使用了，而不必操心这种符号vs数据治理问题。
+环境environment正如其名字一样，它提供了实际资源与现实机会，正是R用来处理上述符号与数据值之间的辩证关系的实际结构。犹如月老一般，千里姻缘一线牵，环境绑定符号与数据值之间的逻辑“姻缘”！结果，操作环境，就是绑定“姻缘”，就是钦点鸳鸯谱；这可是关系到R世界的公序良俗、生存发展的大事情，必须认真且慎重对待！不过好消息是，R默认给我们提供了令人足够满意的环境结构，即.GlobalEnv，大多数情况下.GlobalEnv就足够我们使用了，而不必操心这种符号vs数据治理问题。
 
-不过，士兵总会有个将军梦，环境到底是什么呢？从数据结构上说，它是管理键值对儿的hashmap，不过R把它打造成了一个强大的键值对儿的数据库！你可以理解为，R给自己实现了一个分布式的REDIS用来专门管理R的符号与数据值：R的环境是个“天外有天”的递归结构，即，每个环境都有一个父环境；结果，环境en可以通过parent.env(en)来找“爸爸”！更有甚者，“爸爸”还可以再找“爸爸”：parent.env(parent.env(en))，你可以这样parent.env(….parent.env(parent.env(en)))地一直找下去，直至找到了没有父环境的祖宗环境R_EmptyEnv（这个环境它没有“爸爸”了）。这样，我们就给环境en绘制出了它家族环境谱系或者说族谱：[R_EmptyEnv, e1, e2, … , en]。
+不过，士兵总会有个将军梦，就像孩子长大了总要离开故乡闯荡社会一样，故乡的.GlobalEnv让家雀飞飞游刃有余，但着实难为真正的雄鹰提供广阔天地，同时院子里也是训练不出大将军的，他需要沙场秋点兵！于是那个问题又来了，环境到底是什么呢？从数据结构上说，它是管理键值对儿的hashmap，不过R把它打造成了一个强大的键值对儿的数据库！你可以理解为，R给自己实现了一个分布式的REDIS用来专门管理R的符号与数据值：R的环境是个“天外有天”的递归结构，即，每个环境都有一个父环境；结果，环境en可以通过parent.env(en)来找“爸爸”！更有甚者，“爸爸”还可以再找“爸爸”：parent.env(parent.env(en))，你可以这样parent.env(….parent.env(parent.env(en)))地一直找下去，直至找到了没有父环境的祖宗环境R_EmptyEnv（它没有“爸爸”了，或者说parent.env(R_EmptyEnv)返回空值常量NULL ）。这样，我们就给环境en绘制出了它家族环境谱系或者说族谱：[R_EmptyEnv, e1, e2, … , en]。
 
-有了这条环境族谱以后，符号检索就好办了，假如：我们位于环境en，想要提取（get）符号x的值。于是，首先在当前环境en里查找，找到直接返回；找不到，那就去找“爸爸”，让“爸爸”找；“爸爸”找不到，就再找“爸爸”的“爸爸”，一直向上求索！就像《离骚》里的屈原一样，“路漫漫其修远兮，吾将上下而求索”，但R没有像屈原那样一根筋地“魂兮归来，哀江南！”，找到最好，找不到就stop报错！聪明的你，此时一定发现了：attach(what, pos = 2L, ... ) 其实，这里的what就是调节族谱的结构：[R_EmptyEnv, e1, e2, … , en]，把what插入这条族谱链表中的特定位置来控制符号访问，pos就是插入位置，在这里是倒数第几号，en是倒数第一（对应pos = 1），attach(what，pos = 2)后，族谱就变成了：[R_EmptyEnv, e1, e2, … , what, en]，这就是R为何可以动态调整变量作用域的机制。
+有了这条环境族谱以后，符号检索或者说变量（值）的访问就好办了，假如：我们位于环境en，想要提取（get）符号x的值。于是，首先在当前环境en里查找，找到直接返回；找不到，那就去找“爸爸”，让“爸爸”找；“爸爸”找不到，就再找“爸爸”的“爸爸”，一直向上求索！就像《离骚》里的屈原一样，“路漫漫其修远兮，吾将上下而求索”，但R没有像屈原那样一根筋地“魂兮归来，哀江南！”，找到最好，找不到就stop报错！聪明的你，此时一定发现了：attach(what, pos = 2L, ... ) 其实，这里的what就是调节族谱的结构：[R_EmptyEnv, e1, e2, … , en]，把what插入这条族谱链表中的特定位置来控制符号访问，pos就是插入位置，在这里是倒数第几号，en是倒数第一（对应pos = 1），attach(what，pos = 2)后，族谱就变成了：[R_EmptyEnv, e1, e2, … , what, en]，这就是R为何可以动态调整变量作用域的机制。
 
-R的环境族谱结构是可以修改调整的，这是它有别于其他语言的一大特色，也是它为何可以进行灵活的符值绑定的关键，单就这一点，就可以说R有了它的看家绝活，够R自己来吃饭养家了！with, require, library本质也是这样来修改调整环境族谱来开展&发挥其职责&功能的，不过要更复杂，因为他们合并了创建与组织的双重功能：require/library就是同时为package包中的符号创建了包环境与Namespace命名空间环境，并把这两个环境分别安排attach到searchpaths与基础命名空间的环境谱系，这里就不再展开了；好像我说的够多了，有人会感觉啰嗦；还有我得控制文章篇幅、我得平衡信息密度与结构完整，所以细节咱们就点到为止了；对细节有要求的读者，请留意，本文里有我的思维隐喻和调侃段子，它们很多时候会令你柳暗花明的！
+R的环境族谱结构是可以修改调整的，这是它有别于其他语言的一大特色，也是它为何可以进行灵活的符值绑定的关键，单就这一点，就可以说R有了它的看家绝活，够R自己来吃饭养家了！with, require, library本质也是这样来修改调整环境族谱来开展&发挥其职责&功能的，不过要更复杂，因为他们合并了创建与组织的双重功能：require/library就是同时为package包中的符号创建了包环境与Namespace命名空间环境，并把这两个环境分别安排attach到searchpaths与基础命名空间的环境谱系，这里就不再展开了；好像我说的够多了，有人会感觉啰嗦；还有我得控制文章篇幅、我得平衡信息密度与结构完整，所以细节咱们就点到为止了；对思维细节有要求的读者，请留意，本文里我的那些思维隐喻和调侃段子，它们很多时候会令你柳暗花明的！
 
 调整视角，将symbol符号对象视为函数编程或元编程（metaprogramming）中抽象语法树（AST）上的节点与指针，无疑为理解R的动态特性提供了新的维度。R的这种设计，让编程不再仅仅是编写一系列指令，而是成为了一种创造与操控符号世界的艺术。
 
@@ -153,6 +153,116 @@ R在语言层面上实现了一种极为精妙且强大的功能——类似于L
 
 而当我们完成了一系列的探索与实验，或者想要回归原始状态时，只需轻轻一挥detach的魔法棒，所有在临时环境中进行的修改便瞬间烟消云散，原始数据则如同被时光倒流般恢复如初。这种机制，简直就像是语法层面的git版本管理，让我们能够轻松地穿梭于不同的数据版本之间，随时回滚到任何一个历史节点；又或是与Docker的UnionFS联合文件分层系统有着异曲同工之妙，让我们能够轻松地构造出sandbox的沙盒结构，实现多分枝且独立拥有共同祖先的衍生计算模型。如此看来，那种试图要在数据世界里的上天下地入海，翱翔驰骋冲浪的念头也绝非单纯臆想！
 
+# 上述隐喻可以在R语言中获得如下对应！
+# searchpaths 直接返回从.GlobalEnv的环境谱系：这也是R数据艺术的PS的典型图层结构
+# .SqlQueryEnv 是3答主自定义的本地工具函数环境， 对环境的索引与查找将以此环境为例！
+# 其中包含了会在后文示例代码里使用的两个IO数据源符号sqlquery,sqldframe （使用sql语句从数据库查询数据）
+> searchpaths()
+ [1] ".GlobalEnv"                                   
+ [2] "D:/sliced/develop/r/R-4.5.2/library/stats"    
+ [3] "D:/sliced/develop/r/R-4.5.2/library/graphics" 
+ [4] "D:/sliced/develop/r/R-4.5.2/library/grDevices"
+ [5] "D:/sliced/develop/r/R-4.5.2/library/utils"    
+ [6] "D:/sliced/develop/r/R-4.5.2/library/datasets" 
+ [7] ".SqlQueryEnv"                                 
+ [8] "D:/sliced/develop/r/R-4.5.2/library/methods"  
+ [9] "Autoloads"                                    
+[10] "D:/sliced/develop/r/R-4.5.2/library/base" 
+ 
+# search 直接返回环境list，.SqlQueryEnv 是作者自定义的本地工具函数环境！
+> search()
+ [1] ".GlobalEnv"        "package:stats"     "package:graphics" 
+ [4] "package:grDevices" "package:utils"     "package:datasets" 
+ [7] ".SqlQueryEnv"      "package:methods"   "Autoloads"        
+[10] "package:base" 
+
+# 可以通过searchpaths的位置索引与名称直接转成对应的环境
+> as.environment(7)
+<environment: 0x00000174f208c810>
+attr(,"name")
+[1] ".SqlQueryEnv"
+
+# 也可以通过 search()的包名直接转成环境
+> identical(as.environment(".SqlQueryEnv"), as.environment(7))
+[1] TRUE
+
+# 每个环境中以键值对儿的情况存放了各种符号的定义，可以通过ls与pattern参数进行罗列
+> ls(as.environment(".SqlQueryEnv"), pattern="sql")
+ [1] "ctsql"              "ctsql.mysql"        "ctsql.pg"           "insql"             
+ [5] "list_sql_templates" "rebuild_sqlquery"   "sqldframe"          "sqlexecute"        
+ [9] "sqlexecute.pg"      "sqlexecute2"        "sqlfile"            "sqlfill"           
+[13] "sqlquery"           "sqlquery.ctp"       "sqlquery.h10ctp2"   "sqlquery.pg"       
+[17] "sqlquery2"          "upsql"   
+
+# sqlquery 的符号表达式定义（语法树，源码）就是由.SqlQueryEnv来进行管理的！
+# sqldframe 也是如此，只不过代码要复杂一点，因为涉及到了模板的查找与参数填充逻辑,
+# 但本质都是一样的R通过环境管理着符号与值定义！
+# R把函数sqlquery视为符号名，其值就是对应于源码的一颗语法树（LISP的S表达式），这是形式上的结构！
+# 实际上R其实有专门的概念闭包closure来对函数进行管理（formals：参数之promise求值占位符号,
+# body：语法树定义体,environment：定义环境），函数/closure也是R的一大特色， 但这个概念其他函数式语言
+# 也有涉及，并且函数式编程又是当下主流，因此本文不进行专门介绍！（本文主题是浅谈一点R语法里的偏门但又是核心概念）
+# 但是函数概念R称它为closure，是非常重要的！非常重要！非常重要！重要事情说三遍！
+> as.environment(".SqlQueryEnv")|> with(sqlquery)
+function (sql, simplify = T, n = -1, prettify = function(x) if (1 == 
+    length(x)) x[[1]] else x, ...) 
+{
+    dbfun(function(con, ...) {
+        dataset <- structure(lapply(c(list(), sql), compose(tibble, 
+            partial(dbGetQuery, con = con, n = n))), names = sql)
+        prettify(if (simplify & length(dataset) == 1) 
+            dataset[[1]]
+        else dataset)
+    }, ...)(sql)
+}
+<environment: 0x00000174f9c0f290>    
+
+# parent.env 直接返回相应环境在search()包列表中的结构后继
+> parent.env(as.environment(".SqlQueryEnv"))
+<environment: package:methods>
+attr(,"name")
+[1] "package:methods"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.5.2/library/methods"
+
+# search()包列表中的最后一个元素就是R的base包，base环境的父环境就是大名鼎鼎的“祖宗环境”：R_EmptyEnv
+> parent.env(as.environment("package:base"))
+<environment: R_EmptyEnv>
+
+# R_EmptyEnv 就没有父环境了!
+> parent.env(as.environment("package:base")) |> parent.env()
+Error in parent.env(parent.env(as.environment("package:base"))) : 
+  the empty environment has no parent
+
+# 构造一个自定义环境，并将其添加到search, 相当于自定义一个图层
+> attach(new.env(), name="myenv")
+> search()
+ [1] ".GlobalEnv"        "myenv"             "package:stats"    
+ [4] "package:graphics"  "package:grDevices" "package:utils"    
+ [7] "package:datasets"  ".SqlQueryEnv"      "package:methods"  
+[10] "Autoloads"         "package:base"
+
+# 在“新建图层”myenv上对iris进行涂鸦：增加一个Id列
+> assign("iris", cbind(Id=1:nrow(iris), datasets::iris),envir=as.environment("myenv"))
+> head(iris)
+  Id Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1  1          5.1         3.5          1.4         0.2  setosa
+2  2          4.9         3.0          1.4         0.2  setosa
+3  3          4.7         3.2          1.3         0.2  setosa
+4  4          4.6         3.1          1.5         0.2  setosa
+5  5          5.0         3.6          1.4         0.2  setosa
+6  6          5.4         3.9          1.7         0.4  setosa
+
+# 把涂鸦层myenv删除
+> detach("myenv")
+# iris又恢复到了datasets
+> head(iris)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+4          4.6         3.1          1.5         0.2  setosa
+5          5.0         3.6          1.4         0.2  setosa
+6          5.4         3.9          1.7         0.4  setosa
 总之，R的语法在编程范式上（过程、函数、面向对象、元编程……）向来都是来者不拒的！
 
 R的语法以简洁著称，本质上一行代码，即一次函数形式调用call与环境执行eval可以解决任何问题；R是调用与执行相分离的，它的调用对象call，本质是一棵被装填了环境符号的闭包结构（formals、body、environment）的语法树，于是你可以像处理数据列表一样对call进行处理，像传递普通参数一样进行函数应用，进而实现拦截与编辑，这就是可以自己编写自己、更新升级自己的原理。
