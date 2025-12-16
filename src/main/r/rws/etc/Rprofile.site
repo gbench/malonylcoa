@@ -37,7 +37,7 @@
     sqlquery.rb.keys="##tbl,#startime,#endtime", # 结构记录构建器默认键名序列
     sqlquery.rb.interval=3, # 结构记录构建器默认时间时间跨度
     sqlquery.rb.instrument="rb2605", # 结构记录构建器默认合约
-    sqlquery.env.pkgs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres" # 环境依赖包！
+    sqlquery.env.pkgs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres,boot" # 环境依赖包！
   ) # 本地环境参数设置
 
 # --------------------------------------------------------------------------------------
