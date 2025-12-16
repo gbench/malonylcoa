@@ -134,3 +134,15 @@ ohlc("rb2605", startime='21:00', endtime="23:00", date='20251215', keys=4:8) |> 
         cat("\n[交易建议] 收盘价站上3050的可能性较大\n")
     }
 })
+
+# 数据分层
+system.time({
+    x<-1:10 # 源数据
+    strata <- x%%2 # 分层标记
+    # 按层提取
+    split(x, strata) |> lapply(\(x) boot(x, `[`, 5)$t) |> do.call(rbind, args=_) |> print()
+    # 按层提取
+    split(x, strata) |> lapply(\(x) boot(x, `[`, 5)$t) |> do.call(rbind, args=_) |> apply(2, mean) |> cat("\n")
+    # 原生
+    boot(x, compose(mean, `[`), 5, strata=strata) |> with(base::t(t)) |> cat("\n")
+})
