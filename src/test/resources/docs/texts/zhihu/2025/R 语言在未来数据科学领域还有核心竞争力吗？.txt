@@ -31,6 +31,8 @@ A：当看到你说到“R语法不够现代”时，我就突然觉得自己有
 
 结果，本来是开传送带的，挺着个肚皮鼓的好似猪八戒一般的，体重200的大胖师傅，他就得短腿小跑的、哼哧带喘的、着急忙慌的，奔到那，下面看着都上不见顶儿的，巨型货架面前：对号码、找梯子、爬梯子、拆包装、找东西，... ，这一趟下来，就是因为要给你翻出个牙刷，一上午都搭进去了不说，师傅小命差点儿没给整没了！你若此刻仍不理解，请自己在家，从米袋子里一粒一粒的数出3斤大米，亲自体验一下：
 
+
+
 # 需要明白，读取向量rice的第i个元素的表达式是 rice[i]！
 # R语言对每个表达式是按照语法树的结构来进行组织描述的
 # > ast(rice[i])
@@ -80,7 +82,9 @@ x
 x[1:30]
 # >
 #  [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-实测一下10万粒米的效率(我那垃圾电脑所给的具体数据仅供参考，请留意，此处不同模式间的相对关系即可！使用R版本4.5.2)：R 的性能瓶颈不在「循环」本身，而在「循环中的内存频繁重分配」提前规划内存、优先向量化，是写高效 R 代码的关键!
+实测一下10万粒米的效率(我那垃圾电脑所给的具体数据仅供参考，请留意，此处不同模式间的相对关系即可！使用R版本4.5.2)：R 的性能瓶颈不在「循环」本身，而在「循环中的内存频繁重分配」提前规划内存、优先向量化，是写高效 R 代码的关键！
+
+
 
 > # 测试性能差异
 > rice <- rep(1, 100000)  # 10万粒米
@@ -131,7 +135,15 @@ x[1:30]
 
 这就像是在形式结构中，具体符号如同决定价值意义之大脑的屁股（位置），一旦与相应环境绑定，便赋予了整体结构在特定情境里的的实际价值与意义，换句话的说，这是把剧本排成话剧的剧场艺术：同样的话剧《雷雨》本子，陈道明演周朴园和我那瘸腿的二大爷演，效果可是天壤之别，你不会否认吧！反过来，三国里的王允让貂蝉分别在董卓与吕布面前演了两次嫁女的《美女爱英雄》的本子，结果，董卓就让义子吕布给干死了，可以理解成 evalq(beauty_strategy(beauty, hero) |> Reduce(f=\(acc, a) fight(acc, a)), envir=list(beauty=貂蝉, hero=c(董卓,吕布))) == 吕布。这种同一美女符号，同一女儿貂蝉，同一故事情节，却能在不同的英雄环境里衍生出英雄们从父慈子孝反目成你死我亡的结构能力，正是R为何可以打造数据魔法的根本原因：既然环境是特色化的资源&信息容器，当我们为它们加载&培育出同一种结构的价值目标函数时，就必然可以造就出特色多样的价值意义，结果我们产生了治大国如烹小鲜的大事治理思维！
 
-R的符号（symbol）与变量是两个独立的概念，它们之间的动态绑定让同一个符号在不同上下文中可以拥有截然不同的含义。这种设计，无疑是将数学思维与形式逻辑深度融入语法应用与编程实践中的典范。在R中，一个符号，比如S3类的lm函数，能够根据数据类型的不同（如矩阵、数据框、多维数组等）展现出类似面向对象编程（OOP）的多态行为。更令人惊叹的是，公式中的符号（如y～x）能够动态地绑定到应用数据结构中的相应成分，实现了符号与变量值的彻底分离。
+R的符号（symbol）与变量是两个独立的概念，它们之间的动态绑定让同一个符号在不同上下文中可以拥有截然不同的含义。这种设计，无疑是将数学思维与形式逻辑深度融入语法应用与编程实践中的典范。在R中，一个符号，比如S3类的lm函数，能够根据数据类型的不同（如矩阵、数据框、多维数组等）展现出类似面向对象编程（OOP）的多态行为。令人欣喜的是，公式中的符号（如y～x）能够动态地绑定到应用数据结构中的相应成分，实现了符号与变量值的彻底分离：符号负责形式逻辑&结构占位、表达信息基元&位点概念，仅担任意义抽象；而变量值则负责信息存储&记录、访问&控制，为符号装填价值意义；就像为气球充气一样，数据值的灌注会令符号充盈，令其具有了现实的质量感、体积感、空间感……，即实际的价值意义，最终实现了结构形式与内容意义的统一！
+
+环境environment正如其名字一样，它提供了实际资源与现实机会，正是R用来处理上述符号与数据值之间的辩证关系的实际结构。犹如月老一般，千里姻缘一线牵，环境绑定符号与数据值之间的逻辑“姻缘”！结果，操作环境，就是绑定“姻缘”，就是钦点鸳鸯谱；这可是关系到R世界的公序良俗、生存发展的大事情，必须认真且慎重对待！不过好消息是，R默认给我们提供了令人足够满意的环境结构，即.GlobalEnv，大多数情况下.GlobalEnv就足够我们使用了，而不必操心这种符号vs数据治理问题。
+
+不过，士兵总会有个将军梦，就像孩子长大了总要离开故乡闯荡社会一样，故乡的.GlobalEnv让家雀飞飞游刃有余，但着实难为真正的雄鹰提供广阔天地，同时院子里也是训练不出大将军的，他需要沙场秋点兵！于是那个问题又来了，环境到底是什么呢？从数据结构上说，它是管理键值对儿的hashmap，不过R把它打造成了一个强大的键值对儿的数据库！你可以理解为，R给自己实现了一个分布式的REDIS用来专门管理R的符号与数据值：R的环境是个“天外有天”的递归结构，即，每个环境都有一个父环境；结果，环境en可以通过parent.env(en)来找“爸爸”！更有甚者，“爸爸”还可以再找“爸爸”：parent.env(parent.env(en))，你可以这样parent.env(….parent.env(parent.env(en)))地一直找下去，直至找到了没有父环境的祖宗环境R_EmptyEnv（它没有“爸爸”了，或者说parent.env(R_EmptyEnv)返回空值常量NULL ）。这样，我们就给环境en绘制出了它家族环境谱系或者说族谱：[R_EmptyEnv, e1, e2, … , en]。
+
+有了这条环境族谱以后，符号检索或者说变量（值）的访问就好办了，假如：我们位于环境en，想要提取（get）符号x的值。于是，首先在当前环境en里查找，找到直接返回；找不到，那就去找“爸爸”，让“爸爸”找；“爸爸”找不到，就再找“爸爸”的“爸爸”，一直向上求索！就像《离骚》里的屈原一样，“路漫漫其修远兮，吾将上下而求索”，但R没有像屈原那样一根筋地“魂兮归来，哀江南！”，找到最好，找不到就stop报错！聪明的你，此时一定发现了：attach(what, pos = 2L, ... ) 其实，这里的what就是调节族谱的结构：[R_EmptyEnv, e1, e2, … , en]，把what插入这条族谱链表中的特定位置来控制符号访问，pos就是插入位置，在这里是倒数第几号，en是倒数第一（对应pos = 1），attach(what，pos = 2)后，族谱就变成了：[R_EmptyEnv, e1, e2, … , what, en]，这就是R为何可以动态调整变量作用域的机制。
+
+R的环境族谱结构是可以修改调整的，这是它有别于其他语言的一大特色，也是它为何可以进行灵活的符值绑定的关键，单就这一点，就可以说R有了它的看家绝活，够R自己来吃饭养家了！with, require, library本质也是这样来修改调整环境族谱来开展&发挥其职责&功能的，不过要更复杂，因为他们合并了创建与组织的双重功能：require/library就是同时为package包中的符号创建了包环境与Namespace命名空间环境，并把这两个环境分别安排attach到searchpaths与基础命名空间的环境谱系，这里就不再展开了；好像我说的够多了，有人会感觉啰嗦；还有我得控制文章篇幅、我得平衡信息密度与结构完整，所以细节咱们就点到为止了；对思维细节有要求的读者，请留意，本文里我的那些思维隐喻和调侃段子，它们很多时候会令你柳暗花明的！
 
 调整视角，将symbol符号对象视为函数编程或元编程（metaprogramming）中抽象语法树（AST）上的节点与指针，无疑为理解R的动态特性提供了新的维度。R的这种设计，让编程不再仅仅是编写一系列指令，而是成为了一种创造与操控符号世界的艺术。
 
@@ -141,6 +153,201 @@ R在语言层面上实现了一种极为精妙且强大的功能——类似于L
 
 而当我们完成了一系列的探索与实验，或者想要回归原始状态时，只需轻轻一挥detach的魔法棒，所有在临时环境中进行的修改便瞬间烟消云散，原始数据则如同被时光倒流般恢复如初。这种机制，简直就像是语法层面的git版本管理，让我们能够轻松地穿梭于不同的数据版本之间，随时回滚到任何一个历史节点；又或是与Docker的UnionFS联合文件分层系统有着异曲同工之妙，让我们能够轻松地构造出sandbox的沙盒结构，实现多分枝且独立拥有共同祖先的衍生计算模型。如此看来，那种试图要在数据世界里的上天下地入海，翱翔驰骋冲浪的念头也绝非单纯臆想！
 
+# 上述隐喻可以在R语言中获得如下对应！
+# searchpaths直接返回从.GlobalEnv的环境谱系：每个元素都是一个包环境路径或attch加载名仅当该环境没有包路径时
+# searchpaths就是R数据艺术的PS的典型图层结构！
+# .SqlQueryEnv 是答主自定义的本地工具函数环境， 对环境的索引与查找将以此环境为例！
+# 其中包含了会在后文示例代码里使用的两个IO数据源符号sqlquery, sqldframe （使用sql或语句模板从数据库查询数据）
+> searchpaths()
+ [1] ".GlobalEnv"                                   
+ [2] "D:/sliced/develop/r/R-4.5.2/library/stats"    
+ [3] "D:/sliced/develop/r/R-4.5.2/library/graphics" 
+ [4] "D:/sliced/develop/r/R-4.5.2/library/grDevices"
+ [5] "D:/sliced/develop/r/R-4.5.2/library/utils"    
+ [6] "D:/sliced/develop/r/R-4.5.2/library/datasets" 
+ [7] ".SqlQueryEnv"                                 
+ [8] "D:/sliced/develop/r/R-4.5.2/library/methods"  
+ [9] "Autoloads"                                    
+[10] "D:/sliced/develop/r/R-4.5.2/library/base" 
+ 
+# search直接返回包环境list（每个元素都是一个环境对象）
+> search()
+ [1] ".GlobalEnv"        "package:stats"     "package:graphics" 
+ [4] "package:grDevices" "package:utils"     "package:datasets" 
+ [7] ".SqlQueryEnv"      "package:methods"   "Autoloads"        
+[10] "package:base" 
+
+# 可以通过searchpaths的位置索引与名称直接转成对应的环境
+> as.environment(7)
+<environment: 0x00000174f208c810>
+attr(,"name")
+[1] ".SqlQueryEnv"
+
+# 也可以把search的包名直接转成环境
+> identical(as.environment(".SqlQueryEnv"), as.environment(7))
+[1] TRUE
+
+# 在每个环境中以键值对儿的形式存放了各种符号的定义，可以通过ls与pattern参数进行检索&罗列
+> ls(as.environment(".SqlQueryEnv"), pattern="sql")
+ [1] "ctsql"              "ctsql.mysql"        "ctsql.pg"           "insql"             
+ [5] "list_sql_templates" "rebuild_sqlquery"   "sqldframe"          "sqlexecute"        
+ [9] "sqlexecute.pg"      "sqlexecute2"        "sqlfile"            "sqlfill"           
+[13] "sqlquery"           "sqlquery.ctp"       "sqlquery.h10ctp2"   "sqlquery.pg"       
+[17] "sqlquery2"          "upsql"   
+
+# 符号sqlquery的表达式定义（语法树，源码）就是由.SqlQueryEnv来进行管理的！
+# sqldframe也是如此，只不过代码要复杂一点，因为涉及到了模板的查找与参数填充逻辑,但本质都是一样的。
+# R通过环境管理着符号与值定义！
+# R把函数sqlquery视为符号名，其值就是对应于源码的一颗语法树（LISP的S表达式），这是形式上的结构！
+# 实际上，R其实是通过专门的概念，闭包closure，来对函数的各个关键组成部件来进行管理:
+#（formals：参数之promise求值占位符号，body：语法树、定义体，environment：定义环境），
+# 函数/closure也是R的一大特色， 函数概念其他函数式语言也有涉及，并且函数式编程又是当下主流，
+# 因此，本文不进行专门介绍！本文的主题是：浅谈一点R语法里的“冷门&偏门”但又是核心概念，即那些被忽视的要点！
+# 但是函数概念，注意R称它为closure，是非常重要的！非常重要！非常重要！重要事情说三遍！
+> as.environment(".SqlQueryEnv")|> with(sqlquery)
+function (sql, simplify = T, n = -1, prettify = function(x) if (1 == 
+    length(x)) x[[1]] else x, ...) 
+{
+    dbfun(function(con, ...) {
+        dataset <- structure(lapply(c(list(), sql), compose(tibble, 
+            partial(dbGetQuery, con = con, n = n))), names = sql)
+        prettify(if (simplify & length(dataset) == 1) 
+            dataset[[1]]
+        else dataset)
+    }, ...)(sql)
+}
+<environment: 0x00000174f9c0f290>    
+
+# parent.env可直接返回相应环境在search包环境列表中的结构后继
+> parent.env(as.environment(".SqlQueryEnv"))
+<environment: package:methods>
+attr(,"name")
+[1] "package:methods"
+attr(,"path")
+[1] "D:/sliced/develop/r/R-4.5.2/library/methods"
+
+# search包列表中的最后一个元素就是R的base包，base环境的父环境就是大名鼎鼎的“祖宗环境”：R_EmptyEnv
+> parent.env(as.environment("package:base"))
+<environment: R_EmptyEnv>
+
+# R_EmptyEnv 就没有父环境了!
+> parent.env(as.environment("package:base")) |> parent.env()
+Error in parent.env(parent.env(as.environment("package:base"))) : 
+  the empty environment has no parent
+
+# 构造一个自定义环境，并将其添加到search, 相当于自定义一个图层
+> attach(new.env(), name="myenv")
+> search()
+ [1] ".GlobalEnv"        "myenv"             "package:stats"    
+ [4] "package:graphics"  "package:grDevices" "package:utils"    
+ [7] "package:datasets"  ".SqlQueryEnv"      "package:methods"  
+[10] "Autoloads"         "package:base"
+
+# 在“新建图层”myenv上对iris进行涂鸦：增加一个Id列
+> assign("iris", cbind(Id=1:nrow(iris), datasets::iris), envir=as.environment("myenv"))
+> head(iris)
+  Id Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1  1          5.1         3.5          1.4         0.2  setosa
+2  2          4.9         3.0          1.4         0.2  setosa
+3  3          4.7         3.2          1.3         0.2  setosa
+4  4          4.6         3.1          1.5         0.2  setosa
+5  5          5.0         3.6          1.4         0.2  setosa
+6  6          5.4         3.9          1.7         0.4  setosa
+
+# 把涂鸦层myenv删除
+> detach("myenv")
+
+# iris又恢复到了datasets
+> head(iris)
+  Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+1          5.1         3.5          1.4         0.2  setosa
+2          4.9         3.0          1.4         0.2  setosa
+3          4.7         3.2          1.3         0.2  setosa
+4          4.6         3.1          1.5         0.2  setosa
+5          5.0         3.6          1.4         0.2  setosa
+6          5.4         3.9          1.7         0.4  setosa
+
+# 由于，attach可以编辑search包环境列表，所以attach可以更改search中包环境的父环境！
+# 注意，仅限于search中包环境，典型的设置父环境是parent.env(en) <- exxx ！
+# 于是attach(new.env(), "xxxconfig", pos=match(".SqlQueryEnv", search()) + 1)
+# with(as.environment("xxxconfig"),{ xxx <- yyy }) # 就可以定制化一些特定应用的配置，就像动态加载配置文件一样！
+>
+
+# attach前的数据库配置
+> cat(gettextf("before attach xxxconfig [sqlquery.dbname:%s, db:%s] \n", getOption("sqlquery.dbname"), sqlquery("select database()")))
+before attach xxxconfig [sqlquery.dbname:ctp, db:ctp] 
+>
+
+> # attach 环境 xxxconfig 以动态加载自定义的数据配置
+> attach(new.env(), "xxxconfig", pos=match(".SqlQueryEnv", search()) + 1)
+> with(as.environment("xxxconfig"), { # 在应用app01内部设置该应用相关的环境配置
++     localcfg <- list( # 本地环境参数设置
++         sqlquery.dbname="ctp2" # 指定特定数据库名
++     ) # 本地环境参数设置
++     getOption <- \ (x, default = NULL) { # 拦截base的getOption
++         if(x %in% grep(pattern="sqlquery", value=T, x=names(options()))) localcfg[[x]] %||% default # 拦截sqlquery配置项目
++         else base::getOption(x, default) # 其余配置项目使用默认！
++     } # 拦截base的getOption
++ })
+> 
+
+# 数据库已经配置成xxxconfig所指定的数据库了
+> cat(gettextf("after attach xxxconfig [sqlquery.dbname:%s, db:%s] \n", getOption("sqlquery.dbname"), sqlquery("select database()")))
+after attach xxxconfig [sqlquery.dbname:ctp2, db:ctp2] 
+> 
+
+# 同样我们也可以随时撤回xxxconfig，让环境恢复默认
+> detach(xxxconfig)
+> cat(gettextf("reset sqlquery [sqlquery.dbname:%s, db:%s] \n", getOption("sqlquery.dbname"), sqlquery("select database()")))
+reset sqlquery [sqlquery.dbname:ctp, db:ctp] 
+
+# 其实同一个环境可以被多次重复加载的，这就是环境的git版本管理器的模型
+
+> # 创建版本仓库，初始化数据x
+> myrepos <- list2env(list(x=1)) 
+> 
+> # 使用 attach 模拟 git  commit 到仓库 myrepos （其实应该是导入）
+> attach(myrepos)
+> 
+> # 修改x创建一个x的新版本，并提交到仓库！
+> with(myrepos, x <- 2)
+> # 提交到仓库
+> attach(myrepos)
+The following object is masked from myrepos (pos = 3):
+
+    x
+
+> 
+> # 查看版本号记录
+> which("myrepos" == search())
+[1] 2 3
+> 
+> # 本地修改不提交
+> with(myrepos, x <- 3)
+> # 查看myrepos里变量x的各个版本状态，第一项是本地仓库里x 尚未提交！版本号越小代表数据越新，`2`就是仓库里的最新状态！
+> which("myrepos" == search()) |> setNames(nm=_) |> lapply(as.environment) |> append(myrepos, after=0) |> lapply(\(repos) with(repos, x))
+[[1]]
+[1] 3
+
+$`2`
+[1] 2
+
+$`3`
+[1] 1
+
+# 直接访问就是最新版本的x, 最新的更改(3)由于没有提交&发布并因此并未不生效，它还在本地版本myrepos而非远程的search环境里！
+> x
+[1] 2
+> 
+
+# 对x进行回滚
+> detach(myrepos)
+> x
+[1] 1
+
+# 本地版本不受影响！
+> with(myrepos, x)
+[1] 3
 总之，R的语法在编程范式上（过程、函数、面向对象、元编程……）向来都是来者不拒的！
 
 R的语法以简洁著称，本质上一行代码，即一次函数形式调用call与环境执行eval可以解决任何问题；R是调用与执行相分离的，它的调用对象call，本质是一棵被装填了环境符号的闭包结构（formals、body、environment）的语法树，于是你可以像处理数据列表一样对call进行处理，像传递普通参数一样进行函数应用，进而实现拦截与编辑，这就是可以自己编写自己、更新升级自己的原理。
@@ -168,6 +375,8 @@ R开创了大数据运算的是脑力上的策略安排与设计而非大力飞�
 一旦分析&确定出了具体模式，我们就可以用短短的几行代码来构造一种具有变身对战能力的“孙悟空”来同问题妖怪们斗法了！
 
 然后，真正的战场上（实际运算），一个孙悟空拔根儿猴毛就可变出千万个小孙悟空来对战，实现真正的以一顶百（这其实是“自谦”而非夸张！只复制百倍对于统计计算而言还是小规模的，甚至是大材小用的感觉）！结果，只需设计一个计算模型的孙悟空，就是拥有了一支宇宙里具有顶级作战能力的孙悟空部队，进而间接实现了以弱胜强的计算目的！
+
+
 
 # 光说不练假把式,我们可用计算&生成期货合约的多周期的分钟K线图来直接应用&实现上面的孙悟空以72般变换来战胜妖怪之克敌制胜的实地战法！
 record.builder <- \(keys, .keys=if(length(keys)>1) keys else unlist(strsplit(keys, "[.,/[:blank:]\\]+"))) \(...) setNames(rep_len(list(...), length(.keys)), .keys) # 记录构建器
@@ -208,6 +417,8 @@ list(ps=lapply(list(1, 5, 10) %>% setNames(paste0(., "min")), p),  #  多周期K
 R从头到尾都在贯彻一个思想：代码只不过是思想呈现给人机界面的表达&表现形式，写出什么不是目的，到底要写什么才是！要深思熟虑，想好了再写，否则，废话连篇不说，你会用一堆名称怪异，结构关系混乱不当的变量和函数把自己搞蒙，如此的自作聪明，实属不该；还有，好名字就是好思维，因为任何富有价值意义的目的&意图，它们需要有个充满希望且催人奋进的称谓！好的名字，它会刺激你的思维，令其产生出一种效率&最优的马太效应："凡有的，还要加给他，叫他有余。凡没有的，连他所有的，也要夺去"，进而，形成一种可以进行不断优化的、积极式的正反馈机制。
 
 当你把明太祖朱元璋叫成朱重八，你就很难再客观&公正、系统&全面、正经&积极的讨论其在帝国构建、制度开创、经济文化、思想建设等方面的历史意义；因为，它给你塑造了某种令人厌恶&恶心的乞丐形象，它（朱重八的称谓）会拉扯着你不断地将其行为&意图与沿街行乞的乞丐进行模式匹配、观念映射，以寻求某种不易察觉的、主观上的心理安慰与低俗曲解；这里的大多数都是源自某种社会文化的病态思维惯性或是思潮风向作用于个体脆弱的认知防御堡垒所产生的梦魇一般的幻视幻听，本质上是种个体认知崩溃却毫不自知时，其思维情绪上的一泻千里："这家伙，杀了那么多的开国功勋，定是童年要饭的经历造成的心理扭曲，就是个精神变态！"，泄洪的快感会令你自己说服自己，就像罗生门里每个人都有一个冠冕堂皇的"正当理由"来解释&掩盖自己的罪行一样，此时，你也并不例外，与故事里的武士、盗贼、妻子一样，开始并从事着稻草人逻辑+格式塔（Gestalt）式心理的胡编乱造，结果，你就彻底的走火入魔了；所以，一个字符，一个逗点，一个空格儿都要有其要义。即，简明如旭日、精炼似神谕，按键若有神！magrittr就常常使用“.”来代表管道里的计算对象，那是红点瞄准镜所锚定的击杀位置&目标，是统计之神在管道镜筒中给我们发出&标注的神谕，那是神启之光的亮点！
+
+
 
 # 使用元编程（!!展开）分解表结构，将pick即p函数置于list可避免符号p避免污染到外部环境。p:  partition into parts and pick 裂解&甄选
 # 这其实就是用list创建了一个原型对象，是对OOP编程的封装的R的实现！换句话说R的list可以当成对象来使用它就相当于JS的Object可以挂载一切！
@@ -272,34 +483,79 @@ if(!require(boot)) install.packages("boot"); library(boot) # 加载bootstrap包�
 ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8, flag=T) {
     rb <- record.builder("##tbl,#startime,#endtime") # 参数构建器
     ohlc <- \(tbl) `OHLCV1M` |> sqldframe(rb(tbl, startime, endtime)) %>% with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
-    sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) %>% setNames(., .) |> # 提取指定表名模式的tickdata交易数据表
+    sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) |> setNames(nm=_) |> # 提取指定表名模式的tickdata交易数据表
         lapply(ohlc) |> (\(.) if(flag) do.call(rbind, args=.) else .) () # 根据flag标记进行多日K线数据的合并
 } # 多日表K线的求值函数
-qux <- \(key, fn, probs = seq(0, 1, 0.25)) expr(xs |> # 生成四分位数表达式(采用bootstrap抽样生成5000个样本)
-    with(boot(!!ensym(key), compose(!!ensym(fn), `[`), 5000)) |> with(quantile(t, !!probs))) # qu:quantile, x:统计量
-indgen <- \(fn) list(p=\(x) expr(qux(!!ensym(x), !!ensym(fn))) |> eval()) |> with(\(...) # 指标生成器
-    ensyms(...) %>% setNames(., as.character(.)) |> lapply(\(x) expr(!!p(!!x))) %>% (\(.) expr(cbind(!!!.))) ()) # 指标生成器IndicatorGenerator
+btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric, `[`), 5000) |> # bootstrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
+    with(eval(call(!!as.character(ensym(fn2)), t, !!!match.call(expand.dots=F)$...)))) # 自助法生成器BootstrapGenerator
+indgen <- \(fn) list(p=\(x) expr(btgen(!!ensym(x), !!ensym(fn)) (quantile, probs=seq(0, 1, .25)))) |> with(\(...) # 指标生成器
+    ensyms(...) |> setNames(nm=_) |> lapply(\(x) eval(p(!!ensym(x)))) |> (\(.) expr(with(xs, cbind(!!!.)))) ()) # 指标生成器IndicatorGenerator
+
+# 均值统计量的分析器生成函数
+btgen(Close, mean) 
+# >
+# \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric,`[`),5000) |> # bootrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
+#     with(eval(call(!!as.character(ensym(fn2)), t, !!!match.call(expand.dots=F)$...))))
+# <environment: 0x0000021e8f8b07f0>
+
+# 均值统计量&带有四分位数分析法的表达式
+btgen(Close, mean) (quantile, probs=seq(0, 1, .25))
+# > 
+# with(boot(Close, compose(mean, as.numeric, `[`), 5000), eval(call("quantile", 
+#     t, probs = seq(0, 1, 0.25))))
+
+# boostrap自助抽样的绘图
+ohlcs("rb2605_2025121[0-2]") |> with({ # 展开K线数据
+    origin <- par(); on.exit(origin) # 保证退出执行时，恢复原来的窗口布局
+    layout(matrix(c(1, 2, 3, 4, 5, 5), nrow=3, ncol=2, byrow=T)) # Volume占据两列
+    lapply(ss("Open,High,Low,Close,Volume"), \(x) expr(btgen(!!ensym(x), mean)(hist, main=!!as.character(ensym(x)) , xlab=!!as.character(ensym(x)))) |> 
+        compose(eval, eval) ()) |> invisible() # 由于expr嵌套了btgen因此需要进行双层eval来先创建btgen的生成函数表达式而后再执行该表达式
+}) # K线数据绘图
+# >
+
+# 多指标混合的计算表达式
+indgen(mean)(Open, High, Low, Close, Volume)
+# > 
+# with(xs, cbind(Open = with(boot(Open, compose(mean, as.numeric, 
+#     `[`), 5000), eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     High = with(boot(High, compose(mean, as.numeric, `[`), 5000), 
+#         eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     Low = with(boot(Low, compose(mean, as.numeric, `[`), 5000), 
+#         eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     Close = with(boot(Close, compose(mean, as.numeric, `[`), 
+#         5000), eval(call("quantile", t, probs = seq(0, 1, 0.25)))), 
+#     Volume = with(boot(Volume, compose(mean, as.numeric, `[`), 
+#         5000), eval(call("quantile", t, probs = seq(0, 1, 0.25))))))
 
 # 均值指标统计
-indgen(mean)(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(均值统计)来计算指标分布形态
+indgen(mean)(Open, High, Low, Close, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(均值统计)来计算指标分布形态
 # >
-#          Open     High    Close      Low   Volume
-# 0%   3086.487 3087.320 3085.900 3085.218 3040.794
-# 25%  3088.088 3089.199 3088.089 3086.945 3467.480
-# 50%  3088.486 3089.610 3088.499 3087.360 3555.689
-# 75%  3088.879 3090.015 3088.907 3087.781 3648.457
-# 100% 3090.568 3091.987 3090.858 3089.592 4064.042
-# >
+#          Open     High      Low    Close   Volume
+# 0%   3086.129 3087.522 3084.996 3086.057 3132.222
+# 25%  3088.078 3089.214 3086.943 3088.062 3475.830
+# 50%  3088.485 3089.634 3087.378 3088.480 3561.047
+# 75%  3088.881 3090.053 3087.783 3088.883 3650.408
+# 100% 3091.102 3092.157 3089.905 3090.796 4046.951
 
 # 标准差指标统计
-indgen(sd)(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(标准差统计)来计算指标分布形态
+indgen(sd)(Open, High, Low, Close, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(标准差统计)来计算指标分布形态
 # >
-#          Open     High    Close      Low   Volume
-# 0%   18.00833 18.32910 18.30593 18.52507 3094.675
-# 25%  19.47144 19.49445 19.47025 19.43613 3896.707
-# 50%  19.71371 19.74270 19.72641 19.68090 4167.487
-# 75%  19.96665 20.00294 19.97133 19.92536 4443.329
-# 100% 20.94840 20.95716 21.14223 20.98043 5602.816
+#          Open     High      Low    Close   Volume
+# 0%   18.46859 18.49315 18.47023 18.37209 3048.028
+# 25%  19.46811 19.49265 19.43249 19.47094 3913.760
+# 50%  19.72087 19.74353 19.67659 19.71951 4172.149
+# 75%  19.97971 19.99937 19.93360 19.96717 4445.593
+# 100% 20.99865 20.99349 20.84144 21.19670 5626.599
+
+# 中位绝对偏差指标统计
+indgen(mad)(Open, High, Low, Close, Volume) |> eval(list(xs=ohlcs("rb2605_2025121[0-2]"))) # 使用指标生成器(中位绝对偏差)来计算指标分布形态
+# >
+#         Open    High     Low   Close   Volume
+# 0%   16.3086 16.3086 17.7912 16.3086 1604.173
+# 25%  20.7564 20.7564 20.7564 20.7564 1894.763
+# 50%  20.7564 20.7564 22.2390 20.7564 1961.480
+# 75%  22.2390 22.2390 22.2390 22.2390 2043.023
+# 100% 26.6868 25.2042 26.6868 25.2042 2346.956
 
 
 还是要再提醒一下，那些认为 R 语法不够现代的人请注意：上述示例代码没使用一个R语法关键字，全是标准库以及sqlquery、sqldframe这 2 个从外界读取数据的自定义数据源 IO 符号。当我们把标准库与数据源 IO 符号通过Rprofile.site固化到 R 的会话（Session）环境之中，R 语言就可以展现出一种几乎完全不用关键字来编码、近乎自然语言的描述&表达能力，读写R代码可以使用与阅读&创作文学剧本&小说一样的思维：list(枚举&罗列关键概念&人物的定义&介绍) |> with(突出&刻画、组织&安排上述的关键概念&人物至特定形式的关系结构网络并将其锚定&捆绑至某种参数&配置的业务&事件与情节&冲突之上，精心演绎、推进&展开该专业情景中的故事逻辑&发展过程，从而表达出此程序的 目标&目的、主题&主旨、意义&价值)，即代码在专业领域内是自解释的（DSL）！
@@ -336,6 +592,18 @@ indgen(sd)(Open, High, Close, Low, Volume) |> eval(list(xs=ohlcs("rb2605_2025121
 
 所以，可以理解函数式编程为何要追求代码简短了吗？因为，要轻包装，简短的功能代码便于在出现问题时的快速“调试”，就像扔塑料袋一样的方便，而没有心理负担，于是我们在开始编写代码之初时，就做好随时抛弃原有代码、推倒重来的准备。这就如同一些企业在人员管理上采用类似策略，不长期培养自有工程师，而是使用外包工程师。由于没有固定的人力合同约束，也就不受劳动法的过多限制。在函数式编程中亦是如此，我们没有签订类似约束变量状态的“契约”，所以也就不存在传统意义上的状态性bug。既然没有状态性bug，那么出现的问题就只能是结构设计方面的问题。一旦结构设计有问题，就必须进行全面推导并重新规划。（注意，这里把函数分成了：功能函数与基础函数，功能函数是解决具体业务问题的应对&处理策略，临时性与个性化；而基础函数是包函数是用于构建组合功能函数的函数，长久性且通用；即功能函数与基础函数不是处于一个信任等级的！换而言之，这里不讨论包开发而只是将包视为久经考验的一套具有了官方认可且拥有了党性的被CRAN所钦定的“功能函数“, 于是 c(".GlobalEnv", "package:stats", "package:graphics","package:grDevices", "package:utils", "package:datasets", ".SqlQueryEnv", "package:methods", "Autoloads", "package:base")这些就相当于警察部队了，有问题让他们做就是了；反过来，当你怀疑包函数时，你其实就已经是“反革命“了，再换个视角，R语言里同样的功能往往是有很多包的，事实也变相说明了R接纳“反革命“，看到了吗.SqlQueryEnv就是我为自己打造私人武装。现实或者说实际情况是我既相信警察，同时又是反革命！虽然，这里我们谈函数编程的绝对信用，但真办事的时候，我们需要有，哪种效率高我就用哪个的，具有随时“叛变&投降”的应变策略，而非只做一个冥顽不化的范式卫道者）
 
-函数式编程代码不会冗长的另一个原因是，它构建在类似交易平台的架构之上。就好比期货证券交易者无需去调试螺纹钢的直径，因为交易所（即语言平台）已经确保提供了相应的规范与保障。当然，交易所也存在崩溃的可能，不过这属于系统风险，而系统风险无法在系统内部解决，所以程序在设计时通常不考虑此类情况。即便出现崩溃，我们也可以准备多个后备方案来应对。
+函数式编程代码不会冗长的另一个原因是，它构建在类似交易平台的架构之上。就好比期货证券交易者无需去调试螺纹钢的直径，因为交易所（即语言平台）已经确保提供了相应的规范与保障。当然，交易所也存在崩溃的可能，不过这属于系统风险，而系统风险无法在系统内部解决，所以程序在设计时通常不考虑此类情况。即便出现崩溃，我们也可以准备多个后备方案来应对（比如建立多个异地异构异质平台）。
 
-总之，函数式编程是无需传统意义上的调试的。若你仍执着于过程式的可调试性来批判函数式编程的难维护，则很可能是你的思维还是没转换过来。其原因本质就像在发达国家里“人们从不修家电，大家只是换家电”一样，即函数式编程更注重分析过程，将分析思路以及结论的生成逻辑用领域特定语言（DSL）精准描述出来，这便是编码的实质。
+总之，函数式编程+元编程通常是无需传统意义上的调试（跟踪debug），比如上文的：btgen(Close, mean) (quantile, probs=seq(0, 1, .25)) ，本质上，它与C或LISP的宏展开一样，只是去生成了某个特定结构的表达式：with(boot(Close, compose(mean, as.numeric, `[`), 5000), eval(call("quantile", t, probs = seq(0, 1, 0.25))))。可理解成，将此段较长的表达式给浓缩成较短的形式：“btgen(Close, mean) (quantile, probs=seq(0, 1, .25))”，即缩写&简化！为何要调试缩写？由于完全没有状态，生成的不对，其实是不如意、未达预期，那就重写、重新设计一个！现实中没人调试“美国/US”（缩写符号）来测试它生成的”美利坚合众国/United States of America”也是如此！
+
+若你仍执着于过程式的可调试性来批判函数式编程的难维护，则很可能是你的思维还是没转换过来。其原因&本质，就像在发达国家里“人们从不修家电而只是换家电”一样。即，函数式编程更注重分析过程，将分析思路以及结论的生成逻辑用领域特定语言（DSL）来精准地描述出来，这便是编码的实质！不过，总有些人会坚持他们自己的认知习惯，认为&主张：“一切皆可调试！”，这其实是世界观&思维物种上的差异了，我们需要尊重；毕竟，过程式思维者也可反过来，认为函数式思维者主张：“一切皆可组合”！一般而言，这种不强调具体&实际之主体vs客体关系的绝对化思维是问题大于收益的：是不负责任的口号思维，是说风凉话的舆论思维，是指手画脚的干预&霸权思维！就像厌氧菌（Anaerobic bacteria）不能否定好氧菌（Aerobic bacteria）一样，根瘤菌（Rhizobium）好氧但它不能逼着厌氧的破伤风梭菌（Clostridium tetani）与它一样，因为这是害人，要命的那种！
+
+PS：
+
+请注意，中国人好中庸，总觉得“既XXX又YYY”是一种稳妥的范式，认为思维在“Anaerobic（厌氧）”与“Aerobic（好氧）”上也可以中庸一次，期望可以把自己的思维训练成像大肠杆菌（Escherichia coli）一样的兼性菌（Facultative bacteria）。果真如此吗？Facultative其实只是一种在求生状态下的权宜之计（occurring optionally in response to circumstances rather than by nature），是苟活着不死罢了。这种违背自身真实意图&意志的思维模式和脱离实际生态情景的观点，答主此处持否定意见：客观的物种&环境不能轻易的通过主管的学习&训练来改变，鸡是不能通过学习游泳来变成鸭子的；进化与演变是生物总体的概念，基因性状、能力界限对于具体的实际个体而言，一旦出现&养成，其将伴随终生，一生难变！毕竟，每个自认为是发育成熟的思维个体，它至少需要，自信且清晰回答出“我是谁？”这个基本的认知判断问题。
+
+一句话：切莫把法定年龄当成思维成熟！大臣们都说皇帝的新衣威武霸气、漂亮时尚，唯独孩子说：他只看到了光屁股的皇帝！什么是谎言呢？年龄和经验可是会骗人的：越是位高权重者，就越是身不由己，是职业化思维惯性，让他们“不老实，不诚实”的 不能够任何事情都真的实事求是！（包括答主自己）
+
+虽然，答主谈了大量的关于元编程与函数式思维的便捷和高效，但是它们极有可能是一只破伤风tetani的个人浅见，至少对于那些好氧菌的rhizobium是绝对有害的，还请读者根据自己的实际情况来认知判断，酌情选择！
+
+不过可以肯定，破伤风梭菌（Clostridium tetani）在未来依旧会存在，在其特定领域，R也将继续是它们的致命武器，其毒力不可忽视！
