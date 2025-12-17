@@ -48,7 +48,7 @@ with(as.environment("rb2605"), { # 螺纹钢环境信息绘制
     ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8, flag=T) {
         rb <- record.builder("##tbl,#startime,#endtime") # 参数构建器
         ohlc <- \(tbl) `OHLCV1M` |> sqldframe(rb(tbl, startime, endtime)) %>% with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
-        sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) %>% setNames(., .) |> # 提取指定表名模式的tickdata交易数据表
+        sqlquery("show tables") |> sort() |> grep(pattern, value=T, x=_) |> setNames(nm=_) |> # 提取指定表名模式的tickdata交易数据表
             lapply(ohlc) |> (\(.) if(flag) do.call(rbind, args=.) else .) () # 根据flag标记进行多日K线数据的合并
     } # 多日表K线的求值函数
     btgen <- \(key, fn1) \(fn2, ...) expr(boot(!!ensym(key), compose(!!ensym(fn1), as.numeric, `[`), 500) |> # bootstrap自助法计算fn1统计量并予以fn2分析的生成器函数：fn1统计量函数, fn2 统计量分析函数
