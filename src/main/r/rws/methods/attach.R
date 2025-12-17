@@ -36,12 +36,32 @@ getOption("sqlquery.dbname") # 读取配置
 sqlquery("select database()") # 执行SQL语句
 
 # ------------------------------------------------------------------------------
+# xxxconfig的环境启动
+# ------------------------------------------------------------------------------
+# attach环境xxxconfig，加载位置pos为".SqlQueryEnv"之的直接后继，进而可以拦截base::getOption以便读取自定义的系统配置！
+attach(new.env(), "xxxconfig", pos=match(".SqlQueryEnv", search()) + 1) |> with({ # 在环境xxxconfig里定制相关的系统配置
+    localcfg <- list(sqlquery.drv=RPostgres::Postgres(),sqlquery.dbname="latinus", sqlquery.host="127.0.0.1", sqlquery.port=5432, 
+        sqlquery.user="postgres", sqlquery.password="123456", sqlquery.schema="economics") # 本地环境参数设置
+    getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 联合base图层做叠化绘图的PS技法
+}) # 在环境xxxconfig里定制相关的系统配置
+
+sqlquery.pg("select current_schema") # 当前schema是economics
+
+sql <-"select current_schema"
+dbfun.pg(\(con, .log){
+  dbGetQuery(con, sql) |> print() # 确保连接有效
+  copy_to(con, mtcars)
+  mtcars2 <- tbl(con, "mtcars")
+}, search_path = getOption("sqlquery.schema"), verbose=F) (sql)
+
+detach("xxxconfig") # 卸载环境
+
+# ------------------------------------------------------------------------------
 # 工作区的配置
 # ------------------------------------------------------------------------------
 
 # 添加会话图层专门处理螺纹钢数据
-attach(new.env(), name="rb2605")
-with(as.environment("rb2605"), { # 螺纹钢环境信息绘制
+attach(new.env(), name="rb2605") |> with({ # 螺纹钢环境信息绘制
     ohlcs <- \(pattern="rb2605_2025121", startime="09:00", endtime="23:00", keys=4:8, flag=T) {
         rb <- record.builder("##tbl,#startime,#endtime") # 参数构建器
         ohlc <- \(tbl) `OHLCV1M` |> sqldframe(rb(tbl, startime, endtime)) %>% with(xts(.[, keys], as.POSIXct(paste(Date, Time)))) # 分钟K线函数
