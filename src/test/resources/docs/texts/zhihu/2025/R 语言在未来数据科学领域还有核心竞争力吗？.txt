@@ -278,17 +278,12 @@ Error in parent.env(parent.env(as.environment("package:base"))) :
 before attach xxxconfig [sqlquery.dbname:ctp, db:ctp] 
 >
 
-> # attach 环境 xxxconfig 以动态加载自定义的数据配置
+> # attach环境xxxconfig ，加载位置pos为.SqlQueryEnv之的直接后继，进而可以拦截base::getOption以便读取自定义的数据配置！
 > attach(new.env(), "xxxconfig", pos=match(".SqlQueryEnv", search()) + 1)
-> with(as.environment("xxxconfig"), { # 在应用app01内部设置该应用相关的环境配置
-+     localcfg <- list( # 本地环境参数设置
-+         sqlquery.dbname="ctp2" # 指定特定数据库名
-+     ) # 本地环境参数设置
-+     getOption <- \ (x, default = NULL) { # 拦截base的getOption
-+         if(x %in% grep(pattern="sqlquery", value=T, x=names(options()))) localcfg[[x]] %||% default # 拦截sqlquery配置项目
-+         else base::getOption(x, default) # 其余配置项目使用默认！
-+     } # 拦截base的getOption
-+ })
+> with(as.environment("xxxconfig"), { # 在应用xxxconfig定制相关的环境配置
++     localcfg <- list(sqlquery.dbname="ctp2") # 本地环境参数设置
++     getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 其余配置项目使用默认！
++ }) # 在应用xxxconfig定制相关的环境配置
 > 
 
 # 数据库已经配置成xxxconfig所指定的数据库了
