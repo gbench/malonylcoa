@@ -13,13 +13,13 @@ identical(parent.env(as.environment(".SqlQueryEnv")), as.environment("app01")) #
 
 # 定制应用配置
 with(as.environment("app01"), { # 在应用app01内部设置该应用相关的环境配置
-    sqcfg <- list( # sqlquery的数据库参数预先设置
+    localcfg <- list( # sqlquery的数据库参数预先设置
         #  sqlquery.drv=MySQL(), # 数据库驱动
         sqlquery.host="127.0.0.1", # 数据库主机
         sqlquery.user="root", # 数据库用户
         sqlquery.password="123456", # 数据库密码
         sqlquery.port=3371, # 数据库端口
-        sqlquery.dbname="ctp", # 数据库名
+        sqlquery.dbname="ctp2", # 数据库名
         sqlquery.schema="public,economics", # sqlquery.schema一般为PostgreSQL的参数配置，而MySQL通常不予使用
         #  sqlquery.rb.timestamp=(\(times=0, period=24*3600) (\() {on.exit(times<<-times+1); Sys.time()+times*period})) (), # 带状态时间戳生成函数
         sqlquery.rb.keys="##tbl,#startime,#endtime", # 结构记录构建器默认键名序列
@@ -29,10 +29,7 @@ with(as.environment("app01"), { # 在应用app01内部设置该应用相关的�
     ) # 本地环境参数设置
 
     # 拦截getOption
-    getOption <- \ (x, default = NULL) {
-        if(x %in% grep(pattern="sqlquery", value=T, x=names(options()))) sqcfg[[x]] %||% default # 拦截sqlquery配置项目
-        else base::getOption(x, default) # 其余配置项目使用默认！
-    } # 标准配置
+    getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 其余配置项目使用默认！
 })
 
 getOption("sqlquery.dbname") # 读取配置
