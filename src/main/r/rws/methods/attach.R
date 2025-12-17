@@ -47,12 +47,17 @@ attach(new.env(), "xxxconfig", pos=match(".SqlQueryEnv", search()) + 1) |> with(
 
 sqlquery.pg("select current_schema") # 当前schema是economics
 
-sql <-"select current_schema"
-dbfun.pg(\(con, .log){
-  dbGetQuery(con, sql) |> print() # 确保连接有效
-  copy_to(con, mtcars)
-  mtcars2 <- tbl(con, "mtcars")
-}, search_path = getOption("sqlquery.schema"), verbose=F) (sql)
+# mysql 数据库查询
+sqlquery.ms <- partial(sqlquery, drv=MySQL(), host="127.0.0.1", port=3371, dbname="ctp", user="root", password="123456", 
+    prettify = \(x) if (1 == length(x)) x[[1]] else bind_rows(x)) # 合并多张表为一张表
+
+# 使用框架处理程序来执行dbplyr数据操作！
+dbfun.pg(\(con, .log) { # 数据连接处理
+  rb2605 <- sqlquery.ms("show tables") |> grep(pattern="rb2605", value=T, x=_) |> tail(2) |> 
+    sprintf(fmt="select * from %s limit 10") |> sqlquery.ms() # 
+  copy_to(con, rb2605) # 把从ms获得数据数据上传到pg数据库
+  mtcars2 <- tbl(con, "rb2605") |> collect() # 数据查询
+}, search_path = getOption("sqlquery.schema"), verbose=F) (NULL) |> print() # 指定search_path
 
 detach("xxxconfig") # 卸载环境
 
