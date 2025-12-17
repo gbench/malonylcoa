@@ -45,6 +45,7 @@ attach(new.env(), "xxxconfig", pos=match(".SqlQueryEnv", search()) + 1) |> with(
     getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 联合base图层做叠化绘图的PS技法
 }) # 在环境xxxconfig里定制相关的系统配置
 
+# 检测当前的数据库schema
 sqlquery.pg("select current_schema") # 当前schema是economics
 
 # mysql 数据库查询
@@ -52,12 +53,15 @@ sqlquery.ms <- partial(sqlquery, drv=MySQL(), host="127.0.0.1", port=3371, dbnam
     prettify = \(x) if (1 == length(x)) x[[1]] else bind_rows(x)) # 合并多张表为一张表
 
 # 使用框架处理程序来执行dbplyr数据操作！
-dbfun.pg(\(con, .log) { # 数据连接处理
-  rb2605 <- sqlquery.ms("show tables") |> grep(pattern="rb2605", value=T, x=_) |> tail(2) |> 
-    sprintf(fmt="select * from %s limit 10") |> sqlquery.ms() # 
-  copy_to(con, rb2605) # 把从ms获得数据数据上传到pg数据库
-  mtcars2 <- tbl(con, "rb2605") |> collect() # 数据查询
-}, search_path = getOption("sqlquery.schema"), verbose=F) (NULL) |> print() # 指定search_path
+rb2605 <- (\(con, .log) { # 使用通用数据库连接管理框架dbfun.pg来托管数据库连接来进行dbply方式的合约处理
+      .rb2605 <- sqlquery.ms("show tables") |> grep(pattern="rb2605", value=T, x=_) |> # 读取数据
+          tail(2) |> sprintf(fmt="select * from %s limit 10") |> sqlquery.ms() # 从mysql里读取数据合约
+      copy_to(con, .rb2605) # 把从mysql获得数据数据上传到postgresql数据库
+      mtcars2 <- tbl(con, ".rb2605") |> collect() # 数据查询
+  }) |> dbfun.pg(f=_, search_path = getOption("sqlquery.schema"), verbose=F) # 合约处理
+
+# 数据执行数据
+rb2605() |> print()
 
 detach("xxxconfig") # 卸载环境
 
