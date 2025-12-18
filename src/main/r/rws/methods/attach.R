@@ -64,17 +64,18 @@ rb2605.statistic <- (\(con, .log) { # 使用通用数据库连接管理框架dbf
         tail(2) |> sprintf(fmt="select * from %s limit 1000") |> sqlquery.ms() # 从mysql里读取数据合约
     copy_to(con, .rb2605, name = "t_rb2605", overwrite = TRUE, temporary = FALSE)  
     # 临时加：打印表结构，确认字段名/类型
-    print(dbGetQuery(con, 'SELECT "TradingDay", "UpdateTime" FROM t_rb2605 LIMIT 1') |> tibble())  
+    print(dbGetQuery(con, 'SELECT "TradingDay", "UpdateTime" FROM t_rb2605 LIMIT 1') |> tibble()) 
+    # dbplyr可以在dplyr中使用底层数据库的SQL函数, 如concat, avg 都是
     tbl(con, "t_rb2605") |> group_by(minute=concat(ActionDay, substr(replace(UpdateTime, ":", ""), 1, 4))) |> # 使用PG函数处理时间
-        summarise(mean=avg(LastPrice), n=n()) %T>% {print(sql_render(.))} |> arrange(desc(minute)) |> # 统计分钟数据
+        summarise(mean=avg(LastPrice), n=n()) %T>% {print(sql_render(.))} |> arrange(desc(minute)) |> # 使用SQL函数avg统计分钟数据！
         collect() # 生成SQL并执行结果
 }) |> dbfun.pg(search_path=getOption("sqlquery.schema"), verbose=F) # 合约处理
 
-# 计算rb2605统计量
+# 计算rb2605统计量（没有为生成函数输入sql参数）
 rb2605.statistic() 
 
 # 使用变量xxxconfig来动态卸载
-which(xxxconfig==search())|> as.list() |> do.call(detach, args=_)  # 卸载环境
+which(xxxconfig==search()) |> as.list() |> do.call(detach, args=_)  # 卸载环境
 
 # ------------------------------------------------------------------------------
 # 工作区的配置
