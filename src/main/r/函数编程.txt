@@ -177,6 +177,9 @@ rs2 <- aggregate(breaks~wool+tension, data=warpbreaks, FUN=summary); rs2
 
 # -------------------------------------------------------------------------------------------------------------
 # callCC 与 return 的区别，callCC 类似于带有状态的goto, 可以终止 高阶函数Reduce, apply族等函数
+# Call With Current Continuation
+# callCC provides a non-local exit mechanism that can be useful for early termination of a computation. 
+# callCC calls fun with one argument, an exit function. The exit function takes a single argument, the intended return value.
 # -------------------------------------------------------------------------------------------------------------
 
 xs <- list(NULL) |> rep(10) |> append(as.list(1:10)) # 实验数据
