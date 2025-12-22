@@ -17,7 +17,7 @@ import static gbench.util.data.xls.SimpleExcel.xls;
 import static gbench.util.jdbc.kvp.IRecord.REC;
 
 /**
- * H2数据库示例
+ * Ignite数据库示例
  */
 public class JdbcIgniteTest {
 
