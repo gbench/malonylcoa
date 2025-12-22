@@ -35,7 +35,7 @@ public class JdbcIgniteTest {
 		jdbcApp.withTransaction(sess -> {
 			final var conn = sess.getConnection();
 			final var stmt = conn.createStatement();
-			final var rs = stmt.executeQuery("select * from person");
+			final var rs = stmt.executeQuery("select * from t_mtcars");
 			final var rsm = rs.getMetaData();
 			final var n = rsm.getColumnCount();
 			final var lines = new ArrayList<IRecord>();
