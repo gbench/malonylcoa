@@ -29,13 +29,13 @@ public class JdbcIgniteTest {
 		final var datafile = xls(Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/data/datafile.xlsx"); // 数据-源文件
 		final var sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql"; // sql文件
 		final var db = "ctp"; // 数据库名
-		final var url = String.format("jdbc:ignite:thin://localhost:10800", db); // h2连接字符串
+		final var url = String.format("jdbc:ignite:thin://192.168.1.41:10800", db); // h2连接字符串
 		final var h2_rec = REC("url", url, "driver", "org.h2.Driver", "user", "root", "password", "123456"); // h2数据库
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
 		jdbcApp.withTransaction(sess -> {
 			final var conn = sess.getConnection();
 			final var stmt = conn.createStatement();
-			final var rs = stmt.executeQuery("select * from mtcars");
+			final var rs = stmt.executeQuery("select * from person");
 			final var rsm = rs.getMetaData();
 			final var n = rsm.getColumnCount();
 			final var lines = new ArrayList<IRecord>();
