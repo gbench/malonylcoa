@@ -56,17 +56,21 @@ sqlquery("select * from t_mtcars")
 iris$id<-1:nrow(iris)
 names(iris) <- make_clean_names(names(iris))
 
-#  创建数据表: 使用dbfun托管数据库连接，最后一列作为数据库主键
-dbfun(\(con) dbSendUpdate(con, ctsql(iris, t_iris) |> sub("\n\\)", "primary key\n\\)", x=_)))(NULL)
+# ignite 的RJDBC驱动只支持没有不带有返回值的dbSendUpdate, 不支持带有影响函数返回值的dbSendQuery，
+# dbfun原本设计sql函数生成器(提供通用的数据库连接管理），此处把SQL设置为NULL以表示内置了SQL应用
+# 考虑使用方便，这里不打算封装dbfun为sqlexecute.ignite函数，因为使用R来插入数据并不常见！dbfun已可满足需求！
 
-#  插入数据：使用dbfun托管数据库连接
-dbfun(\(con) dbSendUpdate(con, insql(iris, t_iris)))(NULL)
+# 创建数据表: 使用dbfun托管数据库连接，最后一列作为数据库主键：ctsql  表示CreaTeSQL
+dbfun(\(con) dbSendUpdate(con, ctsql(iris, t_iris) |> sub("\n\\)", "primary key\n\\)", x=_))) (sql=NULL)
+
+#  插入数据：使用dbfun托管数据库连接，dbfun设计为sql函数生成器，此处把SQL设置为NULL以表示内置了SQL应用, insql 表示INsertSQL
+dbfun(\(con) dbSendUpdate(con, insql(iris, t_iris))) (sql=NULL)
 
 # 数据库查询
 sqlquery("select * from t_iris")
 
 # 数据表删除 
-dbfun(\(con) dbSendUpdate(con, "drop table t_iris"))(NULL)
+dbfun(\(con) dbSendUpdate(con, "drop table t_iris")) (sql=NULL)
 
 # 查看数据库表
 sqlquery("select * from system.tables")
