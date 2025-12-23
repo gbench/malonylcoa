@@ -31,8 +31,8 @@ dbDisconnect(conn)
 # xxxconfig的环境启动（使用jdbc方法来拦截ignite) 类似于Photoshop的多级图层的underlay+overlay的联合图层绘图
 # ------------------------------------------------------------------------------
 # install.packages(c("rJava", "RJDBC"), repos = "https://mirrors.ustc.edu.cn/CRAN/")
-batch_load() # 导入基础库
-ss("rJava,RJDBC") |> setNames(nm=_) |> lapply(require, character.only=T) |> unlist() # 加载dbplyr的基础库
+batch_load() # 导入基础库，引入sqlquery系列函数
+ss("rJava,RJDBC") |> setNames(nm=_) |> lapply(require, character.only=T) |> unlist() # 加载RJDBC的基础库
 xxxconfig <- "igniteconfig" # 为环境命名
 
 # attach环境xxxconfig，加载位置pos为".SqlQueryEnv"之的直接后继，进而可以拦截base::getOption以便读取自定义的系统配置！
