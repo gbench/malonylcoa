@@ -1,0 +1,28 @@
+# 1. 装包（仅需第一次）
+install.packages(c("rJava", "RJDBC"), repos = "https://mirrors.ustc.edu.cn/CRAN/")
+
+# 2. 加载
+library(rJava)
+library(RJDBC)
+
+jars <- list.files("D:/sliced/develop/ignite/ignite3-3.1.0/ignite3-cli-3.1.0/lib", pattern = "\\.jar$", full = TRUE)
+
+# 3. 指定驱动 jar 包路径（Ignite 2.x 瘦客户端）
+drv <- JDBC(
+  driverClass = "org.apache.ignite.jdbc.IgniteJdbcDriver",   # 驱动类名
+  classPath = paste(jars, collapse = ";"),  # 放 jar 的绝对路径
+  identifier.quote = "`"  # 可选，防关键字冲突
+)
+
+# 4. 建立连接
+conn <- dbConnect( drv, "jdbc:ignite:thin://192.168.1.41:10800",   # 与 JDBC URL 完全一致
+  user     = "ignite",     # 如未开认证可省略
+  password = "ignite"
+)
+
+# 5. 查询
+df <- dbGetQuery(conn, "SELECT * FROM t_mtcars LIMIT 5")
+print(df)
+
+# 6. 关闭
+dbDisconnect(conn)
