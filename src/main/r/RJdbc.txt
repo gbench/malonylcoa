@@ -54,7 +54,7 @@ sqlquery("select * from t_mtcars")
 
 # 数据准备
 iris$id<-1:nrow(iris)
-names(iris) <- make_clean_names(names(iris))
+names(iris) <- make_clean_names(names(iris)) # 数据框名称管理
 
 # ignite 的RJDBC驱动只支持没有不带有返回值的dbSendUpdate, 不支持带有影响函数返回值的dbSendQuery，
 # dbfun原本设计sql函数生成器(提供通用的数据库连接管理），此处把SQL设置为NULL以表示内置了SQL应用
@@ -68,13 +68,38 @@ dbfun(\(con) dbSendUpdate(con, insql(iris, t_iris))) (sql=NULL)
 
 # 数据库查询
 sqlquery("select * from t_iris")
-
-# 数据表删除 
-dbfun(\(con) dbSendUpdate(con, "drop table t_iris")) (sql=NULL)
+# > 
+# A tibble: 150 × 6
+#    SEPAL_LENGTH SEPAL_WIDTH PETAL_LENGTH PETAL_WIDTH SPECIES       ID
+#           <dbl>       <dbl>        <dbl>       <dbl> <chr>      <dbl>
+#  1          5.8         2.7          3.9         1.2 versicolor    83
+#  2          5.6         2.9          3.6         1.3 versicolor    65
+#  3          7           3.2          4.7         1.4 versicolor    51
+#  4          6.1         2.9          4.7         1.4 versicolor    64
+#  5          6.2         3.4          5.4         2.3 virginica    149
 
 # 查看数据库表
 sqlquery("select * from system.tables")
+# >
+# A tibble: 3 × 15
+#   SCHEMA_NAME TABLE_NAME TABLE_ID TABLE_PK_INDEX_ID ZONE_NAME STORAGE_PROFILE TABLE_COLOCATION_COLUMNS
+#   <chr>       <chr>         <dbl>             <dbl> <chr>     <chr>           <chr>                   
+# 1 PUBLIC      PERSON           21                22 Default   default         ID                      
+# 2 PUBLIC      T_MTCARS         23                24 Default   default         ID                      
+# 3 PUBLIC      T_IRIS           33                34 Default   default         ID                      
+# # ℹ 8 more variables: SCHEMA_ID <dbl>, ZONE_ID <dbl>, SCHEMA <chr>, NAME <chr>, ID <dbl>,
+# #   PK_INDEX_ID <dbl>, COLOCATION_KEY_INDEX <chr>, ZONE <chr>
 
+# 数据表删除 
+dbfun(\(con) dbSendUpdate(con, "drop table t_iris")) (sql=NULL)
+# >
+# A tibble: 2 × 15
+#   SCHEMA_NAME TABLE_NAME TABLE_ID TABLE_PK_INDEX_ID ZONE_NAME STORAGE_PROFILE TABLE_COLOCATION_COLUMNS
+#   <chr>       <chr>         <dbl>             <dbl> <chr>     <chr>           <chr>                   
+# 1 PUBLIC      PERSON           21                22 Default   default         ID                      
+# 2 PUBLIC      T_MTCARS         23                24 Default   default         ID                      
+# # ℹ 8 more variables: SCHEMA_ID <dbl>, ZONE_ID <dbl>, SCHEMA <chr>, NAME <chr>, ID <dbl>,
+# #   PK_INDEX_ID <dbl>, COLOCATION_KEY_INDEX <chr>, ZONE <chr>
 
 # 移除igniteconfig的图层配置
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
