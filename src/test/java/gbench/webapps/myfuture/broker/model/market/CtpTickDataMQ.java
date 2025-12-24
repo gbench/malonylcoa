@@ -103,13 +103,15 @@ public class CtpTickDataMQ {
 					println("\n===== 收到新消息 =====");
 					println("分区：" + record.partition() + "，偏移量：" + record.offset());
 					println("消息 Key：" + record.key());
-					println("消息 Value：" + record.value());
+					// println("消息 Value：" + record.value());
+					final var r = REC("ID", record.offset()).derive(REC(record.value()));
 
 					try {
-						tickdata_handler.apply(REC(record.value()));
+						tickdata_handler.apply(r);
 					} catch (Exception e) {
 						println("解析消息 JSON 失败：" + e.getMessage());
-						println("失败的消息内容：" + record.value());
+						println("失败的消息内容：" + r.json());
+						e.printStackTrace();
 					}
 				} // for
 
