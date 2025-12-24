@@ -205,35 +205,6 @@
 			<version>3.1.0</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-jdbc -->
-		<dependency>
-			<groupId>org.apache.ignite</groupId>
-			<artifactId>ignite-core</artifactId>
-			<version>3.1.0</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-client -->
-		<dependency>
-			<groupId>org.apache.ignite</groupId>
-			<artifactId>ignite-client</artifactId>
-			<version>3.1.0</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-api -->
-		<dependency>
-			<groupId>org.apache.ignite</groupId>
-			<artifactId>ignite-api</artifactId>
-			<version>3.1.0</version>
-			<scope>test</scope>
-		</dependency>
-		<!--
-		https://mvnrepository.com/artifact/org.apache.ignite/ignite-metastorage-cache -->
-		<dependency>
-			<groupId>org.apache.ignite</groupId>
-			<artifactId>ignite-metastorage-cache</artifactId>
-			<version>3.1.0</version>
-			<scope>test</scope>
-		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients -->
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
@@ -280,28 +251,5 @@
 				<version>${maven-javadoc-plugin-version}</version>
 			</plugin>
 		</plugins>
-		<testResources>
-			<testResource>
-				<!-- 基准目录：src/test -->
-				<directory>src/test</directory>
-				<!-- 先明确包含需要的文件（可选，但能避免规则冲突） -->
-				<includes>
-					<include>java/**/*.java</include> <!-- 只保留测试源码 -->
-					<include>resources/**/*</include> <!-- 保留正常的测试资源 -->
-				</includes>
-				<!-- 排除规则：相对于 src/test 的相对路径 -->
-				<excludes>
-					<!-- 排除 src/test 下所有层级的 webapps 目录（包括子文件/子目录） -->
-					<exclude>**/webapps/**/*</exclude>
-					<!-- 通用排除 Node.js/UI 相关文件 -->
-					<exclude>**/node_modules/**/*</exclude>
-					<exclude>**/*.js</exclude>
-					<exclude>**/*.vue</exclude>
-					<exclude>**/package.json</exclude>
-					<exclude>**/yarn.lock</exclude>
-					<exclude>**/ui/**/*</exclude> <!-- 单独排除 ui 目录，双重保障 -->
-				</excludes>
-			</testResource>
-		</testResources>
 	</build>
 </project>
