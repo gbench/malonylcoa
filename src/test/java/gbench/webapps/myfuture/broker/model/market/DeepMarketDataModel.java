@@ -1,4 +1,4 @@
-package gbench.webapps.myfuture.broker.model.maket;
+package gbench.webapps.myfuture.broker.model.market;
 
 import java.util.List;
 import java.util.Map;
@@ -51,7 +51,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
-import static gbench.webapps.myfuture.broker.model.maket.DeepMarketDataModel.CtpIgniteData.*;
+import static gbench.webapps.myfuture.broker.model.market.DeepMarketDataModel.CtpIgniteData.*;
 
 import java.time.Duration;
 import java.util.Collections;
