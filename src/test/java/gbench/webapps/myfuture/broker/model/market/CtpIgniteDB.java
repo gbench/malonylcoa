@@ -30,10 +30,8 @@ import org.apache.ignite.sql.SqlRow;
 
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
-import java.util.concurrent.CompletableFuture;
 
 import static gbench.util.io.Output.println;
-import static gbench.webapps.myfuture.broker.model.market.CtpIgniteDB.proto2tdb;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.apache.ignite.catalog.definitions.ColumnDefinition.column;
 

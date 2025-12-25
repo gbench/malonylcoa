@@ -1,28 +1,19 @@
 package gbench.webapps.myfuture.broker.model.market;
 
-import static gbench.util.io.Output.println;
-import static gbench.util.jdbc.kvp.IRecord.REC;
-import static gbench.webapps.myfuture.broker.model.market.CtpIgniteDB.*;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.apache.ignite.catalog.definitions.ColumnDefinition.column;
+import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.SubmissionPublisher;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-
 import org.apache.ignite.table.*;
 import org.apache.ignite.catalog.ColumnType;
 import org.apache.ignite.catalog.IgniteCatalog;
 import org.apache.ignite.catalog.definitions.TableDefinition;
-import org.junit.jupiter.api.Test;
 
-import com.alibaba.nacos.shaded.com.google.common.base.Objects;
-
-import gbench.util.function.Functions;
-import gbench.util.io.Output;
 import gbench.util.jdbc.kvp.IRecord;
+
+import static gbench.util.io.Output.println;
+import static gbench.util.jdbc.kvp.IRecord.REC;
+import static gbench.webapps.myfuture.broker.model.market.CtpIgniteDB.*;
+import static org.apache.ignite.catalog.definitions.ColumnDefinition.column;
 
 public class DeepMarketDataModel {
 
@@ -52,11 +43,7 @@ public class DeepMarketDataModel {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final Function<IRecord, Object> tickdata_handler = rec -> {
 			igniteDB.put(rec, "InstrumentID", row -> println("row:%s".formatted(row))); // 数据写入
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} // 等待
+			sleep(1000);
 			return null;
 		};
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler).initialize()
@@ -88,6 +75,18 @@ public class DeepMarketDataModel {
 		final var proto = REC(json);
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		igniteDB.put(proto, "InstrumentID", row -> println("row:%s".formatted(row)));
+	}
+
+	/**
+	 * 
+	 * @param millis
+	 */
+	public void sleep(long millis) {
+		try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} // 等待
 	}
 
 	// 配置参数（对应你给出的参数）
