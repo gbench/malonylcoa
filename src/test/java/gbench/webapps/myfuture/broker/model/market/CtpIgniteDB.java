@@ -22,6 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.ignite.catalog.*;
 import org.apache.ignite.table.*;
@@ -136,11 +137,11 @@ public class CtpIgniteDB {
 		this.withTransaction(client -> {
 			final var tblName = record.str(nameKey);
 			final var rec = record.filterNot(nameKey);
-			return client.tables().tableAsync(tblName).handle((tbl, _) -> tbl != null //
-					? completedFuture(tbl)
-					: rec.mutate(p -> client.catalog().createTableAsync(rec2tdb(p, tblName).build()))
-							.thenCompose(e -> completedFuture(e)))
-					.thenCompose(Function.identity()).thenCompose(tbl -> {
+			return client.tables().tableAsync(tblName).handle((tbl, _) -> tbl != null // 检查数据表是否存在
+					? completedFuture(tbl) // 数据表存在，封装成Future结构以便与createTableAsync形成类型同构
+					: client.catalog().createTableAsync(rec2tdf(rec, tblName)) // 数据表不存在则创建数据表
+							.thenCompose(CompletableFuture::completedFuture))
+					.thenCompose(Function.identity()).thenCompose(tbl -> { // 使用identity把内层future暴露出来（数据蜕皮）
 						var kvv = tbl.keyValueView();
 						var key = rec.filter(pk).mutate(CtpIgniteDB::asTuple);
 						var val = rec.filterNot(pk).mutate(CtpIgniteDB::asTuple);
@@ -167,7 +168,17 @@ public class CtpIgniteDB {
 	}
 
 	/**
-	 * 把样本 Map 转成 Ignite 3.x 可用的 DDL 字符串
+	 * 把样本 IRecord 转成 Ignite 3.x 可用的 DDL 字符串
+	 * 
+	 * @param proto 一条样本数据，key=列名，value=任意对象
+	 * @param tbl   表名，为空时自动生成
+	 */
+	public static TableDefinition rec2tdf(final IRecord proto, String tbl) {
+		return proto2tdb(proto.toMap(), tbl).build();
+	}
+
+	/**
+	 * 把样本 IRecord 转成 Ignite 3.x 可用的 DDL 字符串
 	 * 
 	 * @param proto 一条样本数据，key=列名，value=任意对象
 	 * @param tbl   表名，为空时自动生成
