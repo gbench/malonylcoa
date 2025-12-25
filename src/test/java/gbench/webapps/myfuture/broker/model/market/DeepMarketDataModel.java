@@ -87,14 +87,6 @@ public class DeepMarketDataModel {
 		Thread.sleep(1000000); // 等待
 	}
 
-	@Test
-	public void foo10() {
-		for (int i = 0; i < 10000; i++) {
-			System.out.println(System.currentTimeMillis() / 1000 % 10);
-			sleep(1000);
-		}
-	}
-
 	/**
 	 * 动态K线生成
 	 * 
@@ -108,7 +100,7 @@ public class DeepMarketDataModel {
 		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,TIMES,UPTIME"); // K线数据格式
 		final var dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss.SSS");
-		final var clean_interval = 5 * 60;
+		final var CLEAN_INTERVAL = 5 * 60;
 		final var kcache_cleaner = ((BiFunction<Integer, Integer, Consumer<Map<String, IRecord>>>) (expired,
 				maxsize) -> cache -> { // 对缓存进行清理，当cache的size大于maxsize时。把cache中距离当前系统时间大于expired时长的kline项目给予清楚
 					if (cache.size() > maxsize) {
@@ -118,7 +110,7 @@ public class DeepMarketDataModel {
 										.parse(e.getKey().split("_")[1], dtf_ymdhm).atZone(ZoneId.of("Asia/Shanghai"))
 										.toInstant().toEpochMilli() > expired);
 					} // if
-				}).apply(clean_interval * 1000, 10000);
+				}).apply(CLEAN_INTERVAL * 1_000, 100_00);
 
 		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
@@ -139,7 +131,7 @@ public class DeepMarketDataModel {
 			final var kline = kcache.get(key); // 提取
 			final Consumer<Tuple> callback = e -> {
 				println("upate %s:%s".formatted(kline.str(TNAME), e));
-				if (System.currentTimeMillis() / 1000 % clean_interval == 0) { // 2分钟运行一次检测
+				if (System.currentTimeMillis() / 1_000 % CLEAN_INTERVAL == 0) { // 2分钟运行一次检测
 					kcache_cleaner.accept(kcache); // 缓存清理
 				}
 			};
