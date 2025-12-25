@@ -16,33 +16,37 @@ import java.util.Map;
 import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.ignite.catalog.*;
 import org.apache.ignite.table.*;
+
 import org.apache.ignite.catalog.definitions.*;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.sql.SqlRow;
-import org.apache.ignite.table.Table;
 
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
+import java.util.concurrent.CompletableFuture;
 
 import static gbench.util.io.Output.println;
+import static gbench.webapps.myfuture.broker.model.market.CtpIgniteDB.proto2tdb;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.apache.ignite.catalog.definitions.ColumnDefinition.column;
 
 /**
  * 
  */
-public class CtpIgniteData {
+public class CtpIgniteDB {
 
 	/**
 	 * 
 	 * @param addresses
 	 */
-	public CtpIgniteData(final String... addresses) {
+	public CtpIgniteDB(final String... addresses) {
 		this.addresses = addresses;
 	}
 
@@ -60,7 +64,7 @@ public class CtpIgniteData {
 	 */
 	public <T> T withTransaction(Function<IgniteClient, T> handler) {
 		final var ar = new AtomicReference<T>();
-		try (IgniteClient client = IgniteClient.builder().addresses(addresses).build()) {
+		try (final var client = IgniteClient.builder().addresses(addresses).build()) {
 			ar.set(handler.apply(client));
 		}
 		return ar.get();
@@ -109,12 +113,32 @@ public class CtpIgniteData {
 		this.defaultSchema = defaultSchema;
 	}
 
+	/**
+	 * 
+	 * @param record
+	 * @param nameKey
+	 */
+	public void put(final IRecord record, final String nameKey, Consumer<Tuple> callback) {
+		this.withTransaction(client -> {
+			final var tblName = record.str(nameKey);
+			return client.tables().tableAsync(tblName).handle((tbl, _) -> tbl != null //
+					? completedFuture(tbl)
+					: record.mutate(p -> client.catalog().createTableAsync(proto2tdb(p, tblName).build()))
+							.thenCompose(e -> completedFuture(e)))
+					.thenCompose(Function.identity()).thenCompose(tbl -> {
+						var kvv = tbl.keyValueView();
+						var key = record.filter("ID").mutate(CtpIgniteDB::asTuple);
+						var val = record.filterNot("ID").mutate(CtpIgniteDB::asTuple);
+						return kvv.putAsync(null, key, val).thenCompose(_ -> kvv.getAsync(null, key));
+					}).thenAccept(callback).join();
+		});
+	}
+
 	public static void dumpBuilder(TableDefinition.Builder b) {
 		try {
 			Field f = b.getClass().getDeclaredField("columns"); // private List<ColumnDefinition>
 			f.setAccessible(true);
-			@SuppressWarnings("unchecked")
-			List<ColumnDefinition> cols = (List<ColumnDefinition>) f.get(b);
+			final var cols = (List<ColumnDefinition>) f.get(b);
 
 			System.out.println("Builder 当前列信息:");
 			for (ColumnDefinition c : cols) {
@@ -131,35 +155,29 @@ public class CtpIgniteData {
 	 * @param proto 一条样本数据，key=列名，value=任意对象
 	 * @param tbl   表名，为空时自动生成
 	 */
-	public static <X, Y> TableDefinition.Builder proto2tdb(final Map<X, Y> proto, String tbl) {
-		String tableName = (tbl == null || tbl.isBlank()) ? "tbl_" + Math.abs(proto.hashCode()) : tbl;
+	public static TableDefinition.Builder proto2tdb(final IRecord proto, String tbl) {
+		return proto2tdb(proto.toMap(), tbl);
+	}
 
+	/**
+	 * 把样本 Map 转成 Ignite 3.x 可用的 DDL 字符串
+	 * 
+	 * @param proto 一条样本数据，key=列名，value=任意对象
+	 * @param tbl   表名，为空时自动生成
+	 */
+	public static <K, V> TableDefinition.Builder proto2tdb(final Map<K, V> proto, String tbl) {
+		final var tableName = (tbl == null || tbl.isBlank()) ? "tbl_" + Math.abs(proto.hashCode()) : tbl;
 		final var builder = TableDefinition.builder(tableName);
-
-		/* 1. 先推断所有列类型 */
-		Map<String, ColumnType> colTypes = new LinkedHashMap<>();
-		proto.forEach((k, v) -> {
-			String col = String.valueOf(k);
-			colTypes.put(col, inferColumnType(v));
-		});
-
-		/* 2. 主键推断规则：列名 id 且是 INT32 → 主键 */
-		String pk = colTypes.entrySet().stream()
+		final var types = proto.entrySet().stream().reduce(new LinkedHashMap<String, ColumnType>(), (acc, a) -> {
+			acc.put(String.valueOf(a.getKey()), inferColumnType(a.getValue()));
+			return acc;
+		}, (a, _) -> a);
+		final var pk = types.entrySet().stream()
 				.filter(e -> "ID".equalsIgnoreCase(e.getKey()) && e.getValue() == ColumnType.INT32)
-				.map(Map.Entry::getKey).findFirst().orElse(colTypes.keySet().iterator().next()); // 否则取第一列
-
-		final var cols = colTypes.entrySet().stream().map(e -> column(e.getKey(), e.getValue()))
+				.map(Map.Entry::getKey).findFirst().orElse(types.keySet().iterator().next()); // 否则取第一列
+		final var cols = types.entrySet().stream().map(e -> column(e.getKey(), e.getValue()))
 				.toArray(ColumnDefinition[]::new);
-
-		builder.columns(cols);
-		/* 4. 设置主键 */
-		builder.primaryKey(pk);
-
-		println("proto(%s):%s".formatted(proto.size(), proto));
-		dumpBuilder(builder);
-
-		return builder;
-
+		return builder.columns(cols).primaryKey(pk);
 	}
 
 	/**
@@ -283,6 +301,11 @@ public class CtpIgniteData {
 
 		// 兜底
 		return ColumnType.varchar(256);
+	}
+
+	public static Tuple asTuple(IRecord rec) {
+		final var val = rec.tupleS().reduce(Tuple.create(), (acc, a) -> acc.set(a._1(), a._2()), (a, _) -> a);
+		return val;
 	}
 
 	// SqlRow 转 Map 核心方法（极简版）
