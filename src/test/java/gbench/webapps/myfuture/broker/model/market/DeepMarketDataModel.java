@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -75,7 +76,7 @@ public class DeepMarketDataModel {
 	public void quz_tk() throws InterruptedException {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final Function<IRecord, Object> tickdata_handler = tick -> {
-			igniteDB.put(tick.add("TBL", "TK_%s".formatted(tick.str("InstrumentID"))), "TBL",
+			igniteDB.put(tick.add(TNAME, "%s_%s".formatted(PREFIX_TK, tick.str("InstrumentID"))), TNAME,
 					e -> println("row:%s".formatted(e))); // 数据写入
 			sleep(1000);
 			return null;
@@ -113,10 +114,12 @@ public class DeepMarketDataModel {
 				final var kline = IRecord.REC("TS", bar.get(key).str("TS"), "OPEN", bar.get(key).dbl("OPEN"), "HIGH",
 						bar.get(key).dbl("HIGH"), "LOW", bar.get(key).dbl("LOW"), "CLOSE", bar.get(key).dbl("CLOSE"),
 						"VOLUME", bar.get(key).i4("VOLUME"));
-				println("%s:%s".formatted(key, kline));
-				igniteDB.put(kline.add("TBL", "KLINE_%s".formatted(iid)), "TBL", e -> {
+				final Consumer<Tuple> callback = e -> {
 					println("upate %s:%s".formatted(kline.str("TBL"), e));
-				}, "TS"); // 表名靠 kline 里的 TS 去拼？不对！
+				};
+				println("%s:%s".formatted(key, kline));
+				// 吧kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
+				igniteDB.put(kline.add(TNAME, "%s_%s".formatted(PREFIX_KL, iid)), TNAME, callback, "TS");
 			}
 			return null;
 		};
@@ -134,10 +137,10 @@ public class DeepMarketDataModel {
 		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
 		final var patterns = REC( //
 				"tk", "[A-Z]+\\d{3,}([A-Z]+\\d{4,})?", // TICKDATA
-				"kl", "^KL_.*", // KLINE线
+				"kl", "^KLINE_.*", // KLINE线
 				"tbl", "^TBL_.*" // TICKDATA
 		);
-		final var pk = "tk";
+		final var pk = "kl";
 		final var symbols = dfm.filterBy(rec -> rec.str("name").matches(patterns.str(pk)));
 		println(symbols);
 		symbols.rowS().forEach(e -> {
@@ -178,5 +181,8 @@ public class DeepMarketDataModel {
 	private static final String KAFKA_BOOTSTRAP_SERVERS = "192.168.1.41:9092";
 	private static final String KAFKA_CONSUMER_GROUP_ID = "ctp_cxx_ctp_topic_group_ignite-3.10";
 	private static final String IGNITE_ADDRESS = "192.168.1.41:10800";
+	private static final String PREFIX_TK = "TK";
+	private static final String PREFIX_KL = "TK";
+	private static final String TNAME = "TBL";
 
 }
