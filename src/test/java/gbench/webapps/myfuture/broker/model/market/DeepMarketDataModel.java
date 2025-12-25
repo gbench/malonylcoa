@@ -154,8 +154,8 @@ public class DeepMarketDataModel {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
 		final var patterns = REC( //
-				"tk", "[A-Z]+\\d{3,}([A-Z]+\\d{4,})?", // TICKDATA
-				"kl", "^KL_.*", // KLINE线
+				"tk", "^%s_[A-Z]+\\d{3,}([A-Z]+\\d{4,})?".formatted(PREFIX_TK), // TICKDATA
+				"kl", "^%s_.*".formatted(PREFIX_KL), // KLINE线
 				"tbl", "^TBL_.*" // TICKDATA
 		);
 		final var pk = "kl";
