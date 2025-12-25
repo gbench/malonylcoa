@@ -6,10 +6,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.apache.ignite.table.*;
 import org.apache.ignite.catalog.ColumnType;
@@ -87,46 +88,71 @@ public class DeepMarketDataModel {
 	}
 
 	@Test
+	public void foo10() {
+		for (int i = 0; i < 10000; i++) {
+			System.out.println(System.currentTimeMillis() / 1000 % 10);
+			sleep(1000);
+		}
+	}
+
+	/**
+	 * 动态K线生成
+	 * 
+	 * @throws Exception
+	 */
+	@Test
 	void quz_kline1m_final() throws Exception {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		final var bar = new ConcurrentHashMap<String, IRecord>();
-		final var dtm = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
+		final Map<String, IRecord> kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
+		final var dtf = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
+		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,TIMES,UPTIME"); // K线数据格式
+		final var dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss.SSS");
+		final var clean_interval = 5 * 60;
+		final var kcache_cleaner = ((BiFunction<Integer, Integer, Consumer<Map<String, IRecord>>>) (expired,
+				maxsize) -> cache -> { // 对缓存进行清理，当cache的size大于maxsize时。把cache中距离当前系统时间大于expired时长的kline项目给予清楚
+					if (cache.size() > maxsize) {
+						final var now = Instant.now();
+						cache.entrySet()
+								.removeIf(e -> now.toEpochMilli() - LocalDateTime
+										.parse(e.getKey().split("_")[1], dtf_ymdhm).atZone(ZoneId.of("Asia/Shanghai"))
+										.toInstant().toEpochMilli() > expired);
+					} // if
+				}).apply(clean_interval * 1000, 10000);
+
 		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
-			final Supplier<Long> epoch_s = () -> LocalDateTime
-					.parse("%s %s".formatted(tick.str("TradingDay"), tick.str("UpdateTime")), dtm)
-					.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(ZoneId.of("Asia/Shanghai")).toInstant()
-					.toEpochMilli();
-			final var epoch = tick.lngopt("Epoch").orElseGet(epoch_s);
-			final var ymdhm = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"))
-					.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
-			final var key = iid + '_' + ymdhm; // 归集主键
+			final var uptime_inst = LocalDateTime
+					.parse("%s %s".formatted(tick.str("ActionDay"), tick.str("UpdateTime")), dtf)
+					.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(ZoneId.of("Asia/Shanghai")).toInstant(); // s时间计算
+			final var epoch = tick.lngopt("Epoch").orElseGet(() -> uptime_inst.toEpochMilli());
+			final var zdt = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"));
+			final var ymdhm = zdt.format(dtf_ymdhm); // K线的主键
+			final var key = "%s_%s".formatted(iid, ymdhm); // K线的分钟K归集主键
 			final var px = tick.dbl("LastPrice"); // 成交价格
 			final var vol = tick.i4("Volume"); // 成交量
+			final var uptime = zdt.format(dtf_ymdhmsS);
+			final var value = krb.get(ymdhm, px, px, px, px, vol, 1, uptime);
+			kcache.merge(key, value, // 依据合约时间分组key进行K线聚合
+					(o, _) -> o.add(REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px), "CLOSE",
+							px, "VOLUME", o.i4("VOLUME") + vol, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
+			final var kline = kcache.get(key); // 提取
+			final Consumer<Tuple> callback = e -> {
+				println("upate %s:%s".formatted(kline.str(TNAME), e));
+				if (System.currentTimeMillis() / 1000 % clean_interval == 0) { // 2分钟运行一次检测
+					kcache_cleaner.accept(kcache); // 缓存清理
+				}
+			};
+			println("%s:%s".formatted(key, kline));
+			// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
+			igniteDB.put(kline.add(TNAME, "%s_%s".formatted(PREFIX_KL, iid)), TNAME, callback, "TS");
 
-			/* 聚合：不含 InstrumentID */
-			bar.merge(key, IRecord.REC("TS", ymdhm, "OPEN", px, "HIGH", px, "LOW", px, "CLOSE", px, "VOLUME", vol),
-					(o, _) -> o.add(IRecord.REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px),
-							"CLOSE", px, "VOLUME", o.i4("VOLUME") + vol)));
-
-			/* 分钟结束：纯净 K 线（无 InstrumentID）直接写入 */
-			if (System.currentTimeMillis() / 60_000 > Long.parseLong(ymdhm.substring(8))) {
-				final var kline = IRecord.REC("TS", bar.get(key).str("TS"), "OPEN", bar.get(key).dbl("OPEN"), "HIGH",
-						bar.get(key).dbl("HIGH"), "LOW", bar.get(key).dbl("LOW"), "CLOSE", bar.get(key).dbl("CLOSE"),
-						"VOLUME", bar.get(key).i4("VOLUME"));
-				final Consumer<Tuple> callback = e -> {
-					println("upate %s:%s".formatted(kline.str("TBL"), e));
-				};
-				println("%s:%s".formatted(key, kline));
-				// 吧kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
-				igniteDB.put(kline.add(TNAME, "%s_%s".formatted(PREFIX_KL, iid)), TNAME, callback, "TS");
-			}
 			return null;
 		};
 
 		// 连接进入交易消息队列进行tickdata的处理
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler).initialize()
-				.start();
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
+				.sleepInterval(100).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 
 		Thread.sleep(1_000_000);
 	}
@@ -137,7 +163,7 @@ public class DeepMarketDataModel {
 		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
 		final var patterns = REC( //
 				"tk", "[A-Z]+\\d{3,}([A-Z]+\\d{4,})?", // TICKDATA
-				"kl", "^KLINE_.*", // KLINE线
+				"kl", "^KL_.*", // KLINE线
 				"tbl", "^TBL_.*" // TICKDATA
 		);
 		final var pk = "kl";
@@ -182,7 +208,7 @@ public class DeepMarketDataModel {
 	private static final String KAFKA_CONSUMER_GROUP_ID = "ctp_cxx_ctp_topic_group_ignite-3.10";
 	private static final String IGNITE_ADDRESS = "192.168.1.41:10800";
 	private static final String PREFIX_TK = "TK";
-	private static final String PREFIX_KL = "TK";
+	private static final String PREFIX_KL = "KL";
 	private static final String TNAME = "TBL";
 
 }

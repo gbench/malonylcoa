@@ -6,6 +6,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -86,9 +87,20 @@ public class CtpTickDataMQ {
 		return true;
 	}
 
+	/**
+	 * 睡眠时常
+	 * 
+	 * @return
+	 */
+	public CtpTickDataMQ sleepInterval(long ms) {
+		this.sleepInterval.set(ms);
+		return this;
+	}
+
 	final String CTP_TOPIC;
 	final String KAFKA_BOOTSTRAP_SERVERS;
 	final String KAFKA_CONSUMER_GROUP_ID;
+	final AtomicLong sleepInterval = new AtomicLong(1000);
 	private Function<IRecord, Object> tickdata_handler = null;
 	private KafkaConsumer<String, String> consumer = null;
 	private AtomicReference<Boolean> flag = new AtomicReference<>(false);
@@ -115,7 +127,9 @@ public class CtpTickDataMQ {
 					}
 				} // for
 
-				Thread.sleep(1000);
+				if (sleepInterval.get() > 0) {
+					Thread.sleep(sleepInterval.get());
+				}
 			} // while
 		} catch (Exception e) {
 			println("消费消息异常：" + e.getMessage());
