@@ -8,6 +8,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
+
 import org.apache.ignite.table.*;
 import org.apache.ignite.catalog.ColumnType;
 import org.apache.ignite.catalog.IgniteCatalog;
@@ -44,19 +46,6 @@ public class DeepMarketDataModel {
 	}
 
 	@Test
-	public void quz() throws InterruptedException {
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		final Function<IRecord, Object> tickdata_handler = rec -> {
-			igniteDB.put(rec, "InstrumentID", row -> println("row:%s".formatted(row))); // 数据写入
-			sleep(1000);
-			return null;
-		};
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler).initialize()
-				.start();
-		Thread.sleep(1000000); // 等待
-	}
-
-	@Test
 	public void foo1() {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		igniteDB.withTransaction(client -> {
@@ -83,23 +72,36 @@ public class DeepMarketDataModel {
 	}
 
 	@Test
-	void quz_kline1m_final() throws Exception {
-		var db = new CtpIgniteDB(IGNITE_ADDRESS);
-		var bar = new ConcurrentHashMap<String, IRecord>();
-		final Function<IRecord, Object> tick_handler = tick -> {
-			final var epoch = tick.lngopt("Epoch")
-					.orElseGet(() -> LocalDateTime
-							.parse(tick.str("TradingDay") + ' ' + tick.str("UpdateTime"),
-									DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss"))
-							.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(ZoneId.of("Asia/Shanghai"))
-							.toInstant().toEpochMilli());
+	public void quz_tk() throws InterruptedException {
+		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
+		final Function<IRecord, Object> tickdata_handler = tick -> {
+			igniteDB.put(tick.add("TBL", "TK_%s".formatted(tick.str("InstrumentID"))), "TBL",
+					e -> println("row:%s".formatted(e))); // 数据写入
+			sleep(1000);
+			return null;
+		};
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler).initialize()
+				.start();
+		Thread.sleep(1000000); // 等待
+	}
 
+	@Test
+	void quz_kline1m_final() throws Exception {
+		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
+		final var bar = new ConcurrentHashMap<String, IRecord>();
+		final var dtm = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
+		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
+			final Supplier<Long> epoch_s = () -> LocalDateTime
+					.parse("%s %s".formatted(tick.str("TradingDay"), tick.str("UpdateTime")), dtm)
+					.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(ZoneId.of("Asia/Shanghai")).toInstant()
+					.toEpochMilli();
+			final var epoch = tick.lngopt("Epoch").orElseGet(epoch_s);
 			final var ymdhm = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"))
 					.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
-			final var key = iid + '_' + ymdhm;
-			final var px = tick.dbl("LastPrice");
-			final var vol = tick.i4("Volume");
+			final var key = iid + '_' + ymdhm; // 归集主键
+			final var px = tick.dbl("LastPrice"); // 成交价格
+			final var vol = tick.i4("Volume"); // 成交量
 
 			/* 聚合：不含 InstrumentID */
 			bar.merge(key, IRecord.REC("TS", ymdhm, "OPEN", px, "HIGH", px, "LOW", px, "CLOSE", px, "VOLUME", vol),
@@ -108,19 +110,19 @@ public class DeepMarketDataModel {
 
 			/* 分钟结束：纯净 K 线（无 InstrumentID）直接写入 */
 			if (System.currentTimeMillis() / 60_000 > Long.parseLong(ymdhm.substring(8))) {
-				final var kline = IRecord.REC("TBL", "KLINE_%s".formatted(iid), "TS", bar.get(key).str("TS"), "OPEN",
-						bar.get(key).dbl("OPEN"), "HIGH", bar.get(key).dbl("HIGH"), "LOW", bar.get(key).dbl("LOW"),
-						"CLOSE", bar.get(key).dbl("CLOSE"), "VOLUME", bar.get(key).i4("VOLUME"));
+				final var kline = IRecord.REC("TS", bar.get(key).str("TS"), "OPEN", bar.get(key).dbl("OPEN"), "HIGH",
+						bar.get(key).dbl("HIGH"), "LOW", bar.get(key).dbl("LOW"), "CLOSE", bar.get(key).dbl("CLOSE"),
+						"VOLUME", bar.get(key).i4("VOLUME"));
 				println("%s:%s".formatted(key, kline));
-				db.put(kline, "TBL", e -> {
-					println(e);
+				igniteDB.put(kline.add("TBL", "KLINE_%s".formatted(iid)), "TBL", e -> {
+					println("upate %s:%s".formatted(kline.str("TBL"), e));
 				}, "TS"); // 表名靠 kline 里的 TS 去拼？不对！
 			}
 			return null;
 		};
 
 		// 连接进入交易消息队列进行tickdata的处理
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tick_handler).initialize()
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler).initialize()
 				.start();
 
 		Thread.sleep(1_000_000);
@@ -131,10 +133,11 @@ public class DeepMarketDataModel {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
 		final var patterns = REC( //
-				"instrument", "[A-Z]+\\d{3,}([A-Z]+\\d{4,})?", // 期货合约
-				"kline", "^KLINE_.*", // K线
-				"tbl", "^TBL_.*");
-		final var pk = "kline";
+				"tk", "[A-Z]+\\d{3,}([A-Z]+\\d{4,})?", // TICKDATA
+				"kl", "^KL_.*", // KLINE线
+				"tbl", "^TBL_.*" // TICKDATA
+		);
+		final var pk = "tk";
 		final var symbols = dfm.filterBy(rec -> rec.str("name").matches(patterns.str(pk)));
 		println(symbols);
 		symbols.rowS().forEach(e -> {
