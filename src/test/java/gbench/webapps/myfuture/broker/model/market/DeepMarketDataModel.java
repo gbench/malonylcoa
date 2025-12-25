@@ -86,21 +86,20 @@ public class DeepMarketDataModel {
 	void quz_kline1m_final() throws Exception {
 		var db = new CtpIgniteDB(IGNITE_ADDRESS);
 		var bar = new ConcurrentHashMap<String, IRecord>();
-
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tick -> {
-			var epoch = tick.lngopt("Epoch")
+		final Function<IRecord, Object> tick_handler = tick -> {
+			final var epoch = tick.lngopt("Epoch")
 					.orElseGet(() -> LocalDateTime
 							.parse(tick.str("TradingDay") + ' ' + tick.str("UpdateTime"),
 									DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss"))
 							.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(ZoneId.of("Asia/Shanghai"))
 							.toInstant().toEpochMilli());
 
-			var iid = tick.str("InstrumentID");
-			var ymdhm = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"))
+			final var iid = tick.str("InstrumentID");
+			final var ymdhm = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"))
 					.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
-			var key = iid + '_' + ymdhm;
-			var px = tick.dbl("LastPrice");
-			var vol = tick.i4("Volume");
+			final var key = iid + '_' + ymdhm;
+			final var px = tick.dbl("LastPrice");
+			final var vol = tick.i4("Volume");
 
 			/* 聚合：不含 InstrumentID */
 			bar.merge(key, IRecord.REC("TS", ymdhm, "OPEN", px, "HIGH", px, "LOW", px, "CLOSE", px, "VOLUME", vol),
@@ -109,7 +108,7 @@ public class DeepMarketDataModel {
 
 			/* 分钟结束：纯净 K 线（无 InstrumentID）直接写入 */
 			if (System.currentTimeMillis() / 60_000 > Long.parseLong(ymdhm.substring(8))) {
-				var kline = IRecord.REC("TBL", "KLINE_%s".formatted(iid), "TS", bar.get(key).str("TS"), "OPEN",
+				final var kline = IRecord.REC("TBL", "KLINE_%s".formatted(iid), "TS", bar.get(key).str("TS"), "OPEN",
 						bar.get(key).dbl("OPEN"), "HIGH", bar.get(key).dbl("HIGH"), "LOW", bar.get(key).dbl("LOW"),
 						"CLOSE", bar.get(key).dbl("CLOSE"), "VOLUME", bar.get(key).i4("VOLUME"));
 				println("%s:%s".formatted(key, kline));
@@ -118,7 +117,11 @@ public class DeepMarketDataModel {
 				}, "TS"); // 表名靠 kline 里的 TS 去拼？不对！
 			}
 			return null;
-		}).initialize().start();
+		};
+
+		// 连接进入交易消息队列进行tickdata的处理
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tick_handler).initialize()
+				.start();
 
 		Thread.sleep(1_000_000);
 	}
