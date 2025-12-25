@@ -97,7 +97,7 @@ public class DeepMarketDataModel {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final Map<String, IRecord> kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
 		final var dtf = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
-		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,VOL0,VOL1,TIMES,UPTIME"); // K线数据格式, 累计成交量
+		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,VOL0,VOL1,IDX,TIMES,UPTIME"); // K线数据格式, 累计成交量
 		final var dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss.SSS");
 		final var CLEAN_INTERVAL = 5 * 60;
@@ -120,13 +120,14 @@ public class DeepMarketDataModel {
 			final var zdt = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"));
 			final var ymdhm = zdt.format(dtf_ymdhm); // K线的主键(合约表的
 			final var uptime = zdt.format(dtf_ymdhmsS); // 更新时间
+			final var idx = tick.lng("ID"); // 消息在队列内的偏移位置（代表消费进度）
 			final var key = "%s_%s".formatted(iid, ymdhm); // K线的分钟K归集主键
 			final var px = tick.dbl("LastPrice"); // 成交价格
 			final var vol = tick.i4("Volume"); // tick投递的Volume是当日的累计成交量:vol0,起点量vol1终点量,volume:期间流量
-			final var value = krb.get(ymdhm, px, px, px, px, vol, vol, vol, 1, uptime);
+			final var value = krb.get(ymdhm, px, px, px, px, vol, vol, vol, idx, 1, uptime);
 			kcache.merge(key, value, (o, _) -> // 依据合约时间分组key进行K线聚合
 			o.add(REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px), "CLOSE", px, "VOLUME",
-					vol - o.i4("VOL0"), "VOL1", vol, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
+					vol - o.i4("VOL0"), "VOL1", vol, "IDX", idx, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
 			final var kline = kcache.get(key); // 提取
 			final Consumer<Tuple> callback = e -> {
 				println("upate %s:%s".formatted(kline.str(TNAME), e));
