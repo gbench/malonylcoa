@@ -13,11 +13,13 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Spliterators;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -126,36 +128,42 @@ public class CtpIgniteDB {
 	 * 
 	 * @param record
 	 * @param nameKey
+	 * @param pks     主键序列， 默认为ID
 	 */
-	public void put(final IRecord record, final String nameKey, Consumer<Tuple> callback) {
+	public void put(final IRecord record, final String nameKey, Consumer<Tuple> callback, String... pks) {
+		final var pk = (Objects.equals(pks, null) || pks.length < 1) ? "ID"
+				: Stream.of(pks).collect(Collectors.joining(",")); // 合成主键
 		this.withTransaction(client -> {
 			final var tblName = record.str(nameKey);
+			final var rec = record.filterNot(nameKey);
 			return client.tables().tableAsync(tblName).handle((tbl, _) -> tbl != null //
 					? completedFuture(tbl)
-					: record.mutate(p -> client.catalog().createTableAsync(proto2tdb(p, tblName).build()))
+					: rec.mutate(p -> client.catalog().createTableAsync(rec2tdb(p, tblName).build()))
 							.thenCompose(e -> completedFuture(e)))
 					.thenCompose(Function.identity()).thenCompose(tbl -> {
 						var kvv = tbl.keyValueView();
-						var key = record.filter("ID").mutate(CtpIgniteDB::asTuple);
-						var val = record.filterNot("ID").mutate(CtpIgniteDB::asTuple);
+						var key = rec.filter(pk).mutate(CtpIgniteDB::asTuple);
+						var val = rec.filterNot(pk).mutate(CtpIgniteDB::asTuple);
 						return kvv.putAsync(null, key, val).thenCompose(_ -> kvv.getAsync(null, key));
 					}).thenAccept(callback).join();
 		});
 	}
 
-	public static void dumpBuilder(TableDefinition.Builder b) {
+	public static String dump(TableDefinition.Builder b) {
+		final StringBuffer buffer = new StringBuffer();
 		try {
 			Field f = b.getClass().getDeclaredField("columns"); // private List<ColumnDefinition>
 			f.setAccessible(true);
 			final var cols = (List<ColumnDefinition>) f.get(b);
 
-			System.out.println("Builder 当前列信息:");
+			buffer.append("Builder 当前列信息:\n");
 			for (ColumnDefinition c : cols) {
-				System.out.printf("  %s : %s%n", c.name(), c.type());
+				buffer.append("  %s : %s%n".formatted(c.name(), c.type()));
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return buffer.toString();
 	}
 
 	/**
@@ -164,7 +172,7 @@ public class CtpIgniteDB {
 	 * @param proto 一条样本数据，key=列名，value=任意对象
 	 * @param tbl   表名，为空时自动生成
 	 */
-	public static TableDefinition.Builder proto2tdb(final IRecord proto, String tbl) {
+	public static TableDefinition.Builder rec2tdb(final IRecord proto, String tbl) {
 		return proto2tdb(proto.toMap(), tbl);
 	}
 
@@ -186,7 +194,10 @@ public class CtpIgniteDB {
 				.map(Map.Entry::getKey).findFirst().orElse(types.keySet().iterator().next()); // 否则取第一列
 		final var cols = types.entrySet().stream().map(e -> column(e.getKey(), e.getValue()))
 				.toArray(ColumnDefinition[]::new);
-		return builder.columns(cols).primaryKey(pk);
+		final var bd = builder.columns(cols).primaryKey(pk);
+
+		// System.out.println("%s:\n%s".formatted(tbl, dump(bd)));
+		return bd;
 	}
 
 	/**

@@ -2,6 +2,11 @@ package gbench.webapps.myfuture.broker.model.market;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.ignite.table.*;
 import org.apache.ignite.catalog.ColumnType;
@@ -78,26 +83,74 @@ public class DeepMarketDataModel {
 	}
 
 	@Test
+	void quz_kline1m_final() throws Exception {
+		var db = new CtpIgniteDB(IGNITE_ADDRESS);
+		var bar = new ConcurrentHashMap<String, IRecord>();
+
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tick -> {
+			var epoch = tick.lngopt("Epoch")
+					.orElseGet(() -> LocalDateTime
+							.parse(tick.str("TradingDay") + ' ' + tick.str("UpdateTime"),
+									DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss"))
+							.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(ZoneId.of("Asia/Shanghai"))
+							.toInstant().toEpochMilli());
+
+			var iid = tick.str("InstrumentID");
+			var ymdhm = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"))
+					.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
+			var key = iid + '_' + ymdhm;
+			var px = tick.dbl("LastPrice");
+			var vol = tick.i4("Volume");
+
+			/* 聚合：不含 InstrumentID */
+			bar.merge(key, IRecord.REC("TS", ymdhm, "OPEN", px, "HIGH", px, "LOW", px, "CLOSE", px, "VOLUME", vol),
+					(o, _) -> o.add(IRecord.REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px),
+							"CLOSE", px, "VOLUME", o.i4("VOLUME") + vol)));
+
+			/* 分钟结束：纯净 K 线（无 InstrumentID）直接写入 */
+			if (System.currentTimeMillis() / 60_000 > Long.parseLong(ymdhm.substring(8))) {
+				var kline = IRecord.REC("TBL", "KLINE_%s".formatted(iid), "TS", bar.get(key).str("TS"), "OPEN",
+						bar.get(key).dbl("OPEN"), "HIGH", bar.get(key).dbl("HIGH"), "LOW", bar.get(key).dbl("LOW"),
+						"CLOSE", bar.get(key).dbl("CLOSE"), "VOLUME", bar.get(key).i4("VOLUME"));
+				println("%s:%s".formatted(key, kline));
+				db.put(kline, "TBL", e -> {
+					println(e);
+				}, "TS"); // 表名靠 kline 里的 TS 去拼？不对！
+			}
+			return null;
+		}).initialize().start();
+
+		Thread.sleep(1_000_000);
+	}
+
+	@Test
 	public void dropTables() {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
-		final var symbols = dfm.filterBy(rec -> rec.str("name").matches("[A-Z]+\\d{4}([A-Z]+\\d{4,})?"));
+		final var patterns = REC( //
+				"instrument", "[A-Z]+\\d{3,}([A-Z]+\\d{4,})?", // 期货合约
+				"kline", "^KLINE_.*", // K线
+				"tbl", "^TBL_.*");
+		final var pk = "kline";
+		final var symbols = dfm.filterBy(rec -> rec.str("name").matches(patterns.str(pk)));
 		println(symbols);
 		symbols.rowS().forEach(e -> {
 			final var tbl = e.str(0);
 			final var sql = "DROP TABLE %s".formatted(tbl);
-			println("%s".formatted(igniteDB.sqldframe(sql)));
+			println("%s:%s".formatted(tbl, igniteDB.sqldframe(sql)));
 		});
 	}
 
 	@Test
-	public void selectTbl() {
+	public void selectTables() {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
 		final var symbols = dfm.filterBy(rec -> rec.str("name").matches("[A-Z]+\\d{4}([A-Z]+\\d{4,})?"));
 		symbols.rowS().forEach(e -> {
 			final var tbl = e.str(0);
-			final var sql = "SELECT ID,UPDATETIME,LASTPRICE,VOLUME FROM %s ORDER BY id limit 10".formatted(tbl);
+			// final var sql = "SELECT ID, UPDATETIME, LASTPRICE, VOLUME FROM %s ORDER BY ID
+			// limit 10".formatted(tbl);
+			final var sql = "SELECT * FROM %s limit 10".formatted(tbl);
 			println("%s\n:%s\n".formatted(tbl, igniteDB.sqldframe(sql)));
 		});
 	}
