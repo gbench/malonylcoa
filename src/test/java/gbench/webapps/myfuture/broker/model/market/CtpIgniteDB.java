@@ -31,7 +31,6 @@ import org.apache.ignite.sql.SqlRow;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 
-import static gbench.util.io.Output.println;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.apache.ignite.catalog.definitions.ColumnDefinition.column;
 
@@ -109,6 +108,18 @@ public class CtpIgniteDB {
 
 	public void setDefaultSchema(String defaultSchema) {
 		this.defaultSchema = defaultSchema;
+	}
+
+	/**
+	 * 
+	 * @param sql
+	 * @return
+	 */
+	public DFrame sqldframe(final String sql) {
+		return this.withTransaction(client -> {
+			final var rs = client.sql().execute(null, sql);
+			return rs2df(rs);
+		});
 	}
 
 	/**
@@ -310,7 +321,6 @@ public class CtpIgniteDB {
 	public static Map<String, Object> asMap(SqlRow row) {
 		final var map = new LinkedHashMap<String, Object>();
 		if (null != row) {
-			println(row);
 			// 遍历所有列名，填充键值对
 			for (int i = 0; i < row.columnCount(); i++) {
 				String colName = row.columnName(i);
