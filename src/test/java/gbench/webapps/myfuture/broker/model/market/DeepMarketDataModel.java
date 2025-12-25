@@ -172,13 +172,18 @@ public class DeepMarketDataModel {
 	public void selectTables() {
 		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
-		final var symbols = dfm.filterBy(rec -> rec.str("name").matches("[A-Z]+\\d{4}([A-Z]+\\d{4,})?"));
-		symbols.rowS().forEach(e -> {
+		final var tk_symbols = dfm.filterBy(rec -> rec.str("name").matches("TK_[A-Z]+\\d{4}([A-Z]+\\d{4,})?"));
+		tk_symbols.rowS().forEach(e -> {
 			final var tbl = e.str(0);
-			// final var sql = "SELECT ID, UPDATETIME, LASTPRICE, VOLUME FROM %s ORDER BY ID
-			// limit 10".formatted(tbl);
-			final var sql = "SELECT * FROM %s limit 10".formatted(tbl);
-			println("%s\n:%s\n".formatted(tbl, igniteDB.sqldframe(sql)));
+			final var sql = "SELECT ID, UPDATETIME, LASTPRICE, VOLUME FROM %s ORDER BY ID limit 10".formatted(tbl);
+			println("%s:\n%s\n".formatted(tbl, igniteDB.sqldframe(sql)));
+		});
+
+		final var kl_symbols = dfm.filterBy(rec -> rec.str("name").matches("KL_[A-Z]+\\d{4}([A-Z]+\\d{4,})?"));
+		kl_symbols.rowS().forEach(e -> {
+			final var tbl = e.str(0);
+			final var sql = "SELECT * FROM %s ORDER BY TS limit 10".formatted(tbl);
+			println("%s:\n%s\n".formatted(tbl, igniteDB.sqldframe(sql)));
 		});
 	}
 
