@@ -5,7 +5,7 @@ source("xxxconfig_boot.R")                       # 保证 kl() 可用
 # 常规函数：拉数据 -> xts -> 截取30条 -> JSON
 # 替换 fetch_json 即可
 fetch_json <- function(sym) {
-  x <- tail(kl(sym), 30)
+  x <- kl(sym)
   if (!NROW(x)) return(NULL)
   # 纯列表数组，字段名严格对应 KlineCharts 要求
   purrr::transpose(list(
@@ -53,6 +53,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  initialize()
   tick <- reactiveTimer(500)
   data <- reactive({
     tick(); input$refresh
@@ -71,7 +72,7 @@ server <- function(input, output, session) {
     if (!is.null(json)) session$sendCustomMessage("push", json)
   }) |> bindEvent(tick(), input$intv)
   
-  observeEvent(input$exit, stopApp())
+  observeEvent(input$exit, {uninitialize(); stopApp()})
 }
 
 shinyApp(ui, server)
