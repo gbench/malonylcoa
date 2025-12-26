@@ -130,7 +130,7 @@ public class DeepMarketDataModel {
 					vol - o.i4("VOL0"), "VOL1", vol, "IDX", idx, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
 			final var kline = kcache.get(key); // 提取
 			final Consumer<Tuple> callback = e -> {
-				println("upate %s:%s".formatted(kline.str(TNAME), e));
+				println("update %s:%s".formatted(kline.str(TNAME), e));
 				if (System.currentTimeMillis() / 1_000 % CLEAN_INTERVAL == 0) { // 2分钟运行一次检测
 					kcache_cleaner.accept(kcache); // 缓存清理
 				}
@@ -146,7 +146,7 @@ public class DeepMarketDataModel {
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
 				.sleepInterval(100).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 
-		Thread.sleep(1_000_000);
+		Thread.sleep(1_000_000_000);
 	}
 
 	@Test
