@@ -22,3 +22,14 @@ initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
 
 # 移除igniteconfig的图层配置
 uninitialize <- \() search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
+
+
+# 提取指定期货合约的OHLCV数据（转换成xts)
+kl <- function(symbol = "kl_rb2605") {
+  sql <- sprintf("select * from %s", symbol)
+  raw <- sqlquery(sql)
+  raw |> transform(TS = as.POSIXct(TS, format = "%Y%m%d%H%M")) |> arrange(TS) |>
+    with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME, VOL0, VOL1), order.by = TS))
+}
+
+  
