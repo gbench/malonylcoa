@@ -8,52 +8,49 @@ fetch_json <- function(sym) {
   x <- kl(sym) # 读取K线数据
   if (!NROW(x)) return(NULL)
   # 纯列表数组，字段名严格对应 KlineCharts 要求
-  purrr::transpose(list(
+  with(x, purrr::transpose(list(
     timestamp = as.numeric(index(x)) * 1000,
-    open      = x$OPEN,
-    high      = x$HIGH,
-    low       = x$LOW,
-    close     = x$CLOSE,
-    volume    = x$VOLUME
-  )) |> toJSON(auto_unbox = TRUE)
+    open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume= VOLUME,
+    ema1 = EMA(CLOSE, 1), ema5 = EMA(CLOSE, 5), ema10 = EMA(CLOSE, 10), 
+    ema15 = EMA(CLOSE, 15), ema30 = EMA(CLOSE, 30), ema60 = EMA(CLOSE, 60)
+  ))) |> toJSON(auto_unbox = TRUE)
 }
 
+library(shiny)
+
 ui <- fluidPage(
-  tags$head(
-    tags$script(src = "https://cdn.jsdelivr.net/npm/klinecharts/dist/klinecharts.min.js")
-  ),
-  titlePanel("Ignite K-line"), # 面板标题
+  titlePanel("Ignite K-line"),
   sidebarLayout(
-    sidebarPanel(
+    sidebarPanel(width = 2,
       selectInput("sym", "合约",
         c("螺纹钢2605" = "kl_rb2605",
           "螺纹钢2603" = "kl_rb2603",
           "螺纹钢2601" = "kl_rb2601",
           "甲醇2601"   = "kl_ma601"),
-        selected = "kl_rb2601"), # selectInput
-      numericInput("intv", "刷新(s):", 1, min = 1, step = 1), # 刷新频率
-      actionButton("refresh", "手动刷新"), # 刷新按钮
+        selected = "kl_rb2601"),
+      numericInput("intv", "刷新(s):", 1, min = 1, step = 1),
+      actionButton("refresh", "手动刷新"),
       hr(),
       actionButton("exit", "退出", icon = icon("power-off"), class = "btn-danger", width = "100%")
-    ), # sidebarPanel
-    mainPanel(
+    ),
+    mainPanel(width = 10,
       tabsetPanel(id = "tabs", selected = "js",
         tabPanel("js",
-          tags$div(id = "chart", style = "width:100%;height:400px;border:1px solid #ccc;"),
-          tags$script(HTML("
-            const chart = klinecharts.init('chart');
-            Shiny.addCustomMessageHandler('push', j => chart.applyNewData(j));
-          "))), # js panel
-        tabPanel("R", plotOutput("kline", height = "600px")) # R
-      ) # tabsetPanel
-    ) # mainPanel
-  ) # sidebarLayout
-) # fluidPage
+          tags$div(id = "chart", style = "width:100%;height:600px;border:1px solid #ccc;"),
+          # 关键：把 JS 放在这个 tab 里，确保 DOM 已存在
+          tags$script(src = "klinecharts.min.js"),
+          tags$script(src = "kline.js")
+        ),
+        tabPanel("R", plotOutput("kline", height = "600px"))
+      )
+    )
+  )
+)
 
 server <- function(input, output, session) {
   initialize()
 
-  tick <- reactiveTimer(1000)
+  tick <- reactiveTimer(5000)
 
   data <- reactive({
     tick(); input$refresh
