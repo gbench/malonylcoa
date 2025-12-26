@@ -11,7 +11,7 @@ kl <- function(symbol = "kl_rb2605") {
   sql <- sprintf("select * from %s", symbol)
   raw <- sqlquery(sql)
   raw |> transform(TS = as.POSIXct(TS, format = "%Y%m%d%H%M")) |> arrange(TS) |>
-    with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME, VOL0, VOL1), order.by = TS))
+    with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME, VOL0, VOL1), order.by = TS)) |> tail(30)
 }
 
 # ---------- 1. UI ----------
@@ -19,7 +19,13 @@ ui <- fluidPage(
   titlePanel("Ignite K-line Real-time"),
   sidebarLayout(
     sidebarPanel(
-      textInput("symbol", "Symbol:", value = "kl_rb2605"),
+      # textInput("symbol", "Symbol:", value = "kl_rb2605"),
+      selectInput("symbol", "选择服务器", 
+          choices = c("螺纹钢2605" = "kl_rb2605", 
+              "螺纹钢2603" = "kl_rb2603", 
+              "螺纹钢2601" = "kl_rb2601", 
+              "甲醇2601" = "kl_ma601"
+          ), selected = "kl_rb2601"),
       numericInput("interval", "Refresh interval (s):", value = 1, min = 1, step = 1),
       actionButton("refresh", "Manual Refresh"),
       hr(),
