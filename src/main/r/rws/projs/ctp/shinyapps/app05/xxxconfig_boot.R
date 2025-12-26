@@ -24,11 +24,43 @@ initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
 # 移除igniteconfig的图层配置
 uninitialize <- \() search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
 
-# 提取指定期货合约的OHLCV数据（转换成xts)
-kl <- function(symbol = "kl_rb2605", n = -1) {
-  sql <- sprintf("select * from %s %s", symbol, ifelse(n>0, paste("limit", n), ""))
-  sqlquery(sql) |> transform(TS = as.POSIXct(TS, format = "%Y%m%d%H%M")) |> arrange(TS) |>
-    with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME, VOL0, VOL1), order.by = TS))
-} # kl
+kl <- local({
+  e <- new.env(hash=T)
+  \(sym='kl_rb2605',start=NA,end=NA,flush=F){
+    if (flush) {rm(list=ls(e),envir=e); return()}
+    k <- paste(sym,start,end,sep="_")
+    old <- get0(k,envir=e, ifnotfound=data.frame(TS=character()))
+    maxT <- if (nrow(old)) max(old$TS) else "1970-01-01 00:00:00"
+    # 查询范围完全在缓存内直接返回
+    if (!is.na(start) && !is.na(end) && min(old$TS)<=start && max(old$TS)>=end) 
+      return(old[old$TS>=start & old$TS<=end,])
+    new <- sqlquery(sprintf("SELECT * FROM %s WHERE TS>='%s'%s ORDER BY TS",
+      sym, maxT, paste0(if (!all(is.na(c(start,end))))
+        sprintf(" AND %s",paste(c(if(!is.na(start))sprintf("TS>='%s'",start),
+            if(!is.na(end))  sprintf("TS<='%s'",end)),
+          collapse=" AND ")),"")))
+    # 删尾拼新
+    res <- rbind(old[old$TS!=maxT,], new)
+    assign(k,res,envir=e); res
+  }
+})
 
-  
+# 1. 查询kl_rb2605所有数据（首次查询，缓存未命中）
+# data_all <- kl("kl_rb2605")
+
+# 2. 再次查询相同范围（缓存命中，直接返回）
+# data_all_cached <- kl("kl_rb2605")
+
+# 3. 查询指定时间范围（202512242200 至 202512242255）
+# data_range <- kl("kl_rb2605", start = "202512242200", end = "202512242255")
+
+# 4. 清空缓存并全量查询
+# data_refresh <- kl("kl_rb2605", flag = TRUE)
+
+# 5. 1分钟后再次查询（自动刷新当前分钟数据，历史数据复用缓存）
+# Sys.sleep(60)
+# data_refresh_current <- kl("kl_rb2605")
+
+# sqlquery("select * from kl_rb2605 order by TS") |> tail(5)
+# kl() |> tail(5)
+
