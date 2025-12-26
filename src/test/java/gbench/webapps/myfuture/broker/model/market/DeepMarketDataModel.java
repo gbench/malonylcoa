@@ -2,21 +2,27 @@ package gbench.webapps.myfuture.broker.model.market;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.table.*;
 import org.apache.ignite.catalog.ColumnType;
 import org.apache.ignite.catalog.IgniteCatalog;
 import org.apache.ignite.catalog.definitions.TableDefinition;
 
+import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 
 import static gbench.util.io.Output.println;
@@ -99,25 +105,32 @@ public class DeepMarketDataModel {
 		final var dtf = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
 		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,VOL0,VOL1,IDX,TIMES,UPTIME"); // K线数据格式, 累计成交量
 		final var dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
-		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss.SSS");
-		final var CLEAN_INTERVAL = 5 * 60;
-		final var kcache_cleaner = ((BiFunction<Integer, Integer, Consumer<Map<String, IRecord>>>) (expired,
-				maxsize) -> cache -> { // 对缓存进行清理，当cache的size大于maxsize时。把cache中距离当前系统时间大于expired时长的kline项目给予清楚
-					if (cache.size() > maxsize) {
-						final var now = Instant.now();
-						cache.entrySet()
-								.removeIf(e -> now.toEpochMilli() - LocalDateTime
-										.parse(e.getKey().split("_")[1], dtf_ymdhm).atZone(ZoneId.of("Asia/Shanghai"))
-										.toInstant().toEpochMilli() > expired);
-					} // if
-				}).apply(CLEAN_INTERVAL * 1_000, 100_00);
+		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+		final var shzd = ZoneId.of("Asia/Shanghai");
+		final var es = Executors.newCachedThreadPool(); // 清理工作线程池
+		final var ar = new AtomicReference<>(LocalDateTime.now());
+		final var kcache_cleaner = ((BiFunction<Integer, Integer, Consumer<Map<String, IRecord>>>) // K线缓存清理器
+		(expired, maxsize) -> cache -> { // cache结构为<symbol_yyyymmddhhmm,entries>的ConcurrentHashMap结构,
+			if (cache.size() < maxsize && Duration.between(ar.get(), LocalDateTime.now()).getSeconds() < expired) {
+				final var dfm = cache.entrySet().stream().map(e -> e.getValue()).collect(DFrame.dfmclc);
+				println("KCACHE DUMP\n:%s\n".formatted(dfm));
+				return;
+			}
+			final var keys = cache.keySet();
+			final var latest = keys.stream().collect(Collectors.groupingBy(k -> k.split("_")[0])).entrySet().stream()
+					.map(e -> e.getValue().stream().collect(Collectors.maxBy(String::compareTo)))
+					.filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
+			final var diffs = keys.stream().filter(k -> !latest.contains(k)).collect(Collectors.toSet());
+			keys.removeAll(diffs); // 批量删除
+			ar.set(LocalDateTime.now()); // 更新上次处理时间
+		}).apply(1 * 60, 20);
 
 		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
 			final var zdt0 = LocalDateTime.parse("%s %s".formatted(tick.str("ActionDay"), tick.str("UpdateTime")), dtf)
-					.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(ZoneId.of("Asia/Shanghai"));
+					.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(shzd);
 			final var epoch = tick.lngopt("Epoch").orElseGet(() -> zdt0.toInstant().toEpochMilli());
-			final var zdt = Instant.ofEpochMilli(epoch).atZone(ZoneId.of("Asia/Shanghai"));
+			final var zdt = Instant.ofEpochMilli(epoch).atZone(shzd);
 			final var ymdhm = zdt.format(dtf_ymdhm); // K线的主键(合约表的
 			final var uptime = zdt.format(dtf_ymdhmsS); // 更新时间
 			final var idx = tick.lng("ID"); // 消息在队列内的偏移位置（代表消费进度）
@@ -129,15 +142,18 @@ public class DeepMarketDataModel {
 			o.add(REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px), "CLOSE", px, "VOLUME",
 					vol - o.i4("VOL0"), "VOL1", vol, "IDX", idx, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
 			final var kline = kcache.get(key); // 提取
-			final Consumer<Tuple> callback = e -> {
-				println("update %s:%s".formatted(kline.str(TNAME), e));
-				if (System.currentTimeMillis() / 1_000 % CLEAN_INTERVAL == 0) { // 2分钟运行一次检测
-					kcache_cleaner.accept(kcache); // 缓存清理
-				}
+			final var tname = "%s_%s".formatted(PREFIX_KL, iid); // 表名
+			final Function<LocalDateTime, Consumer<Tuple>> cbgen = st -> e -> {
+				final var n = kcache.size();
+				final var ed = LocalDateTime.now();
+				final var duration = Duration.between(st, ed).toMillis();
+				println("UPDATE %s@[st:%s, ed:%s: du:%d]#%s === %s".formatted(key, st, ed, duration, n, e));
+				if (n % 10 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
+					es.execute(() -> kcache_cleaner.accept(kcache));
 			};
 			println("%s:%s".formatted(key, kline));
 			// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
-			igniteDB.put(kline.add(TNAME, "%s_%s".formatted(PREFIX_KL, iid)), TNAME, callback, "TS");
+			igniteDB.put(kline.add(TNAME, tname), TNAME, cbgen.apply(LocalDateTime.now()), "TS");
 
 			return null;
 		};
