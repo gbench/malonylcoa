@@ -2,6 +2,7 @@
 # xxxconfig的环境启动（使用jdbc方法来拦截ignite) 类似于Photoshop的多级图层的underlay+overlay的联合图层绘图
 # ------------------------------------------------------------------------------
 # install.packages(c("rJava", "RJDBC"), repos = "https://mirrors.ustc.edu.cn/CRAN/")
+
 batch_load() # 导入基础库，引入sqlquery系列函数
 ss("rJava,RJDBC") |> setNames(nm=_) |> lapply(require, character.only=T) |> unlist() # 加载RJDBC的基础库
 xxxconfig <- "igniteconfig" # 为环境命名
@@ -23,13 +24,11 @@ initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
 # 移除igniteconfig的图层配置
 uninitialize <- \() search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
 
-
 # 提取指定期货合约的OHLCV数据（转换成xts)
-kl <- function(symbol = "kl_rb2605") {
-  sql <- sprintf("select * from %s", symbol)
-  raw <- sqlquery(sql)
-  raw |> transform(TS = as.POSIXct(TS, format = "%Y%m%d%H%M")) |> arrange(TS) |>
+kl <- function(symbol = "kl_rb2605", n = -1) {
+  sql <- sprintf("select * from %s %s", symbol, ifelse(n>0, paste("limit", n), ""))
+  sqlquery(sql) |> transform(TS = as.POSIXct(TS, format = "%Y%m%d%H%M")) |> arrange(TS) |>
     with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME, VOL0, VOL1), order.by = TS))
-}
+} # kl
 
   
