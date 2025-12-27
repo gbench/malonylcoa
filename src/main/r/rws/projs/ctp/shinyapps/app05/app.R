@@ -1,22 +1,8 @@
 # app.R  ---- 函数式精简版，JS 默认首页 ----
-library(shiny); library(quantmod); library(xts); library(jsonlite)
+library(shiny); library(quantmod); library(xts); library(jsonlite); library(shiny)
 source("xxxconfig_boot.R")  # 保证 kl() 可用
 
-# 常规函数：拉数据 -> xts -> 截取30条 -> JSON
-# 替换 fetch_json 即可
-fetch_json <- function(sym) {
-  x <- kl(sym) # 读取K线数据
-  if (!NROW(x)) return(NULL)
-  # 纯列表数组，字段名严格对应 KlineCharts 要求
-  with(x, purrr::transpose(list(
-    timestamp = as.numeric(index(x)) * 1000,
-    open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume= VOLUME,
-    ema1 = EMA(CLOSE, 1), ema5 = EMA(CLOSE, 5), ema10 = EMA(CLOSE, 10), 
-    ema15 = EMA(CLOSE, 15), ema30 = EMA(CLOSE, 30), ema60 = EMA(CLOSE, 60)
-  ))) |> toJSON(auto_unbox = TRUE)
-}
 
-library(shiny)
 
 ui <- fluidPage(
   titlePanel("Ignite K-line"),
@@ -50,11 +36,11 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   initialize()
 
-  tick <- reactiveTimer(5000)
+  tick <- reactiveTimer(1000)
 
   data <- reactive({
     tick(); input$refresh
-    kl(input$sym, 30)
+    kl(input$sym)
   }) |> bindEvent(tick(), input$refresh)
   
   output$kline <- renderPlot({

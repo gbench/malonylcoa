@@ -7,5 +7,17 @@
   chart.createIndicator('MA', true, { id:'candle_pane' }) 
   chart.createIndicator('BOL', true, { id:'candle_pane' }) 
   /* 3. 监听 Shiny 推送 */
-  Shiny.addCustomMessageHandler('push', j => chart.applyNewData(j));
+  Shiny.addCustomMessageHandler('push', klines => {
+    console.log(klines)
+    const isReady = () => chart.getDataList().length > 0;
+    if (isReady()) {// 增量更新：klines 是新增的一根或多根K线
+      console.log("===================增量更新数据==================================");
+      console.log(JSON.stringify(klines))
+      console.log("================" , JSON.stringify(klines.map(e=>({idx:e.idx, vol:e.volume}))))
+      klines.forEach(k => chart.updateData(k));
+    } else { // 初始导入
+      console.log("===================首次接受数据==================================");
+      chart.applyNewData(klines);
+    }
+  });
 })();
