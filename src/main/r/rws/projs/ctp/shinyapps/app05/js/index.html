@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+  <title>KLineChart 实时演示</title>
+  <script src="https://unpkg.com/klinechart@9/dist/klinechart.min.js"></script>
+</head>
+<body>
+  <div id="chart" style="height:600px;"></div>
+  <script>
+    const chart = init('chart');
+    const ws = new WebSocket('ws://localhost:8080');
+    ws.onmessage = e => {
+      const k = JSON.parse(e.data);
+      // klinechart 要求时间戳是 number（毫秒）
+      chart.applyNewData([{timestamp: new Date(k.TS).getTime(),
+                           open: k.O, high: k.H, low: k.L, close: k.C, volume: k.V}]);
+    };
+  </script>
+</body>
+</html>
