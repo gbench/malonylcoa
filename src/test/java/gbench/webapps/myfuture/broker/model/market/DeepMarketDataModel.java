@@ -137,7 +137,7 @@ public class DeepMarketDataModel {
 			final var key = "%s_%s".formatted(iid, ymdhm); // K线的分钟K归集主键
 			final var px = tick.dbl("LastPrice"); // 成交价格
 			final var vol = tick.i4("Volume"); // tick投递的Volume是当日的累计成交量:vol0,起点量vol1终点量,volume:期间流量
-			final var value = krb.get(ymdhm, px, px, px, px, vol, vol, vol, idx, 1, uptime);
+			final var value = krb.get(ymdhm, px, px, px, px, 0, vol, vol, idx, 1, uptime); // 成交量初始为0
 			kcache.merge(key, value, (o, _) -> // 依据合约时间分组key进行K线聚合
 			o.add(REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px), "CLOSE", px, "VOLUME",
 					vol - o.i4("VOL0"), "VOL1", vol, "IDX", idx, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
@@ -159,7 +159,7 @@ public class DeepMarketDataModel {
 		};
 
 		// 连接进入交易消息队列进行tickdata的处理
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID+"_", tickdata_handler) //
 				.sleepInterval(100).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 
 		Thread.sleep(1_000_000_000);
