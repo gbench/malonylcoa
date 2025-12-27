@@ -42,7 +42,7 @@ kl <- local({
     mu = old[old$TS!=last_uptime, ] # 去除了last_uptime的本地数据
     flag <- is.na(startime) && sum(nu$TS==last_uptime)>0
     res <- if(flag) rbind(mu, nu) else nu  # 删尾拼新
-    if(flag) assign(k, res, envir=kl_cache) else nu # 仅当合并拼接的时候才更新缓存
+    if(is.na(startime)) assign(k, res, envir=kl_cache) else nu # 仅当合并拼接的时候才更新缓存
   }
 })
 
@@ -70,20 +70,20 @@ invalidate_cache <- \(){
 }
 
 # 1. 查询kl_rb2605所有数据（首次查询，缓存未命中）
-# data_all <- kl("kl_rb2605")
+data_all <- kl("kl_rb2605")
 
 # 2. 再次查询相同范围（缓存命中，直接返回）
-# data_all_cached <- kl("kl_rb2605")
+data_all_cached <- kl("kl_rb2605")
 
 # 3. 查询指定时间范围（202512242200 至 202512242255）
-# data_range <- kl("kl_rb2605", start = "202512242200", end = "202512242255")
+data_range <- kl("kl_rb2605", start = "202512242200", end = "202512242255")
 
 # 4. 清空缓存并全量查询
-# data_refresh <- kl("kl_rb2605", flag = TRUE)
+data_refresh <- kl("kl_rb2605", flag = TRUE)
 
 # 5. 1分钟后再次查询（自动刷新当前分钟数据，历史数据复用缓存）
 # Sys.sleep(60)
-# data_refresh_current <- kl("kl_rb2605")
+data_refresh_current <- kl("kl_rb2605")
 
 # sqlquery("select * from kl_rb2605 order by TS") |> tail(5)
-# kl() |> tail()
+kl() |> tail()
