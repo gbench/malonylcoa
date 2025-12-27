@@ -45,7 +45,7 @@ kl <- local({
     if(flag) assign(k, res, envir=kl_cache) else nu # 仅当合并拼接的时候才更新缓存
   }
 })
-kl()
+
 # klinechart的抓取K线数据
 fetch_json <- local({
   st_cache <- new.env() # 时间状态缓存
@@ -53,7 +53,7 @@ fetch_json <- local({
   function(sym="kl_rb2605") {
     startime <- get0(sym, envir=st_cache, ifnotfound=NA)
     x <- kl(sym, startime=startime) # 读取K线数据
-    cat("nrow", nrow(x), "startime", startime, "IDX",last(x)$IDX, "VOLUME",last(x)$VOLUME, "\n") # 获得的最新数据
+    cat("nrow", nrow(x), "startime", startime, "IDX",last(x)$IDX, "VOLUME",last(x)$VOLUME, "\n -- \n") # 获得的最新数据
     assign(sym, max(x$TS), envir=st_cache) # 更新时间缓存
     if (!NROW(x)) return(NULL)
     with(x, purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量

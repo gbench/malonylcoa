@@ -2,8 +2,6 @@
 library(shiny); library(quantmod); library(xts); library(jsonlite); library(shiny)
 source("xxxconfig_boot.R")  # 保证 kl() 可用
 
-
-
 ui <- fluidPage(
   titlePanel("Ignite K-line"),
   sidebarLayout(
@@ -13,8 +11,8 @@ ui <- fluidPage(
           "螺纹钢2603" = "kl_rb2603",
           "螺纹钢2601" = "kl_rb2601",
           "甲醇2601"   = "kl_ma601"),
-        selected = "kl_rb2601"),
-      numericInput("intv", "刷新(s):", 1, min = 1, step = 1),
+        selected = "kl_rb2605"),
+      numericInput("intv", "刷新(s):", 1, min = .1, step = .1),
       actionButton("refresh", "手动刷新"),
       hr(),
       actionButton("exit", "退出", icon = icon("power-off"), class = "btn-danger", width = "100%")
