@@ -24,37 +24,40 @@ initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
 # 移除igniteconfig的图层配置
 uninitialize <- \() search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
 
-kl <- local({
-  kl_cache <- new.env(hash=T)
+# K线刷新函数
+klines <- local({
+  cache <- new.env(hash=T)
+
   \(sym='kl_rb2605',startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
     k <- paste(sym) # 缓存key
-    old <- get0(k,envir=kl_cache, ifnotfound=data.frame(TS=character()))
-    last_uptime <- if (nrow(old)) max(old$TS) else 0 # 上一次的更新时间
+    lc <- get0(k, envir=cache, ifnotfound=data.frame(TS=character())) # 本地拷贝LocalCopy
+    last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
     # 查询范围完全在缓存内直接返回
-    if (!is.na(startime) && !is.na(endtime) && min(old$TS)<=startime && max(old$TS)>=endtime) 
-      return(old[old$TS>=startime & old$TS<=endtime,])
+    if (!is.na(startime) && !is.na(endtime) && min(lc$TS)<=startime && max(lc$TS)>=endtime) 
+      return(lc[lc$TS>=startime & lc$TS<=endtime,])
     sql <- sprintf("SELECT * FROM %s WHERE TS>='%s'%s ORDER BY TS", sym, last_uptime, 
-        paste0(if (!all(is.na(c(startime,endtime))))
-        sprintf(" AND %s",paste(c(if(!is.na(startime)) sprintf("TS>='%s'",startime),
-            if(!is.na(endtime)) sprintf("TS<='%s'",endtime)), collapse=" AND ")), ""))
+        paste0(if (!all(is.na(c(startime, endtime))))
+        sprintf(" AND %s", paste(c(if(!is.na(startime)) sprintf("TS>='%s'", startime),
+          if(!is.na(endtime)) sprintf("TS<='%s'", endtime)), collapse=" AND ")), ""))
     cat(sql, "\n") # 打印查询sql
-    nu <- sqlquery(sql) # 数据查询
-    mu = old[old$TS!=last_uptime, ] # 去除了last_uptime的本地数据
-    flag <- is.na(startime) && sum(nu$TS==last_uptime)>0
+    nu <- sqlquery(sql) %>% with(.[TS>=last_uptime, ]) # 数据查询，提取比LC更新的数据！
+    mu = lc[lc$TS!=last_uptime, ] # 去除了last_uptime的本地数据
+    # startime为NA标志着，这是使用cache的最新时间来进行的查询sum大于0可以返回结果可以与缓存记录进行连接
+    flag <- is.na(startime) && sum(nu$TS==last_uptime) > 0  # nu 结果可否与返回结果进行连接
     res <- if(flag) rbind(mu, nu) else nu  # 删尾拼新
-    if(is.na(startime)) assign(k, res, envir=kl_cache) else nu # 仅当合并拼接的时候才更新缓存
+    if(is.na(startime)) assign(k, res, envir=cache) else nu # 仅当合并拼接的时候才更新缓存
   }
 })
 
 # klinechart的抓取K线数据
 fetch_json <- local({
-  st_cache <- new.env() # 时间状态缓存
+  cache <- new.env() # 时间状态缓存
   
-  function(sym="kl_rb2605") {
-    startime <- get0(sym, envir=st_cache, ifnotfound=NA)
-    x <- kl(sym, startime=startime) # 读取K线数据
-    cat("nrow", nrow(x), "startime", startime, "IDX",last(x)$IDX, "VOLUME",last(x)$VOLUME, "\n -- \n") # 获得的最新数据
-    assign(sym, max(x$TS), envir=st_cache) # 更新时间缓存
+  \(sym="kl_rb2605") {
+    startime <- get0(sym, envir=cache, ifnotfound=NA)
+    x <- klines(sym, startime=startime) # 读取K线数据
+    with(last(x), cat("nrow", nrow(x), "startime", startime, "IDX", IDX, "VOLUME", VOLUME, "\n -- \n")) # 获得的最新数据
+    assign(sym, max(x$TS), envir=cache) # 更新时间缓存
     if (!NROW(x)) return(NULL)
     with(x, purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量
       timestamp = as.numeric(as.POSIXct(TS, format="%Y%m%d%H%M")) * 1000, # 毫秒级的时间戳
@@ -65,28 +68,28 @@ fetch_json <- local({
 
 # 清空数据缓存
 invalidate_cache <- \(){
-  c(environment(kl)$kl_cache, environment(fetch_json)$st_cache) |>  # 提取缓存对象
+  c(klines, fetch_json) |> lapply(\(e) get("cache", envir=environment(e))) |>  # 提取缓存对象
     lapply(\(e) rm(list=ls(e), envir=e))
 }
 
 # # 1. 查询kl_rb2605所有数据（首次查询，缓存未命中）
 # cat("1. 查询kl_rb2605所有数据（首次查询，缓存未命中）\n")
-# data_all <- kl("kl_rb2605")
+# data_all <- klines("kl_rb2605")
 
 # cat("2. 再次查询相同范围（缓存命中，直接返回）\n")
-# data_all_cached <- kl("kl_rb2605")
+# data_all_cached <- klines("kl_rb2605")
 
 # cat("3. 查询指定时间范围（202512242200 至 202512242255）\n")
-# data_range <- kl("kl_rb2605", start = "202512242200", end = "202512242255")
+# data_range <- klines("kl_rb2605", start = "202512242200", end = "202512242255")
 
 # cat("4. 清空缓存并全量查询\n")
 # invalidate_cache()
-# data_refresh <- kl("kl_rb2605")
+# data_refresh <- klines("kl_rb2605")
 
 # cat("5. 1分钟后再次查询（自动刷新当前分钟数据，历史数据复用缓存）\n")
 # # Sys.sleep(60)
-# # data_refresh_current <- kl("kl_rb2605")
+# # data_refresh_current <- klines("kl_rb2605")
 
 # cat(" 4. 清空缓存并全量查询\n")
 # sqlquery("select * from kl_rb2605 order by TS") |> tail(5)
-# kl() |> tail()
+# klines() |> tail()
