@@ -24,13 +24,13 @@ initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
 # 移除igniteconfig的图层配置
 uninitialize <- \() search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
 
-# K线刷新函数
+# K线刷新函数（可以把klines理解为一个简单的浏览器，可以访问动态主页sym上的数据）
 klines <- local({
-  cache <- new.env(hash=T)
+  cache <- new.env(hash=T) # K线缓存
 
   \(sym='kl_rb2605',startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
     k <- paste(sym) # 缓存key
-    lc <- get0(k, envir=cache, ifnotfound=data.frame(TS=character())) # 本地拷贝LocalCopy
+    lc <- get0(k, envir=cache, ifnotfound=data.frame(TS=character())) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
     last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
     # 查询范围完全在缓存内直接返回
     if (!is.na(startime) && !is.na(endtime) && min(lc$TS)<=startime && max(lc$TS)>=endtime) 
