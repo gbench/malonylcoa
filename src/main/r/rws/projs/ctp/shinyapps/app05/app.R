@@ -1,5 +1,5 @@
 # app.R  ---- 函数式精简版，JS 默认首页 ----
-library(shiny); library(quantmod); library(xts); library(jsonlite); library(shiny)
+library(shiny); library(quantmod); library(xts); library(jsonlite); 
 source("xxxconfig_boot.R")  # 保证 kl() 可用
 
 ui <- fluidPage(
@@ -42,7 +42,8 @@ server <- function(input, output, session) {
   }) |> bindEvent(tick(), input$refresh)
   
   output$kline <- renderPlot({
-    d <- data()
+    d <- data() |> with(as.xts(cbind(OPEN,HIGH,LOW,CLOSE,VOLUME), 
+      order.by=as.POSIXct(TS, format="%Y%m%d%H%M")))
     if (is.null(d) || !NROW(d)) return(NULL)
     chartSeries(d, name = toupper(input$sym), theme = chartTheme("white"))
   })

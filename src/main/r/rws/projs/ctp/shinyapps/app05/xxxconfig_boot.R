@@ -69,21 +69,24 @@ invalidate_cache <- \(){
     lapply(\(e) rm(list=ls(e), envir=e))
 }
 
-# 1. 查询kl_rb2605所有数据（首次查询，缓存未命中）
-data_all <- kl("kl_rb2605")
+# # 1. 查询kl_rb2605所有数据（首次查询，缓存未命中）
+# cat("1. 查询kl_rb2605所有数据（首次查询，缓存未命中）\n")
+# data_all <- kl("kl_rb2605")
 
-# 2. 再次查询相同范围（缓存命中，直接返回）
-data_all_cached <- kl("kl_rb2605")
+# cat("2. 再次查询相同范围（缓存命中，直接返回）\n")
+# data_all_cached <- kl("kl_rb2605")
 
-# 3. 查询指定时间范围（202512242200 至 202512242255）
-data_range <- kl("kl_rb2605", start = "202512242200", end = "202512242255")
+# cat("3. 查询指定时间范围（202512242200 至 202512242255）\n")
+# data_range <- kl("kl_rb2605", start = "202512242200", end = "202512242255")
 
-# 4. 清空缓存并全量查询
-data_refresh <- kl("kl_rb2605", flag = TRUE)
+# cat("4. 清空缓存并全量查询\n")
+# invalidate_cache()
+# data_refresh <- kl("kl_rb2605")
 
-# 5. 1分钟后再次查询（自动刷新当前分钟数据，历史数据复用缓存）
-# Sys.sleep(60)
-data_refresh_current <- kl("kl_rb2605")
+# cat("5. 1分钟后再次查询（自动刷新当前分钟数据，历史数据复用缓存）\n")
+# # Sys.sleep(60)
+# # data_refresh_current <- kl("kl_rb2605")
 
+# cat(" 4. 清空缓存并全量查询\n")
 # sqlquery("select * from kl_rb2605 order by TS") |> tail(5)
-kl() |> tail()
+# kl() |> tail()
