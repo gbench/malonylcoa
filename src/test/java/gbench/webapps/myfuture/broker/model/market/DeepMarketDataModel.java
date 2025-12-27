@@ -151,15 +151,16 @@ public class DeepMarketDataModel {
 				if (n % 10 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
 					es.execute(() -> kcache_cleaner.accept(kcache));
 			};
+			
 			println("%s:%s".formatted(key, kline));
 			// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
 			igniteDB.put(kline.add(TNAME, tname), TNAME, cbgen.apply(LocalDateTime.now()), "TS");
 
-			return null;
+			return kline;
 		};
 
 		// 连接进入交易消息队列进行tickdata的处理
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID+"_", tickdata_handler) //
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
 				.sleepInterval(100).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 
 		Thread.sleep(1_000_000_000);
