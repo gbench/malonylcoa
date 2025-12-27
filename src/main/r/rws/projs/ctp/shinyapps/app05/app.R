@@ -38,7 +38,7 @@ server <- function(input, output, session) {
 
   data <- reactive({
     tick(); input$refresh
-    kl(input$sym)
+    klines(input$sym)
   }) |> bindEvent(tick(), input$refresh)
   
   output$kline <- renderPlot({
