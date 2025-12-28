@@ -46,32 +46,33 @@ uninitialize <- \() search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) 
 # 一行代码就完成“心跳、补数、落盘、查询”四件事！
 klines <- local({
   cache <- new.env(hash=T) # K线缓存
+  .get <- \(x) get0(x, envir=cache, ifnotfound=data.frame(TS=character())) # 缓存读写
+  .assign <- \(x, value) assign(x, value, envir=cache) # 环境赋值
 
   #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
   #' @param endtime 截止时间
   \(sym='kl_rb2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
-    k <- paste(sym) # 缓存key
-    lc <- get0(k, envir=cache, ifnotfound=data.frame(TS=character())) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
+    k <- paste(substitute(sym)) # 缓存key
+    lc <- .get(k) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
     last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
-    # 查询范围完全在缓存内直接返回
-    if (!is.na(startime) && !is.na(endtime) && min(lc$TS)<=startime && max(lc$TS)>=endtime) 
-      return(lc[lc$TS>=startime & lc$TS<=endtime,])
-    sql <- sprintf("SELECT * FROM %s WHERE TS>='%s'%s ORDER BY TS", sym, last_uptime, 
-        paste0(if (!all(is.na(c(startime, endtime))))
-        sprintf(" AND %s", paste(c(if(!is.na(startime)) sprintf("TS>='%s'", startime),
-          if(!is.na(endtime)) sprintf("TS<='%s'", endtime)), collapse=" AND ")), ""))
-    cat(sql, "\n") # 打印查询sql
 
-    ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
-    # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-    nu <- ds %>% with(.[TS>=last_uptime, ]) # # 只拿 >= 缓存尾部的数据
-    # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
-    mu <- if(sum(nu$TS==last_uptime)>0) lc[lc$TS!=last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
-    # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
-    res <- if(is.na(startime)) rbind(mu, nu) else ds  # 删尾拼新
-
-    if(is.na(startime)) assign(k, res, envir=cache) else nu # NA心跳模式才会更新缓存，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
-  }
+    if (!is.na(startime) && !is.na(endtime) && min(lc$TS)<=startime && max(lc$TS)>=endtime) { # 查询范围完全在缓存内直接返回
+      lc[lc$TS>=startime & lc$TS<=endtime, ]
+    } else { # 缓存未命中
+      sql <- sprintf("SELECT * FROM %s WHERE TS>='%s' %s ORDER BY TS", sym, last_uptime, 
+          paste0(if (!all(is.na(c(startime, endtime)))) sprintf(" AND %s", 
+            paste(c(if (!is.na(startime)) sprintf("TS>='%s'", startime),
+              if (!is.na(endtime)) sprintf("TS<='%s'", endtime)), collapse=" AND ")), "")) # 读取SQL的拼装
+      cat(sql, "\n") # 打印查询sql
+      ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
+      # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
+      nu <- ds %>% with(.[TS>=last_uptime, ]) # # 只拿 >= 缓存尾部的数据
+      # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
+      mu <- if (sum(nu$TS==last_uptime)>0) lc[lc$TS!=last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
+      # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
+      res <- if (is.na(startime)) rbind(mu, nu) else ds  # 删尾拼新
+      if(is.na(startime)) .assign(k, res) else res # NA心跳模式才会更新缓存，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
+    } # if 
 })
 
 # klinechart的抓取K线数据
@@ -99,8 +100,8 @@ invalidate_kline_caches <- \() {
 
 # kline缓存导出, home 导出文件存放位置
 dump_kline_cache <- \(home="data") {
-   handle.csv <- \(x, name, dir=home) { if(!dir.exists(dir)) dir.create(dir, recursive=T); write.csv(x, "./%s/%s.csv"|>gettextf(dir, name)); nrow(x) } # csv 文件的写入本地
-   environment(klines) |> with(ls(envir=cache) |> setNames(nm=_) |> lapply(\(nm) get(nm, envir=cache))) %>% mapply(FUN=handle.csv, ., names(.))
+  handle.csv <- \(x, name, dir=home) { if(!dir.exists(dir)) dir.create(dir, recursive=T); write.csv(x, "./%s/%s.csv" |> gettextf(dir, name)); nrow(x) } # csv 文件的写入本地
+  environment(klines) |> with(ls(envir=cache) |> setNames(nm=_) |> lapply(\(nm) get(nm, envir=cache))) %>% mapply(FUN=handle.csv, ., names(.))
 }
 
 # ------------------------------------------------------------------------------------------------------------------------------------
@@ -113,7 +114,7 @@ dump_kline_cache <- \(home="data") {
 #  [7] ".SqlQueryEnv"      "package:methods"   "Autoloads"        
 # [10] "package:base"     
 
-# 数据 环境初始化，serach 里增加了igniteconfig.overlay；igniteconfig.underlay 两个拦截层环境！
+# 数据 环境初始化，search 里增加了igniteconfig.overlay；igniteconfig.underlay 两个拦截层环境！
 # 这样sqlquery就直接连接到了ignite了
 # initialize();  search()
 # > 	
@@ -262,7 +263,7 @@ dump_kline_cache <- \(home="data") {
 # 连接到测试库 & 并 给于缓存数据持久化
 # local({ # 缓存数据持久化
 #   handle.csv <- \(x, name) { # 本地CSV文件写入
-#       if(!dir.exists("data")) dir.create("data"); write.csv(x, "./data/%s.csv"|>gettextf(name))
+#       if(!dir.exists("data")) dir.create("data"); write.csv(x, "./data/%s.csv" |> gettextf(name))
 #       nrow(x)
 #   } # handle.csv
 #   handle.ms <- \(x, name) { # MYSQL数据文件写入
