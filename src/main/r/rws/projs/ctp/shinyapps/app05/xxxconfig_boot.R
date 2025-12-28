@@ -87,10 +87,10 @@ fetch_json <- local({
     with(last(x), cat("nrow", nrow(x), "startime", startime, "IDX", IDX, "VOLUME", VOLUME, "\n -- \n")) # 获得的最新数据
     assign(sym, max(x$TS), envir=cache) # 更新时间缓存
     if (!NROW(x)) return(NULL)
-    with(x, purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量
+    with(x, list(instrument = sym, ds = purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量
       timestamp = as.numeric(as.POSIXct(TS, format="%Y%m%d%H%M")) * 1000, # 毫秒级的时间戳
       open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume = VOLUME, idx= IDX
-    ))) |> toJSON(auto_unbox = TRUE)
+    )))) |> toJSON(auto_unbox = TRUE)
   } # 匿名函数
 })
 

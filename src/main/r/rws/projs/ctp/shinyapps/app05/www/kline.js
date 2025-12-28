@@ -1,23 +1,40 @@
 // www/kline.js
-(function(){
-  const chart = klinecharts.init('chart');
-  /* 1. 副图成交量 */
-  chart.createIndicator('VOL');
-  /* https://klinecharts.com/guide/indicator#%E5%86%85%E7%BD%AE%E6%8A%80%E6%9C%AF%E6%8C%87%E6%A0%87 */
-  chart.createIndicator('MA', true, { id:'candle_pane' }) 
-  chart.createIndicator('BOL', true, { id:'candle_pane' }) 
-  /* 3. 监听 Shiny 推送 */
-  Shiny.addCustomMessageHandler('push', klines => {
-    console.log(klines)
-    const isReady = () => chart.getDataList().length > 0;
-    if (isReady()) {// 增量更新：klines 是新增的一根或多根K线
-      console.log("===================增量更新数据==================================");
-      console.log(JSON.stringify(klines))
-      console.log("================" , JSON.stringify(klines.map(e=>({idx:e.idx, vol:e.volume}))))
-      klines.forEach(k => chart.updateData(k));
-    } else { // 初始导入
-      console.log("===================首次接受数据==================================");
-      chart.applyNewData(klines);
+(function () {
+  /* ========== 全局状态 ========== */
+  const chart = klinecharts.init("chart");
+  let currentInstrument = null; // 当前品种
+
+  /* ========== 1. 指标只建一次 ========== */
+  (function initOnce() {
+    chart.createIndicator("VOL"); // 副图
+    chart.createIndicator("MA", true, { id: "candle_pane" });
+    chart.createIndicator("BOL", true, { id: "candle_pane" });
+  })();
+
+  /* ========== 2. 外部手动切换（可选） ========== */
+  window.switchInstrument = function (instrument) {
+    if (instrument === currentInstrument) return;
+    currentInstrument = instrument;
+    chart.clearData(); // 只清数据，不动指标
+    // 可选：通知后端
+    Shiny.setInputValue("switchInstrument", instrument);
+  };
+
+  /* ========== 3. 监听 Shiny 推送 ========== */
+  Shiny.addCustomMessageHandler("push", ({ instrument, ds }) => {
+    if (instrument !== currentInstrument) {
+      // 后端推送了新品种
+      currentInstrument = instrument;
+      chart.clearData(); // 清旧 K 线
+      chart.applyNewData(ds); // 直接整包新数据
+      return;
+    }
+
+    // 同一品种：增量更新
+    if (chart.getDataList().length) {
+      ds.forEach((bar) => chart.updateData(bar));
+    } else {
+      chart.applyNewData(ds);
     }
   });
 })();
