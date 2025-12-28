@@ -29,17 +29,20 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  # 定时器
-  tick <- reactiveTimer(1000)
-  # K线数据
-  data <- reactive({
+  tick <- reactiveTimer(1000) # 刷新频率（定时器）
+  update_klinechart <- \(data) session$sendCustomMessage("push", data) # 更新k线
+  data <- reactive({  # K线数据
     klines(input$sym) |> with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME), 
       order.by=as.POSIXct(TS, format="%Y%m%d%H%M"))) |> tail(100)
   }) |> bindEvent(input$sym, input$refresh)
+  
   # quantmod 近期绘图
   output$kline <- renderPlot(data() |> chartSeries(name=toupper(input$sym), theme=chartTheme("white")))
-  # 定时刷新klinechart
-  observe(fetch_json(input$sym) %>% session$sendCustomMessage("push", .)) |> bindEvent(tick(), input$intv)
+  
+  # 定时刷新klinechart（增量更新数据）
+  observe(update_klinechart(fetch_json(input$sym))) |> bindEvent(tick())
+  # 切换合约（使用全量更新数据）
+  observe(update_klinechart(fetch_json(input$sym, startime=0))) |> bindEvent(input$sym)
   # 手动刷新
   observe(invalidate_kline_caches()) |> bindEvent(input$refresh)
   # 退出事件
