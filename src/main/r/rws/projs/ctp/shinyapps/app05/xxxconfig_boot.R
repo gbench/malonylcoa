@@ -57,8 +57,8 @@ klines <- local({
     lc <- .get(k) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
     last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
 
-    if (!is.na(startime) && !is.na(endtime) && min(lc$TS)<=startime && max(lc$TS)>=endtime) { # 查询范围完全在缓存内直接返回
-      lc[lc$TS>=startime & lc$TS<=endtime, ]
+    if (!is.na(startime) && !is.na(endtime) && with(lc, min(TS)<=startime && max(TS)>=endtime)) { # 查询范围完全在缓存内直接返回
+      with(lc, lc[TS>=startime & TS<=endtime])
     } else { # 缓存未命中
       sql <- sprintf("SELECT * FROM %s WHERE TS>='%s' %s ORDER BY TS", k, last_uptime, 
           paste0(if (!all(is.na(c(startime, endtime)))) sprintf(" AND %s", 
