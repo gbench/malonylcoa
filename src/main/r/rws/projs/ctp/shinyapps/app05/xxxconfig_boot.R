@@ -57,22 +57,23 @@ klines <- local({
     lc <- .get(k) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
     last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
 
-    if (!is.na(startime) && !is.na(endtime) && with(lc, min(TS)<=startime && max(TS)>=endtime)) { # 查询范围完全在缓存内直接返回
-      with(lc, lc[TS>=startime & TS<=endtime])
+    if (!is.na(startime) && !is.na(endtime) && nrow(lc)>0 && min(lc$TS)<=startime && max(lc$TS)>=endtime) { # 查询范围完全在缓存内直接返回
+      lc[lc$TS>=startime & lc$TS<=endtime, , drop = FALSE]
     } else { # 缓存未命中
-      sql <- sprintf("SELECT * FROM %s WHERE TS>='%s' %s ORDER BY TS", k, last_uptime, 
-          paste0(if (!all(is.na(c(startime, endtime)))) sprintf(" AND %s", 
-            paste(c(if (!is.na(startime)) sprintf("TS>='%s'", startime),
-              if (!is.na(endtime)) sprintf("TS<='%s'", endtime)), collapse=" AND ")), "")) # 读取SQL的拼装
+      flag <- is.na(startime) # NA心跳模式&更新缓存
+      .startime <- if(flag) last_uptime else startime # 开始时间
+      rng <- \(s, e, op=c("TS>=", "TS<=")) paste0(op, "'", c(s, e), "'") |> (\(x) x[!endsWith(x, "'NA'")]) () |> 
+        paste(collapse = " AND ") |> (\(s) if(!nzchar(s)) "" else gettextf("WHERE %s", s)) () # 时间范围
+      sql <- sprintf("SELECT * FROM %s %s ORDER BY TS", k, rng(.startime, endtime)) # 读取SQL的拼装
       cat(sql, "\n") # 打印查询sql
       ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-      nu <- ds[ds$TS >= last_uptime, ] # # 只拿 >= 缓存尾部的数据
+      nu <- ds[ds$TS>=last_uptime, ] # # 只拿 >= 缓存尾部的数据
       # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
-      mu <- if (sum(nu$TS==last_uptime)>0) lc[lc$TS>=last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
+      mu <- if (sum(nu$TS==last_uptime)>0) lc[lc$TS<last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
       # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
-      res <- if (is.na(startime)) rbind(mu, nu) else ds  # 删尾拼新
-      if(is.na(startime)) .assign(k, res) else res # NA心跳模式才会更新缓存，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
+      res <- if (flag) rbind(mu, nu) else ds  # 删尾拼新
+      if(flag) .assign(k, res) else res # NA心跳模式才会更新缓存，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
     } # if 
   } # 匿名函数
 })
@@ -86,7 +87,7 @@ fetch_json <- local({
     x <- klines(sym, startime=.startime) # 读取K线数据
     with(last(x), cat("nrow", nrow(x), "startime", startime, "IDX", IDX, "VOLUME", VOLUME, "\n -- \n")) # 获得的最新数据
     assign(sym, max(x$TS), envir=cache) # 更新时间缓存
-    if (!NROW(x)) return(NULL)
+    if (!nrow(x)) return(NULL)
     with(x, list(instrument = sym, ds = purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量
       timestamp = as.numeric(as.POSIXct(TS, format="%Y%m%d%H%M")) * 1000, # 毫秒级的时间戳
       open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume = VOLUME, idx= IDX
