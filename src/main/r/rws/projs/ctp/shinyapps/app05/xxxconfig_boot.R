@@ -92,9 +92,15 @@ fetch_json <- local({
 })
 
 # 清空数据缓存
-invalidate_kline_caches <- \(){
+invalidate_kline_caches <- \() {
   c(klines, fetch_json) |> lapply(\(e) get("cache", envir=environment(e))) |>  # 提取缓存对象
     lapply(\(e) rm(list=ls(e), envir=e)) |> invisible()
+}
+
+# kline缓存导出
+dump_kline_cache <- \() {
+   handle.csv <- \(x, name, dir="data") { if(!dir.exists(dir)) dir.create(dir); write.csv(x, "./%s/%s.csv"|>gettextf(dir, name)); nrow(x) } # csv 文件的写入本地
+   environment(klines) |> with(ls(envir=cache) |> setNames(nm=_) |> lapply(\(nm) get(nm, envir=cache))) %>% mapply(FUN=handle.csv, ., names(.))
 }
 
 # ------------------------------------------------------------------------------------------------------------------------------------
@@ -267,6 +273,41 @@ invalidate_kline_caches <- \(){
 #   } # handle.ms
 #   environment(klines) |> with(ls(envir=cache) |> setNames(nm=_) |> lapply(\(nm) get(nm, envir=cache))) %>% mapply(FUN=handle.ms, ., names(.))
 # }) # local
+# 
+# 导出所有缓存数据
+# source(file.choose()) # 加载xxxconfig_boot.R
+# initialize() # 环境初始化
+# sqlquery("select table_name from system.tables") |> grep(pattern="^KL", value=T) |> lapply(klines) |> system.time() # 导出计时统计
+# >
+# SELECT * FROM KL_MA601 WHERE TS>='202512262259' ORDER BY TS 
+# SELECT * FROM KL_RB2605 WHERE TS>='202512262300' ORDER BY TS 
+# SELECT * FROM KL_RB2603 WHERE TS>='202512262300' ORDER BY TS 
+# SELECT * FROM KL_RB2601 WHERE TS>='202512262300' ORDER BY TS 
+# SELECT * FROM KL_EG2601 WHERE TS>='202512262259' ORDER BY TS 
+# SELECT * FROM KL_RB2605P3100 WHERE TS>='202512260907' ORDER BY TS 
+# SELECT * FROM KL_RB2605P3150 WHERE TS>='202512260907' ORDER BY TS 
+# SELECT * FROM KL_RB2605C3150 WHERE TS>='202512260907' ORDER BY TS 
+# SELECT * FROM KL_RB2605C3100 WHERE TS>='202512260907' ORDER BY TS 
+# SELECT * FROM KL_IF2601 WHERE TS>='202512260733' ORDER BY TS 
+# SELECT * FROM KL_AO2601 WHERE TS>='202512270100' ORDER BY TS 
+#    user  system elapsed 
+#    1.40    0.28    2.91 
+# > 
+# dump_kline_cache() |> compose(t, t)() %>% structure(dimnames=list(row.names(.), "cnt")) # 转置一下好看一些！
+#                 cnt
+# KL_AO2601      1907
+# KL_EG2601      1511
+# KL_IF2601       424
+# KL_MA601       1500
+# KL_RB2601      1515
+# KL_RB2603      1515
+# KL_RB2605      1515
+# KL_RB2605C3100  595
+# KL_RB2605C3150  602
+# KL_RB2605P3100  603
+# KL_RB2605P3150  586
+
+
 
 
 
