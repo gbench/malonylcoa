@@ -52,7 +52,7 @@ klines <- local({
   #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
   #' @param endtime 截止时间
   \(sym='kl_rb2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
-    k <- paste(substitute(sym)) # 缓存key
+    k <- tryCatch(sym, error=\(e) paste0(substitute(sym))) # 缓存key
     lc <- .get(k) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
     last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
 
@@ -92,6 +92,8 @@ fetch_json <- local({
     ))) |> toJSON(auto_unbox = TRUE)
   }
 })
+
+fetch_json()
 
 # 清空数据缓存
 invalidate_kline_caches <- \() {
