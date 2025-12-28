@@ -66,9 +66,9 @@ klines <- local({
       cat(sql, "\n") # 打印查询sql
       ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-      nu <- ds %>% with(.[TS>=last_uptime, ]) # # 只拿 >= 缓存尾部的数据
+      nu <- ds[ds$TS >= last_uptime, ] # # 只拿 >= 缓存尾部的数据
       # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
-      mu <- if (sum(nu$TS==last_uptime)>0) lc[lc$TS!=last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
+      mu <- if (sum(nu$TS==last_uptime)>0) lc[lc$TS>=last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
       # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
       res <- if (is.na(startime)) rbind(mu, nu) else ds  # 删尾拼新
       if(is.na(startime)) .assign(k, res) else res # NA心跳模式才会更新缓存，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
