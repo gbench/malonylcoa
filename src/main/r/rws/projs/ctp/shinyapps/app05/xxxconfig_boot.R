@@ -1,6 +1,8 @@
 # ------------------------------------------------------------------------------
 # xxxconfig的环境启动（使用jdbc方法来拦截ignite) 类似于Photoshop的多级图层的underlay+overlay的联合图层绘图
 # ------------------------------------------------------------------------------
+
+# 安装java环境与jdbc接口包文件
 # install.packages(c("rJava", "RJDBC"), repos = "https://mirrors.ustc.edu.cn/CRAN/")
 
 batch_load() # 导入基础库，引入sqlquery系列函数
@@ -90,29 +92,161 @@ fetch_json <- local({
 })
 
 # 清空数据缓存
-invalidate_cache <- \(){
+invalidate_kline_caches <- \(){
   c(klines, fetch_json) |> lapply(\(e) get("cache", envir=environment(e))) |>  # 提取缓存对象
-    lapply(\(e) rm(list=ls(e), envir=e))
+    lapply(\(e) rm(list=ls(e), envir=e)) |> invisible()
 }
 
+# ------------------------------------------------------------------------------------------------------------------------------------
+# 接口使用示例
+# ------------------------------------------------------------------------------------------------------------------------------------
+#  初始化前环境结构
+# >  search()
+#  [1] ".GlobalEnv"        "package:stats"     "package:graphics" 
+#  [4] "package:grDevices" "package:utils"     "package:datasets" 
+#  [7] ".SqlQueryEnv"      "package:methods"   "Autoloads"        
+# [10] "package:base"     
+
+# 数据 环境初始化，serach 里增加了igniteconfig.overlay；igniteconfig.underlay 两个拦截层环境！
+# 这样sqlquery就直接连接到了ignite了
+# initialize();  search()
+# > 	
+# i> search()
+# i [1] ".GlobalEnv"            "igniteconfig.overlay"  "package:RJDBC"        
+# i [4] "package:rJava"         "package:RPostgres"     "package:janitor"      
+# i [7] "package:data.table"    "package:quantmod"      "package:TTR"          
+# i[10] "package:xts"           "package:zoo"           "package:jsonlite"     
+# i[13] "package:lubridate"     "package:forcats"       "package:stringr"      
+# i[16] "package:dplyr"         "package:purrr"         "package:readr"        
+# i[19] "package:tidyr"         "package:tibble"        "package:ggplot2"      
+# i[22] "package:tidyverse"     "package:RMySQL"        "package:DBI"          
+# i[25] "package:stats"         "package:graphics"      "package:grDevices"    
+# i[28] "package:utils"         "package:datasets"      ".SqlQueryEnv"         
+# i[31] "igniteconfig.underlay" "package:methods"       "Autoloads"            
+# i[34] "package:base" 
+    
+#  我们可以查看当前ignite里各种实时更新的缓存表：KL_XXX是K线表，TK_XXX是TK_XXX是tickdta数据！
+#  > sqlquery("select table_name from system.tables")
+#  [1] "TK_RB2605C3100" "PERSON"         "TK_RB2603"      "TK_MA601"      
+#  [5] "T_MTCARS"       "KL_MA601"       "KL_RB2605"      "KL_RB2603"     
+#  [9] "KL_RB2601"      "KL_EG2601"      "KL_RB2605P3100" "KL_RB2605P3150"
+#  [13] "KL_RB2605C3150" "KL_RB2605C3100" "TK_EG2601"      "TK_RB2605"     
+#  [17] "KL_IF2601"      "TK_AO2601"      "TK_RB2605P3100" "KL_AO2601"     
+#  [21] "T_IRIS"         "TK_RB2601"     
+ 
 # # 1. 查询kl_rb2605所有数据（首次查询，缓存未命中）
 # cat("1. 查询kl_rb2605所有数据（首次查询，缓存未命中）\n")
-# data_all <- klines("kl_rb2605")
+# data_all <- klines("kl_rb2605"); data_all |> tail()
+# >
+# SELECT * FROM kl_rb2605 WHERE TS>='0' ORDER BY TS 
+# # A tibble: 6 × 11
+#   TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
+#   <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
+# 1 202512261058  3101  3102  3100  3101   2390 712842 715232 866306   120 2025-12-26 10:58:59.500
+# 2 202512261059  3102  3105  3101  3103   7906 715234 723140 866852   120 2025-12-26 10:59:59.500
+# 3 202512261100  3104  3105  3102  3102   3818 723152 726970 867366   120 2025-12-26 11:00:59.500
+# 4 202512261101  3103  3103  3102  3103   2019 726973 728992 867854   120 2025-12-26 11:01:59.500
+# 5 202512261102  3102  3105  3102  3104   2641 728993 731634 868336   120 2025-12-26 11:02:59.500
+# 6 202512261103  3105  3105  3103  3104   2022 731635 733657 868647    66 2025-12-26 11:03:32.500
+# >
 
-# cat("2. 再次查询相同范围（缓存命中，直接返回）\n")
-# data_all_cached <- klines("kl_rb2605")
+# cat("2. 再次查询相同范围（缓存命中部分，直接返回，更新部分增量读取, 202512261103的VOLUME,IDX等进行了更新）\n")
+# data_all_cached <- klines("kl_rb2605"); data_all_cached |> tail(1)
+# > 
+# SELECT * FROM kl_rb2605 WHERE TS>='202512261103' ORDER BY TS 
+# # A tibble: 6 × 11
+#   TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
+#   <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
+# 1 202512261058  3101  3102  3100  3101   2390 712842 715232 866306   120 2025-12-26 10:58:59.500
+# 2 202512261059  3102  3105  3101  3103   7906 715234 723140 866852   120 2025-12-26 10:59:59.500
+# 3 202512261100  3104  3105  3102  3102   3818 723152 726970 867366   120 2025-12-26 11:00:59.500
+# 4 202512261101  3103  3103  3102  3103   2019 726973 728992 867854   120 2025-12-26 11:01:59.500
+# 5 202512261102  3102  3105  3102  3104   2641 728993 731634 868336   120 2025-12-26 11:02:59.500
+# 6 202512261103  3105  3105  3103  3104   2097 731635 733732 868694    76 2025-12-26 11:03:37.500
+# >
 
-# cat("3. 查询指定时间范围（202512242200 至 202512242255）\n")
-# data_range <- klines("kl_rb2605", start = "202512242200", end = "202512242255")
+# 直接读取缓存数据
+# environment(klines) |> with(with(cache, kl_rb2605))
+# A tibble: 1,305 × 11
+#    TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
+#    <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
+#  1 202512221330  3122  3124  3122  3123    413 724908 725321 141555    30 2025-12-22 13:30:59.500
+#  2 202512221331  3124  3124  3122  3124   1929 725342 727271 142149   120 2025-12-22 13:31:59.500
+#  3 202512221332  3123  3125  3123  3125   1251 727272 728523 142714   120 2025-12-22 13:32:59.500
+#  4 202512221333  3124  3124  3121  3121   2510 728561 731071 143297   120 2025-12-22 13:33:59.500
+#  5 202512221334  3121  3124  3121  3124   1842 731071 732913 143852   120 2025-12-22 13:34:59.500
+#  6 202512221335  3124  3124  3122  3123   1013 733023 734036 144383   118 2025-12-22 13:35:59.500
+#  7 202512221336  3122  3125  3122  3124   2069 734038 736107 144969   120 2025-12-22 13:36:59.500
+#  8 202512221337  3124  3124  3123  3124    431 736109 736540 145507   119 2025-12-22 13:37:59.500
+#  9 202512221338  3124  3124  3121  3122   1794 736541 738335 146079   120 2025-12-22 13:38:59.500
+# 10 202512221339  3122  3123  3121  3122    948 738335 739283 146659   119 2025-12-22 13:39:59.500
+# # ℹ 1,295 more rows
+# # ℹ Use `print(n = ...)` to see more rows
+# >
+
+# cat("3. 查询指定时间范围（202512221331 至 202512221331）\n")
+# data_range <- klines("kl_rb2605", startime = "202512221331", endtime = "202512221335"); data_range
+# > 
+# # A tibble: 5 × 11
+#   TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
+#   <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
+# 1 202512221331  3124  3124  3122  3124   1929 725342 727271 142149   120 2025-12-22 13:31:59.500
+# 2 202512221332  3123  3125  3123  3125   1251 727272 728523 142714   120 2025-12-22 13:32:59.500
+# 3 202512221333  3124  3124  3121  3121   2510 728561 731071 143297   120 2025-12-22 13:33:59.500
+# 4 202512221334  3121  3124  3121  3124   1842 731071 732913 143852   120 2025-12-22 13:34:59.500
+# 5 202512221335  3124  3124  3122  3123   1013 733023 734036 144383   118 2025-12-22 13:35:59.500
+# >
 
 # cat("4. 清空缓存并全量查询\n")
-# invalidate_cache()
-# data_refresh <- klines("kl_rb2605")
+# invalidate_kline_caches()
+# data_refresh <- klines("kl_rb2605"); data_refresh
+# > 
+# SELECT * FROM kl_rb2605 WHERE TS>='0' ORDER BY TS 
+# A tibble: 1,317 × 11
+#    TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
+#    <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
+#  1 202512221330  3122  3124  3122  3123    413 724908 725321 141555    30 2025-12-22 13:30:59.500
+#  2 202512221331  3124  3124  3122  3124   1929 725342 727271 142149   120 2025-12-22 13:31:59.500
+#  3 202512221332  3123  3125  3123  3125   1251 727272 728523 142714   120 2025-12-22 13:32:59.500
+#  4 202512221333  3124  3124  3121  3121   2510 728561 731071 143297   120 2025-12-22 13:33:59.500
+#  5 202512221334  3121  3124  3121  3124   1842 731071 732913 143852   120 2025-12-22 13:34:59.500
+#  6 202512221335  3124  3124  3122  3123   1013 733023 734036 144383   118 2025-12-22 13:35:59.500
+#  7 202512221336  3122  3125  3122  3124   2069 734038 736107 144969   120 2025-12-22 13:36:59.500
+#  8 202512221337  3124  3124  3123  3124    431 736109 736540 145507   119 2025-12-22 13:37:59.500
+#  9 202512221338  3124  3124  3121  3122   1794 736541 738335 146079   120 2025-12-22 13:38:59.500
+# 10 202512221339  3122  3123  3121  3122    948 738335 739283 146659   119 2025-12-22 13:39:59.500
+# # ℹ 1,307 more rows
+# # ℹ Use `print(n = ...)` to see more rows
+# >
 
-# cat("5. 1分钟后再次查询（自动刷新当前分钟数据，历史数据复用缓存）\n")
-# # Sys.sleep(60)
-# # data_refresh_current <- klines("kl_rb2605")
+# cat(" 5. 使用SQL查询: 根据查询时机，二者会存在差异\n")
+# a <- sqlquery("select * from kl_rb2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
+# >
+# > a <- sqlquery("select * from kl_rb2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
+# SELECT * FROM kl_rb2605 WHERE TS>='202512261126' ORDER BY TS 
+# [1] 0
+# > a <- sqlquery("select * from kl_rb2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
+# SELECT * FROM kl_rb2605 WHERE TS>='202512261126' ORDER BY TS 
+# [1] -28
+# > 
 
-# cat(" 4. 清空缓存并全量查询\n")
-# sqlquery("select * from kl_rb2605 order by TS") |> tail(5)
-# klines() |> tail()
+# 使用完毕后unitialize，我们移除ingnite拦截层
+# >
+#  uninitialize()
+#  [[1]]
+#  <environment: 0x000001f93a729178>
+#  attr(,"name")
+#  [1] "igniteconfig.overlay"
+#  
+#  [[2]]
+#  <environment: 0x000001f93a41e928>
+#  attr(,"name")
+#  [1] "igniteconfig.underlay"
+
+# sqlquery 恢复默认模式的mysql环境了！
+# 
+# > "select version() version; select database() db;" |> ss(";") |> sqlquery() |> lapply(unlist) |> cbind();
+#                          [,1]   
+# select version() version "9.1.0"
+#  select database() db    "ctp"  
+
