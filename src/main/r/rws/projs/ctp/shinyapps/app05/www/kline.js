@@ -7,8 +7,10 @@
   /* ========== 1. 指标只建一次 ========== */
   (function initOnce() {
     chart.createIndicator("VOL"); // 副图
+    chart.createIndicator("KDJ"); // 副图
+    chart.createIndicator("MACD"); // 副图
     chart.createIndicator("MA", true, { id: "candle_pane" });
-    chart.createIndicator("BOL", true, { id: "candle_pane" });
+    chart.createIndicator("BOLL", true, { id: "candle_pane" });
   })();
 
   /* ========== 2. 外部手动切换（可选） ========== */

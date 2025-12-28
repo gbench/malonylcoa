@@ -17,12 +17,12 @@ ui <- fluidPage(
     mainPanel(width = 10,
       tabsetPanel(id = "tabs", selected = "js",
         tabPanel("js",
-          tags$div(id = "chart", style = "width:100%;height:550px;border:1px solid #ccc;"),
+          tags$div(id = "chart", style = "width:100%;height:650px;border:1px solid #ccc;"),
           # 关键：把 JS 放在这个 tab 里，确保 DOM 已存在
           tags$script(src = "klinecharts.min.js"),
           tags$script(src = "kline.js")
         ),
-        tabPanel("R", plotOutput("kline", height = "550px"))
+        tabPanel("R", plotOutput("kline", height = "650px"))
       )
     )
   )
