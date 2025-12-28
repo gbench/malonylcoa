@@ -6,12 +6,8 @@ ui <- fluidPage(
   titlePanel("Ignite K-line"),
   sidebarLayout(
     sidebarPanel(width = 2,
-      selectInput("sym", "合约",
-        c("螺纹钢2605" = "kl_rb2605",
-          "螺纹钢2603" = "kl_rb2603",
-          "螺纹钢2601" = "kl_rb2601",
-          "甲醇2601"   = "kl_ma601"),
-        selected = "kl_rb2605"),
+      selectInput("sym", "合约", choices=sqlquery("select table_name from system.tables") |> 
+        grep("KL", x=_, value=T) %>% setNames(nm=sub("", "", x=.)), selected = "KL_RB2605"),
       numericInput("intv", "刷新(s):", 1, min = .1, step = .1),
       actionButton("refresh", "手动刷新"),
       hr(),
@@ -37,23 +33,17 @@ server <- function(input, output, session) {
   tick <- reactiveTimer(1000)
 
   data <- reactive({
-    tick(); input$refresh
     klines(input$sym)
   }) |> bindEvent(tick(), input$refresh)
   
   output$kline <- renderPlot({
-    d <- data() |> with(as.xts(cbind(OPEN,HIGH,LOW,CLOSE,VOLUME), 
-      order.by=as.POSIXct(TS, format="%Y%m%d%H%M")))
-    if (is.null(d) || !NROW(d)) return(NULL)
-    chartSeries(d, name = toupper(input$sym), theme = chartTheme("white"))
+    d <- data() |> with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME), order.by=as.POSIXct(TS, format="%Y%m%d%H%M")))
+    if (is.null(d) || !NROW(d)) NULL else chartSeries(d, name = toupper(input$sym), theme = chartTheme("white"))
   })
   
-  observe({
-    tick(); invalidateLater(input$intv * 1000, session)
-    json <- fetch_json(input$sym)
-    if (!is.null(json)) session$sendCustomMessage("push", json)
-  }) |> bindEvent(tick(), input$intv)
-  
+  # 刷新klinechart
+  observe(fetch_json(input$sym) %>% session$sendCustomMessage("push", .)) |> bindEvent(tick(), input$intv)
+  # 退出事件
   observeEvent(input$exit, {uninitialize(); stopApp()})
 }
 
