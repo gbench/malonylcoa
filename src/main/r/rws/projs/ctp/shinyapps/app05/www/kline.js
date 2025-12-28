@@ -10,7 +10,7 @@
     chart.createIndicator("KDJ"); // 副图
     chart.createIndicator("MACD"); // 副图
     chart.createIndicator("MA", true, { id: "candle_pane" });
-    chart.createIndicator("BOLL", true, { id: "candle_pane" });
+    // chart.createIndicator("BOLL", true, { id: "candle_pane" });
   })();
 
   /* ========== 2. 外部手动切换（可选） ========== */
