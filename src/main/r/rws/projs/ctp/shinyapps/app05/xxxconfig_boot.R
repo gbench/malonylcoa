@@ -243,10 +243,30 @@ invalidate_kline_caches <- \(){
 #  attr(,"name")
 #  [1] "igniteconfig.underlay"
 
-# sqlquery 恢复默认模式的mysql环境了！
-# 
+# sqlquery 恢复默认模式的mysql环境了（我们把缓存数据持久化）
+#
+# 配置数据库到测试环境
+# options("sqlquery.dbname"="test") # 连接大测试库
 # > "select version() version; select database() db;" |> ss(";") |> sqlquery() |> lapply(unlist) |> cbind();
 #                          [,1]   
 # select version() version "9.1.0"
-#  select database() db    "ctp"  
+#  select database() db    "test"  
+#
+# 连接到测试库 & 并 给于缓存数据持久化
+# local({ # 缓存数据持久化
+#   handle.csv <- \(x, name) { # 本地CSV文件写入
+#       if(!dir.exists("data")) dir.create("data"); write.csv(x, "./data/%s.csv"|>gettextf(name))
+#       nrow(x)
+#   } # handle.csv
+#   handle.ms <- \(x, name) { # MYSQL数据文件写入
+#      params <- list(dfm=x, tbl=name) # 表格定义参数
+#      ctsql <- do.call(ctsql, params); insql <- do.call(insql, params) # DDL 语句
+#      sqlexecute("drop table if exists %s" |> gettextf(name)) # 删除前期数据表（我们全量更新）
+#      sqlexecute(ctsql); sqlexecute(insql) # 创建&插入数据
+#      sqlquery("select count(*) from %s" |> gettextf(name)) # 显示插入数据行
+#   } # handle.ms
+#   environment(klines) |> with(ls(envir=cache) |> setNames(nm=_) |> lapply(\(nm) get(nm, envir=cache))) %>% mapply(FUN=handle.ms, ., names(.))
+# }) # local
+
+
 
