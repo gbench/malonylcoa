@@ -1,6 +1,7 @@
 # app.R  ---- 函数式精简版，JS 默认首页 ----
 library(shiny); library(quantmod); library(xts); library(jsonlite); 
 source("xxxconfig_boot.R")  # 保证 kl() 可用
+initialize()
 
 ui <- fluidPage(
   titlePanel("Ignite K-line"),
@@ -16,33 +17,30 @@ ui <- fluidPage(
     mainPanel(width = 10,
       tabsetPanel(id = "tabs", selected = "js",
         tabPanel("js",
-          tags$div(id = "chart", style = "width:100%;height:500px;border:1px solid #ccc;"),
+          tags$div(id = "chart", style = "width:100%;height:550px;border:1px solid #ccc;"),
           # 关键：把 JS 放在这个 tab 里，确保 DOM 已存在
           tags$script(src = "klinecharts.min.js"),
           tags$script(src = "kline.js")
         ),
-        tabPanel("R", plotOutput("kline", height = "500px"))
+        tabPanel("R", plotOutput("kline", height = "550px"))
       )
     )
   )
 )
 
 server <- function(input, output, session) {
-  initialize()
-
+  # 定时器
   tick <- reactiveTimer(1000)
-
+  # K线数据
   data <- reactive({
-    klines(input$sym)
-  }) |> bindEvent(tick(), input$refresh)
-  
-  output$kline <- renderPlot({
-    d <- data() |> with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME), order.by=as.POSIXct(TS, format="%Y%m%d%H%M")))
-    if (is.null(d) || !NROW(d)) NULL else chartSeries(d, name = toupper(input$sym), theme = chartTheme("white"))
-  })
-  
+    klines(input$sym) |> with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME), 
+      order.by=as.POSIXct(TS, format="%Y%m%d%H%M"))) |> tail(100)
+  }) |> bindEvent(input$sym, input$refresh)
+  # quantmod 近期绘图
+  output$kline <- renderPlot(data() |> chartSeries(name=toupper(input$sym), theme=chartTheme("white")))
   # 刷新klinechart
   observe(fetch_json(input$sym) %>% session$sendCustomMessage("push", .)) |> bindEvent(tick(), input$intv)
+  observe(invalidate_kline_caches()) |> bindEvent(input$refresh)
   # 退出事件
   observeEvent(input$exit, {uninitialize(); stopApp()})
 }
