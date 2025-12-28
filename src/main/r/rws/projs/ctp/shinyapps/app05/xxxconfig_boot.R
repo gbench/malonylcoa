@@ -52,14 +52,15 @@ klines <- local({
   #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
   #' @param endtime 截止时间
   \(sym='kl_rb2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
-    k <- tryCatch(sym, error=\(e) paste0(substitute(sym))) # 缓存key
+    .k <- substitute(sym) # 提取参数符号
+    k <- tryCatch(sym, error=\(e) as.character(.k)) # 如果求值失败则把参数符号名作为合约代码（缓存key)
     lc <- .get(k) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
     last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
 
     if (!is.na(startime) && !is.na(endtime) && min(lc$TS)<=startime && max(lc$TS)>=endtime) { # 查询范围完全在缓存内直接返回
       lc[lc$TS>=startime & lc$TS<=endtime, ]
     } else { # 缓存未命中
-      sql <- sprintf("SELECT * FROM %s WHERE TS>='%s' %s ORDER BY TS", sym, last_uptime, 
+      sql <- sprintf("SELECT * FROM %s WHERE TS>='%s' %s ORDER BY TS", k, last_uptime, 
           paste0(if (!all(is.na(c(startime, endtime)))) sprintf(" AND %s", 
             paste(c(if (!is.na(startime)) sprintf("TS>='%s'", startime),
               if (!is.na(endtime)) sprintf("TS<='%s'", endtime)), collapse=" AND ")), "")) # 读取SQL的拼装
