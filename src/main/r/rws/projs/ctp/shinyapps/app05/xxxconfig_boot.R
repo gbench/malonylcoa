@@ -97,9 +97,9 @@ invalidate_kline_caches <- \() {
     lapply(\(e) rm(list=ls(e), envir=e)) |> invisible()
 }
 
-# kline缓存导出
-dump_kline_cache <- \() {
-   handle.csv <- \(x, name, dir="data") { if(!dir.exists(dir)) dir.create(dir); write.csv(x, "./%s/%s.csv"|>gettextf(dir, name)); nrow(x) } # csv 文件的写入本地
+# kline缓存导出, home 导出文件存放位置
+dump_kline_cache <- \(home="data") {
+   handle.csv <- \(x, name, dir=home) { if(!dir.exists(dir)) dir.create(dir, recursive=T); write.csv(x, "./%s/%s.csv"|>gettextf(dir, name)); nrow(x) } # csv 文件的写入本地
    environment(klines) |> with(ls(envir=cache) |> setNames(nm=_) |> lapply(\(nm) get(nm, envir=cache))) %>% mapply(FUN=handle.csv, ., names(.))
 }
 
