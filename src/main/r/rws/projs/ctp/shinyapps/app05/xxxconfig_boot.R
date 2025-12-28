@@ -93,8 +93,6 @@ fetch_json <- local({
   }
 })
 
-fetch_json()
-
 # 清空数据缓存
 invalidate_kline_caches <- \() {
   c(klines, fetch_json) |> lapply(\(e) get("cache", envir=environment(e))) |>  # 提取缓存对象
