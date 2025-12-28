@@ -38,8 +38,9 @@ server <- function(input, output, session) {
   }) |> bindEvent(input$sym, input$refresh)
   # quantmod 近期绘图
   output$kline <- renderPlot(data() |> chartSeries(name=toupper(input$sym), theme=chartTheme("white")))
-  # 刷新klinechart
+  # 定时刷新klinechart
   observe(fetch_json(input$sym) %>% session$sendCustomMessage("push", .)) |> bindEvent(tick(), input$intv)
+  # 手动刷新
   observe(invalidate_kline_caches()) |> bindEvent(input$refresh)
   # 退出事件
   observeEvent(input$exit, {uninitialize(); stopApp()})

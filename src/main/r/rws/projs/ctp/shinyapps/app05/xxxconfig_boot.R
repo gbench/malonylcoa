@@ -80,9 +80,9 @@ klines <- local({
 fetch_json <- local({
   cache <- new.env() # 时间状态缓存
   
-  \(sym="kl_rb2605") {
-    startime <- get0(sym, envir=cache, ifnotfound=NA)
-    x <- klines(sym, startime=startime) # 读取K线数据
+  \(sym="kl_rb2605", startime=NA) {
+    .startime <- if(is.na(startime)) get0(sym, envir=cache, ifnotfound=NA) else startime
+    x <- klines(sym, startime=.startime) # 读取K线数据
     with(last(x), cat("nrow", nrow(x), "startime", startime, "IDX", IDX, "VOLUME", VOLUME, "\n -- \n")) # 获得的最新数据
     assign(sym, max(x$TS), envir=cache) # 更新时间缓存
     if (!NROW(x)) return(NULL)
@@ -90,7 +90,7 @@ fetch_json <- local({
       timestamp = as.numeric(as.POSIXct(TS, format="%Y%m%d%H%M")) * 1000, # 毫秒级的时间戳
       open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume = VOLUME, idx= IDX
     ))) |> toJSON(auto_unbox = TRUE)
-  }
+  } # 匿名函数
 })
 
 # 清空数据缓存
