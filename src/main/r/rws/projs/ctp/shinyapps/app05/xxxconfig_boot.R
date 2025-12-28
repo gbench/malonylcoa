@@ -73,6 +73,7 @@ klines <- local({
       res <- if (is.na(startime)) rbind(mu, nu) else ds  # 删尾拼新
       if(is.na(startime)) .assign(k, res) else res # NA心跳模式才会更新缓存，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
     } # if 
+  } # 匿名函数
 })
 
 # klinechart的抓取K线数据
