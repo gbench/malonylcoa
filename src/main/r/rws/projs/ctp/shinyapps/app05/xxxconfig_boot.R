@@ -257,6 +257,7 @@ dump_kline_cache <- \(home="data") {
 #                          [,1]   
 # select version() version "9.1.0"
 #  select database() db    "test"  
+# >
 #
 # 连接到测试库 & 并 给于缓存数据持久化
 # local({ # 缓存数据持久化
@@ -273,7 +274,8 @@ dump_kline_cache <- \(home="data") {
 #   } # handle.ms
 #   environment(klines) |> with(ls(envir=cache) |> setNames(nm=_) |> lapply(\(nm) get(nm, envir=cache))) %>% mapply(FUN=handle.ms, ., names(.))
 # }) # local
-# 
+# >
+#
 # 导出所有缓存数据
 # source(file.choose()) # 加载xxxconfig_boot.R
 # initialize() # 环境初始化
@@ -308,8 +310,8 @@ dump_kline_cache <- \(home="data") {
 # SELECT * FROM KL_AO2601 WHERE TS>='202512270100' ORDER BY TS 
 #    user  system elapsed 
 #    1.36    0.25    2.92 
-
 # > 
+#
 # dump_kline_cache() |> compose(t, t)() %>% structure(dimnames=list(row.names(.), "cnt")) # 转置一下好看一些！
 #                 cnt
 # KL_AO2601      1907
