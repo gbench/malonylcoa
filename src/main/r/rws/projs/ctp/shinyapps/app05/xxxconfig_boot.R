@@ -277,8 +277,24 @@ dump_kline_cache <- \(home="data") {
 # 导出所有缓存数据
 # source(file.choose()) # 加载xxxconfig_boot.R
 # initialize() # 环境初始化
-# sqlquery("select table_name from system.tables") |> grep(pattern="^KL", value=T) |> lapply(klines) |> system.time() # 导出计时统计
-# >
+# sqlquery("select table_name from system.tables") |> grep(pattern="^KL", value=T) |> lapply(klines) |> system.time() # 导出数据并计时统计（初次数据量，二次较小）
+# 
+# > sqlquery("select table_name from system.tables") |> grep(pattern="^KL", value=T) |> lapply(klines) |> system.time() # 导出数据并计时统计（初次数据量，二次较小）
+# SELECT * FROM KL_MA601 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2605 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2603 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2601 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_EG2601 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2605P3100 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2605P3150 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2605C3150 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2605C3100 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_IF2601 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_AO2601 WHERE TS>='0' ORDER BY TS 
+#    user  system elapsed 
+#   10.23    1.02    7.37 
+# 
+# > sqlquery("select table_name from system.tables") |> grep(pattern="^KL", value=T) |> lapply(klines) |> system.time() # 导出数据并计时统计（初次数据量，二次较小）
 # SELECT * FROM KL_MA601 WHERE TS>='202512262259' ORDER BY TS 
 # SELECT * FROM KL_RB2605 WHERE TS>='202512262300' ORDER BY TS 
 # SELECT * FROM KL_RB2603 WHERE TS>='202512262300' ORDER BY TS 
@@ -291,7 +307,8 @@ dump_kline_cache <- \(home="data") {
 # SELECT * FROM KL_IF2601 WHERE TS>='202512260733' ORDER BY TS 
 # SELECT * FROM KL_AO2601 WHERE TS>='202512270100' ORDER BY TS 
 #    user  system elapsed 
-#    1.40    0.28    2.91 
+#    1.36    0.25    2.92 
+
 # > 
 # dump_kline_cache() |> compose(t, t)() %>% structure(dimnames=list(row.names(.), "cnt")) # 转置一下好看一些！
 #                 cnt
@@ -306,8 +323,9 @@ dump_kline_cache <- \(home="data") {
 # KL_RB2605C3150  602
 # KL_RB2605P3100  603
 # KL_RB2605P3150  586
-
-
-
-
+# 
+# 数据文件已经导出
+# > list.files("./data")
+#  [1] "KL_AO2601.csv"      "KL_EG2601.csv"      "KL_IF2601.csv"      "KL_MA601.csv"       "KL_RB2601.csv"      "KL_RB2603.csv"      "KL_RB2605.csv"     
+#  [8] "KL_RB2605C3100.csv" "KL_RB2605C3150.csv" "KL_RB2605P3100.csv" "KL_RB2605P3150.csv"
 
