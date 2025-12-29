@@ -84,7 +84,8 @@ fetch_json <- local({
   \(sym="KL_RB2605", startime=NA) {
     .startime <- if(is.na(startime)) get0(sym, envir=cache, ifnotfound=NA) else startime
     x <- klines(sym, startime=.startime) # 读取K线数据
-    with(last(x), cat("nrow", nrow(x), "startime", startime, "IDX", IDX, "VOLUME", VOLUME, "\n -- \n")) # 获得的最新数据
+    with(last(x), cat("sym", sym, "nrow", nrow(x), "startime", startime, "IDX", IDX, 
+      "VOLUME", VOLUME,  "CLOSE", CLOSE, "\n -- \n")) # 获得的最新数据
     assign(sym, max(x$TS), envir=cache) # 更新时间缓存
     if (!nrow(x)) return(NULL)
     with(x, list(instrument = sym, ds = purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量
