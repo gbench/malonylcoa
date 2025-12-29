@@ -6,7 +6,6 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -111,37 +110,40 @@ public class CtpTickDataMQ {
 	private KafkaConsumer<String, String> consumer = null;
 	private AtomicReference<Boolean> flag = new AtomicReference<>(false);
 	private final Thread consumerThread = new Thread(() -> {
+		/* 0. 只建一次线程池 */
+		final var pool = new ThreadPoolExecutor(4, 8, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000), r -> {
+			final var t = new Thread(r, "instrument-worker-" + Thread.currentThread().threadId());
+			t.setDaemon(true);
+			return t;
+		}, new ThreadPoolExecutor.CallerRunsPolicy());
+
 		try {
-			final var pool = new ThreadPoolExecutor(4, 8, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000), r -> {
-				final var t = new Thread(r, "instrument-worker-" + Thread.currentThread().threadId());
-				t.setDaemon(true);
-				return t;
-			}, new ThreadPoolExecutor.CallerRunsPolicy());
-			// 4. 循环消费消息
-			while (!this.flag.get()) {
-				final var records = consumer.poll(Duration.ofSeconds(1)); // 拉取消息，超时时间 1 秒
+			while (!flag.get()) {
+				final var records = consumer.poll(Duration.ofSeconds(1));
+				if (records.count() == 0) { // 快速短路
+					if (sleepInterval.get() > 0)
+						Thread.sleep(sleepInterval.get());
+					continue;
+				}
+
+				/* 1. 分组 -> 2. 直接 forEach 提交任务 */
 				StreamSupport.stream(records.spliterator(), false)
 						.map(rec -> REC("ID", rec.offset()).derive(REC(rec.value())))
-						.collect(Collectors.groupingBy(r -> r.str("InstrumentID"))).entrySet().stream()
-						.map(e -> CompletableFuture.runAsync(() -> e.getValue().forEach(tickdata_handler::apply), pool))
-						.collect(Collectors.collectingAndThen(Collectors.toList(), cfs -> {
-							CompletableFuture.allOf(cfs.toArray(new CompletableFuture[0])).join();
-							return null;
-						}));
-				consumer.commitAsync();
-				if (sleepInterval.get() > 0) {
-					Thread.sleep(sleepInterval.get());
-				}
-			} // while
+						.collect(Collectors.groupingBy(r -> r.str("InstrumentID")))
+						.forEach((_, es) -> pool.execute(() -> es.forEach(tickdata_handler::apply)));
+
+				consumer.commitAsync(); // 批次末尾一次性提交
+			}
+		} catch (InterruptedException ie) {
+			Thread.currentThread().interrupt(); // 保留中断态
 		} catch (Exception e) {
 			println("消费消息异常：" + e.getMessage());
 			e.printStackTrace();
 		} finally {
-			// 6. 关闭消费者，释放资源
-			if (this.flag.get()) {
-				consumer.close();
-				System.out.println("消费者已关闭");
-			}
+			pool.shutdown(); // 先停业务线程
+			pool.close();
+			consumer.close(); // 再关客户端
+			println("消费者已关闭");
 		}
 	});
 }
