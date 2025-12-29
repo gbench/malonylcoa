@@ -132,24 +132,36 @@ public class CtpIgniteDB {
 	 * @param pks     主键序列， 默认为ID
 	 */
 	public void put(final IRecord record, final String nameKey, Consumer<Tuple> callback, String... pks) {
-		final var pk = (Objects.equals(pks, null) || pks.length < 1) ? "ID"
-				: Stream.of(pks).collect(Collectors.joining(",")); // 合成主键
-		this.withTransaction(client -> {
-			final var tblName = record.str(nameKey);
-			final var rec = record.filterNot(nameKey);
-			return client.tables().tableAsync(tblName).handle((tbl, _) -> tbl != null // 检查数据表是否存在
-					? completedFuture(tbl) // 数据表存在，封装成Future结构以便与createTableAsync形成类型同构
-					: client.catalog().createTableAsync(rec2tdf(rec, tblName)) // 数据表不存在则创建数据表
-							.thenCompose(CompletableFuture::completedFuture))
-					.thenCompose(Function.identity()).thenCompose(tbl -> { // 使用identity把内层future暴露出来（数据蜕皮）
-						var kvv = tbl.keyValueView();
-						var key = rec.filter(pk).mutate(CtpIgniteDB::asTuple);
-						var val = rec.filterNot(pk).mutate(CtpIgniteDB::asTuple);
-						return kvv.putAsync(null, key, val).thenCompose(_ -> kvv.getAsync(null, key));
-					}).thenAccept(callback).join();
-		});
+		this.withTransaction(client -> put_s(client, record, nameKey, callback, pks));
 	}
 
+	/**
+	 * 
+	 * @param record
+	 * @param nameKey
+	 * @param pks     主键序列， 默认为ID
+	 */
+	public static Void put_s(IgniteClient client, final IRecord record, final String nameKey,
+			final Consumer<Tuple> callback, final String... pks) {
+		final var pk = (Objects.equals(pks, null) || pks.length < 1) ? "ID"
+				: Stream.of(pks).collect(Collectors.joining(",")); // 合成主键
+
+		final var tblName = record.str(nameKey);
+		final var rec = record.filterNot(nameKey);
+		return client.tables().tableAsync(tblName).handle((tbl, _) -> tbl != null // 检查数据表是否存在
+				? completedFuture(tbl) // 数据表存在，封装成Future结构以便与createTableAsync形成类型同构
+				: client.catalog().createTableAsync(rec2tdf(rec, tblName)) // 数据表不存在则创建数据表
+						.thenCompose(CompletableFuture::completedFuture))
+				.thenCompose(Function.identity()).thenCompose(tbl -> { // 使用identity把内层future暴露出来（数据蜕皮）
+					final var kvv = tbl.keyValueView();
+					final var key = rec.filter(pk).mutate(CtpIgniteDB::asTuple);
+					final var val = rec.filterNot(pk).mutate(CtpIgniteDB::asTuple);
+					return kvv.putAsync(null, key, val).thenCompose(_ -> kvv.getAsync(null, key));
+				}).thenAccept(callback).join();
+
+	}
+
+	@SuppressWarnings("unchecked")
 	public static String dump(TableDefinition.Builder b) {
 		final StringBuffer buffer = new StringBuffer();
 		try {
@@ -196,7 +208,7 @@ public class CtpIgniteDB {
 	public static <K, V> TableDefinition.Builder proto2tdb(final Map<K, V> proto, String tbl) {
 		final var tableName = (tbl == null || tbl.isBlank()) ? "tbl_" + Math.abs(proto.hashCode()) : tbl;
 		final var builder = TableDefinition.builder(tableName);
-		final var types = proto.entrySet().stream().reduce(new LinkedHashMap<String, ColumnType>(), (acc, a) -> {
+		final var types = proto.entrySet().stream().reduce(new LinkedHashMap<String, ColumnType<?>>(), (acc, a) -> {
 			acc.put(String.valueOf(a.getKey()), inferColumnType(a.getValue()));
 			return acc;
 		}, (a, _) -> a);
@@ -278,11 +290,11 @@ public class CtpIgniteDB {
 	}
 
 	/** 根据 Java 对象推断 Ignite ColumnType */
-	private static ColumnType inferColumnType(Object v) {
+	private static ColumnType<?> inferColumnType(Object v) {
 		if (v == null)
 			return ColumnType.varchar(256); // 默认 VARCHAR
 
-		Class<?> c = v.getClass();
+		final Class<?> c = v.getClass();
 
 		// 整数
 		if (c == Integer.class || c == int.class)

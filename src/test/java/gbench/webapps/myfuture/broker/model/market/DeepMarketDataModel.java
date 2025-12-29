@@ -9,8 +9,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -21,6 +23,7 @@ import org.apache.ignite.table.*;
 import org.apache.ignite.catalog.ColumnType;
 import org.apache.ignite.catalog.IgniteCatalog;
 import org.apache.ignite.catalog.definitions.TableDefinition;
+import org.apache.ignite.client.IgniteClient;
 
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
@@ -100,7 +103,6 @@ public class DeepMarketDataModel {
 	 */
 	@Test
 	void quz_kline1m_final() throws Exception {
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
 		final Map<String, IRecord> kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
 		final var dtf = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
 		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,VOL0,VOL1,IDX,TIMES,UPTIME"); // K线数据格式, 累计成交量
@@ -124,7 +126,27 @@ public class DeepMarketDataModel {
 			keys.removeAll(diffs); // 批量删除
 			ar.set(LocalDateTime.now()); // 更新上次处理时间
 		}).apply(1 * 60, 20);
-
+		final Queue<IRecord> queue = new java.util.concurrent.LinkedBlockingQueue<IRecord>(100);
+		final var stopflag = new AtomicBoolean(false);
+		final Function<String, Function<LocalDateTime, Consumer<Tuple>>> cbgen = key -> st -> e -> {
+			final var n = kcache.size();
+			final var ed = LocalDateTime.now();
+			final var duration = Duration.between(st, ed).toMillis();
+			println("UPDATE %s@[st:%s, ed:%s: du:%d]#%s === %s".formatted(key, st, ed, duration, n, e));
+			if (n % 10 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
+				es.execute(() -> kcache_cleaner.accept(kcache));
+		}; // cbgen
+		final var igniteClient = IgniteClient.builder().addresses(IGNITE_ADDRESS).build();
+		final var writer = new Thread(() -> {
+			while (!stopflag.get()) {
+				final var kline = queue.poll();
+				if (kline == null)
+					continue;
+				final var key = kline.str(TNAME).substring(PREFIX_KL.length() + 1);
+				// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
+				CtpIgniteDB.put_s(igniteClient, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS");
+			} // while
+		}); // writer
 		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
 			final var zdt0 = LocalDateTime.parse("%s %s".formatted(tick.str("ActionDay"), tick.str("UpdateTime")), dtf)
@@ -143,18 +165,9 @@ public class DeepMarketDataModel {
 					vol - o.i4("VOL0"), "VOL1", vol, "IDX", idx, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
 			final var kline = kcache.get(key); // 提取
 			final var tname = "%s_%s".formatted(PREFIX_KL, iid); // 表名
-			final Function<LocalDateTime, Consumer<Tuple>> cbgen = st -> e -> {
-				final var n = kcache.size();
-				final var ed = LocalDateTime.now();
-				final var duration = Duration.between(st, ed).toMillis();
-				println("UPDATE %s@[st:%s, ed:%s: du:%d]#%s === %s".formatted(key, st, ed, duration, n, e));
-				if (n % 10 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
-					es.execute(() -> kcache_cleaner.accept(kcache));
-			};
-			
+
+			queue.offer(kline.add(TNAME, tname)); // 写入队列消息
 			println("%s:%s".formatted(key, kline));
-			// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
-			igniteDB.put(kline.add(TNAME, tname), TNAME, cbgen.apply(LocalDateTime.now()), "TS");
 
 			return kline;
 		};
@@ -162,8 +175,12 @@ public class DeepMarketDataModel {
 		// 连接进入交易消息队列进行tickdata的处理
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
 				.sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
+		writer.start();
 
 		Thread.sleep(1_000_000_000);
+		igniteClient.close();
+		es.shutdown();
+		es.close();
 	}
 
 	@Test
