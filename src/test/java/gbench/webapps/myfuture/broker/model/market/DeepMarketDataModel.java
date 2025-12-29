@@ -161,7 +161,7 @@ public class DeepMarketDataModel {
 
 		// 连接进入交易消息队列进行tickdata的处理
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
-				.sleepInterval(100).initialize().start(); // 没间隔100毫秒批量拉去一次数据
+				.sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 
 		Thread.sleep(1_000_000_000);
 	}

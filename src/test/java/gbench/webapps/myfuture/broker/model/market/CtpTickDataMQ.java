@@ -6,9 +6,15 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -48,7 +54,7 @@ public class CtpTickDataMQ {
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 		// 首次消费策略：earliest = 从最早的消息开始消费，latest = 从最新的开始
-		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
 		// 自动提交 offset（新手推荐，生产环境可改为手动提交）
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
 		props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
@@ -106,27 +112,23 @@ public class CtpTickDataMQ {
 	private AtomicReference<Boolean> flag = new AtomicReference<>(false);
 	private final Thread consumerThread = new Thread(() -> {
 		try {
+			final var pool = new ThreadPoolExecutor(4, 8, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000), r -> {
+				final var t = new Thread(r, "instrument-worker-" + Thread.currentThread().threadId());
+				t.setDaemon(true);
+				return t;
+			}, new ThreadPoolExecutor.CallerRunsPolicy());
 			// 4. 循环消费消息
 			while (!this.flag.get()) {
 				final var records = consumer.poll(Duration.ofSeconds(1)); // 拉取消息，超时时间 1 秒
-
-				for (final var record : records) {
-					// 打印消息基础信息
-					println("\n===== 收到新消息 =====");
-					println("分区：" + record.partition() + "，偏移量：" + record.offset());
-					println("消息 Key：" + record.key());
-					// println("消息 Value：" + record.value());
-					final var r = REC("ID", record.offset()).derive(REC(record.value()));
-
-					try {
-						tickdata_handler.apply(r);
-					} catch (Exception e) {
-						println("解析消息 JSON 失败：" + e.getMessage());
-						println("失败的消息内容：" + r.json());
-						e.printStackTrace();
-					}
-				} // for
-
+				StreamSupport.stream(records.spliterator(), false)
+						.map(rec -> REC("ID", rec.offset()).derive(REC(rec.value())))
+						.collect(Collectors.groupingBy(r -> r.str("InstrumentID"))).entrySet().stream()
+						.map(e -> CompletableFuture.runAsync(() -> e.getValue().forEach(tickdata_handler::apply), pool))
+						.collect(Collectors.collectingAndThen(Collectors.toList(), cfs -> {
+							CompletableFuture.allOf(cfs.toArray(new CompletableFuture[0])).join();
+							return null;
+						}));
+				consumer.commitAsync();
 				if (sleepInterval.get() > 0) {
 					Thread.sleep(sleepInterval.get());
 				}
