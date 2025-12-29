@@ -127,13 +127,13 @@ public class DeepMarketDataModel {
 			ar.set(LocalDateTime.now()); // 更新上次处理时间
 		}).apply(1 * 60, 20);
 		final Queue<IRecord> queue = new java.util.concurrent.LinkedBlockingQueue<IRecord>();
-		final var stopflag = new AtomicBoolean(false);
+		final var stopflag = new AtomicBoolean(false); // igniteKLineWriter 是否需要停止运行！false:运行,true:停止！
 		final Function<String, Function<LocalDateTime, Consumer<Tuple>>> cbgen = key -> st -> e -> {
 			final var n = kcache.size();
 			final var ed = LocalDateTime.now();
 			final var duration = Duration.between(st, ed).toMillis();
 			println("UPDATE %s@[st:%s, ed:%s: du:%d]#%s === %s".formatted(key, st, ed, duration, n, e));
-			if (n % 10 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
+			if (n % 100 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
 				es.execute(() -> kcache_cleaner.accept(kcache));
 		}; // cbgen
 		final var igniteClient = IgniteClient.builder().addresses(IGNITE_ADDRESS).build(); // ignite客户端
@@ -180,9 +180,9 @@ public class DeepMarketDataModel {
 
 		Thread.sleep(1_000_000_000);
 
-		// 推出处理
-		stopflag.set(false);
-		Thread.sleep(10); // 等待10S让igniteWriter自动关闭
+		// 退出处理
+		stopflag.set(true);
+		Thread.sleep(1000); // 等待1mS让igniteWriter自动关闭(超时强制关闭）
 		igniteClient.close();
 		es.shutdown();
 		es.close();
