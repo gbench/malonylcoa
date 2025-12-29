@@ -136,17 +136,17 @@ public class DeepMarketDataModel {
 			if (n % 10 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
 				es.execute(() -> kcache_cleaner.accept(kcache));
 		}; // cbgen
-		final var igniteClient = IgniteClient.builder().addresses(IGNITE_ADDRESS).build();
-		final var writer = new Thread(() -> {
+		final var igniteClient = IgniteClient.builder().addresses(IGNITE_ADDRESS).build(); // ignite客户端
+		final var igniteKLineWriter = new Thread(() -> { // igniteKLineWriter读写器具
 			while (!stopflag.get()) {
-				final var kline = queue.poll();
+				final var kline = queue.poll(); // 读取K线信息
 				if (kline == null)
 					continue;
-				final var key = kline.str(TNAME).substring(PREFIX_KL.length() + 1);
+				final var key = kline.str(TNAME).substring(PREFIX_KL.length() + 1); // 剔除表名前缀获取合约编码
 				// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
-				CtpIgniteDB.put_s(igniteClient, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS");
+				CtpIgniteDB.put_s(igniteClient, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS"); // 写入实时K线到Ignite
 			} // while
-		}); // writer
+		}); // igniteKLineWriter
 		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
 			final var zdt0 = LocalDateTime.parse("%s %s".formatted(tick.str("ActionDay"), tick.str("UpdateTime")), dtf)
@@ -175,9 +175,14 @@ public class DeepMarketDataModel {
 		// 连接进入交易消息队列进行tickdata的处理
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
 				.sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
-		writer.start();
+		igniteKLineWriter.setName("IGNITE-KLINE-WRITER"); // IGNITE-KLINE-WRITER
+		igniteKLineWriter.start(); // 启动igniteKLineWriter
 
 		Thread.sleep(1_000_000_000);
+
+		// 推出处理
+		stopflag.set(false);
+		Thread.sleep(10); // 等待10S让igniteWriter自动关闭
 		igniteClient.close();
 		es.shutdown();
 		es.close();
