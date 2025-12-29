@@ -51,7 +51,7 @@ klines <- local({
 
   #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
   #' @param endtime 截止时间
-  \(sym='kl_rb2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
+  \(sym='KL_RB2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
     .k <- substitute(sym) # 提取参数符号
     k <- tryCatch(sym, error=\(e) as.character(.k)) # 如果求值失败则把参数符号名作为合约代码（缓存key)
     lc <- .get(k) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
@@ -61,19 +61,18 @@ klines <- local({
       lc[lc$TS>=startime & lc$TS<=endtime, , drop = FALSE]
     } else { # 缓存未命中
       flag <- is.na(startime) # NA心跳模式&更新缓存
-      .startime <- if(flag) last_uptime else startime # 开始时间
+      .startime <- if (flag) last_uptime else startime # 开始时间
       rng <- \(s, e, op=c("TS>=", "TS<=")) paste0(op, "'", c(s, e), "'") |> (\(x) x[!endsWith(x, "'NA'")]) () |> 
         paste(collapse = " AND ") |> (\(s) if(!nzchar(s)) "" else gettextf("WHERE %s", s)) () # 时间范围
       sql <- sprintf("SELECT * FROM %s %s ORDER BY TS", k, rng(.startime, endtime)) # 读取SQL的拼装
       cat(sql, "\n") # 打印查询sql
       ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-      nu <- ds[ds$TS>=last_uptime, ] # # 只拿 >= 缓存尾部的数据
+      nu <- ds[ds$TS>=last_uptime, ] # 只拿 >= 缓存尾部的数据
       # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
       mu <- if (sum(nu$TS==last_uptime)>0) lc[lc$TS<last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
       # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
-      res <- if (flag) rbind(mu, nu) else ds  # 删尾拼新
-      if(flag) .assign(k, res) else res # NA心跳模式才会更新缓存，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
+      if(flag) .assign(k, rbind(mu, nu)) else ds # NA心跳模式才会更新缓存(删尾拼新)，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
     } # if 
   } # 匿名函数
 })
@@ -82,7 +81,7 @@ klines <- local({
 fetch_json <- local({
   cache <- new.env() # 时间状态缓存
   
-  \(sym="kl_rb2605", startime=NA) {
+  \(sym="KL_RB2605", startime=NA) {
     .startime <- if(is.na(startime)) get0(sym, envir=cache, ifnotfound=NA) else startime
     x <- klines(sym, startime=.startime) # 读取K线数据
     with(last(x), cat("nrow", nrow(x), "startime", startime, "IDX", IDX, "VOLUME", VOLUME, "\n -- \n")) # 获得的最新数据
@@ -144,11 +143,11 @@ dump_kline_cache <- \(home="data") {
 #  [17] "KL_IF2601"      "TK_AO2601"      "TK_RB2605P3100" "KL_AO2601"     
 #  [21] "T_IRIS"         "TK_RB2601"     
  
-# # 1. 查询kl_rb2605所有数据（首次查询，缓存未命中）
-# cat("1. 查询kl_rb2605所有数据（首次查询，缓存未命中）\n")
-# data_all <- klines("kl_rb2605"); data_all |> tail()
+# # 1. 查询KL_RB2605所有数据（首次查询，缓存未命中）
+# cat("1. 查询KL_RB2605所有数据（首次查询，缓存未命中）\n")
+# data_all <- klines("KL_RB2605"); data_all |> tail()
 # >
-# SELECT * FROM kl_rb2605 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2605 WHERE TS>='0' ORDER BY TS 
 # # A tibble: 6 × 11
 #   TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
 #   <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
@@ -161,9 +160,9 @@ dump_kline_cache <- \(home="data") {
 # >
 
 # cat("2. 再次查询相同范围（缓存命中部分，直接返回，更新部分增量读取, 202512261103的VOLUME,IDX等进行了更新）\n")
-# data_all_cached <- klines("kl_rb2605"); data_all_cached |> tail(1)
+# data_all_cached <- klines("KL_RB2605"); data_all_cached |> tail(1)
 # > 
-# SELECT * FROM kl_rb2605 WHERE TS>='202512261103' ORDER BY TS 
+# SELECT * FROM KL_RB2605 WHERE TS>='202512261103' ORDER BY TS 
 # # A tibble: 6 × 11
 #   TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
 #   <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
@@ -176,7 +175,7 @@ dump_kline_cache <- \(home="data") {
 # >
 
 # 直接读取缓存数据
-# environment(klines) |> with(with(cache, kl_rb2605))
+# environment(klines) |> with(with(cache, KL_RB2605))
 # A tibble: 1,305 × 11
 #    TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
 #    <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
@@ -195,7 +194,7 @@ dump_kline_cache <- \(home="data") {
 # >
 
 # cat("3. 查询指定时间范围（202512221331 至 202512221331）\n")
-# data_range <- klines("kl_rb2605", startime = "202512221331", endtime = "202512221335"); data_range
+# data_range <- klines("KL_RB2605", startime = "202512221331", endtime = "202512221335"); data_range
 # > 
 # # A tibble: 5 × 11
 #   TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
@@ -209,9 +208,9 @@ dump_kline_cache <- \(home="data") {
 
 # cat("4. 清空缓存并全量查询\n")
 # invalidate_kline_caches()
-# data_refresh <- klines("kl_rb2605"); data_refresh
+# data_refresh <- klines("KL_RB2605"); data_refresh
 # > 
-# SELECT * FROM kl_rb2605 WHERE TS>='0' ORDER BY TS 
+# SELECT * FROM KL_RB2605 WHERE TS>='0' ORDER BY TS 
 # A tibble: 1,317 × 11
 #    TS            OPEN  HIGH   LOW CLOSE VOLUME   VOL0   VOL1 IDX    TIMES UPTIME                 
 #    <chr>        <dbl> <dbl> <dbl> <dbl>  <dbl>  <dbl>  <dbl> <chr>  <dbl> <chr>                  
@@ -230,13 +229,13 @@ dump_kline_cache <- \(home="data") {
 # >
 
 # cat(" 5. 使用SQL查询: 根据查询时机，二者会存在差异\n")
-# a <- sqlquery("select * from kl_rb2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
+# a <- sqlquery("select * from KL_RB2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
 # >
-# > a <- sqlquery("select * from kl_rb2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
-# SELECT * FROM kl_rb2605 WHERE TS>='202512261126' ORDER BY TS 
+# > a <- sqlquery("select * from KL_RB2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
+# SELECT * FROM KL_RB2605 WHERE TS>='202512261126' ORDER BY TS 
 # [1] 0
-# > a <- sqlquery("select * from kl_rb2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
-# SELECT * FROM kl_rb2605 WHERE TS>='202512261126' ORDER BY TS 
+# > a <- sqlquery("select * from KL_RB2605 order by TS") ; b <- klines(); (a$VOLUME-b$VOLUME ) |> sum()
+# SELECT * FROM KL_RB2605 WHERE TS>='202512261126' ORDER BY TS 
 # [1] -28
 # > 
 

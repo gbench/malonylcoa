@@ -29,7 +29,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  tick <- reactiveTimer(1000) # 刷新频率（定时器）
+  tick <- reactiveTimer(500) # 定时计时周期，因为CTP推送聚合tickdata就是一秒两次的500毫秒的推送周期！
   update_klinechart <- \(data) session$sendCustomMessage("push", data) # 更新k线
   data <- reactive({  # K线数据
     klines(input$sym) |> with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME), 
