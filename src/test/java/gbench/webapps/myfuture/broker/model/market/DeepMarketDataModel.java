@@ -126,7 +126,7 @@ public class DeepMarketDataModel {
 			keys.removeAll(diffs); // 批量删除
 			ar.set(LocalDateTime.now()); // 更新上次处理时间
 		}).apply(1 * 60, 20);
-		final Queue<IRecord> queue = new java.util.concurrent.LinkedBlockingQueue<IRecord>(100);
+		final Queue<IRecord> queue = new java.util.concurrent.LinkedBlockingQueue<IRecord>();
 		final var stopflag = new AtomicBoolean(false);
 		final Function<String, Function<LocalDateTime, Consumer<Tuple>>> cbgen = key -> st -> e -> {
 			final var n = kcache.size();
