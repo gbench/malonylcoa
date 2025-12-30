@@ -33,7 +33,8 @@
     }
 
     // 同一品种：增量更新
-    if (chart.getDataList().length) {
+    const dls = chart.getDataList()
+    if ( !!dls && dls.length>0) {
       ds.forEach((bar) => chart.updateData(bar));
     } else {
       chart.applyNewData(ds);

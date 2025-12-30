@@ -20,7 +20,7 @@ ui <- fluidPage(
     mainPanel( width = 10, class = "main-panel",
       tabsetPanel( id = "tabs", selected = "js",
         tabPanel("js", tags$div(id = "chart", style = "width:100%;height:540px;border:none;"), 
-          tags$script(src = "js/klinecharts.min.js"), tags$script(src = "js/kline.js"), tags$script(src = "js/exit.js")),
+          tags$script(src = "js/klinecharts.min.js"), tags$script(src = "js/chartapp.js"), tags$script(src = "js/exit.js")),
         tabPanel("R", div(class = "shiny-plot-output", plotOutput("kline", height = "540px")))
       )
     )
