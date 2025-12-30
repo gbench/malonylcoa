@@ -109,22 +109,22 @@ public class DeepMarketDataModel {
 		final var dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 		final var shzd = ZoneId.of("Asia/Shanghai");
-		final var es = Executors.newCachedThreadPool(); // 清理工作线程池
-		final var ar = new AtomicReference<>(LocalDateTime.now());
-		final var kcache_cleaner = ((BiFunction<Integer, Integer, Consumer<Map<String, IRecord>>>) // K线缓存清理器
+		final var es = Executors.newFixedThreadPool(1); // 清理工作线程池, 只使用一个清洁工！
+		final var uptm = new AtomicReference<>(LocalDateTime.now()); // 上次更新时间按 update time ar
+		final var kcache_gardener = ((BiFunction<Integer, Integer, Consumer<Map<String, IRecord>>>) // K线缓存清理器
 		(expired, maxsize) -> cache -> { // cache结构为<symbol_yyyymmddhhmm,entries>的ConcurrentHashMap结构,
-			if (cache.size() < maxsize && Duration.between(ar.get(), LocalDateTime.now()).getSeconds() < expired) {
+			if (cache.size() < maxsize && Duration.between(uptm.get(), LocalDateTime.now()).getSeconds() < expired) {
 				final var dfm = cache.entrySet().stream().map(e -> e.getValue()).collect(DFrame.dfmclc);
 				println("KCACHE DUMP\n:%s\n".formatted(dfm));
 				return;
 			}
-			final var keys = cache.keySet();
-			final var latest = keys.stream().collect(Collectors.groupingBy(k -> k.split("_")[0])).entrySet().stream()
-					.map(e -> e.getValue().stream().collect(Collectors.maxBy(String::compareTo)))
-					.filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
-			final var diffs = keys.stream().filter(k -> !latest.contains(k)).collect(Collectors.toSet());
-			keys.removeAll(diffs); // 批量删除
-			ar.set(LocalDateTime.now()); // 更新上次处理时间
+			final var currents = cache.keySet(); // 提取所有合约K线时间戳
+			final var latests = currents.stream().collect(Collectors.groupingBy(k -> k.split("_")[0])).entrySet()
+					.stream().map(e -> e.getValue().stream().collect(Collectors.maxBy(String::compareTo)))
+					.filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet()); // 获取最新时间戳
+			final var outdates = currents.stream().filter(k -> !latests.contains(k)).collect(Collectors.toSet()); // 陈旧时间戳
+			currents.removeAll(outdates); // 批量删除陈旧时间戳
+			uptm.set(LocalDateTime.now()); // 更新上次处理时间
 		}).apply(1 * 60, 20);
 		final Queue<IRecord> queue = new java.util.concurrent.LinkedBlockingQueue<IRecord>();
 		final var stopflag = new AtomicBoolean(false); // igniteKLineWriter 是否需要停止运行！false:运行,true:停止！
@@ -134,7 +134,7 @@ public class DeepMarketDataModel {
 			final var duration = Duration.between(st, ed).toMillis();
 			println("UPDATE %s@[st:%s, ed:%s: du:%d]#%s === %s".formatted(key, st, ed, duration, n, e));
 			if (n % 100 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
-				es.execute(() -> kcache_cleaner.accept(kcache));
+				es.execute(() -> kcache_gardener.accept(kcache));
 		}; // cbgen
 		final var igniteClient = IgniteClient.builder().addresses(IGNITE_ADDRESS).build(); // ignite客户端
 		final var igniteKLineWriter = new Thread(() -> { // igniteKLineWriter读写器具
