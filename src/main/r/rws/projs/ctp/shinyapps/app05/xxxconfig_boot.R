@@ -21,7 +21,7 @@ initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
   attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({ # 头前拦截，为dbConnect函数增加url参数
     cache_conn <- NULL #  连接缓存
     dbConnect <- \(...) if(!is.null(cache_conn) && DBI::dbIsValid(cache_conn)) cache_conn else cache_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
-    dbDisconnect <- \(conn) if(!is.null(cache_conn)) 1 |> invisible() else DBI::dbConnect (conn) # 拦截什么都不做！
+    dbDisconnect <- \(conn) if(!is.null(cache_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
   }) # 头前拦截，为dbConnect函数增加url参数
 }
 
