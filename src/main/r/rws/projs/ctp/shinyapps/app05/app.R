@@ -32,7 +32,7 @@ server <- function(input, output, session) {
   update_klinechart <- \(data) session$sendCustomMessage("push", data) # 更新k线
   safefech <- \(...) if(input$sym %in% syms()) fetch_json(...) else toJSON(list())
   syms <- reactive({ input$refresh; sqlquery("select table_name nm from system.tables order by nm") |> 
-    grep("KL", x=_, value=T) %>% setNames(nm=sub("", "", x=.)) }) 
+    grep("KL", x=_, value=T) %>% setNames(nm=sub("^KL_", "", x=.)) }) 
   data <- reactive({  # K线数据
     klines(input$sym) |> with(as.xts(cbind(OPEN, HIGH, LOW, CLOSE, VOLUME), 
       order.by=as.POSIXct(TS, format="%Y%m%d%H%M"))) |> tail(100)
