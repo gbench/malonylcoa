@@ -18,16 +18,16 @@ initialize <- \() if(!gettextf("%s.underlay", xxxconfig) %in% search()) {
     localcfg <- list(sqlquery.drv=drv, sqlquery.host="jdbc:ignite:thin://192.168.1.41:10800") # 本地环境参数设置
     getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 联合base图层做叠化绘图的PS技法
   }) # 在环境xxxconfig里定制相关的系统配置
-  attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({ # 头前拦截，为dbConnect函数增加url参数
-    cache_conn <- NULL #  连接缓存
-    dbConnect <- \(...) if(!is.null(cache_conn) && DBI::dbIsValid(cache_conn)) cache_conn else cache_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
-    dbDisconnect <- \(conn) if(!is.null(cache_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
+  attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({ # 头前拦截，为dbConnect函数增加url参数并定制共享连接
+    shared_conn <- NULL #  共享连接
+    dbConnect <- \(...) if(!is.null(shared_conn) && DBI::dbIsValid(shared_conn)) shared_conn else shared_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
+    dbDisconnect <- \(conn) if(!is.null(shared_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
   }) # 头前拦截，为dbConnect函数增加url参数
 }
 
 # 移除igniteconfig的图层配置
 uninitialize <- \() {
-  as.environment(gettextf("%s.overlay", xxxconfig)) |> with(if(!is.null(cache_conn) && DBI::dbIsValid(cache_conn)) {dbDisconnect(cache_conn); message("数据库连接已关闭") }) # 断数据连接！
+  as.environment(gettextf("%s.overlay", xxxconfig)) |> with(if(!is.null(shared_conn) && DBI::dbIsValid(shared_conn)) {dbDisconnect(shared_conn); message("数据库连接已关闭") }) # 断数据连接！
   search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
 }
 
@@ -60,22 +60,22 @@ klines <- local({
     .k <- substitute(sym) # 提取参数符号
     k <- tryCatch(sym, error=\(e) as.character(.k)) # 如果求值失败则把参数符号名作为合约代码（缓存key)
     lc <- .get(k) # 本地拷贝LocalCopy默认为空列表(0行带有TS列,防止lc$TS返回NULL)
-    last_uptime <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
+    updt <- if(nrow(lc)) max(lc$TS) else 0 # 上一次的更新时间
 
     if (!is.na(startime) && !is.na(endtime) && nrow(lc)>0 && min(lc$TS)<=startime && max(lc$TS)>=endtime) { # 查询范围完全在缓存内直接返回
       lc[lc$TS>=startime & lc$TS<=endtime, , drop = FALSE]
     } else { # 缓存未命中
       flag <- is.na(startime) # NA心跳模式&更新缓存
-      .startime <- if (flag) last_uptime else startime # 开始时间
+      .startime <- if (flag) updt else startime # 开始时间
       rng <- \(s, e, op=c("TS>=", "TS<=")) paste0(op, "'", c(s, e), "'") |> (\(x) x[!endsWith(x, "'NA'")]) () |> 
         paste(collapse = " AND ") |> (\(s) if(!nzchar(s)) "" else gettextf("WHERE %s", s)) () # 时间范围
       sql <- sprintf("SELECT * FROM %s %s ORDER BY TS", k, rng(.startime, endtime)) # 读取SQL的拼装
       cat(sql, "\n") # 打印查询sql
       ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-      nu <- ds[ds$TS>=last_uptime, ] # 只拿 >= 缓存尾部的数据
+      nu <- ds[ds$TS>=updt, ] # 只拿 >= 缓存尾部的数据
       # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
-      mu <- if (sum(nu$TS==last_uptime)>0) lc[lc$TS<last_uptime, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
+      mu <- if (sum(nu$TS==updt)>0) lc[lc$TS<updt, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
       # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
       if(flag) .assign(k, rbind(mu, nu)) else ds # NA心跳模式才会更新缓存(删尾拼新)，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
     } # if 

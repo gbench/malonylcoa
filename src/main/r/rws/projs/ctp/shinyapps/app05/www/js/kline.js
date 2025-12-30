@@ -37,6 +37,7 @@
       ds.forEach((bar) => chart.updateData(bar));
     } else {
       chart.applyNewData(ds);
-    }
-  });
+    } // if
+  }); // Shiny.addCustomMessageHandler
+
 })();
