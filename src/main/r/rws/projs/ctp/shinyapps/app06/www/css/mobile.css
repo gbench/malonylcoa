@@ -1,0 +1,122 @@
+/* 移动端白色主题样式 */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    background: #f8f9fa;
+    height: 100vh;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  
+  .mobile-header {
+    background: white;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eaeaea;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .mobile-header h4 {
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .mobile-chart-container {
+    height: calc(100vh - 110px);
+    padding: 10px;
+    background: white;
+  }
+  
+  .mobile-chart {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    border: 1px solid #eaeaea;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    background: white;
+  }
+  
+  .mobile-control-bar {
+    background: white;
+    padding: 10px 0;
+    border-top: 1px solid #eaeaea;
+    box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    z-index: 100;
+  }
+  
+  /* 白色主题的选择框 */
+  select {
+    height: 36px !important;
+    padding: 0 8px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+    border: 1px solid #ddd !important;
+    background: white !important;
+    color: #333 !important;
+    font-weight: 500;
+  }
+  
+  /* 白色主题的数值输入 */
+  .shiny-numeric-input input {
+    height: 36px !important;
+    width: 70px !important;
+    padding: 0 8px !important;
+    font-size: 14px !important;
+    border-radius: 6px !important;
+    border: 1px solid #ddd !important;
+    background: white !important;
+    color: #333 !important;
+    text-align: center;
+  }
+  
+  /* 白色主题的按钮 */
+  .btn-sm {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 6px !important;
+    border: 1px solid #ddd !important;
+    background: white !important;
+    color: #666 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+  }
+  
+  .btn-sm:hover {
+    background: #f8f9fa !important;
+    border-color: #ccc !important;
+  }
+  
+  /* 隐藏数值输入的标签 */
+  .shiny-numeric-input .control-label {
+    display: none !important;
+  }
+  
+  .shiny-numeric-input .form-group {
+    margin: 0 !important;
+  }
+  
+  /* 移除select的内边距 */
+  .selectize-control.single .selectize-input {
+    padding: 0 8px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    border-radius: 6px !important;
+    border: 1px solid #ddd !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
+}

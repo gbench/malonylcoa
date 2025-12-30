@@ -1,0 +1,154 @@
+/* 基础重置 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: #f8fafc;
+  padding: 8px;
+}
+
+/* 标题栏 */
+.title-panel {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.title-panel h2 {
+  margin: 0;
+  font-size: 1.3em;
+}
+
+/* 核心布局 - 简化 */
+.sidebarLayout {
+  display: flex !important;
+  gap: 8px;
+  width: 100% !important;
+}
+
+/* 侧边栏 */
+.sidebar-panel {
+  width: 180px !important;
+  flex-shrink: 0 !important; /* 关键：不收缩 */
+  background: white;
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  height: 720px;
+}
+
+/* 主面板 - 关键修改 */
+.main-panel {
+  flex: 1 !important; /* 关键：填充剩余空间 */
+  min-width: 0 !important; /* 关键：允许内容压缩 */
+  overflow: hidden;
+}
+
+/* 确保标签内容不换行 */
+.main-panel .tab-content {
+  width: 100% !important;
+}
+
+.main-panel .tab-pane {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+/* 图表容器 */
+#chart {
+  width: 100% !important;
+  height: 720px !important;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+/* R图表容器 */
+.shiny-plot-output {
+  width: 100% !important;
+  height: 720px !important;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 表单控件 */
+.form-group { margin-bottom: 10px; }
+.control-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 3px;
+  display: block;
+}
+
+select, input {
+  width: 100%;
+  height: 30px;
+  padding: 5px 8px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* 按钮 */
+.btn {
+  width: 100%;
+  height: 32px;
+  margin: 3px 0;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-danger {
+  background: linear-gradient(to right, #f56565, #ed64a6);
+  color: white;
+}
+
+#refresh {
+  background: linear-gradient(to right, #48bb78, #38a169);
+  color: white;
+}
+
+/* 标签页 */
+.nav-tabs {
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 10px;
+}
+
+.nav-tabs > li > a {
+  font-size: 12px;
+  padding: 8px 16px;
+  color: #718096;
+}
+
+.nav-tabs > li.active > a {
+  color: #667eea;
+  font-weight: 600;
+  border-color: #e2e8f0 #e2e8f0 white;
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+  .sidebar-panel { width: 170px !important; height: 680px; }
+  #chart, .shiny-plot-output { height: 680px !important; }
+}
+
+@media (max-width: 768px) {
+  .sidebar-panel { width: 160px !important; height: 650px; }
+  #chart, .shiny-plot-output { height: 650px !important; }
+}
