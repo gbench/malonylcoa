@@ -19,12 +19,17 @@ initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
     getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 联合base图层做叠化绘图的PS技法
   }) # 在环境xxxconfig里定制相关的系统配置
   attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({ # 头前拦截，为dbConnect函数增加url参数
-    dbConnect <- \(...) do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
+    cache_conn <- NULL #  连接缓存
+    dbConnect <- \(...) if(!is.null(cache_conn) && DBI::dbIsValid(cache_conn)) cache_conn else cache_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
+    dbDisconnect <- \(conn) if(!is.null(cache_conn)) 1 |> invisible() else DBI::dbConnect (conn) # 拦截什么都不做！
   }) # 头前拦截，为dbConnect函数增加url参数
 }
 
 # 移除igniteconfig的图层配置
-uninitialize <- \() search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
+uninitialize <- \() {
+  as.environment(gettextf("%s.overlay", xxxconfig)) |> with(if(!is.null(cache_conn) && DBI::dbIsValid(cache_conn)) {dbDisconnect(cache_conn); message("数据库连接已关闭") }) # 断数据连接！
+  search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
+}
 
 # K线刷新函数（可以把klines理解为一个简单的浏览器，可以访问动态主页sym上的数据）
 # 
