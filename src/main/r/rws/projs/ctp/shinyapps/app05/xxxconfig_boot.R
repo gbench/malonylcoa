@@ -10,7 +10,7 @@ ss("rJava,RJDBC") |> setNames(nm=_) |> lapply(require, character.only=T) |> unli
 xxxconfig <- "igniteconfig" # 为环境命名
 
 # 系统启动
-initialize <- \() if(!"igniteconfig.underlay" %in% search()) {
+initialize <- \() if(!gettextf("%s.underlay", xxxconfig) %in% search()) {
   # attach环境xxxconfig，加载位置pos为".SqlQueryEnv"之的直接后继，进而可以拦截base::getOption以便读取自定义的系统配置！
   attach(new.env(), name=paste0(xxxconfig, ".underlay"), pos=match(".SqlQueryEnv", search()) + 1) |> with({ # 在环境xxxconfig里定制相关的系统配置
     jars <- list.files("D:/sliced/develop/ignite/ignite3-3.1.0/ignite3-cli-3.1.0/lib", pattern = "\\.jar$", full = TRUE)
