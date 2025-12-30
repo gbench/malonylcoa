@@ -38,7 +38,8 @@ server <- function(input, output, session) {
   }) |> bindEvent(input$sym, input$refresh)
   
   # 事件的监听
-  observe(updateSelectInput(session, "sym", choices=syms(), selected="KL_RB2605")) |> bindEvent(syms()) # # 动态合约注入
+  observe(updateSelectInput(session, "sym", choices=syms(), selected={ # 选择项目
+      availables <- syms(); s <- "KL_RB2605"; if(s %in% availables) s else availables[1] })) |> bindEvent(syms()) # # 动态合约注入
   observe(update_klinecharts(safefetch(input$sym))) |> bindEvent(tick()) # 定时刷新klinechart（增量更新数据）
   observe(update_klinecharts(safefetch(input$sym, startime=0))) |> bindEvent(input$sym) # 切换合约（使用全量更新数据）
   observe(invalidate_kline_caches()) |> bindEvent(input$refresh) # 手动刷新
