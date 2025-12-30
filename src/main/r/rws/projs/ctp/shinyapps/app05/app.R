@@ -5,7 +5,6 @@ initialize() # 环境初始化
 
 ui <- fluidPage(
   tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "css/style.css")),
-  tags$script(src = "js/utils.js"),
   div(class = "title-panel", titlePanel("Ignite K-line")),
   sidebarLayout(
     sidebarPanel(

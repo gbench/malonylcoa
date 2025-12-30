@@ -24,7 +24,7 @@
 
   /* ========== 3. 监听 Shiny 推送 ========== */
   Shiny.addCustomMessageHandler("push", ({ instrument, ds }) => {
-    if (instrument !== currentInstrument) {
+    if (instrument !== currentInstrument && !!ds && ds.length>0) {
       // 后端推送了新品种
       currentInstrument = instrument;
       chart.clearData(); // 清旧 K 线
@@ -36,8 +36,10 @@
     const dls = chart.getDataList()
     if ( !!dls && dls.length>0) {
       ds.forEach((bar) => chart.updateData(bar));
-    } else {
+    } else if(!!ds) {
       chart.applyNewData(ds);
+    } else {
+      // do nothing
     } // if
   }); // Shiny.addCustomMessageHandler
 
