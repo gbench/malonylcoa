@@ -102,7 +102,7 @@ public class DeepMarketDataModel {
 	 * @throws Exception
 	 */
 	@Test
-	void quz_kline1m_final() throws Exception {
+	public void quz_kline1m_final() throws Exception {
 		final Map<String, IRecord> kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
 		final var dtf = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
 		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,VOL0,VOL1,IDX,TIMES,UPTIME"); // K线数据格式, 累计成交量
