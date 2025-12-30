@@ -100,10 +100,14 @@ fetch_json <- local({
   } # 匿名函数
 })
 
-# 清空数据缓存
-invalidate_kline_caches <- \() {
-  c(klines, fetch_json) |> lapply(\(e) get("cache", envir=environment(e))) |>  # 提取缓存对象
-    lapply(\(e) rm(list=ls(e), envir=e)) |> invisible()
+# 清空数据缓存（把时间戳TS早于startime的数据给予清除：返回包含startime以后的数据，NA表示清除所有数据）
+invalidate_kline_caches <- \(startime=NA) {
+  (  if (!is.na(startime)) # with环境要继承于当前函数的执行环境而不可with(environment(klines), ... ) ，即必须手动创建with环境以通过继承链来发现startime
+       list(cache=environment(klines)$cache) |> with(lapply(ls(cache) |> setNames(nm=_),  
+         \(k, x=get(k, envir=cache)) assign(k, x[x$TS>=startime, , drop=FALSE], envir=cache))) # 剔除过去数据
+     else c(klines, fetch_json) |> lapply(\(e) get("cache", envir=environment(e))) |>  # 提取缓存对象
+       lapply(\(e) rm(list=ls(e), envir=e)) # 清空所有缓存对象
+  ) |> invisible() # 隐藏执行结果
 }
 
 # kline缓存导出, home 导出文件存放位置
