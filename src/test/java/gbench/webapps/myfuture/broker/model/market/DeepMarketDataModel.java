@@ -128,7 +128,7 @@ public class DeepMarketDataModel {
 			uptm.set(LocalDateTime.now()); // 更新上次处理时间
 		}).apply(1 * 60, 20);
 		final Queue<IRecord> queue = new LinkedBlockingQueue<IRecord>();
-		final var stopflag = new AtomicBoolean(false); // igniteKLineWriter 是否需要停止运行！false:运行,true:停止！
+		final var stopflag = new AtomicBoolean(false); // kline_writer 是否需要停止运行！false:运行,true:停止！
 		final Function<String, Function<LocalDateTime, Consumer<Tuple>>> cbgen = key -> st -> e -> {
 			final var n = kcache.size();
 			final var ed = LocalDateTime.now();
@@ -138,7 +138,7 @@ public class DeepMarketDataModel {
 				es.execute(() -> kcache_gardener.accept(kcache));
 		}; // cbgen
 		final var ignite_client = IgniteClient.builder().addresses(IGNITE_ADDRESS).build(); // ignite客户端
-		final var kline_writer = new Thread(() -> { // igniteKLineWriter读写器具
+		final var kline_writer = new Thread(() -> { // kline_writer读写器具
 			while (!stopflag.get()) {
 				final var kline = queue.poll(); // 读取K线信息
 				if (kline == null)
@@ -147,7 +147,7 @@ public class DeepMarketDataModel {
 				// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
 				CtpIgniteDB.put_s(ignite_client, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS"); // 写入实时K线到Ignite
 			} // while
-		}); // igniteKLineWriter
+		}); // kline_writer
 		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
 			final var zdt0 = LocalDateTime.parse("%s %s".formatted(tick.str("ActionDay"), tick.str("UpdateTime")), dtf)
@@ -177,7 +177,7 @@ public class DeepMarketDataModel {
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
 				.sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 		kline_writer.setName("IGNITE-KLINE-WRITER"); // IGNITE-KLINE-WRITER
-		kline_writer.start(); // 启动igniteKLineWriter
+		kline_writer.start(); // 启动kline_writer
 
 		Thread.sleep(1_000_000_000);
 

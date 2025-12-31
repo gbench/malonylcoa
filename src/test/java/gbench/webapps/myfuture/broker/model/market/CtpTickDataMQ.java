@@ -113,15 +113,15 @@ public class CtpTickDataMQ {
 	private final Thread consumerThread = new Thread(() -> {
 		/* 0. 只建一次线程池 */
 		final var ai = new AtomicInteger();
-		final var pool = new ThreadPoolExecutor(4, 8, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000), r -> {
-			final var t = new Thread(r, "instrument-worker-" + ai.getAndIncrement());
-			t.setDaemon(true);
-			return t;
-		}, new ThreadPoolExecutor.CallerRunsPolicy());
+		try (final var pool = new ThreadPoolExecutor(4, 8, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000),
+				r -> {
+					final var t = new Thread(r, "instrument-worker-" + ai.getAndIncrement());
+					t.setDaemon(true);
+					return t;
+				}, new ThreadPoolExecutor.CallerRunsPolicy());) {
 
-		try {
 			while (!stopflag.get()) {
-				final var records = consumer.poll(Duration.ofSeconds(1));
+				final var records = consumer.poll(Duration.ofSeconds(10));
 				if (records.count() == 0) { // 快速短路
 					if (sleepInterval.get() > 0)
 						Thread.sleep(sleepInterval.get());
@@ -142,8 +142,6 @@ public class CtpTickDataMQ {
 			println("消费消息异常：" + e.getMessage());
 			e.printStackTrace();
 		} finally {
-			pool.shutdown(); // 先停业务线程
-			pool.close();
 			consumer.close(); // 再关客户端
 			println("消费者已关闭");
 		}
