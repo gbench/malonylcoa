@@ -113,7 +113,7 @@ public class CtpTickDataMQ {
 	private final Thread consumerThread = new Thread(() -> {
 		/* 0. 只建一次线程池 */
 		final var ai = new AtomicInteger();
-		try (final var pool = new ThreadPoolExecutor(4, 8, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1_000_000),
+		try (final var pool = new ThreadPoolExecutor(4, 16, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(10_000),
 				r -> {
 					final var t = new Thread(r, "instrument-worker-" + ai.getAndIncrement());
 					t.setDaemon(true);

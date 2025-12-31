@@ -53,7 +53,7 @@ public class DeepMarketDataModel {
 	@Test
 	public void foo_pool() {
 		// 分别替换下面三种策略跑一遍
-		final var opt = 1;
+		final var opt = 3;
 		final RejectedExecutionHandler reh = switch (opt) {
 		case 1 -> new ThreadPoolExecutor.AbortPolicy();
 		case 2 -> new ThreadPoolExecutor.DiscardPolicy();
