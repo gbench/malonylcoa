@@ -485,7 +485,8 @@ public class Matrix<T> extends Tensor<T> {
 						.map(j -> Stream.iterate(0, k -> k + 1).limit(depth) // j
 								.map(k -> biop.apply(tt[i * depth + k], uu[k * ncol + j])).collect(collector)));
 
-		return Optional.ofNullable(yclass).map(ycls -> new Matrix<>(yyS.toArray(n -> newArray(ycls, n)), nrow, ncol))
+		return (Matrix<Y>) Optional.ofNullable(yclass)
+				.map(ycls -> new Matrix<>(yyS.toArray(n -> newArray(ycls, n)), nrow, ncol))
 				.orElseGet(() -> new Matrix<>(yyS.collect(Collectors.toList()), nrow, ncol));
 	}
 

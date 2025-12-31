@@ -301,7 +301,7 @@ reset sqlquery [sqlquery.dbname:ctp, db:ctp]
 > # 创建版本仓库，初始化数据x
 > myrepos <- list2env(list(x=1)) 
 > 
-> # 使用 attach 模拟 git  commit 到仓库 myrepos （其实应该是导入）
+> # 使用attach模拟git  commit到仓库 myrepos（初次添加其实应该是import导入，但这里不区分了，旨再展示其思想）
 > attach(myrepos)
 > 
 > # 修改x创建一个x的新版本，并提交到仓库！
@@ -319,7 +319,7 @@ The following object is masked from myrepos (pos = 3):
 > 
 > # 本地修改不提交
 > with(myrepos, x <- 3)
-> # 查看myrepos里变量x的各个版本状态，第一项是本地仓库里x 尚未提交！版本号越小代表数据越新，`2`就是仓库里的最新状态！
+> # 查看myrepos里变量x的各个版本状态，第一项是本地仓库里x 尚未提交！版本号（commit id）越小代表数据越新，`2`就是仓库里的最新状态！
 > which("myrepos" == search()) |> setNames(nm=_) |> lapply(as.environment) |> append(myrepos, after=0) |> lapply(\(repos) with(repos, x))
 [[1]]
 [1] 3
@@ -330,7 +330,7 @@ $`2`
 $`3`
 [1] 1
 
-# 直接访问就是最新版本的x, 最新的更改(3)由于没有提交&发布并因此并未不生效，它还在本地版本myrepos而非远程的search环境里！
+# 直接访问就是最新版本的x, 最新的更改(x设置为3的状态)由于没有提交&发布，因此并未生效，它还在本地myrepos里，而非“远程版本库”的search列表中的“同名环境”里！
 > x
 [1] 2
 > 

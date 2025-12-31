@@ -473,7 +473,8 @@ public class SymboLab implements ISymboLab {
 			} else {
 				if (bop.namEq("*") || bop.namEq("+")) {
 					final BinaryOp<?, ?>[] bb = bop.getArgS() //
-							.map(e -> coef_adjust(BinaryOp.wrap(e))).toArray(BinaryOp[]::new);
+							.map(e -> (BinaryOp<Object, Object>) coef_adjust(BinaryOp.wrap(e)))
+							.toArray(BinaryOp[]::new);
 					if (Arrays.stream(bb).allMatch(e -> e.isConstant()) // 简单节点
 							&& bb[1].dbl() != null && bb[0].dbl() == null) {
 						return bop.compose(bb[1], bb[0]);

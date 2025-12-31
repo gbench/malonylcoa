@@ -106,7 +106,7 @@ public class AlgebraSimplifyTest {
 		} else {
 			if (bop.namEq("*") || bop.namEq("+")) {
 				final BinaryOp<?, ?>[] bb = bop.getArgS() //
-						.map(e -> adjust(BinaryOp.wrap(e))).toArray(BinaryOp[]::new);
+						.map(e -> (BinaryOp<Object, Object>) adjust(BinaryOp.wrap(e))).toArray(BinaryOp[]::new);
 				if (Arrays.stream(bb).allMatch(e -> e.isConstant()) // 简单节点
 						&& bb[1].dbl() != null && bb[0].dbl() == null) {
 					return bop.compose(bb[1], bb[0]);

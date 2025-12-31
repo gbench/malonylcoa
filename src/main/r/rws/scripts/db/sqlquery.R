@@ -247,7 +247,7 @@ sqlexecute2 <- function(sql, simplify = T, ...) {
 dbfun.pg <- \(f, ...) {
   with(list(...), dbfun(\ (con, ...) { # 连接配置, 通过with(list(...), xxx xxx)从dbfun.pg参数中提取search_path
     .log <- \ (x) { if(verbose) cat(" -- ", x, "\n"); x } # 日志输出
-    if(!is.na(search_path)) search_path else getOption("sqlquery.schema", "public,economics") |> 
+    (if(!is.na(search_path)) search_path else getOption("sqlquery.schema", "public,economics")) |> 
       strsplit("[,[:blank:]]+") |> unlist() |> sprintf(fmt="'%s'") |> paste0(collapse=", ") |> 
       sprintf(fmt="SET search_path to %s") |> .log() |> dbExecute(con, statement=_) # search_path 的设置
     f(con, .log=.log) # 把.log注入到f函数

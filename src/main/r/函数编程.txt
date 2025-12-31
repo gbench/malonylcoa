@@ -175,6 +175,28 @@ rs2 <- aggregate(breaks~wool+tension, data=warpbreaks, FUN=summary); rs2
 #      Min. 1st Qu. Median Mean 3rd Qu. Max.
 # [1,] TRUE    TRUE   TRUE TRUE    TRUE TRUE
 
+# -------------------------------------------------------------------------------------------------------------
+# callCC 与 return 的区别，callCC 类似于带有状态的goto, 可以终止 高阶函数Reduce, apply族等函数
+# Call With Current Continuation
+# callCC provides a non-local exit mechanism that can be useful for early termination of a computation. 
+# callCC calls fun with one argument, an exit function. The exit function takes a single argument, the intended return value.
+# -------------------------------------------------------------------------------------------------------------
 
+xs <- list(NULL) |> rep(10) |> append(as.list(1:10)) # 实验数据
+myprint <- \(xs) xs |> as.character() |> paste(collapse=",") # 自定义显示
+myprint(xs)
+# >
+# [1] "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,2,3,4,5,6,7,8,9,10"
 
+# 糟糕的coalesce，不会提前终止，执行了20次，完整执行 Reduce, 因此会执行最后accumulate的归集操作
+bad_coalesce <- \(x, flag=F) Reduce(\(acc, a) if(!is.null(acc)) acc else a, x=x, accumulate= flag)  
+bad_coalesce(xs,T) |> myprint()
+# >
+# [1] "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1,1,1,1,1,1,1,1,1,1"
+
+# 优良的coalesce，提前终止， 并没有完整执行Reduce，因此不会执行最后accumulate的归集操作
+good_coalesce <- \(x, flag=F) callCC(\(k) Reduce(\(acc, a) if(!is.null(acc)) k(acc) else a, x=x, accumulate=flag)) 
+good_coalesce(xs, T)
+# >
+# [1] 1
 
