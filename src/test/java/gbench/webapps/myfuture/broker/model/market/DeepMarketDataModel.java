@@ -5,16 +5,23 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -41,6 +48,32 @@ public class DeepMarketDataModel {
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, //
 				rec -> println(rec)).initialize().start(); //
 		Thread.sleep(1000000); // 等待
+	}
+
+	@Test
+	public void foo_pool() {
+		try (ExecutorService pool = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1),
+				// 分别替换下面三种策略跑一遍
+				// new ThreadPoolExecutor.AbortPolicy()
+				// new ThreadPoolExecutor.DiscardPolicy()
+				new ThreadPoolExecutor.CallerRunsPolicy());) {
+
+			for (int i = 0; i < 10; i++) {
+				final int task = i;
+				try {
+					pool.execute(() -> {
+						System.out.println(LocalTime.now() + " 线程" + Thread.currentThread().getName() + " 执行任务" + task);
+						LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(2));
+					});
+				} catch (RejectedExecutionException e) {
+					System.out.println(task + " 被AbortPolicy拒绝");
+				} catch (Exception e) {
+					throw e;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Test
