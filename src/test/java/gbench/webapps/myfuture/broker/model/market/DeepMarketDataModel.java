@@ -131,9 +131,9 @@ public class DeepMarketDataModel {
 		final var stopflag = new AtomicBoolean(false); // kline_writer 是否需要停止运行！false:运行,true:停止！
 		final Function<String, Function<LocalDateTime, Consumer<Tuple>>> cbgen = key -> st -> e -> {
 			final var n = kcache.size();
-			final var ed = LocalDateTime.now();
-			final var duration = Duration.between(st, ed).toMillis();
-			println("UPDATE %s@[st:%s, ed:%s: du:%d]#%s === %s".formatted(key, st, ed, duration, n, e));
+			final var now = LocalDateTime.now();
+			final var duration = Duration.between(st, now).toMillis();
+			println("UPDATE %s@[st:%s, ed:%s: du:%d]#%s === %s".formatted(key, st, now, duration, n, e));
 			if (n % 100 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
 				es.execute(() -> kcache_gardener.accept(kcache));
 		}; // cbgen
@@ -168,7 +168,7 @@ public class DeepMarketDataModel {
 			final var tname = "%s_%s".formatted(PREFIX_KL, iid); // 表名
 
 			queue.offer(kline.add(TNAME, tname)); // 写入队列消息
-			println("%s:%s".formatted(key, kline));
+			println("[%s] %s:%s".formatted(LocalDateTime.now(), key, kline));
 
 			return kline;
 		};
