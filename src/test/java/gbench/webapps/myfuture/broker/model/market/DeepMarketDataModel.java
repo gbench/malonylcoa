@@ -13,10 +13,10 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -52,12 +52,15 @@ public class DeepMarketDataModel {
 
 	@Test
 	public void foo_pool() {
-		try (ExecutorService pool = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1),
-				// 分别替换下面三种策略跑一遍
-				// new ThreadPoolExecutor.AbortPolicy()
-				// new ThreadPoolExecutor.DiscardPolicy()
-				new ThreadPoolExecutor.CallerRunsPolicy());) {
-
+		// 分别替换下面三种策略跑一遍
+		final var opt = 1;
+		final RejectedExecutionHandler reh = switch (opt) {
+		case 1 -> new ThreadPoolExecutor.AbortPolicy();
+		case 2 -> new ThreadPoolExecutor.DiscardPolicy();
+		case 3 -> new ThreadPoolExecutor.CallerRunsPolicy();
+		default -> throw new IllegalArgumentException("opt must be 1/2/3, but was " + opt);
+		};
+		try (final var pool = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1), reh);) {
 			for (int i = 0; i < 10; i++) {
 				final int task = i;
 				try {
