@@ -9,6 +9,7 @@ import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -88,7 +89,7 @@ public class CtpTickDataMQ {
 	 * @return
 	 */
 	public boolean stop() {
-		this.flag.set(true);
+		this.stopflag.set(true);
 		return true;
 	}
 
@@ -108,17 +109,18 @@ public class CtpTickDataMQ {
 	final AtomicLong sleepInterval = new AtomicLong(1000);
 	private Function<IRecord, Object> tickdata_handler = null;
 	private KafkaConsumer<String, String> consumer = null;
-	private AtomicReference<Boolean> flag = new AtomicReference<>(false);
+	private AtomicReference<Boolean> stopflag = new AtomicReference<>(false);
 	private final Thread consumerThread = new Thread(() -> {
 		/* 0. 只建一次线程池 */
+		final var ai = new AtomicInteger();
 		final var pool = new ThreadPoolExecutor(4, 8, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000), r -> {
-			final var t = new Thread(r, "instrument-worker-" + Thread.currentThread().threadId());
+			final var t = new Thread(r, "instrument-worker-" + ai.getAndIncrement());
 			t.setDaemon(true);
 			return t;
 		}, new ThreadPoolExecutor.CallerRunsPolicy());
 
 		try {
-			while (!flag.get()) {
+			while (!stopflag.get()) {
 				final var records = consumer.poll(Duration.ofSeconds(1));
 				if (records.count() == 0) { // 快速短路
 					if (sleepInterval.get() > 0)
