@@ -183,7 +183,7 @@ public class DeepMarketDataModel {
 
 		// 退出处理
 		stopflag.set(true);
-		Thread.sleep(1000); // 等待1mS让igniteWriter自动关闭(超时强制关闭）
+		Thread.sleep(1000); // 等待1mS让kline_writer自动关闭(超时强制关闭）
 		ignite_client.close();
 		es.shutdown();
 		es.close();
