@@ -10,7 +10,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -163,7 +162,7 @@ public class DeepMarketDataModel {
 			currents.removeAll(outdates); // 批量删除陈旧时间戳
 			uptm.set(LocalDateTime.now()); // 更新上次处理时间
 		}).apply(1 * 60, 20);
-		final Queue<IRecord> queue = new LinkedBlockingQueue<IRecord>();
+		final var queue = new LinkedBlockingQueue<IRecord>();
 		final var stopflag = new AtomicBoolean(false); // kline_writer 是否需要停止运行！false:运行,true:停止！
 		final Function<String, Function<LocalDateTime, Consumer<Tuple>>> cbgen = key -> st -> e -> {
 			final var n = kcache.size();
@@ -176,12 +175,16 @@ public class DeepMarketDataModel {
 		final var ignite_client = IgniteClient.builder().addresses(IGNITE_ADDRESS).build(); // ignite客户端
 		final var kline_writer = new Thread(() -> { // kline_writer读写器具
 			while (!stopflag.get()) {
-				final var kline = queue.poll(); // 读取K线信息
-				if (kline == null)
-					continue;
-				final var key = kline.str(TNAME).substring(PREFIX_KL.length() + 1); // 剔除表名前缀获取合约编码
-				// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
-				CtpIgniteDB.put_s(ignite_client, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS"); // 写入实时K线到Ignite
+				try {
+					final var kline = queue.poll(100, TimeUnit.MILLISECONDS); // 读取K线信息
+					if (kline == null)
+						continue;
+					final var key = kline.str(TNAME).substring(PREFIX_KL.length() + 1); // 剔除表名前缀获取合约编码
+					// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
+					CtpIgniteDB.put_s(ignite_client, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS"); // 写入实时K线到Ignite
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			} // while
 		}); // kline_writer
 		final Function<IRecord, Object> tickdata_handler = tick -> {
@@ -211,7 +214,7 @@ public class DeepMarketDataModel {
 
 		// 连接进入交易消息队列进行tickdata的处理
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
-				.sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
+				.sleepInterval(100).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 		kline_writer.setName("IGNITE-KLINE-WRITER"); // IGNITE-KLINE-WRITER
 		kline_writer.start(); // 启动kline_writer
 
