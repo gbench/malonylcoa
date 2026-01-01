@@ -40,7 +40,7 @@ public class DMDMTest {
 
 	@Test
 	public void foo() throws InterruptedException {
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, //
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, "latest", //
 				rec -> println(rec)).initialize().start(); //
 		Thread.sleep(1000000); // 等待
 	}
@@ -94,8 +94,8 @@ public class DMDMTest {
 			sleep(1000);
 			return null;
 		};
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler).initialize()
-				.start();
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, "latest", tickdata_handler)
+				.initialize().start();
 		Thread.sleep(1000000); // 等待
 	}
 
@@ -176,7 +176,7 @@ public class DMDMTest {
 		};
 
 		// 连接进入交易消息队列进行tickdata的处理
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, "latest", tickdata_handler) //
 				.sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 		kline_writer.setName("IGNITE-KLINE-WRITER"); // IGNITE-KLINE-WRITER
 		kline_writer.start(); // 启动igniteKLineWriter

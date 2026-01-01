@@ -45,17 +45,26 @@ public class DeepMarketDataModel {
 	 * @param tname
 	 */
 	public DeepMarketDataModel(final String ctp_topic, final String kafka_bootstrap_servers,
-			final String kafa_consumer_group_id, final String ignite_address, final String prefix_TK,
-			final String prefix_tl, final String tname) {
+			final String kafa_consumer_group_id, final String kafka_auto_offset_reset_config,
+			final String ignite_address, final String prefix_TK, final String prefix_tl, final String tname) {
 		this.CTP_TOPIC = ctp_topic;
 		this.KAFKA_BOOTSTRAP_SERVERS = kafka_bootstrap_servers;
 		this.KAFKA_CONSUMER_GROUP_ID = kafa_consumer_group_id;
+		this.KAFKA_AUTO_OFFSET_RESET_CONFIG = kafka_auto_offset_reset_config;
 		this.IGNITE_ADDRESS = ignite_address;
 		this.PREFIX_KL = prefix_tl;
 		this.TNAME = tname;
 		this.stopflag = new AtomicBoolean(false);
 		this.es = Executors.newFixedThreadPool(1);
 		this.ignite_client = IgniteClient.builder().addresses(IGNITE_ADDRESS).build();
+	}
+
+	@Override
+	public String toString() {
+		return "DeepMarketDataModel [CTP_TOPIC=" + CTP_TOPIC + ", KAFKA_BOOTSTRAP_SERVERS=" + KAFKA_BOOTSTRAP_SERVERS
+				+ ", KAFKA_CONSUMER_GROUP_ID=" + KAFKA_CONSUMER_GROUP_ID + ", KAFKA_AUTO_OFFSET_RESET_CONFIG="
+				+ KAFKA_AUTO_OFFSET_RESET_CONFIG + ", IGNITE_ADDRESS=" + IGNITE_ADDRESS + ", PREFIX_KL=" + PREFIX_KL
+				+ ", TNAME=" + TNAME + "]";
 	}
 
 	/**
@@ -141,8 +150,8 @@ public class DeepMarketDataModel {
 		};
 
 		// 连接进入交易消息队列进行tickdata的处理
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler) //
-				.sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
+		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, KAFKA_AUTO_OFFSET_RESET_CONFIG,
+				tickdata_handler).sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 		kline_writer.setName("IGNITE-KLINE-WRITER"); // IGNITE-KLINE-WRITER
 		kline_writer.start(); // 启动igniteKLineWriter
 
@@ -173,16 +182,16 @@ public class DeepMarketDataModel {
 	}
 
 	// 配置参数（对应你给出的参数）
-	final DateTimeFormatter dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
-
 	private final String CTP_TOPIC;
 	private final String KAFKA_BOOTSTRAP_SERVERS;
 	private final String KAFKA_CONSUMER_GROUP_ID;
+	private final String KAFKA_AUTO_OFFSET_RESET_CONFIG;
 	private final String IGNITE_ADDRESS;
 	private final String PREFIX_KL;
 	private final String TNAME;
 	private final ExecutorService es;
 	private final AtomicBoolean stopflag;
 	private final IgniteClient ignite_client;
+	private final DateTimeFormatter dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
 }

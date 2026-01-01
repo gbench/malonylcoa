@@ -14,7 +14,8 @@ broker:
   dmdm:
     ctp_topic: my-ctp-topic
     kafka_bootstrap_servers: localhost:9092
-    kafka_consumer_group_id: my-ctp-topic_group_ignite-3.10-1
+    kafka_consumer_group_id: my-ctp-topic_group_ignite-3.10-1.202601011105
+    kafka_auto_offset_reset_config: latest
     ignite_address: localhost:10800
     prefix_kl: KL
     prefix_tk: TK

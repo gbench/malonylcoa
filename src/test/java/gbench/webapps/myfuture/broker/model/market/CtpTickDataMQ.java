@@ -32,11 +32,13 @@ public class CtpTickDataMQ {
 	 * 
 	 * @param handler
 	 */
-	public CtpTickDataMQ(String CTP_TOPIC, String KAFKA_BOOTSTRAP_SERVERS, String KAFKA_CONSUMER_GROUP_ID,
-			Function<IRecord, Object> tickdata_handler) {
+	public CtpTickDataMQ(final String CTP_TOPIC, final String KAFKA_BOOTSTRAP_SERVERS,
+			final String KAFKA_CONSUMER_GROUP_ID, final String KAFKA_AUTO_OFFSET_RESET_CONFIG,
+			final Function<IRecord, Object> tickdata_handler) {
 		this.CTP_TOPIC = CTP_TOPIC;
 		this.KAFKA_BOOTSTRAP_SERVERS = KAFKA_BOOTSTRAP_SERVERS;
 		this.KAFKA_CONSUMER_GROUP_ID = KAFKA_CONSUMER_GROUP_ID;
+		this.KAFKA_AUTO_OFFSET_RESET_CONFIG = KAFKA_AUTO_OFFSET_RESET_CONFIG;
 		this.tickdata_handler = tickdata_handler;
 	}
 
@@ -54,7 +56,7 @@ public class CtpTickDataMQ {
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 		// 首次消费策略：earliest = 从最早的消息开始消费，latest = 从最新的开始
-		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, KAFKA_AUTO_OFFSET_RESET_CONFIG);
 		// 自动提交 offset（新手推荐，生产环境可改为手动提交）
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "true");
 		props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "1000");
@@ -103,10 +105,11 @@ public class CtpTickDataMQ {
 		return this;
 	}
 
-	final String CTP_TOPIC;
-	final String KAFKA_BOOTSTRAP_SERVERS;
-	final String KAFKA_CONSUMER_GROUP_ID;
-	final AtomicLong sleepInterval = new AtomicLong(1000);
+	private final String CTP_TOPIC;
+	private final String KAFKA_BOOTSTRAP_SERVERS;
+	private final String KAFKA_CONSUMER_GROUP_ID;
+	private final String KAFKA_AUTO_OFFSET_RESET_CONFIG;
+	private final AtomicLong sleepInterval = new AtomicLong(1000);
 	private Function<IRecord, Object> tickdata_handler = null;
 	private KafkaConsumer<String, String> consumer = null;
 	private AtomicReference<Boolean> stopflag = new AtomicReference<>(false);
