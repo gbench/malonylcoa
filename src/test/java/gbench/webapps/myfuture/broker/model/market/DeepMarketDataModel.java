@@ -40,19 +40,19 @@ public class DeepMarketDataModel {
 	 * @param kafka_bootstrap_servers
 	 * @param kafa_consumer_group_id
 	 * @param ignite_address
-	 * @param prefix_TK
-	 * @param prefix_tl
+	 * @param prefix_tk
+	 * @param prefix_kl
 	 * @param tname
 	 */
 	public DeepMarketDataModel(final String ctp_topic, final String kafka_bootstrap_servers,
 			final String kafa_consumer_group_id, final String kafka_auto_offset_reset_config,
-			final String ignite_address, final String prefix_TK, final String prefix_tl, final String tname) {
+			final String ignite_address, final String prefix_tk, final String prefix_kl, final String tname) {
 		this.CTP_TOPIC = ctp_topic;
 		this.KAFKA_BOOTSTRAP_SERVERS = kafka_bootstrap_servers;
 		this.KAFKA_CONSUMER_GROUP_ID = kafa_consumer_group_id;
 		this.KAFKA_AUTO_OFFSET_RESET_CONFIG = kafka_auto_offset_reset_config;
 		this.IGNITE_ADDRESS = ignite_address;
-		this.PREFIX_KL = prefix_tl;
+		this.PREFIX_KL = prefix_kl;
 		this.TNAME = tname;
 		this.stopflag = new AtomicBoolean(false);
 		this.es = Executors.newFixedThreadPool(1);
