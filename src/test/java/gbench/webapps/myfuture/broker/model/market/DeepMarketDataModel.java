@@ -80,7 +80,7 @@ public class DeepMarketDataModel {
 	/**
 	 * 动态K线生成
 	 * 
-	 * @throws Exception
+	 * @param tsgen
 	 */
 	public void kline(final Function<ZonedDateTime, String> tsgen) {
 		final var kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
@@ -130,21 +130,21 @@ public class DeepMarketDataModel {
 					.plusNanos(tick.i4("UpdateMillisec") * 1_000_000).atZone(shzd);
 			final var epoch = tick.lngopt("Epoch").orElseGet(() -> zdt0.toInstant().toEpochMilli());
 			final var zdt = Instant.ofEpochMilli(epoch).atZone(shzd);
-			final var kymdhm = zdt.format(dtf_ymdhm); // K线的主键(合约表的
+			final var ts = tsgen.apply(zdt); // K线的主键(合约表的
 			final var uptime = zdt.format(dtf_ymdhmsS); // 更新时间
 			final var idx = tick.lng("ID"); // 消息在队列内的偏移位置（代表消费进度）
-			final var tskey = "%s_%s".formatted(iid, kymdhm); // K线的分钟K归集主键
+			final var key_ts = "%s_%s".formatted(iid, ts); // K线的分钟K归集主键
 			final var px = tick.dbl("LastPrice"); // 成交价格
 			final var vol = tick.i4("Volume"); // tick投递的Volume是当日的累计成交量:vol0,起点量vol1终点量,volume:期间流量
-			final var value = krb.get(kymdhm, px, px, px, px, 0, vol, vol, idx, 1, uptime); // 成交量初始为0
-			kcache.merge(tskey, value, (o, _) -> // 依据合约时间分组key进行K线聚合
+			final var value = krb.get(ts, px, px, px, px, 0, vol, vol, idx, 1, uptime); // 成交量初始为0
+			kcache.merge(key_ts, value, (o, _) -> // 依据合约时间分组key进行K线聚合
 			o.add(REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px), "CLOSE", px, "VOLUME",
 					vol - o.i4("VOL0"), "VOL1", vol, "IDX", idx, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
-			final var kline = kcache.get(tskey); // 提取
+			final var kline = kcache.get(key_ts); // 提取
 			final var tname = "%s_%s".formatted(PREFIX_KL, iid); // 表名
 
 			queue.offer(kline.add(TNAME, tname)); // 写入队列消息
-			println("%s:%s".formatted(tskey, kline));
+			println("%s:%s".formatted(key_ts, kline));
 
 			return kline;
 		};
