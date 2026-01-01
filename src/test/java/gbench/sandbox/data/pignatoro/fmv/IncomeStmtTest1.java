@@ -27,7 +27,7 @@ import gbench.util.lisp.Lisp;
 /**
  * 利润表的数据核算
  */
-public class IncomeStmtTest {
+public class IncomeStmtTest1 {
 
 	/**
 	 * 典型的利润表分析

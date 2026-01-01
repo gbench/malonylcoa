@@ -36,7 +36,7 @@ import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.webapps.myfuture.broker.model.market.CtpIgniteDB.*;
 import static org.apache.ignite.catalog.definitions.ColumnDefinition.column;
 
-public class DMDMTest {
+public class DMDMTest1 {
 
 	@Test
 	public void foo() throws InterruptedException {

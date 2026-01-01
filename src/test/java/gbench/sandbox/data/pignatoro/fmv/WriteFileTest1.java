@@ -28,7 +28,7 @@ import gbench.util.lisp.IRecord;
 /**
  * 文件书写测试
  */
-public class WriteFileTest {
+public class WriteFileTest1 {
 
 	/**
 	 * 文件书写测试
