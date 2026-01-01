@@ -9,3 +9,12 @@ spring:
         server-addr: 127.0.0.1:8848
 server:
   port: 4010
+  
+broker:
+  dmdm:
+    ctp_topic: my-ctp-topic
+    kafka_bootstrap_servers: localhost:9092
+    kafka_consumer_group_id: my-ctp-topic_group_ignite-3.10-1
+    ignite_address: localhost:10800
+    PREFIX_KL: KL
+    TNAME: TBL

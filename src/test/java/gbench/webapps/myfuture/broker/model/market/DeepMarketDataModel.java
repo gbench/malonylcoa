@@ -1,16 +1,16 @@
 package gbench.webapps.myfuture.broker.model.market;
 
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,9 +21,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.table.*;
-import org.apache.ignite.catalog.ColumnType;
-import org.apache.ignite.catalog.IgniteCatalog;
-import org.apache.ignite.catalog.definitions.TableDefinition;
 import org.apache.ignite.client.IgniteClient;
 
 import gbench.util.jdbc.kvp.DFrame;
@@ -31,70 +28,43 @@ import gbench.util.jdbc.kvp.IRecord;
 
 import static gbench.util.io.Output.println;
 import static gbench.util.jdbc.kvp.IRecord.REC;
-import static gbench.webapps.myfuture.broker.model.market.CtpIgniteDB.*;
-import static org.apache.ignite.catalog.definitions.ColumnDefinition.column;
 
+/**
+ * 深度市场数据模型
+ */
 public class DeepMarketDataModel {
 
-	@Test
-	public void foo() throws InterruptedException {
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, //
-				rec -> println(rec)).initialize().start(); //
-		Thread.sleep(1000000); // 等待
+	/**
+	 * 
+	 * @param ctp_topic
+	 * @param kafka_bootstrap_servers
+	 * @param kafa_consumer_group_id
+	 * @param ignite_address
+	 * @param prefix_TK
+	 * @param prefix_tl
+	 * @param tname
+	 */
+	public DeepMarketDataModel(final String ctp_topic, final String kafka_bootstrap_servers,
+			final String kafa_consumer_group_id, final String ignite_address, final String prefix_TK,
+			final String prefix_tl, final String tname) {
+		this.CTP_TOPIC = ctp_topic;
+		this.KAFKA_BOOTSTRAP_SERVERS = kafka_bootstrap_servers;
+		this.KAFKA_CONSUMER_GROUP_ID = kafa_consumer_group_id;
+		this.IGNITE_ADDRESS = ignite_address;
+		this.PREFIX_KL = prefix_tl;
+		this.TNAME = tname;
+		this.stopflag = new AtomicBoolean(false);
+		this.es = Executors.newFixedThreadPool(1);
+		this.ignite_client = IgniteClient.builder().addresses(IGNITE_ADDRESS).build();
 	}
 
-	@Test
-	public void bar() {
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		igniteDB.withTransaction(client -> {
-			final var tbl = client.tables().table("AO2601");
-			final var rs = client.sql().execute(null, "select * from system.tables");
-			println(tbl);
-			println(rs2df(rs));
-			println(igniteDB.tableExists("t_mtcars"));
-			return null;
-		});
-
-	}
-
-	@Test
-	public void foo1() {
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		igniteDB.withTransaction(client -> {
-			IgniteCatalog catalog = client.catalog();
-			catalog.createTable(TableDefinition.builder("sampleTable3").primaryKey("myKey")
-					.columns(column("myKey", ColumnType.INT32), column("myValue", ColumnType.VARCHAR)).build());
-
-			final var myTable = client.tables().table("sampleTable3");
-			myTable.keyValueView().put(null, Tuple.create().set("myKey", 1), Tuple.create().set("myValue", "John"));
-			Tuple value = myTable.keyValueView().get(null, Tuple.create().set("myKey", 1));
-			System.out.println("\nRetrieved value:\n" + value.stringValue("myValue"));
-			return null;
-		});
-	}
-
-	@Test
-	public void foo2() {
-		final var json = """
-				{"ID":536908,"ActionDay":"20251224","AskPrice1":2566.0,"AskPrice2":0.0,"AskPrice3":0.0,"AskPrice4":0.0,"AskPrice5":0.0,"AskVolume1":24,"AskVolume2":0,"AskVolume3":0,"AskVolume4":0,"AskVolume5":0,"AveragePrice":50937.99374408962,"BidPrice1":2565.0,"BidPrice2":0.0,"BidPrice3":0.0,"BidPrice4":0.0,"BidPrice5":0.0,"BidVolume1":58,"BidVolume2":0,"BidVolume3":0,"BidVolume4":0,"BidVolume5":0,"ClosePrice":0.0,"CurrDelta":0.0,"CxxCtpCreateTime":"2025-12-24 13:31:30","ExchangeID":"","ExchangeInstID":"","HighestPrice":2581.0,"InstrumentID":"ao2601","LastPrice":2565.0,"LowerLimitPrice":2343.0,"LowestPrice":2520.0,"OpenInterest":113314.0,"OpenPrice":2520.0,"PreClosePrice":2520.0,"PreDelta":0.0,"PreOpenInterest":135956.0,"PreSettlementPrice":2520.0,"SettlementPrice":0.0,"TradingDay":"20251224","Turnover":7.7026906E9,"UpdateMillisec":500,"UpdateTime":"13:31:29","UpperLimitPrice":2696.0,"Volume":151217}
-				""";
-		final var proto = REC(json);
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		igniteDB.put(proto, "InstrumentID", row -> println("row:%s".formatted(row)));
-	}
-
-	@Test
-	public void quz_tk() throws InterruptedException {
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		final Function<IRecord, Object> tickdata_handler = tick -> {
-			igniteDB.put(tick.add(TNAME, "%s_%s".formatted(PREFIX_TK, tick.str("InstrumentID"))), TNAME,
-					e -> println("row:%s".formatted(e))); // 数据写入
-			sleep(1000);
-			return null;
-		};
-		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, tickdata_handler).initialize()
-				.start();
-		Thread.sleep(1000000); // 等待
+	/**
+	 * 
+	 * @param tsgen
+	 * @throws Exception
+	 */
+	public void kline1m(final Function<ZonedDateTime, String> tsgen) throws Exception {
+		this.kline(zdt -> zdt.format(dtf_ymdhm));
 	}
 
 	/**
@@ -102,12 +72,10 @@ public class DeepMarketDataModel {
 	 * 
 	 * @throws Exception
 	 */
-	@Test
-	public void quz_kline1m_final() throws Exception {
+	public void kline(final Function<ZonedDateTime, String> tsgen) {
 		final Map<String, IRecord> kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
 		final var dtf = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
 		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,VOL0,VOL1,IDX,TIMES,UPTIME"); // K线数据格式, 累计成交量
-		final var dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 		final var shzd = ZoneId.of("Asia/Shanghai");
 		final var es = Executors.newFixedThreadPool(1); // 清理工作线程池, 只使用一个清洁工！
@@ -137,7 +105,6 @@ public class DeepMarketDataModel {
 			if (n % 100 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
 				es.execute(() -> kcache_gardener.accept(kcache));
 		}; // cbgen
-		final var ignite_client = IgniteClient.builder().addresses(IGNITE_ADDRESS).build(); // ignite客户端
 		final var kline_writer = new Thread(() -> { // igniteKLineWriter读写器具
 			while (!stopflag.get()) {
 				final var kline = queue.poll(); // 读取K线信息
@@ -157,18 +124,18 @@ public class DeepMarketDataModel {
 			final var kymdhm = zdt.format(dtf_ymdhm); // K线的主键(合约表的
 			final var uptime = zdt.format(dtf_ymdhmsS); // 更新时间
 			final var idx = tick.lng("ID"); // 消息在队列内的偏移位置（代表消费进度）
-			final var key = "%s_%s".formatted(iid, kymdhm); // K线的分钟K归集主键
+			final var tskey = "%s_%s".formatted(iid, kymdhm); // K线的分钟K归集主键
 			final var px = tick.dbl("LastPrice"); // 成交价格
 			final var vol = tick.i4("Volume"); // tick投递的Volume是当日的累计成交量:vol0,起点量vol1终点量,volume:期间流量
 			final var value = krb.get(kymdhm, px, px, px, px, 0, vol, vol, idx, 1, uptime); // 成交量初始为0
-			kcache.merge(key, value, (o, _) -> // 依据合约时间分组key进行K线聚合
+			kcache.merge(tskey, value, (o, _) -> // 依据合约时间分组key进行K线聚合
 			o.add(REC("HIGH", Math.max(o.dbl("HIGH"), px), "LOW", Math.min(o.dbl("LOW"), px), "CLOSE", px, "VOLUME",
 					vol - o.i4("VOL0"), "VOL1", vol, "IDX", idx, "TIMES", o.i4("TIMES") + 1, "UPTIME", uptime))); // 根据key进行K线聚合
-			final var kline = kcache.get(key); // 提取
+			final var kline = kcache.get(tskey); // 提取
 			final var tname = "%s_%s".formatted(PREFIX_KL, iid); // 表名
 
 			queue.offer(kline.add(TNAME, tname)); // 写入队列消息
-			println("%s:%s".formatted(key, kline));
+			println("%s:%s".formatted(tskey, kline));
 
 			return kline;
 		};
@@ -179,73 +146,43 @@ public class DeepMarketDataModel {
 		kline_writer.setName("IGNITE-KLINE-WRITER"); // IGNITE-KLINE-WRITER
 		kline_writer.start(); // 启动igniteKLineWriter
 
-		Thread.sleep(1_000_000_000);
+	}
 
+	/**
+	 * 
+	 */
+	public void stop() {
 		// 退出处理
 		stopflag.set(true);
-		Thread.sleep(1000); // 等待1mS让igniteWriter自动关闭(超时强制关闭）
+		sleep(1000); // 等待1mS让igniteWriter自动关闭(超时强制关闭）
 		ignite_client.close();
 		es.shutdown();
 		es.close();
 	}
 
-	@Test
-	public void dropTables() {
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
-		final var patterns = REC( //
-				"tk", "^%s_[A-Z]+\\d{3,}([A-Z]+\\d{4,})?".formatted(PREFIX_TK), // TICKDATA
-				"kl", "^%s_.*".formatted(PREFIX_KL), // KLINE线
-				"tbl", "^TBL_.*" // TICKDATA
-		);
-		final var pk = "kl";
-		final var symbols = dfm.filterBy(rec -> rec.str("name").matches(patterns.str(pk)));
-		println(symbols);
-		symbols.rowS().forEach(e -> {
-			final var tbl = e.str(0);
-			final var sql = "DROP TABLE %s".formatted(tbl);
-			println("%s:%s".formatted(tbl, igniteDB.sqldframe(sql)));
-		});
-	}
-
-	@Test
-	public void selectTables() {
-		final var igniteDB = new CtpIgniteDB(IGNITE_ADDRESS);
-		final var dfm = igniteDB.sqldframe("SELECT TABLE_NAME name from SYSTEM.TABLES");
-		final var tk_symbols = dfm.filterBy(rec -> rec.str("name").matches("TK_[A-Z]+\\d{4}([A-Z]+\\d{4,})?"));
-		tk_symbols.rowS().forEach(e -> {
-			final var tbl = e.str(0);
-			final var sql = "SELECT ID, UPDATETIME, LASTPRICE, VOLUME FROM %s ORDER BY ID limit 10".formatted(tbl);
-			println("%s:\n%s\n".formatted(tbl, igniteDB.sqldframe(sql)));
-		});
-
-		final var kl_symbols = dfm.filterBy(rec -> rec.str("name").matches("KL_[A-Z]+\\d{4}([A-Z]+\\d{4,})?"));
-		kl_symbols.rowS().forEach(e -> {
-			final var tbl = e.str(0);
-			final var sql = "SELECT * FROM %s ORDER BY TS limit 10".formatted(tbl);
-			println("%s:\n%s\n".formatted(tbl, igniteDB.sqldframe(sql)));
-		});
-	}
-
 	/**
 	 * 
-	 * @param millis
+	 * @param ms
 	 */
-	public void sleep(long millis) {
+	public void sleep(final long ms) {
 		try {
-			Thread.sleep(millis);
+			Thread.sleep(ms);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-		} // 等待
+		}
 	}
 
 	// 配置参数（对应你给出的参数）
-	private static final String CTP_TOPIC = "test_cxx_ctp_topic";
-	private static final String KAFKA_BOOTSTRAP_SERVERS = "192.168.1.41:9092";
-	private static final String KAFKA_CONSUMER_GROUP_ID = "ctp_cxx_ctp_topic_group_ignite-3.10";
-	private static final String IGNITE_ADDRESS = "192.168.1.41:10800";
-	private static final String PREFIX_TK = "TK";
-	private static final String PREFIX_KL = "KL";
-	private static final String TNAME = "TBL";
+	final DateTimeFormatter dtf_ymdhm = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
+
+	private final String CTP_TOPIC;
+	private final String KAFKA_BOOTSTRAP_SERVERS;
+	private final String KAFKA_CONSUMER_GROUP_ID;
+	private final String IGNITE_ADDRESS;
+	private final String PREFIX_KL;
+	private final String TNAME;
+	private final ExecutorService es;
+	private final AtomicBoolean stopflag;
+	private final IgniteClient ignite_client;
 
 }
