@@ -16,5 +16,6 @@ broker:
     kafka_bootstrap_servers: localhost:9092
     kafka_consumer_group_id: my-ctp-topic_group_ignite-3.10-1
     ignite_address: localhost:10800
-    PREFIX_KL: KL
-    TNAME: TBL
+    prefix_kl: KL
+    prefix_tk: TK
+    tname: TBL

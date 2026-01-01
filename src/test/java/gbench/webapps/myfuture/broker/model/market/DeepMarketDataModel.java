@@ -59,11 +59,12 @@ public class DeepMarketDataModel {
 	}
 
 	/**
+	 * 1分钟K线
 	 * 
 	 * @param tsgen
 	 * @throws Exception
 	 */
-	public void kline1m(final Function<ZonedDateTime, String> tsgen) throws Exception {
+	public void kline1m() {
 		this.kline(zdt -> zdt.format(dtf_ymdhm));
 	}
 
@@ -73,12 +74,11 @@ public class DeepMarketDataModel {
 	 * @throws Exception
 	 */
 	public void kline(final Function<ZonedDateTime, String> tsgen) {
-		final Map<String, IRecord> kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
+		final var kcache = new ConcurrentHashMap<String, IRecord>(); // 本地计算kline的缓存cache:key为{instrument}_{yyyyMMddHHmm}
 		final var dtf = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss");
 		final var krb = IRecord.rb("TS,OPEN,HIGH,LOW,CLOSE,VOLUME,VOL0,VOL1,IDX,TIMES,UPTIME"); // K线数据格式, 累计成交量
 		final var dtf_ymdhmsS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 		final var shzd = ZoneId.of("Asia/Shanghai");
-		final var es = Executors.newFixedThreadPool(1); // 清理工作线程池, 只使用一个清洁工！
 		final var uptm = new AtomicReference<>(LocalDateTime.now()); // 上次更新时间按 update time ar
 		final var kcache_gardener = ((BiFunction<Integer, Integer, Consumer<Map<String, IRecord>>>) // K线缓存清理器
 		(expired, maxsize) -> cache -> { // cache结构为<symbol_yyyymmddhhmm,entries>的ConcurrentHashMap结构,
