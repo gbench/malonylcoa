@@ -21,7 +21,7 @@ import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.json.MyJson;
-import gbench.webapps.myfuture.api.config.param.ParamResolver;
+import gbench.webapps.myfuture.broker.config.param.ParamResolver;
 
 /**
  * 系统配置信息

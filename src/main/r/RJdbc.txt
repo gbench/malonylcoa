@@ -1,0 +1,105 @@
+# 1. 装包（仅需第一次）
+install.packages(c("rJava", "RJDBC"), repos = "https://mirrors.ustc.edu.cn/CRAN/")
+
+# 2. 加载
+library(rJava)
+library(RJDBC)
+
+jars <- list.files("D:/sliced/develop/ignite/ignite3-3.1.0/ignite3-cli-3.1.0/lib", pattern = "\\.jar$", full = TRUE)
+
+# 3. 指定驱动 jar 包路径（Ignite 2.x 瘦客户端）
+drv <- JDBC(
+  driverClass = "org.apache.ignite.jdbc.IgniteJdbcDriver",   # 驱动类名
+  classPath = paste(jars, collapse = ";"),  # 放 jar 的绝对路径
+  identifier.quote = "`"  # 可选，防关键字冲突
+)
+
+# 4. 建立连接
+conn <- dbConnect( drv, "jdbc:ignite:thin://192.168.1.41:10800",   # 与 JDBC URL 完全一致
+  user     = "ignite",     # 如未开认证可省略
+  password = "ignite"
+)
+
+# 5. 查询
+df <- dbGetQuery(conn, "SELECT * FROM t_mtcars LIMIT 5")
+print(df)
+
+# 6. 关闭
+dbDisconnect(conn)
+
+# ------------------------------------------------------------------------------
+# xxxconfig的环境启动（使用jdbc方法来拦截ignite) 类似于Photoshop的多级图层的underlay+overlay的联合图层绘图
+# ------------------------------------------------------------------------------
+# install.packages(c("rJava", "RJDBC"), repos = "https://mirrors.ustc.edu.cn/CRAN/")
+batch_load() # 导入基础库，引入sqlquery系列函数
+ss("rJava,RJDBC") |> setNames(nm=_) |> lapply(require, character.only=T) |> unlist() # 加载RJDBC的基础库
+xxxconfig <- "igniteconfig" # 为环境命名
+
+# attach环境xxxconfig，加载位置pos为".SqlQueryEnv"之的直接后继，进而可以拦截base::getOption以便读取自定义的系统配置！
+attach(new.env(),  name=paste0(xxxconfig, ".underlay"), pos=match(".SqlQueryEnv", search()) + 1) |> with({ # 在环境xxxconfig里定制相关的系统配置
+    jars <- list.files("D:/sliced/develop/ignite/ignite3-3.1.0/ignite3-cli-3.1.0/lib", pattern = "\\.jar$", full = TRUE)
+    drv <- RJDBC::JDBC(driverClass="org.apache.ignite.jdbc.IgniteJdbcDriver", classPath=paste(jars, collapse= ";"), identifier.quote="`")
+    localcfg <- list(sqlquery.drv=drv, sqlquery.host="jdbc:ignite:thin://192.168.1.41:10800") # 本地环境参数设置
+    getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 联合base图层做叠化绘图的PS技法
+}) # 在环境xxxconfig里定制相关的系统配置
+attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({ # 头前拦截，为dbConnect函数增加url参数
+    dbConnect <- \(...) do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
+}) # 头前拦截，为dbConnect函数增加url参数
+
+# 查看数据库表
+sqlquery("select * from system.tables")
+
+# 数据查询
+sqlquery("select * from t_mtcars")
+
+# 数据准备
+iris$id<-1:nrow(iris)
+names(iris) <- make_clean_names(names(iris)) # 数据框名称管理
+
+# ignite 的RJDBC驱动只支持没有不带有返回值的dbSendUpdate, 不支持带有影响函数返回值的dbSendQuery，
+# dbfun原本设计sql函数生成器(提供通用的数据库连接管理），此处把SQL设置为NULL以表示内置了SQL应用
+# 考虑使用方便，这里不打算封装dbfun为sqlexecute.ignite函数，因为使用R来插入数据并不常见！dbfun已可满足需求！
+
+# 创建数据表: 使用dbfun托管数据库连接，最后一列作为数据库主键：ctsql  表示CreaTeSQL
+dbfun(\(con) dbSendUpdate(con, ctsql(iris, t_iris) |> sub("\n\\)", "primary key\n\\)", x=_))) (sql=NULL)
+
+#  插入数据：使用dbfun托管数据库连接，dbfun设计为sql函数生成器，此处把SQL设置为NULL以表示内置了SQL应用, insql 表示INsertSQL
+dbfun(\(con) dbSendUpdate(con, insql(iris, t_iris))) (sql=NULL)
+
+# 数据库查询
+sqlquery("select * from t_iris")
+# > 
+# A tibble: 150 × 6
+#    SEPAL_LENGTH SEPAL_WIDTH PETAL_LENGTH PETAL_WIDTH SPECIES       ID
+#           <dbl>       <dbl>        <dbl>       <dbl> <chr>      <dbl>
+#  1          5.8         2.7          3.9         1.2 versicolor    83
+#  2          5.6         2.9          3.6         1.3 versicolor    65
+#  3          7           3.2          4.7         1.4 versicolor    51
+#  4          6.1         2.9          4.7         1.4 versicolor    64
+#  5          6.2         3.4          5.4         2.3 virginica    149
+
+# 查看数据库表
+sqlquery("select * from system.tables")
+# >
+# A tibble: 3 × 15
+#   SCHEMA_NAME TABLE_NAME TABLE_ID TABLE_PK_INDEX_ID ZONE_NAME STORAGE_PROFILE TABLE_COLOCATION_COLUMNS
+#   <chr>       <chr>         <dbl>             <dbl> <chr>     <chr>           <chr>                   
+# 1 PUBLIC      PERSON           21                22 Default   default         ID                      
+# 2 PUBLIC      T_MTCARS         23                24 Default   default         ID                      
+# 3 PUBLIC      T_IRIS           33                34 Default   default         ID                      
+# # ℹ 8 more variables: SCHEMA_ID <dbl>, ZONE_ID <dbl>, SCHEMA <chr>, NAME <chr>, ID <dbl>,
+# #   PK_INDEX_ID <dbl>, COLOCATION_KEY_INDEX <chr>, ZONE <chr>
+
+# 数据表删除 
+dbfun(\(con) dbSendUpdate(con, "drop table t_iris")) (sql=NULL)
+# >
+# A tibble: 2 × 15
+#   SCHEMA_NAME TABLE_NAME TABLE_ID TABLE_PK_INDEX_ID ZONE_NAME STORAGE_PROFILE TABLE_COLOCATION_COLUMNS
+#   <chr>       <chr>         <dbl>             <dbl> <chr>     <chr>           <chr>                   
+# 1 PUBLIC      PERSON           21                22 Default   default         ID                      
+# 2 PUBLIC      T_MTCARS         23                24 Default   default         ID                      
+# # ℹ 8 more variables: SCHEMA_ID <dbl>, ZONE_ID <dbl>, SCHEMA <chr>, NAME <chr>, ID <dbl>,
+# #   PK_INDEX_ID <dbl>, COLOCATION_KEY_INDEX <chr>, ZONE <chr>
+
+# 移除igniteconfig的图层配置
+search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境

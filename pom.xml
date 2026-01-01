@@ -190,13 +190,41 @@
 			<version>${nacos-version}</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<!-- https://mvnrepository.com/artifact/com.lmax/disruptor -->
 		<dependency>
-		    <groupId>com.lmax</groupId>
-		    <artifactId>disruptor</artifactId>
-		    <version>4.0.0</version>
-		    <scope>test</scope>
+			<groupId>com.lmax</groupId>
+			<artifactId>disruptor</artifactId>
+			<version>4.0.0</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-core -->
+		<dependency>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-core</artifactId>
+			<version>3.1.0</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-jdbc -->
+		<dependency>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-jdbc</artifactId>
+			<version>3.1.0</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-api -->
+		<dependency>
+			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-api</artifactId>
+			<version>3.1.0</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.kafka/kafka-clients -->
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-clients</artifactId>
+			<version>4.1.1</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -207,8 +235,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin-version}</version>
 				<configuration>
-					<source>24</source>
-					<target>24</target>
+					<source>25</source>
+					<target>25</target>
 					<compilerArgs>
 						<compilerArg>-parameters</compilerArg> <!-- java反射获取参数名 -->
 						<compilerArg>-Xlint:unchecked</compilerArg>
