@@ -4,8 +4,22 @@
   const chart = klinecharts.init("chart");
   let currentInstrument = null; // 当前品种
 
+  klinecharts.registerIndicator({ // 持仓量
+    name: 'OINT',                 // 指标名，之后用这个名字挂载
+    shortName: 'OINT',            // 左上角缩写
+    calcParams: [],               // 本例不需要参数
+    shouldFormatBigNumber: true,  // 格式化参数
+    figures: [
+      { key: 'oint', title: '持仓量: ', type: 'bar', baseValue: 0, color: '#5470c6' }
+    ],
+    calc: (kLineDataList, _) => { // 核心：把 K 线数据里的 openInterest 抽出来返回
+      return kLineDataList.map(k => ({ oint: k.oint ?? 0 }));
+    }
+  });
+
   /* ========== 1. 指标只建一次 ========== */
   (function initOnce() {
+    chart.createIndicator("OINT"); // 副图
     chart.createIndicator("VOL"); // 副图
     chart.createIndicator("KDJ"); // 副图
     chart.createIndicator("MACD"); // 副图
@@ -24,8 +38,12 @@
 
   /* ========== 3. 监听 Shiny 推送 ========== */
   Shiny.addCustomMessageHandler("push", ({ instrument, ds }) => {
-    if (instrument !== currentInstrument && !!ds && ds.length>0) {
-      // 后端推送了新品种
+    const flag = !!ds && ds.length>0
+
+    if(!flag) { // 数据无效
+      console.log("数据无效！")
+      return;
+    } else if (instrument !== currentInstrument) { // 后端推送了新品种
       currentInstrument = instrument;
       chart.clearData(); // 清旧 K 线
       chart.applyNewData(ds); // 直接整包新数据
@@ -34,13 +52,11 @@
 
     // 同一品种：增量更新
     const dls = chart.getDataList()
-    if ( !!dls && dls.length>0) {
-      ds.forEach((bar) => chart.updateData(bar));
-    } else if(!!ds) {
+    if(!dls || dls.length<1) {
       chart.applyNewData(ds);
     } else {
-      // do nothing
-    } // if
+      ds.forEach((bar) => chart.updateData(bar));
+    }
   }); // Shiny.addCustomMessageHandler
 
 })();
