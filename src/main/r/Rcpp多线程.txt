@@ -42,6 +42,15 @@ NumericVector parallel_square(NumericVector x) {
 library(Rcpp) # 引入 sourceCpp 函数
 # 编译并加载文件
 sourceCpp("src/parallel_demo.cpp")
-result <- parallel_square(1:1000000); result |> print();
+result <- parallel_square(1:1000000); result |> head() |> print();
+
+# > library(Rcpp) # 引入 sourceCpp 函数
+# > # 编译并加载文件
+# > sourceCpp("src/parallel_demo.cpp")
+# > ls()
+# [1] "parallel_square"
+# > result <- parallel_square(1:1000000); result |> head() |> print();
+# [1]  1  4  9 16 25 36
+# > 
 
 
