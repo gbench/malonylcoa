@@ -1,0 +1,56 @@
+# 编写CPP文件
+# -----------------------------------------------------------------------------------------
+// 在 当前工作区里创建文件： src/parallel_demo.cpp
+// Rcpp 通过注释[[Rcpp::depends(RcppParallel)]] 结构来设置编译条件：Rcpp::depends(RcppParallel) 会 添加-I头文件引用
+
+// [[Rcpp::depends(RcppParallel)]]
+#include <Rcpp.h>
+#include <RcppParallel.h>
+#include <vector>
+#include <cmath>
+
+using namespace Rcpp;
+using namespace RcppParallel;
+
+// 并行工作者
+struct SquareWorker : public Worker {
+    const RVector<double> input;
+    RVector<double> output;
+    
+    SquareWorker(const NumericVector input, NumericVector output) 
+        : input(input), output(output) {}
+    
+    void operator()(std::size_t begin, std::size_t end) {
+        for (std::size_t i = begin; i < end; i++) {
+            output[i] = input[i] * input[i];
+        }
+    }
+};
+
+// [[Rcpp::export]]
+NumericVector parallel_square(NumericVector x) {
+    NumericVector output(x.size());
+    SquareWorker worker(x, output);
+    parallelFor(0, x.size(), worker);
+    return output;
+}
+# -----------------------------------------------------------------------------------------
+
+# 安装包文件
+# install.packages("RcppParallel")
+
+library(Rcpp) # 引入 sourceCpp 函数
+# 编译并加载文件
+sourceCpp("src/parallel_demo.cpp")
+result <- parallel_square(1:1000000); result |> head() |> print();
+
+# > library(Rcpp) # 引入 sourceCpp 函数
+# > # 编译并加载文件
+# > sourceCpp("src/parallel_demo.cpp")
+# > ls()
+# [1] "parallel_square"
+# > result <- parallel_square(1:1000000); result |> head() |> print();
+# [1]  1  4  9 16 25 36
+# > 
+
+

@@ -32,7 +32,7 @@ import static gbench.util.data.xls.SimpleExcel.*;
 /**
  * 财务估值模型
  */
-public class FinModValTest {
+public class FinModValTest1 {
 
 	/**
 	 * Excel 读写测试

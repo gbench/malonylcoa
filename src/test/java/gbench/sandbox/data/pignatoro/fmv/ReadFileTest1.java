@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import gbench.util.data.xls.SimpleExcel;
 
-public class ReadFileTest {
+public class ReadFileTest1 {
 
 	/**
 	 * 文件书写测试

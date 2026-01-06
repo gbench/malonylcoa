@@ -95,7 +95,7 @@ fetch_json <- local({
     if (!nrow(x)) return(NULL)
     with(x, list(instrument = sym, ds = purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量
       timestamp = as.numeric(as.POSIXct(TS, format="%Y%m%d%H%M")) * 1000, # 毫秒级的时间戳
-      open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume = VOLUME, idx= IDX
+      open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume = VOLUME, oint = OINT1,  idx = IDX
     )))) |> toJSON(auto_unbox = TRUE)
   } # 匿名函数
 })

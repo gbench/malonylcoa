@@ -8,11 +8,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -38,18 +38,18 @@ public class DeepMarketDataModel {
 	 * 
 	 * @param ctp_topic
 	 * @param kafka_bootstrap_servers
-	 * @param kafa_consumer_group_id
+	 * @param kafka_consumer_group_id
 	 * @param ignite_address
 	 * @param prefix_tk
 	 * @param prefix_kl
 	 * @param tname
 	 */
 	public DeepMarketDataModel(final String ctp_topic, final String kafka_bootstrap_servers,
-			final String kafa_consumer_group_id, final String kafka_auto_offset_reset_config,
+			final String kafka_consumer_group_id, final String kafka_auto_offset_reset_config,
 			final String ignite_address, final String prefix_tk, final String prefix_kl, final String tname) {
 		this.CTP_TOPIC = ctp_topic;
 		this.KAFKA_BOOTSTRAP_SERVERS = kafka_bootstrap_servers;
-		this.KAFKA_CONSUMER_GROUP_ID = kafa_consumer_group_id;
+		this.KAFKA_CONSUMER_GROUP_ID = kafka_consumer_group_id;
 		this.KAFKA_AUTO_OFFSET_RESET_CONFIG = kafka_auto_offset_reset_config;
 		this.IGNITE_ADDRESS = ignite_address;
 		this.PREFIX_KL = prefix_kl;
@@ -104,8 +104,8 @@ public class DeepMarketDataModel {
 			currents.removeAll(outdates); // 批量删除陈旧时间戳
 			uptm.set(LocalDateTime.now()); // 更新上次处理时间
 		}).apply(1 * 60, 20);
-		final Queue<IRecord> queue = new LinkedBlockingQueue<IRecord>();
-		final var stopflag = new AtomicBoolean(false); // igniteKLineWriter 是否需要停止运行！false:运行,true:停止！
+		final var queue = new LinkedBlockingQueue<IRecord>();
+		final var stopflag = new AtomicBoolean(false); // kline_writer 是否需要停止运行！false:运行,true:停止！
 		final Function<String, Function<LocalDateTime, Consumer<Tuple>>> cbgen = key -> st -> e -> {
 			final var n = kcache.size();
 			final var ed = LocalDateTime.now();
@@ -114,16 +114,20 @@ public class DeepMarketDataModel {
 			if (n % 100 == 0) // 缓存数量超过限度通知kcache_cleaner打扫房间
 				es.execute(() -> kcache_gardener.accept(kcache));
 		}; // cbgen
-		final var kline_writer = new Thread(() -> { // igniteKLineWriter读写器具
+		final var kline_writer = new Thread(() -> { // kline_writer读写器具
 			while (!stopflag.get()) {
-				final var kline = queue.poll(); // 读取K线信息
-				if (kline == null)
-					continue;
-				final var key = kline.str(TNAME).substring(PREFIX_KL.length() + 1); // 剔除表名前缀获取合约编码
-				// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
-				CtpIgniteDB.put_s(ignite_client, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS"); // 写入实时K线到Ignite
+				try {
+					final var kline = queue.poll(100, TimeUnit.MILLISECONDS); // 读取K线信息
+					if (kline == null)
+						continue;
+					final var key = kline.str(TNAME).substring(PREFIX_KL.length() + 1); // 剔除表名前缀获取合约编码
+					// 把kline数据写入TNAME标记的内存表(如KL_RB2605),表内主键为TS;
+					CtpIgniteDB.put_s(ignite_client, kline, TNAME, cbgen.apply(key).apply(LocalDateTime.now()), "TS"); // 写入实时K线到Ignite
+				} catch (Exception e) {
+					e.printStackTrace();
+				} // try
 			} // while
-		}); // igniteKLineWriter
+		}); // kline_writer
 		final Function<IRecord, Object> tickdata_handler = tick -> {
 			final var iid = tick.str("InstrumentID");
 			final var zdt0 = LocalDateTime.parse("%s %s".formatted(tick.str("ActionDay"), tick.str("UpdateTime")), dtf)
@@ -153,7 +157,7 @@ public class DeepMarketDataModel {
 		new CtpTickDataMQ(CTP_TOPIC, KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP_ID, KAFKA_AUTO_OFFSET_RESET_CONFIG,
 				tickdata_handler).sleepInterval(-1).initialize().start(); // 没间隔100毫秒批量拉去一次数据
 		kline_writer.setName("IGNITE-KLINE-WRITER"); // IGNITE-KLINE-WRITER
-		kline_writer.start(); // 启动igniteKLineWriter
+		kline_writer.start(); // 启动kline_writer
 
 	}
 
