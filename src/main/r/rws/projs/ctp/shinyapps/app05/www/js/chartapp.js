@@ -15,22 +15,18 @@
         key: "oint",
         title: "持仓量: ",
         type: "line",
-        baseValue: 0,
-        color: "#5470c6",
       },
       {
         key: "preoint",
         title: "前仓量: ",
         type: "line",
-        baseValue: 0,
-        color: "#fefefe",
       },
     ],
     calc: (kLineDataList, _) => {
       // 核心：把 K 线数据里的 openInterest 抽出来返回
       return kLineDataList.map((k, i, ks) => ({
         oint: k.oint,
-        preoint: (i < 1 ? k.oint : ks[i - 1].oint),
+        preoint: i < 1 ? k.oint : ks[i - 1].oint,
       }));
     },
   });
@@ -40,7 +36,7 @@
     chart.createIndicator("OINT"); // 副图
     chart.createIndicator("VOL"); // 副图
     chart.createIndicator("KDJ"); // 副图
-    // chart.createIndicator("MACD"); // 副图
+    chart.createIndicator("MACD"); // 副图
     chart.createIndicator("MA", true, { id: "candle_pane" });
     // chart.createIndicator("BOLL", true, { id: "candle_pane" });
   })();
