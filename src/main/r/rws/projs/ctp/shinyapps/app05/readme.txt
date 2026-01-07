@@ -8,11 +8,8 @@ initialize()
 # 指定时区
 Sys.setenv(TZ="Asia/Shanghai")
 
-# 时间序列化
-klines.xts <- \(sym="KL_RB2605") {
-  .data<-klines(sym); 
-  as.xts(.data, order.by=ymd_hm(.data$TS, tz="Asia/Shanghai"))
-}
+# 持仓量时间序列
+klines.xts() |> tail(30) |> with(plot(OINT1))
 
 # 提取单价成交量(多少成交量可以拉动一个价格挡位，价格拥堵情况，越是拥堵越价格越是难以波动）
 klines()|>tail(20)|>with(ifelse(OPEN==CLOSE,0,VOLUME/abs(OPEN-CLOSE))|>setNames(nm=str_sub(TS,-4,-1)))|>(\(x){barplot(x,horiz=T,las=1);abline(v=mean(x)+(-1:1)*2*sd(x),lty=c(1,2,1))})()
