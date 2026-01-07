@@ -13,14 +13,19 @@ klines.xts() |> tail(30) |> with(plot(OINT1))
 
 # K线绘图
 local({
-    xs1min <- klines.xts() |> with(cbind(OPEN,HIGH,LOW,CLOSE,VOLUME,TIMES,OINT1)) |> # 提取分钟K线
+    xs <- klines.xts() |> with(cbind(OPEN,HIGH,LOW,CLOSE,VOLUME,TIMES,OINT1)) |> # 提取分钟K线
         setNames(nm=ss("Open,High,Low,Close,Volume,n,OpenInterest")) %>% .[.$n>1] # 过滤非法值
-    xs5min <- to.minutes(xs, 5) |>setNames(nm=ss("Open,High,Low,Close,Volume"))#  项目聚合
-    xs5min |> chartSeries(theme="white") # 聚合绘图
+    xs.5min <- to.minutes(xs, 5) |>setNames(nm=ss("Open,High,Low,Close,Volume"))#  项目聚合
+    xs.5min |> chartSeries(theme="white") # 聚合绘图
     
     # 收益率分布
-    xs1min |> as_tibble()|> mutate(Return=(Close-Open)/Open) |> with(hist(Return)) # 1分钟收益率分布
-    xs5min |> as_tibble()|> mutate(Return=(Close-Open)/Open) |> with(hist(Return)) # 5分钟收益率分布
+    xs |> as_tibble() |> mutate(Return=(Close-Open)/Open) |> with(hist(Return)) # 1分钟收益率分布
+    xs.5min |> as_tibble() |> mutate(Return=(Close-Open)/Open) |> with(hist(Return)) # 5分钟收益率分布
+    
+    # 时间分组
+    xs.period <- xs |> as_tibble(rownames="ts") |> mutate(ts=as.POSIXct(ts), mins=minute(ts), 
+        period=format(floor_date(ts, "30 minutes"), "%Y%m%d%H%M"))
+    xs.period |> with(boxplot(Close~period))
 })
 
 # 提取单价成交量(多少成交量可以拉动一个价格挡位，价格拥堵情况，越是拥堵越价格越是难以波动）
