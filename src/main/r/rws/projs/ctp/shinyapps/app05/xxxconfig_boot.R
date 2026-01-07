@@ -82,7 +82,7 @@ klines <- local({
   } # 匿名函数
 })
 
-// 时间序列
+# 时间序列版本的klines
 klines.xts <- \(sym="KL_RB2605") {
   xs <- klines(sym) 
   .xs <- xs |> transform(UPTIME=as.POSIXct(UPTIME)) |>lapply(as.numeric) |> as.data.frame() # xts 必须拥有同样的类型，因此全面转成数值！
