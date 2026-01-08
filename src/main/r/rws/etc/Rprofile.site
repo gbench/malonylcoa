@@ -24,21 +24,24 @@
 # --------------------------------------------------------------------------------------
 ## 参数设置
 
+# 设置时区（中国标准时区）
+Sys.setenv(TZ="Asia/Shanghai")
+
 # 本地环境参数设置:
-  options( # sqlquery的数据库参数预先设置
+options( # sqlquery的数据库参数预先设置
   #  sqlquery.drv=MySQL(), # 数据库驱动
-    sqlquery.host="127.0.0.1", # 数据库主机
-    sqlquery.user="root", # 数据库用户
-    sqlquery.password="123456", # 数据库密码
-    sqlquery.port=3371, # 数据库端口
-    sqlquery.dbname="ctp", # 数据库名
-    sqlquery.schema="public,economics", # sqlquery.schema一般为PostgreSQL的参数配置，而MySQL通常不予使用
+  sqlquery.host="127.0.0.1", # 数据库主机
+  sqlquery.user="root", # 数据库用户
+  sqlquery.password="123456", # 数据库密码
+  sqlquery.port=3371, # 数据库端口
+  sqlquery.dbname="ctp", # 数据库名
+  sqlquery.schema="public,economics", # sqlquery.schema一般为PostgreSQL的参数配置，而MySQL通常不予使用
   #  sqlquery.rb.timestamp=(\(times=0, period=24*3600) (\() {on.exit(times<<-times+1); Sys.time()+times*period})) (), # 带状态时间戳生成函数
-    sqlquery.rb.keys="##tbl,#startime,#endtime", # 结构记录构建器默认键名序列
-    sqlquery.rb.interval=3, # 结构记录构建器默认时间时间跨度
-    sqlquery.rb.instrument="rb2605", # 结构记录构建器默认合约
-    sqlquery.env.pkgs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres,boot" # 环境依赖包！
-  ) # 本地环境参数设置
+  sqlquery.rb.keys="##tbl,#startime,#endtime", # 结构记录构建器默认键名序列
+  sqlquery.rb.interval=3, # 结构记录构建器默认时间时间跨度
+  sqlquery.rb.instrument="rb2605", # 结构记录构建器默认合约
+  sqlquery.env.pkgs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres,boot" # 环境依赖包！
+) # 本地环境参数设置
 
 # --------------------------------------------------------------------------------------
 #环境设置
