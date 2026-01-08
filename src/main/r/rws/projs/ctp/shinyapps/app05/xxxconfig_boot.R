@@ -75,10 +75,10 @@ klines <- local({
       ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
       nu <- ds[ds$TS>=updt, ] # 只拿 >= 缓存尾部的数据
-      # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
-      mu <- if (sum(nu$TS==updt)>0) lc[lc$TS<updt, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
-      # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
-      if(flag) .assign(k, rbind(mu, nu)) else ds # NA心跳模式才会更新缓存(删尾拼新)，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
+      # 2. 刷新本地缓存，缓存为空或是存在“同名 TS”为标志信号：仅当 nu 带回同名 TS 才砍掉旧尾并与增量nu数据合并，否则原封不动
+      mu <- if (nrow(lc)<1 || sum(nu$TS==updt)>0) .assign(k, rbind(lc[lc$TS<updt, ], nu)) else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
+      # 3. 心跳模式（startime 为 NA）才进行缓存范围内的二次结束时间过滤，ds自带有startime与endtime范围过滤，因此没有必要再次处理！
+      if(flag) (if(is.na(endtime)) mu else mu[mu$TS<=endtime, ]) else ds # 心跳模式把startime的NA值解释为数据库查询时的本地最新，结果返回时的本地最早！
     } # if 
   } # 匿名函数
 })
