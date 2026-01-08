@@ -52,6 +52,7 @@ uninitialize <- \() {
 klines <- local({
   cache <- new.env(hash=T) # K线缓存
   .empty <- \() data.frame(TS=character()) # 空值缓存
+  .is.empty <- \(x) nrow(x)<1  # 空值判断
   .get <- \(x) get0(x, envir=cache, ifnotfound=.empty()) # 缓存读写
   .assign <- \(x, value) assign(x, value, envir=cache) # 环境赋值
 
@@ -74,9 +75,9 @@ klines <- local({
       sql <- sprintf("SELECT * FROM %s %s ORDER BY TS", k, rng(.startime, endtime)) # 读取SQL的拼装
       ds <- if(!is.na(endtime) && endtime<=.startime) .empty() else {cat(sql, "\n"); sqlquery(sql)} # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-      nu <- if(nrow(ds)>0) ds[ds$TS>=updt, ] else ds # 只拿 >= 缓存尾部的数据
+      nu <- if(.is.empty(ds)) ds else ds[ds$TS>=updt, ] # 只拿 >= 缓存尾部的数据
       # 2. 刷新本地缓存，缓存为空或是存在“同名 TS”为标志信号：仅当 nu 带回同名 TS 才砍掉旧尾并与增量nu数据合并，否则原封不动
-      mu <- if (nrow(lc)<1 || sum(nu$TS==updt)>0) .assign(k, rbind(lc[lc$TS<updt, ], nu)) else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
+      mu <- if (.is.empty(lc) || sum(nu$TS==updt)>0) .assign(k, rbind(lc[lc$TS<updt, ], nu)) else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
       # 3. 心跳模式（startime 为 NA）才进行缓存范围内的二次结束时间过滤，ds自带有startime与endtime范围过滤，因此没有必要再次处理！
       if(flag) (if(is.na(endtime)) mu else mu[mu$TS<=endtime, ]) else ds # 心跳模式把startime的NA值解释为数据库查询时的本地最新，结果返回时的本地最早！
     } # if 
