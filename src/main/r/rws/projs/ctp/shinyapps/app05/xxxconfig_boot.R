@@ -54,6 +54,7 @@ klines <- local({
   .get <- \(x) get0(x, envir=cache, ifnotfound=data.frame(TS=character())) # 缓存读写
   .assign <- \(x, value) assign(x, value, envir=cache) # 环境赋值
 
+  #' @param sym 合约代码（证券符号）可以是字符串也可以是R的符号变量
   #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
   #' @param endtime 截止时间
   \(sym='KL_RB2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
@@ -83,6 +84,7 @@ klines <- local({
 })
 
 #' 时间序列版本的klines
+#' @param sym 合约代码（证券符号）可以是字符串也可以是R的符号变量
 #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
 #' @param endtime 截止时间
 klines.xts <- \(sym="KL_RB2605", startime=NA, endtime=NA) {
