@@ -51,7 +51,8 @@ uninitialize <- \() {
 # 一行代码就完成“心跳、补数、落盘、查询”四件事！
 klines <- local({
   cache <- new.env(hash=T) # K线缓存
-  .get <- \(x) get0(x, envir=cache, ifnotfound=data.frame(TS=character())) # 缓存读写
+  .empty <- \() data.frame(TS=character()) # 空值缓存
+  .get <- \(x) get0(x, envir=cache, ifnotfound=.empty()) # 缓存读写
   .assign <- \(x, value) assign(x, value, envir=cache) # 环境赋值
 
   #' @param sym 合约代码（证券符号）可以是字符串也可以是R的符号变量
@@ -71,10 +72,9 @@ klines <- local({
       rng <- \(s, e, op=c("TS>=", "TS<=")) paste0(op, "'", c(s, e), "'") |> (\(x) x[!endsWith(x, "'NA'")]) () |> 
         paste(collapse = " AND ") |> (\(s) if(!nzchar(s)) "" else gettextf("WHERE %s", s)) () # 时间范围
       sql <- sprintf("SELECT * FROM %s %s ORDER BY TS", k, rng(.startime, endtime)) # 读取SQL的拼装
-      cat(sql, "\n") # 打印查询sql
-      ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
+      ds <- if(!is.na(endtime) && endtime<=.startime) .empty() else {cat(sql, "\n"); sqlquery(sql)} # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-      nu <- ds[ds$TS>=updt, ] # 只拿 >= 缓存尾部的数据
+      nu <- if(nrow(ds)>0) ds[ds$TS>=updt, ] else ds # 只拿 >= 缓存尾部的数据
       # 2. 刷新本地缓存，缓存为空或是存在“同名 TS”为标志信号：仅当 nu 带回同名 TS 才砍掉旧尾并与增量nu数据合并，否则原封不动
       mu <- if (nrow(lc)<1 || sum(nu$TS==updt)>0) .assign(k, rbind(lc[lc$TS<updt, ], nu)) else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
       # 3. 心跳模式（startime 为 NA）才进行缓存范围内的二次结束时间过滤，ds自带有startime与endtime范围过滤，因此没有必要再次处理！
