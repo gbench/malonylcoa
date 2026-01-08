@@ -1,6 +1,6 @@
-# 加载文件
-# source(file.choose())
-source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app05/xxxconfig_boot.R")
+# 加载文件(把函数加载到.KlinesEnv的环境中）
+# attach(NULL, name=".KlinesEnv") |> sys.source(file.choose(),  envir=_)
+attach(NULL, name=".KlinesEnv") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app05/xxxconfig_boot.R", envir=_)
 
 # 加载文件
 initialize()
