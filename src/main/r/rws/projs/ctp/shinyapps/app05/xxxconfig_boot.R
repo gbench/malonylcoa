@@ -55,7 +55,9 @@ klines <- local({
   .is.empty <- \(x) nrow(x)<1  # 空值判断
   .get <- \(x) get0(x, envir=cache, ifnotfound=.empty()) # 缓存读写
   .assign <- \(x, value) assign(x, value, envir=cache) # 环境赋值
-
+  
+  #' K线数据说明，TS为分钟级别的全数字时间戳字符串，如：'202601061330'，视为sym对应的证券合约（KL_RB2605）的主键！
+  #' klines通过TS主键来维护本地缓存进而实现了对实时证券数据的高频刷新&访问！
   #' @param sym 合约代码（证券符号）可以是字符串也可以是R的符号变量
   #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
   #' @param endtime 截止时间
@@ -79,7 +81,7 @@ klines <- local({
       # 2. 刷新本地缓存，缓存为空或是存在“同名 TS”为标志信号：仅当 nu 带回同名 TS 才砍掉旧尾并与增量nu数据合并，否则原封不动
       mu <- if (.is.empty(lc) || sum(nu$TS==updt)>0) .assign(k, rbind(lc[lc$TS<updt, ], nu)) else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
       # 3. 心跳模式（startime 为 NA）才进行缓存范围内的二次结束时间过滤，ds自带有startime与endtime范围过滤，因此没有必要再次处理！
-      if(flag) (if(is.na(endtime)) mu else mu[mu$TS<=endtime, ]) else ds # 心跳模式把startime的NA值解释为数据库查询时的本地最新，结果返回时的本地最早！
+      if (flag) (if(is.na(endtime)) mu else mu[mu$TS<=endtime, ]) else ds # 心跳模式把startime的NA值解释为数据库查询时的本地最新，结果返回时的本地最早！
     } # if 
   } # 匿名函数
 })
