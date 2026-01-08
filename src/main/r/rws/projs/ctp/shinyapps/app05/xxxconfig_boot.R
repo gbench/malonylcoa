@@ -86,7 +86,8 @@ klines <- local({
 #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
 #' @param endtime 截止时间
 klines.xts <- \(sym="KL_RB2605", startime=NA, endtime=NA) {
-  xs <- klines(sym, startime, endtime) 
+  .sym <- substitute(sym) # 提前计算输入符号
+  xs <- tryCatch(sym, error=\(e) as.character(.sym)) |> klines(startime, endtime) 
   .xs <- xs |> transform(UPTIME=as.POSIXct(UPTIME)) |>lapply(as.numeric) |> as.data.frame() # xts 必须拥有同样的类型，因此全面转成数值！
   as.xts(.xs, order.by=as.POSIXct(xs$TS, format="%Y%m%d%H%M", tz="Asia/Shanghai"))
 }
