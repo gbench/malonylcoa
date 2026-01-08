@@ -59,8 +59,8 @@ klines <- local({
   #' K线数据说明，TS为分钟级别的全数字时间戳字符串，如：'202601061330'，视为sym对应的证券合约（KL_RB2605）的主键！
   #' klines通过TS主键来维护本地缓存进而实现了对实时证券数据的高频刷新&访问！
   #' @param sym 合约代码（证券符号）可以是字符串也可以是R的符号变量
-  #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
-  #' @param endtime 截止时间
+  #' @param startime (inclusive) NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
+  #' @param endtime (inclusive) 截止时间
   \(sym='KL_RB2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
     .k <- substitute(sym) # 提取参数符号
     k <- tryCatch(sym, error=\(e) as.character(.k)) # 如果求值失败则把参数符号名作为合约代码（缓存key)
