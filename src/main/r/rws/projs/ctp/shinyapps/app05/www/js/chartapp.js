@@ -4,8 +4,8 @@
   const chart = klinecharts.init("chart");
   let currentInstrument = null; // 当前品种
 
+  // 持仓量
   klinecharts.registerIndicator({
-    // 持仓量
     name: "OINT", // 指标名，之后用这个名字挂载
     shortName: "OINT", // 左上角缩写
     calcParams: [], // 本例不需要参数
@@ -31,7 +31,7 @@
     },
   });
 
-  // 1. 剩余时长
+  // 剩余时长
   klinecharts.registerOverlay({
     name: "timeTick",
     totalStep: 1,
@@ -46,7 +46,7 @@
       const last = dataList[dataList.length - 1];
       const leftSec = (((120 - last.times) / 120) * 60).toFixed(0); //  剩余更新次数
       const { x, y } = chart.convertToPixel(
-        { timestamp: last.timestamp, value: (last.low)},
+        { timestamp: last.timestamp, value: last.low },
         { paneId: "candle_pane", absolute: false }
       );
 
@@ -61,8 +61,7 @@
           styles: {
             color: "white",
             size: 14,
-            textAlign: "center",
-            textBaseline: "bottom",
+            backgroundColor: "rgba(33, 150, 243, 0.2)",
           },
         },
       ];
@@ -88,7 +87,10 @@
     Shiny.setInputValue("switchInstrument", instrument);
   };
 
-  window.ttid = null; //  全局的timeTick的id
+  window.ttid = chart.createOverlay({
+    name: "timeTick",
+    points: [{}], // 必须指定points, 否则挂载不上
+  }); //  全局的timeTick的id
 
   /* ========== 3. 监听 Shiny 推送 ========== */
   Shiny.addCustomMessageHandler("push", ({ instrument, ds }) => {
@@ -110,16 +112,9 @@
     const dls = chart.getDataList();
     if (!dls || dls.length < 1) {
       chart.applyNewData(ds, { period: 60 });
-    } else { // 数据更新
+    } else {
+      // 数据更新
       ds.forEach((bar) => chart.updateData(bar));
-      if (!ttid) { // timcTick
-        ttid = chart.createOverlay({
-          name: "timeTick",
-          points: [{}], // 必须指定points, 否则挂载不上
-        });
-      } else {
-        chart.overrideOverlay(ttid);
-      }
     } // if
   }); // Shiny.addCustomMessageHandler
 })();
