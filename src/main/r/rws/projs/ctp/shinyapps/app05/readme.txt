@@ -1,12 +1,12 @@
+# 提前加载， .KlinesEnv 需要的基础函数
+list("magrittr", "xts") |> lapply(require, character.only=T)
+
 # 加载文件(把函数加载到.KlinesEnv的环境中）
 # attach(NULL, name=".KlinesEnv") |> sys.source(file.choose(),  envir=_)
 attach(NULL, name=".KlinesEnv") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app05/xxxconfig_boot.R", envir=_)
 
 # 加载文件
 initialize()
-
-# 指定时区
-Sys.setenv(TZ="Asia/Shanghai")
 
 # 持仓量时间序列
 klines.xts() |> tail(30) |> with(plot(OINT1))
