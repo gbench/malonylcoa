@@ -31,6 +31,44 @@
     },
   });
 
+  // 1. 剩余时长
+  klinecharts.registerOverlay({
+    name: "timeTick",
+    totalStep: 1,
+    needDefaultPointFigure: false,
+    needDefaultXAxisFigure: false,
+    needDefaultYAxisFigure: false,
+
+    createPointFigures: () => {
+      const dataList = chart.getDataList();
+      if (!dataList.length) return [];
+
+      const last = dataList[dataList.length - 1];
+      const leftSec = (((120 - last.times) / 120) * 60).toFixed(0); //  剩余更新次数
+      const { x, y } = chart.convertToPixel(
+        { timestamp: last.timestamp, value: (last.low)},
+        { paneId: "candle_pane", absolute: false }
+      );
+
+      return [
+        {
+          type: "text",
+          attrs: {
+            x,
+            y,
+            text: `${leftSec.padStart(2, "0")}S`,
+          }, // 标记剩余时间
+          styles: {
+            color: "white",
+            size: 14,
+            textAlign: "center",
+            textBaseline: "bottom",
+          },
+        },
+      ];
+    },
+  });
+
   /* ========== 1. 指标只建一次 ========== */
   (function initOnce() {
     chart.createIndicator("OINT"); // 副图
@@ -49,6 +87,8 @@
     // 可选：通知后端
     Shiny.setInputValue("switchInstrument", instrument);
   };
+
+  window.ttid = null; //  全局的timeTick的id
 
   /* ========== 3. 监听 Shiny 推送 ========== */
   Shiny.addCustomMessageHandler("push", ({ instrument, ds }) => {
@@ -69,9 +109,17 @@
     // 同一品种：增量更新
     const dls = chart.getDataList();
     if (!dls || dls.length < 1) {
-      chart.applyNewData(ds);
-    } else {
+      chart.applyNewData(ds, { period: 60 });
+    } else { // 数据更新
       ds.forEach((bar) => chart.updateData(bar));
-    }
+      if (!ttid) { // timcTick
+        ttid = chart.createOverlay({
+          name: "timeTick",
+          points: [{}], // 必须指定points, 否则挂载不上
+        });
+      } else {
+        chart.overrideOverlay(ttid);
+      }
+    } // if
   }); // Shiny.addCustomMessageHandler
 })();
