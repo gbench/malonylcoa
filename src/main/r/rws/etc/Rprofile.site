@@ -24,21 +24,24 @@
 # --------------------------------------------------------------------------------------
 ## 参数设置
 
+# 设置时区（中国标准时区）
+Sys.setenv(TZ="Asia/Shanghai")
+
 # 本地环境参数设置:
-  options( # sqlquery的数据库参数预先设置
+options( # sqlquery的数据库参数预先设置
   #  sqlquery.drv=MySQL(), # 数据库驱动
-    sqlquery.host="127.0.0.1", # 数据库主机
-    sqlquery.user="root", # 数据库用户
-    sqlquery.password="123456", # 数据库密码
-    sqlquery.port=3371, # 数据库端口
-    sqlquery.dbname="ctp", # 数据库名
-    sqlquery.schema="public,economics", # sqlquery.schema一般为PostgreSQL的参数配置，而MySQL通常不予使用
+  sqlquery.host="127.0.0.1", # 数据库主机
+  sqlquery.user="root", # 数据库用户
+  sqlquery.password="123456", # 数据库密码
+  sqlquery.port=3371, # 数据库端口
+  sqlquery.dbname="ctp", # 数据库名
+  sqlquery.schema="public,economics", # sqlquery.schema一般为PostgreSQL的参数配置，而MySQL通常不予使用
   #  sqlquery.rb.timestamp=(\(times=0, period=24*3600) (\() {on.exit(times<<-times+1); Sys.time()+times*period})) (), # 带状态时间戳生成函数
-    sqlquery.rb.keys="##tbl,#startime,#endtime", # 结构记录构建器默认键名序列
-    sqlquery.rb.interval=3, # 结构记录构建器默认时间时间跨度
-    sqlquery.rb.instrument="rb2605", # 结构记录构建器默认合约
-    sqlquery.env.pkgs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres,boot" # 环境依赖包！
-  ) # 本地环境参数设置
+  sqlquery.rb.keys="##tbl,#startime,#endtime", # 结构记录构建器默认键名序列
+  sqlquery.rb.interval=3, # 结构记录构建器默认时间时间跨度
+  sqlquery.rb.instrument="rb2605", # 结构记录构建器默认合约
+  sqlquery.env.pkgs = "RMySQL,tidyverse,jsonlite,quantmod,data.table,janitor,RPostgres,boot" # 环境依赖包！
+) # 本地环境参数设置
 
 # --------------------------------------------------------------------------------------
 #环境设置
@@ -53,7 +56,7 @@ eval(quote({ # 自举构建具体过程逻辑
   attr(.sqlqueryenv, "name") <- ".sqlqueryenv" # 为环境命名，这样print(.sqlqueryenv) 就会有一个符号名字！
   rws_home <- "F:/slicef/ws/rws" # R工作区目录
   rscript_home <- Sys.getenv('RSCRIPT_HOME') # 工具脚本与资源文件目录
-  dailywork_home <- sprintf("%s/dwk/%s", rws_home, Sys.Date()) # 每日工作区目录
+  dailywork_home <- sprintf("%s/dwk/%s", rws_home, strftime(Sys.Date(), format="%Y/%m/%d")) # 每日工作区目录
   
   # --------------------------------------------------------------------------------------
   # 自举工具函数定义
@@ -116,7 +119,7 @@ eval(quote({ # 自举构建具体过程逻辑
     xs <- (if(length(xs) == 1 & is.character(xs)) strsplit(xs, "[,]+") |> unlist() else xs) |> sapply(trimws)
     xs |> sapply(\(x) tryCatch({ #尝试加载&安装x包
       if(!require(x, character.only=TRUE)) install.packages(x);
-      (if(flag) require else library)(x, character.only=TRUE)
+      (if(flag) require else library) (x, character.only=TRUE)
     }, error=\(e) e))
   }
   
@@ -129,7 +132,6 @@ eval(quote({ # 自举构建具体过程逻辑
     
     if (flag) { # 根据指定模式加载数据文件
       # 自定义的预先加载的自定义函数文件列表
-      
       myfiles <- list.files(path = rscript_home, pattern="\\.R$", recursive = T) 
       sprintf(fmt = "%s/%s", rscript_home, myfiles) |> lapply(sys.source, envir=envir) |> invisible()
       mklzdb("malonylcoa", envir) # 创建/更新layloads malonylcoa

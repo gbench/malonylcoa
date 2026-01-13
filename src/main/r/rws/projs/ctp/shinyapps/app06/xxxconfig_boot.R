@@ -51,11 +51,16 @@ uninitialize <- \() {
 # 一行代码就完成“心跳、补数、落盘、查询”四件事！
 klines <- local({
   cache <- new.env(hash=T) # K线缓存
-  .get <- \(x) get0(x, envir=cache, ifnotfound=data.frame(TS=character())) # 缓存读写
+  .empty <- \() data.frame(TS=character()) # 空值缓存
+  .is.empty <- \(x) nrow(x)<1  # 空值判断
+  .get <- \(x) get0(x, envir=cache, ifnotfound=.empty()) # 缓存读写
   .assign <- \(x, value) assign(x, value, envir=cache) # 环境赋值
-
-  #' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
-  #' @param endtime 截止时间
+  
+  #' K线数据说明，TS为分钟级别的全数字时间戳字符串，如：'202601061330'，视为sym对应的证券合约（KL_RB2605）的主键！
+  #' klines通过TS主键来维护本地缓存进而实现了对实时证券数据的高频刷新&访问！
+  #' @param sym 合约代码（证券符号）可以是字符串也可以是R的符号变量
+  #' @param startime (inclusive) NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
+  #' @param endtime (inclusive) 截止时间
   \(sym='KL_RB2605', startime=NA, endtime=NA) { # 开始时间为NA时候表示获取所有之前数据！
     .k <- substitute(sym) # 提取参数符号
     k <- tryCatch(sym, error=\(e) as.character(.k)) # 如果求值失败则把参数符号名作为合约代码（缓存key)
@@ -70,17 +75,27 @@ klines <- local({
       rng <- \(s, e, op=c("TS>=", "TS<=")) paste0(op, "'", c(s, e), "'") |> (\(x) x[!endsWith(x, "'NA'")]) () |> 
         paste(collapse = " AND ") |> (\(s) if(!nzchar(s)) "" else gettextf("WHERE %s", s)) () # 时间范围
       sql <- sprintf("SELECT * FROM %s %s ORDER BY TS", k, rng(.startime, endtime)) # 读取SQL的拼装
-      cat(sql, "\n") # 打印查询sql
-      ds <- sqlquery(sql) # 使用SQL查询结果集(dataset), 原始结果集，只查一次
+      ds <- if(!is.na(endtime) && endtime<=.startime) .empty() else {cat(sql, "\n"); sqlquery(sql)} # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
-      nu <- ds[ds$TS>=updt, ] # 只拿 >= 缓存尾部的数据
-      # 2. “同名 TS”是唯一信号：仅当 nu 带回同名 TS 才砍掉旧尾，否则原封不动
-      mu <- if (sum(nu$TS==updt)>0) lc[lc$TS<updt, ] else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
-      # 3. 心跳模式（startime 为 NA）才把 mu 与 nu 拼成完整缓存；区间查询直接返回 nu，不污染缓存
-      if(flag) .assign(k, rbind(mu, nu)) else ds # NA心跳模式才会更新缓存(删尾拼新)，心跳模式拼新缓存，区间查询原样返回 ds，绝不回写
+      nu <- if(.is.empty(ds)) ds else ds[ds$TS>=updt, ] # 只拿 >= 缓存尾部的数据
+      # 2. 刷新本地缓存，缓存为空或是存在“同名 TS”为标志信号：仅当 nu 带回同名 TS 才砍掉旧尾并与增量nu数据合并，否则原封不动
+      mu <- if (.is.empty(lc) || sum(nu$TS==updt)>0) .assign(k, rbind(lc[lc$TS<updt, ], nu)) else lc # 若带回同名 TS 才砍掉旧尾 否则 原样保留
+      # 3. 心跳模式（startime 为 NA）才进行缓存范围内的二次结束时间过滤，ds自带有startime与endtime范围过滤，因此没有必要再次处理！
+      if (flag) (if(is.na(endtime)) mu else mu[mu$TS<=endtime, ]) else ds # 心跳模式把startime的NA值解释为数据库查询时的本地最新，结果返回时的本地最早！
     } # if 
   } # 匿名函数
 })
+
+#' 时间序列版本的klines
+#' @param sym 合约代码（证券符号）可以是字符串也可以是R的符号变量
+#' @param startime NA表示增量同步，从ignite读取数据到本地，非NA，表示从缓存中查询的起始时间！这是klines的模式标志！
+#' @param endtime 截止时间
+klines.xts <- \(sym="KL_RB2605", startime=NA, endtime=NA) {
+  .sym <- substitute(sym) # 提前计算输入符号
+  xs <- tryCatch(sym, error=\(e) as.character(.sym)) |> klines(startime, endtime) 
+  .xs <- xs |> transform(UPTIME=as.POSIXct(UPTIME)) |>lapply(as.numeric) |> as.data.frame() # xts 必须拥有同样的类型，因此全面转成数值！
+  as.xts(.xs, order.by=as.POSIXct(xs$TS, format="%Y%m%d%H%M", tz="Asia/Shanghai"))
+}
 
 # klinechart的抓取K线数据
 fetch_json <- local({
@@ -95,7 +110,7 @@ fetch_json <- local({
     if (!nrow(x)) return(NULL)
     with(x, list(instrument = sym, ds = purrr::transpose(list( # 纯列表数组，字段名严格对应 KlineCharts 要求, transpose 转成行向量
       timestamp = as.numeric(as.POSIXct(TS, format="%Y%m%d%H%M")) * 1000, # 毫秒级的时间戳
-      open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume = VOLUME, idx= IDX
+      open = OPEN, high = HIGH, low = LOW, close = CLOSE, volume = VOLUME, oint = OINT1,  idx = IDX
     )))) |> toJSON(auto_unbox = TRUE)
   } # 匿名函数
 })
