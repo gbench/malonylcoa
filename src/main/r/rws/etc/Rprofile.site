@@ -56,7 +56,7 @@ eval(quote({ # 自举构建具体过程逻辑
   attr(.sqlqueryenv, "name") <- ".sqlqueryenv" # 为环境命名，这样print(.sqlqueryenv) 就会有一个符号名字！
   rws_home <- "F:/slicef/ws/rws" # R工作区目录
   rscript_home <- Sys.getenv('RSCRIPT_HOME') # 工具脚本与资源文件目录
-  dailywork_home <- sprintf("%s/dwk/%s", rws_home, Sys.Date()) # 每日工作区目录
+  dailywork_home <- sprintf("%s/dwk/%s", rws_home, strftime(Sys.Date(), format="%Y/%m/%d")) # 每日工作区目录
   
   # --------------------------------------------------------------------------------------
   # 自举工具函数定义
@@ -119,7 +119,7 @@ eval(quote({ # 自举构建具体过程逻辑
     xs <- (if(length(xs) == 1 & is.character(xs)) strsplit(xs, "[,]+") |> unlist() else xs) |> sapply(trimws)
     xs |> sapply(\(x) tryCatch({ #尝试加载&安装x包
       if(!require(x, character.only=TRUE)) install.packages(x);
-      (if(flag) require else library)(x, character.only=TRUE)
+      (if(flag) require else library) (x, character.only=TRUE)
     }, error=\(e) e))
   }
   
@@ -132,7 +132,6 @@ eval(quote({ # 自举构建具体过程逻辑
     
     if (flag) { # 根据指定模式加载数据文件
       # 自定义的预先加载的自定义函数文件列表
-      
       myfiles <- list.files(path = rscript_home, pattern="\\.R$", recursive = T) 
       sprintf(fmt = "%s/%s", rscript_home, myfiles) |> lapply(sys.source, envir=envir) |> invisible()
       mklzdb("malonylcoa", envir) # 创建/更新layloads malonylcoa
