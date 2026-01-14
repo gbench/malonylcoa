@@ -75,7 +75,7 @@ klines <- local({
       rng <- \(s, e, op=c("TS>=", "TS<=")) paste0(op, "'", c(s, e), "'") |> (\(x) x[!endsWith(x, "'NA'")]) () |> 
         paste(collapse = " AND ") |> (\(s) if(!nzchar(s)) "" else gettextf("WHERE %s", s)) () # 时间范围
       sql <- sprintf("SELECT * FROM %s %s ORDER BY TS", k, rng(.startime, endtime)) # 读取SQL的拼装
-      ds <- if(!is.na(endtime) && endtime<=.startime) .empty() else {cat(sql, "\n"); sqlquery(sql)} # 使用SQL查询结果集(dataset), 原始结果集，只查一次
+      ds <- if(!is.na(endtime) && endtime<.startime) .empty() else {cat(sql, "\n"); sqlquery(sql)} # 使用SQL查询结果集(dataset), 原始结果集，只查一次
       # 1. 增量过滤：只保留 TS >= 缓存尾部的数据，剔除迟到旧记录
       nu <- if(.is.empty(ds)) ds else ds[ds$TS>=updt, ] # 只拿 >= 缓存尾部的数据
       # 2. 刷新本地缓存，缓存为空或是存在“同名 TS”为标志信号：仅当 nu 带回同名 TS 才砍掉旧尾并与增量nu数据合并，否则原封不动
