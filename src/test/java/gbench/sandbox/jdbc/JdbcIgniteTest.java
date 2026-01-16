@@ -2,9 +2,13 @@ package gbench.sandbox.jdbc;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -14,6 +18,7 @@ import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.type.Times;
 import gbench.util.jdbc.kvp.DFrame;
 
 import static gbench.util.io.Output.println;
@@ -69,8 +74,14 @@ public class JdbcIgniteTest {
 
 		jdbcApp.withTransaction(sess -> {
 			final var sqldframe = fngen.apply(sess);
+			final Function<String, LocalDateTime> toldt = s -> LocalDateTime.parse(s,
+					DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
 			println("KL_RB2605", sqldframe.apply("select * from KL_RB2605 limit 10"));
-			println("KL_MA605", sqldframe.apply("select * from KL_MA605 limit 10"));
+			println("KL_MA605", sqldframe.apply("select * from KL_MA605 limit 10").rowS().map(e -> e.set("TS", toldt))
+					.collect(DFrame.dfmclc));
+			final var ts = sqldframe.apply("select * from KL_IF2603 limit 10").col("TS",
+					(List<String> xs) -> xs.stream().map(toldt).toList());
+			println("TS", ts);
 		});
 
 	}
