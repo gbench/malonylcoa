@@ -18,7 +18,6 @@ import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.util.type.Times;
 import gbench.util.jdbc.kvp.DFrame;
 
 import static gbench.util.io.Output.println;
