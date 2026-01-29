@@ -91,7 +91,7 @@ barclays |> with(ldgload("allinone.rds")) |> ls()
 barclays |> with(balance())
 uae |> with(balance())
 
-# 加载数据  :  只保存包含B的数据
+# 加载数据  :  只保存包含字母'b'的数据
 barclays |> with(ldgsave("bs.rds", "b"))
 barclays |> with(ldgload("bs.rds")) |> ls()
 uae |> with(balance()) # 没有数据
