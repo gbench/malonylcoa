@@ -2,8 +2,8 @@
 bkp <- local({
   cache <- new.env(hash = TRUE)
   .empty <- \() data.frame( ts=numeric(0), drcr=integer(0), name=character(0), amount=numeric(0), tx=character(0), stringsAsFactors=FALSE)
-  .get <- \(x) if (exists(x, envir = cache, inherits = FALSE))  get(x, envir = cache) else .empty()
-  .assign <- \(x, value) assign(x, value, envir = cache)
+  .get <- \(x) if (exists(x, envir=cache, inherits=FALSE))  get(x, envir = cache) else .empty()
+  .assign <- \(x, value) assign(x, value, envir=cache)
   .append <- \(acctentity, drcr, name, amount, tx=NA) .assign(acctentity, rbind(.get(acctentity), 
     data.frame(ts=Sys.time(), drcr=as.integer(drcr), name=as.character(name), amount=as.numeric(amount), tx=as.character(tx), stringsAsFactors=FALSE)))
   
@@ -12,13 +12,10 @@ bkp <- local({
     debit = \(name, amount, ae=NA, tx=NA) .append (ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
     credit = \(name, amount, ae=NA, tx=NA) .append (ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
   ) |> within({
-
     # 1. 复式记账
     dc <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
-
     # 2. 会计分录
     entries <- \(ae=NA) .get(ifelse(is.na(ae), acctentity, ae)) # 科目分录
-
     # 3. 科目余额
     balance <- \(name=NA, ae=NA) { # 科目余额
       .entries <- .get(ifelse(is.na(ae), acctentity, ae)) # 主体分录
@@ -29,22 +26,17 @@ bkp <- local({
          else .entries[.entries$name==name, ] |> bal()
       } # if
     } # balance
-
   }) |> within({
-
     # 4. 会计报表报表生成
     financial_statement <- \(acctentity, type = "bs") {
       # 资产负债表或利润表
     }
-
     # 5. 数据持久化
-    ldgsave <- \(file=gettextf("%s%s.rds", acctentity, strftime(Sys.time(), "%Y%m%d%H%M%S"))) saveRDS(cache, file)
-    
+    ldgsave <- \(file=gettextf("%s%s.rds", acctentity, strftime(Sys.time(), "%Y%m%d%H%M%S")), pattern=".*") 
+      saveRDS(mget(grep(pattern, ls(cache), value=T), envir=cache) |> list2env(), file)
     # 6. 数据读取
     ldgload <- \(file) cache <<- readRDS(file)
-
   }) # within
-
 }) # bkp
 
 # 构建簿记系统
@@ -89,12 +81,20 @@ environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir
 # 科目余额
 barclays |> with(balance())
 
-# 数据持久化
-barclays |> with(ldgsave())
+# 数据持久化 : 保存所有数据
+barclays |> with(ldgsave("allinone.rds"))
 
-#  加载数据
-barclays |> with(ldgload(list.files(pattern="rds")[1]))
+# 加载数据 : 提取所有数据
+barclays |> with(ldgload("allinone.rds")) |> ls()
 
 # 科目余额
 barclays |> with(balance())
+uae |> with(balance())
+
+# 加载数据  :  只保存包含B的数据
+barclays |> with(ldgsave("bs.rds", "b"))
+barclays |> with(ldgload("bs.rds")) |> ls()
+uae |> with(balance()) # 没有数据
+barclays |> with(balance()) # 有数据
+
 
