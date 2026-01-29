@@ -1,4 +1,4 @@
-# 更简洁的版本
+# bookeepings 记账系统
 bkp <- local({
   cache <- new.env(hash = TRUE)
   
@@ -20,22 +20,23 @@ bkp <- local({
   
   .assign <- \(x, value) assign(x, value, envir = cache)
   
-  .insert <- \(acctentity, drcr, name, amount) {
+  .insert <- \(acctentity, drcr, name, amount, tx=NA) {
     new_row <- data.frame(
       ts = Sys.time(),
       drcr = as.integer(drcr),
       name = as.character(name),
       amount = as.numeric(amount),
+      tx = as.character(tx),
       stringsAsFactors = FALSE
     )
     .assign(acctentity, rbind(.get(acctentity), new_row))
   }
   
   \(acctentity) list(
-    debit = \(name, amount, ae=NA) .insert(ifelse(is.na(ae), acctentity, ae), 1L, name, amount), # 借入
-    credit = \(name, amount, ae=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount) # 贷出
+    debit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
+    credit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
   ) |> within({
-    drcr <- \(dr, cr, amount, ae=NA) { debit(dr, amount, ae); credit(cr, amount, ae) } # 分录借贷
+    drcr <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 分录借贷
     entries <- \(ae=NA) .get(ifelse(is.na(ae), acctentity, ae)) # 科目分录
     balance <- \(name=NA, ae=NA) { # 科目余额
       .entries <- .get(ifelse(is.na(ae), acctentity, ae)) # 主体分录
@@ -50,10 +51,8 @@ bkp <- local({
 })
 
 saudi <- bkp("saudi") # 创建 沙特会计
-saudi |> with({
-  # 销售石油
-  drcr("银行存款", "主营业务收入", 1000)
-  entries() |> print() # 查看所有条目
-  balance("主营业务收入") |> print() # 查看所有条目
-  balance() |> print()
-})
+barclays <- bkp("barclays") # 创建 巴克莱银行
+tx0 <- gettextf("%s[沙特卖油收了1亿美元存入伦敦巴克莱银行美元账户]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
+saudi |> with({ drcr(tx=tx0, "银行存款- 巴克莱", "主营业务收入-石油", 1000) }) # 沙特销售石油
+barclays |> with({ drcr(tx=tx, "库存现金-沙特", "客户存款-沙特", 1000) }) # 沙特销售石油
+environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)))
