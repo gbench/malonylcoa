@@ -76,11 +76,6 @@ barclays <- bkp("barclays") # 巴克莱银行
 indian <- bkp("indian") # 印度石油公司
 hsbc <- bkp("hsbc") # 汇丰银行
 
-# TX0：阿联酋卖油给印度（赊销，无现金流动）
-tx0 <- gettextf("%s[赊销石油]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-uae |> with({ drcr(tx=tx0, "应收账款-石油", "主营业务收入-石油", 1000) }) 
-indian |> with({ drcr(tx=tx0, "库存商品-石油", "应付账款-石油", 1000) })
-
 # TX0：阿联酋卖油给印度（赊销）
 tx0 <- gettextf("%s[阿联酋卖油给印度（赊销）]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
 uae |> with({ drcr(tx=tx0, "应收账款-印度", "主营业务收入", 1000) })
