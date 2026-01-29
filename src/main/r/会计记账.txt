@@ -1,0 +1,101 @@
+# bookkeeping 金融记账系统
+# 金融（核算价值利益的组织安排）的本质 就是 跨越会计实体的 对经济交易 给予 记录&核算（实现货币的计量、流通、支付职能的信息管理系统）：多主体会计
+bkp <- local({
+  cache <- new.env(hash = TRUE)
+  .empty <- \() data.frame( ts=numeric(0), drcr=integer(0), name=character(0), amount=numeric(0), tx=character(0), stringsAsFactors=FALSE)
+  .get <- \(x) if (exists(x, envir=cache, inherits=FALSE))  get(x, envir = cache) else .empty()
+  .assign <- \(x, value) assign(x, value, envir=cache)
+  .append <- \(acctentity, drcr, name, amount, tx=NA) .assign(acctentity, rbind(.get(acctentity), 
+    data.frame(ts=Sys.time(), drcr=as.integer(drcr), name=as.character(name), amount=as.numeric(amount), tx=as.character(tx), stringsAsFactors=FALSE)))
+  
+  #' @param acctentity 会计主体
+  \(acctentity) list(
+    debit = \(name, amount, ae=NA, tx=NA) .append (ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
+    credit = \(name, amount, ae=NA, tx=NA) .append (ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
+  ) |> within({
+    # 1. 复式记账
+    dc <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
+    # 2. 会计分录
+    entries <- \(ae=NA) .get(ifelse(is.na(ae), acctentity, ae)) # 科目分录
+    # 3. 科目余额
+    balance <- \(name=NA, ae=NA) { # 科目余额
+      .entries <- .get(ifelse(is.na(ae), acctentity, ae)) # 主体分录
+      if (nrow(.entries)<1) 0 # 没有数据
+      else { # 数据非空
+         bal <- \(es) with(es, sum(drcr*amount)) # 余额计算函数
+         if(is.na(name)) .entries |> split(.entries$name) |> lapply(bal) |> (\(.) data.frame(balance=unlist(.))) ()
+         else .entries[.entries$name==name, ] |> bal()
+      } # if
+    } # balance
+  }) |> within({
+    # 4. 会计报表报表生成
+    financial_statement <- \(acctentity, type = "bs") {
+      # 资产负债表或利润表
+    }
+    # 5. 数据持久化
+    ldgsave <- \(file=gettextf("%s%s.rds", acctentity, strftime(Sys.time(), "%Y%m%d%H%M%S")), pattern=".") 
+      saveRDS(mget(grep(pattern, ls(cache), value=T), envir=cache) |> list2env(), file)
+    # 6. 数据读取
+    ldgload <- \(file) cache <<- readRDS(file)
+  }) # within
+}) # bkp
+
+# 构建簿记系统
+newtx <- \(text) { 
+  tx <- gettextf("%s[%s]", strftime(Sys.time(), "%Y%m%d%H%M%S"), text)
+  \(ae) ae |> within({ tdc <- \(dr, cr, amount) dc(dr, cr, amount, NA, tx) })
+}
+
+# 会计主体
+uae <- bkp("uae") # 阿联酋石油公司
+barclays <- bkp("barclays") # 巴克莱银行
+indian <- bkp("indian") # 印度石油公司
+hsbc <- bkp("hsbc") # 汇丰银行
+
+# 记录交易
+tx0 <- newtx("阿联酋卖油给印度（赊销）")
+tx0(uae) |> with({ tdc("应收账款-印度", "主营业务收入-石油", 1000) })
+tx0(indian) |> with({ tdc("库存商品-石油", "应付账款-UAE", 1000) })
+
+tx1 <- newtx("巴克莱创造信用（核心！）")
+tx1(barclays) |> with({ tdc("贷款资产-印度", "客户存款-印度", 1000) })
+tx1(indian) |> with({ tdc("银行存款-巴克莱", "银行贷款-巴克莱", 1000) })
+
+tx2 <- newtx("印度直接转账给UAE（行间划转，无现金）")
+tx2(indian) |> with({ tdc("应付账款-UAE", "银行存款-巴克莱", 1000) })
+tx2(uae) |> with({ tdc("银行存款-巴克莱", "应收账款-印度", 1000) })
+tx2(barclays) |> with({ tdc("库存现金", "客户存款-UAE", 1000) })
+
+tx3 <- newtx("印度直接转账给UAE（行间划转，无现金）")
+tx3(uae) |> with({ tdc("银行存款-汇丰", "银行存款-巴克莱", 1000) })
+tx3(hsbc) |> with({ tdc("存放同业-巴克莱", "客户存款-UAE", 1000) }) # 对巴克莱的债权
+tx3(barclays) |> with({ tdc("客户存款-UAE", "同业存放-汇丰", 1000) }) #  欠汇丰的债务(把债主从UAE换成汇丰）
+
+# 会计分录列表
+environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)))
+
+# 会计分录汇总
+environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)) |> 
+  lapply(\(xs) split(xs, xs$name) |> lapply(\(es) with(es, sum(drcr*amount)))) |> 
+    lapply(\(bs) data.frame(balance=unlist(bs))) )
+
+# 科目余额
+barclays |> with(balance())
+
+# 数据持久化 : 保存所有数据
+barclays |> with(ldgsave("allinone.rds"))
+
+# 加载数据 : 提取所有数据
+barclays |> with(ldgload("allinone.rds")) |> ls()
+
+# 科目余额
+barclays |> with(balance())
+uae |> with(balance())
+
+# 加载数据  :  只保存包含字母'b'的数据
+barclays |> with(ldgsave("bs.rds", "b"))
+barclays |> with(ldgload("bs.rds")) |> ls()
+uae |> with(balance()) # 没有数据
+barclays |> with(balance()) # 有数据
+
+
