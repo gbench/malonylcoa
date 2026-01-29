@@ -115,3 +115,10 @@ barclays |> with(balance())
 
 # 数据持久化
 barclays |> with(ldgsave())
+
+#  加载数据
+barclays |> with(ldgload(list.files(pattern="rds")[1]))
+
+# 科目余额
+barclays |> with(balance())
+
