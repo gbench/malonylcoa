@@ -37,8 +37,13 @@ bkp <- local({
     debit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
     credit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
   ) |> within({
+    # 1. 复式记账
     drcr <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
+
+    # 2. 会计分录
     entries <- \(ae=NA) .get(ifelse(is.na(ae), acctentity, ae)) # 科目分录
+
+    # 3. 科目余额
     balance <- \(name=NA, ae=NA) { # 科目余额
       .entries <- .get(ifelse(is.na(ae), acctentity, ae)) # 主体分录
       if (nrow(.entries) == 0) 0 # 没有数据
@@ -48,6 +53,19 @@ bkp <- local({
          else .entries[.entries$name==name, ] |> bal()
       } # if
     } # balance
+
+  }) |> within({
+
+    # 4. 会计报表报表生成
+    financial_statement <- \(acctentity, type = "bs") {
+      # 资产负债表或利润表
+    }
+
+    # 5. 数据持久化
+    ldgsave <- \(file=gettextf("%s%s.rds", acctentity, strftime(Sys.time(), "%Y%m%d%H%M%S"))) saveRDS(cache, file)
+    
+    # 6. 数据读取
+    ldgload <- \(file) cache <<- readRDS(file)
   }) # within
 })
 
@@ -94,3 +112,4 @@ environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir
 
 # 科目余额
 barclays |> with(balance())
+barclays |> with(ldgsave())
