@@ -32,7 +32,7 @@ bkp <- local({
       # 资产负债表或利润表
     }
     # 5. 数据持久化
-    ldgsave <- \(file=gettextf("%s%s.rds", acctentity, strftime(Sys.time(), "%Y%m%d%H%M%S")), pattern=".*") 
+    ldgsave <- \(file=gettextf("%s%s.rds", acctentity, strftime(Sys.time(), "%Y%m%d%H%M%S")), pattern=".") 
       saveRDS(mget(grep(pattern, ls(cache), value=T), envir=cache) |> list2env(), file)
     # 6. 数据读取
     ldgload <- \(file) cache <<- readRDS(file)
