@@ -19,7 +19,7 @@ bkp <- local({
     # 3. 科目余额
     balance <- \(name=NA, ae=NA) { # 科目余额
       .entries <- .get(ifelse(is.na(ae), acctentity, ae)) # 主体分录
-      if (nrow(.entries) == 0) 0 # 没有数据
+      if (nrow(.entries)<1) 0 # 没有数据
       else { # 数据非空
          bal <- \(es) with(es, sum(drcr*amount)) # 余额计算函数
          if(is.na(name)) .entries |> split(.entries$name) |> lapply(bal) |> (\(.) data.frame(balance=unlist(.))) ()
