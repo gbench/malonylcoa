@@ -32,6 +32,7 @@ bkp <- local({
     debit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
     credit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
   ) |> within({
+
     # 1. 复式记账
     dc <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
 
@@ -61,7 +62,9 @@ bkp <- local({
     
     # 6. 数据读取
     ldgload <- \(file) cache <<- readRDS(file)
+
   }) # within
+
 })
 
 # 构建簿记系统
