@@ -112,4 +112,6 @@ environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir
 
 # 科目余额
 barclays |> with(balance())
+
+# 数据持久化
 barclays |> with(ldgsave())
