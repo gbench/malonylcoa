@@ -1,4 +1,5 @@
-# bookkeeping 记账系统
+# bookkeeping 金融记账系统
+# 金融（核算价值利益的组织安排）的本质 就是 跨越会计实体的 对经济交易 给予 记录&核算（实现货币的计量、流通、支付职能的信息管理系统）：多主体会计
 bkp <- local({
   cache <- new.env(hash = TRUE)
   .empty <- \() data.frame( ts=numeric(0), drcr=integer(0), name=character(0), amount=numeric(0), tx=character(0), stringsAsFactors=FALSE)
