@@ -51,31 +51,32 @@ bkp <- local({
   }) # within
 })
 
-saudi <- bkp("saudi") # 创建 沙特油企会计
-barclays <- bkp("barclays") # 创建 巴克莱银行
-indian <- bkp("indian") # 创建 印度石油商
-hsbc <- bkp("hsbc") # 创建 印度石油商
+# 构建簿记系统
+saudi <- bkp("saudi") # 沙特油企会计
+barclays <- bkp("barclays") # 巴克莱银行
+indian <- bkp("indian") # 印度石油商
+hsbc <- bkp("hsbc") # 汇丰银行
 
-tx0 <- gettextf("%s[沙特油把1000万美元存入伦敦巴克莱银行美元账户]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-saudi |> with({ drcr(tx=tx0, "银行存款- 巴克莱", "库存现金", 1000) }) # 沙特销售石油
-barclays |> with({ drcr(tx=tx0, "库存现金", "客户存款-沙特", 1000) }) # 沙特销售石油
+tx0 <- gettextf("%s[沙特把1000万美元存入伦敦巴克莱银行美元账户]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
+saudi |> with({ drcr(tx=tx0, "银行存款- 巴克莱", "库存现金", 1000) }) # 沙特存款
+barclays |> with({ drcr(tx=tx0, "库存现金", "客户存款-沙特", 1000) }) # 沙特存款
 
 tx1 <- gettextf("%s[巴克莱把1000万美元贷给印度石油进口商]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
 indian |> with({ drcr(tx=tx1, "银行存款- 巴克莱", "长期贷款-石油", 1000) }) # 石油贷款
-barclays |> with({ drcr(tx=tx1, "银行贷款-沙特", "库存现金", 1000) }) # 石油贷款
+barclays |> with({ drcr(tx=tx1, "银行贷款-印度", "库存现金", 1000) }) # 石油贷款
 
 tx2 <- gettextf("%s[印度商支付给阿联酋石油公司]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
 indian |> with({ drcr(tx=tx2, "库存商品-石油", "银行存款", 1000) }) # 货款计算
-saudi |> with({ drcr(tx=tx2, "库存现金-沙特", "主营业收入-石油", 1000) }) # 货款计算
+saudi |> with({ drcr(tx=tx2, "库存现金", "主营业收入-石油", 1000) }) # 货款计算
 
-tx2 <- gettextf("%s[阿联酋公司把钱存在伦敦汇丰银行]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-hsbc |> with({ drcr(tx=tx0, "库存现金", "客户存款-沙特", 1000) }) # 沙特销售石油
-saudi |> with({ drcr(tx=tx0, "银行存款-汇丰", "库存现金", 1000) }) # 沙特销售石油
+tx3 <- gettextf("%s[阿联酋公司把钱存在伦敦汇丰银行]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
+hsbc |> with({ drcr(tx=tx3, "库存现金", "客户存款-沙特", 1000) }) # 沙特存款
+saudi |> with({ drcr(tx=tx3, "银行存款-汇丰", "库存现金", 1000) }) # 沙特存款
 
-# 会计分录
+# 会计分录列表
 environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)))
 
-# 分录汇总
+# 会计分录汇总
 environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)) |> 
   lapply(\(xs) split(xs, xs$name) |> lapply(\(es) with(es, sum(drcr*amount)))) |> 
     lapply(\(bs) data.frame(balance=unlist(bs))) )
