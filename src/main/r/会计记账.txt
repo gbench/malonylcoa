@@ -1,0 +1,59 @@
+# 更简洁的版本
+bkp <- local({
+  cache <- new.env(hash = TRUE)
+  
+  .empty <- \() data.frame(
+    ts = numeric(0),
+    drcr = integer(0),
+    name = character(0),
+    amount = numeric(0),
+    stringsAsFactors = FALSE
+  )
+  
+  .get <- \(x) {
+    if (exists(x, envir = cache, inherits = FALSE)) {
+      get(x, envir = cache)
+    } else {
+      .empty()
+    }
+  }
+  
+  .assign <- \(x, value) assign(x, value, envir = cache)
+  
+  .insert <- \(acctentity, drcr, name, amount) {
+    new_row <- data.frame(
+      ts = Sys.time(),
+      drcr = as.integer(drcr),
+      name = as.character(name),
+      amount = as.numeric(amount),
+      stringsAsFactors = FALSE
+    )
+    .assign(acctentity, rbind(.get(acctentity), new_row))
+  }
+  
+  \(acctentity) list(
+    debit = \(name, amount, ae=NA) .insert(ifelse(is.na(ae), acctentity, ae), 1L, name, amount), # 借入
+    credit = \(name, amount, ae=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount) # 贷出
+  ) |> within({
+    drcr <- \(dr, cr, amount, ae=NA) { debit(dr, amount, ae); credit(cr, amount, ae) } # 分录借贷
+    entries <- \(ae=NA) .get(ifelse(is.na(ae), acctentity, ae)) # 科目分录
+    balance <- \(name=NA, ae=NA) { # 科目余额
+      .entries <- .get(ifelse(is.na(ae), acctentity, ae)) # 主体分录
+      if (nrow(.entries) == 0) 0 # 没有数据
+      else { # 数据非空
+         bal <- \(es) with(es, sum(drcr*amount)) # 余额计算函数
+         if(is.na(name)) .entries |> split(.entries$name) |> lapply(bal)
+         else .entries[.entries$name==name, ] |> bal()
+      } # if
+    } # balance
+  }) # within
+})
+
+saudi <- bkp("saudi") # 创建 沙特会计
+saudi |> with({
+  # 销售石油
+  drcr("银行存款", "主营业务收入", 1000)
+  entries() |> print() # 查看所有条目
+  balance("主营业务收入") |> print() # 查看所有条目
+  balance() |> print()
+})
