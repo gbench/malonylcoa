@@ -22,15 +22,9 @@ bkp <- local({
   .assign <- \(x, value) assign(x, value, envir = cache)
   
   .insert <- \(acctentity, drcr, name, amount, tx=NA) {
-    new_row <- data.frame(
-      ts = Sys.time(),
-      drcr = as.integer(drcr),
-      name = as.character(name),
-      amount = as.numeric(amount),
-      tx = as.character(tx),
-      stringsAsFactors = FALSE
-    )
-    .assign(acctentity, rbind(.get(acctentity), new_row))
+    row <- data.frame( ts = Sys.time(), drcr = as.integer(drcr), name = as.character(name),
+      amount = as.numeric(amount), tx = as.character(tx), stringsAsFactors = FALSE )
+    .assign(acctentity, rbind(.get(acctentity), row))
   }
   
   #' @param acctentity 会计主体
@@ -39,7 +33,7 @@ bkp <- local({
     credit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
   ) |> within({
     # 1. 复式记账
-    drcr <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
+    dc <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
 
     # 2. 会计分录
     entries <- \(ae=NA) .get(ifelse(is.na(ae), acctentity, ae)) # 科目分录
@@ -71,32 +65,35 @@ bkp <- local({
 })
 
 # 构建簿记系统
+newtx <- \(text) { 
+  tx <- gettextf("%s[%s]", strftime(Sys.time(), "%Y%m%d%H%M%S"), text)
+  \(ae) ae |> within({ tdc <- \(dr, cr, amount) dc(dr, cr, amount, NA, tx) })
+}
+
+# 会计主体
 uae <- bkp("uae") # 阿联酋石油公司
 barclays <- bkp("barclays") # 巴克莱银行
 indian <- bkp("indian") # 印度石油公司
 hsbc <- bkp("hsbc") # 汇丰银行
 
-# TX0：阿联酋卖油给印度（赊销）
-tx0 <- gettextf("%s[阿联酋卖油给印度（赊销）]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-uae |> with({ drcr(tx=tx0, "应收账款-印度", "主营业务收入", 1000) })
-indian |> with({ drcr(tx=tx0, "库存商品-石油", "应付账款-UAE", 1000) })
+# 记录交易
+tx0 <- newtx("阿联酋卖油给印度（赊销）")
+tx0(uae) |> with({ tdc("应收账款-印度", "主营业务收入", 1000) })
+tx0(indian) |> with({ tdc("库存商品-石油", "应付账款-UAE", 1000) })
 
-# TX1：巴克莱创造信用（核心！）
-tx1 <- gettextf("%s[巴克莱创造信用（核心！）]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-barclays |> with({ drcr(tx=tx1, "贷款资产-印度", "客户存款-印度", 1000) })
-indian |> with({ drcr(tx=tx1, "银行存款-巴克莱", "银行贷款", 1000) })
+tx1 <- newtx("巴克莱创造信用（核心！）")
+tx1(barclays) |> with({ tdc("贷款资产-印度", "客户存款-印度", 1000) })
+tx1(indian) |> with({ tdc("银行存款-巴克莱", "银行贷款", 1000) })
 
-# TX2：印度直接转账给UAE（行间划转，无现金）
-tx2 <- gettextf("%s[印度直接转账给UAE（行间划转，无现金）]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-indian |> with({ drcr(tx=tx2, "应付账款-UAE", "银行存款-巴克莱", 1000) })
-uae |> with({ drcr(tx=tx2, "银行存款-巴克莱", "应收账款-印度", 1000) })
+tx2 <- newtx("印度直接转账给UAE（行间划转，无现金）")
+tx2(indian) |> with({ tdc("应付账款-UAE", "银行存款-巴克莱", 1000) })
+tx2(uae) |> with({ tdc("银行存款-巴克莱", "应收账款-印度", 1000) })
 # 此时：这1000万存款从"客户存款-印度"转为"客户存款-UAE"，仍在巴克莱账上
 
-# TX3：UAE转至汇丰（银行间头寸转移，Correspondent Banking）
-tx3 <- gettextf("%s[UAE转至汇丰]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-uae |> with({ drcr(tx=tx3, "银行存款-汇丰", "银行存款-巴克莱", 1000) })
-hsbc |> with({ drcr(tx=tx3, "存放同业-巴克莱", "客户存款-UAE", 1000) }) # 对巴克莱的债权
-barclays |> with({ drcr(tx=tx3, "同业存放-汇丰", "客户存款-UAE", 1000) }) #  欠汇丰的债务
+tx3 <- newtx("印度直接转账给UAE（行间划转，无现金）")
+tx3(uae) |> with({ tdc("银行存款-汇丰", "银行存款-巴克莱", 1000) })
+tx3(hsbc) |> with({ tdc("存放同业-巴克莱", "客户存款-UAE", 1000) }) # 对巴克莱的债权
+tx3(barclays) |> with({ tdc("同业存放-汇丰", "客户存款-UAE", 1000) }) #  欠汇丰的债务
 
 # 会计分录列表
 environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)))
