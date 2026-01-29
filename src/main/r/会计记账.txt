@@ -7,7 +7,7 @@ bkp <- local({
     drcr = integer(0),
     name = character(0),
     amount = numeric(0),
-    tx = integer(0),
+    tx =  character(0),
     stringsAsFactors = FALSE
   )
   
