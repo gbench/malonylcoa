@@ -32,27 +32,53 @@ bkp <- local({
     .assign(acctentity, rbind(.get(acctentity), new_row))
   }
   
+  #' @param acctentity 会计主体
   \(acctentity) list(
     debit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
     credit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
   ) |> within({
-    drcr <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 分录借贷
+    drcr <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
     entries <- \(ae=NA) .get(ifelse(is.na(ae), acctentity, ae)) # 科目分录
     balance <- \(name=NA, ae=NA) { # 科目余额
       .entries <- .get(ifelse(is.na(ae), acctentity, ae)) # 主体分录
       if (nrow(.entries) == 0) 0 # 没有数据
       else { # 数据非空
          bal <- \(es) with(es, sum(drcr*amount)) # 余额计算函数
-         if(is.na(name)) .entries |> split(.entries$name) |> lapply(bal)
+         if(is.na(name)) .entries |> split(.entries$name) |> lapply(bal) |> (\(.) data.frame(balance=unlist(.))) ()
          else .entries[.entries$name==name, ] |> bal()
       } # if
     } # balance
   }) # within
 })
 
-saudi <- bkp("saudi") # 创建 沙特会计
+saudi <- bkp("saudi") # 创建 沙特油企会计
 barclays <- bkp("barclays") # 创建 巴克莱银行
-tx0 <- gettextf("%s[沙特卖油收了1亿美元存入伦敦巴克莱银行美元账户]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
-saudi |> with({ drcr(tx=tx0, "银行存款- 巴克莱", "主营业务收入-石油", 1000) }) # 沙特销售石油
-barclays |> with({ drcr(tx=tx, "库存现金-沙特", "客户存款-沙特", 1000) }) # 沙特销售石油
+indian <- bkp("indian") # 创建 印度石油商
+hsbc <- bkp("hsbc") # 创建 印度石油商
+
+tx0 <- gettextf("%s[沙特油把1000万美元存入伦敦巴克莱银行美元账户]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
+saudi |> with({ drcr(tx=tx0, "银行存款- 巴克莱", "库存现金", 1000) }) # 沙特销售石油
+barclays |> with({ drcr(tx=tx0, "库存现金", "客户存款-沙特", 1000) }) # 沙特销售石油
+
+tx1 <- gettextf("%s[巴克莱把1000万美元贷给印度石油进口商]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
+indian |> with({ drcr(tx=tx1, "银行存款- 巴克莱", "长期贷款-石油", 1000) }) # 石油贷款
+barclays |> with({ drcr(tx=tx1, "银行贷款-沙特", "库存现金", 1000) }) # 石油贷款
+
+tx2 <- gettextf("%s[印度商支付给阿联酋石油公司]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
+indian |> with({ drcr(tx=tx2, "库存商品-石油", "银行存款", 1000) }) # 货款计算
+saudi |> with({ drcr(tx=tx2, "库存现金-沙特", "主营业收入-石油", 1000) }) # 货款计算
+
+tx2 <- gettextf("%s[阿联酋公司把钱存在伦敦汇丰银行]", strftime(Sys.time(), "%Y%m%d%H%M%S"))
+hsbc |> with({ drcr(tx=tx0, "库存现金", "客户存款-沙特", 1000) }) # 沙特销售石油
+saudi |> with({ drcr(tx=tx0, "银行存款-汇丰", "库存现金", 1000) }) # 沙特销售石油
+
+# 会计分录
 environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)))
+
+# 分录汇总
+environment(bkp) |> with(ls(cache) |> setNames(nm=_) |> lapply(\(x) get(x, envir=cache)) |> 
+  lapply(\(xs) split(xs, xs$name) |> lapply(\(es) with(es, sum(drcr*amount)))) |> 
+    lapply(\(bs) data.frame(balance=unlist(bs))) )
+
+# 科目余额
+barclays |> with(balance())
