@@ -1,36 +1,16 @@
-# bookeepings 记账系统
+# bookkeeping 记账系统
 bkp <- local({
   cache <- new.env(hash = TRUE)
-  
-  .empty <- \() data.frame(
-    ts = numeric(0),
-    drcr = integer(0),
-    name = character(0),
-    amount = numeric(0),
-    tx =  character(0),
-    stringsAsFactors = FALSE
-  )
-  
-  .get <- \(x) {
-    if (exists(x, envir = cache, inherits = FALSE)) {
-      get(x, envir = cache)
-    } else {
-      .empty()
-    }
-  }
-  
+  .empty <- \() data.frame( ts=numeric(0), drcr=integer(0), name=character(0), amount=numeric(0), tx=character(0), stringsAsFactors=FALSE)
+  .get <- \(x) if (exists(x, envir = cache, inherits = FALSE))  get(x, envir = cache) else .empty()
   .assign <- \(x, value) assign(x, value, envir = cache)
-  
-  .insert <- \(acctentity, drcr, name, amount, tx=NA) {
-    row <- data.frame( ts = Sys.time(), drcr = as.integer(drcr), name = as.character(name),
-      amount = as.numeric(amount), tx = as.character(tx), stringsAsFactors = FALSE )
-    .assign(acctentity, rbind(.get(acctentity), row))
-  }
+  .append <- \(acctentity, drcr, name, amount, tx=NA) .assign(acctentity, rbind(.get(acctentity), 
+    data.frame(ts=Sys.time(), drcr=as.integer(drcr), name=as.character(name), amount=as.numeric(amount), tx=as.character(tx), stringsAsFactors=FALSE)))
   
   #' @param acctentity 会计主体
   \(acctentity) list(
-    debit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
-    credit = \(name, amount, ae=NA, tx=NA) .insert(ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
+    debit = \(name, amount, ae=NA, tx=NA) .append (ifelse(is.na(ae), acctentity, ae), 1L, name, amount, tx), # 借入
+    credit = \(name, amount, ae=NA, tx=NA) .append (ifelse(is.na(ae), acctentity, ae), -1L, name, amount, tx) # 贷出
   ) |> within({
 
     # 1. 复式记账
@@ -65,7 +45,7 @@ bkp <- local({
 
   }) # within
 
-})
+}) # bkp
 
 # 构建簿记系统
 newtx <- \(text) { 
