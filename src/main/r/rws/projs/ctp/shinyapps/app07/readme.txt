@@ -41,7 +41,11 @@ barclays |> with(balance())
 barclays |> with(ldgsave("allinone.rds"))
 
 # ---------------------------------------
+# 移除库文件
+detach("".Bkp"")
 
+# 库文件加载
+attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
 file <- "F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/data/journal20260130.txt"
 xs <- readLines(file) # 数据行
 .ts <- grep("#[[:blank:]]*TX", xs) # 交易标记所在的行
@@ -79,5 +83,42 @@ tx_parser <- \(tx) {
      stringsAsFactors = FALSE
    )
 }
+
+# 提取日记账
 journal <- txs |> lapply(tx_parser) |> do.call(what = rbind)
 print(journal)
+
+# 创建会计主体容器环境
+entities <- new.env()
+
+# 自动执行 journal 到账簿系统
+journal |> apply(1, \(row) {
+  entity_name <- trimws(row["entity"])
+  tx_id <- row["tx_id"]
+  direction <- tolower(trimws(row["direction"]))
+  account <- trimws(row["account"])
+  amount <- as.numeric(row["amount"])
+ 
+  # 获取或创建会计主体（懒加载模式）
+  if (!exists(entity_name, envir = entities, inherits = FALSE)) {
+    assign(entity_name, bkp(entity_name), envir = entities)
+    message(sprintf("创建会计主体: %s", entity_name))
+  }
+
+  get(entity_name, envir = entities) |> with({  # 根据借贷方向记账（自动携带交易号）
+     if(direction == "dr") { # 借方
+       debit(account, amount, tx = tx_id)
+      } else if(direction == "cr") { # 贷方
+       credit(account, amount, tx = tx_id)
+     } else { # 其他
+       warning(sprintf("未知方向 '%s' 在交易 %s", direction, tx_id))
+     }
+  })
+})
+
+# 验证：查看所有主体的科目余额
+cat("\n=== 各会计主体科目余额 ===\n")
+ls(entities) |> setNames(nm=_) |> lapply(\(name) list(entity=name, balance=get(name, envir = entities)$balance()))
+
+# 查看具体主体的分录（例如 uae）
+get("uae", envir = entities) |> with({ entries() })
