@@ -43,7 +43,21 @@ barclays |> with(ldgsave("allinone.rds"))
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # 移除库文件
-detach("".Bkp"")
+if(!is.na(match(".Bkp", search()))) detach(".Bkp")
+
+# 库文件加载
+attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
+
+p <- bkp(barclays) # 创建会计主体
+rs <- list.files(pattern="\\.rds") # 寻找数据文件
+if(length(rs)>0) list(ldgload = p$ldgload(rs[length(rs)]) |> ls()) |> #  加载数据文件
+  append(p$entities() |> (\(.)  lapply(., p$entries) |> setNames(nm=paste0("entries_", .)))()) |> # 会计分录
+  append(p$entities() |> (\(.)  lapply(., p$entries) |> setNames(nm=paste0("balance_", .)))()) # 科目余额
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# 移除库文件
+if(!is.na(match(".Bkp", search()))) detach(".Bkp")
 
 # 库文件加载
 attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
