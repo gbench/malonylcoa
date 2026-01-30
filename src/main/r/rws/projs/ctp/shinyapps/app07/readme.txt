@@ -40,49 +40,18 @@ barclays |> with(balance())
 # 数据持久化 : 保存所有数据
 barclays |> with(ldgsave("allinone.rds"))
 
-# ---------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # 移除库文件
 detach("".Bkp"")
 
 # 库文件加载
 attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
-file <- "F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/data/journal20260130.txt"
-xs <- readLines(file) # 数据行
+path <- "F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/data/journal20260130.txt"
+xs <- readLines(path) # 数据行
 .ts <- grep("#[[:blank:]]*TX", xs) # 交易标记所在的行
 ts <- if(max(.ts) < length(xs)) c(.ts, length(xs)) else .ts
 txs <- cbind(ts[-length(ts)], ts[-1]) |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]-1], invert=T, value=T)) # 提取交易信息行
-tx_parser <- \(tx) {
-   # 提取交易ID (如 "TX0")
-   tx_id <- sub(".*TX\\s*([A-Za-z0-9]+).*", "\\1", tx[grepl("TX", tx)][1])
-   
-   # 会计主体所在行索引 (# uae: 等)
-   ii <- grep("^#[[:blank:]]+[a-z]+", tx)
-   if(length(ii) == 0) return(NULL)
-   
-   # 分录所在行索引 (dr/cr 开头)
-   entry_lines <- grepl("^[[:blank:]]*(dr|cr)[[:blank:]]+", tx, ignore.case = TRUE)
-   
-   # 建立映射：每个分录行属于哪个会计主体
-   groups <- cut(which(entry_lines), c(ii, Inf), labels = FALSE, right = FALSE)
-   if(any(is.na(groups))) groups[is.na(groups)] <- length(ii)
-   
-   # 提取会计主体名称
-   entities <- gsub("^#[[:blank:]]*|:$", "", tx[ii])[groups]
-   
-   # 解析分录行
-   entries <- tx[entry_lines]
-   parsed <- regmatches(entries, regexec("^(dr|cr)[[:blank:]]+(.+?)[[:blank:]]+(\\d+(?:\\.\\d+)?)$", entries, ignore.case = TRUE))
-   
-   # 构建数据框
-   data.frame(
-     tx_id = tx_id,
-     entity = entities,
-     direction = sapply(parsed, `[`, 2),
-     account = sapply(parsed, `[`, 3),
-     amount = as.numeric(sapply(parsed, `[`, 4)),
-     stringsAsFactors = FALSE
-   )
-}
 
 # 分组示例
 # js:注释所在行索引,  ks:距离自己最近行的注释作为会计主体所在行位置, tx[-js]: 分录所在的数据行， tx[ks][-js] |> sub("#([^#:]+):", "\\1", x=_) 分录所属于的会计主体
@@ -90,7 +59,7 @@ txs |> lapply(\(tx) list(js=grep("^[[:blank:]]*#", tx)) |> within( ks <- rep(js,
   with({ data.frame(k=tx[ks][-js] |> sub("#([^#:]+):", "\\1", x=_), v=tx[-js])} ))
 
 # 提取日记账
-journal <- txs |> lapply(tx_parser) |> do.call(what = rbind)
+journal <- parse_journal(path)
 print(journal)
 
 # 创建会计主体容器环境
@@ -117,9 +86,9 @@ journal |> apply(1, \(row) {
        credit(account, amount, tx = tx_id)
      } else { # 其他
        warning(sprintf("未知方向 '%s' 在交易 %s", direction, tx_id))
-     }
-  })
-})
+     } # if
+  }) # get
+}) # journal
 
 # 验证：查看所有主体的科目余额
 cat("\n=== 各会计主体科目余额 ===\n")
