@@ -61,24 +61,24 @@ newtx <- \(text) {
 #' @return journal 结构的数据框,列向量为 : data.frame(tx_id, entity, direction, account, amount)
 parse_journal <- \(path) {
   xs <- if(file.exists(path)) readLines(path) else path # 如果文件存在则尝试读取文件，否则把path当成字符串向量！
-  .ts <- grep("#[[:blank:]]*TX", xs) # 交易标记所在的行
+  .ts <- grep("#+[[:blank:]]*TX", xs) # 交易标记所在的行索引
   ts <- if(max(.ts) < length(xs)) c(.ts, length(xs)) else .ts
   # ts[-1]-(seq(m)<m) 表示除了ts的最后一个元素，其余元素都向前移动一位，这样我们就可以把区间[a,b,c]打造成开闭区间链,并且每个元素都互斥[[a,b), [b,c]]
   txs <- (\(n=length(ts), m=n-1) cbind(ts[-n], ts[-1]-(seq(m)<m))) () |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]], invert=T, value=T)) # 提取交易信息行
   tx_parser <- \(tx) { # 交易解释器
-    tx_id <- sub(".*TX\\s*([A-Za-z0-9]+).*", "\\1", tx[grepl("TX", tx)][1]) # 提取交易ID (如 "TX0")
-    js <- grep("^#[[:blank:]]+[a-z]+", tx) # 会计主体所在行索引 (# uae: 等)
+    tx_id <- sub(".*TX[[:blank:]]*([[:alnum:]]+).*", "\\1", tx[grepl("TX", tx)][1]) # 提取交易ID (如 "TX0")
+    js <- grep("^#+[[:blank:]]+[[:alnum:]]+", tx) # 会计主体所在行索引 (如 "# uae:" 等)
     if(length(js) == 0) return(NULL)
 
-    entry_lines <- grepl("^[[:blank:]]*(dr|cr)[[:blank:]]+", tx, ignore.case=TRUE)  # 分录所在行索引 (dr/cr 开头)
-    groups <- cut(which(entry_lines), c(js, Inf), labels=FALSE, right=FALSE) # 建立映射：每个分录行属于哪个会计主体
+    ks <- grepl("^[[:blank:]]*(dr|cr)[[:blank:]]+", tx, ignore.case=TRUE)  # 分录所在行索引 (dr/cr 开头)
+    groups <- cut(which(ks), c(js, Inf), labels=FALSE, right=FALSE) # 建立映射：每个分录行属于哪个会计主体
     if(any(is.na(groups))) groups[is.na(groups)] <- length(js)
 
-    entities <- gsub("^#[[:blank:]]*|:$", "", tx[js])[groups] # 提取会计主体名称
-    entries <- tx[entry_lines]  # 解析分录行
+    entities <- gsub("^#+[[:blank:]]*|:$", "", tx[js])[groups] # 提取会计主体名称（去除首位）
+    entries <- tx[ks]  # 解析分录行
     matches <- regmatches(entries, regexec("^(dr|cr)[[:blank:]]+(.+?)[[:blank:]]+(\\d+(?:\\.\\d+)?)$", entries, ignore.case = TRUE)) 
-    data.frame( tx_id=tx_id, entity=entities, direction=sapply(matches, `[`, 2), account=sapply(matches, `[`, 3),  # 构建数据框
-      amount=as.numeric(sapply(matches, `[`, 4)), stringsAsFactors=FALSE)
+    at <- \(i) sapply(matches, `[`, i) # 提取指定位置元素
+    data.frame(tx_id=tx_id, entity=entities, direction=at(2), account=at(3),  amount=as.numeric(at(4)), stringsAsFactors=FALSE) # 构建数据框
   }
 
   txs |> lapply(tx_parser) |> do.call(what=rbind)
