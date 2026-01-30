@@ -39,3 +39,17 @@ barclays |> with(balance())
 
 # 数据持久化 : 保存所有数据
 barclays |> with(ldgsave("allinone.rds"))
+
+# ---------------------------------------
+
+file <- "F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/data/journal20260130.txt"
+xs <- readLines(file) # 数据行
+.ts <- grep("#[[:blank:]]*TX", xs) # 交易标记所在的行
+ts <- if(max(.ts) < length(xs)) c(.ts, length(xs)) else .ts
+txs <- cbind(ts[-length(ts)], ts[-1]) |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]-1], invert=T, value=T)) # 提取交易信息行
+txs |> lapply(\(tx) {
+   ii <- grep("#", tx) # 注释所在行索引
+   ks <- rep(ii, c(diff(ii), 1+length(tx)-max(ii))) # 距离自己最近行的注释作为会计主体所在行位置
+   data.frame(k=tx[ks][-ii], v=tx[-ii])
+})
+
