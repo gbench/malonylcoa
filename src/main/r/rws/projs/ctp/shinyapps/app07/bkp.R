@@ -70,15 +70,14 @@ parse_journal <- \(path) {
     js <- grep("^#+[[:blank:]]+[[:alnum:]]+", tx) # 会计主体所在行索引 (如 "# uae:" 等)
     if(length(js) == 0) return(NULL)
 
-    ks <- grepl("^[[:blank:]]*(dr|cr)[[:blank:]]+", tx, ignore.case=TRUE)  # 分录所在行索引 (dr/cr 开头)
-    groups <- cut(which(ks), c(js, Inf), labels=FALSE, right=FALSE) # 建立映射：每个分录行属于哪个会计主体
+    ks <- grep("^[[:blank:]]*(dr|cr)[[:blank:]]+", tx,  ignore.case = TRUE)  # 分录所在行索引 (dr/cr 开头)
+    groups <- cut(ks, c(js, Inf), labels=FALSE, right=FALSE) # 建立映射：每个分录行属于哪个会计主体
     if(any(is.na(groups))) groups[is.na(groups)] <- length(js)
 
     entities <- gsub("^#+[[:blank:]]*|:$", "", tx[js])[groups] # 提取会计主体名称（去除首位）
-    entries <- tx[ks]  # 解析分录行
-    matches <- regmatches(entries, regexec("^(dr|cr)[[:blank:]]+(.+?)[[:blank:]]+(\\d+(?:\\.\\d+)?)$", entries, ignore.case = TRUE)) 
+    matches <- tx[ks] |> (\ (entries) regmatches(entries, regexec("^(dr|cr)[[:blank:]]+(.+?)[[:blank:]]+(\\d+(?:\\.\\d+)?)$", entries, ignore.case = TRUE))) () # 分录匹配
     at <- \(i) sapply(matches, `[`, i) # 提取指定位置元素
-    data.frame(tx_id=tx_id, entity=entities, direction=at(2), account=at(3),  amount=as.numeric(at(4)), stringsAsFactors=FALSE) # 构建数据框
+    data.frame(tx_id = tx_id, entity = entities, direction = at(2), account = at(3),  amount = as.numeric(at(4)), stringsAsFactors = FALSE) # 构建数据框
   }
 
   txs |> lapply(tx_parser) |> do.call(what=rbind)
