@@ -63,7 +63,8 @@ parse_journal <- \(path) {
   xs <- if(file.exists(path)) readLines(path) else path # 如果文件存在则尝试读取文件，否则把path当成字符串向量！
   .ts <- grep("#[[:blank:]]*TX", xs) # 交易标记所在的行
   ts <- if(max(.ts) < length(xs)) c(.ts, length(xs)) else .ts
-  txs <- cbind(ts[-length(ts)], ts[-1]) |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]-1], invert=T, value=T)) # 提取交易信息行
+  # ts[-1]-(seq(m)<m) 表示除了ts的最后一个元素，其余元素都向前移动一位，这样我们就可以把区间[a,b,c]打造成开闭区间链,并且每个元素都互斥[[a,b), [b,c]]
+  txs <- (\(n=length(ts), m=n-1) cbind(ts[-n], ts[-1]-(seq(m)<m))) () |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]], invert=T, value=T)) # 提取交易信息行
   tx_parser <- \(tx) { # 交易解释器
     tx_id <- sub(".*TX\\s*([A-Za-z0-9]+).*", "\\1", tx[grepl("TX", tx)][1]) # 提取交易ID (如 "TX0")
     js <- grep("^#[[:blank:]]+[a-z]+", tx) # 会计主体所在行索引 (# uae: 等)
