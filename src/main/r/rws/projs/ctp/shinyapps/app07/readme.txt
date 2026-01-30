@@ -88,7 +88,7 @@ journal |> apply(1, \(row) {
        warning(sprintf("未知方向 '%s' 在交易 %s", direction, tx_id))
      } # if
   }) # get
-}) # journal
+}) |> invisible() # journal
 
 # 验证：查看所有主体的科目余额
 cat("\n=== 各会计主体科目余额 ===\n")
