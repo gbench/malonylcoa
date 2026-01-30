@@ -66,7 +66,7 @@ parse_journal <- \(path) {
   # ts[-1]-(seq(m)<m) 表示除了ts的最后一个元素，其余元素都向前移动一位，这样我们就可以把区间[a,b,c]打造成开闭区间链,并且每个元素都互斥[[a,b), [b,c]]
   txs <- (\(n=length(ts), m=n-1) cbind(ts[-n], ts[-1]-(seq(m)<m))) () |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]], invert=T, value=T)) # 提取交易信息行
   tx_parser <- \(tx) { # 交易解释器
-    tx_id <- sub(".*TX[[:blank:]]*([[:alnum:]]+).*", "\\1", tx[grepl("TX", tx)][1]) # 提取交易ID (如 "TX0")
+    tx_id <- sub(".*TX[[:blank:]]*([-_#@[:alnum:]]+).*", "\\1", tx[grepl("TX", tx)][1]) # 提取交易ID (如 "TX0")
     js <- grep("^#+[[:blank:]]+[[:alnum:]]+", tx) # 会计主体所在行索引 (如 "# uae:" 等)
     if(length(js) == 0) return(NULL)
 
