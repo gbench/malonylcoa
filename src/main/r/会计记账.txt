@@ -97,5 +97,3 @@ barclays |> with(ldgsave("bs.rds", "b"))
 barclays |> with(ldgload("bs.rds")) |> ls()
 uae |> with(balance()) # 没有数据
 barclays |> with(balance()) # 有数据
-
-
