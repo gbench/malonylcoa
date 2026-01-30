@@ -52,7 +52,7 @@ p <- bkp(barclays) # 创建会计主体
 rs <- list.files(pattern="\\.rds") # 寻找数据文件
 if(length(rs)>0) list(ldgload = p$ldgload(rs[length(rs)]) |> ls()) |> #  加载数据文件
   append(p$entities() |> (\(.)  lapply(., p$entries) |> setNames(nm=paste0("entries_", .)))()) |> # 会计分录
-  append(p$entities() |> (\(.)  lapply(., p$entries) |> setNames(nm=paste0("balance_", .)))()) # 科目余额
+  append(p$entities() |> (\(.)  lapply(., \(ae) p$balance(ae=ae)) |> setNames(nm=paste0("balance_", .)))()) # 科目余额
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
