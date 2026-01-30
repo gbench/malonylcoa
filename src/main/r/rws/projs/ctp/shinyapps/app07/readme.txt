@@ -47,9 +47,37 @@ xs <- readLines(file) # 数据行
 .ts <- grep("#[[:blank:]]*TX", xs) # 交易标记所在的行
 ts <- if(max(.ts) < length(xs)) c(.ts, length(xs)) else .ts
 txs <- cbind(ts[-length(ts)], ts[-1]) |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]-1], invert=T, value=T)) # 提取交易信息行
-txs |> lapply(\(tx) {
-   ii <- grep("#", tx) # 注释所在行索引
-   ks <- rep(ii, c(diff(ii), 1+length(tx)-max(ii))) # 距离自己最近行的注释作为会计主体所在行位置
-   data.frame(k=tx[ks][-ii], v=tx[-ii])
-})
-
+tx_parser <- \(tx) {
+   # 提取交易ID (如 "TX0")
+   tx_id <- sub(".*TX\\s*([A-Za-z0-9]+).*", "\\1", tx[grepl("TX", tx)][1])
+   
+   # 会计主体所在行索引 (# uae: 等)
+   ii <- grep("^#[[:blank:]]+[a-z]+", tx)
+   if(length(ii) == 0) return(NULL)
+   
+   # 分录所在行索引 (dr/cr 开头)
+   entry_lines <- grepl("^[[:blank:]]*(dr|cr)[[:blank:]]+", tx, ignore.case = TRUE)
+   
+   # 建立映射：每个分录行属于哪个会计主体
+   groups <- cut(which(entry_lines), c(ii, Inf), labels = FALSE, right = FALSE)
+   if(any(is.na(groups))) groups[is.na(groups)] <- length(ii)
+   
+   # 提取会计主体名称
+   entities <- gsub("^#[[:blank:]]*|:$", "", tx[ii])[groups]
+   
+   # 解析分录行
+   entries <- tx[entry_lines]
+   parsed <- regmatches(entries, regexec("^(dr|cr)[[:blank:]]+(.+?)[[:blank:]]+(\\d+(?:\\.\\d+)?)$", entries, ignore.case = TRUE))
+   
+   # 构建数据框
+   data.frame(
+     tx_id = tx_id,
+     entity = entities,
+     direction = sapply(parsed, `[`, 2),
+     account = sapply(parsed, `[`, 3),
+     amount = as.numeric(sapply(parsed, `[`, 4)),
+     stringsAsFactors = FALSE
+   )
+}
+journal <- txs |> lapply(tx_parser) |> do.call(what = rbind)
+print(journal)
