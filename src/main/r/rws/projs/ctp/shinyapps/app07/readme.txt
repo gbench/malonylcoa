@@ -56,7 +56,7 @@ txs <- (\(n=length(ts), m=n-1) cbind(ts[-n], ts[-1]-(seq(m)<m))) () |> apply(1, 
 
 # 分组示例
 # js:注释所在行索引,  ks:距离自己最近行的注释作为会计主体所在行位置, tx[-js]: 分录所在的数据行， tx[ks][-js] |> sub("#([^#:]+):", "\\1", x=_) 分录所属于的会计主体
-txs |> lapply(\(tx) list(js=grep("^[[:blank:]]*#", tx)) |> within( ks <- rep(js, c(diff(js), 1+length(tx)-max(js) )) ) |> 
+txs |> setNames(nm=rep_len(xs[.ts], length(txs))) |> lapply(\(tx) list(js=grep("^[[:blank:]]*#", tx)) |> within( ks <- rep(js, c(diff(js), 1+length(tx)-max(js) )) ) |> 
   with({ data.frame(k=tx[ks][-js] |> sub("#([^#:]+):", "\\1", x=_), v=tx[-js])} ))
 
 # 提取日记账
