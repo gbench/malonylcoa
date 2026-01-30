@@ -3,13 +3,13 @@
 bkp <- local({
   cache <- new.env(hash=TRUE)
   .empty <- \() data.frame(ts=numeric(0), drcr=integer(0), name=character(0), amount=numeric(0), tx=character(0), stringsAsFactors=FALSE)
-  .get <- \(x) if (exists(x, envir=cache, inherits=FALSE))  get(x, envir = cache) else .empty()
+  .get <- \(x) if (exists(as.character(x), envir=cache, inherits=FALSE))  get(x, envir = cache) else .empty()
   .assign <- \(x, value) assign(x, value, envir=cache)
   .append <- \(ae, drcr, name, amount, tx=NA) .assign(ae, rbind(.get(ae), 
     data.frame(ts=Sys.time(), drcr=as.integer(drcr), name=as.character(name), amount=as.numeric(amount), tx=as.character(tx), stringsAsFactors=FALSE)))
   
   #' @param acctentity 会计主体
-  \(acctentity) list(entity=\(ae=NA) ifelse(is.na(ae), (\(s) tryCatch(acctentity, error=\(e) s)) (as.character(substitute(acctentity)))), entities=\() ls(cache)) |> within({
+  \(acctentity) list(entity=\(ae=NA) ifelse(is.na(ae), (\(s) tryCatch(acctentity, error=\(e) s)) (as.character(substitute(acctentity))), ae), entities=\() ls(cache)) |> within({
     debit <- \(name, amount, ae=NA, tx=NA) .append (entity(ae), 1L, name, amount, tx) # 借入
     credit <- \(name, amount, ae=NA, tx=NA) .append (entity(ae), -1L, name, amount, tx) # 贷出
   }) |> within({
