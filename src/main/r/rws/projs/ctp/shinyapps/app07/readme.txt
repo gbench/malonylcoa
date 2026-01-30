@@ -66,15 +66,14 @@ print(journal)
 entities <- new.env()
 
 # 自动执行 journal 到账簿系统
-journal |> apply(1, \(row) {
-  entity_name <- trimws(row["entity"])
+journal |> apply(1, \(row) { # 分录誊写
   tx_id <- row["tx_id"]
+  entity_name <- trimws(row["entity"])
   direction <- tolower(trimws(row["direction"]))
   account <- trimws(row["account"])
   amount <- as.numeric(row["amount"])
  
-  # 获取或创建会计主体（懒加载模式）
-  if (!exists(entity_name, envir = entities, inherits = FALSE)) {
+  if (!exists(entity_name, envir = entities, inherits = FALSE)) { # 获取或创建会计主体（懒加载模式）
     assign(entity_name, bkp(entity_name), envir = entities)
     message(sprintf("创建会计主体: %s", entity_name))
   }
