@@ -51,7 +51,7 @@ path <- "F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/
 xs <- readLines(path) # 数据行
 .ts <- grep("#[[:blank:]]*TX", xs) # 交易标记所在的行
 ts <- if(max(.ts) < length(xs)) c(.ts, length(xs)) else .ts
-txs <- cbind(ts[-length(ts)], ts[-1]) |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]-1], invert=T, value=T)) # 提取交易信息行
+txs <- cbind(ts[-length(ts)], ts[-1]-1) |> apply(1, \(p) grep("^[[:blank:]]*$", xs[p[1]:p[2]], invert=T, value=T)) # 提取交易信息行, ts[-1]-1表示剔除尾部包含构造结构区间[a,b)
 
 # 分组示例
 # js:注释所在行索引,  ks:距离自己最近行的注释作为会计主体所在行位置, tx[-js]: 分录所在的数据行， tx[ks][-js] |> sub("#([^#:]+):", "\\1", x=_) 分录所属于的会计主体
