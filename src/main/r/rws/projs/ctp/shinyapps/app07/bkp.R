@@ -9,17 +9,17 @@ bkp <- local({
     data.frame(ts=Sys.time(), drcr=as.integer(drcr), name=as.character(name), amount=as.numeric(amount), tx=as.character(tx), stringsAsFactors=FALSE)))
   
   #' @param acctentity 会计主体
-  \(acctentity) list(entity=\(ae=NA) ifelse(is.na(ae), acctentity, ae)) |> within({
-    debit <- \(name, amount, ae=NA, tx=NA) .append (entity(), 1L, name, amount, tx) # 借入
-    credit <- \(name, amount, ae=NA, tx=NA) .append (entity(), -1L, name, amount, tx) # 贷出
+  \(acctentity) list(entity=\(ae=NA) ifelse(is.na(ae), (\(s) tryCatch(acctentity, error=\(e) s)) (as.character(substitute(acctentity)))), entities=\() ls(cache)) |> within({
+    debit <- \(name, amount, ae=NA, tx=NA) .append (entity(ae), 1L, name, amount, tx) # 借入
+    credit <- \(name, amount, ae=NA, tx=NA) .append (entity(ae), -1L, name, amount, tx) # 贷出
   }) |> within({
     # 1. 复式记账
     dc <- \(dr, cr, amount, ae=NA, tx=NA) { debit(dr, amount, ae, tx); credit(cr, amount, ae, tx) } # 借贷分录
     # 2. 会计分录
-    entries <- \(ae=NA) .get(entity()) # 科目分录
+    entries <- \(ae=NA) .get(entity(ae)) # 科目分录
     # 3. 科目余额
     balance <- \(name=NA, ae=NA) { # 科目余额
-      .entries <- .get(entity()) # 主体分录
+      .entries <- .get(entity(ae)) # 主体分录
       if (nrow(.entries)<1) 0 # 没有数据
       else { # 数据非空
          bal <- \(es) with(es, sum(drcr*amount)) # 余额计算函数
