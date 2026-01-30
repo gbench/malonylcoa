@@ -29,11 +29,11 @@ bkp <- local({
     } # balance
   }) |> within({
     # 4. 会计报表报表生成
-    financial_statement <- \(acctentity, type = "bs") {
+    financial_statement <- \(ae, type = "bs") {
       # 资产负债表或利润表
     }
     # 5. 数据持久化
-    ldgsave <- \(file=gettextf("%s%s.rds", acctentity, strftime(Sys.time(), "%Y%m%d%H%M%S")), pattern=".") 
+    ldgsave <- \(file=gettextf("%s%s.rds", entity(), strftime(Sys.time(), "%Y%m%d%H%M%S")), pattern=".") 
       saveRDS(mget(grep(pattern, ls(cache), value=T), envir=cache) |> list2env(parent=emptyenv()), file)
     # 6. 数据读取
     ldgload <- \(file) cache <<- readRDS(file)
