@@ -48,12 +48,13 @@ if(!is.na(match(".Bkp", search()))) detach(".Bkp")
 # 库文件加载
 attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
 
-bkp(barclays) |> with(callCC(\(k) { # 创建会计主体
+# 匿名会计主体（主体名称为barclays，不过没有绑定到具体变量，使用返回值传递到with并展开内部私有函数：ldgload, entities, balance 等）
+bkp(barclays) |> with(callCC(\(k) { # 创建匿名会计主体
   backups <- list.files(pattern="\\.rds") # 加载备份文件
   if(length(backups)<1) { message("没找到RDS备份文件!"); k(list()) } # 没有发现备份文件
-  list(ldgload = ldgload(tail(backups, 1)) |> ls()) |> #  加载数据文件(尾部最新)并罗列会计主体
-    append(entities() |> (\(.) lapply(., entries) |> setNames(nm=paste0("entries_", .)))()) |> # 会计分录
-    append(entities() |> (\(.) lapply(., \(ae) balance(ae=ae)) |> setNames(nm=paste0("balance_", .)))()) # 科目余额
+  list( ldgload = ldgload(tail(backups, 1)) |> ls()) |> #  加载数据文件(尾部最新)并罗列会计主体
+    append(entities() |> (\(.) lapply(., entries) |> setNames(nm=paste0(.,".entries"))) ()) |> # 会计分录
+    append(entities() |> (\(.) lapply(., \(ae) balance(ae=ae)) |> setNames(nm=paste0(., ".balance"))) () ) # 科目余额
 })) # with
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
