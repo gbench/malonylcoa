@@ -51,13 +51,13 @@ if(!is.na(match(".Bkp", search()))) detach(".Bkp")
 # 库文件加载
 attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
 
-# 匿名会计主体（主体名称为barclays，不过没有绑定到具体变量，使用返回值传递到with并展开内部私有函数：ldgload, entities, balance 等）
-strsplit("error,barclays,hsbc,uae,indian", "[[:blank:],]+") |> unlist() |> setNames(nm=_) |> lapply(\(ae) bkp(ae) |> with(callCC(\(k) { # 创建匿名会计主体
-  backups <- list.files(pattern=sprintf("%s.*\\.rds", entity())) # 加载备份文件
-  if(length(backups)<1) { message(gettextf("没找到会计主体[%s]的RDS备份文件!", entity())); k(list()) } # 没有发现备份文件
-  list( ldgload = ldgload(tail(backups, 1)) |> ls()) |> #  加载数据文件(尾部最新)并罗列会计主体
-    append(list(entity=entity(), entries=entries(), balance=balance())) # 私有方法
-}))) 
+strsplit("error,barclays,hsbc,uae,indian", "[[:blank:],]+") |> unlist() |> setNames(nm=_) |> lapply(\(ae) bkp(ae) |> #  创建匿名会计主体ae
+  with(callCC(\(k) { # 会计主体ae不会绑定到具体变量，而是通过返回值传递到with，进而暴露展开其内部的私有函数与细节属性：ldgload, entities, balance 等。
+    backups <- list.files(pattern=sprintf("%s.*\\.rds", entity())) # 加载备份文件
+    if(length(backups)<1) { message(gettextf("没找到会计主体[%s]的RDS备份文件!", entity())); k(list()) } # 没有发现备份文件
+    list( ldgload = ldgload(tail(backups, 1)) |> ls()) |> #  加载数据文件(尾部最新)并罗列会计主体
+      append(list(entity=entity(), entries=entries(), balance=balance())) # 私有方法
+  }))) # strsplit
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
