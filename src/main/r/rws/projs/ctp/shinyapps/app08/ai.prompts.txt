@@ -1,4 +1,6 @@
-> 
+> # 请学习以下文件：API接口用法 以及 作者编码风格
+> # attach.R  bkp.readme.R  bkp.readme.txt  sqlquery.readme.txt
+>
 > # 数据加载
 > batch_load() # 导入库函数sqlquery
     RMySQL  tidyverse   jsonlite   quantmod data.table    janitor  RPostgres       boot 
