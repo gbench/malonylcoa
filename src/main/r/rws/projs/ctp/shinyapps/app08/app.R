@@ -40,8 +40,8 @@ ui <- dashboardPage(
       # 退出按钮
       hr(),
       div(style = "padding: 10px;",
-          actionButton("exit_app", label = "安全退出系统", icon = icon("power-off"),
-                      class = "btn-danger btn-block")),
+        actionButton("exit_app", label = "安全退出系统", icon = icon("power-off"),
+          class = "btn-danger btn-block")),
       
       # 数据库连接设置
       hr(),
@@ -54,8 +54,8 @@ ui <- dashboardPage(
         textInput("db_user", "用户名", value = "root"),
         passwordInput("db_pass", "密码", value = "123456"),
         actionButton("connect_db", "连接数据库", 
-                     icon = icon("database"),
-                     class = "btn-primary btn-block")
+          icon = icon("database"),
+          class = "btn-primary btn-block")
       ),
       
       # 处理控制
@@ -64,19 +64,19 @@ ui <- dashboardPage(
         style = "padding: 10px;",
         h4("数据处理控制"),
         dateRangeInput("date_range", "订单日期范围",
-                       start = Sys.Date() - 1000,
-                       end = Sys.Date()),
+          start = Sys.Date() - 1000,
+          end = Sys.Date()),
         actionButton("load_orders", "加载订单", 
-                     icon = icon("refresh"),
-                     class = "btn-success btn-block"),
+          icon = icon("refresh"),
+          class = "btn-success btn-block"),
         br(),
         actionButton("process_accounting", "执行记账", 
-                     icon = icon("calculator"),
-                     class = "btn-warning btn-block"),
+          icon = icon("calculator"),
+          class = "btn-warning btn-block"),
         br(),
         actionButton("generate_reports", "生成报表", 
-                     icon = icon("file-alt"),
-                     class = "btn-info btn-block")
+          icon = icon("file-alt"),
+          class = "btn-info btn-block")
       ),
       
       # 系统状态
@@ -171,14 +171,14 @@ ui <- dashboardPage(
             solidHeader = TRUE,
             width = 3,
             selectInput("filter_shipper", "发货方", 
-                        choices = c("全部"), multiple = TRUE),
+              choices = c("全部"), multiple = TRUE),
             selectInput("filter_receiver", "收货方", 
-                        choices = c("全部"), multiple = TRUE),
+              choices = c("全部"), multiple = TRUE),
             sliderInput("filter_amount", "金额范围",
-                        min = 0, max = 1000,
-                        value = c(0, 1000)),
+              min = 0, max = 1000,
+              value = c(0, 1000)),
             actionButton("apply_filters", "应用筛选", 
-                         icon = icon("filter"))
+              icon = icon("filter"))
           ),
           
           box(
@@ -221,11 +221,11 @@ ui <- dashboardPage(
             solidHeader = TRUE,
             width = 6,
             selectInput("select_entity", "选择会计主体", 
-                        choices = c("请选择"), width = "100%"),
+              choices = c("请选择"), width = "100%"),
             actionButton("view_entity_entries", "查看分录", 
-                         icon = icon("eye")),
+              icon = icon("eye")),
             actionButton("view_entity_balance", "查看余额", 
-                         icon = icon("balance-scale")),
+              icon = icon("balance-scale")),
             hr(),
             plotlyOutput("account_distribution", height = "250px")
           )
@@ -328,22 +328,22 @@ ui <- dashboardPage(
               tabPanel(
                 "公司对比",
                 selectInput("compare_companies", "选择公司", 
-                            choices = c("请选择"), multiple = TRUE),
+                  choices = c("请选择"), multiple = TRUE),
                 plotlyOutput("company_comparison", height = "500px")
               ),
               
               tabPanel(
                 "科目分析",
                 selectInput("analyze_accounts", "选择科目", 
-                            choices = c("请选择"), multiple = TRUE),
+                  choices = c("请选择"), multiple = TRUE),
                 plotlyOutput("account_analysis", height = "500px")
               ),
               
               tabPanel(
                 "趋势分析",
                 dateRangeInput("trend_date_range", "分析期间",
-                               start = Sys.Date() - 60,
-                               end = Sys.Date()),
+                  start = Sys.Date() - 60,
+                  end = Sys.Date()),
                 plotlyOutput("financial_trend", height = "500px")
               )
             )
@@ -361,30 +361,32 @@ ui <- dashboardPage(
             solidHeader = TRUE,
             width = 4,
             radioButtons("export_format", "导出格式",
-                         choices = c("Excel" = "excel",
-                                     "CSV" = "csv",
-                                     "JSON" = "json",
-                                     "PDF报告" = "pdf")),
+              choices = c("Excel" = "excel",
+                "CSV" = "csv",
+                "JSON" = "json",
+                "PDF报告" = "pdf")),
             selectInput("export_data", "导出数据",
-                        choices = c("订单数据",
-                                   "会计分录",
-                                   "科目余额表",
-                                   "资产负债表",
-                                   "利润表",
-                                   "现金流量表",
-                                   "全部数据")),
-            selectInput("export_entity", "会计主体（可选）",
-                        choices = c("全部主体")),
-            textInput("export_filename", "文件名",
-                      value = paste0("财务报表_", Sys.Date())),
-            hr(),
-            actionButton("do_export", "开始导出",
-                         icon = icon("download"),
-                         class = "btn-success btn-block"),
-            br(),
-            actionButton("preview_report", "预览报告",
-                         icon = icon("eye"),
-                         class = "btn-info btn-block")
+              choices = c("订单数据",
+                "会计分录",
+                "科目余额表",
+                "资产负债表",
+                "利润表",
+                "现金流量表",
+                "全部数据")),
+              selectInput("export_entity", "会计主体（可选）",
+                choices = c("全部主体")),
+              textInput("export_filename", "文件名",
+                value = paste0("财务报表_", Sys.Date())),
+              
+              hr(),
+              actionButton("do_export", "开始导出",
+                icon = icon("download"),
+                class = "btn-success btn-block"),
+
+              br(),
+              actionButton("preview_report", "预览报告",
+                icon = icon("eye"),
+                class = "btn-info btn-block")
           ),
           
           box(
@@ -409,23 +411,23 @@ ui <- dashboardPage(
                 h4("数据备份"),
                 p("备份当前所有会计数据"),
                 actionButton("backup_data", "备份数据",
-                             icon = icon("save"),
-                             class = "btn-primary")
+                  icon = icon("save"),
+                  class = "btn-primary")
               ),
               column(
                 4,
                 h4("恢复备份"),
                 fileInput("restore_file", "选择备份文件",
-                          accept = c(".rds")),
+                  accept = c(".rds")),
                 actionButton("restore_data", "恢复数据",
-                             icon = icon("undo"),
-                             class = "btn-warning")
+                  icon = icon("undo"),
+                  class = "btn-warning")
               ),
               column(
                 4,
                 h4("系统日志"),
                 div(class = "system-log",
-                    verbatimTextOutput("system_log")
+                  verbatimTextOutput("system_log")
                 )
               )
             )
@@ -440,15 +442,15 @@ ui <- dashboardPage(
 show_custom_notification <- function(message, type = "default", duration = 5) {
   # 为不同的通知类型添加自定义CSS类
   css_class <- switch(type,
-                      "message" = "notification-success",
-                      "warning" = "notification-warning",
-                      "error" = "notification-error",
-                      "default" = "notification-info")
+    "message" = "notification-success",
+    "warning" = "notification-warning",
+    "error" = "notification-error",
+    "default" = "notification-info")
   
   # 创建自定义的HTML内容
   html_content <- sprintf(
     '<div class="shiny-notification %s" style="width: 300px;">
-       <div class="shiny-notification-content">%s</div>
+      <div class="shiny-notification-content">%s</div>
      </div>',
     css_class, message
   )
@@ -465,7 +467,7 @@ show_custom_notification <- function(message, type = "default", duration = 5) {
 server <- function(input, output, session) {
   
   # 初始化反应值
-  values <- reactiveValues(
+  mydata <- reactiveValues(
     orders_data = NULL,
     entities = list(),
     journal_entries = list(),
@@ -504,13 +506,13 @@ server <- function(input, output, session) {
               if(is.na(name)) .entries |> split(.entries$name) |> lapply(bal) |> 
                 (\(.) data.frame(balance=unlist(.))) ()
               else .entries[.entries$name==name, ] |> bal()
-            }
-          }
-        })
-    })
-    
+            } # if
+          } # balance
+        }) # within
+    }) # local
+
     return(bkp)
-  }
+  } # source_bkp_system
   
   # 创建BKP实例
   bkp_instance <- reactive(source_bkp_system())
@@ -542,14 +544,14 @@ server <- function(input, output, session) {
       test_query <- dbGetQuery(con, "SELECT 1 as test")
       dbDisconnect(con)
       
-      values$db_connected <- TRUE
-      values$system_status <- "数据库连接成功"
+      mydata$db_connected <- TRUE
+      mydata$system_status <- "数据库连接成功"
       
       showNotification("数据库连接成功!", type = "message")
       
     }, error = function(e) {
-      values$db_connected <- FALSE
-      values$system_status <- paste("数据库连接失败:", e$message)
+      mydata$db_connected <- FALSE
+      mydata$system_status <- paste("数据库连接失败:", e$message)
       
       showNotification(paste("连接失败:", e$message), type = "error")
     })
@@ -557,7 +559,7 @@ server <- function(input, output, session) {
   
   # 加载订单数据
   observeEvent(input$load_orders, {
-    if (!values$db_connected) {
+    if (!mydata$db_connected) {
       showNotification("请先连接数据库!", type = "warning")
       return()
     }
@@ -588,7 +590,7 @@ server <- function(input, output, session) {
         return()
       }
       
-      values$orders_data <- orders_data
+      mydata$orders_data <- orders_data
       
       # 更新筛选选项
       updateSelectInput(session, "filter_shipper",
@@ -601,7 +603,7 @@ server <- function(input, output, session) {
       updateSliderInput(session, "filter_amount",
                         max = ceiling(max_amount * 1.1))
       
-      values$system_status <- sprintf("已加载 %d 条订单", nrow(orders_data))
+      mydata$system_status <- sprintf("已加载 %d 条订单", nrow(orders_data))
       showNotification("订单数据加载成功!", type = "message")
       
     }, error = function(e) {
@@ -611,7 +613,7 @@ server <- function(input, output, session) {
   
   # 执行记账
   observeEvent(input$process_accounting, {
-    if (is.null(values$orders_data)) {
+    if (is.null(mydata$orders_data)) {
       showNotification("请先加载订单数据!", type = "warning")
       return()
     }
@@ -621,8 +623,8 @@ server <- function(input, output, session) {
       entities_env <- new.env()
       
       # 处理所有订单
-      for (i in 1:nrow(values$orders_data)) {
-        order <- values$orders_data[i, ]
+      for (i in 1:nrow(mydata$orders_data)) {
+        order <- mydata$orders_data[i, ]
         
         # 创建会计主体
         shipper_name <- as.character(order$shipper)
@@ -670,16 +672,16 @@ server <- function(input, output, session) {
         account_balances[[entity_name]] <- entity$balance()
       }
       
-      values$entities <- as.list(entities_env)
-      values$journal_entries <- journal_entries
-      values$account_balances <- account_balances
+      mydata$entities <- as.list(entities_env)
+      mydata$journal_entries <- journal_entries
+      mydata$account_balances <- account_balances
       
       # 更新会计主体选择
       updateSelectInput(session, "select_entity", choices = c("请选择", entities))
       updateSelectInput(session, "export_entity", choices = c("全部主体", entities))
       updateSelectInput(session, "compare_companies", choices = entities)
       
-      values$system_status <- sprintf("记账完成，处理了 %d 个会计主体", length(entities))
+      mydata$system_status <- sprintf("记账完成，处理了 %d 个会计主体", length(entities))
       showNotification("记账处理完成!", type = "message")
       
     }, error = function(e) {
@@ -689,7 +691,7 @@ server <- function(input, output, session) {
   
   # 生成财务报表
   observeEvent(input$generate_reports, {
-    if (length(values$entities) == 0) {
+    if (length(mydata$entities) == 0) {
       showNotification("请先执行记账!", type = "warning")
       return()
     }
@@ -697,8 +699,8 @@ server <- function(input, output, session) {
     tryCatch({
       financial_reports <- list()
       
-      for (entity_name in names(values$entities)) {
-        entity <- values$entities[[entity_name]]
+      for (entity_name in names(mydata$entities)) {
+        entity <- mydata$entities[[entity_name]]
         entries <- entity$entries()
         
         if (nrow(entries) > 0) {
@@ -746,14 +748,14 @@ server <- function(input, output, session) {
         }
       }
       
-      values$financial_reports <- financial_reports
+      mydata$financial_reports <- financial_reports
       
       # 更新分析选项
-      all_accounts <- unique(unlist(lapply(values$account_balances, rownames)))
+      all_accounts <- unique(unlist(lapply(mydata$account_balances, rownames)))
       updateSelectInput(session, "analyze_accounts",
                         choices = all_accounts)
       
-      values$system_status <- "财务报表生成完成"
+      mydata$system_status <- "财务报表生成完成"
       showNotification("财务报表生成成功!", type = "message")
       
     }, error = function(e) {
@@ -765,24 +767,24 @@ server <- function(input, output, session) {
   output$system_status <- renderUI({
     tags$div(
       class = "alert",
-      style = ifelse(values$db_connected, 
+      style = ifelse(mydata$db_connected, 
         "background-color: #d4edda; color: #155724;", 
         "background-color: #f8d7da; color: #721c24;"),
-      tags$p(tags$strong("状态:"), values$system_status),
+      tags$p(tags$strong("状态:"), mydata$system_status),
       tags$p(tags$strong("数据库:"), 
-        ifelse(values$db_connected, "已连接", "未连接")),
-      if (!is.null(values$orders_data)) {
-        tags$p(tags$strong("订单数:"), nrow(values$orders_data))
+        ifelse(mydata$db_connected, "已连接", "未连接")),
+      if (!is.null(mydata$orders_data)) {
+        tags$p(tags$strong("订单数:"), nrow(mydata$orders_data))
       },
-      if (length(values$entities) > 0) {
-        tags$p(tags$strong("会计主体:"), length(values$entities))
+      if (length(mydata$entities) > 0) {
+        tags$p(tags$strong("会计主体:"), length(mydata$entities))
       }
     )
   })
   
   # 数据概览指标
   output$total_orders <- renderValueBox({
-    count <- ifelse(is.null(values$orders_data), 0, nrow(values$orders_data))
+    count <- ifelse(is.null(mydata$orders_data), 0, nrow(mydata$orders_data))
     valueBox(
       value = count,
       subtitle = "订单总数",
@@ -792,8 +794,8 @@ server <- function(input, output, session) {
   })
   
   output$total_amount <- renderValueBox({
-    total <- ifelse(is.null(values$orders_data), 0, 
-      sum(values$orders_data$amount, na.rm = TRUE))
+    total <- ifelse(is.null(mydata$orders_data), 0, 
+      sum(mydata$orders_data$amount, na.rm = TRUE))
     valueBox(
       value = formatC(total, format = "f", digits = 2, big.mark = ","),
       subtitle = "总交易金额",
@@ -803,7 +805,7 @@ server <- function(input, output, session) {
   })
   
   output$total_companies <- renderValueBox({
-    count <- length(values$entities)
+    count <- length(mydata$entities)
     valueBox(
       value = count,
       subtitle = "会计主体数",
@@ -813,8 +815,8 @@ server <- function(input, output, session) {
   })
   
   output$total_entries <- renderValueBox({
-    count <- ifelse(length(values$journal_entries) == 0, 0,
-      sum(sapply(values$journal_entries, nrow)))
+    count <- ifelse(length(mydata$journal_entries) == 0, 0,
+      sum(sapply(mydata$journal_entries, nrow)))
     valueBox(
       value = count,
       subtitle = "会计分录数",
@@ -825,9 +827,9 @@ server <- function(input, output, session) {
   
   # 订单趋势图
   output$order_trend <- renderPlotly({
-    if (is.null(values$orders_data)) return(NULL)
+    if (is.null(mydata$orders_data)) return(NULL)
     
-    orders <- values$orders_data
+    orders <- mydata$orders_data
     
     # 按日期汇总
     daily_summary <- orders %>%
@@ -865,9 +867,9 @@ server <- function(input, output, session) {
   
   # 公司交易排名
   output$company_ranking <- renderPlotly({
-    if (is.null(values$orders_data)) return(NULL)
+    if (is.null(mydata$orders_data)) return(NULL)
     
-    orders <- values$orders_data
+    orders <- mydata$orders_data
     
     # 计算各公司交易额
     company_stats <- bind_rows(
@@ -899,9 +901,9 @@ server <- function(input, output, session) {
   
   # 最近订单表
   output$recent_orders <- renderDT({
-    if (is.null(values$orders_data)) return(NULL)
+    if (is.null(mydata$orders_data)) return(NULL)
     
-    orders <- values$orders_data %>%
+    orders <- mydata$orders_data %>%
       arrange(desc(create_time)) %>%
       head(20) %>%
       select(id, name, shipper, receiver, amount, create_time)
@@ -922,9 +924,9 @@ server <- function(input, output, session) {
   
   # 订单数据表
   output$orders_table <- renderDT({
-    if (is.null(values$orders_data)) return(NULL)
+    if (is.null(mydata$orders_data)) return(NULL)
     
-    orders <- values$orders_data
+    orders <- mydata$orders_data
     
     # 应用筛选
     if (!is.null(input$filter_shipper) && !"全部" %in% input$filter_shipper) {
@@ -958,12 +960,12 @@ server <- function(input, output, session) {
   
   # 订单详情
   output$order_details <- renderUI({
-    if (is.null(values$orders_data)) return(NULL)
+    if (is.null(mydata$orders_data)) return(NULL)
     
     selected <- input$orders_table_rows_selected
     if (is.null(selected)) return(tags$p("请选择一行订单以查看详情"))
     
-    order <- values$orders_data[selected, ]
+    order <- mydata$orders_data[selected, ]
     
     # 解析订单详情
     details <- tryCatch({
@@ -1018,7 +1020,7 @@ server <- function(input, output, session) {
     selected <- input$orders_table_rows_selected
     if (is.null(selected)) return(NULL)
     
-    order <- values$orders_data[selected, ]
+    order <- mydata$orders_data[selected, ]
     details <- fromJSON(order$details)
     
     if (is.data.frame(details$items)) {
@@ -1037,12 +1039,12 @@ server <- function(input, output, session) {
   
   # 会计分录表
   output$journal_entries <- renderDT({
-    if (length(values$journal_entries) == 0) return(NULL)
+    if (length(mydata$journal_entries) == 0) return(NULL)
     
     # 合并所有分录
     all_entries <- bind_rows(
-      lapply(names(values$journal_entries), function(entity_name) {
-        entries <- values$journal_entries[[entity_name]]
+      lapply(names(mydata$journal_entries), function(entity_name) {
+        entries <- mydata$journal_entries[[entity_name]]
         if (nrow(entries) > 0) {
           entries$entity <- entity_name
           entries$time <- as.POSIXct(entries$ts, origin = "1970-01-01")
@@ -1069,12 +1071,12 @@ server <- function(input, output, session) {
   
   # 科目余额表
   output$account_balances <- renderDT({
-    if (length(values$account_balances) == 0) return(NULL)
+    if (length(mydata$account_balances) == 0) return(NULL)
     
     # 合并所有余额
     all_balances <- bind_rows(
-      lapply(names(values$account_balances), function(entity_name) {
-        balances <- values$account_balances[[entity_name]]
+      lapply(names(mydata$account_balances), function(entity_name) {
+        balances <- mydata$account_balances[[entity_name]]
         if (nrow(balances) > 0) {
           balances$entity <- entity_name
           return(balances)
@@ -1093,9 +1095,8 @@ server <- function(input, output, session) {
         scrollX = TRUE
       ),
       rownames = FALSE,
-      colnames = c("会计主体", "科目", "余额")
-    ) %>%
-      formatCurrency("balance", currency = "", interval = 3, mark = ",")
+      colnames = colnames(all_balances), # c("会计主体", "科目", "余额")
+    ) %>% formatCurrency("balance", currency = "", interval = 3, mark = ",")
   })
   
   # 科目分布图
@@ -1103,7 +1104,7 @@ server <- function(input, output, session) {
     if (is.null(input$select_entity) || input$select_entity == "请选择") return(NULL)
     
     entity_name <- input$select_entity
-    balances <- values$account_balances[[entity_name]]
+    balances <- mydata$account_balances[[entity_name]]
     
     if (is.null(balances) || nrow(balances) == 0) return(NULL)
     
@@ -1125,7 +1126,7 @@ server <- function(input, output, session) {
     plot_ly(
       summary,
       labels = ~category,
-      values = ~total,
+      mydata = ~total,
       type = 'pie',
       textinfo = 'label+percent',
       insidetextorientation = 'radial',
@@ -1144,7 +1145,7 @@ server <- function(input, output, session) {
     if (is.null(input$select_entity) || input$select_entity == "请选择") return()
     
     entity_name <- input$select_entity
-    entries <- values$journal_entries[[entity_name]]
+    entries <- mydata$journal_entries[[entity_name]]
     
     if (is.null(entries) || nrow(entries) == 0) {
       showNotification("该主体无会计分录", type = "default")
@@ -1167,7 +1168,7 @@ server <- function(input, output, session) {
     if (is.null(input$select_entity) || input$select_entity == "请选择") return(NULL)
     
     entity_name <- input$select_entity
-    entries <- values$journal_entries[[entity_name]]
+    entries <- mydata$journal_entries[[entity_name]]
     
     if (is.null(entries)) return(NULL)
     
@@ -1189,12 +1190,12 @@ server <- function(input, output, session) {
   
   # 资产负债表 - 资产
   output$assets_table <- renderDT({
-    if (length(values$financial_reports) == 0) return(NULL)
+    if (length(mydata$financial_reports) == 0) return(NULL)
     
     selected_entity <- input$select_entity
     if (is.null(selected_entity) || selected_entity == "请选择") return(NULL)
     
-    report <- values$financial_reports[[selected_entity]]
+    report <- mydata$financial_reports[[selected_entity]]
     if (is.null(report)) return(NULL)
     
     assets <- report$balance_sheet$assets
@@ -1219,12 +1220,12 @@ server <- function(input, output, session) {
   
   # 资产负债表 - 负债及所有者权益
   output$liabilities_equity_table <- renderDT({
-    if (length(values$financial_reports) == 0) return(NULL)
+    if (length(mydata$financial_reports) == 0) return(NULL)
     
     selected_entity <- input$select_entity
     if (is.null(selected_entity) || selected_entity == "请选择") return(NULL)
     
-    report <- values$financial_reports[[selected_entity]]
+    report <- mydata$financial_reports[[selected_entity]]
     if (is.null(report)) return(NULL)
     
     liabilities <- report$balance_sheet$liabilities
@@ -1257,7 +1258,7 @@ server <- function(input, output, session) {
   
   # 资产负债表检查
   output$balance_check <- renderPrint({
-    if (length(values$financial_reports) == 0) {
+    if (length(mydata$financial_reports) == 0) {
       cat("请先生成财务报表")
       return()
     }
@@ -1268,7 +1269,7 @@ server <- function(input, output, session) {
       return()
     }
     
-    report <- values$financial_reports[[selected_entity]]
+    report <- mydata$financial_reports[[selected_entity]]
     if (is.null(report)) {
       cat("该主体无财务报表")
       return()
@@ -1292,12 +1293,12 @@ server <- function(input, output, session) {
   
   # 利润表 - 收入
   output$revenue_table <- renderDT({
-    if (length(values$financial_reports) == 0) return(NULL)
+    if (length(mydata$financial_reports) == 0) return(NULL)
     
     selected_entity <- input$select_entity
     if (is.null(selected_entity) || selected_entity == "请选择") return(NULL)
     
-    report <- values$financial_reports[[selected_entity]]
+    report <- mydata$financial_reports[[selected_entity]]
     if (is.null(report)) return(NULL)
     
     revenues <- report$income_statement$revenues
@@ -1322,12 +1323,12 @@ server <- function(input, output, session) {
   
   # 利润表 - 费用
   output$expense_table <- renderDT({
-    if (length(values$financial_reports) == 0) return(NULL)
+    if (length(mydata$financial_reports) == 0) return(NULL)
     
     selected_entity <- input$select_entity
     if (is.null(selected_entity) || selected_entity == "请选择") return(NULL)
     
-    report <- values$financial_reports[[selected_entity]]
+    report <- mydata$financial_reports[[selected_entity]]
     if (is.null(report)) return(NULL)
     
     expenses <- report$income_statement$expenses
@@ -1352,12 +1353,12 @@ server <- function(input, output, session) {
   
   # 净利润显示框
   output$net_income_box <- renderValueBox({
-    if (length(values$financial_reports) == 0) return(NULL)
+    if (length(mydata$financial_reports) == 0) return(NULL)
     
     selected_entity <- input$select_entity
     if (is.null(selected_entity) || selected_entity == "请选择") return(NULL)
     
-    report <- values$financial_reports[[selected_entity]]
+    report <- mydata$financial_reports[[selected_entity]]
     if (is.null(report)) return(NULL)
     
     net_income <- report$income_statement$net_income
@@ -1372,12 +1373,12 @@ server <- function(input, output, session) {
   
   # 现金流量表
   output$cash_flow_table <- renderDT({
-    if (length(values$journal_entries) == 0) return(NULL)
+    if (length(mydata$journal_entries) == 0) return(NULL)
     
     selected_entity <- input$select_entity
     if (is.null(selected_entity) || selected_entity == "请选择") return(NULL)
     
-    entries <- values$journal_entries[[selected_entity]]
+    entries <- mydata$journal_entries[[selected_entity]]
     if (is.null(entries)) return(NULL)
     
     # 筛选现金相关科目
@@ -1403,19 +1404,18 @@ server <- function(input, output, session) {
       colnames = c("时间", "科目", "方向", "金额", "交易说明")
     ) %>%
       formatCurrency("amount", currency = "", interval = 3, mark = ",") %>%
-      formatStyle("amount",
-                  color = styleInterval(0, c('red', 'green'))) %>%
+      formatStyle("amount", color = styleInterval(0, c('red', 'green'))) %>%
       formatDate("time", method = "toLocaleString")
   })
   
   # 现金流量分析图
   output$cash_flow_chart <- renderPlotly({
-    if (length(values$journal_entries) == 0) return(NULL)
+    if (length(mydata$journal_entries) == 0) return(NULL)
     
     selected_entity <- input$select_entity
     if (is.null(selected_entity) || selected_entity == "请选择") return(NULL)
     
-    entries <- values$journal_entries[[selected_entity]]
+    entries <- mydata$journal_entries[[selected_entity]]
     if (is.null(entries)) return(NULL)
     
     # 筛选现金相关科目
@@ -1468,7 +1468,7 @@ server <- function(input, output, session) {
     comparison_data <- data.frame()
     
     for (company in selected_companies) {
-      report <- values$financial_reports[[company]]
+      report <- mydata$financial_reports[[company]]
       if (!is.null(report)) {
         bs <- report$balance_sheet
         is <- report$income_statement
@@ -1524,7 +1524,7 @@ server <- function(input, output, session) {
   
   # 数据导出处理
   observeEvent(input$do_export, {
-    if (is.null(values$orders_data) && length(values$entities) == 0) {
+    if (is.null(mydata$orders_data) && length(mydata$entities) == 0) {
       showNotification("没有数据可导出!", type = "warning")
       return()
     }
@@ -1537,13 +1537,13 @@ server <- function(input, output, session) {
       
       # 根据选择准备数据
       if (data_type == "订单数据") {
-        data_to_export <- values$orders_data
+        data_to_export <- mydata$orders_data
       } else if (data_type == "会计分录") {
         if (entity == "全部主体") {
           # 合并所有主体的分录
           all_entries <- bind_rows(
-            lapply(names(values$journal_entries), function(en) {
-              entries <- values$journal_entries[[en]]
+            lapply(names(mydata$journal_entries), function(en) {
+              entries <- mydata$journal_entries[[en]]
               if (nrow(entries) > 0) {
                 entries$entity <- en
                 entries$time <- as.POSIXct(entries$ts, origin = "1970-01-01")
@@ -1554,7 +1554,7 @@ server <- function(input, output, session) {
           )
           data_to_export <- all_entries
         } else {
-          entries <- values$journal_entries[[entity]]
+          entries <- mydata$journal_entries[[entity]]
           if (!is.null(entries) && nrow(entries) > 0) {
             entries$time <- as.POSIXct(entries$ts, origin = "1970-01-01")
             entries$direction <- ifelse(entries$drcr == 1, "借", "贷")
@@ -1568,8 +1568,8 @@ server <- function(input, output, session) {
         if (entity == "全部主体") {
           # 合并所有主体的余额
           all_balances <- bind_rows(
-            lapply(names(values$account_balances), function(en) {
-              balances <- values$account_balances[[en]]
+            lapply(names(mydata$account_balances), function(en) {
+              balances <- mydata$account_balances[[en]]
               if (nrow(balances) > 0) {
                 balances$entity <- en
                 return(balances)
@@ -1578,7 +1578,7 @@ server <- function(input, output, session) {
           )
           data_to_export <- all_balances
         } else {
-          balances <- values$account_balances[[entity]]
+          balances <- mydata$account_balances[[entity]]
           if (!is.null(balances) && nrow(balances) > 0) {
             data_to_export <- balances
           } else {
@@ -1627,19 +1627,19 @@ server <- function(input, output, session) {
   # 数据备份
   observeEvent(input$backup_data, {
     backup_data <- list(
-      orders = values$orders_data,
-      entities = values$entities,
-      journal_entries = values$journal_entries,
-      account_balances = values$account_balances,
-      financial_reports = values$financial_reports,
+      orders = mydata$orders_data,
+      entities = mydata$entities,
+      journal_entries = mydata$journal_entries,
+      account_balances = mydata$account_balances,
+      financial_reports = mydata$financial_reports,
       timestamp = Sys.time()
     )
     
     filename <- sprintf("backup_%s.rds", format(Sys.time(), "%Y%m%d_%H%M%S"))
     saveRDS(backup_data, filename)
     
-    values$last_backup <- filename
-    values$system_status <- sprintf("数据已备份: %s", filename)
+    mydata$last_backup <- filename
+    mydata$system_status <- sprintf("数据已备份: %s", filename)
     
     showNotification("数据备份成功!", type = "message")
   })
@@ -1651,28 +1651,28 @@ server <- function(input, output, session) {
     tryCatch({
       backup_data <- readRDS(input$restore_file$datapath)
       
-      values$orders_data <- backup_data$orders
-      values$entities <- backup_data$entities
-      values$journal_entries <- backup_data$journal_entries
-      values$account_balances <- backup_data$account_balances
-      values$financial_reports <- backup_data$financial_reports
+      mydata$orders_data <- backup_data$orders
+      mydata$entities <- backup_data$entities
+      mydata$journal_entries <- backup_data$journal_entries
+      mydata$account_balances <- backup_data$account_balances
+      mydata$financial_reports <- backup_data$financial_reports
       
       # 更新UI选项
-      if (!is.null(values$orders_data)) {
+      if (!is.null(mydata$orders_data)) {
         updateSelectInput(session, "filter_shipper",
-                          choices = c("全部", unique(values$orders_data$shipper)))
+          choices = c("全部", unique(mydata$orders_data$shipper)))
         updateSelectInput(session, "filter_receiver",
-                          choices = c("全部", unique(values$orders_data$receiver)))
+          choices = c("全部", unique(mydata$orders_data$receiver)))
       }
       
-      if (length(values$entities) > 0) {
-        entity_names <- names(values$entities)
+      if (length(mydata$entities) > 0) {
+        entity_names <- names(mydata$entities)
         updateSelectInput(session, "select_entity", choices = c("请选择", entity_names))
         updateSelectInput(session, "export_entity", choices = c("全部主体", entity_names))
         updateSelectInput(session, "compare_companies", choices = entity_names)
       }
       
-      values$system_status <- sprintf("数据恢复成功: %s", input$restore_file$name)
+      mydata$system_status <- sprintf("数据恢复成功: %s", input$restore_file$name)
       showNotification("数据恢复成功!", type = "message")
       
     }, error = function(e) {
@@ -1682,19 +1682,19 @@ server <- function(input, output, session) {
   
   # 系统日志
   output$system_log <- renderText({
-    log_text <- sprintf("系统状态: %s\n", values$system_status)
-    log_text <- paste0(log_text, sprintf("数据库连接: %s\n", ifelse(values$db_connected, "已连接", "未连接")))
+    log_text <- sprintf("系统状态: %s\n", mydata$system_status)
+    log_text <- paste0(log_text, sprintf("数据库连接: %s\n", ifelse(mydata$db_connected, "已连接", "未连接")))
     
-    if (!is.null(values$orders_data)) {
-      log_text <- paste0(log_text, sprintf("订单数量: %d\n", nrow(values$orders_data)))
+    if (!is.null(mydata$orders_data)) {
+      log_text <- paste0(log_text, sprintf("订单数量: %d\n", nrow(mydata$orders_data)))
     }
     
-    if (length(values$entities) > 0) {
-      log_text <- paste0(log_text, sprintf("会计主体: %d\n", length(values$entities)))
+    if (length(mydata$entities) > 0) {
+      log_text <- paste0(log_text, sprintf("会计主体: %d\n", length(mydata$entities)))
     }
     
-    if (!is.null(values$last_backup)) {
-      log_text <- paste0(log_text, sprintf("最近备份: %s\n", values$last_backup))
+    if (!is.null(mydata$last_backup)) {
+      log_text <- paste0(log_text, sprintf("最近备份: %s\n", mydata$last_backup))
     }
     
     log_text <- paste0(log_text, sprintf("当前时间: %s", Sys.time()))
@@ -1706,9 +1706,9 @@ server <- function(input, output, session) {
   observeEvent(input$apply_filters, {
     # 更新订单数据表的显示
     output$orders_table <- renderDT({
-      if (is.null(values$orders_data)) return(NULL)
+      if (is.null(mydata$orders_data)) return(NULL)
       
-      orders <- values$orders_data
+      orders <- mydata$orders_data
       
       # 应用筛选
       if (!is.null(input$filter_shipper) && !"全部" %in% input$filter_shipper) {
