@@ -48,11 +48,13 @@ if(!is.na(match(".Bkp", search()))) detach(".Bkp")
 # 库文件加载
 attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
 
-p <- bkp(barclays) # 创建会计主体
 rs <- list.files(pattern="\\.rds") # 寻找数据文件
-if(length(rs)>0) list(ldgload = p$ldgload(rs[length(rs)]) |> ls()) |> #  加载数据文件
-  append(p$entities() |> (\(.)  lapply(., p$entries) |> setNames(nm=paste0("entries_", .)))()) |> # 会计分录
-  append(p$entities() |> (\(.)  lapply(., \(ae) p$balance(ae=ae)) |> setNames(nm=paste0("balance_", .)))()) # 科目余额
+bkp(barclays) |> with(callCC(\(k) { # 创建会计主体
+  if(length(rs)<1) { message("没找到RDS数据文件!"); k(list()) } # 
+  list(ldgload = ldgload(rs[length(rs)]) |> ls()) |> #  加载数据文件&并罗列会计主体
+    append(entities() |> (\(.) lapply(., entries) |> setNames(nm=paste0("entries_", .)))()) |> # 会计分录
+    append(entities() |> (\(.) lapply(., \(ae) balance(ae=ae)) |> setNames(nm=paste0("balance_", .)))()) # 科目余额
+}))
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
