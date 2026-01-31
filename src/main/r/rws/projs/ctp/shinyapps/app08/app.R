@@ -58,7 +58,7 @@ ui <- dashboardPage(
         style = "padding: 10px;",
         h4("数据处理控制"),
         dateRangeInput("date_range", "订单日期范围",
-                       start = Sys.Date() - 30,
+                       start = Sys.Date() - 1000,
                        end = Sys.Date()),
         actionButton("load_orders", "加载订单", 
                      icon = icon("refresh"),
