@@ -594,14 +594,14 @@ server <- function(input, output, session) {
       
       # 更新筛选选项
       updateSelectInput(session, "filter_shipper",
-                        choices = c("全部", unique(orders_data$shipper)))
+        choices = c("全部", unique(orders_data$shipper)))
       updateSelectInput(session, "filter_receiver",
-                        choices = c("全部", unique(orders_data$receiver)))
+        choices = c("全部", unique(orders_data$receiver)))
       
       # 更新金额范围
       max_amount <- max(orders_data$amount, na.rm = TRUE)
       updateSliderInput(session, "filter_amount",
-                        max = ceiling(max_amount * 1.1))
+        max = ceiling(max_amount * 1.1))
       
       mydata$system_status <- sprintf("已加载 %d 条订单", nrow(orders_data))
       showNotification("订单数据加载成功!", type = "message")
@@ -937,9 +937,7 @@ server <- function(input, output, session) {
       orders <- orders %>% filter(receiver %in% input$filter_receiver)
     }
     
-    orders <- orders %>% 
-      filter(amount >= input$filter_amount[1] & 
-               amount <= input$filter_amount[2])
+    orders <- orders %>% filter(amount >= input$filter_amount[1] & amount <= input$filter_amount[2])
     
     datatable(
       orders,
@@ -1079,6 +1077,7 @@ server <- function(input, output, session) {
         balances <- mydata$account_balances[[entity_name]]
         if (nrow(balances) > 0) {
           balances$entity <- entity_name
+          balances$account <- row.names(balances) # 账户名称  
           return(balances)
         }
       }),
@@ -1088,14 +1087,14 @@ server <- function(input, output, session) {
     if (nrow(all_balances) == 0) return(NULL)
     
     datatable(
-      all_balances,
+      all_balances[, c("entity", "account", "balance")],
       options = list(
         pageLength = 10,
         lengthMenu = c(10, 25, 50),
         scrollX = TRUE
       ),
       rownames = FALSE,
-      colnames = colnames(all_balances), # c("会计主体", "科目", "余额")
+      colnames = c("会计主体", "科目", "余额")
     ) %>% formatCurrency("balance", currency = "", interval = 3, mark = ",")
   })
   
