@@ -269,3 +269,7 @@ Warning messages:
 5: In dbSendQuery(conn, statement, ...) :
   Decimal MySQL column 4 imported as numeric
 > 
+>
+> # 你学会了作者的极致简洁的编码风格了吗？
+> # hitler 数据库的表结构学会了吗？
+> # 基于hitler编码程序，为各个会计主体(公司)生成财务报表(资产负债，利润，现金流量)
