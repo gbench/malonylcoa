@@ -95,7 +95,7 @@ ui <- dashboardPage(
       tags$style(HTML("
         .small-box { border-radius: 10px; }
         .info-box { border-radius: 10px; }
-        .btn-block { width: 100%; }
+        .btn-block { width: 90%; }
         .box { border-radius: 10px; }
         .skin-blue .main-header .logo { background-color: #2c3e50; }
         .skin-blue .main-header .navbar { background-color: #34495e; }
