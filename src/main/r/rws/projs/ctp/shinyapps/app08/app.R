@@ -36,6 +36,12 @@ ui <- dashboardPage(
       menuItem("财务报表", tabName = "reports", icon = icon("file-invoice-dollar")),
       menuItem("可视化分析", tabName = "visualization", icon = icon("chart-bar")),
       menuItem("数据导出", tabName = "export", icon = icon("download")),
+
+      # 退出按钮
+      hr(),
+      div(style = "padding: 10px;",
+          actionButton("exit_app", label = "安全退出系统", icon = icon("power-off"),
+                      class = "btn-danger btn-block")),
       
       # 数据库连接设置
       hr(),
@@ -510,6 +516,15 @@ server <- function(input, output, session) {
   bkp_instance <- reactive({
     source_bkp_system()
   })
+
+  # 退出功能
+  observeEvent(input$exit_app, {
+    showModal(modalDialog(
+      title = "确认退出", "确定要退出系统吗？",
+      footer = tagList(modalButton("取消"), actionButton("confirm_exit", "退出", class = "btn-danger"))
+    ))
+  })
+  observeEvent(input$confirm_exit, { removeModal(); stopApp() })
   
   # 数据库连接
   observeEvent(input$connect_db, {
