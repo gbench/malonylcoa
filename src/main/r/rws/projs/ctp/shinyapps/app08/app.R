@@ -481,13 +481,13 @@ server <- function(input, output, session) {
     bkp <- local({
       cache <- new.env(hash=TRUE)
       .empty <- \() data.frame(ts=numeric(0), drcr=integer(0), name=character(0), 
-                               amount=numeric(0), tx=character(0), stringsAsFactors=FALSE)
+        amount=numeric(0), tx=character(0), stringsAsFactors=FALSE)
       .get <- \(x, s=as.character(x)) if (exists(s, envir=cache, inherits=FALSE)) 
         get(s, envir = cache) else .empty()
       .assign <- \(x, value) assign(x, value, envir=cache)
       .append <- \(ae, drcr, name, amount, tx=NA) .assign(ae, rbind(.get(ae), 
         data.frame(ts=Sys.time(), drcr=as.integer(drcr), name=as.character(name), 
-                   amount=as.numeric(amount), tx=as.character(tx), stringsAsFactors=FALSE)))
+          amount=as.numeric(amount), tx=as.character(tx), stringsAsFactors=FALSE)))
       
       \(acctentity, .ae=(\(s) tryCatch(acctentity, error=\(e) s)) (as.character(substitute(acctentity))))
         list(entity=\(ae=NA) ifelse(is.na(ae), .ae, ae), entities=\() ls(cache)) |> within({
@@ -513,9 +513,7 @@ server <- function(input, output, session) {
   }
   
   # 创建BKP实例
-  bkp_instance <- reactive({
-    source_bkp_system()
-  })
+  bkp_instance <- reactive(source_bkp_system())
 
   # 退出功能
   observeEvent(input$exit_app, {
@@ -524,6 +522,7 @@ server <- function(input, output, session) {
       footer = tagList(modalButton("取消"), actionButton("confirm_exit", "退出", class = "btn-danger"))
     ))
   })
+
   observeEvent(input$confirm_exit, { removeModal(); stopApp() })
   
   # 数据库连接
@@ -676,12 +675,9 @@ server <- function(input, output, session) {
       values$account_balances <- account_balances
       
       # 更新会计主体选择
-      updateSelectInput(session, "select_entity",
-                        choices = c("请选择", entities))
-      updateSelectInput(session, "export_entity",
-                        choices = c("全部主体", entities))
-      updateSelectInput(session, "compare_companies",
-                        choices = entities)
+      updateSelectInput(session, "select_entity", choices = c("请选择", entities))
+      updateSelectInput(session, "export_entity", choices = c("全部主体", entities))
+      updateSelectInput(session, "compare_companies", choices = entities)
       
       values$system_status <- sprintf("记账完成，处理了 %d 个会计主体", length(entities))
       showNotification("记账处理完成!", type = "message")
@@ -770,11 +766,11 @@ server <- function(input, output, session) {
     tags$div(
       class = "alert",
       style = ifelse(values$db_connected, 
-                     "background-color: #d4edda; color: #155724;", 
-                     "background-color: #f8d7da; color: #721c24;"),
+        "background-color: #d4edda; color: #155724;", 
+        "background-color: #f8d7da; color: #721c24;"),
       tags$p(tags$strong("状态:"), values$system_status),
       tags$p(tags$strong("数据库:"), 
-             ifelse(values$db_connected, "已连接", "未连接")),
+        ifelse(values$db_connected, "已连接", "未连接")),
       if (!is.null(values$orders_data)) {
         tags$p(tags$strong("订单数:"), nrow(values$orders_data))
       },
@@ -797,7 +793,7 @@ server <- function(input, output, session) {
   
   output$total_amount <- renderValueBox({
     total <- ifelse(is.null(values$orders_data), 0, 
-                    sum(values$orders_data$amount, na.rm = TRUE))
+      sum(values$orders_data$amount, na.rm = TRUE))
     valueBox(
       value = formatC(total, format = "f", digits = 2, big.mark = ","),
       subtitle = "总交易金额",
@@ -818,7 +814,7 @@ server <- function(input, output, session) {
   
   output$total_entries <- renderValueBox({
     count <- ifelse(length(values$journal_entries) == 0, 0,
-                    sum(sapply(values$journal_entries, nrow)))
+      sum(sapply(values$journal_entries, nrow)))
     valueBox(
       value = count,
       subtitle = "会计分录数",
@@ -845,14 +841,14 @@ server <- function(input, output, session) {
     
     plot_ly(daily_summary) %>%
       add_trace(x = ~date, y = ~order_count, 
-                type = 'scatter', mode = 'lines+markers',
-                name = '订单数',
-                line = list(color = '#3498db'),
-                yaxis = 'y') %>%
+        type = 'scatter', mode = 'lines+markers',
+        name = '订单数',
+        line = list(color = '#3498db'),
+        yaxis = 'y') %>%
       add_trace(x = ~date, y = ~total_amount, 
-                type = 'bar', name = '交易金额',
-                yaxis = 'y2',
-                marker = list(color = '#2ecc71', opacity = 0.6)) %>%
+        type = 'bar', name = '交易金额',
+        yaxis = 'y2',
+        marker = list(color = '#2ecc71', opacity = 0.6)) %>%
       layout(
         title = "订单趋势分析",
         xaxis = list(title = "日期"),
@@ -878,24 +874,22 @@ server <- function(input, output, session) {
       orders %>% 
         group_by(company = shipper) %>%
         summarise(total_amount = sum(amount, na.rm = TRUE),
-                  role = "发货方"),
+          role = "发货方"),
       orders %>% 
         group_by(company = receiver) %>%
         summarise(total_amount = sum(amount, na.rm = TRUE),
-                  role = "收货方")
-    ) %>%
-      group_by(company) %>%
+          role = "收货方")
+    ) %>% group_by(company) %>%
       summarise(total_amount = sum(total_amount, na.rm = TRUE)) %>%
       arrange(desc(total_amount)) %>%
       head(10)
     
     plot_ly(company_stats,
-            x = ~total_amount,
-            y = ~reorder(company, total_amount),
-            type = 'bar',
-            orientation = 'h',
-            marker = list(color = '#9b59b6')) %>%
-      layout(
+      x = ~total_amount,
+      y = ~reorder(company, total_amount),
+      type = 'bar',
+      orientation = 'h',
+      marker = list(color = '#9b59b6')) %>% layout(
         title = "公司交易排名",
         xaxis = list(title = "交易金额"),
         yaxis = list(title = ""),
@@ -1216,13 +1210,11 @@ server <- function(input, output, session) {
       ),
       rownames = FALSE,
       colnames = c("科目", "余额")
-    ) %>%
-      formatCurrency("balance", currency = "", interval = 3, mark = ",") %>%
-      formatStyle("balance",
-                  background = styleColorBar(range(assets$balance), '#3498db'),
-                  backgroundSize = '100% 90%',
-                  backgroundRepeat = 'no-repeat',
-                  backgroundPosition = 'center')
+    ) %>% formatCurrency("balance", currency = "", interval = 3, mark = ",") %>% 
+    formatStyle("balance", background = styleColorBar(range(assets$balance), '#3498db'),
+      backgroundSize = '100% 90%',
+      backgroundRepeat = 'no-repeat',
+      backgroundPosition = 'center')
   })
   
   # 资产负债表 - 负债及所有者权益
@@ -1257,10 +1249,10 @@ server <- function(input, output, session) {
     ) %>%
       formatCurrency("balance", currency = "", interval = 3, mark = ",") %>%
       formatStyle("balance",
-                  background = styleColorBar(range(combined$balance), '#2ecc71'),
-                  backgroundSize = '100% 90%',
-                  backgroundRepeat = 'no-repeat',
-                  backgroundPosition = 'center')
+        background = styleColorBar(range(combined$balance), '#2ecc71'),
+        backgroundSize = '100% 90%',
+        backgroundRepeat = 'no-repeat',
+        backgroundPosition = 'center')
   })
   
   # 资产负债表检查
@@ -1324,8 +1316,8 @@ server <- function(input, output, session) {
     ) %>%
       formatCurrency("balance", currency = "", interval = 3, mark = ",") %>%
       formatStyle("balance",
-                  color = styleInterval(0, c('red', 'green')),
-                  fontWeight = styleInterval(0, c('normal', 'bold')))
+        color = styleInterval(0, c('red', 'green')),
+        fontWeight = styleInterval(0, c('normal', 'bold')))
   })
   
   # 利润表 - 费用
@@ -1354,8 +1346,8 @@ server <- function(input, output, session) {
     ) %>%
       formatCurrency("balance", currency = "", interval = 3, mark = ",") %>%
       formatStyle("balance",
-                  color = styleInterval(0, c('green', 'red')),
-                  fontWeight = styleInterval(0, c('bold', 'normal')))
+        color = styleInterval(0, c('green', 'red')),
+        fontWeight = styleInterval(0, c('bold', 'normal')))
   })
   
   # 净利润显示框
@@ -1443,15 +1435,15 @@ server <- function(input, output, session) {
     
     plot_ly(cash_entries) %>%
       add_trace(x = ~date, y = ~daily_flow,
-                type = 'bar', name = '日现金流量',
-                marker = list(color = ~daily_flow,
-                              colorscale = list(c(0, '#e74c3c'), c(1, '#2ecc71')),
-                              showscale = FALSE)) %>%
+        type = 'bar', name = '日现金流量',
+        marker = list(color = ~daily_flow,
+          colorscale = list(c(0, '#e74c3c'), c(1, '#2ecc71')),
+          showscale = FALSE)) %>%
       add_trace(x = ~date, y = ~cumulative,
-                type = 'scatter', mode = 'lines',
-                name = '累计现金流量',
-                line = list(color = '#3498db', width = 3),
-                yaxis = 'y2') %>%
+        type = 'scatter', mode = 'lines',
+        name = '累计现金流量',
+        line = list(color = '#3498db', width = 3),
+        yaxis = 'y2') %>%
       layout(
         title = sprintf("%s - 现金流量分析", selected_entity),
         xaxis = list(title = "日期"),
@@ -1675,12 +1667,9 @@ server <- function(input, output, session) {
       
       if (length(values$entities) > 0) {
         entity_names <- names(values$entities)
-        updateSelectInput(session, "select_entity",
-                          choices = c("请选择", entity_names))
-        updateSelectInput(session, "export_entity",
-                          choices = c("全部主体", entity_names))
-        updateSelectInput(session, "compare_companies",
-                          choices = entity_names)
+        updateSelectInput(session, "select_entity", choices = c("请选择", entity_names))
+        updateSelectInput(session, "export_entity", choices = c("全部主体", entity_names))
+        updateSelectInput(session, "compare_companies", choices = entity_names)
       }
       
       values$system_status <- sprintf("数据恢复成功: %s", input$restore_file$name)
@@ -1694,8 +1683,7 @@ server <- function(input, output, session) {
   # 系统日志
   output$system_log <- renderText({
     log_text <- sprintf("系统状态: %s\n", values$system_status)
-    log_text <- paste0(log_text, sprintf("数据库连接: %s\n", 
-                                         ifelse(values$db_connected, "已连接", "未连接")))
+    log_text <- paste0(log_text, sprintf("数据库连接: %s\n", ifelse(values$db_connected, "已连接", "未连接")))
     
     if (!is.null(values$orders_data)) {
       log_text <- paste0(log_text, sprintf("订单数量: %d\n", nrow(values$orders_data)))
@@ -1731,9 +1719,7 @@ server <- function(input, output, session) {
         orders <- orders %>% filter(receiver %in% input$filter_receiver)
       }
       
-      orders <- orders %>% 
-        filter(amount >= input$filter_amount[1] & 
-                 amount <= input$filter_amount[2])
+      orders <- orders %>% filter(amount >= input$filter_amount[1] & amount <= input$filter_amount[2])
       
       datatable(
         orders,
