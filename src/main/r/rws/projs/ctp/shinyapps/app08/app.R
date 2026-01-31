@@ -1125,7 +1125,7 @@ server <- function(input, output, session) {
     plot_ly(
       summary,
       labels = ~category,
-      mydata = ~total,
+      values = ~total,
       type = 'pie',
       textinfo = 'label+percent',
       insidetextorientation = 'radial',
