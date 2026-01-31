@@ -40,6 +40,9 @@ barclays |> with(balance())
 # 数据持久化 : 保存所有数据
 barclays |> with(ldgsave("allinone.rds"))
 
+# 数据持久化 : 多主体私有保存
+barclays |> with(entities() |> setNames(nm=_) |> lapply(\(ae, file=gettextf("%s%s.rds", ae, strftime(Sys.time(),"%Y%m%d%H%M%S"))) ldgsave(file, ae)))
+
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # 移除库文件
@@ -48,11 +51,13 @@ if(!is.na(match(".Bkp", search()))) detach(".Bkp")
 # 库文件加载
 attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
 
-p <- bkp(barclays) # 创建会计主体
-rs <- list.files(pattern="\\.rds") # 寻找数据文件
-if(length(rs)>0) list(ldgload = p$ldgload(rs[length(rs)]) |> ls()) |> #  加载数据文件
-  append(p$entities() |> (\(.)  lapply(., p$entries) |> setNames(nm=paste0("entries_", .)))()) |> # 会计分录
-  append(p$entities() |> (\(.)  lapply(., \(ae) p$balance(ae=ae)) |> setNames(nm=paste0("balance_", .)))()) # 科目余额
+strsplit("error,barclays,hsbc,uae,indian", "[[:blank:],]+") |> unlist() |> setNames(nm=_) |> lapply(\(ae) bkp(ae) |> #  创建匿名会计主体ae
+  with(callCC(\(k) { # 会计主体ae不会绑定到具体变量，而是通过返回值传递到with，进而暴露展开其内部的私有函数与细节属性：ldgload, entities, balance 等。
+    backups <- list.files(pattern=sprintf("^%s.*\\.rds$", entity())) # 加载备份文件
+    if(length(backups)<1) { message(gettextf("没找到会计主体[%s]的RDS备份文件!", entity())); k(list()) } # 没有发现主体ae的数据备份文件则kill本次执行，返回空列表！
+    list(backup=tail(backups, 1)) |> with(list(ldgload=ldgload(tail(backups, 1)) |> ls()) |> #  加载数据文件(尾部最新)并罗列会计主体
+      append(list(entity=entity(), backup=backup, mtime=file.mtime(backup), entries=entries(), balance=balance()))) # 私有方法
+  }))) # strsplit
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
