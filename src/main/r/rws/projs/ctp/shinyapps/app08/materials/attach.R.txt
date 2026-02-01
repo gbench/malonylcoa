@@ -148,16 +148,55 @@ ods <- sqlquery("select * from t_order"); ods # 订单数据
 file.show("acct.sql") # 查看文件内容
 
 # 模板查询
-bills <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=map(details, fj2)) |> # 把details转成list对象
+company_id <- 1 # 公司id
+bills <- GJVs |> sqldframe(list("##company_id"=company_id)) |> mutate(details=map(details, fj2)) |> # 把details转成list对象
   mutate(p=map(details,"items") |> map(~ # 提取details中的items产品列表, 对产品列表进行类型变换
-    mutate(., across(id,as.integer), across(c(quantity,price),as.integer)) |> # 类型转换
+    mutate(., across(id, as.integer), across(c(quantity, price), as.double)) |> # 类型转换
     setNames(nm=paste0("item_", names(.))) # 增加item前缀以向上提升层级unnest发生名称冲突
   )) |> select(-details) |> arrange(bill_type) |> unnest(p) %>% # 产品列表p中item进行行级提升(类似java的flatMap)
-  mutate(name=cps[match(.$item_id, cps$id),]$name); # 把 item_id 改名成 name
+  mutate(name=cps$name[match(.$item_id, cps$id)]); # 把 item_id 改名成 name
 
 dtbs <- setDT(bills) # 转换成data.table对象 
 dtbs[bill_type=="t_order"] |> print() # 提取所有订单项目
 dtbs[bill_type=="t_payment"] |> print() # 付款单
+
+# 加入在会计记账系统
+attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
+ents <- sqlquery("select * from t_company") # 公司信息
+ents$name[match(company_id, ents$id)] |> bkp() |> with({
+  foreach <- \(x, f) seq_len(nrow(x)) |> lapply(\(i, e=x[i, ]) f(e, i)) # 遍历函数
+  account <- \(acct, item) gettextf("%s-%s", acct, item) # 会计科目
+
+  order_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-order-%s", x$id)) with(x, { # 订单处理函数
+    if(position=="long") dc(account("材料采购", name) ,account("应付账款", name), amount, tx)
+    else dc(account("应收账款", name), account("主营业务收入", name), amount, tx)
+  }) # order_handler
+
+  invoice_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-payment-%s", x$id)) with(x, { # 订单处理函数
+    if(position=="long") dc(account("在途物资", name) ,account("材料采购", name), amount, tx=gettextf("tx-order-%s", id))
+    else dc(account("发出商品", name), account("库存商品", name), amount, tx)
+  }) # invoice_handler
+
+  receipt_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-payment-%s", x$id)) with(x, { # 订单处理函数
+    if(position=="long") dc(account("库存商品", name) ,account("在途物资", name), amount, tx)
+    else dc(account("主营业务成本", name), account("发出商品", name), amount, tx)
+  }) # receipt_handler
+
+  payment_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-payment-%s", x$id)) with(x, { # 订单处理函数
+    if(position=="long") dc(account("应付账款", name) ,account("银行存款", name), amount,tx)
+    else dc(account("银行存款", name), account("应收账款", name), amount, tx)
+  }) # payment_handler
+
+  default_handler <- \(x, i) list() # 默认处理器
+
+  bills |> foreach(\(e,i) switch(e$bill_type, # 根据凭证类型执行会计记账
+    t_order = order_handler, invoice = invoice_handler, receipt = receipt_handler, 
+    t_payment = payment_handler, default_handler) (e)
+  ) |> rbind() |> print() # 根据凭证类型执行会计记账
+  
+  entries() |> print() # 会计分录
+  balance() # 试算平衡
+}) # bkp 会计记账
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
