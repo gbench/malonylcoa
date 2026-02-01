@@ -135,9 +135,12 @@ attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({
     dbDisconnect <- \(conn) if(!is.null(shared_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
 })
 
-# 数据查询（）
-pcts <- sqlquery("select * from t_product")
-sqlquery("select * from t_order")
+# fromJson twice ! 会把JSON数据进行二次转意义，因此这里需要二次解析
+fj2 <- compose(fromJSON, fromJSON)
+
+# 数据查询
+cps <- sqlquery("select * from t_company_product") |> mutate(p=map(attrs,compose(as.data.frame,fj2))) |> select(-attrs) |> unnest(p)
+ods <- sqlquery("select * from t_order"); ods # 订单数据
 
 # 使用 sql模板 GJVs
 "https://raw.githubusercontent.com/gbench/malonylcoa/main/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql" |> 
@@ -145,8 +148,16 @@ sqlquery("select * from t_order")
 file.show("acct.sql") # 查看文件内容
 
 # 模板查询
-vouchers <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=purrr::map(details, compose(fromJSON,fromJSON)))
-print(vouchers$details)
+bills <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=map(details, fj2)) |> # 把details转成list对象
+  mutate(p=map(details,"items") |> map(~ # 提取details中的items产品列表, 对产品列表进行类型变换
+    mutate(., across(id,as.integer), across(c(quantity,price),as.integer)) |> # 类型转换
+    setNames(nm=paste0("item_", names(.))) # 增加item前缀以向上提升层级unnest发生名称冲突
+  )) |> select(-details) |> arrange(bill_type) |> unnest(p) %>% # 产品列表p中item进行行级提升(类似java的flatMap)
+  mutate(name=cps[match(.$item_id, cps$id),]$name); # 把 item_id 改名成 name
+
+dtbs <- setDT(bills) # 转换成data.table对象 
+dtbs[bill_type=="t_order"] |> print() # 提取所有订单项目
+dtbs[bill_type=="t_payment"] |> print() # 付款单
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
