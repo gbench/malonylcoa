@@ -172,26 +172,26 @@ ents$name[match(company_id, ents$id)] |> bkp() |> with({
     else dc(account("应收账款", name), account("主营业务收入", name), amount, tx)
   }) # order_handler
 
-  invoice_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-payment-%s", x$id)) with(x, { # 订单处理函数
+  invoice_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-invoice-%s", x$id)) with(x, { # 发货处理函数
     if(position=="long") dc(account("在途物资", name) ,account("材料采购", name), amount, tx=gettextf("tx-order-%s", id))
     else dc(account("发出商品", name), account("库存商品", name), amount, tx)
   }) # invoice_handler
 
-  receipt_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-payment-%s", x$id)) with(x, { # 订单处理函数
+  receipt_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-receipt-%s", x$id)) with(x, { # 收货处理函数
     if(position=="long") dc(account("库存商品", name) ,account("在途物资", name), amount, tx)
     else dc(account("主营业务成本", name), account("发出商品", name), amount, tx)
   }) # receipt_handler
 
-  payment_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-payment-%s", x$id)) with(x, { # 订单处理函数
-    if(position=="long") dc(account("应付账款", name) ,account("银行存款", name), amount,tx)
+  payment_handler <- \(x, i, amount=x$item_price*x$item_quantity, tx=gettextf("tx-payment-%s", x$id)) with(x, { # 付款处理函数
+    if(position=="long") dc(account("应付账款", name) ,account("银行存款", name), amount, tx)
     else dc(account("银行存款", name), account("应收账款", name), amount, tx)
   }) # payment_handler
 
   default_handler <- \(x, i) list() # 默认处理器
 
-  bills |> foreach(\(e,i) switch(e$bill_type, # 根据凭证类型执行会计记账
+  bills |> foreach(\(x, i) switch(x$bill_type, # 根据凭证类型执行会计记账
     t_order = order_handler, invoice = invoice_handler, receipt = receipt_handler, 
-    t_payment = payment_handler, default_handler) (e)
+    t_payment = payment_handler, default_handler) (x, i)
   ) |> rbind() |> print() # 根据凭证类型执行会计记账
   
   entries() |> print() # 会计分录
