@@ -148,9 +148,16 @@ ods <- sqlquery("select * from t_order"); ods # 订单数据
 file.show("acct.sql") # 查看文件内容
 
 # 模板查询
-bills <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=map(details, fj2)) |>
-  mutate(p=map(details,"items") |> map(~ mutate(., price=as.double(price), quantity=as.integer(quantity)) |> setNames(paste0("item_", names(.))) )) |> 
-  select(-details) |> arrange(bill_type) |> unnest(p) %>% mutate(name=cps[match(.$id, cps$id),]$name); bills
+bills <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=map(details, fj2)) |> # 把details转成list对象
+  mutate(p=map(details,"items") |> map(~ # 提取details中的items产品列表, 对产品列表进行类型变换
+    mutate(., across(id,as.integer), across(c(quantity,price),as.integer)) |> # 类型转换
+    setNames(nm=paste0("item_", names(.))) # 增加item前缀以向上提升层级unnest发生名称冲突
+  )) |> select(-details) |> arrange(bill_type) |> unnest(p) %>% # 产品列表p中item进行行级提升(类似java的flatMap)
+  mutate(name=cps[match(.$item_id, cps$id),]$name); # 把 item_id 改名成 name
+
+dtbs <- setDT(bills) # 转换成data.table对象 
+dtbs[bill_type=="t_order"] |> print() # 提取所有订单项目
+dtbs[bill_type=="t_payment"] |> print() # 付款单
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
