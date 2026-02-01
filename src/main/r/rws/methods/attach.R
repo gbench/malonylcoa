@@ -136,7 +136,17 @@ attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({
 })
 
 # 数据查询（）
+pcts <- sqlquery("select * from t_product")
 sqlquery("select * from t_order")
+
+# 使用 sql模板 GJVs
+"https://raw.githubusercontent.com/gbench/malonylcoa/main/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql" |> 
+  download.file(url=_, destfile ="acct.sql", method = "auto") 
+file.show("acct.sql") # 查看文件内容
+
+# 模板查询
+vourchers <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=purrr::map(details, compose(fromJSON,fromJSON)))
+print(vourchers$details)
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
