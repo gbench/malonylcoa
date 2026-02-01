@@ -145,8 +145,8 @@ sqlquery("select * from t_order")
 file.show("acct.sql") # 查看文件内容
 
 # 模板查询
-vourchers <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=purrr::map(details, compose(fromJSON,fromJSON)))
-print(vourchers$details)
+vouchers <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=purrr::map(details, compose(fromJSON,fromJSON)))
+print(vouchers$details)
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
