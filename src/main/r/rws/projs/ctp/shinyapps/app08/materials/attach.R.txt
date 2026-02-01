@@ -149,7 +149,7 @@ file.show("acct.sql") # 查看文件内容
 
 # 模板查询
 bills <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=map(details, fj2)) |>
-  mutate(p=map(details,"items") |> map(~ mutate(., price=as.double(price)) |> setNames(paste0("item_", names(.)))  )) |> 
+  mutate(p=map(details,"items") |> map(~ mutate(., price=as.double(price), quantity=as.integer(quantity)) |> setNames(paste0("item_", names(.))) )) |> 
   select(-details) |> arrange(bill_type) |> unnest(p) %>% mutate(name=cps[match(.$id, cps$id),]$name); bills
 
 # 卸载环境
