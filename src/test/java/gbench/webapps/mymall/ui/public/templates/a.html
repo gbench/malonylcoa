@@ -36,10 +36,10 @@
             <option v-for="bt in btypes" :value="bt">{{bt}}</option>
           </select> &nbsp;
           <!--全选和清空-->
-          <span v-if="lines.length>0">
+          <span v-if="current_tbl=='t_order'&&lines.length>0">
             <button @click="()=>current.lines_selected=lines.map((e,i)=>i)">all</button>
             &nbsp;
-          </span><span v-if="lines.length>0">
+          </span><span v-if="current_tbl=='t_order'&&lines.length>0">
             <button @click="()=>current.lines_selected=[]">clear</button> &nbsp;
           </span>
           <!--功能按钮-->
@@ -92,9 +92,28 @@
       <div style="clear:both"></div>
       <div>
         <hr>
-        <div v-if="current_tbl=='t_order' && is_logined" style="border:solid 1px red;height:60px;width:99%">
+        <div v-if="current_tbl=='t_company_product' && is_logined"
+          style="border:solid 1px red;height:63px;width:99%;overflow:auto;">
+          <div>
+            <div style="display:inline-block;font-weight:bold;text-align:center;vertical-align:top;">
+              &nbsp;Total($):&nbsp;
+              <div v-html="total_cps.toFixed(2)"></div>
+            </div>
+            <div v-for="cp in current.cps_selected"
+              style="display:inline-block;text-align:center;border-left:solid 2px red;">
+              <div style="display:inline-block;text-align:left;margin-left:2px;font-size:13px">
+                <div style="font-weight:bold;font-size:16px;">{{cp.attrs.name}}</div>
+                <div>quantity:<input type='text' v-model="cp.qty" style="width:20px;border:none;" /></div>
+                <div>price:${{cp.attrs.price.toFixed(2)}}</div>
+              </div>
+              <img :src="(s=>s.startsWith('http')?s:'/h5/api/readfile?file='+s)(cp.attrs.url)" @click="select_cps(cp)"
+                style="height:50px;margin:1px" />
+            </div>
+          </div>
+        </div>
+        <div v-if="current_tbl=='t_order' && is_logined" style="border:solid 1px red;height:63px;width:99%">
           <div
-            style="float:left;width:220px;height:60px;text-align:center;background-color:red;color:white;overflow:hidden;">
+            style="float:left;width:220px;height:63px;text-align:center;background-color:red;color:white;overflow:hidden;">
             <a style='font-size:45px;font-weight:bold;color:white;' :href="this.current.counterpart.website">
               {{this.current.counterpart.name}}
             </a>
@@ -103,7 +122,7 @@
             <!--客户操作-->
             <div>
               <!--交易头寸-->
-              <select v-model="order_position">
+              <select v-model="order_position" @change="(()=>current.cps_selected=[])">
                 <option value="1">LONG</option>
                 <option value="-1">SHORT</option>
               </select> &nbsp;
@@ -114,10 +133,34 @@
               <select v-model="current.counterpart.default_warehouse_id">
                 <option v-for="wh in current.counterpart.warehouses" :value="wh.id">{{wh.name}}</option>
               </select> &nbsp;
+              <select v-if="order_position=='1'" @change="on_counterpart_cps_change($event)">
+                <option v-for="cp in current.counterpart.cps" :value="cp.id">{{cp.attrs.name}}</option>
+              </select> &nbsp;
             </div>
             <!--订单操作-->
             <div style="margin-top:2px;">
-              <button @click="on_order_btn_click($event)">order</button> &nbsp;
+              <button @click="on_order_btn_click($event)" style="width:70px;">order</button> &nbsp;
+              <div v-if="total_cps>0"
+                style="display:inline-block;vertical-align:top;white-space:nowrap;overflow:hidden;">
+                <div style='display:inline-block;vertical-align:top;font-weight:bold;font-size:14px;'>
+                  Total($):<br>
+                  {{total_cps.toFixed(2)}}
+                </div>&nbsp;
+                <div v-for="cp in current.cps_selected"
+                  style="display:inline-block;border-left:solid 1px gray;margin-right:2px;">
+                  <img :src="(s=>s.startsWith('http')?s:'/h5/api/readfile?file='+s)(cp.attrs.url)"
+                    @click="select_cps(cp)" style="height:30px;" />
+                  <div style="display:inline-block;margin-left:2px;">
+                    <div style="color:gray;font-size:12px;font-weight:bold;">{{cp.attrs.name}}</div>
+                    <span style="font-size:10px;color:gray;margin-right:2px;">
+                      price:${{cp.attrs.price.toFixed(2)}}
+                    </span>
+                    <span style="font-size:10px;color:gray">qty:</span>
+                    <input type='text' v-model="cp.qty" @change="()=>{!cp.qty?select_cps(cp):1}"
+                      style="width:20px;border:none;color:gray;font-size:9px" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

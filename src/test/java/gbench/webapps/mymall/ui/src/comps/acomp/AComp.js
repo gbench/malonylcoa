@@ -9,10 +9,12 @@ import "../../css/acomp.css";
 
 /**
  * 持久化数据 
- * 设计BUG:t_freight_order应该是多对一于t_billof_product(invoice)的但是这里给设计成了一对一的了。
+ * 设计BUG: t_freight_order 应该是多对一于t_billof_product(invoice)的，但是这里给设计成了一对一的了。
  * 于是当为一个发货单进行多次货运t_freight_order的时候,invoice只能记录第一次给予发货的货单,结果就是
- * 对于一个invoice只要货运一次,不是不是将其所有产品都给予货运,系统一概都将该invoice的中的商品视为全部
- * 货运,结果就造成了收货方的应收于实收不一致的情况了。
+ * 对于一个invoice只要货运一次,但并没有一次货运所有产品,则系统一概都将该invoice的中的商品视为全部货运, 
+ * 结果就造成了收货方的应收于实收不一致的情况了:
+ * 发货方以t_order为依据，因为：t_freight_order只有order_id，而没有invoice_id, 即 DB设计者默认是一次发完全部的!
+ * 收货方以:receipt为依据。其实要想修正也很简单，只需在t_freight_order里添加invoice_id！
  * 
  * @param entity 实体对象
  */
@@ -66,7 +68,14 @@ function trader(id) {
 			const sql = `select wh.* from (select * from t_company_warehouse where company_id=${id}) cy 
 				left join t_warehouse wh on cy.warehouse_id=wh.id`;
 			return sqlquery2(sql).then(action);
-		}
+		},/**
+		 * 公司的信息 
+		 * @returns 
+		 */
+		cps(action) {
+			const sql = `select * from t_company_product where company_id=${id}`;
+			return sqlquery2(sql).then(action);
+		},
 	};
 }
 
@@ -102,12 +111,14 @@ const INIT_DATA = {
 		counterpart: { // 对方明细
 			id: -1, // 交易对手
 			default_warehouse_id: -1, // 默认仓库
-			warehouses: []
+			warehouses: [],
+			cps: [] // 竞争对手的品列表
 		},
 		// 公司对象
 		company: null, // 当前公司对象,仅当用户登录后才有效
 		// 默认的仓库
-		default_warehouse_id: -1 // 默认的公司仓库
+		default_warehouse_id: -1, // 默认的公司仓库
+		cps_selected: [] // 当前选的公司产品
 	},  //  当前对象
 	tables: [], // 数据表
 	tbldata: [], // 表数据
@@ -171,6 +182,13 @@ const AComp = {
 			this.tables = data.map(e => { return { name: e["TABLE_NAME"] }; });
 		});
 
+		if (this.current && this.current.cps_selected.length > 0) {
+			if (this.current.cps_selected[0].company_id == this.company_id) { // 当前公司的产品列表
+				this.order_position = -1; // 当前公司的产品,订单头寸是空头卖出
+			} else { // 对手公司的产品列表
+				this.order_position = 1; // 公司对手的产品,订单头寸是多头买入
+			}
+		}
 	},
 
 	/**
@@ -321,6 +339,14 @@ const AComp = {
 				const btype = e["bill_type"];
 				return _.isEqual(btype, this.btype);
 			});
+		},
+
+		/**
+		 * 购物车中的货品金额 
+		 * @returns 
+		 */
+		total_cps() {
+			return this.current.cps_selected.map(e => e.attrs.price * (e.qty ? e.qty : 0)).reduce((acc, a) => acc + a, 0);
 		},
 
 		/**
@@ -494,6 +520,34 @@ const AComp = {
 		},
 
 		/**
+		 * 选择公司产品:购物车 
+		 * @param {*} line 
+		 */
+		select_cps(line) {
+			if (this.current.cps_selected.length > 0 && this.current.cps_selected[0].company_id != line.company_id) {
+				this.current.cps_selected = []; // 清空产品项目
+			}
+			const i = _.findIndex(this.current.cps_selected, ln => ln.id == line.id);
+			if (i < 0) {
+				if (!line.qty) {
+					line.qty = 1;
+				}
+				this.current.cps_selected.push(line);
+			} else {
+				const _line = this.current.cps_selected[i];
+				if (_line.qty) {
+					delete _line.qty;
+				}
+				this.current.cps_selected.splice(i, 1);
+			} // if
+			if (this.current.cps_selected.length > 0) { // 调整订单头寸
+				if (this.current.cps_selected[0].company_id == this.company_id) { //  这个当前公司产品列表
+					this.order_position = -1;
+				}
+			}
+		},
+
+		/**
 		 * 登录 
 		 * @param {*} event 
 		 */
@@ -619,6 +673,15 @@ const AComp = {
 					} // t_payment
 					case "t_company_product": { // 公司产品
 						conditions = `WHERE company_id=${this.company_id}`;
+						data_handler = data => {
+							this.tbldata = data.map(e => {
+								const i = _.findIndex(this.current.cps_selected, ln => ln.id == e.id);
+								if (i >= 0) { // 初始化产品列表
+									e.qty = this.current.cps_selected[i].qty;
+								}
+								return e;
+							});
+						};
 						break;
 					} // t_company_product
 					default: {
@@ -734,6 +797,9 @@ const AComp = {
 						this.on_counterpart_change(null, counterpart_id); // 更新对手方信息
 						break;
 					} // t_order
+					case "t_company_product": {
+						this.select_cps(line);
+					}
 					default: { // 其余不予处置
 						// do nothing
 					} // default
@@ -781,8 +847,13 @@ const AComp = {
 				} else {
 					t = td;
 				} // if
-
-				if (t.length > 10) { // 超长省略
+				const rp = /^([a-z]:)?([/\\a-z]+)\.[a-z]+$/ig;
+				if (rp.test(t)) {
+					const src = `src='/h5/api/readfile?file=${t}'`;
+					return `<img style='height:40px;' ${src} title='${t}' />`;
+				} else if (/^http[s]?:\/([-_/\\0-9a-z.]+\.(gif|jpg|png|jpeg))$/ig.test(t)) {
+					return `<img style='height:40px;' src='${t}' title='${t}' />`;
+				} else if (t.length > 10) { // 超长省略
 					return `<a title='${t}'>${t.substring(0, 10)}...<a>`;
 				} else {
 					return t;
@@ -840,12 +911,17 @@ const AComp = {
 					// 产品id生成规则: 乙方id+10以内的随机数，这个产品id是有限制，依据t_company_prodduct的结构来进行设置
 					return { id: (partb_id - 1) * 10 + rnd(10), quantity: rnd(10) }; // 随机生成产品id和交易数量
 				})); // 随机生成订单项目
-			const items = Object.keys(iid2pcts).map(pid => { // 产品id
+			let items = Object.keys(iid2pcts).map(pid => { // 产品id
 				const pcts = aslist(iid2pcts[pid]); // 提取指定id订单产品项目列表
 				const quantity = _.sumBy(pcts, e => e["quantity"]); // 累计交易数量
 				const item = Object.assign(pcts[0], { quantity, price: rnd2(100) }); // 累计行项目的数量并补充价格
 				return item; // 返回产品行项目
 			});
+			if (this.current.cps_selected.length > 0) { // 使用cps作为订单行项目
+				items = this.current.cps_selected.map(e => { // 订单行项目
+					return { id: e.id, quantity: e.qty, price: e.attrs.price };
+				});
+			}
 			const order_bill = { // 订单数据
 				name: "t_order", // 表名
 				lines: [{ parta_id, partb_id, details: { items }, creator_id: 1, time }] // 行项目 
@@ -855,6 +931,7 @@ const AComp = {
 			persist(order_bill).then(data => { //  持久化事后回调
 				this.reset_selected_lines(); // 重置选择行项目
 				this.refresh_orders(data); // 刷新订单
+				this.current.cps_selected = []; // 清空订单行项目
 			}); // 订单数据写入并刷新订单列表
 		}, // on_order_btn_click
 
@@ -944,7 +1021,7 @@ const AComp = {
 				const time = moment().format("YYYY-MM-DD HH:mm:ss"); // 当前系统时间
 				const freight_bill = { // 货运单
 					name: "t_freight_order",
-					lines: [{ order_id, consigner_id, consignee_id, shipping_from, shipping_to, details, creator_id, time }]
+					lines: [{ order_id, invoice_id:bill_id, consigner_id, consignee_id, shipping_from, shipping_to, details, creator_id, time }]
 				}; // 货运单
 				// 货运单持久化
 				persist(freight_bill).then(data => { // 刷新订单行项目
@@ -1041,6 +1118,9 @@ const AComp = {
 				} //if
 				this.current.counterpart.warehouses = whdata;
 			}); // warehouses
+			ct.cps(cpdata => {
+				this.current.counterpart.cps = cpdata;
+			});
 
 			// 基础信息重新加载
 			ct.reload(lines => {
@@ -1048,6 +1128,19 @@ const AComp = {
 					this.current.counterpart = Object.assign(this.current.counterpart, lines[0]);
 				}
 			});
+		},
+
+		/**
+		 * 交易对手的公司产品
+		 * @param {*} $event 
+		 */
+		on_counterpart_cps_change(event) {
+			const id = $(event.target).val();
+			const i = _.findIndex(this.current.counterpart.cps, ln => ln.id == id);
+			if (i >= 0) {
+				const line = this.current.counterpart.cps[i];
+				this.select_cps(line);
+			}
 		},
 
 		/**

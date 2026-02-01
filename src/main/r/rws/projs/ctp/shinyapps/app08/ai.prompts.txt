@@ -1,0 +1,275 @@
+> # 请学习以下文件：API接口用法 以及 作者编码风格
+> # attach.R  bkp.R  bkp.readme.txt  sqlquery.readme.txt
+>
+> # 数据加载
+> batch_load() # 导入库函数sqlquery
+    RMySQL  tidyverse   jsonlite   quantmod data.table    janitor  RPostgres       boot 
+      TRUE       TRUE       TRUE       TRUE       TRUE       TRUE       TRUE       TRUE 
+> sqlquery.hitler <- partial(sqlquery, host="192.168.1.6", port=3309, dbname="hitler")
+> tbldef.sql<- \(tbl, dbname="hitler") gettextf("
++   SELECT -- 查看列定义详情
++       COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE,
++       COLUMN_DEFAULT, COLUMN_COMMENT
++   FROM information_schema.COLUMNS 
++   WHERE TABLE_SCHEMA = '%s' 
++     AND TABLE_NAME = '%s'
++   ORDER BY ORDINAL_POSITION",dbname, tbl)
+> topn.sql <- \(tbl, n=5,dbname="hitler") gettextf("select * from %s.%s limit %s", dbname, tbl, n)
+> hitler.tables <- sqlquery.hitler("show tables") |> setNames(nm=_) # hitler数据库中的所有数据表
+> 
+> # 表定义
+> hitler.tables |> lapply(\(x) sqlquery.hitler(tbldef.sql(x)))
+$t_account
+# A tibble: 3 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>          <chr>         
+1 id          int                             NA NO          <NA>           ""            
+2 name        varchar                         30 NO          ""             ""            
+3 balance     double                          NA NO          "0"            ""            
+
+$t_accts
+# A tibble: 7 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT    COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>             <chr>         
+1 id          int                             NA NO          <NA>              id            
+2 acctnum     int                             NA YES         0                 acctnum       
+3 title       varchar                        256 NO          -                 title         
+4 amount      int                             NA YES         0                 amount        
+5 drcr        int                             NA YES         0                 drcr          
+6 journal_id  int                             NA YES         0                 journal_id    
+7 due_date    datetime                        NA NO          CURRENT_TIMESTAMP due_date      
+
+$t_bksys
+# A tibble: 6 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT    COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>             <chr>         
+1 id          int                             NA NO          <NA>              id            
+2 name        varchar                        256 NO          -                 name          
+3 title       varchar                        256 NO          -                 title         
+4 company_id  int                             NA YES         0                 company_id    
+5 create_time datetime                        NA NO          CURRENT_TIMESTAMP create_time   
+6 description varchar                        256 NO          -                 description   
+
+$t_coa
+# A tibble: 6 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>          <chr>         
+1 id          int                             NA NO          <NA>           id            
+2 account     varchar                        256 NO          -              account       
+3 pinyin      varchar                        256 NO          -              pinyin        
+4 category    varchar                        256 NO          -              category      
+5 acctnum     int                             NA YES         0              acctnum       
+6 description varchar                        256 NO          -              description   
+
+$t_company
+# A tibble: 3 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>          <chr>         
+1 id          int                             NA NO          <NA>           id            
+2 name        varchar                        256 NO          -              name          
+3 website     varchar                        256 NO          -              website       
+
+$t_company_product
+# A tibble: 6 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT    COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>             <chr>         
+1 id          int                             NA NO          <NA>              id            
+2 company_id  int                             NA YES         0                 company_id    
+3 product_id  int                             NA YES         0                 product_id    
+4 attrs       json                            NA NO          json_object()     attrs         
+5 create_time datetime                        NA NO          CURRENT_TIMESTAMP create_time   
+6 update_time datetime                        NA NO          CURRENT_TIMESTAMP update_time   
+
+$t_cph_6
+# A tibble: 7 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>          <chr>         
+1 _0          int                             NA YES         0              _0            
+2 _1          int                             NA YES         0              _1            
+3 _2          int                             NA YES         0              _2            
+4 _3          int                             NA YES         0              _3            
+5 _4          int                             NA YES         0              _4            
+6 _5          int                             NA YES         0              _5            
+7 id          int                             NA NO          <NA>           id            
+
+$t_customer
+# A tibble: 7 × 6
+  COLUMN_NAME DATA_TYPE  CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT    COLUMN_COMMENT
+  <chr>       <chr>                         <dbl> <chr>       <chr>             <chr>         
+1 id          int                              NA NO          <NA>              id            
+2 name        varchar                         256 NO          -                 name          
+3 sex         varchar                         256 NO          -                 sex           
+4 birth       datetime                         NA NO          CURRENT_TIMESTAMP birth         
+5 password    int                              NA YES         0                 password      
+6 phone       mediumtext                 16777215 YES         <NA>              phone         
+7 email       varchar                         256 NO          -                 email         
+
+$t_journal
+# A tibble: 6 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT    COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>             <chr>         
+1 id          int                             NA NO          <NA>              id            
+2 bksys_id    int                             NA YES         0                 bksys_id      
+3 title       varchar                        256 NO          -                 title         
+4 objects     varchar                        256 NO          -                 objects       
+5 create_time datetime                        NA NO          CURRENT_TIMESTAMP create_time   
+6 description varchar                        256 NO          -                 description   
+
+$t_order
+# A tibble: 8 × 6
+  COLUMN_NAME     DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT    COLUMN_COMMENT 
+  <chr>           <chr>                        <dbl> <chr>       <chr>             <chr>          
+1 id              int                             NA NO          <NA>              id             
+2 name            varchar                        256 NO          -                 name           
+3 shipper         varchar                        256 NO          -                 shipper        
+4 receiver        varchar                        256 NO          -                 receiver       
+5 receive_address varchar                        256 NO          -                 receive_address
+6 amount          decimal                         NA NO          0.000             amount         
+7 details         json                            NA NO          json_object()     details        
+8 create_time     datetime                        NA NO          CURRENT_TIMESTAMP create_time    
+
+$t_product
+# A tibble: 6 × 6
+  COLUMN_NAME   DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT COLUMN_COMMENT
+  <chr>         <chr>                        <dbl> <chr>       <chr>          <chr>         
+1 id            int                             NA NO          <NA>           id            
+2 name          varchar                        256 NO          -              name          
+3 title         varchar                        256 NO          -              title         
+4 price         decimal                         NA NO          0.000          price         
+5 price_striked decimal                         NA NO          0.000          price_striked 
+6 url           varchar                        256 NO          -              url           
+
+$t_user
+# A tibble: 2 × 6
+  COLUMN_NAME DATA_TYPE CHARACTER_MAXIMUM_LENGTH IS_NULLABLE COLUMN_DEFAULT COLUMN_COMMENT
+  <chr>       <chr>                        <dbl> <chr>       <chr>          <chr>         
+1 id          int                             NA YES         <NA>           ""            
+2 name        varchar                         34 YES         <NA>           ""            
+
+> 
+> # 数据示例
+> hitler.tables |> lapply(\(x) sqlquery.hitler(topn.sql(x)))
+$t_account
+# A tibble: 3 × 3
+     id name     balance
+  <int> <chr>      <dbl>
+1     1 zhangsan     300
+2     2 lisi         350
+3     3 wangwu       500
+
+$t_accts
+# A tibble: 5 × 7
+     id acctnum title               amount  drcr journal_id due_date           
+  <int>   <int> <chr>                <int> <int>      <int> <chr>              
+1     1    1002 银行存款-天月桥支行 200000     1          1 2023-01-01 20:24:00
+2     2    4001 实收资本-林正东     100000    -1          1 2023-01-01 20:24:00
+3     3    4001 实收资本-刘洋        60000    -1          1 2023-01-01 20:24:00
+4     4    4001 实收资本-孙灵奚      40000    -1          1 2023-01-01 20:24:00
+5     7    1231 其他应收款－备用金     100     1          3 2024-06-19 06:46:04
+
+$t_bksys
+# A tibble: 1 × 6
+     id name      title     company_id create_time         description
+  <int> <chr>     <chr>          <int> <chr>               <chr>      
+1     1 WMT账套01 WMT账套01          1 2023-07-22 13:48:00 -          
+
+$t_coa
+# A tibble: 5 × 6
+     id account          pinyin   category acctnum description
+  <int> <chr>            <chr>    <chr>      <int> <chr>      
+1     1 库存现金         kcxj     资产类      1001 -          
+2     2 银行存款         yhck     资产类      1002 -          
+3     3 存放中央银行款项 cfzyyhkx 资产类      1003 银行专用   
+4     4 存放同业         cfty     资产类      1011 银行专用   
+5     5 其他货币资金     qthbzj   资产类      1015 -          
+
+$t_company
+# A tibble: 5 × 3
+     id name               website                           
+  <int> <chr>              <chr>                             
+1     1 Walmart            https://www.walmart.com/          
+2     2 Amazon             https://www.amazon.com/           
+3     3 Apple              https://www.apple.com/            
+4     4 CVS Health         https://www.cvshealth.com/        
+5     5 UnitedHealth Group https://www.unitedhealthgroup.com/
+
+$t_company_product
+# A tibble: 5 × 6
+     id company_id product_id attrs                                                                                                  create_time update_time
+  <int>      <int>      <int> <chr>                                                                                                  <chr>       <chr>      
+1     1          1          1 "{\"url\": \"C:/Users/Administrator/Pictures/fumarate/sale.jpg\", \"price\": 6.19295151370011, \"pric… 2023-05-26… 2023-05-26…
+2     2          1          2 "{\"url\": \"C:/Users/Administrator/Pictures/fumarate/sale.jpg\", \"price\": 2.7754494476749287, \"pr… 2023-05-26… 2023-05-26…
+3     3          1          3 "{\"url\": \"C:/Users/Administrator/Pictures/fumarate/sale.jpg\", \"price\": 17.467105368706445, \"pr… 2023-05-26… 2023-05-26…
+4     4          1          4 "{\"url\": \"C:/Users/Administrator/Pictures/fumarate/sale.jpg\", \"price\": 2.7835311762337915, \"pr… 2023-05-26… 2023-05-26…
+5     5          1          5 "{\"url\": \"C:/Users/Administrator/Pictures/fumarate/sale.jpg\", \"price\": 1.7923294287299258, \"pr… 2023-05-26… 2023-05-26…
+
+$t_cph_6
+# A tibble: 5 × 7
+   `_0`  `_1`  `_2`  `_3`  `_4`  `_5`    id
+  <int> <int> <int> <int> <int> <int> <int>
+1     1     1     1     3     1     1     1
+2     1     1     1     3     1     2     2
+3     1     1     1     3     1     3     3
+4     1     1     1     3     1     4     4
+5     1     1     1     3     1     5     5
+
+$t_customer
+# A tibble: 5 × 7
+     id name     sex   birth               password phone       email            
+  <int> <chr>    <chr> <chr>                  <int> <chr>       <chr>            
+1     1 gbench   男    2003-07-13 06:15:56   123456 13120751771 gbench@sina.com  
+2     2 Smith    男    2016-04-28 23:58:45   123456 13120751772 Smith@sina.com   
+3     3 Johnson  男    1997-01-23 17:08:53   123456 13120751773 Johnson@sina.com 
+4     4 Williams 男    2023-06-20 09:47:09   123456 13120751774 Williams@sina.com
+5     5 Brown    男    2017-03-20 17:39:49   123456 13120751775 Brown@sina.com   
+
+$t_journal
+# A tibble: 2 × 6
+     id bksys_id title                  objects create_time         description           
+  <int>    <int> <chr>                  <chr>   <chr>               <chr>                 
+1     1        1 收股东投资款           资本    2023-07-22 13:48:00 收股东投资款          
+2     3        1 现金/备用金/开立备用金 备用金  2024-06-19 06:46:03 现金/备用金/开立备用金
+
+$t_order
+# A tibble: 5 × 8
+     id name   shipper                  receiver                 receive_address amount details                                                  create_time
+  <int> <chr>  <chr>                    <chr>                    <chr>            <dbl> <chr>                                                    <chr>      
+1     1 苹果   SINOPEC GROUP            WALMART                  上海              195. "{\"flag\": false, \"name\": \"苹果\", \"items\": [{\"id\… 2024-04-30…
+2     2 鸭梨   SINOPEC GROUP            CHINA NATIONAL PETROLEUM 上海              385. "{\"flag\": false, \"name\": \"鸭梨\", \"items\": [{\"id\… 2024-05-01…
+3     3 马铃薯 CHINA NATIONAL PETROLEUM ROYAL DUTCH SHELL        北京              540. "{\"flag\": false, \"name\": \"马铃薯\", \"items\": [{\"id… 2024-05-02…
+4     4 西红柿 WALMART                  SINOPEC GROUP            上海              535. "{\"flag\": false, \"name\": \"西红柿\", \"items\": [{\"id… 2024-05-03…
+5     5 葡萄   SAUDI ARAMCO             WALMART                  重庆              334. "{\"flag\": false, \"name\": \"葡萄\", \"items\": [{\"id\… 2024-05-04…
+
+$t_product
+# A tibble: 5 × 6
+     id name         title                                                    price price_striked url                                                       
+  <int> <chr>        <chr>                                                    <dbl>         <dbl> <chr>                                                     
+1     1 Pepsi Cola   Pepsi Cola Soda Pop, 16.9 fl oz, 12 Pack Bottles          5.72          6.98 https://i5.walmartimages.com/asr/e0df638c-c3e1-444f-8e23-…
+2     2 Potato Chips Lay's Classic Potato Chips, 8 oz Bag                      2.76          3.86 https://i5.walmartimages.com/asr/8eb1bec0-864f-4db2-b935-…
+3     3 Beef Burgers Sam's Choice 100% Angus Beef Burgers, 12ct, 4lb (Frozen) 17.4           0    https://i5.walmartimages.com/asr/c924f3db-e493-4ca1-a2a7-…
+4     4 Lettuce      Fresh Romaine Lettuce Hearts 3 Count, Each                2.74          3.44 https://i5.walmartimages.com/asr/d475f905-b33a-4532-b50f-…
+5     5 Broccoli     Fresh Broccoli Crowns, Each                               1.68          0    https://i5.walmartimages.com/asr/c721459d-3826-4461-9e79-…
+
+$t_user
+# A tibble: 2 × 2
+     id name     
+  <int> <chr>    
+1     1 zhangsan 
+2     3 zhangsan3
+
+Warning messages:
+1: In dbSendQuery(conn, statement, ...) :
+  unrecognized MySQL field type 245 in column 3 imported as character
+2: In dbSendQuery(conn, statement, ...) :
+  Decimal MySQL column 5 imported as numeric
+3: In dbSendQuery(conn, statement, ...) :
+  unrecognized MySQL field type 245 in column 6 imported as character
+4: In dbSendQuery(conn, statement, ...) :
+  Decimal MySQL column 3 imported as numeric
+5: In dbSendQuery(conn, statement, ...) :
+  Decimal MySQL column 4 imported as numeric
+> 
+>
+> # 你学会了作者的极致简洁的编码风格了吗？
+> # hitler 数据库的表结构学会了吗？
+> # 基于hitler编码程序，为各个会计主体(公司)生成财务报表(资产负债，利润，现金流量)
