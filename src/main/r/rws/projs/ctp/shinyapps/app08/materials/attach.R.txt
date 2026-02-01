@@ -148,7 +148,7 @@ ods <- sqlquery("select * from t_order"); ods # 订单数据
 file.show("acct.sql") # 查看文件内容
 
 # 模板查询
-company_id <- 1 # 公司id
+company_id <- 1 # 公司 id ( 会计主体：Walmart）
 bills <- GJVs |> sqldframe(list("##company_id"=company_id)) |> mutate(details=map(details, fj2)) |> # 把details转成list对象
   mutate(p=map(details,"items") |> map(~ # 提取details中的items产品列表, 对产品列表进行类型变换
     mutate(., across(id, as.integer), across(c(quantity, price), as.double)) |> # 类型转换
