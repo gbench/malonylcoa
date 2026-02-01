@@ -93,7 +93,9 @@ attach(new.env(),  name=paste0(xxxconfig, ".underlay"), pos=match(".SqlQueryEnv"
     getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default) # 联合base图层做叠化绘图的PS技法
 }) # 在环境xxxconfig里定制相关的系统配置
 attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({ # 头前拦截，为dbConnect函数增加url参数
-    dbConnect <- \(...) do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
+    shared_conn <- NULL #  共享连接
+    dbConnect <- \(...) if(!is.null(shared_conn) && DBI::dbIsValid(shared_conn)) shared_conn else shared_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
+    dbDisconnect <- \(conn) if(!is.null(shared_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
 }) # 头前拦截，为dbConnect函数增加url参数
 
 # 数据查询
@@ -101,6 +103,43 @@ sqlquery("select * from t_mtcars")
 
 # 移除igniteconfig的图层配置
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))  # 卸载环境
+
+# ------------------------------------------------------------------------------
+# H2 数据库环境配置（内存模式 - 适合快速测试）
+# ------------------------------------------------------------------------------
+batch_load() # 导入基础库，引入sqlquery系列函数
+ss("rJava,RJDBC") |> setNames(nm=_) |> lapply(require, character.only=T) |> unlist() # 加载RJDBC基础库
+xxxconfig <- "h2config" # 为环境命名
+
+# 连接mymall的H2数据库，需要启动：
+# set api_home=F:/slicef/ws/gitws/mymall/api
+# java -jar %api_home%/target/api-0.0.1-SNAPSHOT.jar --spring.config.location=%api_home%/src/main/resources/application.yml
+# 可以在application.yml的[gbench.mymall.finance.acct.jdbc]项目下面配置h2数据库的jdbc属性: vim %api_home%/src/main/resources/application.yml
+# 启动 api-0.0.1-SNAPSHOT应用后, 可在线进行数据接口测试：
+# http://localhost:6010/finance/data/sqlquery?sql=show%20tables
+# http://localhost:6010/finance/data/sqlquery?sql=select * from t_order
+# 结果类似：{"code":0,"data":[{"id":1,"parta_id":1,"partb_id":2,"details":{"items":[{"id":11,"price":1,"quantity":1},{"id":12,"price":1.5,"quantity":2},{"id":13,"price":3,"quantity":3.5}]},"creator_id":1,"time":"2024-01-05 23:56:00"},{"id":2,"parta_id":2,"partb_id":1,"details":{"items":[{"id":8,"quantity":8,"price":"36.12"}]},"creator_id":1,"time":"2026-02-01 14:06:29"}]}
+
+# Underlay 图层：配置驱动和连接参数
+attach(new.env(), name=paste0(xxxconfig, ".underlay"), pos=match(".SqlQueryEnv", search()) + 1) |> with({
+    h2.jar <- "D:/sliced/mvn_repos/com/h2database/h2/2.2.224/h2-2.2.224.jar"
+    drv <- RJDBC::JDBC(driverClass="org.h2.Driver", classPath=h2.jar, identifier.quote="\"")
+    localcfg <- list(sqlquery.drv=drv, sqlquery.user="sa", sqlquery.password="", sqlquery.host="jdbc:h2:tcp://localhost:9102/mem:mymall;mode=mysql;db_close_delay=-1;database_to_upper=false")
+    getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default)
+})
+
+# Overlay 图层：拦截 dbConnect 注入 URL 和认证信息
+attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({
+    shared_conn <- NULL #  共享连接
+    dbConnect <- \(...) if(!is.null(shared_conn) && DBI::dbIsValid(shared_conn)) shared_conn else shared_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
+    dbDisconnect <- \(conn) if(!is.null(shared_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
+})
+
+# 数据查询（）
+sqlquery("select * from t_order")
+
+# 卸载环境
+search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
 
 # ------------------------------------------------------------------------------
 # 工作区的配置
