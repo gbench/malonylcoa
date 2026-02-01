@@ -135,9 +135,12 @@ attach(new.env(), name=paste0(xxxconfig, ".overlay")) |> with({
     dbDisconnect <- \(conn) if(!is.null(shared_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
 })
 
-# 数据查询（）
-pcts <- sqlquery("select * from t_product")
-sqlquery("select * from t_order")
+# fromJson twice ! 会把JSON数据进行二次转意义，因此这里需要二次解析
+fj2 <- compose(fromJSON, fromJSON)
+
+# 数据查询
+cps <- sqlquery("select * from t_company_product") |> mutate(p=map(attrs,compose(as.data.frame,fj2))) |> select(-attrs) |> unnest(p)
+ods <- sqlquery("select * from t_order"); ods # 订单数据
 
 # 使用 sql模板 GJVs
 "https://raw.githubusercontent.com/gbench/malonylcoa/main/src/test/java/gbench/webapps/mymall/api/model/sqls/acct.sql" |> 
@@ -145,8 +148,43 @@ sqlquery("select * from t_order")
 file.show("acct.sql") # 查看文件内容
 
 # 模板查询
-vouchers <- GJVs |> sqldframe(list("##company_id"=1)) |> mutate(details=purrr::map(details, compose(fromJSON,fromJSON)))
-print(vouchers$details)
+company_id <- 1 # 公司 id ( 会计主体：Walmart）
+bills <- GJVs |> sqldframe(list("##company_id"=company_id)) |> mutate(details=map(details, fj2)) |> # 把details转成list对象
+  mutate(p=map(details,"items") |> map(~ # 提取details中的items产品列表, 对产品列表进行类型变换
+    mutate(., across(id, as.integer), across(c(quantity, price), as.double)) |> # 类型转换
+    setNames(nm=paste0("item_", names(.))) # 增加item前缀以向上提升层级unnest发生名称冲突
+  )) |> select(-details) |> arrange(bill_type) |> unnest(p) %>% # 产品列表p中item进行行级提升(类似java的flatMap)
+  mutate(name=cps$name[match(.$item_id, cps$id)]); # 把 item_id 改名成 name
+
+dtbs <- setDT(bills) # 转换成data.table对象 
+dtbs[bill_type=="t_order"] |> print() # 提取所有订单项目
+dtbs[bill_type=="t_payment"] |> print() # 付款单
+
+# 加入在会计记账系统
+attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
+policies <- list( # 记账策略
+  t_order=list(short=list(dr="应收账款", cr="主营业务收入"), long= list(dr="材料采购",  cr="应付账款")), # 订单策略
+  invoice=list(short=list(dr="发出商品",  cr="库存商品"), long=list(dr ="在途物资",  cr="材料采购")), # 发货单策略
+  receipt=list(short=list(dr="主营业务成本",  cr="发出商品"), long=list(dr="库存商品",  cr="在途物资")), # 收货策略
+  t_payment=list(short=list(dr="银行存款",  cr="应收账款"), long=list(dr="应付账款",  cr="银行存款")) # 付款策略
+) # polices 
+
+account <- \(acct, item) gettextf("%s-%s", acct, item) # 会计科目
+foreach <- \(x, f) seq_len(nrow(x)) |> lapply(\(i, e=x[i, ]) f(e, i)) # 遍历函数
+sqlquery("select * from t_company") |> (\(cs) cs$name[match(company_id, cs$id)]) () |> bkp() |> with({ # 为company_id 设计会计主体&并记账
+  post_to_ledger <- \(x, i) with(x, { # 会计记账
+      policy <- policies[[bill_type]][[position]] # 记账策略
+      if(is.null(policy)) return (list()) # 如哦记账策略不存在直接返回
+
+      amount <- item_price * item_quantity # 交易金额
+      tx <- gettextf("tx-%s[%s]-%s", sub("^t_", "", bill_type), x$id, i) # 交易摘要
+      dc(dr=account(policy$dr, name), cr=account(policy$cr, name), amount=amount, tx=tx) |> print() # Debit-Credit 复式记账
+  }) # handler
+
+  bills |> foreach(post_to_ledger) |> rbind() |> print() # 根据凭证类型执行会计记账
+  entries() |> print() # 会计分录
+  balance() # 试算平衡      
+}) # bkp 会计记账
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))

@@ -1,0 +1,175 @@
+<div style='margin-left:-1px;'>
+	<div>
+		<span style="margin-left:5px;">{{name}}(PC<span
+				v-if="userstore.current_user">:{{userstore.current_user.name}}</span>) &nbsp;</span>
+
+		<span> <!-- 数据源连接与挂载-->
+			数据源: <select v-model="current_dstype" @change='on_dstype_change($event)'>
+				<option :value="dstype" v-for="dstype in dstypes">{{dstype}}</option>
+			</select> &nbsp;
+		</span>
+
+		<span v-if="current_dstype=='hrdata'"> <!--组织&人力管理-->
+			<input type='checkbox' v-model="edit_user_depart_flag" /> 组织&人力 编辑
+		</span>
+
+		<span> <!-- 流程图管理按钮区域 -->
+			<input type='checkbox' v-model="process_diagram_flag"> 流程图
+		</span>
+		<span>
+			<input type='checkbox' v-model="userdata_flag" /> 用户数据
+		</span>
+
+		<span>
+			<span v-if="!userstore.current_user">
+				<span>name <input v-model="userstore.username"></span> &nbsp;
+				<span>password <input v-model="userstore.password"></span> &nbsp;
+			</span>
+			<span v-else="userstore.current_user">{{(u=>`${u.name}#${u.id}`)(userstore.current_user)}}</span>
+			<button v-if="!userstore.current_user" @click="on_login_btn_click">Login</button> &nbsp;
+			<button v-if="userstore.current_user" @click="on_logout_btn_click">Logout</button>
+		</span>
+
+		<span><!--登录与退出-->
+			<button style="margin:2px;" @click='on_close($event)'>close</button>
+		</span>
+	</div>
+
+	<!--数据工作区-->
+	<div style="display:flex">
+		<div style='width:80%;height:549px;flex-grow:1'>
+			<div id="panel1" v-if="current_dstype!='bpmndata'"
+				style='border:solid 1px red;height:413px;margin-bottom:1px;display:flex;flex-direction:column'>
+
+				<!-- 流程图 -->
+				<div v-if="process_diagram_flag" style="height:150px;border:solid 1px red;margin:2px;">
+					<div v-html="process_diagram_panel"></div>
+				</div>
+
+				<!--数据工作区-->
+				<div style="display:flex;flex:1;margin-bottom:3px;">
+
+					<!--hr操作数据-->
+					<div v-if="current_dstype=='hrdata'" style="display:flex;flex-direction:row;margin-top:1px;">
+						<!--当前用户数据表-->
+						<div v-if="userstore.current_user"
+							style="border:solid 1px red;margin-left:1px;width:300px;overflow:auto;">
+							<data-table tblclass="mytblclass" :data="userstore.ndfs_tables" style="width:100%;"
+								:trclass="(line,i)=>line==current_ndfstbl_line?'highlight':'trclass0'"
+								@trclick="on_ndfstbl_row_trclick($event)" />
+						</div>
+						<!--工作主体区-->
+						<div v-if="userstore.current_user"
+							style="border:solid 1px red;margin-left:1px;width:724px;overflow:auto;">
+							<!--用户的流程实例-->
+							<div v-if='!mytbldata'>
+								<data-table tblclass="mytblclass" :data="mypinsts" style="width:100%"
+									:trclass="(line,i)=>line==current_mypinst_line?'highlight':'trclass0'"
+									@trclick="on_mypinst_row_trclick($event)" />
+							</div>
+							<!--我的用户数据,我不清楚为何设置了height属性就可限制mytbldata的同时又可以弹性布局了很神奇！！！-->
+							<div v-if='mypinsts' style="height:0px;">
+								<data-table tblclass="mytblclass" :data="mytbldata" style="width:100%"
+									:trclass="(line,i)=>line==current_mytbldata_line?'highlight':'trclass0'"
+									@trclick="on_mytbldata_row_trclick($event)" />
+							</div>
+						</div>
+					</div>
+
+					<!--其他:任务操作-->
+					<div v-else style="display:flex;width:100%;">
+						<!-- 任务列表-->
+						<div
+							style="margin-left:2px;border:solid 1px red;width:330px;overflow:auto;margin-top:1px;height:87%">
+							<div style="height:80%;overflow:auto;">
+								<data-table tblclass="mytblclass" :data="tasks" style="width:100%;border:none;"
+									:trclass="(line,i)=>current_task&&line['id']==current_task['id']?'highlight':'trclass0'"
+									@trclick="on_task_row_trclick($event)" />
+								<div v-if="tasks.length<=0">PINST-LISTITEMS</div>
+							</div>
+							<hr>
+							<!--操作按钮-->
+							<div v-if="current_pinst" style="margin:2px;">
+								<button @click="on_task_submit_click"> 提交</button>
+							</div>
+							<div v-else>PINST-BUTTONS</div>
+						</div>
+
+						<!-- 表单列表-->
+						<div
+							style="margin-left:2px;border:solid 1px red;flex-grow:1;overflow:auto;margin-right:2px;margin-top:1px;height:87%">
+							<div id="form" style="height:99.2%;overflow: auto;border:red 1px solid;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="panel2" v-if="current_dstype=='bpmndata'"
+				style='border:solid 1px red;height:413px;margin-bottom:1px;display:flex;flex-direction:column;overflow: auto;'>
+				<data-table tblclass="mytblclass" :data="bpmndata" style="width:100%;"
+					:trclass="(line,i)=>line==current_bpmnndata_line?'highlight':'trclass0'"
+					@trclick="on_bpmndata_row_trclick($event)" />
+			</div>
+
+			<!-- tab 按钮区域-->
+			<div id="panel3" style="border:solid 1px red;display:flex;height:134px;overflow:auto;">
+
+				<!-- 一般数据源 -->
+				<div id="tree_dstype" v-if="current_dstype=='hrdata' || current_dstype=='formschema'"
+					style='height:100%;width:100%;overflow:auto;'>
+					<data-table tblclass="mytblclass" :data="datasource.tbldata" style="width:100%"
+						:trclass="(line,i)=>line['status']?'highlight':'trclass0'"
+						@trclick="on_ds_row_trclick($event)" />
+				</div>
+
+				<!--流程实例-->
+				<div id="pinst_dstype" v-if="current_dstype=='pinst'" style="height:100%;width:100%;overflow:auto;">
+					<data-table tblclass="mytblclass" :data="pinsts" style="width:100%"
+						:trclass="(line,i)=>current_pinst&&line['ID_']==current_pinst['ID_']?'highlight':'trclass0'"
+						@trclick="on_pinst_row_trclick($event)" />
+				</div> <!-- 流程定义 -->
+
+				<!--流程定义-->
+				<div id="pdf_dstype" v-if="current_dstype=='pdf'" style="height:100%;width:100%;overflow:auto;">
+					<data-table tblclass="mytblclass" :data="pdfs" style="width:100%"
+						:trclass="(line,i)=>current_pdf&&line['id']==current_pdf['id']?'highlight':'trclass0'"
+						@trclick="on_pdf_row_trclick($event)" />
+
+					<!--操作按钮-->
+					<div v-if="current_pdf" style="margin:2px;">
+						<button @click="on_startprocess_btn_click($event)">启动流程</button>
+					</div>
+				</div> <!-- 流程定义 -->
+
+				<!--bpmndata操作-->
+				<div id="bpmndata_dstype" v-if="current_dstype=='bpmndata'"
+					style="width:100%;overflow:auto;padding:2px;display:flex">
+					<div style="flex:0.5;overflow:auto">
+						<textarea v-model="jdbc_sql" style="height:70%;width:98%"></textarea> <br>
+						<button @click="reload_by_dstype('bpmndata')">查询</button>
+					</div>
+					<div style="flex:1;height:100%;overflow:auto">
+						<data-table tblclass="mytblclass" :data="bpmntables" style="width:100%"
+							:trclass="(line,i)=>current_bpmntable_line&&line==current_bpmntable_line?'highlight':'trclass0'"
+							@trclick="on_bpmntable_row_trclick($event)" />
+					</div>
+				</div> <!-- 流程定义 -->
+
+				<!-- 用户数据标记 -->
+				<div id="tree_dstype" v-if="userdata_flag&&userdata&&userdata.length>0"
+					style='height:100%;width:100%;overflow:auto;'>
+					<data-table tblclass="mytblclass" :data="userdata" style="width:100%"
+						:trclass="(line,i)=>current_userdata_line&&current_userdata_line==line?'highlight':'trclass0'"
+						@trclick="on_userdata_row_trclick($event)" />
+				</div>
+
+			</div>
+		</div>
+
+		<!-- 导航 -->
+		<div v-if="userdata_flag" style='border:solid 1px red;height:549px;margin:1px;'>
+			<div id='tree' v-if="current_dstype=='hrdata'" class='ztree' style="height:540px;overflow:auto"></div>
+		</div>
+	</div>
+
+	<div style='clear:both'></div>
+</div>
