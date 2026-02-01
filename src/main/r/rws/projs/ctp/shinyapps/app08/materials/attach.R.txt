@@ -171,15 +171,16 @@ policies <- list( # 记账策略
 
 account <- \(acct, item) gettextf("%s-%s", acct, item) # 会计科目
 foreach <- \(x, f) seq_len(nrow(x)) |> lapply(\(i, e=x[i, ]) f(e, i)) # 遍历函数
-ents <- sqlquery("select * from t_company") # 公司信息
-ents$name[match(company_id, ents$id)] |> bkp() |> with({
+sqlquery("select * from t_company") |> (\(cs) cs$name[match(company_id, cs$id)]) () |> bkp() |> with({ # 为company_id 设计会计主体&并记账
   post_to_ledger <- \(x, i) with(x, { # 会计记账
       policy <- policies[[bill_type]][[position]] # 记账策略
-      if(is.null(policy)) return (list()) # 记账策略不存在直接返回
-      amount <- item_price * item_quantity # 金额
-      tx = gettextf("tx-%s[%s]-%s", sub("^t_", "", bill_type), x$id, i) # 交易信息
-      dc(dr=account(policy$dr, name), cr=account(policy$cr, name), amount=amount, tx=tx) |> print() # 复式记账
+      if(is.null(policy)) return (list()) # 如哦记账策略不存在直接返回
+
+      amount <- item_price * item_quantity # 交易金额
+      tx <- gettextf("tx-%s[%s]-%s", sub("^t_", "", bill_type), x$id, i) # 交易摘要
+      dc(dr=account(policy$dr, name), cr=account(policy$cr, name), amount=amount, tx=tx) |> print() # Debit-Credit 复式记账
   }) # handler
+
   bills |> foreach(post_to_ledger) |> rbind() |> print() # 根据凭证类型执行会计记账
   entries() |> print() # 会计分录
   balance() # 试算平衡      
