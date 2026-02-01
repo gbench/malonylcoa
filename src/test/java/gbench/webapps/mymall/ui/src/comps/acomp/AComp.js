@@ -9,10 +9,12 @@ import "../../css/acomp.css";
 
 /**
  * 持久化数据 
- * 设计BUG:t_freight_order应该是多对一于t_billof_product(invoice)的但是这里给设计成了一对一的了。
+ * 设计BUG: t_freight_order 应该是多对一于t_billof_product(invoice)的，但是这里给设计成了一对一的了。
  * 于是当为一个发货单进行多次货运t_freight_order的时候,invoice只能记录第一次给予发货的货单,结果就是
- * 对于一个invoice只要货运一次,不是不是将其所有产品都给予货运,系统一概都将该invoice的中的商品视为全部
- * 货运,结果就造成了收货方的应收于实收不一致的情况了。
+ * 对于一个invoice只要货运一次,但并没有一次货运所有产品,则系统一概都将该invoice的中的商品视为全部货运, 
+ * 结果就造成了收货方的应收于实收不一致的情况了:
+ * 发货方以t_order为依据，因为：t_freight_order只有order_id，而没有invoice_id，其实加个invoice_id就可以了), 
+ * 收货方以:receipt为依据。
  * 
  * @param entity 实体对象
  */
