@@ -160,31 +160,46 @@ dtbs <- setDT(bills) # 转换成data.table对象
 dtbs[bill_type=="t_order"] |> print() # 提取所有订单项目
 dtbs[bill_type=="t_payment"] |> print() # 付款单
 
-# 加入在会计记账系统
+# 加入会计记账系统（bookkeeping)
 attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/projs/ctp/shinyapps/app07/bkp.R", envir=_)
+
+# 为mymall进行会计记账
 policies <- list( # 记账策略
-  t_order=list(short=list(dr="应收账款", cr="主营业务收入"), long= list(dr="材料采购",  cr="应付账款")), # 订单策略
-  invoice=list(short=list(dr="发出商品",  cr="库存商品"), long=list(dr ="在途物资",  cr="材料采购")), # 发货单策略
-  receipt=list(short=list(dr="主营业务成本",  cr="发出商品"), long=list(dr="库存商品",  cr="在途物资")), # 收货策略
-  t_payment=list(short=list(dr="银行存款",  cr="应收账款"), long=list(dr="应付账款",  cr="银行存款")) # 付款策略
-) # polices 
+  t_order=list(short=list(dr="应收账款", cr="主营业务收入"),  long=list(dr="材料采购", cr="应付账款")), # 订单策略
+  invoice=list(short=list(dr="发出商品", cr="库存商品"),  long=list(dr="在途物资", cr="材料采购")), # 发货单策略
+  receipt=list(short=list(dr="主营业务成本", cr="发出商品"),  long=list(dr="库存商品", cr="在途物资")), # 收货策略
+  t_payment=list(short=list(dr="银行存款", cr="应收账款"),  long=list(dr="应付账款", cr="银行存款")) # 付款策略
+) # policies 
 
-account <- \(acct, item) gettextf("%s-%s", acct, item) # 会计科目
-foreach <- \(x, f) seq_len(nrow(x)) |> lapply(\(i, e=x[i, ]) f(e, i)) # 遍历函数
-sqlquery("select * from t_company") |> (\(cs) cs$name[match(company_id, cs$id)]) () |> bkp() |> with({ # 为company_id 设计会计主体&并记账
-  post_to_ledger <- \(x, i) with(x, { # 会计记账
-      policy <- policies[[bill_type]][[position]] # 记账策略
-      if(is.null(policy)) return (list()) # 如哦记账策略不存在直接返回
-
-      amount <- item_price * item_quantity # 交易金额
-      tx <- gettextf("tx-%s[%s]-%s", sub("^t_", "", bill_type), x$id, i) # 交易摘要
-      dc(dr=account(policy$dr, name), cr=account(policy$cr, name), amount=amount, tx=tx) |> print() # Debit-Credit 复式记账
-  }) # handler
+account <- \(acct, bill) with(bill, gettextf("%s-%s-%s", acct, name, ifelse(warehouse_id<1, "no", warehouse_id))) # 会计科目
+foreach <- \(xs, f) seq_len(nrow(xs)) |> lapply(\(i, x=xs[i, ]) f(x, i)) # 遍历函数
+trial_balances <- sqlquery("select * from t_company") |> (\(cs) cs$name[match(company_id, cs$id)]) () |> bkp() |> with({ # 为company_id 设计会计主体&并记账
+  post_to_ledger <- \(bill, i) with(bill, { # 会计记账
+      policy <- if(is.null(policies[[bill_type]])) NULL else policies[[bill_type]][[position]] # 根据凭证类型匹配相应的会计记账策略
+      if(is.null(policy)) list() # 记账策略无效返回空列表
+      else { #  记账策略有效
+        amount <- item_price * item_quantity # 交易金额
+        tx <- gettextf("tx-%s[%s]-%s", sub("^t_", "", bill_type), bill$id, i) # 交易摘要，方括号内为相应凭证id(可据此id查询凭证时间这样分录就可取消交易时间)
+        dc(dr=account(policy$dr, bill), cr=account(policy$cr, bill), amount=amount, tx=tx) |> print() # Debit-Credit 复式记账
+      } # if
+  }) # post_to_ledger
 
   bills |> foreach(post_to_ledger) |> rbind() |> print() # 根据凭证类型执行会计记账
   entries() |> print() # 会计分录
-  balance() # 试算平衡      
-}) # bkp 会计记账
+  balance() # 科目试算      
+}) |> row.names() |> strsplit("[-]") |> lapply(\(e) setNames(e, nm=c("account","name", "warehouse"))) |> # 分解科目结构
+do.call("rbind", args=_) |> as_tibble() |> mutate(balance=unlist(balances)) # trial_balances 试算平衡
+
+# 从试算平衡里计算科目余额
+trial_balances |> aggregate(balance~account, data=_, sum) # 科目汇总只提取
+
+# >
+# >   account balance
+# > 1 在途物资     0.0
+# > 2 库存商品    14.5
+# > 3 应付账款     0.0
+# > 4 材料采购     0.0
+# > 5 银行存款   -14.5
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
