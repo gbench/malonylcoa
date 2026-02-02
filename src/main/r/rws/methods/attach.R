@@ -165,10 +165,10 @@ attach(NULL, name=".Bkp") |> sys.source("F:/slicef/ws/gitws/malonylcoa/src/main/
 
 # 为mymall进行会计记账
 policies <- list( # 记账策略
-  t_order=list(short=list(dr="应收账款", cr="主营业务收入"), long= list(dr="材料采购",  cr="应付账款")), # 订单策略
-  invoice=list(short=list(dr="发出商品",  cr="库存商品"), long=list(dr="在途物资",  cr="材料采购")), # 发货单策略
-  receipt=list(short=list(dr="主营业务成本",  cr="发出商品"), long=list(dr="库存商品",  cr="在途物资")), # 收货策略
-  t_payment=list(short=list(dr="银行存款",  cr="应收账款"), long=list(dr="应付账款",  cr="银行存款")) # 付款策略
+  t_order=list(short=list(dr="应收账款", cr="主营业务收入"),  long=list(dr="材料采购", cr="应付账款")), # 订单策略
+  invoice=list(short=list(dr="发出商品", cr="库存商品"),  long=list(dr="在途物资", cr="材料采购")), # 发货单策略
+  receipt=list(short=list(dr="主营业务成本", cr="发出商品"),  long=list(dr="库存商品", cr="在途物资")), # 收货策略
+  t_payment=list(short=list(dr="银行存款", cr="应收账款"),  long=list(dr="应付账款", cr="银行存款")) # 付款策略
 ) # policies 
 
 account <- \(acct, bill) with(bill, gettextf("%s-%s-%s", acct, name, ifelse(warehouse_id<1, "no", warehouse_id))) # 会计科目
