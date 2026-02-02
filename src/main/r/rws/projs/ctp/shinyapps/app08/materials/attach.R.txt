@@ -171,7 +171,7 @@ policies <- list( # 记账策略
   t_payment=list(short=list(dr="银行存款", cr="应收账款"),  long=list(dr="应付账款", cr="银行存款")) # 付款策略
 ) # policies 
 
-account <- \(acct, bill) with(bill, gettextf("%s-%s-%s", acct, name, ifelse(warehouse_id<1, "no", warehouse_id))) # 会计科目
+account <- \(acct, bill) with(bill, gettextf("%s-%s-%s", acct, name, ifelse(warehouse_id<1, "NOHOUSE", warehouse_id))) # 会计科目
 foreach <- \(xs, f) seq_len(nrow(xs)) |> lapply(\(i, x=xs[i, ]) f(x, i)) # 遍历函数
 trial_balances <- sqlquery("select * from t_company") |> (\(cs) cs$name[match(company_id, cs$id)]) () |> bkp() |> with({ # 为company_id 设计会计主体&并记账
   post_to_ledger <- \(bill, i) with(bill, { # 会计记账
@@ -187,8 +187,8 @@ trial_balances <- sqlquery("select * from t_company") |> (\(cs) cs$name[match(co
   bills |> foreach(post_to_ledger) |> rbind() |> print() # 根据凭证类型执行会计记账
   entries() |> print() # 会计分录
   balance() # 科目试算      
-}) |> row.names() |> strsplit("[-]") |> lapply(\(e) setNames(e, nm=c("account","name", "warehouse"))) |> # 分解科目结构
-do.call("rbind", args=_) |> as_tibble() |> mutate(balance=unlist(balances)) # trial_balances 试算平衡
+}) |> (\(bs) row.names(bs) |> strsplit("[-]") |> lapply(\(e) setNames(e, nm=c("account","name", "warehouse"))) |> # 分解科目结构
+do.call("rbind", args=_) |> as_tibble() |> mutate(balance=unlist(bs))) () # trial_balances 试算平衡
 
 # 从试算平衡里计算科目余额
 trial_balances |> aggregate(balance~account, data=_, sum) # 科目汇总只提取
