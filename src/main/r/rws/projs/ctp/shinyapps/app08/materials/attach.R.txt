@@ -174,7 +174,7 @@ policies <- list( # 记账策略
 account <- \(acct, bill) with(bill, gettextf("%s-%s-%s", acct, name, ifelse(warehouse_id<1, "NOHOUSE", warehouse_id))) # 会计科目
 foreach <- \(xs, f) seq_len(nrow(xs)) |> lapply(\(i, x=xs[i, ]) f(x, i)) # 遍历函数
 trial_balances <- sqlquery("select * from t_company") |> (\(cs) cs$name[match(company_id, cs$id)]) () |> bkp() |> with({ # 为company_id 设计会计主体&并记账
-  post_to_ledger <- \(bill, i) with(bill, { # 会计记账
+    post_to_ledger <- \(bill, i) with(bill, { # 会计记账
       policy <- if(is.null(policies[[bill_type]])) NULL else policies[[bill_type]][[position]] # 根据凭证类型匹配相应的会计记账策略
       if(is.null(policy)) list() # 记账策略无效返回空列表
       else { #  记账策略有效
@@ -182,13 +182,13 @@ trial_balances <- sqlquery("select * from t_company") |> (\(cs) cs$name[match(co
         tx <- gettextf("tx-%s[%s]-%s", sub("^t_", "", bill_type), bill$id, i) # 交易摘要，方括号内为相应凭证id(可据此id查询凭证时间这样分录就可取消交易时间)
         dc(dr=account(policy$dr, bill), cr=account(policy$cr, bill), amount=amount, tx=tx) |> print() # Debit-Credit 复式记账
       } # if
-  }) # post_to_ledger
+    }) # post_to_ledger
 
-  bills |> foreach(post_to_ledger) |> rbind() |> print() # 根据凭证类型执行会计记账
-  entries() |> print() # 会计分录
-  balance() # 科目试算      
-}) |> (\(bs) row.names(bs) |> strsplit("[-]") |> lapply(\(e) setNames(e, nm=c("account","name", "warehouse"))) |> # 分解科目结构
-do.call("rbind", args=_) |> as_tibble() |> mutate(balance=unlist(bs))) () # trial_balances 试算平衡
+    bills |> foreach(post_to_ledger) |> print() # 根据凭证类型执行会计记账
+    entries() |> print() # 会计分录
+    balance() # 科目试算      
+  }) |> (\(bs) row.names(bs) |> strsplit("[-]") |> lapply(\(e) setNames(e, nm=c("account","name", "warehouse"))) |> # 分解科目结构
+  do.call("rbind", args=_) |> as_tibble() |> mutate(balance=unlist(bs))) () # trial_balances 试算平衡
 
 # 从试算平衡里计算科目余额
 trial_balances |> aggregate(balance~account, data=_, sum) # 科目汇总只提取
@@ -200,6 +200,13 @@ trial_balances |> aggregate(balance~account, data=_, sum) # 科目汇总只提�
 # > 3 应付账款     0.0
 # > 4 材料采购     0.0
 # > 5 银行存款   -14.5
+
+# 从上面的代码不难发现：
+# 作者的思想本质上是巫师思维：你只需要通过sys.source将资源草药导入特定的环境炼金釜，然后念咒、发功即可！他的代码本身就是他通过attach环境所营造的魔法阵、魔咒仙界！
+# GJVs仅仅是一个符号，由sqldframe负责解释。这正是函数式编程的典型特征——你只需将符号视作携带意义的对象，比如可把GJVs视为通用日记账的会计凭证咒语。
+# 接着，用sqldframe这根魔杖点化一下，它就能从mymall系统中汲取灵力信息，转化成一叠真实的会计凭证！随后这些凭证进行bkp二次施法，则trial_balances便随之显现。
+# 需要注意，函数式编程强调：符号形式的结构逻辑先于语义逻辑，使用魔杖（法器道具函数）把咒语符号其导入魔法阵中，美好惊喜发生！这也是作者为何上来就创建环境的原因！
+# 即，函数式编程的结果是激发环境运行时所“爆”出来的，而不是像过程式编程那样，一斧子一凿子累积细节的劈砍数据石料、刻凿雕花！这是数据魔法师VS石雕工匠的区别！
 
 # 卸载环境
 search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
