@@ -191,7 +191,7 @@ trial_balances <- sqlquery("select * from t_company") |> (\(cs) cs$name[match(co
   do.call("rbind", args=_) |> as_tibble() |> mutate(balance=unlist(bs))) () # trial_balances 试算平衡
 
 # 从试算平衡里计算科目余额
-trial_balances |> aggregate(balance~account, data=_, sum) # 科目汇总只提取
+trial_balances |> aggregate(balance~account, data=_, sum) # 科目汇总
 
 # >
 # >   account balance

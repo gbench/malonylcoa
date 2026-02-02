@@ -41,7 +41,7 @@ public class DataAppConfig {
 	 */
 	@Bean
 	public MyDataApp dataApp(final DataSource ds, final @Value("${gbench.dbreset:true}") Boolean dbreset,
-			final @Value("${gbench.datafile:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/world/api/model/data/datafile.xlsx}") String datafile) {
+			final @Value("${gbench.datafile:F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/myfuture/api/model/data/datafile.xlsx}") String datafile) {
 
 		final var dataApp = new MyDataApp(ds);
 		if (dbreset) {

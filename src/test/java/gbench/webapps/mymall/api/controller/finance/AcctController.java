@@ -82,7 +82,7 @@ public class AcctController {
 		Stream.of(Optional.ofNullable(company_ids).orElseGet(() -> new Long[] { 1l, 2l }))
 				.forEach(executor_of(jdbcApp, ledger, "#GJVs")); // 模拟各个公司的运行
 		final var _keys = Optional.ofNullable(keys).orElse("ledger_id,acctnum,warehouse,item,drcr").split(","); // 透视表键值列表
-		final var json = fa.trialBalance(_keys).json( // 生成josn
+		final var json = fa.trialBalance(_keys).json( // 生成son
 				(sb, node) -> {
 					final var value = node.attrvalOpt().map(Types.obj2dbl(0d)).orElse(0d); // 提取数值性的节点值属性
 					final String key = node.attr("key"); // 透视表索引路径

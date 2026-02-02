@@ -9,3 +9,24 @@ spring:
         server-addr: 127.0.0.1:8848
 server:
   port: 6011
+  
+gbench:
+  mymall:
+    data:
+      datafile: F:/slicef/ws/gitws/mymall/api/src/main/resources/data/datafile.xlsx
+      jdbc:
+        driver: org.h2.Driver
+        url: jdbc:h2:mem:mymall;mode=mysql;db_close_delay=-1;database_to_upper=false
+        user: sa
+        password: 
+        port: 9201
+    finance:
+      acct:
+        datafile: F:/slicef/ws/gitws/mymall/api/src/main/resources/data/acct_data.xlsx
+        sqlfile: F:/slicef/ws/gitws/mymall/api/src/main/resources/sqls/acct.sql
+        jdbc:
+          driver: org.h2.Driver
+          url: jdbc:h2:mem:myacct;mode=mysql;db_close_delay=-1;database_to_upper=false
+          user: sa
+          password: 
+          port: 9202
