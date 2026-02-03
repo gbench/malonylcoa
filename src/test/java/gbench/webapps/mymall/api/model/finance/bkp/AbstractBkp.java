@@ -189,7 +189,7 @@ public class AbstractBkp {
 	public final static String etbl = "t_entry"; // 记账分录
 	public final static String catalog = "myacct"; // 数据库
 	// 数据文件
-	public final static String datahome = "F:/slicef/ws/gitws/mymall/finance/src/test/java/gbench/mymall/finance/acct/data";
+	public final static String datahome = "F:/slicef/ws/gitws/malonylcoa/src/test/java/gbench/webapps/mymall/api/model/data";
 
 	// 数据库配置
 	public final static IRecord h2_rec = REC("url",
