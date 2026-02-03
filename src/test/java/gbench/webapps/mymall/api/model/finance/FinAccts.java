@@ -74,7 +74,7 @@ public class FinAccts {
 				final var bill_type = line.str("bill_type"); // 记账凭证&单据类型
 				final var position = line.str("position"); // 交易的产品头寸
 				final var item_id = line.i4("item_id"); // 公司产品id
-				final var product_id = line.i4("product_id"); // 公司产品id
+				final var product_id = line.i4("product_id"); // 产品id
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
 				final var quantity = line.dbl("quantity"); // item数量
 				final var price = line.dbl("price"); // item单价
