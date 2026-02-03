@@ -31,17 +31,17 @@ public class FinAccts {
 	 * 
 	 * @param jdbcApp 业务数据库
 	 * @param ledger  分类账对象
-	 * @param jvs     记账凭证数据源 journal voucher sources,
+	 * @param gjvs    通用记账凭证数据源 general journal voucher sources,
 	 *                通过指定不同的记账凭证源，就可以实现不同业务范围的账目核算了。
 	 * @return 获取会计核算运行器
 	 */
-	public static Consumer<Long> executor_of(final IMySQL jdbcApp, final Ledger ledger, final String jvs) {
+	public static Consumer<Long> executor_of(final IMySQL jdbcApp, final Ledger ledger, final String gjvs) {
 		return company_id -> jdbcApp.withTransaction(sess -> {
 			println("平台数据表", sess.sql2dframe("show tables")); // 数据表
 			final var cpdfm = sess.sql2dframe("select * from t_company_product") // 公司产品表
 					.forEachBy(h2_json_processor("attrs")).rowS(e -> e.rec("attrs").derive(e)) // 解析属性字段
 					.collect(DFrame.dfmclc);
-			final var bldfm = sess.sql2dframe(jvs, "company_id", company_id) // 依据凭证源头，加载指定的记账凭证信息
+			final var bldfm = sess.sql2dframe(gjvs, "company_id", company_id) // 依据凭证源头，加载指定的记账凭证信息
 					.forEachBy(h2_json_processor("details")); // 记账凭证&单据信息
 			final var whdfm = sess.sql2dframe("select * from t_warehouse"); // 仓库信息
 			final var cydfm = sess.sql2dframe("select * from t_company"); // 公司信息
@@ -74,7 +74,7 @@ public class FinAccts {
 				final var bill_type = line.str("bill_type"); // 记账凭证&单据类型
 				final var position = line.str("position"); // 交易的产品头寸
 				final var item_id = line.i4("item_id"); // 公司产品id
-				final var product_id = line.i4("product_id"); // 公司产品id
+				final var product_id = line.i4("product_id"); // 产品id
 				final var warehouse_id = line.i4("warehouse_id"); // 仓库id
 				final var quantity = line.dbl("quantity"); // item数量
 				final var price = line.dbl("price"); // item单价
