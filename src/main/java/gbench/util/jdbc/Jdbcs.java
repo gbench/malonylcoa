@@ -2722,7 +2722,7 @@ public class Jdbcs {
 
 				for (final var row : data.rows()) {
 					final var r = flag //
-							? row.remove(0) // 去除首项id,因为这是自增长数据表
+							? row.remove("id") // 去除首项id,因为这是自增长数据表
 							: row;
 					sess.sql2execute(insql(tblname, r));
 				}
