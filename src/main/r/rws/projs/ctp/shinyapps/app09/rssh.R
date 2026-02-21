@@ -1,5 +1,6 @@
 # 极简 R + tcltk SSH 多选终端
-strsplit("tcltk,ssh", ",") |> unlist() |> setNames(nm=_) |> lapply(\(pkg) {if(!require("tcltk")) install.packages(pkg); require(pkg,  character.only=T)})
+strsplit("tcltk,ssh", ",") |> unlist() |> setNames(nm=_) |> 
+  lapply(\(pkg) {if(!require("tcltk")) install.packages(pkg); require(pkg,  character.only=T)})
 
 servers <- list(
   "192.168.1.10" = list(user="gbench", pass="123456"),
@@ -39,14 +40,14 @@ tkgrid.rowconfigure(tt, 1, weight=1)
 tkgrid.columnconfigure(tt, 1, weight=1)
 
 # 获取选中的服务器
-get_selected <- function() {
+get_selected <- \() {
   idx <- as.integer(tkcurselection(srv_list))
   if(length(idx) == 0) return(NULL)
   names(servers)[idx + 1]  # Tcl索引从0开始
 }
 
 # 执行
-run_cmd <- function() {
+run_cmd <- \() {
   targets <- get_selected()
   cmd <- tclvalue(cmd_var)
   
@@ -86,19 +87,21 @@ tkgrid(btn_frm, row=2, column=0, columnspan=2)
 tkbutton(btn_frm, text="执行", command=run_cmd, bg="green") -> btn_run
 tkpack(btn_run, side="left", padx=5)
 
-tkbutton(btn_frm, text="全选", command=function() {
-  tkselection.set(srv_list, 0, "end")
-}) -> btn_all
+# 删除文本控件内容的命令, tkdelete(txt, "1.0", "end") :第 1 行第 0 列（开头）
+tkbutton(btn_frm, text="清空", command=\() tkdelete(txt, "1.0", "end") ) -> btn_clear 
+tkpack(btn_clear, side="left", padx=5)
+
+tkbutton(btn_frm, text="全选", command=\() tkselection.set(srv_list, 0, "end")) -> btn_all
 tkpack(btn_all, side="left", padx=5)
 
-tkbutton(btn_frm, text="断开", command=function() {
+tkbutton(btn_frm, text="断开", command=\() {
   for(s in sessions) try(ssh_disconnect(s), silent=TRUE)
   sessions <<- list()
   tkinsert(txt, "end", "\n[已断开]\n")
 }) -> btn_disc
 tkpack(btn_disc, side="left", padx=5)
 
-tkbutton(btn_frm, text="退出", command=function() {
+tkbutton(btn_frm, text="退出", command=\() {
   for(s in sessions) try(ssh_disconnect(s), silent=TRUE)
   tkdestroy(tt)
 }, bg="red") -> btn_exit
