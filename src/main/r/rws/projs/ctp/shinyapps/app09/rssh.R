@@ -1,8 +1,5 @@
 # 极简 R + tcltk SSH 多选终端
-if (!require("tcltk")) install.packages("tcltk")
-if (!require("ssh"))   install.packages("ssh")
-library(tcltk)
-library(ssh)
+strsplit("tcltk,ssh", ",") |> unlist() |> setNames(nm=_) |> lapply(\(pkg) {if(!require("tcltk")) install.packages(pkg); require(pkg,  character.only=T)})
 
 servers <- list(
   "192.168.1.10" = list(user="gbench", pass="123456"),
