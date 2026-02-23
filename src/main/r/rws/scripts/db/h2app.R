@@ -53,12 +53,7 @@ sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = FALSE, ...) {
       
       dbCommit(con)
       
-      df <- data.frame(
-        type = sapply(res, `[[`, "type"),
-        rows = sapply(res, `[[`, "rows"),
-        id = sapply(res, `[[`, "id"),
-        row.names = NULL
-      ) |> tibble::as_tibble()
+      df <- purrr::map_dfr(res, `[`, c("type", "rows", "id"))
       
       if (simplify && nrow(df) == 1) df[1, ] else df
       
