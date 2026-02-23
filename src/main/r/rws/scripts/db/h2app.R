@@ -8,82 +8,61 @@
 #'   的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
 #'   其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
 #'   返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
-sqlexecute.h2 <- function(sql, simplify = T, get_last_id = FALSE, ...) {
+sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = FALSE, ...) {
   require(DBI)
   require(rJava)
   
-  dbfun(\ (con, ...) {
+  dbfun(\(con) {
     tryCatch({
       dbBegin(con)
+      jc <- con@jc
       
-      dataset <- lapply(c(sql), function(.sql) {
-        sql_upper <- trimws(toupper(.sql))
-        is_ddl <- grepl("^(CREATE|DROP|ALTER|TRUNCATE)", sql_upper)
-        is_insert <- grepl("^INSERT", sql_upper)
-        is_select <- grepl("^SELECT", sql_upper)
+      res <- lapply(c(sql), \(s) {
+        s_up <- toupper(trimws(s))
+        is_sel <- grepl("^SELECT", s_up)
+        is_ins <- grepl("^INSERT", s_up)
+        is_ddl <- grepl("^(CREATE|DROP|ALTER|TRUNCATE)", s_up)
         
-        # 获取底层 JDBC 连接
-        jc <- con@jc
-        
-        if (is_select) {
-          result <- dbGetQuery(con, .sql)
-          return(list(
-            type = "SELECT",
-            affected_rows = nrow(result),
-            last_insert_id = NA
-          ))
-        }
-        
-        # 创建 Statement，指定返回生成键
-        if (get_last_id && is_insert) {
-          # 使用 prepareStatement 获取生成键能力
-          stmt <- rJava::.jcall(jc, "Ljava/sql/PreparedStatement;", "prepareStatement", .sql, 
-            rJava::.jfield("java/sql/Statement", "RETURN_GENERATED_KEYS"))
-          rJava::.jcall(stmt, "Z", "execute")
-          affected_rows <- rJava::.jcall(stmt, "I", "getUpdateCount")
+        if (is_sel) {
+          list(type = "SELECT", rows = nrow(dbGetQuery(con, s)), id = NA)
+        } else if (get_last_id && is_ins) {
+          # INSERT 获取生成键
+          stmt <- .jcall(jc, "Ljava/sql/PreparedStatement;", "prepareStatement", s,
+            .jfield("java/sql/Statement", "RETURN_GENERATED_KEYS"))
+          .jcall(stmt, "Z", "execute")
+          rows <- .jcall(stmt, "I", "getUpdateCount")
           
           # 获取生成键
-          last_id <- NA
-          gen_keys <- rJava::.jcall(stmt, "Ljava/sql/ResultSet;", "getGeneratedKeys")
-          if (!rJava::is.jnull(gen_keys) && rJava::.jcall(gen_keys, "Z", "next")) {
-            last_id <- rJava::.jcall(gen_keys, "J", "getLong", 1L)
-            rJava::.jcall(gen_keys, "V", "close")
-          }
-          rJava::.jcall(stmt, "V", "close")
+          rs <- .jcall(stmt, "Ljava/sql/ResultSet;", "getGeneratedKeys")
+          id <- if (!is.jnull(rs) && .jcall(rs, "Z", "next")) as.numeric(.jcall(rs, "J", "getLong", 1L)) else NA
           
+          .jcall(rs, "V", "close")
+          .jcall(stmt, "V", "close")
+          
+          list(type = "DML", rows = rows, id = id)
         } else {
-          # 普通执行（DDL 或其他 DML）
-          stmt <- rJava::.jcall(jc, "Ljava/sql/Statement;", "createStatement")
-          is_rs <- rJava::.jcall(stmt, "Z", "execute", .sql)
-          affected_rows <- if (!is_rs) rJava::.jcall(stmt, "I", "getUpdateCount") else 0L
-          rJava::.jcall(stmt, "V", "close")
-          last_id <- NA
+          # 普通执行
+          stmt <- .jcall(jc, "Ljava/sql/Statement;", "createStatement")
+          has_rs <- .jcall(stmt, "Z", "execute", s)
+          rows <- if (!has_rs) .jcall(stmt, "I", "getUpdateCount") else 0L
+          .jcall(stmt, "V", "close")
+          
+          list(type = if (is_ddl) "DDL" else "DML", rows = rows, id = NA)
         }
-        
-        list(
-          type = ifelse(is_ddl, "DDL", "DML"),
-          affected_rows = affected_rows,
-          last_insert_id = if (!is.na(last_id)) as.numeric(last_id) else NA
-        )
       })
-      
-      result_df <- do.call(rbind, lapply(dataset, function(x) {
-        data.frame(
-          type = x$type,
-          affected_rows = x$affected_rows,
-          last_insert_id = x$last_insert_id,
-          stringsAsFactors = FALSE
-        )
-      })) |> tibble::as_tibble()
       
       dbCommit(con)
       
-      if (simplify && nrow(result_df) == 1) result_df[1, ] else result_df
+      df <- data.frame(
+        type = sapply(res, `[[`, "type"),
+        rows = sapply(res, `[[`, "rows"),
+        id = sapply(res, `[[`, "id"),
+        row.names = NULL
+      ) |> tibble::as_tibble()
       
-    }, error = function(err) {
-      dbRollback(con)
-      stop(err)
-    })
+      if (simplify && nrow(df) == 1) df[1, ] else df
+      
+    }, error = \(e) { dbRollback(con); stop(e) })
   }, ...)(sql)
 }
 
