@@ -9,56 +9,36 @@
 #'   其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
 #'   返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
 sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = FALSE, ...) {
-  require(DBI)
-  require(rJava)
+  require(DBI); require(rJava)
   
-  dbfun(\(con) {
+  dbfun(\(con) { # 数据库练级使用函数
     tryCatch({
       dbBegin(con)
-      jc <- con@jc
-      
-      res <- lapply(c(sql), \(s) {
-        s_up <- toupper(trimws(s))
-        is_sel <- grepl("^SELECT", s_up)
-        is_ins <- grepl("^INSERT", s_up)
-        is_ddl <- grepl("^(CREATE|DROP|ALTER|TRUNCATE)", s_up)
-        
-        if (is_sel) {
+      jc <- con@jc # 提取连接指针以便.jcall使用
+      res <- lapply(c(sql), \(s) { # 执行SQL语句
+        S <- toupper(trimws(s)) # 转换成大写形式
+        if (grepl("^(SELECT|SHOW)", S)) { # 数据查询
           list(type = "SELECT", rows = nrow(dbGetQuery(con, s)), id = NA)
-        } else if (get_last_id && is_ins) {
-          # INSERT 获取生成键
-          stmt <- .jcall(jc, "Ljava/sql/PreparedStatement;", "prepareStatement", s,
-            .jfield("java/sql/Statement", "RETURN_GENERATED_KEYS"))
-          .jcall(stmt, "Z", "execute")
-          rows <- .jcall(stmt, "I", "getUpdateCount")
-          
-          # 获取生成键
-          rs <- .jcall(stmt, "Ljava/sql/ResultSet;", "getGeneratedKeys")
+        } else if (get_last_id && grepl("^INSERT", S)) { # INSERT 获取生成键
+          stmt <- .jcall(jc, "Ljava/sql/PreparedStatement;", "prepareStatement", s, .jfield("java/sql/Statement", "RETURN_GENERATED_KEYS"))
+          .jcall(stmt, "Z", "execute") # 语句执行
+          rows <- .jcall(stmt, "I", "getUpdateCount") # 更新行数
+          rs <- .jcall(stmt, "Ljava/sql/ResultSet;", "getGeneratedKeys")  # 获取生成键
           id <- if (!is.jnull(rs) && .jcall(rs, "Z", "next")) as.numeric(.jcall(rs, "J", "getLong", 1L)) else NA
-          
-          .jcall(rs, "V", "close")
-          .jcall(stmt, "V", "close")
-          
+          .jcall(rs, "V", "close"); .jcall(stmt, "V", "close") # 关闭对象
           list(type = "DML", rows = rows, id = id)
-        } else {
-          # 普通执行
+        } else { # 普通执行
           stmt <- .jcall(jc, "Ljava/sql/Statement;", "createStatement")
           has_rs <- .jcall(stmt, "Z", "execute", s)
           rows <- if (!has_rs) .jcall(stmt, "I", "getUpdateCount") else 0L
           .jcall(stmt, "V", "close")
-          
-          list(type = if (is_ddl) "DDL" else "DML", rows = rows, id = NA)
-        }
-      })
-      
-      dbCommit(con)
-      
-      df <- purrr::map_dfr(res, `[`, c("type", "rows", "id"))
-      
-      if (simplify && nrow(df) == 1) df[1, ] else df
-      
+          list(type = if (grepl("^(CREATE|DROP|ALTER|TRUNCATE)", S)) "DDL" else "DML", rows = rows, id = NA)
+        } # if
+      }) # res返回SQL语句的执行结果
+      dbCommit(con) # 成功执行提交事务
+      purrr::map_dfr(res, `[`, c("type", "rows", "id")) |> (\(df) if (simplify && nrow(df) == 1) df[1, ] else df) ()
     }, error = \(e) { dbRollback(con); stop(e) })
-  }, ...)(sql)
+  }, ...)(sql) # dbfun 
 }
 
 xxxconfig <- "h2config" # 为环境命名
@@ -78,7 +58,7 @@ app_init <- \(port) {
         shared_conn <- NULL #  共享连接
         dbConnect <- \(...) if(!is.null(shared_conn) && DBI::dbIsValid(shared_conn)) shared_conn else shared_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
         dbDisconnect <- \(conn) if(!is.null(shared_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
-        })
+    })
 }
 
 # qpp 取消初始化
