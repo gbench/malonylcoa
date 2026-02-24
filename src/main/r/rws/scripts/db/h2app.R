@@ -8,7 +8,7 @@
 #'   的情况affected_rows返回实际插入的数量，last_insert_id返回插入的第一条数据的id
 #'   其余id请根据last_insert_id,affected_rows依次计算，比如name_1的id为x，那么name_2就是x+1,...，name_n为x+n-1
 #'   返回实际插入数据的id为: seq(from=last_insert_id,lengout.out=affected_rows)
-sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = FALSE, ...) {
+sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = TRUE, ...) {
   require(DBI); require(rJava)
   
   dbfun(\(con) { # 数据库练级使用函数
@@ -20,7 +20,8 @@ sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = FALSE, ...) {
         if (grepl("^(SELECT|SHOW)", S)) { # 数据查询
           list(type = "SELECT", rows = nrow(dbGetQuery(con, s)), id = NA)
         } else if (get_last_id && grepl("^INSERT", S)) { # INSERT 获取生成键
-          stmt <- .jcall(jc, "Ljava/sql/PreparedStatement;", "prepareStatement", s, .jfield("java/sql/Statement", "RETURN_GENERATED_KEYS"))
+          stmt <- .jcall(jc, "Ljava/sql/PreparedStatement;", "prepareStatement", s, 
+            .jfield("java/sql/Statement", "I", "RETURN_GENERATED_KEYS", TRUE))
           .jcall(stmt, "Z", "execute") # 语句执行
           rows <- .jcall(stmt, "I", "getUpdateCount") # 更新行数
           rs <- .jcall(stmt, "Ljava/sql/ResultSet;", "getGeneratedKeys")  # 获取生成键
