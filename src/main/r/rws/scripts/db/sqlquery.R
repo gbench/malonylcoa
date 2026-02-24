@@ -134,7 +134,7 @@ ctsql.mysql <- function(dfm, tbl) {
       default_type=sprintf('varchar(%s)', n) # 默认类型
     ) switch(t, # 类型判断
       `logical`='bool', # 布尔类型
-      `integer`=if(cls=='factor') default_type else 'integer', # 列表类型
+      `integer`=if('factor' %in% cls) default_type else 'integer', # 列表类型
       `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) "datetime" else 'double', # 列表类型
       `list`='json', # 列表类型
       default_type # 默认类型
@@ -313,7 +313,7 @@ ctsql.pg <- function(dfm, tbl) {
     default_type=sprintf('varchar(%s)', n) # 默认类型
     ) switch(t, # 类型判断
       `logical`='boolean', # PostgreSQL布尔类型
-      `integer`=if(cls=='factor') default_type else 'integer', # 整数类型
+      `integer`=if('factor' %in% cls) default_type else 'integer', # 整数类型
       `double`=if(any(grepl(pattern="Date", x=cls))) "date" else if(any(grepl(pattern="POSIXct|POSIXt", x=cls))) "timestamp with time zone" else 'double precision', # PostgreSQL浮点类型
       `character`=default_type, # 字符类型
       `list`='jsonb', # PostgreSQL JSONB类型
