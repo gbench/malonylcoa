@@ -45,14 +45,14 @@ sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = TRUE, ...) {
 xxxconfig <- "h2config" # 为环境命名
 
 # 环境初始化
-app_init <- \(port, dbname="mybank") {
+app_init <- \(port, dbname="mem:mybank", sqlquery.host=gettextf("jdbc:h2:tcp://localhost:%s/%s;mode=mysql;db_close_delay=-1;database_to_upper=false", port, dbname)) {
     app_uninit() # 清理环境
     
     # Underlay 图层：配置驱动和连接参数
-    attach(list2env(list(port=port, dbname=dbname)), name=paste0(xxxconfig, ".underlay"), pos=match(".SqlQueryEnv", search()) + 1) |> with({
+    attach(list2env(list(sqlquery.host=sqlquery.host)), name=paste0(xxxconfig, ".underlay"), pos=match(".SqlQueryEnv", search()) + 1) |> with({
         h2.jar <- "D:/sliced/mvn_repos/com/h2database/h2/2.2.224/h2-2.2.224.jar"
         drv <- RJDBC::JDBC(driverClass="org.h2.Driver", classPath=h2.jar, identifier.quote="\"")
-        localcfg <- list(sqlquery.drv=drv, sqlquery.user="root", sqlquery.password="123456", sqlquery.host=gettextf("jdbc:h2:tcp://localhost:%s/mem:%s;mode=mysql;db_close_delay=-1;database_to_upper=false", port, dbname))
+        localcfg <- list(sqlquery.drv=drv, sqlquery.user="root", sqlquery.password="123456", sqlquery.host=sqlquery.host)
         getOption <- \ (x, default = NULL) localcfg[[x]] %||% base::getOption(x, default)
     })
 
