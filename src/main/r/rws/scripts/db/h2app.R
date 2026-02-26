@@ -64,6 +64,7 @@ app_init <- \(port) {
 
 # qpp 取消初始化
 app_uninit <- \() {
+    DBI::dbDisconnect(get("shared_conn", envir=as.environment(paste0(xxxconfig, ".overlay"))))  # 真正关闭连接！
     search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
 }
 
