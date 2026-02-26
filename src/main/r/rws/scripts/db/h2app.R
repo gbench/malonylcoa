@@ -45,7 +45,9 @@ sqlexecute.h2 <- function(sql, simplify = TRUE, get_last_id = TRUE, ...) {
 xxxconfig <- "h2config" # 为环境命名
 
 # 环境初始化
-app_init <- \(port, dbname) {
+app_init <- \(port, dbname="mybank") {
+    app_uninit() # 清理环境
+    
     # Underlay 图层：配置驱动和连接参数
     attach(list2env(list(port=port, dbname=dbname)), name=paste0(xxxconfig, ".underlay"), pos=match(".SqlQueryEnv", search()) + 1) |> with({
         h2.jar <- "D:/sliced/mvn_repos/com/h2database/h2/2.2.224/h2-2.2.224.jar"
@@ -60,11 +62,17 @@ app_init <- \(port, dbname) {
         dbConnect <- \(...) if(!is.null(shared_conn) && DBI::dbIsValid(shared_conn)) shared_conn else shared_conn <<- do.call(DBI::dbConnect, args=c(list(...), url=localcfg[["sqlquery.host"]]))
         dbDisconnect <- \(conn) if(!is.null(shared_conn)) 1 |> invisible() else DBI::dbDisconnect (conn) # 拦截状态什么都不做！（返回1）表示拒绝关闭！
     })
+
+  message(gettextf("switch to dbname:%s, port:%s", dbname, port))
 }
 
 # qpp 取消初始化
 app_uninit <- \() {
-    DBI::dbDisconnect(get("shared_conn", envir=as.environment(paste0(xxxconfig, ".overlay"))))  # 真正关闭连接！
-    search() |> grep(pattern=xxxconfig, value=T) |> lapply(\(e) do.call(detach, args=list(e)))
+    es <- search() |> grep(pattern=xxxconfig, value=T)
+    if(length(es)>0) {
+      shared_conn <- get("shared_conn", envir=as.environment(paste0(xxxconfig, ".overlay")))
+      if(!is.null(shared_conn) && DBI::dbIsValid(shared_conn)) DBI::dbDisconnect(shared_conn)  # 真正关闭连接！
+      es |> lapply(\(e) do.call(detach, args=list(e)))
+    }
 }
 
