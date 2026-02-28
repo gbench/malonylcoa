@@ -24,9 +24,16 @@ public class SharedMem {
      * 数据类型枚举
      */
     public enum DataType {
-        INT8(1), INT16(2), INT32(4), INT64(8), FLOAT32(4), FLOAT64(8), STRING16(2), // UTF-16
-        STRING32(32 * 2), STRING64(64 * 2), STRING128(128 * 2), STRING256(256 * 2), STRING512(512 * 2),
-        STRING1024(1024 * 2), STRING2048(2048 * 2), BYTE(1), NULL(0);
+        INT8(1), INT16(2), INT32(4), INT64(8), FLOAT32(4), FLOAT64(8), 
+        STRING16(16 * 2),    // 修复：32字节，可存储16个UTF-16字符
+        STRING32(32 * 2), 
+        STRING64(64 * 2), 
+        STRING128(128 * 2), 
+        STRING256(256 * 2), 
+        STRING512(512 * 2),
+        STRING1024(1024 * 2), 
+        STRING2048(2048 * 2), 
+        BYTE(1), NULL(0);
 
         public final int elementSize;
 
@@ -132,20 +139,20 @@ public class SharedMem {
 
             switch (type) {
             case INT32 -> {
-                var arr = vals.stream().mapToInt(v -> ((Number) v).intValue()).toArray();
-                buffer.asIntBuffer().put(arr);
+                // 修复：使用循环写入，确保buffer position正确推进
+                vals.forEach(v -> buffer.putInt(((Number) v).intValue()));
             }
             case FLOAT64 -> {
-                var arr = vals.stream().mapToDouble(v -> ((Number) v).doubleValue()).toArray();
-                buffer.asDoubleBuffer().put(arr);
+                // 修复：使用循环写入，确保buffer position正确推进
+                vals.forEach(v -> buffer.putDouble(((Number) v).doubleValue()));
             }
             case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
                 vals.forEach(v -> {
                     var str = v.toString();
                     var bytes = str.getBytes(StandardCharsets.UTF_16LE);
-                    buffer.put(bytes);
-                    var remain = type.elementSize - bytes.length;
-                    for (int i = 0; i < remain; i++) buffer.put((byte) 0);
+                    // 修复：使用Arrays.copyOf自动截断或填充到固定长度
+                    var fixedBytes = Arrays.copyOf(bytes, type.elementSize);
+                    buffer.put(fixedBytes);
                 });
             }
             case INT8, BYTE -> {
@@ -223,7 +230,7 @@ public class SharedMem {
                     byte[] bytes = new byte[strBytesLen];
                     buf.get(bytes);
                     
-                    // 找到字符串结束位置
+                    // 找到字符串结束位置（双字节\0）
                     int len = 0;
                     while (len < bytes.length - 1) {
                         if (bytes[len] == 0 && bytes[len + 1] == 0) break;
