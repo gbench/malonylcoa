@@ -884,6 +884,26 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 字段键名
 	 * @return Optional
 	 */
+	default Optional<IRecord> recopt(final String key) {
+		return Optional.ofNullable(this.rec(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<IRecord> recopt(final int idx) {
+		return this.recopt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
 	default Optional<String> stropt(final String key) {
 		return Optional.ofNullable(this.str(key));
 	}
