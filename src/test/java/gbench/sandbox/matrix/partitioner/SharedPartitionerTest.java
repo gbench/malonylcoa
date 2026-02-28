@@ -4,7 +4,7 @@ import static gbench.util.array.Partitioner.P2;
 
 import java.util.Arrays;
 
-import gbench.util.SharedPartitioner;
+import gbench.util.SharedMem;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -15,7 +15,7 @@ public class SharedPartitionerTest {
 	/**
 	 * 创建记账分录结构
 	 */
-	public static SharedPartitioner acct_entries(String name) {
+	public static SharedMem acct_entries(String name) {
 		int RECORD_COUNT = 128;
 		int INT64_SIZE = 8;
 		int FLOAT64_SIZE = 8;
@@ -34,7 +34,7 @@ public class SharedPartitionerTest {
 				) //
 		));
 
-		return SharedPartitioner.of(schema, name);
+		return SharedMem.of(schema, name);
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class SharedPartitionerTest {
 		sp.metadata().forEach((k, v) -> System.out.println(k + ": " + v));
 
 		// 读取id字段
-		long[] ids = sp.fld("root.int64.id").lng(sp.buffer);
+		long[] ids = sp.slot("root.int64.id").lng(sp.buffer);
 		System.out.println("\n前10个ID: " + Arrays.toString(Arrays.copyOf(ids, 10)));
 
 		// 保持共享内存运行

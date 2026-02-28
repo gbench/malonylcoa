@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * 共享内存分区器 - 将Partitioner数据结构映射到共享内存 实现Java与R的零拷贝数据共享
  */
-public class SharedPartitioner {
+public class SharedMem {
 
 	// 共享内存文件描述符
 	public final String shmPath;
@@ -28,19 +28,19 @@ public class SharedPartitioner {
 	public final int size;
 
 	// 字段访问器缓存
-	private final Map<String, Field> accessors = new LinkedHashMap<>();
+	private final Map<String, Slot> slots = new LinkedHashMap<>();
 
 	/**
 	 * 字段访问器 - 封装对特定字段的读写操作
 	 */
-	public static class Field {
+	public static class Slot {
 		public final String path;
 		public final int offset;
 		public final int size;
 		public final DataType type;
 		public final int count; // 元素数量（对于数组）
 
-		public Field(String path, int offset, int size, DataType type, int count) {
+		public Slot(String path, int offset, int size, DataType type, int count) {
 			this.path = path;
 			this.offset = offset;
 			this.size = size;
@@ -144,7 +144,7 @@ public class SharedPartitioner {
 	 * @param schema Partitioner模式定义
 	 * @param name   共享内存名称 (如 "/acct_entries")
 	 */
-	private SharedPartitioner(final Partitioner schema, final String name) {
+	private SharedMem(final Partitioner schema, final String name) {
 		this.schema = schema;
 		this.size = schema.length();
 		final var tempDirPath = System.getProperty("java.io.tmpdir");
@@ -206,7 +206,7 @@ public class SharedPartitioner {
 				elementSize = 8; // 8字节每记录
 			}
 
-			accessors.put(path, new Field(path, start, size, type, count));
+			slots.put(path, new Slot(path, start, size, type, count));
 		});
 	}
 
@@ -237,8 +237,8 @@ public class SharedPartitioner {
 	/**
 	 * 获取字段访问器
 	 */
-	public Field fld(String path) {
-		return accessors.get(path);
+	public Slot slot(final String path) {
+		return slots.get(path);
 	}
 
 	/**
@@ -250,7 +250,7 @@ public class SharedPartitioner {
 		meta.put("record_count", 128); // 记录数
 
 		List<Map<String, Object>> fields = new ArrayList<>();
-		for (Map.Entry<String, Field> entry : accessors.entrySet()) {
+		for (Map.Entry<String, Slot> entry : slots.entrySet()) {
 			Map<String, Object> field = new LinkedHashMap<>();
 			field.put("name", entry.getKey().replaceAll("^root\\.", ""));
 			field.put("offset", entry.getValue().offset);
@@ -287,37 +287,37 @@ public class SharedPartitioner {
 		long[] ids = new long[128];
 		for (int i = 0; i < 128; i++)
 			ids[i] = i + 1;
-		fld("root.int64.id").lng(buffer, ids);
+		slot("root.int64.id").lng(buffer, ids);
 
 		// 写入drcr (交替0/1)
 		long[] drcr = new long[128];
 		for (int i = 0; i < 128; i++)
 			drcr[i] = i % 2;
-		fld("root.int64.drcr").lng(buffer, drcr);
+		slot("root.int64.drcr").lng(buffer, drcr);
 
 		// 写入价格
 		double[] prices = new double[128];
 		for (int i = 0; i < 128; i++)
 			prices[i] = 100.0 + i * 10;
-		fld("root.float64.price").dbl(buffer, prices);
+		slot("root.float64.price").dbl(buffer, prices);
 
 		// 写入数量
 		double[] quantities = new double[128];
 		for (int i = 0; i < 128; i++)
 			quantities[i] = 10 + i;
-		fld("root.float64.quantity").dbl(buffer, quantities);
+		slot("root.float64.quantity").dbl(buffer, quantities);
 
 		// 写入名称
 		String[] names = new String[128];
 		for (int i = 0; i < 128; i++)
 			names[i] = "Product_" + i;
-		fld("root.string32.name").str(buffer, names, 32);
+		slot("root.string32.name").str(buffer, names, 32);
 
 		// 写入描述
 		String[] descs = new String[128];
 		for (int i = 0; i < 128; i++)
 			descs[i] = "Description for item " + i;
-		fld("root.string32.description").str(buffer, descs, 32);
+		slot("root.string32.description").str(buffer, descs, 32);
 
 		// 写入元数据
 		writeMetadata();
@@ -348,7 +348,7 @@ public class SharedPartitioner {
 		return Json.json2obj(json, Map.class);
 	}
 
-	public static SharedPartitioner of(final Partitioner schema, final String name) {
-		return new SharedPartitioner(schema, name);
+	public static SharedMem of(final Partitioner schema, final String name) {
+		return new SharedMem(schema, name);
 	}
 }
