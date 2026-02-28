@@ -4,13 +4,14 @@ import static gbench.util.array.Partitioner.P2;
 
 import java.util.Arrays;
 
-import gbench.util.SharedMem;
 import org.junit.jupiter.api.Test;
+
+import gbench.util.array.SharedMem;
 
 /**
  * 
  */
-public class SharedPartitionerTest {
+public class SharedMemTest {
 
 	/**
 	 * 创建记账分录结构

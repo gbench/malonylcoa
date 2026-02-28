@@ -1,6 +1,5 @@
-package gbench.util;
+package gbench.util.array;
 
-import gbench.util.array.Partitioner;
 import gbench.util.jdbc.kvp.Json;
 
 import java.io.File;
