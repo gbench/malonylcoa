@@ -20,10 +20,18 @@ import java.util.*;
 public class SharedMemTest {
 
 	@Test
-	public void foo() throws JsonMappingException, JsonProcessingException {
-		SharedMem.slotS(dfmOf(mpgjson).head(5)).forEach(p -> {
+	public void foo() throws Exception {
+		final var dfm = dfmOf(mpgjson).head(5);
+		SharedMem.slotS(dfm).forEach(p -> {
 			println(p);
 		});
+		final var buffer = SharedMem.createSharedMemory("E:/slicee/temp/malonylcoa/array/a", 100000);
+		SharedMem.write(buffer, dfm);
+		final var dfm2 = SharedMem.read(buffer);
+		println("----------------------");
+		println(dfm);
+		println("----------------------");
+		println(dfm2);
 	}
 
 	public static DFrame dfmOf(final String json) throws JsonMappingException, JsonProcessingException {

@@ -20,179 +20,250 @@ import java.util.stream.Stream;
  */
 public class SharedMem {
 
-	/**
-	 * 数据类型枚举
-	 */
-	public enum DataType {
-		INT8(1), INT16(2), INT32(4), INT64(8), FLOAT32(4), FLOAT64(8), STRING16(2), // UTF-16
-		STRING32(32 * 2), STRING64(64 * 2), STRING128(128 * 2), STRING256(256 * 2), STRING512(512 * 2),
-		STRING1024(1024 * 2), STRING2048(2048 * 2), BYTE(1), NULL(0);
+    /**
+     * 数据类型枚举
+     */
+    public enum DataType {
+        INT8(1), INT16(2), INT32(4), INT64(8), FLOAT32(4), FLOAT64(8), STRING16(2), // UTF-16
+        STRING32(32 * 2), STRING64(64 * 2), STRING128(128 * 2), STRING256(256 * 2), STRING512(512 * 2),
+        STRING1024(1024 * 2), STRING2048(2048 * 2), BYTE(1), NULL(0);
 
-		public final int elementSize;
+        public final int elementSize;
 
-		DataType(final int size) {
-			this.elementSize = size;
-		}
-	}
+        DataType(final int size) {
+            this.elementSize = size;
+        }
+    }
 
-	@SuppressWarnings("unchecked")
-	public static <T, X extends List<?>> Tuple2<String, DataType> parse(final Tuple2<String, X> p) {
-		String key = p._1();
-		String type = p._2().stream().filter(Objects::nonNull).findFirst().map(Object::getClass).map(e -> (Class<T>) e)
-				.orElse((Class<T>) Object.class).getSimpleName();
-		DataType size = switch (type) {
-		case "Byte", "byte" -> DataType.BYTE;
-		case "Boolean", "boolean" -> DataType.BYTE;
-		case "Short", "short" -> DataType.INT16;
-		case "Integer", "int" -> DataType.INT32;
-		case "Long", "long" -> DataType.INT64;
-		case "Float", "float" -> DataType.FLOAT32;
-		case "Double", "double" -> DataType.FLOAT64;
-		case "String" -> {
-			final var max = p._2().stream().filter(Objects::nonNull).map(s -> ((String) s).length())
-					.max(Integer::compare).orElse(32);
-			if (max < 16)
-				yield DataType.STRING16;
-			else if (max < 32)
-				yield DataType.STRING32;
-			else if (max < 64)
-				yield DataType.STRING64;
-			else if (max < 128)
-				yield DataType.STRING128;
-			else if (max < 256)
-				yield DataType.STRING256;
-			else if (max < 512)
-				yield DataType.STRING512;
-			else if (max < 1024)
-				yield DataType.STRING1024;
-			else if (max < 2048)
-				yield DataType.STRING2048;
-			else
-				yield DataType.NULL;
-		}
-		default -> DataType.NULL;
-		};
-		return Tuple2.of(key, size);
-	}
+    @SuppressWarnings("unchecked")
+    public static <T, X extends List<?>> Tuple2<String, DataType> parse(final Tuple2<String, X> p) {
+        String key = p._1();
+        String type = p._2().stream().filter(Objects::nonNull).findFirst().map(Object::getClass).map(e -> (Class<T>) e)
+                .orElse((Class<T>) Object.class).getSimpleName();
+        DataType size = switch (type) {
+        case "Byte", "byte" -> DataType.BYTE;
+        case "Boolean", "boolean" -> DataType.BYTE;
+        case "Short", "short" -> DataType.INT16;
+        case "Integer", "int" -> DataType.INT32;
+        case "Long", "long" -> DataType.INT64;
+        case "Float", "float" -> DataType.FLOAT32;
+        case "Double", "double" -> DataType.FLOAT64;
+        case "String" -> {
+            final var max = p._2().stream().filter(Objects::nonNull).map(s -> ((String) s).length())
+                    .max(Integer::compare).orElse(32);
+            if (max < 16)
+                yield DataType.STRING16;
+            else if (max < 32)
+                yield DataType.STRING32;
+            else if (max < 64)
+                yield DataType.STRING64;
+            else if (max < 128)
+                yield DataType.STRING128;
+            else if (max < 256)
+                yield DataType.STRING256;
+            else if (max < 512)
+                yield DataType.STRING512;
+            else if (max < 1024)
+                yield DataType.STRING1024;
+            else if (max < 2048)
+                yield DataType.STRING2048;
+            else
+                yield DataType.NULL;
+        }
+        default -> DataType.NULL;
+        };
+        return Tuple2.of(key, size);
+    }
 
-	public static <T> Partitioner schemaOf(final DFrame dfm) {
-		final var n = dfm.shape()._1();
-		@SuppressWarnings("unused")
-		var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(SharedMem::parse).reduce(P2(), (acc, a) -> {
-			final var key = a._1();
-			final var type = a._2();
-			final var size = type.elementSize;
-			((Partitioner) acc.computeIfAbsent(type.name(), k -> P2())).put(key, size * n);
-			return acc;
-		}, (a, b) -> {
-			a.putAll(b);
-			return a;
-		});
-		return P2("root", schema);
-	}
+    public static <T> Partitioner schemaOf(final DFrame dfm) {
+        final var n = dfm.shape()._1();
+        var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(SharedMem::parse).reduce(P2(), (acc, a) -> {
+            final var key = a._1();
+            final var type = a._2();
+            final var size = type.elementSize;
+            ((Partitioner) acc.computeIfAbsent(type.name(), k -> P2())).put(key, size * n);
+            return acc;
+        }, (a, b) -> {
+            a.putAll(b);
+            return a;
+        });
+        return P2("root", schema);
+    }
 
-	public static Stream<IRecord> slotS(final DFrame dfm) {
-		final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
-		return SharedMem.schemaOf(dfm).leafS().map(slot -> {
-			final var paths = slot.paths();
-			final var path = paths.stream().collect(Collectors.joining("."));
-			final var name = paths.get(2);
-			final var type = DataType.valueOf(paths.get(1));
-			final var start = slot.start();
-			final var end = slot.end();
-			final var length = slot.length();
-			final var value = dfm.col(name);
-			final var count = value.size();
-			return rb.get(path, name, type, start, end, length, count, value);
-		});
-	}
+    public static Stream<IRecord> slotS(final DFrame dfm) {
+        final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
+        return SharedMem.schemaOf(dfm).leafS().map(slot -> {
+            final var paths = slot.paths();
+            final var path = paths.stream().collect(Collectors.joining("."));
+            final var name = paths.get(2);
+            final var type = DataType.valueOf(paths.get(1));
+            final var start = slot.start();
+            final var end = slot.end();
+            final var length = slot.length();
+            final var value = dfm.col(name);
+            final var count = value.size();
+            return rb.get(path, name, type, start, end, length, count, value);
+        });
+    }
 
-	/**
-	 * 将DFrame数据写入共享内存
-	 * 
-	 * @param buffer MappedByteBuffer 共享内存缓冲区
-	 * @param dfm    数据框
-	 */
-	public static void write(MappedByteBuffer buffer, DFrame dfm) {
-		var slots = slotS(dfm).collect(Collectors.toList());
-		var meta = Json.obj2json(Map.of("s",
-				slots.stream().map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"))).toList()));
-		var metaBytes = meta.getBytes(StandardCharsets.UTF_8);
+    public static void write(MappedByteBuffer buffer, DFrame dfm) {
+        var slots = slotS(dfm).collect(Collectors.toList());
 
-		buffer.position(0);
-		buffer.putInt(metaBytes.length);
-		buffer.put(metaBytes);
+        var meta = Json.obj2json(Map.of("s", slots.stream().map(s -> Map.of(
+            "n", s.str("name"),
+            "t", s.str("type"),
+            "c", s.num("count"),
+            "start", s.num("start")
+        )).toList()));
 
-		slots.forEach(s -> {
-			var pos = s.num("start").intValue() + 4 + metaBytes.length;
-			buffer.position(pos);
-			var vals = s.lla("value", e -> e);
-			var type = DataType.valueOf(s.str("type"));
+        var metaBytes = meta.getBytes(StandardCharsets.UTF_8);
+        var metaSize = 4 + metaBytes.length;
 
-			switch (type) {
-			case INT32 -> {
-				var arr = vals.stream().mapToInt(v -> ((Number) v).intValue()).toArray();
-				buffer.asIntBuffer().put(arr);
-			}
-			case FLOAT64 -> {
-				var arr = vals.stream().mapToDouble(v -> ((Number) v).doubleValue()).toArray();
-				buffer.asDoubleBuffer().put(arr);
-			}
-			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
-				vals.forEach(v -> {
-					var bytes = v.toString().getBytes(StandardCharsets.UTF_16LE);
-					buffer.put(bytes);
-					for (int i = bytes.length; i < type.elementSize; i++)
-						buffer.put((byte) 0);
-				});
-			}
-			default -> {
-			}
-			}
-		});
-		buffer.force();
-	}
+        buffer.position(0);
+        buffer.putInt(metaBytes.length);
+        buffer.put(metaBytes);
 
-	// 方法1：从文件创建
-	public static MappedByteBuffer createSharedMemory(String filePath, int size) throws Exception {
-		try (RandomAccessFile file = new RandomAccessFile(filePath, "rw")) {
-			file.setLength(size); // 设置文件大小
-			FileChannel channel = file.getChannel();
-			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
-		}
-	}
+        slots.forEach(s -> {
+            var type = DataType.valueOf(s.str("type"));
+            var vals = s.lla("value", e -> e);
+            var pos = metaSize + s.num("start").intValue();
+            
+            buffer.position(pos);
 
-	// 方法2：从临时文件创建（Linux共享内存）
-	public static MappedByteBuffer createShm(String name, int size) throws Exception {
-		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
-		return createSharedMemory(path, size);
-	}
+            switch (type) {
+            case INT32 -> {
+                var arr = vals.stream().mapToInt(v -> ((Number) v).intValue()).toArray();
+                buffer.asIntBuffer().put(arr);
+            }
+            case FLOAT64 -> {
+                var arr = vals.stream().mapToDouble(v -> ((Number) v).doubleValue()).toArray();
+                buffer.asDoubleBuffer().put(arr);
+            }
+            case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
+                vals.forEach(v -> {
+                    var str = v.toString();
+                    var bytes = str.getBytes(StandardCharsets.UTF_16LE);
+                    buffer.put(bytes);
+                    var remain = type.elementSize - bytes.length;
+                    for (int i = 0; i < remain; i++) buffer.put((byte) 0);
+                });
+            }
+            case INT8, BYTE -> {
+                vals.forEach(v -> buffer.put(((Number) v).byteValue()));
+            }
+            case INT16 -> {
+                vals.forEach(v -> buffer.putShort(((Number) v).shortValue()));
+            }
+            case INT64 -> {
+                vals.forEach(v -> buffer.putLong(((Number) v).longValue()));
+            }
+            case FLOAT32 -> {
+                vals.forEach(v -> buffer.putFloat(((Number) v).floatValue()));
+            }
+            default -> {}
+            }
+        });
+        buffer.force();
+    }
 
-	/**
-	 * 从共享内存读取数据到DFrame
-	 * 
-	 * @param buffer MappedByteBuffer 共享内存缓冲区
-	 * @return DFrame
-	 */
-	public static DFrame read(MappedByteBuffer buffer) {
-		buffer.position(0);
-		var metaLen = buffer.getInt();
-		var metaBytes = new byte[metaLen];
-		buffer.get(metaBytes);
-		var meta = Json.json2obj(new String(metaBytes, StandardCharsets.UTF_8), Map.class);
+    public static MappedByteBuffer createSharedMemory(String filePath, int size) throws Exception {
+        try (RandomAccessFile file = new RandomAccessFile(filePath, "rw")) {
+            file.setLength(size);
+            FileChannel channel = file.getChannel();
+            return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+        }
+    }
 
-		var records = new ArrayList<Map<String, Object>>();
-		var fields = (List<Map<String, Object>>) meta.get("s");
+    public static MappedByteBuffer createShm(String name, int size) throws Exception {
+        String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
+        return createSharedMemory(path, size);
+    }
 
-		for (var field : fields) {
-			var name = (String) field.get("n");
-			var type = DataType.valueOf((String) field.get("t"));
-			var count = ((Number) field.get("c")).intValue();
+    @SuppressWarnings("unchecked")
+    public static DFrame read(MappedByteBuffer buf) {
+        buf.position(0);
 
-			// 这里需要根据实际偏移读取数据，简化实现
-			// 实际应用中需要完整的偏移计算
-		}
+        int metaLen = buf.getInt();
+        byte[] metaBytes = new byte[metaLen];
+        buf.get(metaBytes);
 
-		return null; // 返回构建的DFrame
-	}
+        var meta = Json.json2obj(new String(metaBytes, StandardCharsets.UTF_8), Map.class);
+        var fields = (List<Map<String, Object>>) meta.get("s");
+        if (fields == null || fields.isEmpty()) return DFrame.dfm();
+
+        int dataStart = 4 + metaLen;
+        var args = new ArrayList<Object>();
+        var colNames = new ArrayList<String>();
+        var colData = new ArrayList<List<?>>();
+
+        for (var f : fields) {
+            var name = (String) f.get("n");
+            var type = DataType.valueOf((String) f.get("t"));
+            var cnt = ((Number) f.get("c")).intValue();
+            var start = ((Number) f.get("start")).intValue();
+
+            buf.position(dataStart + start);
+            colNames.add(name);
+
+            switch (type) {
+            case INT32 -> {
+                var list = new ArrayList<Integer>();
+                for (int i = 0; i < cnt; i++) list.add(buf.getInt());
+                colData.add(list);
+            }
+            case FLOAT64 -> {
+                var list = new ArrayList<Double>();
+                for (int i = 0; i < cnt; i++) list.add(buf.getDouble());
+                colData.add(list);
+            }
+            case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
+                var list = new ArrayList<String>();
+                int strBytesLen = type.elementSize;
+                for (int i = 0; i < cnt; i++) {
+                    byte[] bytes = new byte[strBytesLen];
+                    buf.get(bytes);
+                    
+                    // 找到字符串结束位置
+                    int len = 0;
+                    while (len < bytes.length - 1) {
+                        if (bytes[len] == 0 && bytes[len + 1] == 0) break;
+                        len += 2;
+                    }
+                    
+                    list.add(new String(bytes, 0, len, StandardCharsets.UTF_16LE));
+                }
+                colData.add(list);
+            }
+            case INT8, BYTE -> {
+                var list = new ArrayList<Byte>();
+                for (int i = 0; i < cnt; i++) list.add(buf.get());
+                colData.add(list);
+            }
+            case INT16 -> {
+                var list = new ArrayList<Short>();
+                for (int i = 0; i < cnt; i++) list.add(buf.getShort());
+                colData.add(list);
+            }
+            case INT64 -> {
+                var list = new ArrayList<Long>();
+                for (int i = 0; i < cnt; i++) list.add(buf.getLong());
+                colData.add(list);
+            }
+            case FLOAT32 -> {
+                var list = new ArrayList<Float>();
+                for (int i = 0; i < cnt; i++) list.add(buf.getFloat());
+                colData.add(list);
+            }
+            default -> colData.add(new ArrayList<>());
+            }
+        }
+
+        // 构建DFrame参数
+        for (int i = 0; i < colNames.size(); i++) {
+            args.add(colNames.get(i));
+            args.add(colData.get(i));
+        }
+
+        return DFrame.dfm(args.toArray());
+    }
 }
