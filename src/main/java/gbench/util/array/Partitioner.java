@@ -248,7 +248,7 @@ public class Partitioner extends LinkedHashMap<String, Object> {
 	 *
 	 * @return 由Elem 构成的数据流 需要竞购 消费才能有效。
 	 */
-	public Stream<Elem> buildTreeS() {
+	private Stream<Elem> buildTreeS() {
 		final Stack<Elem> stack = new Stack<>();
 		final Elem root = E(null, this, null, null);
 		stack.push(root);
@@ -308,6 +308,15 @@ public class Partitioner extends LinkedHashMap<String, Object> {
 	 */
 	public Stream<Elem> elemS() {
 		return this.root().stream().map(e -> e._2);
+	}
+
+	/**
+	 * 节点元素 的 流
+	 * 
+	 * @return 节点元素流
+	 */
+	public Stream<Elem> leafS() {
+		return this.root().stream().map(e -> e._2).filter(e -> e.isLeaf());
 	}
 
 	/**
