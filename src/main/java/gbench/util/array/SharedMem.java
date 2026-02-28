@@ -7,7 +7,9 @@ import gbench.util.jdbc.kvp.Json;
 
 import static gbench.util.array.Partitioner.P2;
 
+import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -149,6 +151,21 @@ public class SharedMem {
 			}
 		});
 		buffer.force();
+	}
+
+	// 方法1：从文件创建
+	public static MappedByteBuffer createSharedMemory(String filePath, int size) throws Exception {
+		try (RandomAccessFile file = new RandomAccessFile(filePath, "rw")) {
+			file.setLength(size); // 设置文件大小
+			FileChannel channel = file.getChannel();
+			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+		}
+	}
+
+	// 方法2：从临时文件创建（Linux共享内存）
+	public static MappedByteBuffer createShm(String name, int size) throws Exception {
+		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
+		return createSharedMemory(path, size);
 	}
 
 	/**
