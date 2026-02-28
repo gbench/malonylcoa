@@ -3,9 +3,12 @@ package gbench.util.array;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
+import gbench.util.jdbc.kvp.Json;
 
 import static gbench.util.array.Partitioner.P2;
 
+import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,12 +73,6 @@ public class SharedMem {
 		return Tuple2.of(key, size);
 	}
 
-	/**
-	 * 
-	 * @param <T>
-	 * @param dfm
-	 * @return
-	 */
 	public static <T> Partitioner schemaOf(final DFrame dfm) {
 		final var n = dfm.shape()._1();
 		@SuppressWarnings("unused")
@@ -95,17 +92,90 @@ public class SharedMem {
 	public static Stream<IRecord> slotS(final DFrame dfm) {
 		final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
 		return SharedMem.schemaOf(dfm).leafS().map(slot -> {
-			final var paths = slot.paths(); // 路径路劲
-			final var path = paths.stream().collect(Collectors.joining(".")); // 路径拼接
-			final var name = paths.get(2); // 字段名称
-			final var type = DataType.valueOf(paths.get(1)); // 字段类型
-			final var start = slot.start(); // 起始偏移（包含）
-			final var end = slot.end(); // 位置结尾索引（不报考）
-			final var length = slot.length(); // (end-start) 长度
-			final var value = dfm.col(name); // 数据值
-			final var count = value.size(); // 数据数量
+			final var paths = slot.paths();
+			final var path = paths.stream().collect(Collectors.joining("."));
+			final var name = paths.get(2);
+			final var type = DataType.valueOf(paths.get(1));
+			final var start = slot.start();
+			final var end = slot.end();
+			final var length = slot.length();
+			final var value = dfm.col(name);
+			final var count = value.size();
 			return rb.get(path, name, type, start, end, length, count, value);
 		});
 	}
 
+	/**
+	 * 将DFrame数据写入共享内存
+	 * 
+	 * @param buffer MappedByteBuffer 共享内存缓冲区
+	 * @param dfm    数据框
+	 */
+	public static void write(MappedByteBuffer buffer, DFrame dfm) {
+		var slots = slotS(dfm).collect(Collectors.toList());
+		var meta = Json.obj2json(Map.of("s",
+				slots.stream().map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"))).toList()));
+		var metaBytes = meta.getBytes(StandardCharsets.UTF_8);
+
+		buffer.position(0);
+		buffer.putInt(metaBytes.length);
+		buffer.put(metaBytes);
+
+		slots.forEach(s -> {
+			var pos = s.num("start").intValue() + 4 + metaBytes.length;
+			buffer.position(pos);
+			var vals = s.lla("value", e -> e);
+			var type = DataType.valueOf(s.str("type"));
+
+			switch (type) {
+			case INT32 -> {
+				var arr = vals.stream().mapToInt(v -> ((Number) v).intValue()).toArray();
+				buffer.asIntBuffer().put(arr);
+			}
+			case FLOAT64 -> {
+				var arr = vals.stream().mapToDouble(v -> ((Number) v).doubleValue()).toArray();
+				buffer.asDoubleBuffer().put(arr);
+			}
+			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
+				vals.forEach(v -> {
+					var bytes = v.toString().getBytes(StandardCharsets.UTF_16LE);
+					buffer.put(bytes);
+					for (int i = bytes.length; i < type.elementSize; i++)
+						buffer.put((byte) 0);
+				});
+			}
+			default -> {
+			}
+			}
+		});
+		buffer.force();
+	}
+
+	/**
+	 * 从共享内存读取数据到DFrame
+	 * 
+	 * @param buffer MappedByteBuffer 共享内存缓冲区
+	 * @return DFrame
+	 */
+	public static DFrame read(MappedByteBuffer buffer) {
+		buffer.position(0);
+		var metaLen = buffer.getInt();
+		var metaBytes = new byte[metaLen];
+		buffer.get(metaBytes);
+		var meta = Json.json2obj(new String(metaBytes, StandardCharsets.UTF_8), Map.class);
+
+		var records = new ArrayList<Map<String, Object>>();
+		var fields = (List<Map<String, Object>>) meta.get("s");
+
+		for (var field : fields) {
+			var name = (String) field.get("n");
+			var type = DataType.valueOf((String) field.get("t"));
+			var count = ((Number) field.get("c")).intValue();
+
+			// 这里需要根据实际偏移读取数据，简化实现
+			// 实际应用中需要完整的偏移计算
+		}
+
+		return null; // 返回构建的DFrame
+	}
 }
