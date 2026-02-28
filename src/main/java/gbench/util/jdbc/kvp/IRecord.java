@@ -6239,6 +6239,7 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		return this.keys().stream().map(name -> (tt2u.apply((List<T>) this.lla(name, t -> (T) t))));
 	}
 
+	@SuppressWarnings("unchecked")
 	default <T, U> Stream<U> colS(final BiFunction<String, List<T>, U> tt2u) {
 		return this.keys().stream().map(name -> (tt2u.apply(name, (List<T>) this.lla(name, t -> (T) t))));
 	}
