@@ -12,6 +12,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -163,22 +164,39 @@ public class SharedMem {
 		}
 	}
 
+	public static MappedByteBuffer tempbuf(final String name, final DFrame dfm) throws Exception {
+		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
+		return rafbuf(path, sizeof(dfm));
+	}
+
 	public static MappedByteBuffer tempbuf(final String name, final int size) throws Exception {
 		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
 		return rafbuf(path, size);
 	}
 
-	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
-		final var slots = slots(dfm);
-		final var meta = Json.obj2json(Map.of("slots", slots.stream().map(slot -> Map.of("x", slot.str("name"), "t",
-				slot.str("type"), "n", slot.num("count"), "s", slot.num("start"))).toList()));
+	public static <T> ArrayList<T> fetch(final int n, final Supplier<T> reader) {
+		final var list = new ArrayList<T>();
+		for (int i = 0; i < n; i++) {
+			list.add(reader.get());
+		}
+		return list;
+	}
 
-		final var metaBytes = meta.getBytes(StandardCharsets.UTF_8);
-		final var metaSize = 4 + metaBytes.length;
+	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
+		write(buffer, slots(dfm));
+	}
+
+	public static void write(final MappedByteBuffer buffer, final List<IRecord> slots) {
+		final var metaJson = Json.obj2json(Map.of("slots", slots.stream().map(slot -> //
+		Map.of("x", slot.str("name"), "t", slot.str("type"), "n", slot.num("count"), "s", slot.num("start")))
+				.toList()));
+
+		final var jsonBytes = metaJson.getBytes(StandardCharsets.UTF_8);
+		final var metaSize = 4 + jsonBytes.length;
 
 		buffer.position(0);
-		buffer.putInt(metaBytes.length);
-		buffer.put(metaBytes);
+		buffer.putInt(jsonBytes.length);
+		buffer.put(jsonBytes);
 
 		slots.forEach(slot -> {
 			final var type = DataType.valueOf(slot.str("type"));
@@ -213,47 +231,39 @@ public class SharedMem {
 	public static DFrame read(final MappedByteBuffer buf) {
 		buf.position(0);
 
-		final int metalen = buf.getInt();
-		final byte[] bb = new byte[metalen];
-		buf.get(bb);
+		final int metaLen = buf.getInt();
+		final byte[] jsonBytes = new byte[metaLen];
+		buf.get(jsonBytes);
 
-		final var meta = Json.json2obj(new String(bb, StandardCharsets.UTF_8), Map.class);
-		final var fields = (List<Map<String, Object>>) meta.get("slots");
-		if (fields == null || fields.isEmpty())
+		final var meta = Json.json2obj(new String(jsonBytes, StandardCharsets.UTF_8), Map.class);
+		final var slots = (List<Map<String, Object>>) meta.get("slots");
+		if (slots == null || slots.isEmpty())
 			return DFrame.dfm();
 
-		final int offset = 4 + metalen; // 数据偏移
+		final int offset = 4 + metaLen; // 数据偏移
 		final var kvps = new ArrayList<Object>();
 		final var keys = new ArrayList<String>();
 		final var values = new ArrayList<List<?>>();
 
-		for (var f : fields) {
-			final var name = (String) f.get("x");
-			final var type = DataType.valueOf((String) f.get("t"));
-			final var cnt = ((Number) f.get("n")).intValue();
-			final var start = ((Number) f.get("s")).intValue();
+		for (final var slot : slots) {
+			final var name = (String) slot.get("x");
+			final var type = DataType.valueOf((String) slot.get("t"));
+			final var cnt = ((Number) slot.get("n")).intValue();
+			final var start = ((Number) slot.get("s")).intValue();
 
 			buf.position(offset + start);
 			keys.add(name);
 
 			switch (type) {
-			case INT32 -> {
-				final var list = new ArrayList<Integer>();
-				for (int i = 0; i < cnt; i++)
-					list.add(buf.getInt());
-				values.add(list);
-			}
-			case FLOAT64 -> {
-				final var list = new ArrayList<Double>();
-				for (int i = 0; i < cnt; i++)
-					list.add(buf.getDouble());
-				values.add(list);
-			}
+			case INT32 -> values.add(fetch(cnt, buf::getInt));
+
+			case FLOAT64 -> values.add(fetch(cnt, buf::getDouble));
+
 			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
 				final var list = new ArrayList<String>();
-				int strBytesLen = type.elementSize;
+				final int strBytesLen = type.elementSize;
 				for (int i = 0; i < cnt; i++) {
-					byte[] bytes = new byte[strBytesLen];
+					final byte[] bytes = new byte[strBytesLen];
 					buf.get(bytes);
 
 					// 找到字符串结束位置（双字节\0）
@@ -268,30 +278,10 @@ public class SharedMem {
 				}
 				values.add(list);
 			}
-			case INT8, BYTE -> {
-				final var list = new ArrayList<Byte>();
-				for (int i = 0; i < cnt; i++)
-					list.add(buf.get());
-				values.add(list);
-			}
-			case INT16 -> {
-				final var list = new ArrayList<Short>();
-				for (int i = 0; i < cnt; i++)
-					list.add(buf.getShort());
-				values.add(list);
-			}
-			case INT64 -> {
-				final var list = new ArrayList<Long>();
-				for (int i = 0; i < cnt; i++)
-					list.add(buf.getLong());
-				values.add(list);
-			}
-			case FLOAT32 -> {
-				final var list = new ArrayList<Float>();
-				for (int i = 0; i < cnt; i++)
-					list.add(buf.getFloat());
-				values.add(list);
-			}
+			case INT8, BYTE -> values.add(fetch(cnt, buf::get));
+			case INT16 -> values.add(fetch(cnt, buf::getShort));
+			case INT64 -> values.add(fetch(cnt, buf::getLong));
+			case FLOAT32 -> values.add(fetch(cnt, buf::getFloat));
 			default -> values.add(new ArrayList<>());
 			}
 		}
