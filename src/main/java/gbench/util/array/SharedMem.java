@@ -36,7 +36,7 @@ public class SharedMem {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T, X extends List<?>> Tuple2<String, DataType> parse(final Tuple2<String, X> p) {
+	public static <T, X extends List<?>> Tuple2<String, DataType> parseType(final Tuple2<String, X> p) {
 		String key = p._1();
 		String type = p._2().stream().filter(Objects::nonNull).findFirst().map(Object::getClass).map(e -> (Class<T>) e)
 				.orElse((Class<T>) Object.class).getSimpleName();
@@ -78,7 +78,7 @@ public class SharedMem {
 	public static <T> Partitioner schemaOf(final DFrame dfm) {
 		final var n = dfm.shape()._1();
 		@SuppressWarnings("unused")
-		var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(SharedMem::parse).reduce(P2(), (acc, a) -> {
+		var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(SharedMem::parseType).reduce(P2(), (acc, a) -> {
 			final var key = a._1();
 			final var type = a._2();
 			final var size = type.elementSize;
@@ -110,15 +110,35 @@ public class SharedMem {
 		}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
 	}
 
-	public static MappedByteBuffer bufferOf(String filePath, int size) throws Exception {
-		try (final RandomAccessFile file = new RandomAccessFile(filePath, "rw")) {
+	public static int dfmsize(DFrame dfm) {
+		final var slots = SharedMem.slotS(dfm).collect(Collectors.toList());
+		final int dataSize = slots.stream().mapToInt(slot -> slot.i4("end")).max().orElse(0);
+		final var meta = Json.obj2json(Map.of("s", slots.stream()
+				.map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"), "start", s.num("start")))
+				.toList()));
+		final int metaSize = 4 + meta.getBytes(StandardCharsets.UTF_8).length;
+
+		return metaSize + dataSize;
+	}
+
+	public static MappedByteBuffer dfmbuf(final String filePath, DFrame dfm) throws Exception {
+		try (final var file = new RandomAccessFile(filePath, "rw")) {
+			final var size = dfmsize(dfm);
 			file.setLength(size);
-			FileChannel channel = file.getChannel();
+			final var channel = file.getChannel();
 			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
 		}
 	}
 
-	public static MappedByteBuffer buffer2(final String name, int size) throws Exception {
+	public static MappedByteBuffer bufferOf(final String filePath, final int size) throws Exception {
+		try (final var file = new RandomAccessFile(filePath, "rw")) {
+			file.setLength(size);
+			final var channel = file.getChannel();
+			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+		}
+	}
+
+	public static MappedByteBuffer buffer2(final String name, final int size) throws Exception {
 		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
 		return bufferOf(path, size);
 	}
@@ -137,23 +157,23 @@ public class SharedMem {
 
 		slots.forEach(slot -> {
 			final var type = DataType.valueOf(slot.str("type"));
-			final var vals = slot.lla("value", e -> e);
+			final var value = slot.lla("value", e -> e);
 			final var pos = metaSize + slot.num("start").intValue();
 
 			buffer.position(pos);
 
 			switch (type) {
-			case INT8, BYTE -> vals.forEach(v -> buffer.put(((Number) v).byteValue()));
-			case INT32 -> vals.forEach(v -> buffer.putInt(((Number) v).intValue()));
-			case INT16 -> vals.forEach(v -> buffer.putShort(((Number) v).shortValue()));
-			case INT64 -> vals.forEach(v -> buffer.putLong(((Number) v).longValue()));
-			case FLOAT32 -> vals.forEach(v -> buffer.putFloat(((Number) v).floatValue()));
-			case FLOAT64 -> vals.forEach(v -> buffer.putDouble(((Number) v).doubleValue()));
+			case INT8, BYTE -> value.forEach(v -> buffer.put(((Number) v).byteValue()));
+			case INT32 -> value.forEach(v -> buffer.putInt(((Number) v).intValue()));
+			case INT16 -> value.forEach(v -> buffer.putShort(((Number) v).shortValue()));
+			case INT64 -> value.forEach(v -> buffer.putLong(((Number) v).longValue()));
+			case FLOAT32 -> value.forEach(v -> buffer.putFloat(((Number) v).floatValue()));
+			case FLOAT64 -> value.forEach(v -> buffer.putDouble(((Number) v).doubleValue()));
 			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
-				vals.forEach(v -> {
-					var str = v.toString();
-					var bytes = str.getBytes(StandardCharsets.UTF_16LE);
-					var fixedBytes = Arrays.copyOf(bytes, type.elementSize);
+				value.forEach(v -> {
+					final var str = v.toString();
+					final var bytes = str.getBytes(StandardCharsets.UTF_16LE);
+					final var fixedBytes = Arrays.copyOf(bytes, type.elementSize);
 					buffer.put(fixedBytes);
 				});
 			}
@@ -168,16 +188,16 @@ public class SharedMem {
 	public static DFrame read(final MappedByteBuffer buf) {
 		buf.position(0);
 
-		final int metaLen = buf.getInt();
-		final byte[] metaBytes = new byte[metaLen];
-		buf.get(metaBytes);
+		final int metalen = buf.getInt();
+		final byte[] bb = new byte[metalen];
+		buf.get(bb);
 
-		final var meta = Json.json2obj(new String(metaBytes, StandardCharsets.UTF_8), Map.class);
+		final var meta = Json.json2obj(new String(bb, StandardCharsets.UTF_8), Map.class);
 		final var fields = (List<Map<String, Object>>) meta.get("slots");
 		if (fields == null || fields.isEmpty())
 			return DFrame.dfm();
 
-		final int offset = 4 + metaLen; // 数据偏移
+		final int offset = 4 + metalen; // 数据偏移
 		final var kvps = new ArrayList<Object>();
 		final var keys = new ArrayList<String>();
 		final var values = new ArrayList<List<?>>();
@@ -193,19 +213,19 @@ public class SharedMem {
 
 			switch (type) {
 			case INT32 -> {
-				var list = new ArrayList<Integer>();
+				final var list = new ArrayList<Integer>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getInt());
 				values.add(list);
 			}
 			case FLOAT64 -> {
-				var list = new ArrayList<Double>();
+				final var list = new ArrayList<Double>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getDouble());
 				values.add(list);
 			}
 			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
-				var list = new ArrayList<String>();
+				final var list = new ArrayList<String>();
 				int strBytesLen = type.elementSize;
 				for (int i = 0; i < cnt; i++) {
 					byte[] bytes = new byte[strBytesLen];
@@ -224,25 +244,25 @@ public class SharedMem {
 				values.add(list);
 			}
 			case INT8, BYTE -> {
-				var list = new ArrayList<Byte>();
+				final var list = new ArrayList<Byte>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.get());
 				values.add(list);
 			}
 			case INT16 -> {
-				var list = new ArrayList<Short>();
+				final var list = new ArrayList<Short>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getShort());
 				values.add(list);
 			}
 			case INT64 -> {
-				var list = new ArrayList<Long>();
+				final var list = new ArrayList<Long>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getLong());
 				values.add(list);
 			}
 			case FLOAT32 -> {
-				var list = new ArrayList<Float>();
+				final var list = new ArrayList<Float>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getFloat());
 				values.add(list);

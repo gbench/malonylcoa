@@ -25,9 +25,9 @@ public class SharedMemTest {
 		SharedMem.slotS(dfm).forEach(p -> {
 			println(p);
 		});
-		final var buffer = SharedMem.bufferOf("E:/slicee/temp/malonylcoa/array/a", 100000);
-		SharedMem.write(buffer, dfm);
-		final var dfm2 = SharedMem.read(buffer);
+		final var mpgbuf = SharedMem.dfmbuf("E:/slicee/temp/malonylcoa/array/mpg", dfm);
+		SharedMem.write(mpgbuf, dfm);
+		final var dfm2 = SharedMem.read(mpgbuf);
 		println("----------------------");
 		println(dfm);
 		println("----------------------");
