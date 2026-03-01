@@ -75,8 +75,12 @@ public class SharedMem {
 		return Tuple2.of(key, size);
 	}
 
-	public static int sizeof(DFrame dfm) {
-		final var slots = SharedMem.slotS(dfm).collect(Collectors.toList());
+	/**
+	 * 
+	 * @param slots
+	 * @return
+	 */
+	public static int sizeof(final List<IRecord> slots) {
 		final int dataSize = slots.stream().mapToInt(slot -> slot.i4("end")).max().orElse(0);
 		final var meta = Json.obj2json(Map.of("s", slots.stream()
 				.map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"), "start", s.num("start")))
@@ -84,6 +88,16 @@ public class SharedMem {
 		final int metaSize = 4 + meta.getBytes(StandardCharsets.UTF_8).length;
 
 		return metaSize + dataSize;
+	}
+
+	/**
+	 * 
+	 * @param dfm
+	 * @return
+	 */
+	public static int sizeof(final DFrame dfm) {
+		final var slots = SharedMem.slotS(dfm).collect(Collectors.toList());
+		return sizeof(slots);
 	}
 
 	/**
@@ -107,6 +121,10 @@ public class SharedMem {
 			return a;
 		});
 		return P2("root", schema);
+	}
+
+	public static List<IRecord> slots(final DFrame dfm) {
+		return slotS(dfm).toList();
 	}
 
 	public static Stream<IRecord> slotS(final DFrame dfm) {
@@ -151,7 +169,7 @@ public class SharedMem {
 	}
 
 	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
-		final var slots = slotS(dfm).toList();
+		final var slots = slots(dfm);
 		final var meta = Json.obj2json(Map.of("slots", slots.stream().map(slot -> Map.of("x", slot.str("name"), "t",
 				slot.str("type"), "n", slot.num("count"), "s", slot.num("start"))).toList()));
 
