@@ -1,5 +1,6 @@
 package gbench.util.jdbc.kvp;
 
+import java.nio.MappedByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -9,16 +10,27 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import gbench.util.array.SharedMem;
+import gbench.util.jdbc.function.ExceptionalFunction;
+
 public class DFrames {
 
-	public static DFrame dfm(final ResultSet rs) {
-		DFrame df = null;
-		try {
-			df = dfm(rs, true);
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return df;
+	/**
+	 * 把 ResultSet 转换成 MappedByteBuffer
+	 */
+	public static Function<String, ExceptionalFunction<ResultSet, MappedByteBuffer>> shmfn = //
+			path -> rs -> shm(path, rs);
+
+	public static MappedByteBuffer shm(final String path, final ResultSet rs) throws Exception {
+		final var dfm = dfm(rs);
+		final var slots = SharedMem.Schema.slots(dfm);
+		final var buffer = SharedMem.Schema.rafbuf(path, SharedMem.Schema.sizeof(slots));
+		SharedMem.write(buffer, dfm);
+		return buffer;
+	}
+
+	public static DFrame dfm(final ResultSet rs) throws SQLException {
+		return dfm(rs, true);
 	}
 
 	public static DFrame dfm(final ResultSet rs, final boolean close) throws SQLException {
