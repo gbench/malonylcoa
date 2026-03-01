@@ -413,6 +413,16 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 重命名
+	 * 
+	 * @param keymapper 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
+	 * @return DFrame
+	 */
+	public DFrame rename(final Function<String, String> keymapper) {
+		return this.mutate(e -> e.alias(keymapper).mutate(DFrame::dfm));
+	}
+
+	/**
 	 * 按照行进行排序 <br>
 	 * 例如:dfm.sortBy(Collections::reverse)
 	 * 
