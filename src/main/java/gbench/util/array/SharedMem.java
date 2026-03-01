@@ -125,10 +125,8 @@ public class SharedMem {
 
 	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
 		final var slots = slotS(dfm).toList();
-		final var meta = Json.obj2json(Map.of("slots",
-				slots.stream().map(
-						s -> Map.of("x", s.str("name"), "t", s.str("type"), "n", s.num("count"), "s", s.num("start")))
-						.toList()));
+		final var meta = Json.obj2json(Map.of("slots", slots.stream().map(slot -> Map.of("x", slot.str("name"), "t",
+				slot.str("type"), "n", slot.num("count"), "s", slot.num("start"))).toList()));
 
 		final var metaBytes = meta.getBytes(StandardCharsets.UTF_8);
 		final var metaSize = 4 + metaBytes.length;
