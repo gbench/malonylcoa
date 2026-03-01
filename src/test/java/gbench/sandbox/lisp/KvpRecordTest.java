@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 
-import gbench.util.io.Output;
 import gbench.util.jdbc.kvp.IRecord;
 
 public class KvpRecordTest {
