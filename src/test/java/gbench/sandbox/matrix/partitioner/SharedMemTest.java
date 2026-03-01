@@ -24,7 +24,7 @@ public class SharedMemTest {
 	@Test
 	public void foo() throws Exception {
 
-		final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg2"; // 共享内存文件
+		final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg1"; // 共享内存文件
 		final var dfm = SharedMem.writerGen.apply(shmfile) // 生成一个写入器
 				.compose((String json) -> DFrames.dfm(json).head(50)) // 把接口适配到json
 				.andThen(SharedMem::read) // 把结果导入到SharedMem::read
@@ -47,6 +47,7 @@ public class SharedMemTest {
 			for (final var sql : Arrays.asList(ctsql(tbl, proto), insql(tbl, dfm.rows()))) {
 				sess.sqlexecute(sql);
 			}
+
 			final var sql = "select * from %s".formatted(tbl);
 			final var mpg = sess.sql2dframe(sql);
 
@@ -57,6 +58,7 @@ public class SharedMemTest {
 					.andThen(DFrames.df2shmGen.apply(shmfile)) // 生成一个共享内存函数dfshm:DFrame2SharedMem
 					.andThen(SharedMem::read) // 读取共享内存
 					.apply(sql); // java.nio.MappedByteBuffer
+
 			println(mpg2);
 
 		});
