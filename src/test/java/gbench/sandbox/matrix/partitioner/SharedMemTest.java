@@ -29,6 +29,7 @@ public class SharedMemTest {
 				.compose((String json) -> DFrames.dfm(json).head(50)) // 把接口适配到json
 				.andThen(SharedMem::read) // 把结果导入到SharedMem::read
 				.apply(mpg_json); // 读取json
+
 		println(dfm);
 
 	}
@@ -57,10 +58,9 @@ public class SharedMemTest {
 			final var mpg2 = DFrames.sqldframeGen.apply(sess.getConnection()) // 生成一个sqldframe
 					.andThen(DFrames.df2shmGen.apply(shmfile)) // 生成一个共享内存函数dfshm:DFrame2SharedMem
 					.andThen(SharedMem::read) // 读取共享内存
-					.apply(sql); // java.nio.MappedByteBuffer
+					.apply(sql); // 装填sql从共享内存里读取数据框
 
 			println(mpg2);
-
 		});
 	}
 
