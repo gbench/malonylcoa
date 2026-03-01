@@ -11,7 +11,6 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
-import gbench.util.io.Output;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
@@ -48,6 +47,7 @@ public class DFrameTest {
 		final var rb = IRecord.rb("a,b,c");
 		final var dfm = Lisp.cph(xs, xs, xs).map(rb::get).collect(DFrame.dfmclc);
 		final var proto = dfm.head();
+
 		jdbcApp.withTransaction(sess -> {
 			final var tbl = "t_cph";
 			for (final var sql : Arrays.asList(ctsql(tbl, proto), insql(tbl, dfm.rows()))) {
@@ -55,7 +55,12 @@ public class DFrameTest {
 				sess.sqlexecute(sql);
 			}
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			sqldframe.andThen(Output::println).apply("select * from %s".formatted(tbl));
+			sqldframe.andThen(DFrames.df2shmGen.apply("abc")) //
+					.andThen(chanbuf -> {
+						println(chanbuf.getName());
+						chanbuf.close();
+						return null;
+					}).apply("select * from %s".formatted(tbl));
 		});
 	}
 

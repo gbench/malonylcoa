@@ -74,14 +74,15 @@ public class DFrames {
 	/**
 	 * 创建共享内存文件
 	 * 
-	 * @param path 共享内存文件路径
-	 * @param dfm  共享内存文件数据
+	 * @param pathname 共享内存文件路径
+	 * @param dfm      共享内存文件数据
 	 * @return
 	 * @throws Exception
 	 */
-	public static ChanBuff shm(final String path, final DFrame dfm) throws Exception {
+	public static ChanBuff shm(final String pathname, final DFrame dfm) throws Exception {
 		final var slots = SharedMem.Schema.slots(dfm);
-		final var buffer = SharedMem.Schema.rafbuf(path, SharedMem.Schema.sizeof(slots));
+		final var buffer = SharedMem.Schema.rafbuf(pathname, SharedMem.Schema.sizeof(slots));
+
 		SharedMem.write(buffer, dfm);
 		return buffer;
 	}

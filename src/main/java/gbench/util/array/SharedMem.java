@@ -7,12 +7,14 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
 import gbench.util.jdbc.kvp.Json;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,6 +46,47 @@ public class SharedMem {
 
 			/**
 			 * 
+			 * @param key
+			 * @param value
+			 * @return
+			 */
+			public ChanBuff put(final String key, final Object value) {
+				cachedata.put(key, value);
+				return this;
+			}
+
+			/**
+			 * 
+			 * @param file
+			 * @return
+			 */
+			public ChanBuff rafile(final RandomAccessFile rafile) {
+				return this.put(Constant.RAND_FILE.name(), rafile);
+			}
+
+			/**
+			 * 
+			 * @param path
+			 * @return
+			 */
+			public ChanBuff pathname(final String datafile) {
+				return this.put(Constant.PATH_NAME.name(), datafile);
+			}
+
+			/**
+			 * 
+			 * @return
+			 */
+			public String getName() {
+				return Optional.ofNullable(cachedata.get(Constant.PATH_NAME.name())) //
+						.map(e -> switch (e) {
+						case File file -> file.getAbsolutePath();
+						default -> String.valueOf(e);
+						}).orElse(null);
+			}
+
+			/**
+			 * 
 			 * @param channel
 			 * @param size
 			 * @return
@@ -53,6 +96,11 @@ public class SharedMem {
 				return new ChanBuff(channel, channel.map(FileChannel.MapMode.READ_WRITE, 0, size));
 			}
 
+			enum Constant {
+				RAND_FILE, PATH_NAME
+			}
+
+			public Map<String, Object> cachedata = new ConcurrentHashMap<>();
 			public final FileChannel chan;
 			public final MappedByteBuffer buff;
 		}
@@ -122,10 +170,20 @@ public class SharedMem {
 			return sizeof(slots);
 		}
 
+		/**
+		 * 
+		 * @param dfm
+		 * @return
+		 */
 		public static List<IRecord> slots(final DFrame dfm) {
 			return slotS(dfm).toList();
 		}
 
+		/**
+		 * 
+		 * @param dfm
+		 * @return
+		 */
 		public static Stream<IRecord> slotS(final DFrame dfm) {
 			if (dfm.shape()._1() < 1)
 				return Stream.empty();
@@ -145,33 +203,71 @@ public class SharedMem {
 			}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
 		}
 
+		/**
+		 * 
+		 * @param filePath
+		 * @param slots
+		 * @return
+		 * @throws Exception
+		 */
 		public static ChanBuff slotsbuf(final String filePath, List<IRecord> slots) throws Exception {
 			@SuppressWarnings("resource")
 			final var file = new RandomAccessFile(filePath, "rw");
 			final var size = sizeof(slots);
 			file.setLength(size);
-			return ChanBuff.of(file.getChannel(), size);
+			return ChanBuff.of(file.getChannel(), size).rafile(file);
 		}
 
+		/**
+		 * 
+		 * @param filePath
+		 * @param dfm
+		 * @return
+		 * @throws Exception
+		 */
 		public static ChanBuff dfmbuf(final String filePath, DFrame dfm) throws Exception {
 			return slotsbuf(filePath, slots(dfm));
 		}
 
-		public static ChanBuff rafbuf(final String filePath, final int size) throws Exception {
-			try (var file = new RandomAccessFile(filePath, "rw")) {
+		/**
+		 * 
+		 * @param pathname
+		 * @param size
+		 * @return
+		 * @throws Exception
+		 */
+		public static ChanBuff rafbuf(final String pathname, final int size) throws Exception {
+			if (pathname == null) {
+				return tempbuf(null, size);
+			} else {
+				final var file = new RandomAccessFile(pathname, "rw");
 				file.setLength(size);
-				return ChanBuff.of(file.getChannel(), size);
+				return ChanBuff.of(file.getChannel(), size).rafile(file).pathname(pathname);
 			}
 		}
 
+		/**
+		 * 
+		 * @param name
+		 * @param dfm
+		 * @return
+		 * @throws Exception
+		 */
 		public static ChanBuff tempbuf(final String name, final DFrame dfm) throws Exception {
-			String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
-			return rafbuf(path, sizeof(dfm));
+			return tempbuf(name, sizeof(dfm));
 		}
 
+		/**
+		 * 
+		 * @param name
+		 * @param size
+		 * @return
+		 * @throws Exception
+		 */
 		public static ChanBuff tempbuf(final String name, final int size) throws Exception {
-			String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
-			return rafbuf(path, size);
+			final var filename = Optional.ofNullable(name).orElse(UUID.randomUUID().toString().replace("-", ""));
+			final var pathname = "%s%s%s".formatted(System.getProperty("java.io.tmpdir"), "shm_", filename);
+			return rafbuf(pathname, size);
 		}
 
 		/**
@@ -228,6 +324,13 @@ public class SharedMem {
 		}
 	}
 
+	/**
+	 * 
+	 * @param <T>
+	 * @param n
+	 * @param reader
+	 * @return
+	 */
 	public static <T> ArrayList<T> fetch(final int n, final Supplier<T> reader) {
 		final var list = new ArrayList<T>();
 		for (int i = 0; i < n; i++) {
@@ -302,6 +405,11 @@ public class SharedMem {
 		buff.force();
 	}
 
+	/**
+	 * 
+	 * @param chanBuff
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public static DFrame read(final ChanBuff chanBuff) {
 		final var buf = chanBuff.buff;
