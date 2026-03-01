@@ -1,11 +1,13 @@
 package gbench.util.array;
 
+import gbench.util.array.SharedMem.Schema.ChanBuff;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
 import gbench.util.jdbc.kvp.Json;
 
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -23,6 +25,37 @@ public class SharedMem {
 	public static class Schema extends Partitioner {
 
 		private static final long serialVersionUID = -4217509027616888918L;
+
+		/**
+		 * 
+		 */
+		public static class ChanBuff implements AutoCloseable {
+
+			public ChanBuff(FileChannel chan, MappedByteBuffer buf) {
+				this.chan = chan;
+				this.buff = buf;
+			}
+
+			@Override
+			public void close() throws Exception {
+				buff.force();
+				chan.close();
+			}
+
+			/**
+			 * 
+			 * @param channel
+			 * @param size
+			 * @return
+			 * @throws IOException
+			 */
+			public static ChanBuff of(final FileChannel channel, final int size) throws IOException {
+				return new ChanBuff(channel, channel.map(FileChannel.MapMode.READ_WRITE, 0, size));
+			}
+
+			public final FileChannel chan;
+			public final MappedByteBuffer buff;
+		}
 
 		@SuppressWarnings("unchecked")
 		public static <T, X extends List<?>> Tuple2<String, DataType> typeof(final Tuple2<String, X> p) {
@@ -112,33 +145,31 @@ public class SharedMem {
 			}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
 		}
 
-		public static MappedByteBuffer slotsbuf(final String filePath, List<IRecord> slots) throws Exception {
-			try (final var file = new RandomAccessFile(filePath, "rw")) {
-				final var size = sizeof(slots);
-				file.setLength(size);
-				final var channel = file.getChannel();
-				return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
-			}
+		public static ChanBuff slotsbuf(final String filePath, List<IRecord> slots) throws Exception {
+			@SuppressWarnings("resource")
+			final var file = new RandomAccessFile(filePath, "rw");
+			final var size = sizeof(slots);
+			file.setLength(size);
+			return ChanBuff.of(file.getChannel(), size);
 		}
 
-		public static MappedByteBuffer dfmbuf(final String filePath, DFrame dfm) throws Exception {
+		public static ChanBuff dfmbuf(final String filePath, DFrame dfm) throws Exception {
 			return slotsbuf(filePath, slots(dfm));
 		}
 
-		public static MappedByteBuffer rafbuf(final String filePath, final int size) throws Exception {
-			try (final var file = new RandomAccessFile(filePath, "rw")) {
+		public static ChanBuff rafbuf(final String filePath, final int size) throws Exception {
+			try (var file = new RandomAccessFile(filePath, "rw")) {
 				file.setLength(size);
-				final var channel = file.getChannel();
-				return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+				return ChanBuff.of(file.getChannel(), size);
 			}
 		}
 
-		public static MappedByteBuffer tempbuf(final String name, final DFrame dfm) throws Exception {
+		public static ChanBuff tempbuf(final String name, final DFrame dfm) throws Exception {
 			String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
 			return rafbuf(path, sizeof(dfm));
 		}
 
-		public static MappedByteBuffer tempbuf(final String name, final int size) throws Exception {
+		public static ChanBuff tempbuf(final String name, final int size) throws Exception {
 			String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
 			return rafbuf(path, size);
 		}
@@ -208,70 +239,72 @@ public class SharedMem {
 	/**
 	 * 写入器生成器
 	 */
-	public static ExceptionalFunction<String, ExceptionalFunction<DFrame, MappedByteBuffer>> writerGen = path -> dfm -> {
+	public static ExceptionalFunction<String, ExceptionalFunction<DFrame, ChanBuff>> writerGen = path -> dfm -> {
 		final var slots = Schema.slots(dfm);
-		final var mpgbuf = Schema.slotsbuf(path, slots);
-		SharedMem.write(mpgbuf, dfm);
-		return mpgbuf;
+		final var chanbuff = Schema.slotsbuf(path, slots);
+		SharedMem.write(chanbuff, dfm);
+		return chanbuff;
 	};
 
 	/**
 	 * 
-	 * @param buffer
+	 * @param chanbuff
 	 * @param dfm
 	 */
-	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
-		write(buffer, Schema.slots(dfm));
+	public static void write(final ChanBuff chanbuff, final DFrame dfm) {
+		write(chanbuff, Schema.slots(dfm));
 	}
 
 	/**
 	 * 
-	 * @param buffer
+	 * @param chanBuff
 	 * @param slots
 	 */
-	public static void write(final MappedByteBuffer buffer, final List<IRecord> slots) {
+	public static void write(final ChanBuff chanBuff, final List<IRecord> slots) {
 		final var metaJson = Json.obj2json(Map.of("slots", slots.stream().map(slot -> //
 		Map.of("x", slot.str("name"), "t", slot.str("type"), "n", slot.num("count"), "s", slot.num("start")))
 				.toList()));
 
 		final var jsonBytes = metaJson.getBytes(StandardCharsets.UTF_8);
 		final var metaSize = 4 + jsonBytes.length;
+		final var buff = chanBuff.buff;
 
-		buffer.position(0);
-		buffer.putInt(jsonBytes.length);
-		buffer.put(jsonBytes);
+		buff.position(0);
+		buff.putInt(jsonBytes.length);
+		buff.put(jsonBytes);
 
 		slots.forEach(slot -> {
 			final var type = DataType.valueOf(slot.str("type"));
 			final var value = slot.lla("value", e -> e);
 			final var pos = metaSize + slot.num("start").intValue();
 
-			buffer.position(pos);
+			buff.position(pos);
 
 			switch (type) {
-			case INT8, BYTE -> value.forEach(v -> buffer.put(((Number) v).byteValue()));
-			case INT32 -> value.forEach(v -> buffer.putInt(((Number) v).intValue()));
-			case INT16 -> value.forEach(v -> buffer.putShort(((Number) v).shortValue()));
-			case INT64 -> value.forEach(v -> buffer.putLong(((Number) v).longValue()));
-			case FLOAT32 -> value.forEach(v -> buffer.putFloat(((Number) v).floatValue()));
-			case FLOAT64 -> value.forEach(v -> buffer.putDouble(((Number) v).doubleValue()));
+			case INT8, BYTE -> value.forEach(v -> buff.put(((Number) v).byteValue()));
+			case INT32 -> value.forEach(v -> buff.putInt(((Number) v).intValue()));
+			case INT16 -> value.forEach(v -> buff.putShort(((Number) v).shortValue()));
+			case INT64 -> value.forEach(v -> buff.putLong(((Number) v).longValue()));
+			case FLOAT32 -> value.forEach(v -> buff.putFloat(((Number) v).floatValue()));
+			case FLOAT64 -> value.forEach(v -> buff.putDouble(((Number) v).doubleValue()));
 			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
 				value.forEach(v -> {
 					final var str = v.toString();
 					final var bytes = str.getBytes(StandardCharsets.UTF_16LE);
 					final var fixedBytes = Arrays.copyOf(bytes, type.elementSize);
-					buffer.put(fixedBytes);
+					buff.put(fixedBytes);
 				});
 			}
 			default -> {
 			}
 			}
 		});
-		buffer.force();
+		buff.force();
 	}
 
 	@SuppressWarnings("unchecked")
-	public static DFrame read(final MappedByteBuffer buf) {
+	public static DFrame read(final ChanBuff chanBuff) {
+		final var buf = chanBuff.buff;
 		buf.position(0);
 
 		final int metaLen = buf.getInt();

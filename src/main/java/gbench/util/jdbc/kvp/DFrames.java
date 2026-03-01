@@ -1,6 +1,5 @@
 package gbench.util.jdbc.kvp;
 
-import java.nio.MappedByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,6 +12,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import gbench.util.array.SharedMem;
+import gbench.util.array.SharedMem.Schema.ChanBuff;
 import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.json.MyJson;
@@ -63,12 +63,12 @@ public class DFrames {
 	/**
 	 * 把 ResultSet 转换成 MappedByteBuffer
 	 */
-	public static ExceptionalFunction<String, ExceptionalFunction<ResultSet, MappedByteBuffer>> rs2shmGen = //
+	public static ExceptionalFunction<String, ExceptionalFunction<ResultSet, ChanBuff>> rs2shmGen = //
 			path -> rs -> shm(path, rs);
 	/**
 	 * 把 ResultSet 转换成 MappedByteBuffer
 	 */
-	public static ExceptionalFunction<String, ExceptionalFunction<DFrame, MappedByteBuffer>> df2shmGen = //
+	public static ExceptionalFunction<String, ExceptionalFunction<DFrame, ChanBuff>> df2shmGen = //
 			path -> dfm -> shm(path, dfm);
 
 	/**
@@ -79,7 +79,7 @@ public class DFrames {
 	 * @return
 	 * @throws Exception
 	 */
-	public static MappedByteBuffer shm(final String path, final DFrame dfm) throws Exception {
+	public static ChanBuff shm(final String path, final DFrame dfm) throws Exception {
 		final var slots = SharedMem.Schema.slots(dfm);
 		final var buffer = SharedMem.Schema.rafbuf(path, SharedMem.Schema.sizeof(slots));
 		SharedMem.write(buffer, dfm);
@@ -94,7 +94,7 @@ public class DFrames {
 	 * @return
 	 * @throws Exception
 	 */
-	public static MappedByteBuffer shm(final String path, final ResultSet rs) throws Exception {
+	public static ChanBuff shm(final String path, final ResultSet rs) throws Exception {
 		return shm(path, dfm(rs));
 	}
 
