@@ -147,13 +147,17 @@ public class SharedMem {
 		}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
 	}
 
-	public static MappedByteBuffer dfmbuf(final String filePath, DFrame dfm) throws Exception {
+	public static MappedByteBuffer slotsbuf(final String filePath, List<IRecord> slots) throws Exception {
 		try (final var file = new RandomAccessFile(filePath, "rw")) {
-			final var size = sizeof(dfm);
+			final var size = sizeof(slots);
 			file.setLength(size);
 			final var channel = file.getChannel();
 			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
 		}
+	}
+
+	public static MappedByteBuffer dfmbuf(final String filePath, DFrame dfm) throws Exception {
+		return slotsbuf(filePath, slots(dfm));
 	}
 
 	public static MappedByteBuffer rafbuf(final String filePath, final int size) throws Exception {
@@ -256,14 +260,16 @@ public class SharedMem {
 
 			switch (type) {
 			case INT32 -> values.add(fetch(cnt, buf::getInt));
-
 			case FLOAT64 -> values.add(fetch(cnt, buf::getDouble));
-
+			case INT8, BYTE -> values.add(fetch(cnt, buf::get));
+			case INT16 -> values.add(fetch(cnt, buf::getShort));
+			case INT64 -> values.add(fetch(cnt, buf::getLong));
+			case FLOAT32 -> values.add(fetch(cnt, buf::getFloat));
 			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
 				final var list = new ArrayList<String>();
-				final int strBytesLen = type.elementSize;
+				final var elmsize = type.elementSize; // 类型长度
 				for (int i = 0; i < cnt; i++) {
-					final byte[] bytes = new byte[strBytesLen];
+					final byte[] bytes = new byte[elmsize];
 					buf.get(bytes);
 
 					// 找到字符串结束位置（双字节\0）
@@ -278,10 +284,6 @@ public class SharedMem {
 				}
 				values.add(list);
 			}
-			case INT8, BYTE -> values.add(fetch(cnt, buf::get));
-			case INT16 -> values.add(fetch(cnt, buf::getShort));
-			case INT64 -> values.add(fetch(cnt, buf::getLong));
-			case FLOAT32 -> values.add(fetch(cnt, buf::getFloat));
 			default -> values.add(new ArrayList<>());
 			}
 		}

@@ -23,8 +23,9 @@ public class SharedMemTest {
 	@Test
 	public void foo() throws Exception {
 		final var dfm = dfmOf(mpgjson).head(50);
-		SharedMem.slotS(dfm).forEach(Output::println);
-		final var mpgbuf = SharedMem.dfmbuf("E:/slicee/temp/malonylcoa/array/mpg", dfm);
+		final var slots = SharedMem.slots(dfm);
+		slots.forEach(Output::println);
+		final var mpgbuf = SharedMem.slotsbuf("E:/slicee/temp/malonylcoa/array/mpg", slots);
 		SharedMem.write(mpgbuf, dfm);
 		final var dfm2 = SharedMem.read(mpgbuf);
 		println("----------------------");
