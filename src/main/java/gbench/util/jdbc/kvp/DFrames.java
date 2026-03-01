@@ -13,6 +13,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import gbench.util.array.SharedMem;
+import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.json.MyJson;
 
@@ -52,6 +53,12 @@ public class DFrames {
 		stmt.close();
 		return dfm;
 	};
+
+	/**
+	 * sqldframe 生成函数
+	 */
+	public static ExceptionalFunction<IJdbcSession<?, ?>, ExceptionalFunction<String, DFrame>> sqldframeGen2 = sqldframeGen
+			.compose((ExceptionalFunction<IJdbcSession<?, ?>, Connection>) IJdbcSession::getConnection);
 
 	/**
 	 * 把 ResultSet 转换成 MappedByteBuffer

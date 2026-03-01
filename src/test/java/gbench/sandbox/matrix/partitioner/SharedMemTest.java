@@ -9,14 +9,11 @@ import org.junit.jupiter.api.Test;
 
 import gbench.util.array.SharedMem;
 import gbench.util.jdbc.IJdbcApp;
-import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.IMySQL;
-import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrames;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
 
-import java.sql.Connection;
 import java.util.*;
 
 /**
@@ -58,12 +55,12 @@ public class SharedMemTest {
 			println(mpg);
 
 			final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg2"; // 共享内存文件
-			final var mpg2 = DFrames.sqldframeGen
-					.compose((ExceptionalFunction<IJdbcSession<?, ?>, Connection>) IJdbcSession::getConnection) // 适配到IJdbcSession
-					.apply(sess) // 生成一个sqldframe函数
+			final var mpg2 = DFrames.sqldframeGen2.apply(sess) // 生成一个sqldframe函数
 					.andThen(DFrames.df2shmGen.apply(shmfile)) // 生成一个共享内存函数dfshm:DFrame2SharedMem
 					.andThen(SharedMem::read) // 读取共享内存
 					.apply(sql); // 装填sql从共享内存里读取数据框
+
+			println(sess.sql2dframe(sql));
 
 			println(mpg2);
 		});
