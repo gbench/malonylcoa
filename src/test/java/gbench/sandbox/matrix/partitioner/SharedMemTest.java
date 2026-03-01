@@ -25,7 +25,7 @@ public class SharedMemTest {
 		SharedMem.slotS(dfm).forEach(p -> {
 			println(p);
 		});
-		final var buffer = SharedMem.createSharedMemory("E:/slicee/temp/malonylcoa/array/a", 100000);
+		final var buffer = SharedMem.bufferOf("E:/slicee/temp/malonylcoa/array/a", 100000);
 		SharedMem.write(buffer, dfm);
 		final var dfm2 = SharedMem.read(buffer);
 		println("----------------------");
