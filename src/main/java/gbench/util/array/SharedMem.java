@@ -86,6 +86,13 @@ public class SharedMem {
 		return metaSize + dataSize;
 	}
 
+	/**
+	 * schema 3 级别结构：[type:[(key,size)]]
+	 * 
+	 * @param <T>
+	 * @param dfm
+	 * @return
+	 */
 	public static <T> Partitioner schemaof(final DFrame dfm) {
 		final var n = dfm.shape()._1();
 		@SuppressWarnings("unused")
@@ -107,7 +114,7 @@ public class SharedMem {
 			return Stream.empty();
 		final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
 		final var rec = dfm.head(); // 样板行
-		return schemaof(dfm).leafS().map(slot -> {
+		return schemaof(dfm).leafS().map(slot -> { // 遍历叶子节点slot
 			final var paths = slot.paths();
 			final var path = paths.stream().collect(Collectors.joining("."));
 			final var name = paths.get(2);
