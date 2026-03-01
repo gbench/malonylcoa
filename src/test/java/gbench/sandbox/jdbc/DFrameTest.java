@@ -47,28 +47,28 @@ public class DFrameTest {
 
 		final var xs = A(1, 2, 3);
 		final var rb = IRecord.rb("a,b,c");
-		final var dfm = Lisp.cph(xs, xs, xs).map(rb::get).collect(DFrame.dfmclc);
-		final var proto = dfm.head();
+		final var dfm = Lisp.cph(xs, xs, xs).map(rb::get).collect(DFrame.dfmclc); // 生成向量笛卡尔集生成数据集
+		final var proto = dfm.head(); // 模板数据
 
 		jdbcApp.withTransaction(sess -> {
 			final var tbl = "t_cph";
-			for (final var sql : Arrays.asList(ctsql(tbl, proto), insql(tbl, dfm.rows()))) {
-				println(sql);
-				sess.sqlexecute(sql);
+			for (final var sql : Arrays.asList(ctsql(tbl, proto), insql(tbl, dfm.rows()))) { // 生成DML SQL语句
+				sess.sqlexecute(println(sql));
 			}
-			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			final String shmfile = null; // 临时文件
-			final var cbs = new ChanBuff[1];
 
-			final var cphdfm = sqldframe //
-					.andThen(DFrames.df2shmGen.apply(shmfile)) // dfm写入共享内存
+			final String shmfile = null; // 临时文件
+			final var cbs = new ChanBuff[1]; // 单值容器！
+			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
+			final var dfm_pipeline = sqldframe.andThen(DFrames.df2shmGen.apply(shmfile)) // dfm写入共享内存
 					.andThen(chanbuf -> {
 						cbs[0] = chanbuf;
 						println("pathname:%s".formatted(chanbuf));
 						return SharedMem.read(chanbuf); // 读取数据文件
-					}).apply("select * from %s".formatted(tbl));
+					});
+			final var cphdfm = dfm_pipeline.apply("select * from %s".formatted(tbl));
 
-			println(cphdfm);
+			println("cph", cphdfm);
+			println("cph json", cphdfm.json());
 			cbs[0].close(); // 缓存关闭
 		});
 	}
