@@ -36,7 +36,7 @@ public class SharedMem {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T, X extends List<?>> Tuple2<String, DataType> parseType(final Tuple2<String, X> p) {
+	public static <T, X extends List<?>> Tuple2<String, DataType> typeof(final Tuple2<String, X> p) {
 		String key = p._1();
 		String type = p._2().stream().filter(Objects::nonNull).findFirst().map(Object::getClass).map(e -> (Class<T>) e)
 				.orElse((Class<T>) Object.class).getSimpleName();
@@ -75,10 +75,21 @@ public class SharedMem {
 		return Tuple2.of(key, size);
 	}
 
-	public static <T> Partitioner schemaOf(final DFrame dfm) {
+	public static int sizeof(DFrame dfm) {
+		final var slots = SharedMem.slotS(dfm).collect(Collectors.toList());
+		final int dataSize = slots.stream().mapToInt(slot -> slot.i4("end")).max().orElse(0);
+		final var meta = Json.obj2json(Map.of("s", slots.stream()
+				.map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"), "start", s.num("start")))
+				.toList()));
+		final int metaSize = 4 + meta.getBytes(StandardCharsets.UTF_8).length;
+
+		return metaSize + dataSize;
+	}
+
+	public static <T> Partitioner schemaof(final DFrame dfm) {
 		final var n = dfm.shape()._1();
 		@SuppressWarnings("unused")
-		var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(SharedMem::parseType).reduce(P2(), (acc, a) -> {
+		var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(SharedMem::typeof).reduce(P2(), (acc, a) -> {
 			final var key = a._1();
 			final var type = a._2();
 			final var size = type.elementSize;
@@ -96,7 +107,7 @@ public class SharedMem {
 			return Stream.empty();
 		final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
 		final var rec = dfm.head(); // 样板行
-		return schemaOf(dfm).leafS().map(slot -> {
+		return schemaof(dfm).leafS().map(slot -> {
 			final var paths = slot.paths();
 			final var path = paths.stream().collect(Collectors.joining("."));
 			final var name = paths.get(2);
@@ -110,20 +121,9 @@ public class SharedMem {
 		}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
 	}
 
-	public static int dfmsize(DFrame dfm) {
-		final var slots = SharedMem.slotS(dfm).collect(Collectors.toList());
-		final int dataSize = slots.stream().mapToInt(slot -> slot.i4("end")).max().orElse(0);
-		final var meta = Json.obj2json(Map.of("s", slots.stream()
-				.map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"), "start", s.num("start")))
-				.toList()));
-		final int metaSize = 4 + meta.getBytes(StandardCharsets.UTF_8).length;
-
-		return metaSize + dataSize;
-	}
-
 	public static MappedByteBuffer dfmbuf(final String filePath, DFrame dfm) throws Exception {
 		try (final var file = new RandomAccessFile(filePath, "rw")) {
-			final var size = dfmsize(dfm);
+			final var size = sizeof(dfm);
 			file.setLength(size);
 			final var channel = file.getChannel();
 			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
