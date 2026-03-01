@@ -11,6 +11,8 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
+import gbench.util.array.SharedMem;
+import gbench.util.array.SharedMem.Schema.ChanBuff;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
@@ -55,13 +57,19 @@ public class DFrameTest {
 				sess.sqlexecute(sql);
 			}
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			final var shmfile = "a/b/mpg";
-			sqldframe.andThen(DFrames.df2shmGen.apply(shmfile)) //
+			final String shmfile = null; // 临时文件
+			final var cbs = new ChanBuff[1];
+
+			final var cphdfm = sqldframe //
+					.andThen(DFrames.df2shmGen.apply(shmfile)) // dfm写入共享内存
 					.andThen(chanbuf -> {
-						println(chanbuf.getName());
-						chanbuf.close();
-						return null;
+						cbs[0] = chanbuf;
+						println("pathname:%s".formatted(chanbuf));
+						return SharedMem.read(chanbuf); // 读取数据文件
 					}).apply("select * from %s".formatted(tbl));
+
+			println(cphdfm);
+			cbs[0].close(); // 缓存关闭
 		});
 	}
 

@@ -66,10 +66,19 @@ public class SharedMem {
 
 			/**
 			 * 
+			 * @param file
+			 * @return
+			 */
+			public RandomAccessFile rafile() {
+				return (RandomAccessFile) this.cachedata.get(Constant.RAND_FILE.name());
+			}
+
+			/**
+			 * 
 			 * @param path
 			 * @return
 			 */
-			public ChanBuff pathname(final Object file) {
+			public ChanBuff pathname(final File file) {
 				return this.put(Constant.PATH_NAME.name(), file);
 			}
 
@@ -77,12 +86,20 @@ public class SharedMem {
 			 * 
 			 * @return
 			 */
-			public String getName() {
+			public String pathname() {
 				return Optional.ofNullable(cachedata.get(Constant.PATH_NAME.name())) //
 						.map(e -> switch (e) {
 						case File file -> file.getAbsolutePath();
 						default -> String.valueOf(e);
 						}).orElse(null);
+			}
+
+			/**
+			 * 
+			 * @return
+			 */
+			public String getName() {
+				return this.pathname();
 			}
 
 			/**
@@ -98,6 +115,11 @@ public class SharedMem {
 
 			enum Constant {
 				RAND_FILE, PATH_NAME
+			}
+
+			@Override
+			public String toString() {
+				return "%s".formatted(this.pathname());
 			}
 
 			public Map<String, Object> cachedata = new ConcurrentHashMap<>();
