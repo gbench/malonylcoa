@@ -616,7 +616,7 @@ public class DFrame extends LinkedRecord {
 
 		final var numS = margin == 1 // 数值流
 				? this.rowS().map(e -> DFrame.dblS(e.values())) // 行数据流
-				: this.colS(DFrame::dblS); // 列数据流
+				: this.colS(es -> DFrame.dblS(es)); // 列数据流
 
 		return numS.map(ds -> ds.summaryStatistics()).map(e -> {
 			return IRecord.REC("min", e.getMin(), "max", e.getMax(), //
