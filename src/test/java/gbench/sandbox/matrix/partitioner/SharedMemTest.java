@@ -60,8 +60,6 @@ public class SharedMemTest {
 					.andThen(SharedMem::read) // 读取共享内存
 					.apply(sql); // 装填sql从共享内存里读取数据框
 
-			println(sess.sql2dframe(sql));
-
 			println(mpg2);
 		});
 	}
