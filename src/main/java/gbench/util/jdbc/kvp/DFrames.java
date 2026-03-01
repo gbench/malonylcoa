@@ -4,16 +4,27 @@ import java.nio.MappedByteBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import gbench.util.array.SharedMem;
 import gbench.util.jdbc.function.ExceptionalFunction;
+import gbench.util.json.MyJson;
 
 public class DFrames {
+
+	public static <T> T maxof_textlen(final List<T> xs) {
+		return maxof(xs, e -> String.valueOf(e).length());
+	}
+
+	public static <T> T maxof(final List<T> xs, final Function<T, Integer> k) {
+		return xs.stream().collect(Collectors.maxBy(Comparator.comparing(k))).orElse(null);
+	}
 
 	/**
 	 * 把 ResultSet 转换成 MappedByteBuffer
@@ -27,6 +38,18 @@ public class DFrames {
 		final var buffer = SharedMem.Schema.rafbuf(path, SharedMem.Schema.sizeof(slots));
 		SharedMem.write(buffer, dfm);
 		return buffer;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static DFrame dfm(final String json) {
+		DFrame dfm = null;
+		try {
+			final List<Object> es = MyJson.recM().readValue(json, List.class);
+			dfm = es.stream().map(IRecord::REC).collect(DFrame.dfmclc);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return dfm;
 	}
 
 	public static DFrame dfm(final ResultSet rs) throws SQLException {

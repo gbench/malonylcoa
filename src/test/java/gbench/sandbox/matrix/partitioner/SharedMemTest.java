@@ -1,6 +1,9 @@
 package gbench.sandbox.matrix.partitioner;
 
 import static gbench.util.io.Output.println;
+import static gbench.util.jdbc.kvp.DFrames.maxof_textlen;
+import static gbench.util.jdbc.sql.SQL.ctsql;
+import static gbench.util.jdbc.sql.SQL.insql;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,10 +14,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gbench.util.array.SharedMem;
 import gbench.util.array.SharedMem.Schema;
 import gbench.util.io.Output;
+import gbench.util.jdbc.IJdbcApp;
+import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
+import gbench.util.jdbc.kvp.DFrames;
 import gbench.util.jdbc.kvp.IRecord;
+import gbench.util.jdbc.kvp.Tuple2;
+import gbench.util.jdbc.sql.SQL;
 import gbench.util.json.MyJson;
+
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.maxBy;
+
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 
@@ -23,7 +37,7 @@ public class SharedMemTest {
 
 	@Test
 	public void foo() throws Exception {
-		final var dfm = dfmOf(mpgjson).head(50);
+		final var dfm = DFrames.dfm(mpgjson).head(50);
 		final var slots = Schema.slots(dfm);
 		slots.forEach(Output::println);
 		final var mpgbuf = Schema.slotsbuf("E:/slicee/temp/malonylcoa/array/mpg", slots);
@@ -35,10 +49,24 @@ public class SharedMemTest {
 		println(dfm2);
 	}
 
-	public static DFrame dfmOf(final String json) throws JsonMappingException, JsonProcessingException {
-		@SuppressWarnings("unchecked")
-		final List<Object> es = objM.readValue(mpgjson, List.class);
-		return es.stream().map(IRecord::REC).collect(DFrame.dfmclc);
+	@Test
+	public void bar() {
+		final var dfm = DFrames.dfm(mpgjson).rename("_%s"::formatted);
+		final var proto = IRecord.REC(dfm.colS((k, vs) -> Tuple2.of(k, maxof_textlen(vs))) //
+				.flatMap(Tuple2::stream).toArray()); // 提取原型数据(文本长度最大的值的)
+		final var h2_rec = IRecord.REC("driver", "org.h2.Driver", "user", "root", "password", "123456", "url",
+				String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", "malonylcoa"));
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(null, IMySQL.class, h2_rec); // 数据库应用客户端
+		jdbcApp.withTransaction(sess -> {
+			final var ctsql = ctsql("t_mpg", proto);
+			final var insql = insql("t_mpg", dfm.rows());
+			println(insql);
+			for (final var sql : Arrays.asList(ctsql, insql)) {
+				sess.sqlexecute(sql);
+			}
+			final var mpg = sess.sql2dframe("select * from t_mpg");
+			println(mpg);
+		});
 	}
 
 	public static ObjectMapper objM = MyJson.recM();
