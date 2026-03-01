@@ -8,6 +8,7 @@ import static gbench.util.jdbc.sql.SQL.insql;
 import org.junit.jupiter.api.Test;
 
 import gbench.util.array.SharedMem;
+import gbench.util.array.SharedMem.Schema.ChanBuff;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrames;
@@ -15,6 +16,7 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -25,13 +27,15 @@ public class SharedMemTest {
 	public void foo() throws Exception {
 
 		final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg1"; // 共享内存文件
+		final var cbs = new ChanBuff[1]; // 单值容器
 		final var dfm = SharedMem.writerGen.apply(shmfile) // 生成一个写入器
 				.compose((String json) -> DFrames.dfm(json).head(50)) // 把接口适配到json
+				.andThen(e -> cbs[0] = e) // 记录数据
 				.andThen(SharedMem::read) // 把结果导入到SharedMem::read
 				.apply(mpg_json); // 读取json
 
 		println(dfm);
-
+		cbs[0].close();
 	}
 
 	@Test
@@ -54,13 +58,16 @@ public class SharedMemTest {
 
 			println(mpg);
 
+			final var ar = new AtomicReference<ChanBuff>(); // 记录ChanBuff
 			final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg2"; // 共享内存文件
 			final var mpg2 = DFrames.sqldframeGen2.apply(sess) // 生成一个sqldframe函数
 					.andThen(DFrames.df2shmGen.apply(shmfile)) // 生成一个共享内存函数dfshm:DFrame2SharedMem
+					.andThen(e -> ar.updateAndGet(k -> e)) // 记录数据
 					.andThen(SharedMem::read) // 读取共享内存
 					.apply(sql); // 装填sql从共享内存里读取数据框
 
 			println(mpg2);
+			ar.get().close();
 		});
 	}
 
