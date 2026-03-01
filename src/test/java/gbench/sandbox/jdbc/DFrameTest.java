@@ -55,7 +55,8 @@ public class DFrameTest {
 				sess.sqlexecute(sql);
 			}
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			sqldframe.andThen(DFrames.df2shmGen.apply("abc")) //
+			final var shmfile = "a/b/mpg";
+			sqldframe.andThen(DFrames.df2shmGen.apply(shmfile)) //
 					.andThen(chanbuf -> {
 						println(chanbuf.getName());
 						chanbuf.close();

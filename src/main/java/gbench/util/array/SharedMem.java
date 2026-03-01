@@ -69,8 +69,8 @@ public class SharedMem {
 			 * @param path
 			 * @return
 			 */
-			public ChanBuff pathname(final String datafile) {
-				return this.put(Constant.PATH_NAME.name(), datafile);
+			public ChanBuff pathname(final Object file) {
+				return this.put(Constant.PATH_NAME.name(), file);
 			}
 
 			/**
@@ -240,9 +240,14 @@ public class SharedMem {
 			if (pathname == null) {
 				return tempbuf(null, size);
 			} else {
-				final var file = new RandomAccessFile(pathname, "rw");
-				file.setLength(size);
-				return ChanBuff.of(file.getChannel(), size).rafile(file).pathname(pathname);
+				final var file = new File(pathname);
+				final var pfile = file.getParentFile();
+				if (!pfile.exists()) { // 创建目录
+					pfile.mkdirs();
+				}
+				final var rafile = new RandomAccessFile(file.getAbsolutePath(), "rw");
+				rafile.setLength(size);
+				return ChanBuff.of(rafile.getChannel(), size).rafile(rafile).pathname(file);
 			}
 		}
 
