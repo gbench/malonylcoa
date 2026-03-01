@@ -1,5 +1,7 @@
 package gbench.util.jdbc.function;
 
+import java.util.function.BiFunction;
+
 /**
  * 可以抛出异常的函数
  * 
@@ -20,4 +22,23 @@ public interface ExceptionalBiFunction<T, U, V> {
 	 * @throws Exception 异常
 	 */
 	V apply(final T t, final U u) throws Exception;
+
+	/**
+	 * 
+	 * @param <T>
+	 * @param <U>
+	 * @param efn
+	 * @return
+	 */
+	public static <T, U, V> BiFunction<T, U, V> efn2fn(final ExceptionalBiFunction<T, U, V> efn) {
+		return (t, u) -> {
+			V v = null;
+			try {
+				v = efn.apply(t, u);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return v;
+		};
+	}
 }

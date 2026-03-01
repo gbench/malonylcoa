@@ -1,5 +1,7 @@
 package gbench.util.jdbc.function;
 
+import java.util.function.*;
+
 /**
  * 可以抛出异常的函数
  * 
@@ -37,5 +39,24 @@ public interface ExceptionalFunction<T, U> {
 	 */
 	default <V> ExceptionalFunction<T, V> andThen(final ExceptionalFunction<U, V> u2v) {
 		return t -> u2v.apply((this.apply(t)));
+	}
+
+	/**
+	 * 
+	 * @param <T>
+	 * @param <U>
+	 * @param efn
+	 * @return
+	 */
+	public static <T, U> Function<T, U> efn2fn(final ExceptionalFunction<T, U> efn) {
+		return t -> {
+			U u = null;
+			try {
+				u = efn.apply(t);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			return u;
+		};
 	}
 }

@@ -8,24 +8,43 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import gbench.util.array.SharedMem;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.json.MyJson;
 
+/**
+ * DFrame 的 工具函数
+ */
 public class DFrames {
 
+	/**
+	 * 
+	 * @param <T>
+	 * @param xs
+	 * @return
+	 */
 	public static <T> T maxof_textlen(final List<T> xs) {
 		return maxof(xs, e -> String.valueOf(e).length());
 	}
 
+	/**
+	 * 
+	 * @param <T>
+	 * @param xs
+	 * @param k
+	 * @return
+	 */
 	public static <T> T maxof(final List<T> xs, final Function<T, Integer> k) {
 		return xs.stream().collect(Collectors.maxBy(Comparator.comparing(k))).orElse(null);
 	}
 
+	/**
+	 * sqldframe 生成函数
+	 */
 	public static ExceptionalFunction<Connection, ExceptionalFunction<String, DFrame>> sqldframeGen = conn -> sql -> {
 		final var stmt = conn.createStatement();
 		final var rs = stmt.executeQuery(sql);
@@ -46,9 +65,10 @@ public class DFrames {
 			path -> dfm -> shm(path, dfm);
 
 	/**
+	 * 创建共享内存文件
 	 * 
-	 * @param path
-	 * @param dfm
+	 * @param path 共享内存文件路径
+	 * @param dfm  共享内存文件数据
 	 * @return
 	 * @throws Exception
 	 */
@@ -60,9 +80,10 @@ public class DFrames {
 	}
 
 	/**
+	 * 创建共享内存文件
 	 * 
-	 * @param path
-	 * @param rs
+	 * @param path 共享内存文件路径
+	 * @param rs   共享内存文件数据
 	 * @return
 	 * @throws Exception
 	 */
@@ -70,6 +91,11 @@ public class DFrames {
 		return shm(path, dfm(rs));
 	}
 
+	/**
+	 * 
+	 * @param json
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public static DFrame dfm(final String json) {
 		DFrame dfm = null;
@@ -82,20 +108,36 @@ public class DFrames {
 		return dfm;
 	}
 
+	/**
+	 * 
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
 	public static DFrame dfm(final ResultSet rs) throws SQLException {
 		return dfm(rs, true);
 	}
 
+	/**
+	 * 
+	 * @param rs
+	 * @param close
+	 * @return
+	 * @throws SQLException
+	 */
 	public static DFrame dfm(final ResultSet rs, final boolean close) throws SQLException {
 		return dfm(rs, null, close);
 	}
 
+	/**
+	 * 
+	 */
 	@SuppressWarnings("unused")
 	public static DFrame dfm(final ResultSet rs, final Integer max, final boolean close) throws SQLException {
+
 		final var kvps = new LinkedHashMap<Integer, List<Object>>();
 		final var rsm = rs.getMetaData();
 		final var ncol = rsm.getColumnCount();
-		final var MAX = Optional.ofNullable(max).orElse(Integer.MAX_VALUE);
 		final Function<Integer, String> keyOf = i -> {
 			String key = null;
 			try {
@@ -104,10 +146,11 @@ public class DFrames {
 			}
 			return key;
 		};
+		final Predicate<Integer> break_pred = (null == max) ? j -> false : j -> j >= max; // max 为空时永远不主动退出！
 
 		var j = 0;
 		while (rs.next()) {
-			if (j++ >= MAX) {
+			if (break_pred.test(j++)) {
 				break;
 			} else {
 				for (int i = 0; i < ncol; i++) {
