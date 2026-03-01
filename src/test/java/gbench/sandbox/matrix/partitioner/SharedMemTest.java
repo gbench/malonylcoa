@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.array.SharedMem;
+import gbench.util.array.SharedMem.Schema;
 import gbench.util.io.Output;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
@@ -23,9 +24,9 @@ public class SharedMemTest {
 	@Test
 	public void foo() throws Exception {
 		final var dfm = dfmOf(mpgjson).head(50);
-		final var slots = SharedMem.slots(dfm);
+		final var slots = Schema.slots(dfm);
 		slots.forEach(Output::println);
-		final var mpgbuf = SharedMem.slotsbuf("E:/slicee/temp/malonylcoa/array/mpg", slots);
+		final var mpgbuf = Schema.slotsbuf("E:/slicee/temp/malonylcoa/array/mpg", slots);
 		SharedMem.write(mpgbuf, dfm);
 		final var dfm2 = SharedMem.read(mpgbuf);
 		println("----------------------");

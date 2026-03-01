@@ -5,8 +5,6 @@ import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
 import gbench.util.jdbc.kvp.Json;
 
-import static gbench.util.array.Partitioner.P2;
-
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -20,6 +18,168 @@ import java.util.stream.Stream;
  * 共享内存分区器 - 将Partitioner数据结构映射到共享内存 实现Java与R的零拷贝数据共享
  */
 public class SharedMem {
+
+	public static class Schema extends Partitioner {
+
+		private static final long serialVersionUID = -4217509027616888918L;
+
+		@SuppressWarnings("unchecked")
+		public static <T, X extends List<?>> Tuple2<String, DataType> typeof(final Tuple2<String, X> p) {
+			String key = p._1();
+			String type = p._2().stream().filter(Objects::nonNull).findFirst().map(Object::getClass)
+					.map(e -> (Class<T>) e).orElse((Class<T>) Object.class).getSimpleName();
+			DataType size = switch (type) {
+			case "Byte", "byte" -> DataType.BYTE;
+			case "Boolean", "boolean" -> DataType.BYTE;
+			case "Short", "short" -> DataType.INT16;
+			case "Integer", "int" -> DataType.INT32;
+			case "Long", "long" -> DataType.INT64;
+			case "Float", "float" -> DataType.FLOAT32;
+			case "Double", "double" -> DataType.FLOAT64;
+			case "String" -> {
+				final var max = p._2().stream().filter(Objects::nonNull).map(s -> ((String) s).length())
+						.max(Integer::compare).orElse(32);
+				if (max < 16)
+					yield DataType.STRING16;
+				else if (max < 32)
+					yield DataType.STRING32;
+				else if (max < 64)
+					yield DataType.STRING64;
+				else if (max < 128)
+					yield DataType.STRING128;
+				else if (max < 256)
+					yield DataType.STRING256;
+				else if (max < 512)
+					yield DataType.STRING512;
+				else if (max < 1024)
+					yield DataType.STRING1024;
+				else if (max < 2048)
+					yield DataType.STRING2048;
+				else
+					yield DataType.NULL;
+			}
+			default -> DataType.NULL;
+			};
+			return Tuple2.of(key, size);
+		}
+
+		/**
+		 * 
+		 * @param slots
+		 * @return
+		 */
+		public static int sizeof(final List<IRecord> slots) {
+			final int dataSize = slots.stream().mapToInt(slot -> slot.i4("end")).max().orElse(0);
+			final var meta = Json.obj2json(Map.of("s", slots.stream().map(
+					s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"), "start", s.num("start")))
+					.toList()));
+			final int metaSize = 4 + meta.getBytes(StandardCharsets.UTF_8).length;
+
+			return metaSize + dataSize;
+		}
+
+		/**
+		 * 
+		 * @param dfm
+		 * @return
+		 */
+		public static int sizeof(final DFrame dfm) {
+			final var slots = slotS(dfm).collect(Collectors.toList());
+			return sizeof(slots);
+		}
+
+		public static List<IRecord> slots(final DFrame dfm) {
+			return slotS(dfm).toList();
+		}
+
+		public static Stream<IRecord> slotS(final DFrame dfm) {
+			if (dfm.shape()._1() < 1)
+				return Stream.empty();
+			final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
+			final var rec = dfm.head(); // 样板行
+			return Schema.of(dfm).leafS().map(slot -> { // 遍历叶子节点slot
+				final var paths = slot.paths();
+				final var path = paths.stream().collect(Collectors.joining("."));
+				final var name = paths.get(2);
+				final var type = DataType.valueOf(paths.get(1));
+				final var start = slot.start();
+				final var end = slot.end();
+				final var length = slot.length();
+				final var value = dfm.col(name);
+				final var count = value.size();
+				return rb.get(path, name, type, start, end, length, count, value);
+			}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
+		}
+
+		public static MappedByteBuffer slotsbuf(final String filePath, List<IRecord> slots) throws Exception {
+			try (final var file = new RandomAccessFile(filePath, "rw")) {
+				final var size = sizeof(slots);
+				file.setLength(size);
+				final var channel = file.getChannel();
+				return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+			}
+		}
+
+		public static MappedByteBuffer dfmbuf(final String filePath, DFrame dfm) throws Exception {
+			return slotsbuf(filePath, slots(dfm));
+		}
+
+		public static MappedByteBuffer rafbuf(final String filePath, final int size) throws Exception {
+			try (final var file = new RandomAccessFile(filePath, "rw")) {
+				file.setLength(size);
+				final var channel = file.getChannel();
+				return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+			}
+		}
+
+		public static MappedByteBuffer tempbuf(final String name, final DFrame dfm) throws Exception {
+			String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
+			return rafbuf(path, sizeof(dfm));
+		}
+
+		public static MappedByteBuffer tempbuf(final String name, final int size) throws Exception {
+			String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
+			return rafbuf(path, size);
+		}
+
+		/**
+		 * 构造器
+		 * 
+		 * @param kvps
+		 * @return
+		 */
+		public static Schema of(final Object... kvps) {
+			final var schema = new Schema();
+			final var n = kvps.length;
+			for (int i = 0; i < n; i += 2) {
+				schema.put(String.valueOf(kvps[i]), kvps[(i + 1) % n]);
+			}
+			return schema;
+		}
+
+		/**
+		 * schema 3 级别结构：[type:[(key,size)]]
+		 * 
+		 * @param <T>
+		 * @param dfm
+		 * @return
+		 */
+		public static <T> Schema of(final DFrame dfm) {
+			final var n = dfm.shape()._1();
+			@SuppressWarnings("unused")
+			var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(Schema::typeof).reduce(Schema.of(), (acc, a) -> {
+				final var key = a._1();
+				final var type = a._2();
+				final var size = type.elementSize;
+				((Schema) acc.computeIfAbsent(type.name(), k -> Schema.of())).put(key, size * n);
+				return acc;
+			}, (a, b) -> {
+				a.putAll(b);
+				return a;
+			});
+			return Schema.of("root", schema);
+		}
+	}
 
 	/**
 	 * 数据类型枚举
@@ -36,148 +196,6 @@ public class SharedMem {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public static <T, X extends List<?>> Tuple2<String, DataType> typeof(final Tuple2<String, X> p) {
-		String key = p._1();
-		String type = p._2().stream().filter(Objects::nonNull).findFirst().map(Object::getClass).map(e -> (Class<T>) e)
-				.orElse((Class<T>) Object.class).getSimpleName();
-		DataType size = switch (type) {
-		case "Byte", "byte" -> DataType.BYTE;
-		case "Boolean", "boolean" -> DataType.BYTE;
-		case "Short", "short" -> DataType.INT16;
-		case "Integer", "int" -> DataType.INT32;
-		case "Long", "long" -> DataType.INT64;
-		case "Float", "float" -> DataType.FLOAT32;
-		case "Double", "double" -> DataType.FLOAT64;
-		case "String" -> {
-			final var max = p._2().stream().filter(Objects::nonNull).map(s -> ((String) s).length())
-					.max(Integer::compare).orElse(32);
-			if (max < 16)
-				yield DataType.STRING16;
-			else if (max < 32)
-				yield DataType.STRING32;
-			else if (max < 64)
-				yield DataType.STRING64;
-			else if (max < 128)
-				yield DataType.STRING128;
-			else if (max < 256)
-				yield DataType.STRING256;
-			else if (max < 512)
-				yield DataType.STRING512;
-			else if (max < 1024)
-				yield DataType.STRING1024;
-			else if (max < 2048)
-				yield DataType.STRING2048;
-			else
-				yield DataType.NULL;
-		}
-		default -> DataType.NULL;
-		};
-		return Tuple2.of(key, size);
-	}
-
-	/**
-	 * 
-	 * @param slots
-	 * @return
-	 */
-	public static int sizeof(final List<IRecord> slots) {
-		final int dataSize = slots.stream().mapToInt(slot -> slot.i4("end")).max().orElse(0);
-		final var meta = Json.obj2json(Map.of("s", slots.stream()
-				.map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"), "start", s.num("start")))
-				.toList()));
-		final int metaSize = 4 + meta.getBytes(StandardCharsets.UTF_8).length;
-
-		return metaSize + dataSize;
-	}
-
-	/**
-	 * 
-	 * @param dfm
-	 * @return
-	 */
-	public static int sizeof(final DFrame dfm) {
-		final var slots = SharedMem.slotS(dfm).collect(Collectors.toList());
-		return sizeof(slots);
-	}
-
-	/**
-	 * schema 3 级别结构：[type:[(key,size)]]
-	 * 
-	 * @param <T>
-	 * @param dfm
-	 * @return
-	 */
-	public static <T> Partitioner schemaof(final DFrame dfm) {
-		final var n = dfm.shape()._1();
-		@SuppressWarnings("unused")
-		var schema = dfm.colS((k, v) -> Tuple2.of(k, v)).map(SharedMem::typeof).reduce(P2(), (acc, a) -> {
-			final var key = a._1();
-			final var type = a._2();
-			final var size = type.elementSize;
-			((Partitioner) acc.computeIfAbsent(type.name(), k -> P2())).put(key, size * n);
-			return acc;
-		}, (a, b) -> {
-			a.putAll(b);
-			return a;
-		});
-		return P2("root", schema);
-	}
-
-	public static List<IRecord> slots(final DFrame dfm) {
-		return slotS(dfm).toList();
-	}
-
-	public static Stream<IRecord> slotS(final DFrame dfm) {
-		if (dfm.shape()._1() < 1)
-			return Stream.empty();
-		final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
-		final var rec = dfm.head(); // 样板行
-		return schemaof(dfm).leafS().map(slot -> { // 遍历叶子节点slot
-			final var paths = slot.paths();
-			final var path = paths.stream().collect(Collectors.joining("."));
-			final var name = paths.get(2);
-			final var type = DataType.valueOf(paths.get(1));
-			final var start = slot.start();
-			final var end = slot.end();
-			final var length = slot.length();
-			final var value = dfm.col(name);
-			final var count = value.size();
-			return rb.get(path, name, type, start, end, length, count, value);
-		}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
-	}
-
-	public static MappedByteBuffer slotsbuf(final String filePath, List<IRecord> slots) throws Exception {
-		try (final var file = new RandomAccessFile(filePath, "rw")) {
-			final var size = sizeof(slots);
-			file.setLength(size);
-			final var channel = file.getChannel();
-			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
-		}
-	}
-
-	public static MappedByteBuffer dfmbuf(final String filePath, DFrame dfm) throws Exception {
-		return slotsbuf(filePath, slots(dfm));
-	}
-
-	public static MappedByteBuffer rafbuf(final String filePath, final int size) throws Exception {
-		try (final var file = new RandomAccessFile(filePath, "rw")) {
-			file.setLength(size);
-			final var channel = file.getChannel();
-			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
-		}
-	}
-
-	public static MappedByteBuffer tempbuf(final String name, final DFrame dfm) throws Exception {
-		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
-		return rafbuf(path, sizeof(dfm));
-	}
-
-	public static MappedByteBuffer tempbuf(final String name, final int size) throws Exception {
-		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
-		return rafbuf(path, size);
-	}
-
 	public static <T> ArrayList<T> fetch(final int n, final Supplier<T> reader) {
 		final var list = new ArrayList<T>();
 		for (int i = 0; i < n; i++) {
@@ -187,7 +205,7 @@ public class SharedMem {
 	}
 
 	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
-		write(buffer, slots(dfm));
+		write(buffer, Schema.slots(dfm));
 	}
 
 	public static void write(final MappedByteBuffer buffer, final List<IRecord> slots) {
