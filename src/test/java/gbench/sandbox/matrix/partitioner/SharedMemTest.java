@@ -14,6 +14,7 @@ import gbench.util.array.SharedMem.Schema;
 import gbench.util.io.Output;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrames;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
@@ -28,16 +29,14 @@ public class SharedMemTest {
 
 	@Test
 	public void foo() throws Exception {
-		final var dfm = DFrames.dfm(mpgjson).head(50);
-		final var slots = Schema.slots(dfm);
-		slots.forEach(Output::println);
-		final var mpgbuf = Schema.slotsbuf("E:/slicee/temp/malonylcoa/array/mpg", slots);
-		SharedMem.write(mpgbuf, dfm);
-		final var dfm2 = SharedMem.read(mpgbuf);
-		println("----------------------");
+
+		final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg2"; // 共享内存文件
+		final var dfm = SharedMem.writerGen.apply(shmfile) // 生成一个写入器
+				.compose((String json) -> DFrames.dfm(json).head(50)) // 把接口适配到json
+				.andThen(SharedMem::read) // 把结果导入到SharedMem::read
+				.apply(mpgjson); // 读取json
 		println(dfm);
-		println("----------------------");
-		println(dfm2);
+
 	}
 
 	@Test

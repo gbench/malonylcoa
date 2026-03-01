@@ -1,5 +1,6 @@
 package gbench.util.array;
 
+import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
@@ -204,10 +205,30 @@ public class SharedMem {
 		return list;
 	}
 
+	/**
+	 * 写入器生成器
+	 */
+	public static ExceptionalFunction<String, ExceptionalFunction<DFrame, MappedByteBuffer>> writerGen = path -> dfm -> {
+		final var slots = Schema.slots(dfm);
+		final var mpgbuf = Schema.slotsbuf(path, slots);
+		SharedMem.write(mpgbuf, dfm);
+		return mpgbuf;
+	};
+
+	/**
+	 * 
+	 * @param buffer
+	 * @param dfm
+	 */
 	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
 		write(buffer, Schema.slots(dfm));
 	}
 
+	/**
+	 * 
+	 * @param buffer
+	 * @param slots
+	 */
 	public static void write(final MappedByteBuffer buffer, final List<IRecord> slots) {
 		final var metaJson = Json.obj2json(Map.of("slots", slots.stream().map(slot -> //
 		Map.of("x", slot.str("name"), "t", slot.str("type"), "n", slot.num("count"), "s", slot.num("start")))

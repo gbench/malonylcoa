@@ -24,21 +24,21 @@ public interface ExceptionalFunction<T, U> {
 	/**
 	 * 
 	 * @param <V>
-	 * @param v2t
+	 * @param f
 	 * @return
 	 */
-	default <V> ExceptionalFunction<V, U> compose(final ExceptionalFunction<V, T> v2t) {
-		return v -> this.apply(v2t.apply(v));
+	default <V> ExceptionalFunction<V, U> compose(final ExceptionalFunction<V, T> f) {
+		return v -> this.apply(f.apply(v));
 	}
 
 	/**
 	 * 
 	 * @param <V>
-	 * @param u2v
+	 * @param f
 	 * @return
 	 */
-	default <V> ExceptionalFunction<T, V> andThen(final ExceptionalFunction<U, V> u2v) {
-		return t -> u2v.apply((this.apply(t)));
+	default <V> ExceptionalFunction<T, V> andThen(final ExceptionalFunction<U, V> f) {
+		return t -> f.apply((this.apply(t)));
 	}
 
 	/**
