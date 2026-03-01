@@ -60,6 +60,7 @@ public class SharedMemTest {
 
 			final var ar = new AtomicReference<ChanBuff>(); // 记录ChanBuff
 			final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg2"; // 共享内存文件
+			@SuppressWarnings("unused")
 			final var mpg2 = DFrames.sqldframeGen2.apply(sess) // 生成一个sqldframe函数
 					.andThen(DFrames.df2shmGen.apply(shmfile)) // 生成一个共享内存函数dfshm:DFrame2SharedMem
 					.andThen(e -> ar.updateAndGet(k -> e)) // 记录数据

@@ -167,7 +167,7 @@ public class DFrames {
 		}
 
 		final var ps = kvps.entrySet().stream().flatMap(p -> //
-		Tuple2.of(keyOf.apply(p.getKey() + 1), p.getValue()).stream()).toArray();
+		Tuple2.of(keyOf.apply(p.getKey()), p.getValue()).stream()).toArray();
 
 		if (close) {
 			rs.close();
