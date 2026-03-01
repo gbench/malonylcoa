@@ -7,8 +7,6 @@ import static gbench.util.jdbc.sql.SQL.insql;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gbench.util.array.SharedMem;
@@ -16,19 +14,12 @@ import gbench.util.array.SharedMem.Schema;
 import gbench.util.io.Output;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
-import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.DFrames;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
-import gbench.util.jdbc.sql.SQL;
 import gbench.util.json.MyJson;
 
-import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.maxBy;
-
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 
@@ -57,15 +48,24 @@ public class SharedMemTest {
 		final var h2_rec = IRecord.REC("driver", "org.h2.Driver", "user", "root", "password", "123456", "url",
 				String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", "malonylcoa"));
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(null, IMySQL.class, h2_rec); // 数据库应用客户端
+
 		jdbcApp.withTransaction(sess -> {
-			final var ctsql = ctsql("t_mpg", proto);
-			final var insql = insql("t_mpg", dfm.rows());
-			println(insql);
-			for (final var sql : Arrays.asList(ctsql, insql)) {
+			final var tbl = "t_mpg";
+			for (final var sql : Arrays.asList(ctsql(tbl, proto), insql(tbl, dfm.rows()))) {
 				sess.sqlexecute(sql);
 			}
-			final var mpg = sess.sql2dframe("select * from t_mpg");
+			final var sql = "select * from %s".formatted(tbl);
+			final var mpg = sess.sql2dframe(sql);
+
 			println(mpg);
+
+			final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg2"; // 共享内存文件
+			final var mpg2 = DFrames.sqldframeGen.apply(sess.getConnection()) // 生成一个sqldframe
+					.andThen(DFrames.df2shmGen.apply(shmfile)) // 生成一个共享内存函数dfshm:DFrame2SharedMem
+					.andThen(SharedMem::read) // 读取共享内存
+					.apply(sql); // java.nio.MappedByteBuffer
+			println(mpg2);
+
 		});
 	}
 
