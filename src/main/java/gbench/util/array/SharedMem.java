@@ -96,7 +96,7 @@ public class SharedMem {
 			return Stream.empty();
 		final var rb = IRecord.rb("path,name,type,start,end,length,count,value");
 		final var rec = dfm.head(); // 样板行
-		return SharedMem.schemaOf(dfm).leafS().map(slot -> {
+		return schemaOf(dfm).leafS().map(slot -> {
 			final var paths = slot.paths();
 			final var path = paths.stream().collect(Collectors.joining("."));
 			final var name = paths.get(2);
@@ -110,56 +110,54 @@ public class SharedMem {
 		}).sorted((a, b) -> rec.indexOfKey(a.str("name")) - rec.indexOfKey(b.str("name"))); // 保持dfm的列顺序
 	}
 
-	public static void write(MappedByteBuffer buffer, DFrame dfm) {
-		var slots = slotS(dfm).collect(Collectors.toList());
+	public static MappedByteBuffer bufferOf(String filePath, int size) throws Exception {
+		try (final RandomAccessFile file = new RandomAccessFile(filePath, "rw")) {
+			file.setLength(size);
+			FileChannel channel = file.getChannel();
+			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
+		}
+	}
 
-		var meta = Json.obj2json(Map.of("s", slots.stream()
-				.map(s -> Map.of("n", s.str("name"), "t", s.str("type"), "c", s.num("count"), "start", s.num("start")))
-				.toList()));
+	public static MappedByteBuffer buffer2(final String name, int size) throws Exception {
+		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
+		return bufferOf(path, size);
+	}
 
-		var metaBytes = meta.getBytes(StandardCharsets.UTF_8);
-		var metaSize = 4 + metaBytes.length;
+	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
+		final var slots = slotS(dfm).toList();
+		final var meta = Json.obj2json(Map.of("slots",
+				slots.stream().map(
+						s -> Map.of("x", s.str("name"), "t", s.str("type"), "n", s.num("count"), "s", s.num("start")))
+						.toList()));
+
+		final var metaBytes = meta.getBytes(StandardCharsets.UTF_8);
+		final var metaSize = 4 + metaBytes.length;
 
 		buffer.position(0);
 		buffer.putInt(metaBytes.length);
 		buffer.put(metaBytes);
 
-		slots.forEach(s -> {
-			var type = DataType.valueOf(s.str("type"));
-			var vals = s.lla("value", e -> e);
-			var pos = metaSize + s.num("start").intValue();
+		slots.forEach(slot -> {
+			final var type = DataType.valueOf(slot.str("type"));
+			final var vals = slot.lla("value", e -> e);
+			final var pos = metaSize + slot.num("start").intValue();
 
 			buffer.position(pos);
 
 			switch (type) {
-			case INT32 -> {
-				// 修复：使用循环写入，确保buffer position正确推进
-				vals.forEach(v -> buffer.putInt(((Number) v).intValue()));
-			}
-			case FLOAT64 -> {
-				// 修复：使用循环写入，确保buffer position正确推进
-				vals.forEach(v -> buffer.putDouble(((Number) v).doubleValue()));
-			}
+			case INT8, BYTE -> vals.forEach(v -> buffer.put(((Number) v).byteValue()));
+			case INT32 -> vals.forEach(v -> buffer.putInt(((Number) v).intValue()));
+			case INT16 -> vals.forEach(v -> buffer.putShort(((Number) v).shortValue()));
+			case INT64 -> vals.forEach(v -> buffer.putLong(((Number) v).longValue()));
+			case FLOAT32 -> vals.forEach(v -> buffer.putFloat(((Number) v).floatValue()));
+			case FLOAT64 -> vals.forEach(v -> buffer.putDouble(((Number) v).doubleValue()));
 			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
 				vals.forEach(v -> {
 					var str = v.toString();
 					var bytes = str.getBytes(StandardCharsets.UTF_16LE);
-					// 修复：使用Arrays.copyOf自动截断或填充到固定长度
 					var fixedBytes = Arrays.copyOf(bytes, type.elementSize);
 					buffer.put(fixedBytes);
 				});
-			}
-			case INT8, BYTE -> {
-				vals.forEach(v -> buffer.put(((Number) v).byteValue()));
-			}
-			case INT16 -> {
-				vals.forEach(v -> buffer.putShort(((Number) v).shortValue()));
-			}
-			case INT64 -> {
-				vals.forEach(v -> buffer.putLong(((Number) v).longValue()));
-			}
-			case FLOAT32 -> {
-				vals.forEach(v -> buffer.putFloat(((Number) v).floatValue()));
 			}
 			default -> {
 			}
@@ -168,58 +166,45 @@ public class SharedMem {
 		buffer.force();
 	}
 
-	public static MappedByteBuffer bufferOf(String filePath, int size) throws Exception {
-		try (RandomAccessFile file = new RandomAccessFile(filePath, "rw")) {
-			file.setLength(size);
-			FileChannel channel = file.getChannel();
-			return channel.map(FileChannel.MapMode.READ_WRITE, 0, size);
-		}
-	}
-
-	public static MappedByteBuffer buffer2(String name, int size) throws Exception {
-		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
-		return bufferOf(path, size);
-	}
-
 	@SuppressWarnings("unchecked")
-	public static DFrame read(MappedByteBuffer buf) {
+	public static DFrame read(final MappedByteBuffer buf) {
 		buf.position(0);
 
-		int metaLen = buf.getInt();
-		byte[] metaBytes = new byte[metaLen];
+		final int metaLen = buf.getInt();
+		final byte[] metaBytes = new byte[metaLen];
 		buf.get(metaBytes);
 
-		var meta = Json.json2obj(new String(metaBytes, StandardCharsets.UTF_8), Map.class);
-		var fields = (List<Map<String, Object>>) meta.get("s");
+		final var meta = Json.json2obj(new String(metaBytes, StandardCharsets.UTF_8), Map.class);
+		final var fields = (List<Map<String, Object>>) meta.get("slots");
 		if (fields == null || fields.isEmpty())
 			return DFrame.dfm();
 
-		int dataStart = 4 + metaLen;
-		var args = new ArrayList<Object>();
-		var colNames = new ArrayList<String>();
-		var colData = new ArrayList<List<?>>();
+		final int offset = 4 + metaLen; // 数据偏移
+		final var kvps = new ArrayList<Object>();
+		final var keys = new ArrayList<String>();
+		final var values = new ArrayList<List<?>>();
 
 		for (var f : fields) {
-			var name = (String) f.get("n");
-			var type = DataType.valueOf((String) f.get("t"));
-			var cnt = ((Number) f.get("c")).intValue();
-			var start = ((Number) f.get("start")).intValue();
+			final var name = (String) f.get("x");
+			final var type = DataType.valueOf((String) f.get("t"));
+			final var cnt = ((Number) f.get("n")).intValue();
+			final var start = ((Number) f.get("s")).intValue();
 
-			buf.position(dataStart + start);
-			colNames.add(name);
+			buf.position(offset + start);
+			keys.add(name);
 
 			switch (type) {
 			case INT32 -> {
 				var list = new ArrayList<Integer>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getInt());
-				colData.add(list);
+				values.add(list);
 			}
 			case FLOAT64 -> {
 				var list = new ArrayList<Double>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getDouble());
-				colData.add(list);
+				values.add(list);
 			}
 			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
 				var list = new ArrayList<String>();
@@ -238,42 +223,42 @@ public class SharedMem {
 
 					list.add(new String(bytes, 0, len, StandardCharsets.UTF_16LE));
 				}
-				colData.add(list);
+				values.add(list);
 			}
 			case INT8, BYTE -> {
 				var list = new ArrayList<Byte>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.get());
-				colData.add(list);
+				values.add(list);
 			}
 			case INT16 -> {
 				var list = new ArrayList<Short>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getShort());
-				colData.add(list);
+				values.add(list);
 			}
 			case INT64 -> {
 				var list = new ArrayList<Long>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getLong());
-				colData.add(list);
+				values.add(list);
 			}
 			case FLOAT32 -> {
 				var list = new ArrayList<Float>();
 				for (int i = 0; i < cnt; i++)
 					list.add(buf.getFloat());
-				colData.add(list);
+				values.add(list);
 			}
-			default -> colData.add(new ArrayList<>());
+			default -> values.add(new ArrayList<>());
 			}
 		}
 
 		// 构建DFrame参数
-		for (int i = 0; i < colNames.size(); i++) {
-			args.add(colNames.get(i));
-			args.add(colData.get(i));
+		for (int i = 0; i < keys.size(); i++) {
+			kvps.add(keys.get(i));
+			kvps.add(values.get(i));
 		}
 
-		return DFrame.dfm(args.toArray());
+		return DFrame.dfm(kvps.toArray());
 	}
 }
