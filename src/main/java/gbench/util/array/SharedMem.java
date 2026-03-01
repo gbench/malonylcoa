@@ -130,7 +130,7 @@ public class SharedMem {
 		}
 	}
 
-	public static MappedByteBuffer bufferOf(final String filePath, final int size) throws Exception {
+	public static MappedByteBuffer rafbuf(final String filePath, final int size) throws Exception {
 		try (final var file = new RandomAccessFile(filePath, "rw")) {
 			file.setLength(size);
 			final var channel = file.getChannel();
@@ -138,9 +138,9 @@ public class SharedMem {
 		}
 	}
 
-	public static MappedByteBuffer buffer2(final String name, final int size) throws Exception {
+	public static MappedByteBuffer tempbuf(final String name, final int size) throws Exception {
 		String path = System.getProperty("java.io.tmpdir") + "/shm_" + name;
-		return bufferOf(path, size);
+		return rafbuf(path, size);
 	}
 
 	public static void write(final MappedByteBuffer buffer, final DFrame dfm) {
