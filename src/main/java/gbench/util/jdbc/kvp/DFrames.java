@@ -21,7 +21,7 @@ import gbench.util.json.MyJson;
  * DFrame 的 工具函数
  */
 public class DFrames {
-	
+
 	/**
 	 * 
 	 */
@@ -42,25 +42,25 @@ public class DFrames {
 	public static interface STR2DFM_FN extends ExceptionalFunction<String, DFrame> {
 
 	}
-	
+
 	/**
 	 * 
 	 */
 	public static interface DFM2DFM_FN extends ExceptionalFunction<DFrame, DFrame> {
 
 	}
-	
+
 	/**
 	 * 
 	 */
 	public static interface REC2DFM_FN extends ExceptionalFunction<IRecord, DFrame> {
 
 	}
-	
+
 	/**
 	 * 
 	 */
-	public static interface DFM2REC extends ExceptionalFunction<DFrame, IRecord> {
+	public static interface DFM2REC_FN extends ExceptionalFunction<DFrame, IRecord> {
 
 	}
 

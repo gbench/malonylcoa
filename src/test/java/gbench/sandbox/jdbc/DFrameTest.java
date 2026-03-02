@@ -9,6 +9,7 @@ import static gbench.util.jdbc.sql.SQL.insql;
 import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.rpta;
 import static gbench.util.jdbc.kvp.DFrames.STR2BOOL_FN;
+import static gbench.util.jdbc.kvp.DFrames.DFM2DFM_FN;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -91,7 +92,7 @@ public class DFrameTest {
 					.sqlfunGen(conn -> (STR2BOOL_FN) sql -> conn.createStatement().execute(sql))
 					.compose((IJdbcSession<?, ?> js) -> js.getConnection());
 			final var showtbls = "show tables";
-			final ExceptionalFunction<Integer, ExceptionalFunction<DFrame, DFrame>> head = n -> df -> df.head(n); // 提取前5行
+			final ExceptionalFunction<Integer, DFM2DFM_FN> head = n -> df -> df.head(n); // 提取前5行
 			final var h5 = head.apply(5);
 			final var h5pipeline = DFrames.sqldframeGen2.andThen(sqldfm -> sqldfm.andThen(h5)
 					.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
