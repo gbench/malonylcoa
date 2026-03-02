@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +20,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -1059,6 +1061,18 @@ public class DFrame extends LinkedRecord {
 	public <T, U> Stream<U> dataS(final int margin, final Function<T, U> mapper) {
 
 		return this.dataS(margin).map(e -> mapper.apply((T) e));
+	}
+
+	/**
+	 * 圆葱
+	 * 
+	 * @return
+	 */
+	public IRecord proto() {
+		final Function<List<Object>, Object> maxlen_of = xs -> xs.stream()
+				.collect(Collectors.maxBy(Comparator.comparing(x -> String.valueOf(x).length()))).orElse(null);
+		return IRecord.REC(this.colS((k, vs) -> Tuple2.of(k, maxlen_of.apply(vs))) //
+				.flatMap(Tuple2::stream).toArray()); // 提取原型数据(文本长度最大的值的)
 	}
 
 	/**
