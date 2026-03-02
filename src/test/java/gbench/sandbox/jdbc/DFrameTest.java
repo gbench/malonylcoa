@@ -95,11 +95,11 @@ public class DFrameTest {
 			final var showtbls = "show tables";
 			final ExceptionalFunction<Integer, DFM2DFM_FN> head = n -> df -> df.head(n); // 提取前5行
 			final var h5 = head.apply(5);
-			final var h5pipeline = DFrames.sqldframeGen2.andThen(sqldfm -> sqldfm.andThen(h5)
+			final var dfm_h5_pipeline = DFrames.sqldframeGen2.andThen(sqldfm -> sqldfm.andThen(h5)
 					.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
 							.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
 					.andThen(sqldframe));
-			final ExceptionalFunction<String, ExceptionalFunction<IJdbcSession<UUID, Object>, String>> println_pipepline = sql -> js -> h5pipeline
+			final ExceptionalFunction<String, ExceptionalFunction<IJdbcSession<UUID, Object>, String>> println_pipepline = sql -> js -> dfm_h5_pipeline
 					.apply(js).andThen(Output::println).apply(sql);
 
 			// 打印输出
