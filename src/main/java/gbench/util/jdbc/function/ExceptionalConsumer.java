@@ -1,5 +1,7 @@
 package gbench.util.jdbc.function;
 
+import java.util.function.Consumer;
+
 /**
  * 可以抛出异常的消费函数
  * 
@@ -16,4 +18,19 @@ public interface ExceptionalConsumer<T> {
 	 * @throws Exception 异常
 	 */
 	void accept(final T t) throws Exception;
+
+	/**
+	 * 没有异常版本
+	 * 
+	 * @return
+	 */
+	default Consumer<T> noexcept() {
+		return t -> {
+			try {
+				this.accept(t);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		};
+	}
 }

@@ -1,7 +1,6 @@
 package gbench.sandbox.matrix.partitioner;
 
 import static gbench.util.io.Output.println;
-import static gbench.util.jdbc.kvp.DFrames.maxof_textlen;
 import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
 
@@ -13,7 +12,6 @@ import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrames;
 import gbench.util.jdbc.kvp.IRecord;
-import gbench.util.jdbc.kvp.Tuple2;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,15 +39,13 @@ public class SharedMemTest {
 	@Test
 	public void bar() {
 		final var dfm = DFrames.dfm(mpg_json).rename("_%s"::formatted);
-		final var proto = IRecord.REC(dfm.colS((k, vs) -> Tuple2.of(k, maxof_textlen(vs))) //
-				.flatMap(Tuple2::stream).toArray()); // 提取原型数据(文本长度最大的值的)
 		final var h2_rec = IRecord.REC("driver", "org.h2.Driver", "user", "root", "password", "123456", "url",
 				String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", "malonylcoa"));
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(null, IMySQL.class, h2_rec); // 数据库应用客户端
 
 		jdbcApp.withTransaction(sess -> {
 			final var tbl = "t_mpg";
-			for (final var sql : Arrays.asList(ctsql(tbl, proto), insql(tbl, dfm.rows()))) {
+			for (final var sql : Arrays.asList(ctsql(tbl, dfm.proto()), insql(tbl, dfm.rows()))) {
 				sess.sqlexecute(sql);
 			}
 

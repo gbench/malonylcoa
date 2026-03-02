@@ -1,5 +1,7 @@
 package gbench.util.jdbc.function;
 
+import java.util.function.Supplier;
+
 /**
  * 供应函数
  * 
@@ -17,4 +19,20 @@ public interface ExceptionalSupplier<T> {
 	 * @throws Exception 异常
 	 */
 	T get() throws Exception;
+
+	/**
+	 * 没有异常版本
+	 * 
+	 * @return
+	 */
+	default Supplier<T> noexcept() {
+		return () -> {
+			T ret = null;
+			try {
+				ret = this.get();
+			} catch (Exception e) {
+			}
+			return ret;
+		};
+	}
 }

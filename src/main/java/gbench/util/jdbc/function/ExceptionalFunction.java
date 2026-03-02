@@ -48,11 +48,11 @@ public interface ExceptionalFunction<T, U> {
 	 * @param efn
 	 * @return
 	 */
-	public static <T, U> Function<T, U> efn2fn(final ExceptionalFunction<T, U> efn) {
+	default Function<T, U> noexcept() {
 		return t -> {
 			U u = null;
 			try {
-				u = efn.apply(t);
+				u = this.apply(t);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

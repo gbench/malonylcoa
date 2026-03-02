@@ -1064,7 +1064,8 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
-	 * 圆葱
+	 * 原型（用于创建sql统计文本长度，把每一列数据的文本字符传的最长内容搜集到一个IRecord)<br>
+	 * 比如：ctsql("t_data", datadfm.proto()) 这就是典型应用！
 	 * 
 	 * @return
 	 */

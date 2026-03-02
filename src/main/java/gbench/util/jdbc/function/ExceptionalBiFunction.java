@@ -24,17 +24,18 @@ public interface ExceptionalBiFunction<T, U, V> {
 	V apply(final T t, final U u) throws Exception;
 
 	/**
+	 * 不抛异常版本
 	 * 
 	 * @param <T>
 	 * @param <U>
 	 * @param efn
 	 * @return
 	 */
-	public static <T, U, V> BiFunction<T, U, V> efn2fn(final ExceptionalBiFunction<T, U, V> efn) {
+	public default BiFunction<T, U, V> noexcept() {
 		return (t, u) -> {
 			V v = null;
 			try {
-				v = efn.apply(t, u);
+				v = this.apply(t, u);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

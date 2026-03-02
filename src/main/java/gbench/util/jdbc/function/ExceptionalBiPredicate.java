@@ -1,5 +1,7 @@
 package gbench.util.jdbc.function;
 
+import java.util.function.BiPredicate;
+
 /**
  * 可以抛出异常的谓词判断函数
  * 
@@ -19,4 +21,19 @@ public interface ExceptionalBiPredicate<T, U> {
 	 * @throws Exception 异常
 	 */
 	Boolean test(final T t, final U u) throws Exception;
+
+	/**
+	 * 没有异常版本
+	 * @return
+	 */
+	default BiPredicate<T, U> noexcept() {
+		return (t, u) -> {
+			Boolean ret = false;
+			try {
+				ret = this.test(t, u);
+			} catch (Exception e) {
+			}
+			return ret;
+		};
+	}
 }
