@@ -8,6 +8,7 @@ import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
 import static gbench.util.lisp.Lisp.A;
 import static gbench.util.lisp.Lisp.rpta;
+import static gbench.util.jdbc.kvp.DFrames.STR2BOOL_FN;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -22,13 +23,11 @@ import gbench.util.io.Output;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.IMySQL;
-import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.DFrames;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
-import gbench.util.jdbc.sql.SQL;
 import gbench.util.lisp.Lisp;
 
 /**
@@ -83,23 +82,27 @@ public class DFrameTest {
 
 	@Test
 	public void qux() {
-		final var jdbcMy = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // 数据库应用客户端
-		final var jdbcH2 = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
+		final var jdbcMy = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // MySQL 数据库应用客户端
+		final var jdbcH2 = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // H2 数据库应用客户端
+
 		jdbcMy.withTransaction(sess -> {
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			final var sqlexecuteGen = DFrames.sqlfunGen(conn -> (ExceptionalFunction<String, Boolean>) sql -> //
-			conn.createStatement().execute(sql)).compose((IJdbcSession<?, ?> js) -> js.getConnection());
+			final var sqlexecuteGen = DFrames
+					.sqlfunGen(conn -> (STR2BOOL_FN) sql -> conn.createStatement().execute(sql))
+					.compose((IJdbcSession<?, ?> js) -> js.getConnection());
 			final var showtbls = "show tables";
-			final ExceptionalFunction<DFrame, DFrame> head5 = df -> df.head(5); // 提取前5行
-			final var h5pipeline = DFrames.sqldframeGen2.andThen(sd -> sd.andThen(head5)
+			final ExceptionalFunction<Integer, ExceptionalFunction<DFrame, DFrame>> head = n -> df -> df.head(n); // 提取前5行
+			final var h5 = head.apply(5);
+			final var h5pipeline = DFrames.sqldframeGen2.andThen(sqldfm -> sqldfm.andThen(h5)
 					.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
 							.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
 					.andThen(sqldframe).andThen(Output::println));
-			//
+
+			// 打印输出
 			h5pipeline.apply(sess).apply(showtbls);
 
 			// 把数据拷贝到H2数据库
-			sqldframe.andThen(head5).andThen(df -> df.strcolS(0).limit(5) //
+			sqldframe.andThen(h5).andThen(df -> df.strcolS(0).limit(5) //
 					.map(e -> Tuple2.of(e, "select * from %s limit 5".formatted(e)))) //
 					.andThen(ps -> ps.flatMap(p -> {
 						final var dfm = sqldframe.noexcept().apply(p._2());
@@ -107,7 +110,8 @@ public class DFrameTest {
 					})).andThen(sqls -> jdbcH2.withTransaction(sses2 -> sqls.map(Output::println) //
 							.forEach(sqlexecuteGen.apply(sses2).noexcept2())))
 					.apply(showtbls);
-			//
+
+			// 打印输出
 			jdbcH2.withTransaction(s -> h5pipeline.apply(s).apply(showtbls));
 		});
 	}
