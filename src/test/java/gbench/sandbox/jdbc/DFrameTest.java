@@ -122,7 +122,7 @@ public class DFrameTest {
 	public void quz() {
 
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // MySQL 数据库应用客户端
-		final var sql = "select '%s' tbl, concat(REGEXP_REPLACE(TradingDay, '(\\\\d{4})(\\\\d{2})(\\\\d{2})', '$1-$2-$3'),' ', UpdateTime) TickTime, t.* from %s t limit 100";
+		final var sql = "select '%s' tbl, concat(REGEXP_REPLACE(TradingDay, '(\\\\d{4})(\\\\d{2})(\\\\d{2})', '$1-$2-$3'),' ', UpdateTime) TickTime, t.* from %s t limit 10";
 		final var flds = "tbl,LastPrice,TickTime,CxxCtpCreateTime,ActionDay";
 
 		jdbcApp.withTransaction(sess -> {
@@ -151,7 +151,7 @@ public class DFrameTest {
 				} // try
 			}; // shm_writer
 
-			sqldframe.andThen(dfm -> dfm.head(2).strcolS(0).map(Lisp.rpta(2)).map(sql::formatted).map(Output::println)
+			sqldframe.andThen(dfm -> dfm.head(10).strcolS(0).map(Lisp.rpta(2)).map(sql::formatted).map(Output::println)
 					.map(sqldframe.noexcept())).apply("show tables").forEach(shm_writer); // forEach
 			chanbuffs.forEach(cbclose.noexcept()); // chanbuffs 批量回收！
 		}); // withTransaction
