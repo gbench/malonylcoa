@@ -98,7 +98,7 @@ public interface ExceptionalFunction<T, U> {
 	 * 
 	 * @return
 	 */
-	default ExceptionalConsumer<T> exceptionalCS() {
+	default ExceptionalConsumer<T> except2cs() {
 		return t -> {
 			try {
 				this.apply(t);

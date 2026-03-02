@@ -87,27 +87,22 @@ public class DFrameTest {
 		final var jdbcMy = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // MySQL 数据库应用客户端
 		final var jdbcH2 = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // H2 数据库应用客户端
 
+		final var showtbls = "show tables";
+		final var sqlexecuteGen = DFrames.sqlfunGen(conn -> (STR2BOOL_FN) sql -> conn.createStatement().execute(sql))
+				.compose((IJdbcSession<?, ?> js) -> js.getConnection());
+		final ExceptionalFunction<Integer, DFM2DFM_FN> head = n -> df -> df.head(n); // 提取前5行
+		final var dfm_h10_pipeline = DFrames.sqldframeGen2.andThen(sqldframe -> sqldframe.andThen(head.apply(10))
+				.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
+						.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
+				.andThen(sqldframe));
+		final ExceptionalFunction<String, ExceptionalFunction<IJdbcSession<UUID, Object>, String>> print10ln_pipepline = sql -> js -> dfm_h10_pipeline
+				.apply(js).andThen(Output::println).apply(sql);
+
 		jdbcMy.withTransaction(sess -> {
+			final var print10tbl = print10ln_pipepline.apply(showtbls); // 最多显示10行数据
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			final var sqlexecuteGen = DFrames
-					.sqlfunGen(conn -> (STR2BOOL_FN) sql -> conn.createStatement().execute(sql))
-					.compose((IJdbcSession<?, ?> js) -> js.getConnection());
-			final var showtbls = "show tables";
-			final ExceptionalFunction<Integer, DFM2DFM_FN> head = n -> df -> df.head(n); // 提取前5行
-			final var h5 = head.apply(5);
-			final var dfm_h5_pipeline = DFrames.sqldframeGen2.andThen(sqldfm -> sqldfm.andThen(h5)
-					.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
-							.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
-					.andThen(sqldframe));
-			final ExceptionalFunction<String, ExceptionalFunction<IJdbcSession<UUID, Object>, String>> println_pipepline = sql -> js -> dfm_h5_pipeline
-					.apply(js).andThen(Output::println).apply(sql);
-
-			// 打印输出
-			println_pipepline.apply(showtbls).apply(sess);
-
-			// 把数据拷贝到H2数据库
-			sqldframe.andThen(h5).andThen(df -> df.strcolS(0).limit(5) //
-					.map(e -> Tuple2.of(e, "select * from %s limit 5".formatted(e)))) //
+			sqldframe.andThen(head.apply(6)) // 把数据拷贝到H2数据库
+					.andThen(dfm -> dfm.strcolS(0).map(e -> Tuple2.of(e, "select * from %s limit 5".formatted(e)))) //
 					.andThen(ps -> ps.flatMap(p -> {
 						final var dfm = sqldframe.noexcept().apply(p._2());
 						return Stream.of(ctsql(p._1(), dfm.proto()), insql(p._1(), dfm.rows())); // 生成DML SQL语句
@@ -115,8 +110,8 @@ public class DFrameTest {
 							.forEach(sqlexecuteGen.apply(js).noexcept2cs())))
 					.apply(showtbls);
 
-			// 打印输出
-			jdbcH2.withTransaction(println_pipepline.apply(showtbls).exceptionalCS());
+			print10tbl.apply(sess); // 打印输出
+			jdbcH2.withTransaction(print10tbl.except2cs()); // 打印输出
 		});
 	}
 
