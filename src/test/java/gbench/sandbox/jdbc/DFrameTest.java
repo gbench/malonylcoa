@@ -11,6 +11,7 @@ import static gbench.util.lisp.Lisp.rpta;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
@@ -19,11 +20,15 @@ import gbench.util.array.SharedMem;
 import gbench.util.array.SharedMem.Schema.ChanBuff;
 import gbench.util.io.Output;
 import gbench.util.jdbc.IJdbcApp;
+import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.function.ExceptionalConsumer;
+import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.DFrames;
 import gbench.util.jdbc.kvp.IRecord;
 import gbench.util.jdbc.kvp.Tuple2;
+import gbench.util.jdbc.sql.SQL;
 import gbench.util.lisp.Lisp;
 
 /**
@@ -78,22 +83,32 @@ public class DFrameTest {
 
 	@Test
 	public void qux() {
-		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // 数据库应用客户端
-		final var jdbcH2 = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // 数据库应用客户端
-		jdbcApp.withTransaction(sess -> {
+		final var jdbcMy = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // 数据库应用客户端
+		final var jdbcH2 = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
+		jdbcMy.withTransaction(sess -> {
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
+			final var sqlexecuteGen = DFrames.sqlfunGen(conn -> (ExceptionalFunction<String, Boolean>) sql -> //
+			conn.createStatement().execute(sql)).compose((IJdbcSession<?, ?> js) -> js.getConnection());
 			final var showtbls = "show tables";
-			sqldframe.andThen(df -> df.filterBy(rec -> rec.str(0).contains("rb2601")).head(5))
+			final ExceptionalFunction<DFrame, DFrame> head5 = df -> df.head(5); // 提取前5行
+			final var h5pipeline = DFrames.sqldframeGen2.andThen(sd -> sd.andThen(head5)
 					.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
 							.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
-					.andThen(sqldframe).andThen(Output::println).apply(showtbls);
-			sqldframe.andThen(df -> df.strcolS(0).limit(5).map(e -> Tuple2.of(e, "select * from %s".formatted(e))))
-					.andThen(ps -> {
-						for (var p : ps.toList()) {
-							final var dfm = sqldframe.apply(p._2());
-						}
-						return ps;
-					}).apply(showtbls);
+					.andThen(sqldframe).andThen(Output::println));
+			//
+			h5pipeline.apply(sess).apply(showtbls);
+
+			// 把数据拷贝到H2数据库
+			sqldframe.andThen(head5).andThen(df -> df.strcolS(0).limit(5) //
+					.map(e -> Tuple2.of(e, "select * from %s limit 5".formatted(e)))) //
+					.andThen(ps -> ps.flatMap(p -> {
+						final var dfm = sqldframe.noexcept().apply(p._2());
+						return Stream.of(ctsql(p._1(), dfm.proto()), insql(p._1(), dfm.rows())); // 生成DML SQL语句
+					})).andThen(sqls -> jdbcH2.withTransaction(sses2 -> sqls.map(Output::println) //
+							.forEach(sqlexecuteGen.apply(sses2).noexcept2())))
+					.apply(showtbls);
+			//
+			jdbcH2.withTransaction(s -> h5pipeline.apply(s).apply(showtbls));
 		});
 	}
 

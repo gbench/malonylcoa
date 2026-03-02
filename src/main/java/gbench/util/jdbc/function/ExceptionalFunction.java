@@ -42,6 +42,22 @@ public interface ExceptionalFunction<T, U> {
 	}
 
 	/**
+	 * 返回之前执行函数
+	 * 
+	 * @param <V>
+	 * @param f
+	 * @return
+	 */
+	default <V> ExceptionalFunction<T, U> onReturn(final ExceptionalConsumer<U> clear) {
+
+		return t -> {
+			final var u = this.apply(t);
+			clear.accept(u);
+			return u;
+		};
+	}
+
+	/**
 	 * 
 	 * @param <T>
 	 * @param <U>
@@ -57,6 +73,23 @@ public interface ExceptionalFunction<T, U> {
 				e.printStackTrace();
 			}
 			return u;
+		};
+	}
+
+	/**
+	 * 
+	 * @param <T>
+	 * @param <U>
+	 * @param efn
+	 * @return
+	 */
+	default Consumer<T> noexcept2() {
+		return t -> {
+			try {
+				this.apply(t);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		};
 	}
 }

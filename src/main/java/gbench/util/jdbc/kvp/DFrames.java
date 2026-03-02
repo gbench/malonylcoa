@@ -61,6 +61,16 @@ public class DFrames {
 			.compose((ExceptionalFunction<IJdbcSession<?, ?>, Connection>) IJdbcSession::getConnection);
 
 	/**
+	 * 
+	 * @param <T>
+	 * @param fun
+	 * @return
+	 */
+	public static <T> ExceptionalFunction<Connection, T> sqlfunGen(final ExceptionalFunction<Connection, T> fun) {
+		return con -> fun.apply(con);
+	}
+
+	/**
 	 * 把 ResultSet 转换成 MappedByteBuffer
 	 */
 	public static ExceptionalFunction<String, ExceptionalFunction<ResultSet, ChanBuff>> rs2shmGen = //
