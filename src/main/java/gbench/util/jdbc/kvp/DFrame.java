@@ -381,6 +381,50 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param kvps 键值序列,每个value都代表一个值列表 key0,value0,key1,value1
+	 * @return DFrame 对象
+	 */
+	public DFrame addcol(final Object... kvps) {
+
+		return this.derive(kvps).mutate(DFrame::dfm);
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号之间不能留有空格
+	 * @return DFrame 对象
+	 */
+	public DFrame filtercol(final String flds) {
+
+		return this.filter(flds).mutate(DFrame::dfm);
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param kk 提取的字段的键值名称数据,kk 为null 表示不进行过滤。
+	 * @return DFrame 对象
+	 */
+	public DFrame filtercol(final String... kk) {
+
+		return this.filter(kk).mutate(DFrame::dfm);
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号之间不能留有空格
+	 * @return DFrame 对象
+	 */
+	public DFrame filtercol(final Integer... indexes) {
+
+		return this.filter(indexes).mutate(DFrame::dfm);
+	}
+
+	/**
 	 * 这是按照keys 所指定的键名进行字段否定过滤。默认过滤空值字段（该字段的值value为null) <br>
 	 * 
 	 * @param keys 否定提取的字段集合用逗号分割,keys为null表示不进行过滤。注意分隔符号之间不能留有空格
