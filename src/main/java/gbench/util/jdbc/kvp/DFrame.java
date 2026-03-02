@@ -1156,6 +1156,17 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param kvps 键值序列,每个value都代表一个值列表 key0,value0,key1,value1
+	 * @return DFrame 对象
+	 */
+	public static DFrame dfm(final IRecord rec) {
+
+		return DFrame.dfm(rec.tupleS().flatMap(Tuple2::stream).toArray());
+	}
+
+	/**
 	 * 构建DFrame
 	 * 
 	 * @param rows 行数据

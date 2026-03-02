@@ -126,11 +126,12 @@ public class DFrameTest {
 			sqldframe.andThen(dfm -> dfm.head(2).strcolS(0).map(Lisp.rpta(2)).map(
 					"select '%s' tbl, concat(REGEXP_REPLACE(TradingDay, '(\\\\d{4})(\\\\d{2})(\\\\d{2})', '$1-$2-$3'),' ', UpdateTime) TickTime, t.* from %s t limit 3"::formatted) //
 					.map(Output::println).map(sqldframe.noexcept()) //
-			).apply("show tables").forEach(dfm -> {
-				dfm //
-						.set("TickTime", dfm.ldtcol("TickTime")) //
-						.set("CxxCtpCreateTime", dfm.ldtcol("CxxCtpCreateTime")) //
-						.set("ActionDay", dfm.column("ActionDay", Times::asLocalDate));
+			).apply("show tables").forEach(df -> {
+				final var dfm = df.derive( // 时间修正
+						"TickTime", df.ldtcol("TickTime"), //
+						"CxxCtpCreateTime", df.ldtcol("CxxCtpCreateTime"), //
+						"ActionDay", df.column("ActionDay", Times::asLocalDate) //
+				).mutate(DFrame::dfm);
 				final var proto = dfm.head();
 				final var tbl = proto.str("tbl");
 				final var shmfile = "E:/slicee/temp/malonylcoa/test/array/%s".formatted(tbl);
@@ -140,7 +141,8 @@ public class DFrameTest {
 						println("pathname:%s".formatted(chanbuf));
 						println("read.shm('%s')|> as_tibble() |> select(TickTime,CxxCtpCreateTime,ActionDay)"
 								.formatted(chanbuf).replace("\\", "/"));
-						return SharedMem.read(chanbuf); // 读取数据文件
+						return SharedMem.read(chanbuf).filter("TickTime,CxxCtpCreateTime,ActionDay")
+								.mutate(DFrame::dfm); // 读取数据文件
 					}).andThen(Output::println).apply(dfm);
 				} catch (Exception e) {
 					e.printStackTrace();
