@@ -13,6 +13,11 @@ import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -162,6 +167,11 @@ public class SharedMem {
 				else
 					yield DataType.NULL;
 			}
+			// 添加日期时间类型的处理
+			case "LocalDateTime" -> DataType.DATETIME;
+			case "LocalDate" -> DataType.DATE;
+			case "Date" -> DataType.DATETIME; // java.util.Date 也存储为 DATETIME 类型
+			case "Timestamp" -> DataType.DATETIME; // java.sql.Timestamp
 			default -> DataType.NULL;
 			};
 			return Tuple2.of(key, size);
@@ -337,12 +347,16 @@ public class SharedMem {
 	}
 
 	/**
-	 * 数据类型枚举
+	 * 数据类型枚举 - 添加日期时间类型
 	 */
 	public enum DataType {
 		INT8(1), INT16(2), INT32(4), INT64(8), FLOAT32(4), FLOAT64(8), STRING16(16 * 2), // 修复：32字节，可存储16个UTF-16字符
 		STRING32(32 * 2), STRING64(64 * 2), STRING128(128 * 2), STRING256(256 * 2), STRING512(512 * 2),
-		STRING1024(1024 * 2), STRING2048(2048 * 2), BYTE(1), NULL(0);
+		STRING1024(1024 * 2), STRING2048(2048 * 2), BYTE(1),
+		// 添加日期时间类型
+		DATE(8), // 存储为自1970-01-01以来的天数 (int64)
+		DATETIME(16), // 存储为自1970-01-01T00:00:00Z以来的秒数(long) + 纳秒数(int)
+		NULL(0);
 
 		public final int elementSize;
 
@@ -425,6 +439,50 @@ public class SharedMem {
 					buff.put(fixedBytes);
 				});
 			}
+			// 添加日期类型的写入逻辑
+			case DATE -> {
+				value.forEach(v -> {
+					if (v == null) {
+						buff.putLong(0L); // 默认值
+					} else {
+						long epochDay = 0L;
+						if (v instanceof LocalDate) {
+							epochDay = ((LocalDate) v).toEpochDay();
+						} else if (v instanceof LocalDateTime) {
+							epochDay = ((LocalDateTime) v).toLocalDate().toEpochDay();
+						} else if (v instanceof Date) {
+							epochDay = ((Date) v).toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toEpochDay();
+						}
+						buff.putLong(epochDay);
+					}
+				});
+			}
+			// 添加日期时间类型的写入逻辑
+			case DATETIME -> {
+				value.forEach(v -> {
+					if (v == null) {
+						buff.putLong(0L); // 秒数
+						buff.putInt(0); // 纳秒数
+					} else {
+						long epochSecond = 0L;
+						int nano = 0;
+
+						if (v instanceof LocalDateTime) {
+							epochSecond = ((LocalDateTime) v).toEpochSecond(ZoneOffset.UTC);
+							nano = ((LocalDateTime) v).getNano();
+						} else if (v instanceof LocalDate) {
+							epochSecond = ((LocalDate) v).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+						} else if (v instanceof Date) {
+							Instant instant = ((Date) v).toInstant();
+							epochSecond = instant.getEpochSecond();
+							nano = instant.getNano();
+						}
+
+						buff.putLong(epochSecond);
+						buff.putInt(nano);
+					}
+				});
+			}
 			default -> {
 			}
 			}
@@ -491,6 +549,33 @@ public class SharedMem {
 				}
 				values.add(list);
 			}
+			// 添加日期类型的读取逻辑
+			case DATE -> {
+				final var list = new ArrayList<LocalDate>();
+				for (int i = 0; i < cnt; i++) {
+					long epochDay = buf.getLong();
+					if (epochDay == 0) {
+						list.add(null);
+					} else {
+						list.add(LocalDate.ofEpochDay(epochDay));
+					}
+				}
+				values.add(list);
+			}
+			// 添加日期时间类型的读取逻辑
+			case DATETIME -> {
+				final var list = new ArrayList<LocalDateTime>();
+				for (int i = 0; i < cnt; i++) {
+					long epochSecond = buf.getLong();
+					int nano = buf.getInt();
+					if (epochSecond == 0 && nano == 0) {
+						list.add(null);
+					} else {
+						list.add(LocalDateTime.ofEpochSecond(epochSecond, nano, ZoneOffset.UTC));
+					}
+				}
+				values.add(list);
+			}
 			default -> values.add(new ArrayList<>());
 			}
 		}
@@ -503,4 +588,5 @@ public class SharedMem {
 
 		return DFrame.dfm(kvps.toArray());
 	}
+
 }
