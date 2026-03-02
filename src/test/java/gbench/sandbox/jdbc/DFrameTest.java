@@ -2,17 +2,22 @@ package gbench.sandbox.jdbc;
 
 import static gbench.util.array.INdarray.nats;
 import static gbench.util.io.Output.println;
+import static gbench.util.jdbc.kvp.IRecord.REC;
 import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
 import static gbench.util.lisp.Lisp.A;
+import static gbench.util.lisp.Lisp.rpta;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import gbench.global.Globals;
 import gbench.util.array.SharedMem;
 import gbench.util.array.SharedMem.Schema.ChanBuff;
+import gbench.util.io.Output;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IMySQL;
 import gbench.util.jdbc.kvp.DFrame;
@@ -41,10 +46,7 @@ public class DFrameTest {
 
 	@Test
 	public void bar() {
-		final var h2_rec = IRecord.REC("driver", "org.h2.Driver", "user", "root", "password", "123456", "url",
-				String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", "malonylcoa"));
-		final var jdbcApp = IJdbcApp.newNsppDBInstance(null, IMySQL.class, h2_rec); // 数据库应用客户端
-
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
 		final var xs = A(1, 2, 3);
 		final var rb = IRecord.rb("a,b,c");
 		final var dfm = Lisp.cph(xs, xs, xs).map(rb::get).collect(DFrame.dfmclc); // 生成向量笛卡尔集生成数据集
@@ -58,19 +60,38 @@ public class DFrameTest {
 
 			final String shmfile = null; // 临时文件
 			final var cbs = new ChanBuff[1]; // 单值容器！
-			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			final var dfm_pipeline = sqldframe.andThen(DFrames.df2shmGen.apply(shmfile)) // dfm写入共享内存
+			final var sqlpipeline = DFrames.sqldframeGen2.apply(sess) //
+					.andThen(DFrames.df2shmGen.apply(shmfile)) // dfm写入共享内存
 					.andThen(chanbuf -> {
 						cbs[0] = chanbuf;
 						println("pathname:%s".formatted(chanbuf));
 						return SharedMem.read(chanbuf); // 读取数据文件
 					});
-			final var cphdfm = dfm_pipeline.apply("select * from %s".formatted(tbl));
+			final var cphdfm = sqlpipeline.apply("select * from %s".formatted(tbl));
 
 			println("cph", cphdfm);
 			println("cph json", cphdfm.json());
 			cbs[0].close(); // 缓存关闭
 		});
 	}
+
+	@Test
+	public void qux() {
+		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // 数据库应用客户端
+		jdbcApp.withTransaction(sess -> {
+			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
+			sqldframe.andThen(df -> df.filterBy(rec -> rec.str(0).contains("rb2601")).head(5))
+					.andThen(df -> df.column(0, String.class).stream().map(rpta(2)) //
+							.map("select '%s' name , count(*) n from %s"::formatted) //
+							.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
+					.andThen(sqldframe).andThen(Output::println).apply("show tables");
+		});
+	}
+
+	final String sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
+	final IRecord h2_rec = REC("driver", "org.h2.Driver", "user", "root", "password", "123456", "url",
+			String.format("jdbc:h2:mem:%s2;MODE=MYSQL;DB_CLOSE_DELAY=-1;database_to_upper=false;", "malonylcoa"));
+	final IRecord mysql_rec = REC("url", "jdbc:mysql://127.0.0.1:3371/ctp?serverTimezone=UTC", "driver",
+			"com.mysql.cj.jdbc.Driver", "user", "root", "password", "123456");
 
 }

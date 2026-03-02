@@ -267,7 +267,7 @@ public class Lisp {
 	}
 
 	/**
-	 * repeat array <br>
+	 * repeat to an array <br>
 	 * 复制元素t,生成数组 n 个元素的数组
 	 *
 	 * @param <T> 数组元素类型
@@ -283,6 +283,30 @@ public class Lisp {
 			tt[i] = t;
 		}
 		return tt;
+	}
+
+	/**
+	 * repeat to an array <br>
+	 * 复制元素t,生成数组 n 个元素的数组
+	 * 
+	 * @param <T> 元素
+	 * @param n   复制次数
+	 * @return 函数：元素->数组
+	 */
+	public static <T> Function<T, T[]> rpta(final int n) {
+		return t -> RPTA(t, n);
+	}
+
+	/**
+	 * repeat to an array <br>
+	 * 复制元素t,生成数组 n 个元素的数组
+	 * 
+	 * @param <T> 元素
+	 * @param t   复制元素
+	 * @return 函数：次数->数组
+	 */
+	public static <T> Function<Integer, T[]> rpta2(final T t) {
+		return n -> RPTA(t, n);
 	}
 
 	/**
