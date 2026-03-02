@@ -12,6 +12,7 @@ import static gbench.util.jdbc.kvp.DFrames.STR2BOOL_FN;
 import static gbench.util.jdbc.kvp.DFrames.DFM2DFM_FN;
 
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -97,10 +98,12 @@ public class DFrameTest {
 			final var h5pipeline = DFrames.sqldframeGen2.andThen(sqldfm -> sqldfm.andThen(h5)
 					.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
 							.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
-					.andThen(sqldframe).andThen(Output::println));
+					.andThen(sqldframe));
+			final ExceptionalFunction<String, ExceptionalFunction<IJdbcSession<UUID, Object>, String>> println_pipepline = sql -> js -> h5pipeline
+					.apply(js).andThen(Output::println).apply(sql);
 
 			// 打印输出
-			h5pipeline.apply(sess).apply(showtbls);
+			println_pipepline.apply(showtbls).apply(sess);
 
 			// 把数据拷贝到H2数据库
 			sqldframe.andThen(h5).andThen(df -> df.strcolS(0).limit(5) //
@@ -113,7 +116,7 @@ public class DFrameTest {
 					.apply(showtbls);
 
 			// 打印输出
-			jdbcH2.withTransaction(s -> h5pipeline.apply(s).apply(showtbls));
+			jdbcH2.withTransaction(println_pipepline.apply(showtbls).exceptionalCS());
 		});
 	}
 

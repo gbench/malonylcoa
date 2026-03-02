@@ -93,4 +93,18 @@ public interface ExceptionalFunction<T, U> {
 			}
 		};
 	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	default ExceptionalConsumer<T> exceptionalCS() {
+		return t -> {
+			try {
+				this.apply(t);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		};
+	}
 }
