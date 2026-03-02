@@ -108,8 +108,8 @@ public class DFrameTest {
 					.andThen(ps -> ps.flatMap(p -> {
 						final var dfm = sqldframe.noexcept().apply(p._2());
 						return Stream.of(ctsql(p._1(), dfm.proto()), insql(p._1(), dfm.rows())); // 生成DML SQL语句
-					})).andThen(sqls -> jdbcH2.withTransaction(sses2 -> sqls.map(Output::println) //
-							.forEach(sqlexecuteGen.apply(sses2).noexcept2())))
+					})).andThen(sqls -> jdbcH2.withTransaction(js -> sqls.map(Output::println) //
+							.forEach(sqlexecuteGen.apply(js).noexcept2cs())))
 					.apply(showtbls);
 
 			// 打印输出

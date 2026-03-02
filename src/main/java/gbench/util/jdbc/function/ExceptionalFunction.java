@@ -77,13 +77,14 @@ public interface ExceptionalFunction<T, U> {
 	}
 
 	/**
+	 * 转成Consumer
 	 * 
 	 * @param <T>
 	 * @param <U>
 	 * @param efn
 	 * @return
 	 */
-	default Consumer<T> noexcept2() {
+	default Consumer<T> noexcept2cs() {
 		return t -> {
 			try {
 				this.apply(t);
