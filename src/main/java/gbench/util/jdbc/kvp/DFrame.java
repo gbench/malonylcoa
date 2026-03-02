@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,6 +24,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import gbench.util.jdbc.Jdbcs;
+import gbench.util.type.Times;
 
 /**
  * DFrame 数据框，(key,[v0,v1,...]) 结构的键值对集合 kvs 即值元素为集合类型的KVPs.<br>
@@ -154,6 +156,226 @@ public class DFrame extends LinkedRecord {
 	public <T> List<T> col(final String key) {
 
 		return this.col(this.indexOfKey(key));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<String> strcol(final int colid) {
+
+		return this.strcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<String> strcol(final String key) {
+
+		return this.strcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<String> strcolS(final int colid) {
+
+		return this.strcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<String> strcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(String::valueOf));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<Integer> i4col(final int colid) {
+
+		return this.i4col(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<Integer> i4col(final String key) {
+
+		return this.i4colS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<Integer> i4colS(final int colid) {
+
+		return this.i4colS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<Integer> i4colS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(IRecord.obj2dbl()).map(Number::intValue));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<Long> lngcol(final int colid) {
+
+		return this.lngcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<Long> lngcol(final String key) {
+
+		return this.lngcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<Long> lngcolS(final int colid) {
+
+		return this.lngcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<Long> lngcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(IRecord.obj2dbl()).map(Number::longValue));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<Double> dblcol(final int colid) {
+
+		return this.dblcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<Double> dblcol(final String key) {
+
+		return this.dblcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<Double> dblcolS(final int colid) {
+
+		return this.dblcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<Double> dblcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(IRecord.obj2dbl()));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<LocalDateTime> ldtcol(final int colid) {
+
+		return this.ldtcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<LocalDateTime> ldtcol(final String key) {
+
+		return this.ldtcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<LocalDateTime> ldtcolS(final int colid) {
+
+		return this.ldtcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<LocalDateTime> ldtcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(Times::asLocalDateTime));
 	}
 
 	/**

@@ -81,8 +81,7 @@ public class DFrameTest {
 		jdbcApp.withTransaction(sess -> {
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
 			sqldframe.andThen(df -> df.filterBy(rec -> rec.str(0).contains("rb2601")).head(5))
-					.andThen(df -> df.column(0, String.class).stream().map(rpta(2)) //
-							.map("select '%s' name , count(*) n from %s"::formatted) //
+					.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
 							.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
 					.andThen(sqldframe).andThen(Output::println).apply("show tables");
 		});
