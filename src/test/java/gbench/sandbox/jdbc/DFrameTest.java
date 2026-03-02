@@ -26,6 +26,7 @@ import gbench.util.io.Output;
 import gbench.util.jdbc.IJdbcApp;
 import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.IMySQL;
+import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.jdbc.kvp.DFrame;
 import gbench.util.jdbc.kvp.DFrames;
@@ -119,42 +120,42 @@ public class DFrameTest {
 
 	@Test
 	public void quz() {
+
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // MySQL 数据库应用客户端
+		final var sql = "select '%s' tbl, concat(REGEXP_REPLACE(TradingDay, '(\\\\d{4})(\\\\d{2})(\\\\d{2})', '$1-$2-$3'),' ', UpdateTime) TickTime, t.* from %s t limit 3";
+		final var flds = "tbl,LastPrice,TickTime,CxxCtpCreateTime,ActionDay";
+
 		jdbcApp.withTransaction(sess -> {
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
 			final var chanbuffs = new LinkedList<ChanBuff>();
-			sqldframe.andThen(dfm -> dfm.head(2).strcolS(0).map(Lisp.rpta(2)).map(
-					"select '%s' tbl, concat(REGEXP_REPLACE(TradingDay, '(\\\\d{4})(\\\\d{2})(\\\\d{2})', '$1-$2-$3'),' ', UpdateTime) TickTime, t.* from %s t limit 3"::formatted) //
-					.map(Output::println).map(sqldframe.noexcept()) //
-			).apply("show tables").forEach(df -> {
-				final var dfm = df.addcol( // 时间修正
-						"TickTime", df.ldtcol("TickTime"), //
-						"CxxCtpCreateTime", df.ldtcol("CxxCtpCreateTime"), //
-						"ActionDay", df.column("ActionDay", Times::asLocalDate));
-				final var proto = dfm.head();
+			final ExceptionalConsumer<ChanBuff> cbclose = ChanBuff::close; // ChanBuff 关闭回收！
+			final java.util.function.Consumer<DFrame> shm_writer = datadfm -> { // 共享缓存读写
+				final var dfm = datadfm.addcol( // 时间修正
+						"TickTime", datadfm.ldtcol("TickTime"), //
+						"CxxCtpCreateTime", datadfm.ldtcol("CxxCtpCreateTime"), //
+						"ActionDay", datadfm.column("ActionDay", Times::asLocalDate));
+				final var proto = dfm.head(); // 原型数据
 				final var tbl = proto.str("tbl");
 				final var shmfile = "E:/slicee/temp/malonylcoa/test/array/%s".formatted(tbl);
-				try {
-					DFrames.df2shmGen.apply(shmfile).andThen(chanbuf -> {
-						chanbuffs.add(chanbuf);
-						final var flds = "tbl,LastPrice,TickTime,CxxCtpCreateTime,ActionDay";
-						println("pathname:%s".formatted(chanbuf));
-						println("read.shm('%s')|> as_tibble() |> select(%s)" //
-								.formatted(chanbuf, flds).replace("\\", "/"));
+
+				try { // 使用 DFrame 读写共享缓存:ChanBuffer分装了(MappedByteBuffer与FileChannel)
+					DFrames.df2shmGen.apply(shmfile).andThen(chanbuf -> { // 共享缓存读取
+						chanbuffs.add(chanbuf); // 登记chanbuf 已被结束时关闭回收！
+						println("pathname:%s".formatted(chanbuf)); // 打印内存映射文件路径(ChanBuff.toString默认显示pathname即数据文件的绝对路径)
+						println("read.shm('%s')|> as_tibble() |> select(%s)".formatted(chanbuf, flds) //
+								.replace("\\", "/")); // R 语言的读取函数
 						return SharedMem.read(chanbuf).filtercol(flds); // 读取数据文件
 					}).andThen(Output::println).apply(dfm);
 				} catch (Exception e) {
 					e.printStackTrace();
-				}
-			});
-			chanbuffs.forEach(c -> {
-				try {
-					c.close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			});
-		});
+				} // try
+			}; // shm_writer
+
+			sqldframe.andThen(dfm -> dfm.head(2).strcolS(0).map(Lisp.rpta(2)).map(sql::formatted).map(Output::println)
+					.map(sqldframe.noexcept())).apply("show tables").forEach(shm_writer); // forEach
+			chanbuffs.forEach(cbclose.noexcept()); // chanbuffs 批量回收！
+		}); // withTransaction
+
 	}
 
 	final String sqlfile = Globals.WS_HOME + "/gitws/malonylcoa/src/test/java/gbench/sandbox/jdbc/sqls/mysql_test.sql";
