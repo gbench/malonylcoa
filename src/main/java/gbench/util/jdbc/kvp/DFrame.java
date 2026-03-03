@@ -1158,7 +1158,16 @@ public class DFrame extends LinkedRecord {
 	 * @return 行数量
 	 */
 	public int height() {
-		return this.length();
+		return this.nrow();
+	}
+
+	/**
+	 * 行数量(length别名）
+	 * 
+	 * @return 行数量
+	 */
+	public int nrow() {
+		return this.rows().size();
 	}
 
 	/**
@@ -1168,6 +1177,15 @@ public class DFrame extends LinkedRecord {
 	 */
 	public int length() {
 		return this.rows().size();
+	}
+
+	/**
+	 * 列数量：等同于 size 方法
+	 * 
+	 * @return 行数量
+	 */
+	public int ncol() {
+		return this.size();
 	}
 
 	/**
