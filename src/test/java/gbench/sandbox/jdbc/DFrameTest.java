@@ -13,7 +13,9 @@ import static gbench.util.jdbc.kvp.DFrames.DFM2DFM_FN;
 
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,6 +44,7 @@ public class DFrameTest {
 
 	@Test
 	public void foo() {
+
 		final var abc_rb = rb("a,b,c");
 		final var dfm = nats(9).cuts(3).collect(DFrame.dfmclc(abc_rb::get));
 		println(dfm);
@@ -52,10 +55,12 @@ public class DFrameTest {
 		println(dfm.summary());
 		println(dfm.min("b"), dfm.max("b"), dfm.count("b"), dfm.avg("b"));
 		println(dfm.min(1), dfm.max(1), dfm.count(1), dfm.avg(1));
+
 	}
 
 	@Test
 	public void bar() {
+
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // 数据库应用客户端
 		final var xs = A(1, 2, 3);
 		final var rb = IRecord.rb("a,b,c");
@@ -83,10 +88,12 @@ public class DFrameTest {
 			println("cph json", cphdfm.json());
 			cbs[0].close(); // 缓存关闭
 		});
+
 	}
 
 	@Test
 	public void qux() {
+
 		final var jdbcMy = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // MySQL 数据库应用客户端
 		final var jdbcH2 = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // H2 数据库应用客户端
 
@@ -116,43 +123,38 @@ public class DFrameTest {
 			print10tbl.apply(sess); // 打印输出
 			jdbcH2.withTransaction(print10tbl.except2cs()); // 打印输出
 		});
+
 	}
 
 	@Test
 	public void quz() {
 
 		final var jdbcApp = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, mysql_rec); // MySQL 数据库应用客户端
-		final var sql = "select '%s' tbl, concat(REGEXP_REPLACE(TradingDay, '(\\\\d{4})(\\\\d{2})(\\\\d{2})', '$1-$2-$3'),' ', UpdateTime) TickTime, t.* from %s t limit 10";
-		final var flds = "tbl,LastPrice,TickTime,CxxCtpCreateTime,ActionDay";
+		final var sql = "select '%s' Tbl, concat(REGEXP_REPLACE(ActionDay, '(\\\\d{4})(\\\\d{2})(\\\\d{2})', '$1-$2-$3'), ' ', UpdateTime) TickTime, t.* from %s t limit 10";
+		final var flds = "Id,Tbl,LastPrice,TradingDay,TickTime,UpdateMillisec,CxxCtpCreateTime";
+		final ExceptionalConsumer<ChanBuff> cbclose = ChanBuff::close; // ChanBuff 关闭回收！
+		final Function<List<ChanBuff>, ExceptionalConsumer<DFrame>> shmwriterGen = chanbuffs -> datadfm -> { // 共享缓存读写
+			final var dfm = datadfm.addcol( // 时间修正
+					"TickTime", datadfm.ldtcol("TickTime"), //
+					"CxxCtpCreateTime", datadfm.ldtcol("CxxCtpCreateTime"), //
+					"TradingDay", datadfm.column("TradingDay", Times::asLocalDate));
+			final var shmname = this.getClass().getName().replace(".", "/").toLowerCase();
+			final var shmfile = "E:/slicee/temp/malonylcoa/test/%s/%s".formatted(shmname, dfm.head().str("Tbl"));
+
+			DFrames.df2shmGen.apply(shmfile).andThen(chanbuf -> { // 使用DFrame读写共享缓存:ChanBuffer封装了MappedByteBuffer与FileChannel
+				chanbuffs.add(chanbuf); // 登记chanbuf已便结束时可以close关闭回收！
+				println("pathname:%s".formatted(chanbuf)); // 打印内存映射文件路径(ChanBuff.toString默认显示pathname即数据文件的绝对路径)
+				println("read.shm('%s') |> as_tibble() |> select(%s)".formatted(chanbuf, flds).replace("\\", "/"));
+				return SharedMem.read(chanbuf).filtercol(flds); // 读取数据文件
+			}).andThen(Output::println).apply(dfm);
+		}; // shm_writer
 
 		jdbcApp.withTransaction(sess -> {
-			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
 			final var chanbuffs = new LinkedList<ChanBuff>();
-			final ExceptionalConsumer<ChanBuff> cbclose = ChanBuff::close; // ChanBuff 关闭回收！
-			final java.util.function.Consumer<DFrame> shm_writer = datadfm -> { // 共享缓存读写
-				final var dfm = datadfm.addcol( // 时间修正
-						"TickTime", datadfm.ldtcol("TickTime"), //
-						"CxxCtpCreateTime", datadfm.ldtcol("CxxCtpCreateTime"), //
-						"ActionDay", datadfm.column("ActionDay", Times::asLocalDate));
-				final var proto = dfm.head(); // 原型数据
-				final var tbl = proto.str("tbl");
-				final var shmfile = "E:/slicee/temp/malonylcoa/test/array/%s".formatted(tbl);
-
-				try { // 使用 DFrame 读写共享缓存:ChanBuffer分装了(MappedByteBuffer与FileChannel)
-					DFrames.df2shmGen.apply(shmfile).andThen(chanbuf -> { // 共享缓存读取
-						chanbuffs.add(chanbuf); // 登记chanbuf 已被结束时关闭回收！
-						println("pathname:%s".formatted(chanbuf)); // 打印内存映射文件路径(ChanBuff.toString默认显示pathname即数据文件的绝对路径)
-						println("read.shm('%s')|> as_tibble() |> select(%s)".formatted(chanbuf, flds) //
-								.replace("\\", "/")); // R 语言的读取函数
-						return SharedMem.read(chanbuf).filtercol(flds); // 读取数据文件
-					}).andThen(Output::println).apply(dfm);
-				} catch (Exception e) {
-					e.printStackTrace();
-				} // try
-			}; // shm_writer
-
+			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
+			final var shmwriter = shmwriterGen.apply(chanbuffs).noexcept();
 			sqldframe.andThen(dfm -> dfm.head(10).strcolS(0).map(Lisp.rpta(2)).map(sql::formatted).map(Output::println)
-					.map(sqldframe.noexcept())).apply("show tables").forEach(shm_writer); // forEach
+					.map(sqldframe.noexcept())).apply("show tables").forEach(shmwriter);
 			chanbuffs.forEach(cbclose.noexcept()); // chanbuffs 批量回收！
 		}); // withTransaction
 

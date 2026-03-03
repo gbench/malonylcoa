@@ -23,8 +23,8 @@ public class SharedMemTest {
 
 	@Test
 	public void foo() throws Exception {
-
-		final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg1"; // 共享内存文件
+		final var pkg = this.getClass().getName().replace(".", "/").toLowerCase();
+		final var shmfile = "E:/slicee/temp/malonylcoa/test/%s/%s".formatted(pkg, "mpg1"); // 共享内存文件
 		final var cbs = new ChanBuff[1]; // 单值容器
 		final var dfm = SharedMem.writerGen.apply(shmfile) // 生成一个写入器
 				.compose((String json) -> DFrames.dfm(json).head(50)) // 把接口适配到json
@@ -55,7 +55,8 @@ public class SharedMemTest {
 			println(mpg);
 
 			final var ar = new AtomicReference<ChanBuff>(); // 记录ChanBuff
-			final var shmfile = "E:/slicee/temp/malonylcoa/array/mpg2"; // 共享内存文件
+			final var pkg = this.getClass().getName().replace(".", "/").toLowerCase();
+			final var shmfile = "E:/slicee/temp/malonylcoa/test/%s/%s".formatted(pkg, "mpg2"); // 共享内存文件
 			@SuppressWarnings("unused")
 			final var mpg2 = DFrames.sqldframeGen2.apply(sess) // 生成一个sqldframe函数
 					.andThen(DFrames.df2shmGen.apply(shmfile)) // 生成一个共享内存函数dfshm:DFrame2SharedMem
