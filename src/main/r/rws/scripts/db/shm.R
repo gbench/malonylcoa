@@ -4,7 +4,7 @@
 #' read.shm("E:/slicee/temp/malonylcoa/array/mpg")
 #' @param name 文件名
 #' @param dir 路径
-read.shm <- function(name, dir = NULL) {
+read.shm <- function(name, dir = NULL, show_progress = FALSE, encoding = "UTF-8") {
   path <- if (!is.null(dir)) {
     file.path(dir, basename(name))
   } else if (grepl("[/\\\\]", name) || file.exists(name)) {
@@ -14,93 +14,110 @@ read.shm <- function(name, dir = NULL) {
   }
 
   if (!file.exists(path)) stop("File not found: ", path)
+  file_size <- file.info(path)$size
+  if (file_size == 0) stop("Shared memory file is empty: ", path)
+  if (show_progress) message("Reading SHM file: ", path, " (", file_size, " bytes)")
 
+  # 预定义常量
+  STRING_WIDTHS <- c(STRING16 = 16, STRING32 = 32, STRING64 = 64, STRING128 = 128,
+    STRING256 = 256, STRING512 = 512, STRING1024 = 1024, STRING2048 = 2048)
+  
   read.strings <- function(con, type, n) {
-    widths <- c(STRING16 = 16, STRING32 = 32, STRING64 = 64, STRING128 = 128,
-                STRING256 = 256, STRING512 = 512, STRING1024 = 1024, STRING2048 = 2048)
-    bytes <- widths[[type]] * 2
+    bytes <- STRING_WIDTHS[[type]] * 2
     raw <- readBin(con, "raw", bytes * n)
-    
-    vapply(seq_len(n), function(i) {
-      chunk <- raw[((i-1)*bytes + 1):(i*bytes)]
-      len <- 0
-      while (len < bytes - 1) {
-        if (chunk[len+1] == 0 && chunk[len+2] == 0) break
-        len <- len + 2
+
+    # 批量处理字符串
+    result <- character(n)
+    for (i in seq_len(n)) {
+      start_pos <- (i-1) * bytes + 1
+      end_pos <- start_pos + bytes - 1
+
+      # 找到字符串结束位置
+      str_end <- start_pos
+      while (str_end < end_pos) {
+        if (raw[str_end] == 0 && raw[str_end + 1] == 0) break
+        str_end <- str_end + 2
       }
-      if (len == 0) return("")
-      iconv(list(chunk[1:len]), from = "UTF-16LE", to = "UTF-8")
-    }, character(1))
+
+      if (str_end == start_pos) {
+        result[i] <- ""
+      } else {
+        result[i] <- iconv(list(raw[start_pos:(str_end-1)]), from = "UTF-16LE", to = encoding)
+      }
+    }
+    result
   }
 
-  # 修正：读取DATE类型（存储为从1970-01-01开始的天数，int64/bigint）
   read.date <- function(con, n) {
-    # Java 写入的是 long (8 bytes)，使用 integer size=8 读取
     epoch_days <- readBin(con, "integer", n, 8, signed = TRUE, endian = "big")
-    # 转换为日期，需要用 as.numeric 避免整数溢出
     as.Date(as.numeric(epoch_days), origin = "1970-01-01")
   }
 
-  # 修正：读取DATETIME类型（存储为秒数(long) + 纳秒数(int)）
   read.datetime <- function(con, n) {
-    result <- vector("list", n)
+    # 预分配
+    result <- numeric(n)
     for (i in seq_len(n)) {
-      # 修正1：用 integer size=8 读取 long（秒数），而不是 double
       epoch_seconds <- readBin(con, "integer", 1, 8, signed = TRUE, endian = "big")
-      # 修正2：纳秒数是 4 字节 int
       nano <- readBin(con, "integer", 1, 4, signed = TRUE, endian = "big")
       
       if (epoch_seconds == 0 && nano == 0) {
-        result[[i]] <- NA
+        result[i] <- NA_real_
       } else {
-        # 转换为POSIXct，需要用 as.numeric 避免整数溢出
-        seconds <- as.numeric(epoch_seconds) + as.numeric(nano) / 1e9
-        result[[i]] <- as.POSIXct(seconds, origin = "1970-01-01", tz = "UTC")
+        result[i] <- as.numeric(epoch_seconds) + as.numeric(nano) / 1e9
       }
     }
-    # 将列表转换为POSIXct向量
-    do.call(c, result)
+    as.POSIXct(result, origin = "1970-01-01", tz = "UTC")
   }
 
   read.column <- function(con, type, n) {
     switch(type,
-      BYTE    = readBin(con, "raw",    n),
-      INT8    = readBin(con, "integer", n, 1, signed = TRUE),
-      INT16   = readBin(con, "integer", n, 2, signed = TRUE,  endian = "big"),
-      INT32   = readBin(con, "integer", n, 4, signed = TRUE,  endian = "big"),
-      # 修正：INT64 也用 integer size=8 读取，而不是 double
-      INT64   = readBin(con, "integer", n, 8, signed = TRUE, endian = "big"),
-      FLOAT32 = readBin(con, "double",  n, 4, endian = "big"),
-      FLOAT64 = readBin(con, "double",  n, 8, endian = "big"),
-      # 日期类型处理
+      BYTE    = readBin(con, "raw",      n),
+      INT8    = readBin(con, "integer",  n, 1, signed = TRUE),
+      INT16   = readBin(con, "integer",  n, 2, signed = TRUE,  endian = "big"),
+      INT32   = readBin(con, "integer",  n, 4, signed = TRUE,  endian = "big"),
+      INT64   = readBin(con, "integer",  n, 8, signed = TRUE, endian = "big"),
+      FLOAT32 = readBin(con, "double",   n, 4, endian = "big"),
+      FLOAT64 = readBin(con, "double",   n, 8, endian = "big"),
       DATE    = read.date(con, n),
       DATETIME = read.datetime(con, n),
-      # 字符串类型
-      read.strings(con, type, n)
+      read.strings(con, type, n)  # 字符串类型
     )
   }
 
   con <- file(path, "rb")
   on.exit(close(con))
 
-  meta.len <- readBin(con, "integer", 1, 4, endian = "big")
+  meta.len <- readBin(con, "integer", 1, 4, endian = "big") # 读取元数据
   if (meta.len <= 0 || meta.len > 1e8) stop("Invalid meta length: ", meta.len)
+
+  if (show_progress) message("Metadata size: ", meta.len, " bytes")
 
   meta.raw <- readBin(con, "raw", meta.len)
   meta <- jsonlite::fromJSON(rawToChar(meta.raw), simplifyDataFrame = FALSE)
 
-  offset <- 4 + meta.len
+  if (show_progress) message("Columns: ", length(meta$slots))
 
-  cols <- lapply(meta$slots, function(s) {
-    name  <- s[["x"]]           # 列名
-    type  <- s[["t"]]           # 类型
-    start <- s[["s"]]           # 起始偏移
-    count <- s[["n"]]           # 行数
-    
-    seek(con, offset + as.integer(start))
-    read.column(con, type, as.integer(count))
-  })
+  offset <- 4 + meta.len
+  total_rows <- if(length(meta$slots) > 0) meta$slots[[1]]$n else 0
+
+  if (show_progress) message("Total rows: ", total_rows)
+
+  cols <- vector("list", length(meta$slots)) # 读取所有列
+  for (i in seq_along(meta$slots)) {
+    s <- meta$slots[[i]]
+
+    if (show_progress) {
+      message(sprintf("  [%d/%d] %s (%s, %d rows)", i, length(meta$slots), s$x, s$t, s$n))
+    }
+
+    seek(con, offset + as.integer(s$s))
+    cols[[i]] <- read.column(con, s$t, as.integer(s$n))
+  }
 
   names(cols) <- sapply(meta$slots, `[[`, "x")
-  as.data.frame(cols, stringsAsFactors = FALSE)
+  result <- as.data.frame(cols, stringsAsFactors = FALSE) # 转换为data.frame
+
+  if (show_progress) message("Done! Loaded ", nrow(result), " rows × ", ncol(result), " cols")
+
+  result
 }
