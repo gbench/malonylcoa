@@ -7,7 +7,6 @@ import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
 import static gbench.util.lisp.Lisp.A;
-import static gbench.util.lisp.Lisp.rpta;
 import static gbench.util.jdbc.kvp.DFrames.STR2BOOL_FN;
 import static gbench.util.jdbc.kvp.DFrames.DFM2DFM_FN;
 
@@ -102,7 +101,7 @@ public class DFrameTest {
 				.compose((IJdbcSession<?, ?> js) -> js.getConnection());
 		final ExceptionalFunction<Integer, DFM2DFM_FN> head = n -> df -> df.head(n); // 提取前5行
 		final var dfm_h10_pipeline = DFrames.sqldframeGen2.andThen(sqldframe -> sqldframe.andThen(head.apply(10))
-				.andThen(df -> df.strcolS(0).map(rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
+				.andThen(df -> df.strcolS(0).map(Lisp.rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
 						.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句
 				.andThen(sqldframe));
 		final ExceptionalFunction<String, ExceptionalFunction<IJdbcSession<UUID, Object>, String>> print10ln_pipepline = sql -> js -> dfm_h10_pipeline
