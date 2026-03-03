@@ -110,8 +110,8 @@ public class DFrameTest {
 		jdbcMy.withTransaction(sess -> {
 			final var print10tbl = print10ln_pipepline.apply(showtbls); // 最多显示10行数据
 			final var sqldframe = DFrames.sqldframeGen2.apply(sess);
-			sqldframe.andThen(head.apply(6)) // 把数据拷贝到H2数据库
-					.andThen(dfm -> dfm.strcolS(0).map(e -> Tuple2.of(e, "select * from %s limit 5".formatted(e)))) //
+			sqldframe.andThen(head.apply(5)) // 把数据拷贝到H2数据库（5张表）
+					.andThen(dfm -> dfm.strcolS(0).map(e -> Tuple2.of(e, "select * from %s limit 100".formatted(e)))) // 100条数据
 					.andThen(ps -> ps.flatMap(p -> {
 						final var dfm = sqldframe.noexcept().apply(p._2());
 						return Stream.of(ctsql(p._1(), dfm.proto()), insql(p._1(), dfm.rows())); // 生成DML SQL语句
@@ -119,7 +119,9 @@ public class DFrameTest {
 							.forEach(sqlexecuteGen.apply(js).noexcept2cs())))
 					.apply(showtbls);
 
+			println("\nmysql:");
 			print10tbl.apply(sess); // 打印输出
+			println("\nh2:");
 			jdbcH2.withTransaction(print10tbl.except2cs()); // 打印输出
 		});
 
