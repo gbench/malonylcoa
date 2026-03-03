@@ -103,6 +103,19 @@ public class DFrames {
 			.compose((ExceptionalFunction<IJdbcSession<?, ?>, Connection>) IJdbcSession::getConnection);
 
 	/**
+	 * sqlexecute 生成函数
+	 */
+	public static ExceptionalFunction<Connection, ExceptionalFunction<String, Boolean>> sqlexecuteGen = conn -> sql -> {
+		return conn.createStatement().execute(sql);
+	};
+
+	/**
+	 * sqlexecute 生成函数
+	 */
+	public static ExceptionalFunction<IJdbcSession<?, ?>, ExceptionalFunction<String, Boolean>> sqlexecuteGen2 = sqlexecuteGen
+			.compose((ExceptionalFunction<IJdbcSession<?, ?>, Connection>) IJdbcSession::getConnection);
+
+	/**
 	 * 
 	 * @param <T>
 	 * @param fun
