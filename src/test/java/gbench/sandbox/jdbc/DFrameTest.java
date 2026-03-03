@@ -7,8 +7,8 @@ import static gbench.util.jdbc.kvp.IRecord.rb;
 import static gbench.util.jdbc.sql.SQL.ctsql;
 import static gbench.util.jdbc.sql.SQL.insql;
 import static gbench.util.lisp.Lisp.A;
-import static gbench.util.jdbc.kvp.DFrames.STR2BOOL_FN;
-import static gbench.util.jdbc.kvp.DFrames.DFM2DFM_FN;
+import static gbench.util.jdbc.kvp.DFrames.STR2BOOL_EFN;
+import static gbench.util.jdbc.kvp.DFrames.DFM2DFM_EFN;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -97,9 +97,9 @@ public class DFrameTest {
 		final var jdbcH2 = IJdbcApp.newNsppDBInstance(sqlfile, IMySQL.class, h2_rec); // H2 数据库应用客户端
 
 		final var showtbls = "show tables";
-		final var sqlexecuteGen = DFrames.sqlfunGen(conn -> (STR2BOOL_FN) sql -> conn.createStatement().execute(sql))
+		final var sqlexecuteGen = DFrames.sqlfunGen(conn -> (STR2BOOL_EFN) sql -> conn.createStatement().execute(sql))
 				.compose((IJdbcSession<?, ?> js) -> js.getConnection());
-		final ExceptionalFunction<Integer, DFM2DFM_FN> head = n -> df -> df.head(n); // 提取前5行
+		final ExceptionalFunction<Integer, DFM2DFM_EFN> head = n -> df -> df.head(n); // 提取前5行
 		final var dfm_h10_pipeline = DFrames.sqldframeGen2.andThen(sqldframe -> sqldframe.andThen(head.apply(10))
 				.andThen(df -> df.strcolS(0).map(Lisp.rpta(2)).map("select '%s' name , count(*) n from %s"::formatted) //
 						.collect(Collectors.joining("\nunion\n"))) // 生成SQL语句

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import gbench.util.array.SharedMem;
 import gbench.util.array.SharedMem.Schema.ChanBuff;
 import gbench.util.jdbc.IJdbcSession;
+import gbench.util.jdbc.function.ExceptionalConsumer;
 import gbench.util.jdbc.function.ExceptionalFunction;
 import gbench.util.json.MyJson;
 
@@ -25,35 +26,35 @@ public class DFrames {
 	/**
 	 * 
 	 */
-	public static interface STR2INT_FN extends ExceptionalFunction<String, Integer> {
+	public static interface STR2INT_EFN extends ExceptionalFunction<String, Integer> {
 
 	}
 
 	/**
 	 * 
 	 */
-	public static interface STR2BOOL_FN extends ExceptionalFunction<String, Boolean> {
+	public static interface STR2BOOL_EFN extends ExceptionalFunction<String, Boolean> {
 
 	}
 
 	/**
 	 * 
 	 */
-	public static interface STR2DFM_FN extends ExceptionalFunction<String, DFrame> {
+	public static interface STR2DFM_EFN extends ExceptionalFunction<String, DFrame> {
 
 	}
 
 	/**
 	 * 
 	 */
-	public static interface DFM2DFM_FN extends ExceptionalFunction<DFrame, DFrame> {
+	public static interface DFM2DFM_EFN extends ExceptionalFunction<DFrame, DFrame> {
 
 	}
 
 	/**
 	 * 
 	 */
-	public static interface REC2DFM_FN extends ExceptionalFunction<IRecord, DFrame> {
+	public static interface REC2DFM_EFN extends ExceptionalFunction<IRecord, DFrame> {
 
 	}
 
@@ -61,6 +62,27 @@ public class DFrames {
 	 * 
 	 */
 	public static interface DFM2REC_FN extends ExceptionalFunction<DFrame, IRecord> {
+
+	}
+
+	/**
+	 * 
+	 */
+	public static interface STR_ECS extends ExceptionalConsumer<IRecord> {
+
+	}
+
+	/**
+	 * 
+	 */
+	public static interface REC_ECS extends ExceptionalConsumer<IRecord> {
+
+	}
+
+	/**
+	 * 
+	 */
+	public static interface DFM_ECS extends ExceptionalConsumer<DFrame> {
 
 	}
 
