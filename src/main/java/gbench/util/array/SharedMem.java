@@ -47,6 +47,13 @@ public class SharedMem {
 			public void close() throws Exception {
 				buff.force();
 				chan.close();
+				Optional.ofNullable(this.rafile()).ifPresent(rafile -> {
+					try {
+						rafile.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
 			}
 
 			/**
