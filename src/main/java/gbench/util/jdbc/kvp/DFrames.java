@@ -1,17 +1,27 @@
 package gbench.util.jdbc.kvp;
 
+import java.nio.MappedByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import gbench.util.array.SharedMem;
+import gbench.util.array.SharedMem.DataType;
 import gbench.util.array.SharedMem.Schema.ChanBuff;
 import gbench.util.jdbc.IJdbcSession;
 import gbench.util.jdbc.function.ExceptionalConsumer;
@@ -105,6 +115,184 @@ public class DFrames {
 	 */
 	public static <T> T maxof(final List<T> xs, final Function<T, Integer> k) {
 		return xs.stream().collect(Collectors.maxBy(Comparator.comparing(k))).orElse(null);
+	}
+
+	// 直接写入 Buffer（无中间对象）
+	private static Function<MappedByteBuffer, BiFunction<DataType, Object, MappedByteBuffer>> mbbwrite = buf -> (type,
+			value) -> {
+		if (value == null) {
+			// 写入零值
+			for (int i = 0; i < type.elementSize; i++)
+				buf.put((byte) 0);
+			return buf;
+		}
+
+		switch (type) {
+		case INT32 -> buf.putInt(((Number) value).intValue());
+		case INT64 -> buf.putLong(((Number) value).longValue());
+		case FLOAT64 -> buf.putDouble(((Number) value).doubleValue());
+		case FLOAT32 -> buf.putFloat(((Number) value).floatValue());
+		case DATETIME -> {
+			final var ldt = (LocalDateTime) value;
+			buf.putLong(ldt.toEpochSecond(ZoneOffset.UTC));
+			buf.putInt(ldt.getNano());
+		}
+		case DATE -> buf.putLong(((java.time.LocalDate) value).toEpochDay());
+		case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
+			final var str = value.toString();
+			final var bytes = str.getBytes(StandardCharsets.UTF_16LE);
+			final var fixed = Arrays.copyOf(bytes, type.elementSize);
+			buf.put(fixed);
+		}
+		default -> throw new IllegalArgumentException("Unsupported type: " + type);
+		}
+		return buf;
+	};
+
+	/**
+	 * sql2chanbufGen
+	 */
+	public static ExceptionalFunction<Connection, ExceptionalFunction<String, ExceptionalFunction<String, ChanBuff>>> sql2chanbufGen = conn -> sql -> shmfile -> {
+
+		// 1. 获取列元数据
+		final var metasql = "SELECT * FROM (%s) t WHERE 1=0".formatted(sql);
+		final List<IRecord> columns;
+		try (var meta_rs = conn.createStatement().executeQuery(metasql)) {
+			final var rsm = meta_rs.getMetaData();
+			columns = IntStream.range(1, rsm.getColumnCount() + 1).mapToObj(i -> {
+				try {
+					return IRecord.REC("name", rsm.getColumnLabel(i), "sqlType", rsm.getColumnType(i), "precision",
+							rsm.getPrecision(i));
+				} catch (SQLException e) {
+					throw new RuntimeException(e);
+				}
+			}).toList();
+		}
+
+		// 2. 获取统计信息（行数 + 字符串最大长度）
+		final var statsSql = statssql_of(sql, columns);
+		final IRecord stats;
+		try (var stats_rs = conn.createStatement().executeQuery(statsSql)) {
+			stats_rs.next();
+			stats = IRecord.REC("nrows", stats_rs.getInt(1));
+			for (int i = 0; i < columns.size(); i++) {
+				final var col = columns.get(i);
+				if (is_string(col.i4("sqlType"))) {
+					stats.add("max_" + col.str("name"), stats_rs.getInt(i + 2));
+				}
+			}
+		}
+
+		final int nrows = stats.i4("nrows");
+
+		// 3. 构建 Schema 并计算精确大小
+		final var slots = new ArrayList<IRecord>();
+		final var rb = IRecord.rb("path,name,type,start,end,length,count");
+		var dataSize = 0;
+		final List<DataType> types = new ArrayList<>();
+
+		for (final var col : columns) {
+			final var name = col.str("name");
+			final var sqlType = col.i4("sqlType");
+			final var maxLen = stats.opt("max_" + name).map(Object::toString).map(Integer::parseInt).orElse(0);
+
+			final DataType type = resolve_type(sqlType, maxLen);
+			types.add(type);
+
+			final var colSize = type.elementSize * nrows;
+			slots.add(rb.get("root." + type.name() + "." + name, name, type.name(), dataSize, dataSize + colSize,
+					type.elementSize, nrows));
+			dataSize += colSize;
+		}
+
+		// 4. 精确分配 ChanBuff
+		final var metaJson = Json.obj2json(Map.of("slots", slots.stream() //
+				.map(s -> Map.of("x", s.str("name"), "t", s.str("type"), "n", s.i4("count"), "s", s.i4("start")))
+				.toList()));
+		final var metaBytes = metaJson.getBytes(StandardCharsets.UTF_8);
+		final var totalSize = 4 + metaBytes.length + dataSize;
+		final var chanbuff = SharedMem.Schema.rafbuf(shmfile, totalSize);
+		final var buf = chanbuff.buff;
+
+		// 5. 写入元数据头
+		buf.putInt(metaBytes.length);
+		buf.put(metaBytes);
+
+		// 6. 执行正式查询 → 直接写入 Buffer
+		final var stmt = conn.createStatement();
+		final var rs = stmt.executeQuery(sql);
+		final var ncol = columns.size();
+
+		// 按列维护写入位置
+		final var offsets = slots.stream().mapToInt(s -> 4 + metaBytes.length + s.i4("start")).toArray();
+		final var writer = mbbwrite.apply(buf);
+		while (rs.next()) {
+			for (int i = 0; i < ncol; i++) {
+				buf.position(offsets[i]);
+				writer.apply(types.get(i), rs.getObject(i + 1));
+				offsets[i] += types.get(i).elementSize;
+			}
+		}
+
+		// buf.force(); // 7. 强制刷新并关闭
+		rs.close();
+		stmt.close();
+
+		return chanbuff;
+	};
+
+	// 辅助方法
+	private static String statssql_of(final String sql, final List<IRecord> columns) {
+		final var aggs = columns.stream().filter(c -> is_string(c.i4("sqlType")))
+				.map(c -> "MAX(LENGTH(%s))".formatted(c.str("name"))).collect(Collectors.joining(", "));
+		return aggs.isEmpty() ? "SELECT COUNT(*) FROM (%s) t".formatted(sql)
+				: "SELECT COUNT(*), %s FROM (%s) t".formatted(aggs, sql);
+	}
+
+	/**
+	 * 
+	 * @param sqlType
+	 * @return
+	 */
+	private static boolean is_string(final int sqlType) {
+		return sqlType == Types.VARCHAR || sqlType == Types.CHAR || sqlType == Types.LONGVARCHAR;
+	}
+
+	/**
+	 * 
+	 * @param sqlType
+	 * @param maxLen
+	 * @return
+	 */
+	private static DataType resolve_type(final int sqlType, final int maxLen) {
+		final Function<Integer, DataType> choose_strtype = n -> {
+			if (n <= 8)
+				return DataType.STRING16;
+			if (n <= 16)
+				return DataType.STRING32;
+			if (n <= 32)
+				return DataType.STRING64;
+			if (n <= 64)
+				return DataType.STRING128;
+			if (n <= 128)
+				return DataType.STRING256;
+			if (n <= 256)
+				return DataType.STRING512;
+			if (n <= 512)
+				return DataType.STRING1024;
+			return DataType.STRING2048;
+		};
+
+		return switch (sqlType) {
+		case Types.INTEGER -> DataType.INT32;
+		case Types.BIGINT -> DataType.INT64;
+		case Types.DOUBLE, Types.FLOAT -> DataType.FLOAT64;
+		case Types.DECIMAL, Types.NUMERIC -> DataType.FLOAT64;
+		case Types.TIMESTAMP -> DataType.DATETIME;
+		case Types.DATE -> DataType.DATE;
+		case Types.VARCHAR, Types.CHAR -> choose_strtype.apply(maxLen);
+		default -> DataType.STRING256;
+		};
 	}
 
 	/**
