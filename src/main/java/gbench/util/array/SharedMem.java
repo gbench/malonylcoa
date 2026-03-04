@@ -396,7 +396,16 @@ public class SharedMem {
 	 * @param dfm
 	 */
 	public static void write(final ChanBuff chanbuff, final DFrame dfm) {
-		write(chanbuff, Schema.slots(dfm));
+		write(chanbuff, Schema.slots(dfm), false);
+	}
+
+	/**
+	 * 
+	 * @param chanbuff
+	 * @param dfm
+	 */
+	public static void write(final ChanBuff chanbuff, final DFrame dfm, boolean flag) {
+		write(chanbuff, Schema.slots(dfm), flag);
 	}
 
 	/**
@@ -404,7 +413,7 @@ public class SharedMem {
 	 * @param chanBuff
 	 * @param slots
 	 */
-	public static void write(final ChanBuff chanBuff, final List<IRecord> slots) {
+	public static void write(final ChanBuff chanBuff, final List<IRecord> slots, boolean flag) {
 		final var metaJson = Json.obj2json(Map.of("slots", slots.stream().map(slot -> //
 		Map.of("x", slot.str("name"), "t", slot.str("type"), "n", slot.num("count"), "s", slot.num("start")))
 				.toList()));
@@ -487,7 +496,10 @@ public class SharedMem {
 			}
 			}
 		});
-		buff.force();
+
+		if (flag) {
+			buff.force();
+		}
 	}
 
 	/**
