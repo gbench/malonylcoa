@@ -42,4 +42,20 @@ public interface ExceptionalBiFunction<T, U, V> {
 			return v;
 		};
 	}
+
+	/**
+	 * 返回之前执行函数
+	 * 
+	 * @param <V>
+	 * @param callback
+	 * @return
+	 */
+	default ExceptionalBiFunction<T, U, V> onReturn(final ExceptionalBiConsumer<T, U> callback) {
+
+		return (t, u) -> {
+			final var v = this.apply(t, u);
+			callback.accept(t, u);
+			return v;
+		};
+	}
 }

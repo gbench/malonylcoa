@@ -45,14 +45,30 @@ public interface ExceptionalFunction<T, U> {
 	 * 返回之前执行函数
 	 * 
 	 * @param <V>
-	 * @param f
+	 * @param callback
 	 * @return
 	 */
-	default <V> ExceptionalFunction<T, U> onReturn(final ExceptionalConsumer<U> clear) {
+	default <V> ExceptionalFunction<T, U> onReturn(final ExceptionalConsumer<U> callback) {
 
 		return t -> {
 			final var u = this.apply(t);
-			clear.accept(u);
+			callback.accept(u);
+			return u;
+		};
+	}
+
+	/**
+	 * 返回之前执行函数
+	 * 
+	 * @param <V>
+	 * @param callback
+	 * @return
+	 */
+	default <V> ExceptionalFunction<T, U> onReturn(final ExceptionalBiConsumer<T, U> callback) {
+
+		return t -> {
+			final var u = this.apply(t);
+			callback.accept(t, u);
 			return u;
 		};
 	}
