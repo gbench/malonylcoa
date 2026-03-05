@@ -884,6 +884,26 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 	 * @param key 字段键名
 	 * @return Optional
 	 */
+	default Optional<IRecord> recopt(final String key) {
+		return Optional.ofNullable(this.rec(key));
+	}
+
+	/**
+	 * 提取指定键名索引的可选值
+	 * 
+	 * @param idx 字段编号索引,从0开始
+	 * @return Optional
+	 */
+	default Optional<IRecord> recopt(final int idx) {
+		return this.recopt(this.keyOfIndex(idx));
+	}
+
+	/**
+	 * 提取指定键名的可选值
+	 * 
+	 * @param key 字段键名
+	 * @return Optional
+	 */
 	default Optional<String> stropt(final String key) {
 		return Optional.ofNullable(this.str(key));
 	}
@@ -6219,13 +6239,18 @@ public interface IRecord extends Serializable, Comparable<IRecord>, Iterable<KVP
 		return this.keys().stream().map(name -> (tt2u.apply((List<T>) this.lla(name, t -> (T) t))));
 	}
 
+	@SuppressWarnings("unchecked")
+	default <T, U> Stream<U> colS(final BiFunction<String, List<T>, U> tt2u) {
+		return this.keys().stream().map(name -> (tt2u.apply(name, (List<T>) this.lla(name, t -> (T) t))));
+	}
+
 	/**
 	 * 提取列值集合：把列转换成IRecord
 	 *
 	 * @return 列集合每个列族使一个IRecord类型的列表
 	 */
-	default Stream<IRecord> colS() {
-		return this.colS(IRecord::L2REC);
+	default <T> Stream<IRecord> colS() {
+		return this.colS((Function<List<T>, IRecord>) IRecord::L2REC);
 	}
 
 	/**

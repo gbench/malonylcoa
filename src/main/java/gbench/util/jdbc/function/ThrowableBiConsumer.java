@@ -1,5 +1,7 @@
 package gbench.util.jdbc.function;
 
+import java.util.function.BiConsumer;
+
 /**
  *
  * @author gbench accept 返回 false终止遍历
@@ -15,4 +17,19 @@ public interface ThrowableBiConsumer<T, U> {
 	 * @throws Exception 一场
 	 */
 	boolean accept(final T t, final U u) throws Exception;
+
+	/**
+	 * 没有异常版本
+	 * 
+	 * @return
+	 */
+	default BiConsumer<T, U> noexcept() {
+		return (t, u) -> {
+			try {
+				this.accept(t, u);
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		};
+	}
 }

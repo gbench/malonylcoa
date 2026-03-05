@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -18,11 +20,13 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import gbench.util.jdbc.Jdbcs;
+import gbench.util.type.Times;
 
 /**
  * DFrame 数据框，(key,[v0,v1,...]) 结构的键值对集合 kvs 即值元素为集合类型的KVPs.<br>
@@ -154,6 +158,270 @@ public class DFrame extends LinkedRecord {
 	public <T> List<T> col(final String key) {
 
 		return this.col(this.indexOfKey(key));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<String> strcol(final int colid) {
+
+		return this.strcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<String> strcol(final String key) {
+
+		return this.strcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<String> strcolS(final int colid) {
+
+		return this.strcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<String> strcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(String::valueOf));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<Integer> i4col(final int colid) {
+
+		return this.i4col(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<Integer> i4col(final String key) {
+
+		return this.i4colS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<Integer> i4colS(final int colid) {
+
+		return this.i4colS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<Integer> i4colS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(IRecord.obj2dbl()).map(Number::intValue));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<Long> lngcol(final int colid) {
+
+		return this.lngcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<Long> lngcol(final String key) {
+
+		return this.lngcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<Long> lngcolS(final int colid) {
+
+		return this.lngcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<Long> lngcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(IRecord.obj2dbl()).map(Number::longValue));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<Double> dblcol(final int colid) {
+
+		return this.dblcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<Double> dblcol(final String key) {
+
+		return this.dblcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<Double> dblcolS(final int colid) {
+
+		return this.dblcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<Double> dblcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(IRecord.obj2dbl()));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public List<LocalDateTime> ldtcol(final int colid) {
+
+		return this.ldtcol(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> List<LocalDateTime> ldtcol(final String key) {
+
+		return this.ldtcolS(key).toList();
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param colid 列号索引：从0开始
+	 * @return colid所标识列号数据
+	 */
+	public Stream<LocalDateTime> ldtcolS(final int colid) {
+
+		return this.ldtcolS(this.keyOfIndex(colid));
+	}
+
+	/**
+	 * 第colid 所在的列号数据
+	 * 
+	 * @param key 列号名称
+	 * @return key所标识列号数据
+	 */
+	public <T> Stream<LocalDateTime> ldtcolS(final String key) {
+
+		return this.col(key, vs -> vs.stream().map(Times::asLocalDateTime));
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param kvps 键值序列,每个value都代表一个值列表 key0,value0,key1,value1
+	 * @return DFrame 对象
+	 */
+	public DFrame addcol(final Object... kvps) {
+
+		return this.derive(kvps).mutate(DFrame::dfm);
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号之间不能留有空格
+	 * @return DFrame 对象
+	 */
+	public DFrame filtercol(final String flds) {
+
+		return this.filter(flds).mutate(DFrame::dfm);
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param kk 提取的字段的键值名称数据,kk 为null 表示不进行过滤。
+	 * @return DFrame 对象
+	 */
+	public DFrame filtercol(final String... kk) {
+
+		return this.filter(kk).mutate(DFrame::dfm);
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param flds 提取的字段集合用逗号分割,flds为null 表示不进行过滤。 注意分隔符号之间不能留有空格
+	 * @return DFrame 对象
+	 */
+	public DFrame filtercol(final Integer... indexes) {
+
+		return this.filter(indexes).mutate(DFrame::dfm);
 	}
 
 	/**
@@ -413,6 +681,16 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 重命名
+	 * 
+	 * @param keymapper 键名变换函数:把原来的字符类型的key,转换成T类型的键名。
+	 * @return DFrame
+	 */
+	public DFrame rename(final Function<String, String> keymapper) {
+		return this.mutate(e -> e.alias(keymapper).mutate(DFrame::dfm));
+	}
+
+	/**
 	 * 按照行进行排序 <br>
 	 * 例如:dfm.sortBy(Collections::reverse)
 	 * 
@@ -606,7 +884,7 @@ public class DFrame extends LinkedRecord {
 
 		final var numS = margin == 1 // 数值流
 				? this.rowS().map(e -> DFrame.dblS(e.values())) // 行数据流
-				: this.colS(DFrame::dblS); // 列数据流
+				: this.colS(es -> DFrame.dblS(es)); // 列数据流
 
 		return numS.map(ds -> ds.summaryStatistics()).map(e -> {
 			return IRecord.REC("min", e.getMin(), "max", e.getMax(), //
@@ -830,6 +1108,19 @@ public class DFrame extends LinkedRecord {
 	}
 
 	/**
+	 * 原型（用于创建sql统计文本长度，把每一列数据的文本字符传的最长内容搜集到一个IRecord)<br>
+	 * 比如：ctsql("t_data", datadfm.proto()) 这就是典型应用！
+	 * 
+	 * @return
+	 */
+	public IRecord proto() {
+		final Function<List<Object>, Object> maxlen_of = xs -> xs.stream()
+				.collect(Collectors.maxBy(Comparator.comparing(x -> String.valueOf(x).length()))).orElse(null);
+		return IRecord.REC(this.colS((k, vs) -> Tuple2.of(k, maxlen_of.apply(vs))) //
+				.flatMap(Tuple2::stream).toArray()); // 提取原型数据(文本长度最大的值的)
+	}
+
+	/**
 	 * 提取指定名称额缓存
 	 * 
 	 * @param <K> 键名类型
@@ -867,7 +1158,16 @@ public class DFrame extends LinkedRecord {
 	 * @return 行数量
 	 */
 	public int height() {
-		return this.length();
+		return this.nrow();
+	}
+
+	/**
+	 * 行数量(length别名）
+	 * 
+	 * @return 行数量
+	 */
+	public int nrow() {
+		return this.rows().size();
 	}
 
 	/**
@@ -877,6 +1177,15 @@ public class DFrame extends LinkedRecord {
 	 */
 	public int length() {
 		return this.rows().size();
+	}
+
+	/**
+	 * 列数量：等同于 size 方法
+	 * 
+	 * @return 行数量
+	 */
+	public int ncol() {
+		return this.size();
 	}
 
 	/**
@@ -906,6 +1215,17 @@ public class DFrame extends LinkedRecord {
 	public static DFrame dfm(final Object... kvps) {
 
 		return new DFrame(IRecord.REC(kvps).toMap());
+	}
+
+	/**
+	 * DFrame 构造一个数据框对象
+	 * 
+	 * @param kvps 键值序列,每个value都代表一个值列表 key0,value0,key1,value1
+	 * @return DFrame 对象
+	 */
+	public static DFrame dfm(final IRecord rec) {
+
+		return DFrame.dfm(rec.tupleS().flatMap(Tuple2::stream).toArray());
 	}
 
 	/**

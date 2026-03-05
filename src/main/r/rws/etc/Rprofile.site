@@ -129,9 +129,8 @@ eval(quote({ # 自举构建具体过程逻辑
   rebuild_sqlquery <- \(flag=F, envir=.sqlqueryenv) {
     if (!dir.exists(dailywork_home)) mkdir(dailywork_home) # 创建工作目录
     setwd(dailywork_home) # 设置工作去目录
-    
-    if (flag) { # 根据指定模式加载数据文件
-      # 自定义的预先加载的自定义函数文件列表
+    if (!dir.exists(paste0(rscript_home, '/lazyloads')) || flag) { # 若lazyloads不存在直接创建, 否则，根据指定模式加载数据文件！
+      # 自定义的预先加载的自定义函数文件列表 
       myfiles <- list.files(path = rscript_home, pattern="\\.R$", recursive = T) 
       sprintf(fmt = "%s/%s", rscript_home, myfiles) |> lapply(sys.source, envir=envir) |> invisible()
       mklzdb("malonylcoa", envir) # 创建/更新layloads malonylcoa
