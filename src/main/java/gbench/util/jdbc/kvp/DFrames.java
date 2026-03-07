@@ -121,33 +121,33 @@ public class DFrames {
 	// 直接写入 Buffer（无中间对象）
 	private static Function<MappedByteBuffer, BiFunction<DataType, Object, MappedByteBuffer>> mbb_writer = buf -> (type,
 			value) -> {
-		if (value == null) {
-			// 写入零值
+
+		if (value == null) { // 写入零值
 			for (int i = 0; i < type.elementSize; i++)
 				buf.put((byte) 0);
 			return buf;
-		}
-
-		switch (type) {
-		case INT32 -> buf.putInt(((Number) value).intValue());
-		case INT64 -> buf.putLong(((Number) value).longValue());
-		case FLOAT64 -> buf.putDouble(((Number) value).doubleValue());
-		case FLOAT32 -> buf.putFloat(((Number) value).floatValue());
-		case DATETIME -> {
-			final var ldt = (LocalDateTime) value;
-			buf.putLong(ldt.toEpochSecond(ZoneOffset.UTC));
-			buf.putInt(ldt.getNano());
-		}
-		case DATE -> buf.putLong(((java.time.LocalDate) value).toEpochDay());
-		case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
-			final var str = value.toString();
-			final var bytes = str.getBytes(StandardCharsets.UTF_16LE);
-			final var fixed = Arrays.copyOf(bytes, type.elementSize);
-			buf.put(fixed);
-		}
-		default -> throw new IllegalArgumentException("Unsupported type: " + type);
-		}
-		return buf;
+		} else {
+			switch (type) {
+			case INT32 -> buf.putInt(((Number) value).intValue());
+			case INT64 -> buf.putLong(((Number) value).longValue());
+			case FLOAT64 -> buf.putDouble(((Number) value).doubleValue());
+			case FLOAT32 -> buf.putFloat(((Number) value).floatValue());
+			case DATETIME -> {
+				final var ldt = (LocalDateTime) value;
+				buf.putLong(ldt.toEpochSecond(ZoneOffset.UTC));
+				buf.putInt(ldt.getNano());
+			}
+			case DATE -> buf.putLong(((java.time.LocalDate) value).toEpochDay());
+			case STRING16, STRING32, STRING64, STRING128, STRING256, STRING512, STRING1024, STRING2048 -> {
+				final var str = value.toString();
+				final var bytes = str.getBytes(StandardCharsets.UTF_16LE);
+				final var fixed = Arrays.copyOf(bytes, type.elementSize);
+				buf.put(fixed);
+			}
+			default -> throw new IllegalArgumentException("Unsupported type: " + type);
+			}
+			return buf;
+		} // if
 	};
 
 	/**
