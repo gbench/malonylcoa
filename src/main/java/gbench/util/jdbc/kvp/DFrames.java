@@ -160,7 +160,7 @@ public class DFrames {
 		try (final var meta_rs = conn.createStatement().executeQuery(metasql)) {
 			final var rsm = meta_rs.getMetaData();
 			final ExceptionalFunction<Integer, IRecord> idx2rec = i -> IRecord.REC("name", rsm.getColumnLabel(i + 1),
-					"sqltype", rsm.getColumnType(i), "precision", rsm.getPrecision(i));
+					"sqltype", rsm.getColumnType(i), "precision", rsm.getPrecision(i + 1));
 			columns = Stream.iterate(0, i -> i + 1).limit(rsm.getColumnCount()).map(idx2rec.noexcept()).toList();
 		}
 
