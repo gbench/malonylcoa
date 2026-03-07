@@ -186,19 +186,18 @@ public class DFrames {
 		// 3. 构建 Schema 并计算精确大小
 		final var slots = new ArrayList<IRecord>();
 		final var rb = IRecord.rb("path,name,type,start,end,length,count");
-		var datasize = 0;
 		final List<DataType> types = new ArrayList<>();
+		var datasize = 0;
 
 		for (final var col : columns) {
 			final var name = col.str("name");
 			final var sqltype = col.i4("sqltype");
 			final var maxlen = stats.i4opt("max_" + name).orElse(0);
-
-			final DataType type = resolve_type(sqltype, maxlen);
-			types.add(type);
-
+			final var type = resolve_type(sqltype, maxlen);
 			final var colsize = type.elementSize * nrows;
-			slots.add(rb.get("root." + type.name() + "." + name, name, type.name(), datasize, datasize + colsize,
+
+			types.add(type);
+			slots.add(rb.get("root.%s.%s".formatted(type.name(), name), name, type.name(), datasize, datasize + colsize,
 					type.elementSize, nrows));
 			datasize += colsize;
 		}
