@@ -159,9 +159,9 @@ public class DFrames {
 		final List<IRecord> columns;
 		try (final var meta_rs = conn.createStatement().executeQuery(metasql)) {
 			final var rsm = meta_rs.getMetaData();
-			final ExceptionalFunction<Integer, IRecord> i2rec = i -> IRecord.REC("name", rsm.getColumnLabel(i),
+			final ExceptionalFunction<Integer, IRecord> idx2rec = i -> IRecord.REC("name", rsm.getColumnLabel(i + 1),
 					"sqltype", rsm.getColumnType(i), "precision", rsm.getPrecision(i));
-			columns = Stream.iterate(0, i -> i + 1).limit(rsm.getColumnCount()).map(i2rec.noexcept()).toList();
+			columns = Stream.iterate(0, i -> i + 1).limit(rsm.getColumnCount()).map(idx2rec.noexcept()).toList();
 		}
 
 		// 2. 获取统计信息（行数 + 字符串最大长度）
