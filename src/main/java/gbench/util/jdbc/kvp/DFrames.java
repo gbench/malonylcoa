@@ -157,7 +157,7 @@ public class DFrames {
 		// 1. 获取列元数据
 		final var metasql = "SELECT * FROM (%s) t WHERE 1=0".formatted(sql);
 		final List<IRecord> columns;
-		try (final var meta_rs = conn.createStatement().executeQuery(metasql)) {
+		try (final var stmt = conn.createStatement(); final var meta_rs = stmt.executeQuery(metasql)) {
 			final var rsm = meta_rs.getMetaData();
 			final ExceptionalFunction<Integer, IRecord> idx2rec = i -> IRecord.REC("name", rsm.getColumnLabel(i + 1),
 					"sqltype", rsm.getColumnType(i + 1), "precision", rsm.getPrecision(i + 1));
@@ -167,7 +167,7 @@ public class DFrames {
 		// 2. 获取统计信息（行数 + 字符串最大长度）
 		final var stats_sql = statssql_of(sql, columns);
 		final IRecord stats;
-		try (final var stats_rs = conn.createStatement().executeQuery(stats_sql)) {
+		try (final var stmt = conn.createStatement(); final var stats_rs = stmt.executeQuery(stats_sql)) {
 			stats_rs.next();
 			stats = IRecord.REC("nrows", stats_rs.getInt(1));
 			for (int i = 0; i < columns.size(); i++) {
@@ -213,24 +213,22 @@ public class DFrames {
 		buf.put(metabytes);
 
 		// 6. 执行正式查询 → 直接写入 Buffer
-		final var stmt = conn.createStatement();
-		final var rs = stmt.executeQuery(sql);
-		final var ncol = columns.size();
+		try (final var stmt = conn.createStatement(); final var rs = stmt.executeQuery(sql)) {
+			final var ncol = columns.size();
 
-		// 按列维护写入位置
-		final var offsets = slots.stream().mapToInt(s -> 4 + metabytes.length + s.i4("start")).toArray();
-		final var writer = mbb_writer.apply(buf);
-		while (rs.next()) {
-			for (int i = 0; i < ncol; i++) {
-				buf.position(offsets[i]);
-				writer.apply(types.get(i), rs.getObject(i + 1));
-				offsets[i] += types.get(i).elementSize;
+			// 按列维护写入位置
+			final var offsets = slots.stream().mapToInt(s -> 4 + metabytes.length + s.i4("start")).toArray();
+			final var writer = mbb_writer.apply(buf);
+			while (rs.next()) {
+				for (int i = 0; i < ncol; i++) {
+					buf.position(offsets[i]);
+					writer.apply(types.get(i), rs.getObject(i + 1));
+					offsets[i] += types.get(i).elementSize;
+				}
 			}
-		}
 
-		// buf.force(); // 7. 强制刷新并关闭
-		rs.close();
-		stmt.close();
+			// buf.force(); // 7. 强制刷新并关闭
+		}
 
 		return chanbuff;
 	};
