@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -152,32 +153,29 @@ public class DFrames {
 	/**
 	 * sql2chanbufGen
 	 */
+	@SuppressWarnings("unchecked")
 	public static ExceptionalFunction<Connection, ExceptionalFunction<String, ExceptionalFunction<String, ChanBuff>>> sql2chanbufGen = conn -> sql -> shmfile -> {
 
 		// 1. 获取列元数据
 		final var metasql = "SELECT * FROM (%s) t WHERE 1=0".formatted(sql);
 		final List<IRecord> columns;
-		try (var meta_rs = conn.createStatement().executeQuery(metasql)) {
+		try (final var meta_rs = conn.createStatement().executeQuery(metasql)) {
 			final var rsm = meta_rs.getMetaData();
-			columns = IntStream.range(1, rsm.getColumnCount() + 1).mapToObj(i -> {
-				try {
-					return IRecord.REC("name", rsm.getColumnLabel(i), "sqlType", rsm.getColumnType(i), "precision",
-							rsm.getPrecision(i));
-				} catch (SQLException e) {
-					throw new RuntimeException(e);
-				}
-			}).toList();
+			final ExceptionalFunction<Integer, IRecord> i2rec = i -> IRecord.REC("name", rsm.getColumnLabel(i),
+					"sqltype", rsm.getColumnType(i), "precision", rsm.getPrecision(i));
+			columns = IntStream.range(1, rsm.getColumnCount() + 1).mapToObj((IntFunction<IRecord>) i2rec.noexcept())
+					.toList();
 		}
 
 		// 2. 获取统计信息（行数 + 字符串最大长度）
 		final var stats_sql = statssql_of(sql, columns);
 		final IRecord stats;
-		try (var stats_rs = conn.createStatement().executeQuery(stats_sql)) {
+		try (final var stats_rs = conn.createStatement().executeQuery(stats_sql)) {
 			stats_rs.next();
 			stats = IRecord.REC("nrows", stats_rs.getInt(1));
 			for (int i = 0; i < columns.size(); i++) {
 				final var col = columns.get(i);
-				if (is_string(col.i4("sqlType"))) {
+				if (is_string(col.i4("sqltype"))) {
 					stats.add("max_" + col.str("name"), stats_rs.getInt(i + 2));
 				}
 			}
@@ -193,23 +191,23 @@ public class DFrames {
 
 		for (final var col : columns) {
 			final var name = col.str("name");
-			final var sqltype = col.i4("sqlType");
-			final var maxlen = stats.opt("max_" + name).map(Object::toString).map(Integer::parseInt).orElse(0);
+			final var sqltype = col.i4("sqltype");
+			final var maxlen = stats.i4opt("max_" + name).orElse(0);
 
 			final DataType type = resolve_type(sqltype, maxlen);
 			types.add(type);
 
-			final var colSize = type.elementSize * nrows;
-			slots.add(rb.get("root." + type.name() + "." + name, name, type.name(), datasize, datasize + colSize,
+			final var colsize = type.elementSize * nrows;
+			slots.add(rb.get("root." + type.name() + "." + name, name, type.name(), datasize, datasize + colsize,
 					type.elementSize, nrows));
-			datasize += colSize;
+			datasize += colsize;
 		}
 
 		// 4. 精确分配 ChanBuff
-		final var metaJson = Json.obj2json(Map.of("slots", slots.stream() //
+		final var metajson = Json.obj2json(Map.of("slots", slots.stream() //
 				.map(s -> Map.of("x", s.str("name"), "t", s.str("type"), "n", s.i4("count"), "s", s.i4("start")))
 				.toList()));
-		final var metabytes = metaJson.getBytes(StandardCharsets.UTF_8);
+		final var metabytes = metajson.getBytes(StandardCharsets.UTF_8);
 		final var totalsize = 4 + metabytes.length + datasize;
 		final var chanbuff = SharedMem.Schema.rafbuf(shmfile, totalsize);
 		final var buf = chanbuff.buff;
@@ -243,7 +241,7 @@ public class DFrames {
 
 	// 辅助方法
 	private static String statssql_of(final String sql, final List<IRecord> columns) {
-		final var aggs = columns.stream().filter(c -> is_string(c.i4("sqlType")))
+		final var aggs = columns.stream().filter(c -> is_string(c.i4("sqltype")))
 				.map(c -> "MAX(LENGTH(%s))".formatted(c.str("name"))).collect(Collectors.joining(", "));
 		return aggs.isEmpty() ? "SELECT COUNT(*) FROM (%s) t".formatted(sql)
 				: "SELECT COUNT(*), %s FROM (%s) t".formatted(aggs, sql);
@@ -251,20 +249,20 @@ public class DFrames {
 
 	/**
 	 * 
-	 * @param sqlType
+	 * @param sqltype
 	 * @return
 	 */
-	private static boolean is_string(final int sqlType) {
-		return sqlType == Types.VARCHAR || sqlType == Types.CHAR || sqlType == Types.LONGVARCHAR;
+	private static boolean is_string(final int sqltype) {
+		return sqltype == Types.VARCHAR || sqltype == Types.CHAR || sqltype == Types.LONGVARCHAR;
 	}
 
 	/**
 	 * 
-	 * @param sqlType
+	 * @param sqltype
 	 * @param maxLen
 	 * @return
 	 */
-	private static DataType resolve_type(final int sqlType, final int maxLen) {
+	private static DataType resolve_type(final int sqltype, final int maxLen) {
 		final Function<Integer, DataType> choose_strtype = n -> {
 			if (n <= 8)
 				return DataType.STRING16;
@@ -283,7 +281,7 @@ public class DFrames {
 			return DataType.STRING2048;
 		};
 
-		return switch (sqlType) {
+		return switch (sqltype) {
 		case Types.INTEGER -> DataType.INT32;
 		case Types.BIGINT -> DataType.INT64;
 		case Types.DOUBLE, Types.FLOAT -> DataType.FLOAT64;
