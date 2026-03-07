@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -153,7 +152,6 @@ public class DFrames {
 	/**
 	 * sql2chanbufGen
 	 */
-	@SuppressWarnings("unchecked")
 	public static ExceptionalFunction<Connection, ExceptionalFunction<String, ExceptionalFunction<String, ChanBuff>>> sql2chanbufGen = conn -> sql -> shmfile -> {
 
 		// 1. 获取列元数据
