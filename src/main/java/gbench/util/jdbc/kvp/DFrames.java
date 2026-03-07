@@ -118,7 +118,7 @@ public class DFrames {
 	}
 
 	// 直接写入 Buffer（无中间对象）
-	private static Function<MappedByteBuffer, BiFunction<DataType, Object, MappedByteBuffer>> mbbwrite = buf -> (type,
+	private static Function<MappedByteBuffer, BiFunction<DataType, Object, MappedByteBuffer>> mbb_writer = buf -> (type,
 			value) -> {
 		if (value == null) {
 			// 写入零值
@@ -170,9 +170,9 @@ public class DFrames {
 		}
 
 		// 2. 获取统计信息（行数 + 字符串最大长度）
-		final var statsSql = statssql_of(sql, columns);
+		final var stats_sql = statssql_of(sql, columns);
 		final IRecord stats;
-		try (var stats_rs = conn.createStatement().executeQuery(statsSql)) {
+		try (var stats_rs = conn.createStatement().executeQuery(stats_sql)) {
 			stats_rs.next();
 			stats = IRecord.REC("nrows", stats_rs.getInt(1));
 			for (int i = 0; i < columns.size(); i++) {
@@ -188,35 +188,35 @@ public class DFrames {
 		// 3. 构建 Schema 并计算精确大小
 		final var slots = new ArrayList<IRecord>();
 		final var rb = IRecord.rb("path,name,type,start,end,length,count");
-		var dataSize = 0;
+		var datasize = 0;
 		final List<DataType> types = new ArrayList<>();
 
 		for (final var col : columns) {
 			final var name = col.str("name");
-			final var sqlType = col.i4("sqlType");
-			final var maxLen = stats.opt("max_" + name).map(Object::toString).map(Integer::parseInt).orElse(0);
+			final var sqltype = col.i4("sqlType");
+			final var maxlen = stats.opt("max_" + name).map(Object::toString).map(Integer::parseInt).orElse(0);
 
-			final DataType type = resolve_type(sqlType, maxLen);
+			final DataType type = resolve_type(sqltype, maxlen);
 			types.add(type);
 
 			final var colSize = type.elementSize * nrows;
-			slots.add(rb.get("root." + type.name() + "." + name, name, type.name(), dataSize, dataSize + colSize,
+			slots.add(rb.get("root." + type.name() + "." + name, name, type.name(), datasize, datasize + colSize,
 					type.elementSize, nrows));
-			dataSize += colSize;
+			datasize += colSize;
 		}
 
 		// 4. 精确分配 ChanBuff
 		final var metaJson = Json.obj2json(Map.of("slots", slots.stream() //
 				.map(s -> Map.of("x", s.str("name"), "t", s.str("type"), "n", s.i4("count"), "s", s.i4("start")))
 				.toList()));
-		final var metaBytes = metaJson.getBytes(StandardCharsets.UTF_8);
-		final var totalSize = 4 + metaBytes.length + dataSize;
-		final var chanbuff = SharedMem.Schema.rafbuf(shmfile, totalSize);
+		final var metabytes = metaJson.getBytes(StandardCharsets.UTF_8);
+		final var totalsize = 4 + metabytes.length + datasize;
+		final var chanbuff = SharedMem.Schema.rafbuf(shmfile, totalsize);
 		final var buf = chanbuff.buff;
 
 		// 5. 写入元数据头
-		buf.putInt(metaBytes.length);
-		buf.put(metaBytes);
+		buf.putInt(metabytes.length);
+		buf.put(metabytes);
 
 		// 6. 执行正式查询 → 直接写入 Buffer
 		final var stmt = conn.createStatement();
@@ -224,8 +224,8 @@ public class DFrames {
 		final var ncol = columns.size();
 
 		// 按列维护写入位置
-		final var offsets = slots.stream().mapToInt(s -> 4 + metaBytes.length + s.i4("start")).toArray();
-		final var writer = mbbwrite.apply(buf);
+		final var offsets = slots.stream().mapToInt(s -> 4 + metabytes.length + s.i4("start")).toArray();
+		final var writer = mbb_writer.apply(buf);
 		while (rs.next()) {
 			for (int i = 0; i < ncol; i++) {
 				buf.position(offsets[i]);
@@ -340,6 +340,7 @@ public class DFrames {
 	 */
 	public static ExceptionalFunction<String, ExceptionalFunction<ResultSet, ChanBuff>> rs2shmGen = //
 			path -> rs -> shm(path, rs);
+
 	/**
 	 * 把 ResultSet 转换成 MappedByteBuffer
 	 */
