@@ -214,6 +214,7 @@ public class DFrames {
 
 		// 6. 执行正式查询 → 直接写入 Buffer
 		try (final var stmt = conn.createStatement(); final var rs = stmt.executeQuery(sql)) {
+			stmt.setFetchSize(nrows); // 避免一次性加载所有结果到内存
 			final var ncol = columns.size();
 
 			// 按列维护写入位置
