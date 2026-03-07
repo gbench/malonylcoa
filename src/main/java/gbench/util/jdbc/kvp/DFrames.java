@@ -19,7 +19,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import gbench.util.array.SharedMem;
 import gbench.util.array.SharedMem.DataType;
@@ -163,8 +163,7 @@ public class DFrames {
 			final var rsm = meta_rs.getMetaData();
 			final ExceptionalFunction<Integer, IRecord> i2rec = i -> IRecord.REC("name", rsm.getColumnLabel(i),
 					"sqltype", rsm.getColumnType(i), "precision", rsm.getPrecision(i));
-			columns = IntStream.range(1, rsm.getColumnCount() + 1).mapToObj((IntFunction<IRecord>) i2rec.noexcept())
-					.toList();
+			columns = Stream.iterate(0, i -> i + 1).limit(rsm.getColumnCount()).map(i2rec.noexcept()).toList();
 		}
 
 		// 2. 获取统计信息（行数 + 字符串最大长度）
@@ -258,10 +257,10 @@ public class DFrames {
 	/**
 	 * 
 	 * @param sqltype
-	 * @param maxLen
+	 * @param maxlen
 	 * @return
 	 */
-	private static DataType resolve_type(final int sqltype, final int maxLen) {
+	private static DataType resolve_type(final int sqltype, final int maxlen) {
 		final Function<Integer, DataType> choose_strtype = n -> {
 			if (n <= 8)
 				return DataType.STRING16;
@@ -287,7 +286,7 @@ public class DFrames {
 		case Types.DECIMAL, Types.NUMERIC -> DataType.FLOAT64;
 		case Types.TIMESTAMP -> DataType.DATETIME;
 		case Types.DATE -> DataType.DATE;
-		case Types.VARCHAR, Types.CHAR -> choose_strtype.apply(maxLen);
+		case Types.VARCHAR, Types.CHAR -> choose_strtype.apply(maxlen);
 		default -> DataType.STRING256;
 		};
 	}
