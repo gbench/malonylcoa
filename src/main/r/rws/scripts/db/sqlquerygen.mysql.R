@@ -662,7 +662,7 @@ sqlqueryGen.mysql <- function(host, port = 3306, user, password, database) {
 }
 
 # 使用示例
-if (TRUE) {
+if (FALSE) {
   sqlquery <- sqlqueryGen.mysql(
     host = "localhost",
     port = 3371,
