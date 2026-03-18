@@ -83,9 +83,9 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       
       # 线程 ID
       self$thread_id <- as.integer(pkt[pos]) + 
-                       bitwShiftL(as.integer(pkt[pos+1]), 8) + 
-                       bitwShiftL(as.integer(pkt[pos+2]), 16) + 
-                       bitwShiftL(as.integer(pkt[pos+3]), 24)
+        bitwShiftL(as.integer(pkt[pos+1]), 8) + 
+        bitwShiftL(as.integer(pkt[pos+2]), 16) + 
+        bitwShiftL(as.integer(pkt[pos+3]), 24)
       pos <- pos + 4
       
       # Salt part 1
@@ -95,8 +95,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       pos <- pos + 1  # filler
       
       # 能力标志（低16位）
-      self$capabilities <- as.integer(pkt[pos]) + 
-                          bitwShiftL(as.integer(pkt[pos+1]), 8)
+      self$capabilities <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos+1]), 8)
       pos <- pos + 2
       
       # 字符集
@@ -104,13 +103,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       pos <- pos + 1
       
       # 服务器状态
-      self$server_status <- as.integer(pkt[pos]) + 
-                           bitwShiftL(as.integer(pkt[pos+1]), 8)
+      self$server_status <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos+1]), 8)
       pos <- pos + 2
       
       # 能力标志（高16位）
-      high_caps <- as.integer(pkt[pos]) + 
-                  bitwShiftL(as.integer(pkt[pos+1]), 8)
+      high_caps <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos+1]), 8)
       self$capabilities <- self$capabilities + bitwShiftL(high_caps, 16)
       pos <- pos + 2
       
@@ -469,8 +466,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         }
       } else if (first == 0xfc) {
         if (start_pos + 2 <= length(bytes)) {
-          len <- as.integer(bytes[start_pos+1]) + 
-                 bitwShiftL(as.integer(bytes[start_pos+2]), 8)
+          len <- as.integer(bytes[start_pos+1]) + bitwShiftL(as.integer(bytes[start_pos+2]), 8)
           if (start_pos + 2 + len <= length(bytes)) {
             value <- rawToChar(bytes[(start_pos+3):(start_pos+2+len)])
             next_pos <- start_pos + 3 + len
@@ -546,8 +542,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       
       # 解析包长度
       pkt_len <- as.integer(header[1]) + 
-                 bitwShiftL(as.integer(header[2]), 8) + 
-                 bitwShiftL(as.integer(header[3]), 16)
+        bitwShiftL(as.integer(header[2]), 8) + 
+        bitwShiftL(as.integer(header[3]), 16)
       
       # 获取序列号
       seq <- as.integer(header[4])
@@ -619,8 +615,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         return(as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8))
       } else if (first == 0xfd && length(bytes) >= 4) {
         return(as.integer(bytes[2]) + 
-               bitwShiftL(as.integer(bytes[3]), 8) + 
-               bitwShiftL(as.integer(bytes[4]), 16))
+          bitwShiftL(as.integer(bytes[3]), 8) + 
+          bitwShiftL(as.integer(bytes[4]), 16))
       }
       return(0)
     },
