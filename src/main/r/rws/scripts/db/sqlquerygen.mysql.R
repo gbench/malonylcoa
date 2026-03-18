@@ -640,7 +640,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
 )
 
 # 用户接口
-sqlqueryGen.mysql <- function(host, port = 3306, user, password, database) {
+sqlquerygen.mysql <- function(host, port = 3306, user, password, database) {
   conn <- MySQLConnection$new(host, port, user, password, database)
   conn$connect()
   
@@ -659,7 +659,7 @@ sqlqueryGen.mysql <- function(host, port = 3306, user, password, database) {
 
 # 使用示例
 if (FALSE) {
-  sqlquery <- sqlqueryGen.mysql(
+  sqlquery <- sqlquerygen.mysql(
     host = "localhost",
     port = 3371,
     user = "root",
