@@ -54,15 +54,11 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else 
   
   # 用 bytes_to_int 读取长度（如果 extra > 0）
   data_len <- if (info$extra == 0) info$len else bytes_to_int(bytes, pos + 1, info$len)
-  data_start <- pos + 1 + (if (info$extra == 0) 0 else info$extra-1)
+  data_start <- pos + 1 + max(0, info$extra - 1) # max(0, info$extra - 1) 等价于 ifelse(info$extra == 0, 0, info$extra - 1)
   data_end <- data_start + data_len - 1
   
   if (data_end > length(bytes)) list(error = TRUE, next_pos = pos + 1 + info$extra)
-  else list(
-    value = eval_bs(bytes, data_start, data_end),
-    next_pos = data_end + 1,
-    is_null = FALSE
-  )
+  else list(value = eval_bs(bytes, data_start, data_end), next_pos = data_end + 1, is_null = FALSE)
 }
 
 # MySQLConnection 数据库连接对象
@@ -209,12 +205,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       if (plugin == "mysql_native_password") {
         stage1 <- digest::digest(self$password, "sha1", serialize = FALSE, raw = TRUE)
         stage2 <- digest::digest(stage1, "sha1", serialize = FALSE, raw = TRUE)
-        sha_salt_stage2 <- digest::digest(c(salt[1:20], stage2), "sha1", 
-                                         serialize = FALSE, raw = TRUE)
+        sha_salt_stage2 <- digest::digest(c(salt[1:20], stage2), "sha1", serialize = FALSE, raw = TRUE)
         auth_response <- raw(20)
         for (i in 1:20) {
-          auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), 
-                                            as.integer(sha_salt_stage2[i])))
+          auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), as.integer(sha_salt_stage2[i])))
         }
         return(auth_response)
       } else if (plugin == "caching_sha2_password") {
@@ -434,8 +428,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           row_pkt <- self$read_packet()
           if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
           f(f, append(acc, list(self$parse_row(row_pkt, columns))))
-        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为f，进而模拟递归
-      })
+        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
+      }) # rows
       row_count <- length(rows)
       
       # 转换为数据框
@@ -661,7 +655,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 行数据
     parse_row = \(pkt, columns) {
       callCC(\(exit) {
-        (\(f, pos = 1, row = list(), cols_left = columns) {
+        (\(f, pos = 1, row = list(), cols_left = columns) { # f 表示当前函数本身
           if (length(cols_left) == 0) exit(row)
           if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left))))
           
@@ -672,8 +666,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           } else {
             f(f, res$next_pos, c(row, list(res$val)), cols_left[-1])
           }
-        }) |> (\(g) g(g))()
-      })
+        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
+      }) # callCC
     },
     
     read_packet = \() {
