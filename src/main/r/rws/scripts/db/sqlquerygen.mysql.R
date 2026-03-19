@@ -20,7 +20,7 @@ pack_int <- function(x, n = 4) {
 }
 
 # 通用 Length-Encoded Integer/String 解析
-read_lenenc <- \(bytes, pos) {
+read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else rawToChar(bs[start:end])) {
   if (pos > length(bytes)) return(NULL)
   
   first <- as.integer(bytes[pos])
@@ -45,7 +45,7 @@ read_lenenc <- \(bytes, pos) {
   
   if (data_end > length(bytes)) list(error = TRUE, next_pos = pos + 1 + info$extra)
   else list(
-    value = if (data_len == 0) "" else rawToChar(bytes[data_start:data_end]),
+    value = eval_bs(bytes, data_start, data_end),
     next_pos = data_end + 1,
     is_null = FALSE
   )
