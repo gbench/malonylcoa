@@ -655,7 +655,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 行数据
     parse_row = \(bytes, columns) {
       callCC(\(exit) {
-        (\(f, pos = 1, row = list(), cols_left = columns) { # f 表示当前函数本身
+        (\(f, pos = 1, row = character(0), cols_left = columns) { # f 表示当前函数本身,row = character(0), 行初始为空字符串向量
           if (length(cols_left) == 0) exit(row)
           if (pos > length(bytes)) exit(c(row, rep(NA, length(cols_left)))) # pos超出数据范围，把剩余字段填写为NA
           read_lenenc(bytes, pos) |> with(f(f, next_pos, c(row, value), cols_left[-1])) # 递归读取剩余列
