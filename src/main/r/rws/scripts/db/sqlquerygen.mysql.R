@@ -19,7 +19,21 @@ pack_int <- function(x, n = 4) {
   as.raw(bitwAnd(bitwShiftR(rep(x, each = n), 8 * (0:(n - 1))), 255))
 }
 
-# 通用 Length-Encoded Integer/String 解析
+#' 通用 Length-Encoded Integer/String 解析
+#' 
+#' 
+#' | 首字节值                    | 含义          | 实际长度              |
+#' | ----------------------- | ----------- | ----------------- |
+#' | `0x00` - `0xfa` (0-250) | 直接表示长度      | 0-250 字节          |
+#' | `0xfb` (251)            | **NULL**    | 无后续数据             |
+#' | `0xfc` (252)            | 后续 2 字节表示长度 | 251-65535 字节      |
+#' | `0xfd` (253)            | 后续 3 字节表示长度 | 65536-16777215 字节 |
+#' | `0xfe` (254)            | 后续 8 字节表示长度 | 大字段               |
+#' | `0xff` (255)            | 保留/错误       | -                 |
+#' 
+#' @param bytes 字节数组
+#' @param pos 位置索引
+#' @param eval_bs value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive)
 read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else rawToChar(bs[start:end])) {
   if (pos > length(bytes)) return(NULL)
   
@@ -52,16 +66,6 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else 
 }
 
 # MySQLConnection 数据库连接对象
-# 
-# | 首字节值                    | 含义          | 实际长度              |
-# | ----------------------- | ----------- | ----------------- |
-# | `0x00` - `0xfa` (0-250) | 直接表示长度      | 0-250 字节          |
-# | `0xfb` (251)            | **NULL**    | 无后续数据             |
-# | `0xfc` (252)            | 后续 2 字节表示长度 | 251-65535 字节      |
-# | `0xfd` (253)            | 后续 3 字节表示长度 | 65536-16777215 字节 |
-# | `0xfe` (254)            | 后续 8 字节表示长度 | 大字段               |
-# | `0xff` (255)            | 保留/错误       | -                 |
-
 MySQLConnection <- R6::R6Class("MySQLConnection",
   public = list(
     # 连接参数
@@ -483,13 +487,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
 
     # 读取长度编码整数
     read_lenenc_int = function(bytes) {
-      if (length(bytes) == 0) return(0)
-      first <- as.integer(bytes[1])
-      
-      if (first < 0xfb) first
-      else if (first == 0xfc && length(bytes) >= 3) as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8)
-      else if (first == 0xfd && length(bytes) >= 4) as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8) + bitwShiftL(as.integer(bytes[4]), 16)
-      else 0
+      result <- read_lenenc(bytes, start_pos, eval_bs=\(bs, start, end) if (start > end) "" else bytes_to_int(bs, start, end-start+1))
+      result$value
     },
     
     # 读取长度编码字符串
