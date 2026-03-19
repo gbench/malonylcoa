@@ -53,7 +53,7 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else 
   if (info$null) return(list(val = NA, next_pos = pos + 1))
   
   # 用 bytes_to_int 读取长度（如果 extra > 0）
-  data_len <- if (info$extra == 0) info$len else bytes_to_int(pkt, pos + 1, info$len)
+  data_len <- if (info$extra == 0) info$len else bytes_to_int(bytes, pos + 1, info$len)
   data_start <- pos + 1 + info$extra
   data_end <- data_start + data_len - 1
   
