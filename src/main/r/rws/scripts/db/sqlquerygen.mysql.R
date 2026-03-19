@@ -232,7 +232,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     
     send_auth = function() {
       # 客户端能力标志
-      CLIENT_LONG_PASSWORD <- 1
+      CLIENT_LONG_PASSWORD <- 2^0
       CLIENT_PROTOCOL_41 <- 2^9
       CLIENT_SECURE_CONNECTION <- 2^15
       CLIENT_PLUGIN_AUTH <- 2^19
