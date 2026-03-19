@@ -5,6 +5,56 @@ if (!require("digest", quietly = TRUE)) {
   stop("请先安装 digest 包: install.packages('digest')")
 }
 
+# ==== 协议工具函数 ====
+
+# 字节转整数（小端）
+bytes_to_int <- function(bytes, start = 1, n = 4) {
+  if (length(bytes) < start + n - 1) return(0)
+  sum(as.integer(bytes[start:(start + n - 1)]) * 256^(0:(n - 1)))
+}
+
+# 打包整数为小端字节
+pack_int <- function(x, n = 4) {
+  x <- as.integer(x)
+  as.raw(bitwAnd(bitwShiftR(rep(x, each = n), 8 * (0:(n - 1))), 255))
+}
+
+# 读取 null 结尾字符串
+read_null_str <- function(bytes, start = 1) {
+  if (start > length(bytes)) return(list("", start))
+  null_pos <- which(bytes[start:length(bytes)] == 0)[1]
+  if (is.na(null_pos)) {
+    value <- rawToChar(bytes[start:length(bytes)])
+    next_pos <- length(bytes) + 1
+  } else {
+    end_pos <- start + null_pos - 2
+    value <- if (end_pos >= start) rawToChar(bytes[start:end_pos]) else ""
+    next_pos <- start + null_pos
+  }
+  list(value, next_pos)
+}
+
+# 读取长度编码整数
+g_read_lenenc_int <- function(bytes, start = 1) {
+  if (start > length(bytes)) return(list(0, start))
+  first <- as.integer(bytes[start])
+  if (first < 0xfb) return(list(first, start + 1))
+  if (first == 0xfc) return(list(bytes_to_int(bytes, start + 1, 2), start + 3))
+  if (first == 0xfd) return(list(bytes_to_int(bytes, start + 1, 3), start + 4))
+  list(0, start + 1)
+}
+
+# 读取长度编码字符串
+g_read_lenenc_str <- function(bytes, start = 1) {
+  len_info <- g_read_lenenc_int(bytes, start)
+  if (len_info[[1]] == 0) return(list("", len_info[[2]]))
+  str_start <- len_info[[2]]
+  str_end <- str_start + len_info[[1]] - 1
+  if (str_end > length(bytes)) return(list(NULL, str_start))
+  list(rawToChar(bytes[str_start:str_end]), str_end + 1)
+}
+
+# MySQLConnection 数据库连接对象
 MySQLConnection <- R6::R6Class("MySQLConnection",
   public = list(
     # 连接参数
@@ -168,12 +218,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       } else if (plugin == "caching_sha2_password") {
         hash1 <- digest::digest(self$password, "sha256", serialize = FALSE, raw = TRUE)
         hash2 <- digest::digest(hash1, "sha256", serialize = FALSE, raw = TRUE)
-        hash3 <- digest::digest(c(hash2, salt[1:20]), "sha256", 
-                               serialize = FALSE, raw = TRUE)
+        hash3 <- digest::digest(c(hash2, salt[1:20]), "sha256", serialize = FALSE, raw = TRUE)
         auth_response <- raw(32)
         for (i in 1:32) {
-          auth_response[i] <- as.raw(bitwXor(as.integer(hash1[i]), 
-                                            as.integer(hash3[i])))
+          auth_response[i] <- as.raw(bitwXor(as.integer(hash1[i]), as.integer(hash3[i])))
         }
         return(auth_response)
       }
@@ -445,7 +493,25 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       
       list(name = name)
     },
+
+    # 读取长度编码整数
+    read_lenenc_int = function(bytes) {
+      if (length(bytes) == 0) return(0)
+      first <- as.integer(bytes[1])
+      
+      if (first < 0xfb) {
+        return(first)
+      } else if (first == 0xfc && length(bytes) >= 3) {
+        return(as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8))
+      } else if (first == 0xfd && length(bytes) >= 4) {
+        return(as.integer(bytes[2]) + 
+          bitwShiftL(as.integer(bytes[3]), 8) + 
+          bitwShiftL(as.integer(bytes[4]), 16))
+      }
+      return(0)
+    },
     
+    # 读取长度编码字符串
     read_lenenc_str = function(bytes, start_pos) {
       if (start_pos > length(bytes)) {
         result <- list(value = NULL)
@@ -603,22 +669,6 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         as.raw(bitwAnd(bitwShiftR(x, 16), 255)),
         as.raw(bitwAnd(bitwShiftR(x, 24), 255))
       )
-    },
-    
-    read_lenenc_int = function(bytes) {
-      if (length(bytes) == 0) return(0)
-      first <- as.integer(bytes[1])
-      
-      if (first < 0xfb) {
-        return(first)
-      } else if (first == 0xfc && length(bytes) >= 3) {
-        return(as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8))
-      } else if (first == 0xfd && length(bytes) >= 4) {
-        return(as.integer(bytes[2]) + 
-          bitwShiftL(as.integer(bytes[3]), 8) + 
-          bitwShiftL(as.integer(bytes[4]), 16))
-      }
-      return(0)
     },
     
     close = function() {
