@@ -762,7 +762,7 @@ sqlquerygen.mysql <- \(host, port = 3306, user, password, database) {
 }
 
 # 使用示例
-if (T) {
+if (F) {
   library(tibble); library(purrr)
   sqlquery <- sqlquerygen.mysql(host="localhost", port=3371, user="root", password="123456", database="ctp")
   tbls <- sqlquery("SHOW TABLES") |> print()
