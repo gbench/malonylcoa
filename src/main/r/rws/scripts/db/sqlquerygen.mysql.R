@@ -444,10 +444,94 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         colnames(df) <- sapply(columns, function(x) x$name)
         df
       } else {
-        df <- seq(col_count) |> lapply(\(j) sapply(rows, getElement, name=j)) |> do.call(cbind, args=_)
+        df <- seq(col_count) |> lapply(function(j) sapply(rows, getElement, name=j) |> self$convert_column(col_info=columns[[j]])) |> as.data.frame()
         colnames(df) <- sapply(columns, function(x) x$name)
         df
       }
+    },
+    
+    # 添加列转换函数 - 修复版本
+    convert_column = function(values, col_info) {
+      type_code <- col_info$column_type
+      type_name <- col_info$type_name
+      
+      # 调试输出（仅在需要时启用）
+      # print(values)
+      # print(col_info)
+      
+      # 处理 type_name 为 NULL 的情况
+      if (is.null(type_name)) {
+        type_name <- self$get_type_name(type_code)
+      }
+      
+      # 处理 NULL 值
+      values <- lapply(values, function(v) {
+        if (is.null(v) || (is.raw(v) && length(v) == 1 && as.integer(v) == 0xfb)) {
+          return(NA)
+        }
+        if (is.raw(v)) {
+          return(rawToChar(v))
+        }
+        v
+      })
+      
+      # 根据类型进行转换 - 使用 if-else 替代 switch 避免 NULL 问题
+      result <- if (type_name %in% c("TINY", "SHORT", "LONG", "LONGLONG", "INT24", "YEAR")) {
+        as.integer(unlist(values))
+      } else if (type_name %in% c("DECIMAL", "NEWDECIMAL")) {
+        as.numeric(unlist(values))
+      } else if (type_name %in% c("FLOAT", "DOUBLE")) {
+        as.numeric(unlist(values))
+      } else if (type_name == "BIT") {
+        sapply(values, function(v) {
+          if (is.na(v)) return(NA)
+          if (is.raw(v)) {
+            sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
+          } else {
+            as.integer(v)
+          }
+        })
+      } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
+        sapply(values, function(v) {
+          if (is.na(v)) return(NA)
+          if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) {
+            as.Date(v)
+          } else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\,d{2}:\\d{2}:\\d{2}", v)) {
+            as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
+          } else {
+            v
+          }
+        }, simplify = FALSE) |> unlist()
+      } else if (type_name == "TIME") {
+        unlist(values)
+      } else if (type_name %in% c("TINY_BLOB", "MEDIUM_BLOB", "LONG_BLOB", "BLOB", "GEOMETRY")) {
+        if (all(sapply(values, is.raw))) {
+          I(values)
+        } else {
+          unlist(values)
+        }
+      } else if (type_name == "JSON") {
+        sapply(values, function(v) {
+          if (is.na(v)) return(NA)
+          tryCatch({
+            jsonlite::fromJSON(v)
+          }, error = function(e) {
+            v
+          })
+        }, simplify = FALSE)
+      } else if (type_name %in% c("ENUM", "SET")) {
+        factor(unlist(values))
+      } else {
+        # 默认作为字符类型
+        unlist(values)
+      }
+      
+      # 确保结果长度一致
+      if (length(result) != length(values)) {
+        result <- values
+      }
+      
+      result
     },
     
     parse_column = function(pkt) {
@@ -478,9 +562,9 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       org_name <- self$read_lenenc_str(pkt, pos)
       pos <- attr(org_name, "next_pos")
       
-      # 读取长度编码的固定长度字段 (总是 0x0c)
-      fixed_len <- self$read_lenenc_int(pkt, pos)
-      pos <- attr(fixed_len, "next_pos")
+      # 【关键修复】直接读取 1 字节作为 fixed_len (总是 0x0c)
+      fixed_len <- bytes_to_int(pkt, pos, 1)
+      pos <- pos + 1
       
       # 读取字符集编号 (2字节)
       charset <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos + 1]), 8)
@@ -490,7 +574,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       column_length <- bytes_to_int(pkt, pos, 4)
       pos <- pos + 4
       
-      # 读取列类型 (1字节)
+      # 读取列类型 (1字节) - 现在位置正确了
       column_type <- as.integer(pkt[pos])
       pos <- pos + 1
       
@@ -584,7 +668,6 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     
     # 行数据
     parse_row = function(pkt, columns) {
-      
       callCC(\(exit) {
         (\(f, pos = 1, row = list(), cols_left = columns) {
           if (length(cols_left) == 0) exit(row)
