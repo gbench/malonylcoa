@@ -490,7 +490,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           if (is.na(v)) return(NA)
           if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) {
             as.Date(v)
-          } else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\,d{2}:\\d{2}:\\d{2}", v)) {
+          } else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) {
             as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
           } else {
             v
