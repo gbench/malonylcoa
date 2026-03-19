@@ -8,13 +8,13 @@ if (!require("digest", quietly = TRUE)) {
 # ==== 协议工具函数 ====
 
 # 字节转整数（小端）
-bytes_to_int <- function(bytes, start = 1, n = 4) {
+bytes_to_int <- \(bytes, start = 1, n = 4) {
   if (length(bytes) < start + n - 1) return(0)
   sum(as.integer(bytes[start:(start + n - 1)]) * 256^(0:(n - 1)))
 }
 
 # 打包整数为小端字节
-pack_int <- function(x, n = 4) {
+pack_int <- \(x, n = 4) {
   x <- as.integer(x)
   as.raw(bitwAnd(bitwShiftR(rep(x, each = n), 8 * (0:(n - 1))), 255))
 }
@@ -97,7 +97,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 认证状态
     auth_phase = 0,
     
-    initialize = function(host, port = 3306, user, password, database) {
+    initialize = \(host, port = 3306, user, password, database) {
       self$host <- host
       self$port <- port
       self$user <- user
@@ -105,7 +105,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$database <- database
     },
     
-    connect = function() {
+    connect = \() {
       self$sock <- socketConnection(host = self$host, port = self$port, blocking = TRUE, open = "r+b", timeout = 30)
       
       # 读取握手包
@@ -121,7 +121,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       invisible(self)
     },
     
-    read_handshake = function() {
+    read_handshake = \() {
       pkt <- self$read_packet()
       if (length(pkt) < 5) stop("握手包太短")
       
@@ -203,7 +203,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       message(sprintf("连接到 MySQL %s", self$server_version))
     },
     
-    calculate_auth = function(plugin, salt) {
+    calculate_auth = \(plugin, salt) {
       if (is.null(self$password) || nchar(self$password) == 0) return(raw(0))
       
       if (plugin == "mysql_native_password") {
@@ -230,7 +230,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       return(raw(0))
     },
     
-    send_auth = function() {
+    send_auth = \() {
       # 客户端能力标志
       CLIENT_LONG_PASSWORD <- 2^0
       CLIENT_PROTOCOL_41 <- 2^9
@@ -279,7 +279,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       message(sprintf("发送认证包，使用插件: %s", self$server_auth_plugin))
     },
     
-    handle_auth_response = function() {
+    handle_auth_response = \() {
       pkt <- self$read_packet()
       if (length(pkt) == 0) stop("连接失败：无响应")
       
@@ -305,7 +305,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       }
     },
     
-    handle_auth_switch = function(pkt) {
+    handle_auth_switch = \(pkt) {
       if (length(pkt) < 2) stop("Auth switch 包太短")
       
       # 解析插件名
@@ -349,7 +349,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$handle_auth_response()
     },
     
-    handle_caching_sha2_auth = function(pkt) {
+    handle_caching_sha2_auth = \(pkt) {
       if (length(pkt) < 2) {
         self$handle_auth_response()
         return()
@@ -392,7 +392,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$handle_auth_response()
     },
     
-    query = function(sql) {
+    query = \(sql) {
       # 重置序列号
       self$seq_id <- 0
       
@@ -403,7 +403,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$read_result()
     },
     
-    read_result = function() {
+    read_result = \() {
       pkt <- self$read_packet()
       if (length(pkt) == 0) return(data.frame())
       
@@ -441,17 +441,17 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       # 转换为数据框
       if (row_count == 0) {
         df <- as.data.frame(matrix(ncol = col_count, nrow = 0))
-        colnames(df) <- sapply(columns, function(x) x$name)
+        colnames(df) <- sapply(columns, \(x) x$name)
         df
       } else {
-        df <- seq(col_count) |> lapply(function(j) sapply(rows, getElement, name=j) |> self$convert_column(col_info=columns[[j]])) |> as.data.frame()
-        colnames(df) <- sapply(columns, function(x) x$name)
+        df <- seq(col_count) |> lapply(\(j) sapply(rows, getElement, name=j) |> self$convert_column(columns[[j]])) |> as.data.frame()
+        colnames(df) <- sapply(columns, \(x) x$name)
         df
       }
     },
     
     # 添加列转换函数 - 修复版本
-    convert_column = function(values, col_info) {
+    convert_column = \(values, col_info) {
       type_code <- col_info$column_type
       type_name <- col_info$type_name
       
@@ -465,7 +465,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       }
       
       # 处理 NULL 值
-      values <- lapply(values, function(v) {
+      values <- lapply(values, \(v) {
         if (is.null(v) || (is.raw(v) && length(v) == 1 && as.integer(v) == 0xfb)) {
           return(NA)
         }
@@ -483,7 +483,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       } else if (type_name %in% c("FLOAT", "DOUBLE")) {
         as.numeric(unlist(values))
       } else if (type_name == "BIT") {
-        sapply(values, function(v) {
+        sapply(values, \(v) {
           if (is.na(v)) return(NA)
           if (is.raw(v)) {
             sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
@@ -492,7 +492,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           }
         })
       } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
-        sapply(values, function(v) {
+        sapply(values, \(v) {
           if (is.na(v)) return(NA)
           if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) {
             as.Date(v)
@@ -511,11 +511,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           unlist(values)
         }
       } else if (type_name == "JSON") {
-        sapply(values, function(v) {
+        sapply(values, \(v) {
           if (is.na(v)) return(NA)
           tryCatch({
             jsonlite::fromJSON(v)
-          }, error = function(e) {
+          }, error = \(e) {
             v
           })
         }, simplify = FALSE)
@@ -534,7 +534,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       result
     },
     
-    parse_column = function(pkt) {
+    # 列信息分析
+    parse_column = \(pkt) {
       pos <- 1
       
       # 读取 catalog (总是 "def")
@@ -605,7 +606,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
 
     # 添加类型名称映射函数
-    get_type_name = function(type_code) {
+    get_type_name = \(type_code) {
       type_map <- c(
         "0" = "DECIMAL",
         "1" = "TINY",
@@ -649,7 +650,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
 
     # 读取长度编码整数
-    read_lenenc_int = function(bytes, start_pos=1) {
+    read_lenenc_int = \(bytes, start_pos=1) {
       read_lenenc(bytes, start_pos, eval_bs = \(bs, start, end) if (start > end) "" else bytes_to_int(bs, start, end-start+1)) |> with({
         attr(value, "next_pos") <- next_pos
         attr(value, "is_null") <- is_null %||% FALSE
@@ -658,7 +659,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
     
     # 读取长度编码字符串
-    read_lenenc_str = function(bytes, start_pos) {
+    read_lenenc_str = \(bytes, start_pos) {
       read_lenenc(bytes, start_pos) |> with({
         attr(value, "next_pos") <- next_pos
         attr(value, "is_null") <- is_null %||% FALSE
@@ -667,7 +668,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
     
     # 行数据
-    parse_row = function(pkt, columns) {
+    parse_row = \(pkt, columns) {
       callCC(\(exit) {
         (\(f, pos = 1, row = list(), cols_left = columns) {
           if (length(cols_left) == 0) exit(row)
@@ -684,7 +685,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       })
     },
     
-    read_packet = function() {
+    read_packet = \() {
       # 读取包头
       header <- readBin(self$sock, "raw", 4)
       if (length(header) < 4) return(raw(0))
@@ -724,7 +725,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       pkt
     },
     
-    write_packet = function(data) {
+    write_packet = \(data) {
       pkt_len <- length(data)
       
       header <- c(
@@ -746,7 +747,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     
     pack_int32 = pack_int,
     
-    close = function() {
+    close = \() {
       if (!is.null(self$sock)) {
         tryCatch({
           if (isOpen(self$sock)) {
@@ -756,7 +757,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
             }, silent = TRUE)
             close(self$sock)
           }
-        }, error = function(e) NULL)
+        }, error = \(e) NULL)
         self$sock <- NULL
         message("连接已关闭")
       }
@@ -765,20 +766,20 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
 )
 
 # 用户接口
-sqlquerygen.mysql <- function(host, port = 3306, user, password, database) {
+sqlquerygen.mysql <- \(host, port = 3306, user, password, database) {
   conn <- MySQLConnection$new(host, port, user, password, database)
   conn$connect()
   
-  query_fn <- function(sql) {
+  query_fn <- \(sql) {
     tryCatch({
       conn$query(sql)
-    }, error = function(e) {
+    }, error = \(e) {
       try(conn$close(), silent = TRUE)
       stop(e)
     })
   }
   
-  attr(query_fn, "close") <- function() conn$close()
+  attr(query_fn, "close") <- \() conn$close()
   query_fn
 }
 
