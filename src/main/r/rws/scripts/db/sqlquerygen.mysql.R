@@ -486,16 +486,16 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           }
         })
       } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
-        sapply(values, \(v) {
+        lapply(values, \(v) {
           if (is.na(v)) return(NA)
           if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) {
             as.Date(v)
-          } else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\,d{2}:\\d{2}:\\d{2}", v)) {
+          } else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) {
             as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
           } else {
             v
           }
-        }, simplify = FALSE) |> unlist()
+        }) |> do.call(c, args=_) # 使用do.call来避免unlist自动抹除时间类型的class属性:"POSIXct","POSIXt"
       } else if (type_name == "TIME") {
         unlist(values)
       } else if (type_name %in% c("TINY_BLOB", "MEDIUM_BLOB", "LONG_BLOB", "BLOB", "GEOMETRY")) {
@@ -653,19 +653,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
     
     # 行数据
-    parse_row = \(pkt, columns) {
+    parse_row = \(bytes, columns) {
       callCC(\(exit) {
-        (\(f, pos = 1, row = list(), cols_left = columns) { # f 表示当前函数本身
+        (\(f, pos = 1, row = character(0), cols_left = columns) { # f 表示当前函数本身,row = character(0), 行初始为空字符串向量
           if (length(cols_left) == 0) exit(row)
-          if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left))))
-          
-          res <- read_lenenc(pkt, pos)
-          
-          if (is.null(res)) {
-            f(f, pos + 1, c(row, list(NA)), cols_left[-1])
-          } else {
-            f(f, res$next_pos, c(row, list(res$val)), cols_left[-1])
-          }
+          if (pos > length(bytes)) exit(c(row, rep(NA, length(cols_left)))) # pos超出数据范围，把剩余字段填写为NA
+          read_lenenc(bytes, pos) |> with(f(f, next_pos, c(row, value), cols_left[-1])) # 递归读取剩余列
         }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
       }) # callCC
     },
