@@ -398,7 +398,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           row_pkt <- self$read_packet()
           if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
           f(f, append(acc, list(self$parse_row(row_pkt, columns))))
-        }) |> (\(f) f(f)) () # 把 lambda 表达式命名为f，进而模拟递归
+        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为f，进而模拟递归
       })
       row_count <- length(rows)
       
@@ -504,45 +504,53 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
     
     parse_row = function(pkt, columns) {
+      
+      # 通用 Length-Encoded Integer/String 解析
+      read_lenenc <- \(pos) {
+        if (pos > length(pkt)) return(NULL)
+        
+        first <- as.integer(pkt[pos])
+        
+        # 长度信息表：c(额外字节数, 长度读取字节数)
+        info <- switch(as.character(first),
+          "251" = list(extra = 0, len = 0, null = TRUE),           # NULL (0xfb)
+          "252" = list(extra = 2, len = 2, null = FALSE),          # 2字节长度 (0xfc)
+          "253" = list(extra = 3, len = 3, null = FALSE),          # 3字节长度 (0xfd)
+          "254" = list(extra = 8, len = 8, null = FALSE),          # 8字节长度 (0xfe)
+          "255" = NULL,                                             # 错误
+          list(extra = 0, len = first, null = FALSE)               # 0-250 直接编码
+        )
+        
+        if (is.null(info)) return(NULL)
+        if (info$null) return(list(val = NA, next_pos = pos + 1))
+        
+        # 用 bytes_to_int 读取长度（如果 extra > 0）
+        data_len <- if (info$extra == 0) info$len else bytes_to_int(pkt, pos + 1, info$len)
+        data_start <- pos + 1 + info$extra
+        data_end <- data_start + data_len - 1
+        
+        if (data_end > length(pkt)) return(NULL)
+        
+        list(
+          val = if (data_len == 0) "" else rawToChar(pkt[data_start:data_end]),
+          next_pos = data_end + 1
+        )
+      }
+      
       callCC(\(exit) {
-        (\(f, pos = 1, row = list(), cols_left = columns) { # cols_left 剩余的列字段
-          if (length(cols_left) == 0) exit(row) # 返回空行
-          if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left)))) # 已经处理完了所有列字段
+        (\(f, pos = 1, row = list(), cols_left = columns) {
+          if (length(cols_left) == 0) exit(row)
+          if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left))))
           
-          first <- as.integer(pkt[pos])
+          res <- read_lenenc(pos)
           
-          # 解析当前字段 + 递归剩余
-          parse_field <- \(val, next_pos) { # 把val数据追加到row数据行，并处理下一个字段
-            f(f, next_pos, c(row, list(val)), cols_left[-1])
-          }
-          
-          if (first < 0xfb) { # 0x00 - 0xfa (0-250)	直接表示长度
-            len <- first
-            end <- pos + len
-            if (end <= length(pkt)) {
-              parse_field(rawToChar(pkt[(pos+1):end]), pos + 1 + len)
-            } else {
-              parse_field(NA, pos + 1)
-            }
-          } else if (first == 0xfb) { # 	NULL, 无后续数据
-            parse_field(NA, pos + 1)
-          } else if (first == 0xfc) { # 后续 2 字节表示长度	
-            if (pos + 2 > length(pkt)) {
-              parse_field(NA, pos + 1)
-            } else {
-              len <- as.integer(pkt[pos+1]) + bitwShiftL(as.integer(pkt[pos+2]), 8) # 两字节长度
-              end <- pos + 2 + len
-              if (end <= length(pkt)) {
-                parse_field(rawToChar(pkt[(pos+3):end]), pos + 3 + len)
-              } else {
-                parse_field(NA, pos + 3)
-              }
-            }
+          if (is.null(res)) {
+            f(f, pos + 1, c(row, list(NA)), cols_left[-1])
           } else {
-            parse_field(NA, pos + 1)
+            f(f, res$next_pos, c(row, list(res$val)), cols_left[-1])
           }
         }) |> (\(g) g(g))()
-      }) # callCC
+      })
     },
     
     read_packet = function() {
