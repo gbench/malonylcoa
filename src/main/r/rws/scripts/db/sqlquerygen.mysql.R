@@ -653,12 +653,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
     
     # 行数据
-    parse_row = \(pkt, columns) {
+    parse_row = \(bytes, columns) {
       callCC(\(exit) {
         (\(f, pos = 1, row = list(), cols_left = columns) { # f 表示当前函数本身
           if (length(cols_left) == 0) exit(row)
-          if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left))))
-          read_lenenc(pkt, pos) |> with(f(f, next_pos, c(row, value), cols_left[-1]))
+          if (pos > length(bytes)) exit(c(row, rep(NA, length(cols_left)))) # pos超出数据范围，把剩余字段填写为NA
+          read_lenenc(bytes, pos) |> with(f(f, next_pos, c(row, value), cols_left[-1])) # 递归读取剩余列
         }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
       }) # callCC
     },
@@ -762,7 +762,7 @@ sqlquerygen.mysql <- \(host, port = 3306, user, password, database) {
 }
 
 # 使用示例
-if (F) {
+if (T) {
   library(tibble); library(purrr)
   sqlquery <- sqlquerygen.mysql(host="localhost", port=3371, user="root", password="123456", database="ctp")
   tbls <- sqlquery("SHOW TABLES") |> print()
