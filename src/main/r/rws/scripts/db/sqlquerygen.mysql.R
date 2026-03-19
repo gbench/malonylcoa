@@ -19,6 +19,38 @@ pack_int <- function(x, n = 4) {
   as.raw(bitwAnd(bitwShiftR(rep(x, each = n), 8 * (0:(n - 1))), 255))
 }
 
+# 通用 Length-Encoded Integer/String 解析
+read_lenenc <- \(pkt, pos) {
+  if (pos > length(pkt)) return(NULL)
+  
+  first <- as.integer(pkt[pos])
+  
+  # 长度信息表：c(额外字节数, 长度读取字节数)
+  info <- switch(as.character(first),
+    "251" = list(extra = 0, len = 0, null = TRUE),           # NULL (0xfb)
+    "252" = list(extra = 2, len = 2, null = FALSE),          # 2字节长度 (0xfc)
+    "253" = list(extra = 3, len = 3, null = FALSE),          # 3字节长度 (0xfd)
+    "254" = list(extra = 8, len = 8, null = FALSE),          # 8字节长度 (0xfe)
+    "255" = NULL,                                             # 错误
+    list(extra = 0, len = first, null = FALSE)               # 0-250 直接编码
+  )
+  
+  if (is.null(info)) return(NULL)
+  if (info$null) return(list(val = NA, next_pos = pos + 1))
+  
+  # 用 bytes_to_int 读取长度（如果 extra > 0）
+  data_len <- if (info$extra == 0) info$len else bytes_to_int(pkt, pos + 1, info$len)
+  data_start <- pos + 1 + info$extra
+  data_end <- data_start + data_len - 1
+  
+  if (data_end > length(pkt)) return(NULL)
+  
+  list(
+    val = if (data_len == 0) "" else rawToChar(pkt[data_start:data_end]),
+    next_pos = data_end + 1
+  )
+}
+
 # MySQLConnection 数据库连接对象
 # 
 # | 首字节值                    | 含义          | 实际长度              |
@@ -505,44 +537,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     
     parse_row = function(pkt, columns) {
       
-      # 通用 Length-Encoded Integer/String 解析
-      read_lenenc <- \(pos) {
-        if (pos > length(pkt)) return(NULL)
-        
-        first <- as.integer(pkt[pos])
-        
-        # 长度信息表：c(额外字节数, 长度读取字节数)
-        info <- switch(as.character(first),
-          "251" = list(extra = 0, len = 0, null = TRUE),           # NULL (0xfb)
-          "252" = list(extra = 2, len = 2, null = FALSE),          # 2字节长度 (0xfc)
-          "253" = list(extra = 3, len = 3, null = FALSE),          # 3字节长度 (0xfd)
-          "254" = list(extra = 8, len = 8, null = FALSE),          # 8字节长度 (0xfe)
-          "255" = NULL,                                             # 错误
-          list(extra = 0, len = first, null = FALSE)               # 0-250 直接编码
-        )
-        
-        if (is.null(info)) return(NULL)
-        if (info$null) return(list(val = NA, next_pos = pos + 1))
-        
-        # 用 bytes_to_int 读取长度（如果 extra > 0）
-        data_len <- if (info$extra == 0) info$len else bytes_to_int(pkt, pos + 1, info$len)
-        data_start <- pos + 1 + info$extra
-        data_end <- data_start + data_len - 1
-        
-        if (data_end > length(pkt)) return(NULL)
-        
-        list(
-          val = if (data_len == 0) "" else rawToChar(pkt[data_start:data_end]),
-          next_pos = data_end + 1
-        )
-      }
-      
       callCC(\(exit) {
         (\(f, pos = 1, row = list(), cols_left = columns) {
           if (length(cols_left) == 0) exit(row)
           if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left))))
           
-          res <- read_lenenc(pos)
+          res <- read_lenenc(pkt, pos)
           
           if (is.null(res)) {
             f(f, pos + 1, c(row, list(NA)), cols_left[-1])
