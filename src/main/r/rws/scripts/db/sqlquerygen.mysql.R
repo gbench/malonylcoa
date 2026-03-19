@@ -209,12 +209,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       if (plugin == "mysql_native_password") {
         stage1 <- digest::digest(self$password, "sha1", serialize = FALSE, raw = TRUE)
         stage2 <- digest::digest(stage1, "sha1", serialize = FALSE, raw = TRUE)
-        sha_salt_stage2 <- digest::digest(c(salt[1:20], stage2), "sha1", 
-                                         serialize = FALSE, raw = TRUE)
+        sha_salt_stage2 <- digest::digest(c(salt[1:20], stage2), "sha1", serialize = FALSE, raw = TRUE)
         auth_response <- raw(20)
         for (i in 1:20) {
-          auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), 
-                                            as.integer(sha_salt_stage2[i])))
+          auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), as.integer(sha_salt_stage2[i])))
         }
         return(auth_response)
       } else if (plugin == "caching_sha2_password") {
@@ -434,8 +432,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           row_pkt <- self$read_packet()
           if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
           f(f, append(acc, list(self$parse_row(row_pkt, columns))))
-        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为f，进而模拟递归
-      })
+        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
+      }) # rows
       row_count <- length(rows)
       
       # 转换为数据框
@@ -661,7 +659,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 行数据
     parse_row = \(pkt, columns) {
       callCC(\(exit) {
-        (\(f, pos = 1, row = list(), cols_left = columns) {
+        (\(f, pos = 1, row = list(), cols_left = columns) { # f 表示当前函数本身
           if (length(cols_left) == 0) exit(row)
           if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left))))
           
@@ -672,8 +670,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           } else {
             f(f, res$next_pos, c(row, list(res$val)), cols_left[-1])
           }
-        }) |> (\(g) g(g))()
-      })
+        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
+      }) # callCC
     },
     
     read_packet = \() {
