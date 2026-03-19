@@ -442,16 +442,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       if (row_count == 0) {
         df <- as.data.frame(matrix(ncol = col_count, nrow = 0))
         colnames(df) <- sapply(columns, function(x) x$name)
-        return(df)
+        df
+      } else {
+        df <- seq(col_count) |> lapply(\(j) sapply(rows, \(row) row[[j]])) |> do.call(cbind, args=_)
+        colnames(df) <- sapply(columns, function(x) x$name)
+        df
       }
-      
-      df <- data.frame(matrix(nrow = row_count, ncol = col_count))
-      for (i in 1:col_count) {
-        df[, i] <- sapply(rows, function(row) row[[i]])
-      }
-      colnames(df) <- sapply(columns, function(x) x$name)
-      
-      df
     },
     
     parse_column = function(pkt) {
