@@ -19,41 +19,6 @@ pack_int <- function(x, n = 4) {
   as.raw(bitwAnd(bitwShiftR(rep(x, each = n), 8 * (0:(n - 1))), 255))
 }
 
-# 读取 null 结尾字符串
-read_null_str <- function(bytes, start = 1) {
-  if (start > length(bytes)) return(list("", start))
-  null_pos <- which(bytes[start:length(bytes)] == 0)[1]
-  if (is.na(null_pos)) {
-    value <- rawToChar(bytes[start:length(bytes)])
-    next_pos <- length(bytes) + 1
-  } else {
-    end_pos <- start + null_pos - 2
-    value <- if (end_pos >= start) rawToChar(bytes[start:end_pos]) else ""
-    next_pos <- start + null_pos
-  }
-  list(value, next_pos)
-}
-
-# 读取长度编码整数
-g_read_lenenc_int <- function(bytes, start = 1) {
-  if (start > length(bytes)) return(list(0, start))
-  first <- as.integer(bytes[start])
-  if (first < 0xfb) return(list(first, start + 1))
-  if (first == 0xfc) return(list(bytes_to_int(bytes, start + 1, 2), start + 3))
-  if (first == 0xfd) return(list(bytes_to_int(bytes, start + 1, 3), start + 4))
-  list(0, start + 1)
-}
-
-# 读取长度编码字符串
-g_read_lenenc_str <- function(bytes, start = 1) {
-  len_info <- g_read_lenenc_int(bytes, start)
-  if (len_info[[1]] == 0) return(list("", len_info[[2]]))
-  str_start <- len_info[[2]]
-  str_end <- str_start + len_info[[1]] - 1
-  if (str_end > length(bytes)) return(list(NULL, str_start))
-  list(rawToChar(bytes[str_start:str_end]), str_end + 1)
-}
-
 # MySQLConnection 数据库连接对象
 MySQLConnection <- R6::R6Class("MySQLConnection",
   public = list(
@@ -95,13 +60,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
     
     connect = function() {
-      self$sock <- socketConnection(
-        host = self$host, 
-        port = self$port, 
-        blocking = TRUE, 
-        open = "r+b", 
-        timeout = 30
-      )
+      self$sock <- socketConnection(host = self$host, port = self$port, blocking = TRUE, open = "r+b", timeout = 30)
       
       # 读取握手包
       self$read_handshake()
@@ -132,10 +91,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       pos <- pos + null_pos
       
       # 线程 ID
-      self$thread_id <- as.integer(pkt[pos]) + 
-        bitwShiftL(as.integer(pkt[pos+1]), 8) + 
-        bitwShiftL(as.integer(pkt[pos+2]), 16) + 
-        bitwShiftL(as.integer(pkt[pos+3]), 24)
+      self$thread_id <- bytes_to_int(pkt, 4)
       pos <- pos + 4
       
       # Salt part 1
@@ -422,17 +378,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       
       # 结果集
       col_count <- as.integer(pkt[1])
-      columns <- list()
-      
-      for (i in 1:col_count) {
-        col_pkt <- self$read_packet()
-        columns[[i]] <- self$parse_column(col_pkt)
-      }
+      columns <- seq(col_count) |> Reduce(\(acc, i) { col_pkt <- self$read_packet(); acc[[i]] <- self$parse_column(col_pkt); acc }, x=_, init=list())
       
       # EOF 包
       self$read_packet()
-      
-      # 读取行数据
+       # 读取行数据
       data <- list()
       row_count <- 0
       
@@ -499,16 +449,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       if (length(bytes) == 0) return(0)
       first <- as.integer(bytes[1])
       
-      if (first < 0xfb) {
-        return(first)
-      } else if (first == 0xfc && length(bytes) >= 3) {
-        return(as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8))
-      } else if (first == 0xfd && length(bytes) >= 4) {
-        return(as.integer(bytes[2]) + 
-          bitwShiftL(as.integer(bytes[3]), 8) + 
-          bitwShiftL(as.integer(bytes[4]), 16))
-      }
-      return(0)
+      if (first < 0xfb) first
+      else if (first == 0xfc && length(bytes) >= 3) as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8)
+      else if (first == 0xfd && length(bytes) >= 4) as.integer(bytes[2]) + bitwShiftL(as.integer(bytes[3]), 8) + bitwShiftL(as.integer(bytes[4]), 16)
+      else 0
     },
     
     # 读取长度编码字符串
@@ -661,15 +605,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$auth_phase <- self$auth_phase + 1
     },
     
-    pack_int32 = function(x) {
-      x <- as.integer(x)
-      c(
-        as.raw(bitwAnd(x, 255)),
-        as.raw(bitwAnd(bitwShiftR(x, 8), 255)),
-        as.raw(bitwAnd(bitwShiftR(x, 16), 255)),
-        as.raw(bitwAnd(bitwShiftR(x, 24), 255))
-      )
-    },
+    pack_int32 = pack_int,
     
     close = function() {
       if (!is.null(self$sock)) {
@@ -708,17 +644,10 @@ sqlquerygen.mysql <- function(host, port = 3306, user, password, database) {
 }
 
 # 使用示例
-if (FALSE) {
-  sqlquery <- sqlquerygen.mysql(
-    host = "localhost",
-    port = 3371,
-    user = "root",
-    password = "123456",
-    database = "ctp"
-  )
-
+if (T) {
+  library(tibble); library(purrr)
+  sqlquery <- sqlquerygen.mysql(host="localhost", port=3371, user="root", password="123456", database="ctp")
   tbls <- sqlquery("SHOW TABLES") |> print()
-  tbls |> unlist() |> setNames(nm=_) |> head(5) |> sprintf(fmt="select * from %s limit 5") |> lapply(sqlquery) |> print()
-
-  attr(sqlquery, "close")()
+  tbls |> (\(., x=unlist(head(.))) sprintf(fmt="select * from %s limit 5", x=x) |> setNames(nm=_)) () |> lapply(compose(as_tibble, sqlquery)) |> print()
+  attr(sqlquery, "close") ()
 }
