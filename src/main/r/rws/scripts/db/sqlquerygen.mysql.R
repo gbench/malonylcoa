@@ -658,14 +658,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         (\(f, pos = 1, row = list(), cols_left = columns) { # f 表示当前函数本身
           if (length(cols_left) == 0) exit(row)
           if (pos > length(pkt)) exit(c(row, rep(list(NA), length(cols_left))))
-          
-          res <- read_lenenc(pkt, pos)
-          
-          if (is.null(res)) {
-            f(f, pos + 1, c(row, list(NA)), cols_left[-1])
-          } else {
-            f(f, res$next_pos, c(row, list(res$val)), cols_left[-1])
-          }
+          read_lenenc(pkt, pos) |> with(f(f, next_pos, c(row, value), cols_left[-1]))
         }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
       }) # callCC
     },
