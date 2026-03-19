@@ -643,19 +643,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       )
       
       if (as.character(type_code) %in% names(type_map)) {
-        return(type_map[as.character(type_code)])
+        type_map[as.character(type_code)]
       } else {
-        return(sprintf("UNKNOWN(%d)", type_code))
+        sprintf("UNKNOWN(%d)", type_code)
       }
-    },
-
-    # 读取长度编码整数
-    read_lenenc_int = \(bytes, start_pos=1) {
-      read_lenenc(bytes, start_pos, eval_bs = \(bs, start, end) if (start > end) "" else bytes_to_int(bs, start, end-start+1)) |> with({
-        attr(value, "next_pos") <- next_pos
-        attr(value, "is_null") <- is_null %||% FALSE
-        value
-      })
     },
     
     # 读取长度编码字符串
@@ -784,7 +775,7 @@ sqlquerygen.mysql <- \(host, port = 3306, user, password, database) {
 }
 
 # 使用示例
-if (F) {
+if (T) {
   library(tibble); library(purrr)
   sqlquery <- sqlquerygen.mysql(host="localhost", port=3371, user="root", password="123456", database="ctp")
   tbls <- sqlquery("SHOW TABLES") |> print()
