@@ -20,10 +20,10 @@ pack_int <- function(x, n = 4) {
 }
 
 # 通用 Length-Encoded Integer/String 解析
-read_lenenc <- \(pkt, pos) {
-  if (pos > length(pkt)) return(NULL)
+read_lenenc <- \(bytes, pos) {
+  if (pos > length(bytes)) return(NULL)
   
-  first <- as.integer(pkt[pos])
+  first <- as.integer(bytes[pos])
   
   # 长度信息表：c(额外字节数, 长度读取字节数)
   info <- switch(as.character(first),
@@ -43,11 +43,11 @@ read_lenenc <- \(pkt, pos) {
   data_start <- pos + 1 + info$extra
   data_end <- data_start + data_len - 1
   
-  if (data_end > length(pkt)) return(NULL)
-  
-  list(
-    val = if (data_len == 0) "" else rawToChar(pkt[data_start:data_end]),
-    next_pos = data_end + 1
+  if (data_end > length(bytes)) list(error = TRUE, next_pos = pos + 1 + info$extra)
+  else list(
+    value = if (data_len == 0) "" else rawToChar(bytes[data_start:data_end]),
+    next_pos = data_end + 1,
+    is_null = FALSE
   )
 }
 
@@ -494,45 +494,16 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     
     # 读取长度编码字符串
     read_lenenc_str = function(bytes, start_pos) {
-      if (start_pos > length(bytes)) {
-        result <- list(value = NULL)
-        attr(result, "next_pos") <- start_pos
-        return(result)
-      }
-      
-      first <- as.integer(bytes[start_pos])
-      
-      if (first < 0xfb) {
-        len <- first
-        if (start_pos + len <= length(bytes)) {
-          value <- rawToChar(bytes[(start_pos+1):(start_pos+len)])
-          next_pos <- start_pos + 1 + len
-        } else {
-          value <- NULL
-          next_pos <- start_pos + 1
-        }
-      } else if (first == 0xfc) {
-        if (start_pos + 2 <= length(bytes)) {
-          len <- as.integer(bytes[start_pos+1]) + bitwShiftL(as.integer(bytes[start_pos+2]), 8)
-          if (start_pos + 2 + len <= length(bytes)) {
-            value <- rawToChar(bytes[(start_pos+3):(start_pos+2+len)])
-            next_pos <- start_pos + 3 + len
-          } else {
-            value <- NULL
-            next_pos <- start_pos + 3
-          }
-        } else {
-          value <- NULL
-          next_pos <- start_pos + 1
-        }
-      } else {
-        value <- NULL
-        next_pos <- start_pos + 1
-      }
-      
-      result <- list(value = value)
-      attr(result, "next_pos") <- next_pos
-      result
+      # 执行解析
+      result <- read_lenenc(bytes, start_pos)
+
+      # 统一返回格式（保持与原函数兼容的 list + attr 风格）
+      out <- list(value = result$value)
+      attr(out, "next_pos") <- result$next_pos
+      attr(out, "is_null") <- result$is_null %||% FALSE
+      attr(out, "error") <- result$error %||% FALSE
+
+      out
     },
     
     parse_row = function(pkt, columns) {
