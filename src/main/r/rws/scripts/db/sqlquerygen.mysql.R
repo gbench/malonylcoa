@@ -486,29 +486,24 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
 
     # 读取长度编码整数
-    read_lenenc_int = function(bytes) {
+    read_lenenc_int = function(bytes, start_pos=1) {
       read_lenenc(bytes, start_pos, eval_bs = \(bs, start, end) if (start > end) "" else bytes_to_int(bs, start, end-start+1)) |> with({
         attr(value, "next_pos") <- next_pos
         attr(value, "is_null") <- is_null %||% FALSE
-        attr(value, "error") <- error %||% FALSE
         value
       })
     },
     
     # 读取长度编码字符串
     read_lenenc_str = function(bytes, start_pos) {
-      # 执行解析
-      result <- read_lenenc(bytes, start_pos)
-
-      # 统一返回格式（保持与原函数兼容的 list + attr 风格）
-      out <- result$value
-      attr(out, "next_pos") <- result$next_pos
-      attr(out, "is_null") <- result$is_null %||% FALSE
-      attr(out, "error") <- result$error %||% FALSE
-
-      out
+      read_lenenc(bytes, start_pos) |> with({
+        attr(value, "next_pos") <- next_pos
+        attr(value, "is_null") <- is_null %||% FALSE
+        value
+      })
     },
     
+    # 行数据
     parse_row = function(pkt, columns) {
       
       callCC(\(exit) {
