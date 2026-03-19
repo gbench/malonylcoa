@@ -233,11 +233,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     send_auth = function() {
       # 客户端能力标志
       CLIENT_LONG_PASSWORD <- 1
-      CLIENT_PROTOCOL_41 <- 512
-      CLIENT_SECURE_CONNECTION <- 32768
-      CLIENT_PLUGIN_AUTH <- 524288
-      CLIENT_CONNECT_WITH_DB <- 8
-      CLIENT_PLUGIN_AUTH_LENENC_DATA <- 131072
+      CLIENT_PROTOCOL_41 <- 2^9
+      CLIENT_SECURE_CONNECTION <- 2^15
+      CLIENT_PLUGIN_AUTH <- 2^19
+      CLIENT_CONNECT_WITH_DB <- 2^3
+      CLIENT_PLUGIN_AUTH_LENENC_DATA <- 2^17
       
       client_flag <- CLIENT_LONG_PASSWORD
       client_flag <- bitwOr(client_flag, CLIENT_PROTOCOL_41)
