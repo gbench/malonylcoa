@@ -476,7 +476,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       # 读取 name
       name_info <- self$read_lenenc_str(pkt, pos)
       pos <- attr(name_info, "next_pos")
-      name <- ifelse(is.null(name_info$value), "unknown", name_info$value)
+      name <- ifelse(is.null(name_info), "unknown", name_info)
       
       # 跳过 org_name
       org_name <- self$read_lenenc_str(pkt, pos)
@@ -501,7 +501,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       result <- read_lenenc(bytes, start_pos)
 
       # 统一返回格式（保持与原函数兼容的 list + attr 风格）
-      out <- list(value = result$value)
+      out <- result$value
       attr(out, "next_pos") <- result$next_pos
       attr(out, "is_null") <- result$is_null %||% FALSE
       attr(out, "error") <- result$error %||% FALSE
