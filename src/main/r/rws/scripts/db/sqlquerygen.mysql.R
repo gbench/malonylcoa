@@ -382,20 +382,15 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       
       # EOF 包
       self$read_packet()
-       # 读取行数据
-      data <- list()
-      row_count <- 0
-      
-      repeat {
-        row_pkt <- self$read_packet()
-        if (length(row_pkt) == 0) break
-        
-        if (as.integer(row_pkt[1]) == 0xfe) break
-        
-        row <- self$parse_row(row_pkt, columns)
-        row_count <- row_count + 1
-        data[[row_count]] <- row
-      }
+      # 读取行数据
+      rows <- callCC(\(exit) {
+        (\(f, acc = list()) { # f 表示当前函数本身
+          row_pkt <- self$read_packet()
+          if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
+          f(f, append(acc, list(self$parse_row(row_pkt, columns))))
+        }) |> (\(f) f(f)) () # 把 lambda 表达式命名为f，进而模拟递归
+      })
+      row_count <- length(rows)
       
       # 转换为数据框
       if (row_count == 0) {
@@ -406,7 +401,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       
       df <- data.frame(matrix(nrow = row_count, ncol = col_count))
       for (i in 1:col_count) {
-        df[, i] <- sapply(data, function(row) row[[i]])
+        df[, i] <- sapply(rows, function(row) row[[i]])
       }
       colnames(df) <- sapply(columns, function(x) x$name)
       
