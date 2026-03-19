@@ -444,7 +444,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         colnames(df) <- sapply(columns, function(x) x$name)
         df
       } else {
-        df <- seq(col_count) |> lapply(\(j) sapply(rows, \(row) row[[j]])) |> do.call(cbind, args=_)
+        df <- seq(col_count) |> lapply(\(j) sapply(rows, getElement, name=j)) |> do.call(cbind, args=_)
         colnames(df) <- sapply(columns, function(x) x$name)
         df
       }
@@ -453,32 +453,115 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     parse_column = function(pkt) {
       pos <- 1
       
-      # 跳过 catalog
+      # 读取 catalog (总是 "def")
       catalog <- self$read_lenenc_str(pkt, pos)
       pos <- attr(catalog, "next_pos")
       
-      # 跳过 schema
+      # 读取 schema (数据库名)
       schema <- self$read_lenenc_str(pkt, pos)
       pos <- attr(schema, "next_pos")
       
-      # 跳过 table
+      # 读取 table (表别名)
       table <- self$read_lenenc_str(pkt, pos)
       pos <- attr(table, "next_pos")
       
-      # 跳过 org_table
+      # 读取 org_table (原始表名)
       org_table <- self$read_lenenc_str(pkt, pos)
       pos <- attr(org_table, "next_pos")
       
-      # 读取 name
+      # 读取 name (列别名)
       name_info <- self$read_lenenc_str(pkt, pos)
       pos <- attr(name_info, "next_pos")
       name <- ifelse(is.null(name_info), "unknown", name_info)
       
-      # 跳过 org_name
+      # 读取 org_name (原始列名)
       org_name <- self$read_lenenc_str(pkt, pos)
       pos <- attr(org_name, "next_pos")
       
-      list(name = name)
+      # 读取长度编码的固定长度字段 (总是 0x0c)
+      fixed_len <- self$read_lenenc_int(pkt, pos)
+      pos <- attr(fixed_len, "next_pos")
+      
+      # 读取字符集编号 (2字节)
+      charset <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos + 1]), 8)
+      pos <- pos + 2
+      
+      # 读取列长度 (4字节)
+      column_length <- bytes_to_int(pkt, pos, 4)
+      pos <- pos + 4
+      
+      # 读取列类型 (1字节)
+      column_type <- as.integer(pkt[pos])
+      pos <- pos + 1
+      
+      # 读取 flags (2字节)
+      flags <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos + 1]), 8)
+      pos <- pos + 2
+      
+      # 读取 decimals (1字节)
+      decimals <- as.integer(pkt[pos])
+      pos <- pos + 1
+      
+      # 跳过 filler (2字节)
+      pos <- pos + 2
+      
+      list(
+        name = name,
+        org_name = org_name,
+        table = table,
+        org_table = org_table,
+        schema = schema,
+        charset = charset,
+        column_length = column_length,
+        column_type = column_type,
+        flags = flags,
+        decimals = decimals,
+        type_name = self$get_type_name(column_type)
+      )
+    },
+
+    # 添加类型名称映射函数
+    get_type_name = function(type_code) {
+      type_map <- c(
+        "0" = "DECIMAL",
+        "1" = "TINY",
+        "2" = "SHORT",
+        "3" = "LONG",
+        "4" = "FLOAT",
+        "5" = "DOUBLE",
+        "6" = "NULL",
+        "7" = "TIMESTAMP",
+        "8" = "LONGLONG",
+        "9" = "INT24",
+        "10" = "DATE",
+        "11" = "TIME",
+        "12" = "DATETIME",
+        "13" = "YEAR",
+        "14" = "NEWDATE",
+        "15" = "VARCHAR",
+        "16" = "BIT",
+        "17" = "TIMESTAMP2",
+        "18" = "DATETIME2",
+        "19" = "TIME2",
+        "20" = "TYPED_ARRAY",  # MySQL 8.0.17+
+        "245" = "JSON",
+        "246" = "NEWDECIMAL",
+        "247" = "ENUM",
+        "248" = "SET",
+        "249" = "TINY_BLOB",
+        "250" = "MEDIUM_BLOB",
+        "251" = "LONG_BLOB",
+        "252" = "BLOB",
+        "253" = "VAR_STRING",
+        "254" = "STRING",
+        "255" = "GEOMETRY"
+      )
+      
+      if (as.character(type_code) %in% names(type_map)) {
+        return(type_map[as.character(type_code)])
+      } else {
+        return(sprintf("UNKNOWN(%d)", type_code))
+      }
     },
 
     # 读取长度编码整数
