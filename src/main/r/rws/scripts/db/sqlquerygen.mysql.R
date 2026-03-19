@@ -486,7 +486,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           }
         })
       } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
-        sapply(values, \(v) {
+        lapply(values, \(v) {
           if (is.na(v)) return(NA)
           if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) {
             as.Date(v)
@@ -495,7 +495,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           } else {
             v
           }
-        }, simplify = FALSE) |> unlist()
+        }) |> do.call(c, args=_) # 使用do.call来避免unlist自动抹除时间类型的class属性:"POSIXct","POSIXt"
       } else if (type_name == "TIME") {
         unlist(values)
       } else if (type_name %in% c("TINY_BLOB", "MEDIUM_BLOB", "LONG_BLOB", "BLOB", "GEOMETRY")) {
