@@ -487,8 +487,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
 
     # 读取长度编码整数
     read_lenenc_int = function(bytes) {
-      result <- read_lenenc(bytes, start_pos, eval_bs=\(bs, start, end) if (start > end) "" else bytes_to_int(bs, start, end-start+1))
-      result$value
+      read_lenenc(bytes, start_pos, eval_bs = \(bs, start, end) if (start > end) "" else bytes_to_int(bs, start, end-start+1)) |> with({
+        attr(value, "next_pos") <- next_pos
+        attr(value, "is_null") <- is_null %||% FALSE
+        attr(value, "error") <- error %||% FALSE
+        value
+      })
     },
     
     # 读取长度编码字符串
