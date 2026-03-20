@@ -9,8 +9,7 @@ if (!require("digest", quietly = TRUE)) {
 
 # 字节转整数（小端）
 bytes_to_int <- \(bytes, start = 1, n = 4) {
-  if (length(bytes) < start + n - 1) return(0)
-  sum(as.integer(bytes[start:(start + n - 1)]) * 256^(0:(n - 1)))
+  if (length(bytes) < start + n - 1) 0 else sum(as.integer(bytes[start:(start + n - 1)]) * 256^(0:(n - 1)))
 }
 
 # 打包整数为小端字节
@@ -45,20 +44,20 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else 
     "252" = list(extra = 2, len = 2, null = FALSE),          # 2字节长度 (0xfc)
     "253" = list(extra = 3, len = 3, null = FALSE),          # 3字节长度 (0xfd)
     "254" = list(extra = 8, len = 8, null = FALSE),          # 8字节长度 (0xfe)
-    "255" = NULL,                                             # 错误
+    "255" = NULL,                                            # 错误
     list(extra = 0, len = first, null = FALSE)               # 0-250 直接编码
   )
   
-  if (is.null(info)) return(NULL)
-  if (info$null) return(list(val = NA, next_pos = pos + 1))
+  if (is.null(info)) list(val = NULL, next_pos = pos + 1, is_null = FALSE, is_error = TRUE)
+  else if (info$null) list(val = NA, next_pos = pos + 1, is_null = TRUE, is_error = FALSE)
+  else { 
+    data_len <- ifelse(info$extra == 0, info$len, bytes_to_int(bytes, pos + 1, info$len)) 
+    data_start <- pos + 1 + max(0, info$extra - 1) # max(0, info$extra - 1) 等价于 ifelse(info$extra == 0, 0, info$extra - 1)
+    data_end <- data_start + data_len - 1
   
-  # 用 bytes_to_int 读取长度（如果 extra > 0）
-  data_len <- if (info$extra == 0) info$len else bytes_to_int(bytes, pos + 1, info$len)
-  data_start <- pos + 1 + max(0, info$extra - 1) # max(0, info$extra - 1) 等价于 ifelse(info$extra == 0, 0, info$extra - 1)
-  data_end <- data_start + data_len - 1
-  
-  if (data_end > length(bytes)) list(error = TRUE, next_pos = pos + 1 + info$extra)
-  else list(value = eval_bs(bytes, data_start, data_end), next_pos = data_end + 1, is_null = FALSE)
+    if (data_end > length(bytes)) list(error = TRUE, next_pos = pos + 1 + info$extra)
+    else list(value = eval_bs(bytes, data_start, data_end), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE)
+  } # if
 }
 
 # MySQLConnection 数据库连接对象
@@ -210,7 +209,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         for (i in 1:20) {
           auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), as.integer(sha_salt_stage2[i])))
         }
-        return(auth_response)
+        auth_response
       } else if (plugin == "caching_sha2_password") {
         hash1 <- digest::digest(self$password, "sha256", serialize = FALSE, raw = TRUE)
         hash2 <- digest::digest(hash1, "sha256", serialize = FALSE, raw = TRUE)
@@ -219,9 +218,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         for (i in 1:32) {
           auth_response[i] <- as.raw(bitwXor(as.integer(hash1[i]), as.integer(hash3[i])))
         }
-        return(auth_response)
-      }
-      return(raw(0))
+        auth_response
+      } else {
+        raw(0)
+      } # if
     },
     
     send_auth = \() {
@@ -250,14 +250,14 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         as.raw(33),                  # charset utf8
         raw(23),                     # reserved
         charToRaw(self$user), as.raw(0)
-      )
+      ) # pkt
       
       # 认证响应
       if (length(auth_response) > 0) {
         pkt <- c(pkt, as.raw(length(auth_response)), auth_response)
       } else {
         pkt <- c(pkt, as.raw(0))
-      }
+      } # if
       
       # 数据库名
       if (!is.null(self$database) && nchar(self$database) > 0) {
@@ -272,7 +272,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$write_packet(pkt)
       message(sprintf("发送认证包，使用插件: %s", self$server_auth_plugin))
     },
-    
+   
+    # 处理认证响应
     handle_auth_response = \() {
       pkt <- self$read_packet()
       if (length(pkt) == 0) stop("连接失败：无响应")
@@ -299,6 +300,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       }
     },
     
+    # 处理认证切换 
     handle_auth_switch = \(pkt) {
       if (length(pkt) < 2) stop("Auth switch 包太短")
       
@@ -342,7 +344,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       # 继续处理认证
       self$handle_auth_response()
     },
-    
+   
+    # 处理 caching_sha2_auth 
     handle_caching_sha2_auth = \(pkt) {
       if (length(pkt) < 2) {
         self$handle_auth_response()
@@ -379,9 +382,9 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
             err_code <- as.integer(result_pkt[2]) + bitwShiftL(as.integer(result_pkt[3]), 8)
             err_msg <- rawToChar(result_pkt[4:length(result_pkt)])
             stop(sprintf("密码认证失败 [%d]: %s", err_code, err_msg))
-          }
-        }
-      }
+          } # if as.integer
+        } # if length
+      } # if auth_status
       
       self$handle_auth_response()
     },
@@ -447,27 +450,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 添加列转换函数 - 修复版本
     convert_column = \(values, col_info) {
       type_code <- col_info$column_type
-      type_name <- col_info$type_name
-      
-      # 调试输出（仅在需要时启用）
-      # print(values)
-      # print(col_info)
-      
-      # 处理 type_name 为 NULL 的情况
-      if (is.null(type_name)) {
-        type_name <- self$get_type_name(type_code)
-      }
-      
+      type_name <- ifelse(is.null(col_info$type_name), self$get_type_name(type_code), col_info$type_name) 
+
       # 处理 NULL 值
-      values <- lapply(values, \(v) {
-        if (is.null(v) || (is.raw(v) && length(v) == 1 && as.integer(v) == 0xfb)) {
-          return(NA)
-        }
-        if (is.raw(v)) {
-          return(rawToChar(v))
-        }
-        v
-      })
+      values <- lapply(values, \(v) if (is.null(v) || (is.raw(v) && length(v) == 1 && as.integer(v) == 0xfb)) NA else if (is.raw(v)) rawToChar(v) else v)
       
       # 根据类型进行转换 - 使用 if-else 替代 switch 避免 NULL 问题
       result <- if (type_name %in% c("TINY", "SHORT", "LONG", "LONGLONG", "INT24", "YEAR")) {
@@ -478,54 +464,33 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         as.numeric(unlist(values))
       } else if (type_name == "BIT") {
         sapply(values, \(v) {
-          if (is.na(v)) return(NA)
-          if (is.raw(v)) {
-            sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
-          } else {
-            as.integer(v)
-          }
+          if (is.na(v)) NA
+	  else if (is.raw(v)) sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
+          else as.integer(v)
         })
       } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
         lapply(values, \(v) {
-          if (is.na(v)) return(NA)
-          if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) {
-            as.Date(v)
-          } else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) {
-            as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
-          } else {
-            v
-          }
+          if (is.na(v)) NA
+	  else if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) as.Date(v)
+          else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
+          else v
         }) |> do.call(c, args=_) # 使用do.call来避免unlist自动抹除时间类型的class属性:"POSIXct","POSIXt"
       } else if (type_name == "TIME") {
         unlist(values)
       } else if (type_name %in% c("TINY_BLOB", "MEDIUM_BLOB", "LONG_BLOB", "BLOB", "GEOMETRY")) {
-        if (all(sapply(values, is.raw))) {
-          I(values)
-        } else {
-          unlist(values)
-        }
+        if (all(sapply(values, is.raw))) I(values)
+        else unlist(values)
       } else if (type_name == "JSON") {
-        sapply(values, \(v) {
-          if (is.na(v)) return(NA)
-          tryCatch({
-            jsonlite::fromJSON(v)
-          }, error = \(e) {
-            v
-          })
-        }, simplify = FALSE)
+	if(!require(jsonlite)) stop("请先安装 jsonlite 包: install.packages('jsonlite')")
+        sapply(values, \(v) if (is.na(v)) NA else tryCatch(jsonlite::fromJSON(v), error = \(e) v), simplify = FALSE)
       } else if (type_name %in% c("ENUM", "SET")) {
         factor(unlist(values))
       } else {
         # 默认作为字符类型
         unlist(values)
-      }
+      } # result
       
-      # 确保结果长度一致
-      if (length(result) != length(values)) {
-        result <- values
-      }
-      
-      result
+      if (length(result) != length(values)) values else result # 确保结果长度一致
     },
     
     # 列信息分析
@@ -636,11 +601,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         "255" = "GEOMETRY"
       )
       
-      if (as.character(type_code) %in% names(type_map)) {
-        type_map[as.character(type_code)]
-      } else {
-        sprintf("UNKNOWN(%d)", type_code)
-      }
+      if (as.character(type_code) %in% names(type_map)) type_map[as.character(type_code)]
+      else sprintf("UNKNOWN(%d)", type_code)
     },
     
     # 读取长度编码字符串
@@ -648,8 +610,9 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       read_lenenc(bytes, start_pos) |> with({
         attr(value, "next_pos") <- next_pos
         attr(value, "is_null") <- is_null %||% FALSE
+        attr(value, "is_error") <- is_error %||% FALSE
         value
-      })
+      }) # with
     },
     
     # 行数据
@@ -662,24 +625,19 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
       }) # callCC
     },
-    
+   
+    # 读取报数据 
     read_packet = \() {
-      # 读取包头
-      header <- readBin(self$sock, "raw", 4)
+      header <- readBin(self$sock, "raw", 4) # 读取包头
       if (length(header) < 4) return(raw(0))
       
-      # 解析包长度
-      pkt_len <- as.integer(header[1]) + 
-        bitwShiftL(as.integer(header[2]), 8) + 
-        bitwShiftL(as.integer(header[3]), 16)
-      
-      # 获取序列号
-      seq <- as.integer(header[4])
-      
+      pkt_len <- bytes_to_int(header, n=3) # 解析包长度
+      seq <- as.integer(header[4]) # 获取序列号
+
       # 检查序列号
-      if (seq != self$seq_id) {
+      if (seq != self$seq_id) { 
         # 在认证切换时，序列号可能会重置，这里只记录不报错
-        if (self$auth_phase > 0) {
+        if (self$auth_phase > 0) { 
           # 认证阶段，接受序列号变化
           self$seq_id <- seq + 1
         } else {
@@ -698,11 +656,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         more <- readBin(self$sock, "raw", pkt_len - length(pkt))
         if (length(more) == 0) break
         pkt <- c(pkt, more)
-      }
+      } # while
       
       pkt
     },
-    
+   
+    # 发送包数据 
     write_packet = \(data) {
       pkt_len <- length(data)
       
@@ -722,9 +681,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$seq_id <- self$seq_id + 1
       self$auth_phase <- self$auth_phase + 1
     },
-    
+   
+    # 打包一个整数默认4字节 
     pack_int32 = pack_int,
     
+    # 连接关闭 
     close = \() {
       if (!is.null(self$sock)) {
         tryCatch({
