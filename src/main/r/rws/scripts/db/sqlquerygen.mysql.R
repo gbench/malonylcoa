@@ -427,10 +427,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$read_packet()
       # 读取行数据
       rows <- callCC(\(exit) {
-        (\(f, acc = list()) { # f 表示当前函数本身
+        (\(f, acc = list()) { # f 表示当前函数本身, acc:累计行集
           row_pkt <- self$read_packet()
           if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
-          f(f, append(acc, list(self$parse_row(row_pkt, columns))))
+          row <- list(self$parse_row(row_pkt, columns)) # 把行向量封装成list对象,确保append到acc成为独立行元素,否则append向量会扁平化，造成行无法区分！
+          f(f, append(acc, row)) # 递归追加数据行
         }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
       }) # rows
       row_count <- length(rows)
@@ -614,7 +615,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       }) # with
     },
     
-    # 行数据
+    # 行数据, 返回一个字符向量
     parse_row = \(bytes, columns) {
       callCC(\(exit) {
         (\(f, pos = 1, row = character(0), cols_left = columns) { # f 表示当前函数本身,row = character(0), 行初始为空字符串向量
