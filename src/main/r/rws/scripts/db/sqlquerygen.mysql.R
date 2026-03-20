@@ -648,17 +648,14 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         self$seq_id <- seq + 1
       }
       
-      if (pkt_len == 0) return(raw(0))
-      
-      # 读取包数据
-      pkt <- readBin(self$sock, "raw", pkt_len)
-      while (length(pkt) < pkt_len) {
-        more <- readBin(self$sock, "raw", pkt_len - length(pkt))
-        if (length(more) == 0) break
-        pkt <- c(pkt, more)
-      } # while
-      
-      pkt
+      if (pkt_len == 0) raw(0)
+      else callCC(\(exit) (\(f, .pkt=NULL) { # 读取包数据
+        pkt <- if(is.null(.pkt)) readBin(self$sock, "raw", pkt_len) else .pkt # 初始值
+        if (length(pkt) < pkt_len) { # 读取数据直到达到pkt_len
+          more <- readBin(self$sock, "raw", pkt_len - length(pkt))
+          if (length(more) == 0) exit(pkt) else f(f, c(pkt, more)) # 递归读取
+        } else pkt # 数据读取完毕
+      }) |> (\(g) g(g)) ()) # callCC
     },
    
     # 发送包数据 
