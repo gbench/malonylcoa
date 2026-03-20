@@ -1,5 +1,4 @@
 # MySQL 原生协议 R 实现 - 适用于 MySQL 8.0/9.0+
-# 修正：认证切换时的序列号问题
 
 if (!require("digest", quietly = TRUE)) {
   stop("请先安装 digest 包: install.packages('digest')")
@@ -205,20 +204,16 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         stage1 <- digest::digest(self$password, "sha1", serialize = FALSE, raw = TRUE)
         stage2 <- digest::digest(stage1, "sha1", serialize = FALSE, raw = TRUE)
         sha_salt_stage2 <- digest::digest(c(salt[1:20], stage2), "sha1", serialize = FALSE, raw = TRUE)
-        auth_response <- raw(20)
-        for (i in 1:20) {
-          auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), as.integer(sha_salt_stage2[i])))
-        }
-        auth_response
+        Reduce(\(auth_response, i) {
+          auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), as.integer(sha_salt_stage2[i]))); auth_response 
+        }, init = raw(20), x=1:20)
       } else if (plugin == "caching_sha2_password") {
         hash1 <- digest::digest(self$password, "sha256", serialize = FALSE, raw = TRUE)
         hash2 <- digest::digest(hash1, "sha256", serialize = FALSE, raw = TRUE)
         hash3 <- digest::digest(c(hash2, salt[1:20]), "sha256", serialize = FALSE, raw = TRUE)
-        auth_response <- raw(32)
-        for (i in 1:32) {
-          auth_response[i] <- as.raw(bitwXor(as.integer(hash1[i]), as.integer(hash3[i])))
-        }
-        auth_response
+        Reduce(\(auth_response, i) {
+          auth_response[i] <- as.raw(bitwXor(as.integer(hash1[i]), as.integer(hash3[i]))); auth_response
+        }, init = raw(32), x = 1:32)
       } else {
         raw(0)
       } # if
@@ -509,7 +504,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       org_name <- self$read_lenenc_str(pkt, pos)
       pos <- attr(org_name, "next_pos")
       
-      # 【关键修复】直接读取 1 字节作为 fixed_len (总是 0x0c)
+      # 直接读取 1 字节作为 fixed_len (总是 0x0c)
       fixed_len <- bytes_to_int(pkt, pos, 1)
       pos <- pos + 1
       
@@ -521,7 +516,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       column_length <- bytes_to_int(pkt, pos, 4)
       pos <- pos + 4
       
-      # 读取列类型 (1字节) - 现在位置正确了
+      # 读取列类型 (1字节) 
       column_type <- as.integer(pkt[pos])
       pos <- pos + 1
       
