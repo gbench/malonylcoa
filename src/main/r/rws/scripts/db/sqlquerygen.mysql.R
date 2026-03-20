@@ -403,7 +403,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       
       # 结果集
       col_count <- as.integer(pkt[1])
-      columns <- seq(col_count) |> Reduce(\(acc, i) { col_pkt <- self$read_packet(); acc[[i]] <- self$parse_column(col_pkt); acc }, x=_, init=list())
+      columns <- seq(col_count) |> lapply(\(i) self$parse_column(self$read_packet()))
       
       # EOF 包
       self$read_packet()
