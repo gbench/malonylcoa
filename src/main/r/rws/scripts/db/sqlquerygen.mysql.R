@@ -427,10 +427,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$read_packet()
       # 读取行数据
       rows <- callCC(\(exit) {
-        (\(f, acc = list()) { # f 表示当前函数本身
+        (\(f, acc = list()) { # f 表示当前函数本身, acc:累计行集
           row_pkt <- self$read_packet()
           if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
-          f(f, append(acc, list(self$parse_row(row_pkt, columns))))
+          row <- list(self$parse_row(row_pkt, columns)) # 把行向量封装成list对象,确保append到acc成为独立行元素,否则append向量会扁平化，造成行无法区分！
+          f(f, append(acc, row)) # 递归追加数据行
         }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
       }) # rows
       row_count <- length(rows)
@@ -465,13 +466,13 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       } else if (type_name == "BIT") {
         sapply(values, \(v) {
           if (is.na(v)) NA
-	  else if (is.raw(v)) sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
+	        else if (is.raw(v)) sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
           else as.integer(v)
         })
       } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
         lapply(values, \(v) {
           if (is.na(v)) NA
-	  else if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) as.Date(v)
+	        else if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) as.Date(v)
           else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
           else v
         }) |> do.call(c, args=_) # 使用do.call来避免unlist自动抹除时间类型的class属性:"POSIXct","POSIXt"
@@ -481,12 +482,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         if (all(sapply(values, is.raw))) I(values)
         else unlist(values)
       } else if (type_name == "JSON") {
-	if(!require(jsonlite)) stop("请先安装 jsonlite 包: install.packages('jsonlite')")
+	      if(!require(jsonlite)) stop("请先安装 jsonlite 包: install.packages('jsonlite')")
         sapply(values, \(v) if (is.na(v)) NA else tryCatch(jsonlite::fromJSON(v), error = \(e) v), simplify = FALSE)
       } else if (type_name %in% c("ENUM", "SET")) {
         factor(unlist(values))
-      } else {
-        # 默认作为字符类型
+      } else { # 默认作为字符类型
         unlist(values)
       } # result
       
@@ -615,7 +615,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       }) # with
     },
     
-    # 行数据
+    # 行数据, 返回一个字符向量
     parse_row = \(bytes, columns) {
       callCC(\(exit) {
         (\(f, pos = 1, row = character(0), cols_left = columns) { # f 表示当前函数本身,row = character(0), 行初始为空字符串向量
@@ -708,16 +708,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
 sqlquerygen.mysql <- \(host, port = 3306, user, password, database) {
   conn <- MySQLConnection$new(host, port, user, password, database)
   conn$connect()
-  
-  query_fn <- \(sql) {
-    tryCatch({
-      conn$query(sql)
-    }, error = \(e) {
-      try(conn$close(), silent = TRUE)
-      stop(e)
-    })
-  }
-  
+  query_fn <- \(sql) tryCatch(conn$query(sql), error = print)
   attr(query_fn, "close") <- \() conn$close()
   query_fn
 }
