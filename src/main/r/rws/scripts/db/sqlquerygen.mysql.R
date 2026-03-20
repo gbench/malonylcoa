@@ -31,14 +31,14 @@ pack_int <- \(x, n = 4) {
 #' 
 #' @param bytes 字节数组
 #' @param pos 位置索引
-#' @param eval_bs value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive)
-read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else rawToChar(bs[start:end])) {
+#' @param eval_bs value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive, lenenc_meta: 长度编码整数的元信息)
+read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end, lenenc_meta) if (start > end) "" else rawToChar(bs[start:end])) {
   if (pos > length(bytes)) return(NULL)
   
   first <- as.integer(bytes[pos])
   
   # 长度信息表：c(额外字节数, 长度读取字节数)
-  info <- switch(as.character(first),
+  lenenc_meta <- switch(as.character(first),
     "251" = list(extra = 0, len = 0, null = TRUE),           # NULL (0xfb)
     "252" = list(extra = 2, len = 2, null = FALSE),          # 2字节长度 (0xfc)
     "253" = list(extra = 3, len = 3, null = FALSE),          # 3字节长度 (0xfd)
@@ -47,15 +47,16 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else 
     list(extra = 0, len = first, null = FALSE)               # 0-250 直接编码
   )
   
-  if (is.null(info)) list(value = NULL, next_pos = pos + 1, is_null = FALSE, is_error = TRUE)
-  else if (info$null) list(value = NA, next_pos = pos + 1, is_null = TRUE, is_error = FALSE)
+  if (is.null(lenenc_meta)) list(value = NULL, next_pos = pos + 1, is_null = FALSE, is_error = TRUE)
+  else if (lenenc_meta$null) list(value = NA, next_pos = pos + 1, is_null = TRUE, is_error = FALSE)
   else { 
-    data_len <- ifelse(info$extra == 0, info$len, bytes_to_int(bytes, pos + 1, info$len)) 
-    data_start <- pos + 1 + max(0, info$extra - 1) # max(0, info$extra - 1) 等价于 ifelse(info$extra == 0, 0, info$extra - 1)
+    data_len <- ifelse(lenenc_meta$extra == 0, lenenc_meta$len, bytes_to_int(bytes, pos + 1, lenenc_meta$len)) 
+    data_start <- pos + 1 + max(0, lenenc_meta$extra - 1) # max(0, lenenc_meta$extra - 1) 等价于 ifelse(lenenc_meta$extra == 0, 0, lenenc_meta$extra - 1)
     data_end <- data_start + data_len - 1
-  
-    if (data_end > length(bytes)) list(value = NULL, next_pos = pos + 1 + info$extra, is_null = FALSE, is_error = TRUE)
-    else list(value = eval_bs(bytes, data_start, data_end), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE)
+    
+    if (data_end > length(bytes)) list(value = NULL, next_pos = pos + 1 + lenenc_meta$extra, is_null = FALSE, is_error = TRUE)
+    else list( # 注意，这是按照字符串逻辑计算的范围，对于整数需要lenenc_meta根据lenenc_meta调节
+      value = eval_bs(bytes, data_start, data_end, lenenc_meta), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE) 
   } # if
 }
 
@@ -378,11 +379,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     query = \(sql) {
       self$seq_id <- 0 # 重置序列号
       self$write_packet(c(as.raw(0x03), charToRaw(sql))) # 通过 COM_QUERY (0x03) 发送 SQL, 结果集返回的数据类型都是字符串
-      self$read_result() # 读取结果
+      if (grepl("^\\s*(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN)\\s", sql, TRUE)) self$read_query_result()
+      else self$read_execute_result() # 读取结果
     },
     
     # 读取返回结果
-    read_result = \() {
+    read_query_result = \() {
       pkt <- self$read_packet()
       if (length(pkt) == 0) return(data.frame())
       
@@ -428,6 +430,63 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         colnames(df) <- sapply(columns, \(x) x$name)
         df
       } # if
+    },
+
+    # 读取执行结果
+    read_execute_result = \() {
+      pkt <- self$read_packet()
+      if (length(pkt) == 0) {
+        return(data.frame(affected_rows = 0, insert_id = 0, server_status = 0, warnings = 0))
+      }
+      
+      msg_type <- as.integer(pkt[1])
+      
+      # 错误包
+      if (msg_type == 0xff) {
+        err_code <- as.integer(pkt[2]) + bitwShiftL(as.integer(pkt[3]), 8)
+        err_msg <- rawToChar(pkt[4:length(pkt)])
+        stop(sprintf("执行错误 [%d]: %s", err_code, err_msg))
+      }
+      
+      # OK 包
+      if (msg_type == 0x00) {
+        pos <- 2
+        
+        # 读取受影响的行数
+        affected_rows <- self$read_lenenc_int(pkt, pos)
+        pos <- attr(affected_rows, "next_pos")
+        
+        # 读取最后插入的ID
+        insert_id <- self$read_lenenc_int(pkt, pos)
+        pos <- attr(insert_id, "next_pos")
+        
+        # 读取服务器状态（2字节）
+        server_status <- 0
+        if (pos + 1 <= length(pkt)) {
+          server_status <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos + 1]), 8)
+          pos <- pos + 2
+        }
+        
+        # 读取警告数量（2字节）
+        warnings <- 0
+        if (pos + 1 <= length(pkt)) {
+          warnings <- as.integer(pkt[pos]) + bitwShiftL(as.integer(pkt[pos + 1]), 8)
+        }
+        
+        data.frame(
+          affected_rows = affected_rows,
+          insert_id = insert_id,
+          server_status = server_status,
+          warnings = warnings
+        )
+      } else if (msg_type > 0x00 && msg_type < 0xff) {
+        # 如果是结果集（不应该出现在 execute 中）
+        stop("execute 返回了结果集，请使用 query 方法")
+      } else {
+        # 其他情况
+        warning(sprintf("未知的响应类型: %d", msg_type))
+        data.frame(affected_rows = 0, insert_id = 0, server_status = 0, warnings = 0)
+      }
     },
     
     # 添加列转换函数 - 修复版本
@@ -590,10 +649,28 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 读取长度编码字符串
     read_lenenc_str = \(bytes, start_pos) {
       read_lenenc(bytes, start_pos) |> with({
-        attr(value, "next_pos") <- next_pos
-        attr(value, "is_null") <- is_null %||% FALSE
-        attr(value, "is_error") <- is_error %||% FALSE
-        value
+        .value = if (is.null(value)) "NULL" else value
+        attr(.value, "next_pos") <- next_pos
+        attr(.value, "is_null") <- is_null %||% FALSE
+        attr(.value, "is_error") <- is_error %||% FALSE
+        .value
+      }) # with
+    },
+
+    # 添加一个通用的长度编码整数解析辅助函数
+    read_lenenc_int = \(bytes, pos) {
+      .lenenc_meta <- NULL # 长度编码整数的元信息
+      read_lenenc(bytes, pos, eval_bs = \(bs, start, end, lenenc_meta) {
+        .lenenc_meta <<- lenenc_meta # 保存到本地
+        if(lenenc_meta$extra==0) lenenc_meta$len # 基础数值
+        else if (start > end) as.integer(bs[pos]) 
+        else bytes_to_int(bs, start, end - start + 1)
+      }) |> with({
+        .value = if (is.null(value)) 0 else value
+        attr(.value, "next_pos") <- if(!is.null(.lenenc_meta) && .lenenc_meta$extra==0) pos + 1 else next_pos
+        attr(.value, "is_null") <- is_null %||% FALSE
+        attr(.value, "is_error") <- is_error %||% FALSE
+        .value
       }) # with
     },
     
@@ -699,4 +776,12 @@ if (F) {
   tbls <- sqlquery("SHOW TABLES") |> print()
   tbls |> (\(., x=unlist(head(.))) sprintf(fmt="select * from %s limit 5", x=x) |> setNames(nm=_)) () |> lapply(compose(as_tibble, sqlquery)) |> print()
   attr(sqlquery, "close") ()
+} else if (F) {
+  library(tibble); library(purrr)
+  sqlquery <- sqlquerygen.mysql(host="localhost", port=3371, user="root", password="123456", database="inventory")
+  sqlquery("select * from t_pineapple_20251113") |> as_tibble() |> print()
+  sqlquery("drop table mtcars") |> print()
+  sqlquery(ctsql(mtcars)) |> print()
+  sqlquery(insql(mtcars)) |> print()
+  sqlquery("select * from mtcars") |> as_tibble() |> print()
 }
