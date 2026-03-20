@@ -450,27 +450,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 添加列转换函数 - 修复版本
     convert_column = \(values, col_info) {
       type_code <- col_info$column_type
-      type_name <- col_info$type_name
-      
-      # 调试输出（仅在需要时启用）
-      # print(values)
-      # print(col_info)
-      
-      # 处理 type_name 为 NULL 的情况
-      if (is.null(type_name)) {
-        type_name <- self$get_type_name(type_code)
-      }
-      
+      type_name <- ifelse(is.null(col_info$type_name), self$get_type_name(type_code), col_info$type_name) 
+
       # 处理 NULL 值
-      values <- lapply(values, \(v) {
-        if (is.null(v) || (is.raw(v) && length(v) == 1 && as.integer(v) == 0xfb)) {
-          return(NA)
-        }
-        if (is.raw(v)) {
-          return(rawToChar(v))
-        }
-        v
-      })
+      values <- lapply(values, \(v) if (is.null(v) || (is.raw(v) && length(v) == 1 && as.integer(v) == 0xfb)) NA else if (is.raw(v)) rawToChar(v) else v)
       
       # 根据类型进行转换 - 使用 if-else 替代 switch 避免 NULL 问题
       result <- if (type_name %in% c("TINY", "SHORT", "LONG", "LONGLONG", "INT24", "YEAR")) {
@@ -481,54 +464,33 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         as.numeric(unlist(values))
       } else if (type_name == "BIT") {
         sapply(values, \(v) {
-          if (is.na(v)) return(NA)
-          if (is.raw(v)) {
-            sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
-          } else {
-            as.integer(v)
-          }
+          if (is.na(v)) NA
+	  else if (is.raw(v)) sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
+          else as.integer(v)
         })
       } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
         lapply(values, \(v) {
-          if (is.na(v)) return(NA)
-          if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) {
-            as.Date(v)
-          } else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) {
-            as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
-          } else {
-            v
-          }
+          if (is.na(v)) NA
+	  else if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) as.Date(v)
+          else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
+          else v
         }) |> do.call(c, args=_) # 使用do.call来避免unlist自动抹除时间类型的class属性:"POSIXct","POSIXt"
       } else if (type_name == "TIME") {
         unlist(values)
       } else if (type_name %in% c("TINY_BLOB", "MEDIUM_BLOB", "LONG_BLOB", "BLOB", "GEOMETRY")) {
-        if (all(sapply(values, is.raw))) {
-          I(values)
-        } else {
-          unlist(values)
-        }
+        if (all(sapply(values, is.raw))) I(values)
+        else unlist(values)
       } else if (type_name == "JSON") {
-        sapply(values, \(v) {
-          if (is.na(v)) return(NA)
-          tryCatch({
-            jsonlite::fromJSON(v)
-          }, error = \(e) {
-            v
-          })
-        }, simplify = FALSE)
+	if(!require(jsonlite)) stop("请先安装 jsonlite 包: install.packages('jsonlite')")
+        sapply(values, \(v) if (is.na(v)) NA else tryCatch(jsonlite::fromJSON(v), error = \(e) v), simplify = FALSE)
       } else if (type_name %in% c("ENUM", "SET")) {
         factor(unlist(values))
       } else {
         # 默认作为字符类型
         unlist(values)
-      }
+      } # result
       
-      # 确保结果长度一致
-      if (length(result) != length(values)) {
-        result <- values
-      }
-      
-      result
+      if (length(result) != length(values)) values else result # 确保结果长度一致
     },
     
     # 列信息分析
