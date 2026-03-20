@@ -44,20 +44,20 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end) if (start > end) "" else 
     "252" = list(extra = 2, len = 2, null = FALSE),          # 2字节长度 (0xfc)
     "253" = list(extra = 3, len = 3, null = FALSE),          # 3字节长度 (0xfd)
     "254" = list(extra = 8, len = 8, null = FALSE),          # 8字节长度 (0xfe)
-    "255" = NULL,                                             # 错误
+    "255" = NULL,                                            # 错误
     list(extra = 0, len = first, null = FALSE)               # 0-250 直接编码
   )
   
-  if (is.null(info)) return(NULL)
-  if (info$null) return(list(val = NA, next_pos = pos + 1))
+  if (is.null(info)) list(val = NULL, next_pos = pos + 1, is_null = FALSE, is_error = TRUE)
+  else if (info$null) list(val = NA, next_pos = pos + 1, is_null = TRUE, is_error = FALSE)
+  else { 
+    data_len <- ifelse(info$extra == 0, info$len, bytes_to_int(bytes, pos + 1, info$len)) 
+    data_start <- pos + 1 + max(0, info$extra - 1) # max(0, info$extra - 1) 等价于 ifelse(info$extra == 0, 0, info$extra - 1)
+    data_end <- data_start + data_len - 1
   
-  # 用 bytes_to_int 读取长度（如果 extra > 0）
-  data_len <- if (info$extra == 0) info$len else bytes_to_int(bytes, pos + 1, info$len)
-  data_start <- pos + 1 + max(0, info$extra - 1) # max(0, info$extra - 1) 等价于 ifelse(info$extra == 0, 0, info$extra - 1)
-  data_end <- data_start + data_len - 1
-  
-  if (data_end > length(bytes)) list(error = TRUE, next_pos = pos + 1 + info$extra)
-  else list(value = eval_bs(bytes, data_start, data_end), next_pos = data_end + 1, is_null = FALSE)
+    if (data_end > length(bytes)) list(error = TRUE, next_pos = pos + 1 + info$extra)
+    else list(value = eval_bs(bytes, data_start, data_end), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE)
+  } # if
 }
 
 # MySQLConnection 数据库连接对象
@@ -639,11 +639,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         "255" = "GEOMETRY"
       )
       
-      if (as.character(type_code) %in% names(type_map)) {
-        type_map[as.character(type_code)]
-      } else {
-        sprintf("UNKNOWN(%d)", type_code)
-      }
+      if (as.character(type_code) %in% names(type_map)) type_map[as.character(type_code)]
+      else sprintf("UNKNOWN(%d)", type_code)
     },
     
     # 读取长度编码字符串
@@ -651,8 +648,9 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       read_lenenc(bytes, start_pos) |> with({
         attr(value, "next_pos") <- next_pos
         attr(value, "is_null") <- is_null %||% FALSE
+        attr(value, "is_error") <- is_error %||% FALSE
         value
-      })
+      }) # with
     },
     
     # 行数据
