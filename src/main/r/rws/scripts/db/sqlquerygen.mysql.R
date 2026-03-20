@@ -31,8 +31,8 @@ pack_int <- \(x, n = 4) {
 #' 
 #' @param bytes 字节数组
 #' @param pos 位置索引
-#' @param lenenc_meta value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive, lenenc_meta: 长度编码整数的元信息)
-read_lenenc <- \(bytes, pos, lenenc_meta=\(bs, start, end, lenenc_meta) if (start > end) "" else rawToChar(bs[start:end])) {
+#' @param eval_bs value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive, lenenc_meta: 长度编码整数的元信息)
+read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end, lenenc_meta) if (start > end) "" else rawToChar(bs[start:end])) {
   if (pos > length(bytes)) return(NULL)
   
   first <- as.integer(bytes[pos])
@@ -56,7 +56,7 @@ read_lenenc <- \(bytes, pos, lenenc_meta=\(bs, start, end, lenenc_meta) if (star
     
     if (data_end > length(bytes)) list(value = NULL, next_pos = pos + 1 + lenenc_meta$extra, is_null = FALSE, is_error = TRUE)
     else list( # 注意，这是按照字符串逻辑计算的范围，对于整数需要lenenc_meta根据lenenc_meta调节
-      value = lenenc_meta(bytes, data_start, data_end, lenenc_meta), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE) 
+      value = eval_bs(bytes, data_start, data_end, lenenc_meta), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE) 
   } # if
 }
 
@@ -660,8 +660,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 添加一个通用的长度编码整数解析辅助函数
     read_lenenc_int = \(bytes, pos) {
       .lenenc_meta <- NULL # 长度编码整数的元信息
-      read_lenenc(bytes, pos, lenenc_meta = \(bs, start, end, lenenc_meta) {
-        .lenenc_meta <<- lenenc_meta
+      read_lenenc(bytes, pos, eval_bs = \(bs, start, end, lenenc_meta) {
+        .lenenc_meta <<- lenenc_meta # 保存到本地
         if(lenenc_meta$extra==0) lenenc_meta$len # 基础数值
         else if (start > end) as.integer(bs[pos]) 
         else bytes_to_int(bs, start, end - start + 1)
