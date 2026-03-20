@@ -209,7 +209,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         for (i in 1:20) {
           auth_response[i] <- as.raw(bitwXor(as.integer(stage1[i]), as.integer(sha_salt_stage2[i])))
         }
-        return(auth_response)
+        auth_response
       } else if (plugin == "caching_sha2_password") {
         hash1 <- digest::digest(self$password, "sha256", serialize = FALSE, raw = TRUE)
         hash2 <- digest::digest(hash1, "sha256", serialize = FALSE, raw = TRUE)
@@ -218,9 +218,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         for (i in 1:32) {
           auth_response[i] <- as.raw(bitwXor(as.integer(hash1[i]), as.integer(hash3[i])))
         }
-        return(auth_response)
-      }
-      return(raw(0))
+        auth_response
+      } else {
+        raw(0)
+      } # if
     },
     
     send_auth = \() {
@@ -249,14 +250,14 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         as.raw(33),                  # charset utf8
         raw(23),                     # reserved
         charToRaw(self$user), as.raw(0)
-      )
+      ) # pkt
       
       # 认证响应
       if (length(auth_response) > 0) {
         pkt <- c(pkt, as.raw(length(auth_response)), auth_response)
       } else {
         pkt <- c(pkt, as.raw(0))
-      }
+      } # if
       
       # 数据库名
       if (!is.null(self$database) && nchar(self$database) > 0) {
@@ -271,7 +272,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$write_packet(pkt)
       message(sprintf("发送认证包，使用插件: %s", self$server_auth_plugin))
     },
-    
+   
+    # 处理认证响应
     handle_auth_response = \() {
       pkt <- self$read_packet()
       if (length(pkt) == 0) stop("连接失败：无响应")
@@ -298,6 +300,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       }
     },
     
+    # 处理认证切换 
     handle_auth_switch = \(pkt) {
       if (length(pkt) < 2) stop("Auth switch 包太短")
       
@@ -341,7 +344,8 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       # 继续处理认证
       self$handle_auth_response()
     },
-    
+   
+    # 处理 caching_sha2_auth 
     handle_caching_sha2_auth = \(pkt) {
       if (length(pkt) < 2) {
         self$handle_auth_response()
@@ -378,9 +382,9 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
             err_code <- as.integer(result_pkt[2]) + bitwShiftL(as.integer(result_pkt[3]), 8)
             err_msg <- rawToChar(result_pkt[4:length(result_pkt)])
             stop(sprintf("密码认证失败 [%d]: %s", err_code, err_msg))
-          }
-        }
-      }
+          } # if as.integer
+        } # if length
+      } # if auth_status
       
       self$handle_auth_response()
     },
