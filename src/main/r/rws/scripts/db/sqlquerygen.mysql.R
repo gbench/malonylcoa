@@ -225,20 +225,10 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     },
     
     send_auth = \() {
-      # 客户端能力标志
-      CLIENT_LONG_PASSWORD <- 2^0
-      CLIENT_PROTOCOL_41 <- 2^9
-      CLIENT_SECURE_CONNECTION <- 2^15
-      CLIENT_PLUGIN_AUTH <- 2^19
-      CLIENT_CONNECT_WITH_DB <- 2^3
-      CLIENT_PLUGIN_AUTH_LENENC_DATA <- 2^17
-      
-      client_flag <- CLIENT_LONG_PASSWORD
-      client_flag <- bitwOr(client_flag, CLIENT_PROTOCOL_41)
-      client_flag <- bitwOr(client_flag, CLIENT_SECURE_CONNECTION)
-      client_flag <- bitwOr(client_flag, CLIENT_PLUGIN_AUTH)
-      client_flag <- bitwOr(client_flag, CLIENT_CONNECT_WITH_DB)
-      client_flag <- bitwOr(client_flag, CLIENT_PLUGIN_AUTH_LENENC_DATA)
+      client_flag <- c( # 客户端能力标记
+        CLIENT_LONG_PASSWORD = 0, CLIENT_PROTOCOL_41 = 9, CLIENT_SECURE_CONNECTION = 15,
+        CLIENT_PLUGIN_AUTH = 19, CLIENT_CONNECT_WITH_DB = 3, CLIENT_PLUGIN_AUTH_LENENC_DATA = 17
+      ) |> (\(i) 2^i) () |> Reduce(bitwOr, x=_)
       
       # 使用服务器要求的插件计算认证响应
       auth_response <- self$calculate_auth(self$server_auth_plugin, self$salt)
@@ -389,17 +379,14 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$handle_auth_response()
     },
     
+    # 执行SQL语句
     query = \(sql) {
-      # 重置序列号
-      self$seq_id <- 0
-      
-      # 发送查询命令
+      self$seq_id <- 0 # 重置序列号
       self$write_packet(c(as.raw(0x03), charToRaw(sql))) # 通过 COM_QUERY (0x03) 发送 SQL, 结果集返回的数据类型都是字符串
-      
-      # 读取结果
-      self$read_result()
+      self$read_result() # 读取结果
     },
     
+    # 读取返回结果
     read_result = \() {
       pkt <- self$read_packet()
       if (length(pkt) == 0) return(data.frame())
@@ -445,7 +432,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         df <- seq(col_count) |> lapply(\(j) sapply(rows, getElement, name=j) |> self$convert_column(columns[[j]])) |> as.data.frame()
         colnames(df) <- sapply(columns, \(x) x$name)
         df
-      }
+      } # if
     },
     
     # 添加列转换函数 - 修复版本
