@@ -9,8 +9,7 @@ if (!require("digest", quietly = TRUE)) {
 
 # 字节转整数（小端）
 bytes_to_int <- \(bytes, start = 1, n = 4) {
-  if (length(bytes) < start + n - 1) return(0)
-  sum(as.integer(bytes[start:(start + n - 1)]) * 256^(0:(n - 1)))
+  if (length(bytes) < start + n - 1) 0 else sum(as.integer(bytes[start:(start + n - 1)]) * 256^(0:(n - 1)))
 }
 
 # 打包整数为小端字节
@@ -662,24 +661,19 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
       }) # callCC
     },
-    
+   
+    # 读取报数据 
     read_packet = \() {
-      # 读取包头
-      header <- readBin(self$sock, "raw", 4)
+      header <- readBin(self$sock, "raw", 4) # 读取包头
       if (length(header) < 4) return(raw(0))
       
-      # 解析包长度
-      pkt_len <- as.integer(header[1]) + 
-        bitwShiftL(as.integer(header[2]), 8) + 
-        bitwShiftL(as.integer(header[3]), 16)
-      
-      # 获取序列号
-      seq <- as.integer(header[4])
-      
+      pkt_len <- bytes_to_int(header, n=3) # 解析包长度
+      seq <- as.integer(header[4]) # 获取序列号
+
       # 检查序列号
-      if (seq != self$seq_id) {
+      if (seq != self$seq_id) { 
         # 在认证切换时，序列号可能会重置，这里只记录不报错
-        if (self$auth_phase > 0) {
+        if (self$auth_phase > 0) { 
           # 认证阶段，接受序列号变化
           self$seq_id <- seq + 1
         } else {
@@ -698,11 +692,12 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         more <- readBin(self$sock, "raw", pkt_len - length(pkt))
         if (length(more) == 0) break
         pkt <- c(pkt, more)
-      }
+      } # while
       
       pkt
     },
-    
+   
+    # 发送包数据 
     write_packet = \(data) {
       pkt_len <- length(data)
       
@@ -722,9 +717,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       self$seq_id <- self$seq_id + 1
       self$auth_phase <- self$auth_phase + 1
     },
-    
+   
+    # 打包一个整数默认4字节 
     pack_int32 = pack_int,
     
+    # 连接关闭 
     close = \() {
       if (!is.null(self$sock)) {
         tryCatch({
