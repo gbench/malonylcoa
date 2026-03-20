@@ -776,5 +776,12 @@ if (F) {
   tbls <- sqlquery("SHOW TABLES") |> print()
   tbls |> (\(., x=unlist(head(.))) sprintf(fmt="select * from %s limit 5", x=x) |> setNames(nm=_)) () |> lapply(compose(as_tibble, sqlquery)) |> print()
   attr(sqlquery, "close") ()
+} else if (F) {
+  library(tibble); library(purrr)
+  sqlquery <- sqlquerygen.mysql(host="localhost", port=3371, user="root", password="123456", database="inventory")
+  sqlquery("select * from t_pineapple_20251113") |> as_tibble() |> print()
+  sqlquery("drop table mtcars") |> print()
+  sqlquery(ctsql(mtcars)) |> print()
+  sqlquery(insql(mtcars)) |> print()
+  sqlquery("select * from mtcars") |> as_tibble() |> print()
 }
-
