@@ -466,13 +466,13 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       } else if (type_name == "BIT") {
         sapply(values, \(v) {
           if (is.na(v)) NA
-	        else if (is.raw(v)) sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
+          else if (is.raw(v)) sum(as.integer(v) * 256^(rev(seq_along(v)-1)))
           else as.integer(v)
         })
       } else if (type_name %in% c("DATE", "DATETIME", "TIMESTAMP")) {
         lapply(values, \(v) {
           if (is.na(v)) NA
-	        else if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) as.Date(v)
+          else if (grepl("^\\d{4}-\\d{2}-\\d{2}$", v)) as.Date(v)
           else if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", v)) as.POSIXct(v, format = "%Y-%m-%d %H:%M:%S")
           else v
         }) |> do.call(c, args=_) # 使用do.call来避免unlist自动抹除时间类型的class属性:"POSIXct","POSIXt"
@@ -482,7 +482,7 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
         if (all(sapply(values, is.raw))) I(values)
         else unlist(values)
       } else if (type_name == "JSON") {
-	      if(!require(jsonlite)) stop("请先安装 jsonlite 包: install.packages('jsonlite')")
+        if(!require(jsonlite)) stop("请先安装 jsonlite 包: install.packages('jsonlite')")
         sapply(values, \(v) if (is.na(v)) NA else tryCatch(jsonlite::fromJSON(v), error = \(e) v), simplify = FALSE)
       } else if (type_name %in% c("ENUM", "SET")) {
         factor(unlist(values))
