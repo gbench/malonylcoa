@@ -31,14 +31,14 @@ pack_int <- \(x, n = 4) {
 #' 
 #' @param bytes 字节数组
 #' @param pos 位置索引
-#' @param eval_bs value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive, info: 长度信息表)
-read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end, info) if (start > end) "" else rawToChar(bs[start:end])) {
+#' @param lenenc_meta value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive, lenenc_meta: 长度编码整数的元信息)
+read_lenenc <- \(bytes, pos, lenenc_meta=\(bs, start, end, lenenc_meta) if (start > end) "" else rawToChar(bs[start:end])) {
   if (pos > length(bytes)) return(NULL)
   
   first <- as.integer(bytes[pos])
   
   # 长度信息表：c(额外字节数, 长度读取字节数)
-  info <- switch(as.character(first),
+  lenenc_meta <- switch(as.character(first),
     "251" = list(extra = 0, len = 0, null = TRUE),           # NULL (0xfb)
     "252" = list(extra = 2, len = 2, null = FALSE),          # 2字节长度 (0xfc)
     "253" = list(extra = 3, len = 3, null = FALSE),          # 3字节长度 (0xfd)
@@ -47,15 +47,16 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end, info) if (start > end) ""
     list(extra = 0, len = first, null = FALSE)               # 0-250 直接编码
   )
   
-  if (is.null(info)) list(value = NULL, next_pos = pos + 1, is_null = FALSE, is_error = TRUE)
-  else if (info$null) list(value = NA, next_pos = pos + 1, is_null = TRUE, is_error = FALSE)
+  if (is.null(lenenc_meta)) list(value = NULL, next_pos = pos + 1, is_null = FALSE, is_error = TRUE)
+  else if (lenenc_meta$null) list(value = NA, next_pos = pos + 1, is_null = TRUE, is_error = FALSE)
   else { 
-    data_len <- ifelse(info$extra == 0, info$len, bytes_to_int(bytes, pos + 1, info$len)) 
-    data_start <- pos + 1 + max(0, info$extra - 1) # max(0, info$extra - 1) 等价于 ifelse(info$extra == 0, 0, info$extra - 1)
+    data_len <- ifelse(lenenc_meta$extra == 0, lenenc_meta$len, bytes_to_int(bytes, pos + 1, lenenc_meta$len)) 
+    data_start <- pos + 1 + max(0, lenenc_meta$extra - 1) # max(0, lenenc_meta$extra - 1) 等价于 ifelse(lenenc_meta$extra == 0, 0, lenenc_meta$extra - 1)
     data_end <- data_start + data_len - 1
-  
-    if (data_end > length(bytes)) list(value = NULL, next_pos = pos + 1 + info$extra, is_null = FALSE, is_error = TRUE)
-    else list(value = eval_bs(bytes, data_start, data_end, info), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE)
+    
+    if (data_end > length(bytes)) list(value = NULL, next_pos = pos + 1 + lenenc_meta$extra, is_null = FALSE, is_error = TRUE)
+    else list( # 注意，这是按照字符串逻辑计算的范围，对于整数需要lenenc_meta根据lenenc_meta调节
+      value = lenenc_meta(bytes, data_start, data_end, lenenc_meta), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE) 
   } # if
 }
 
@@ -658,13 +659,15 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
 
     # 添加一个通用的长度编码整数解析辅助函数
     read_lenenc_int = \(bytes, pos) {
-      read_lenenc(bytes, pos, eval_bs = \(bs, start, end, info) {
-        if(info$extra==0) info$len # 基础数值
+      .lenenc_meta <- NULL # 长度编码整数的元信息
+      read_lenenc(bytes, pos, lenenc_meta = \(bs, start, end, lenenc_meta) {
+        .lenenc_meta <<- lenenc_meta
+        if(lenenc_meta$extra==0) lenenc_meta$len # 基础数值
         else if (start > end) as.integer(bs[pos]) 
         else bytes_to_int(bs, start, end - start + 1)
       }) |> with({
         .value = if (is.null(value)) 0 else value
-        attr(.value, "next_pos") <- next_pos
+        attr(.value, "next_pos") <- if(!is.null(.lenenc_meta) && .lenenc_meta$extra==0) pos + 1 else next_pos
         attr(.value, "is_null") <- is_null %||% FALSE
         attr(.value, "is_error") <- is_error %||% FALSE
         .value
@@ -774,3 +777,4 @@ if (F) {
   tbls |> (\(., x=unlist(head(.))) sprintf(fmt="select * from %s limit 5", x=x) |> setNames(nm=_)) () |> lapply(compose(as_tibble, sqlquery)) |> print()
   attr(sqlquery, "close") ()
 }
+
