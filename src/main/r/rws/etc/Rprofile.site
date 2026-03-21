@@ -92,23 +92,44 @@ eval(quote({ # 自举构建具体过程逻辑
   #' @param lazyloads_home 延迟数据库根目录，默认为 RSCRIPT_HOME 环境变量指定路径下的 lazyloads 文件夹
   #' @return 生成的延迟加载数据库文件的路径
   #' @export
-  mklzdb <- function(dbname, envir = environment(), lazyloads_home = file.path(rscript_home, "lazyloads")) {
-    # 创建延迟加载的数据根目录
+  mklzdb <- function(dbname, envir = environment(), lazyloads_home = file.path(rscript_home, "lazyloads"), compile = TRUE, optimize_level = 3) {
     mkdir(lazyloads_home)
-    
-    # 构建目标文件路径
     target <- file.path(lazyloads_home, dbname)
     
-    # 生成数据文件
+    if (compile && is.environment(envir) && requireNamespace("compiler", quietly = TRUE)) {
+        
+      # 递归编译函数（带深度限制）
+      compile_env <- function(env, depth = 0, max_depth = 10) {
+        if (depth > max_depth) return()
+        if (!is.environment(env) || identical(env, emptyenv())) return()
+        
+        for (nm in ls(env, all.names = TRUE)) {
+          obj <- get(nm, envir = env)
+          if (is.function(obj)) {
+            assign(nm, compiler::cmpfun(obj, options = list(optimize = optimize_level)), envir = env)
+            # 递归处理闭包环境
+            func_env <- environment(get(nm, envir = env))
+            if (!identical(func_env, env) && !identical(func_env, emptyenv())) {
+                compile_env(func_env, depth + 1, max_depth)
+            }
+          }
+        }
+      }
+      
+      compile_env(envir)
+      message("函数编译完成")
+    }
+    
     tryCatch({
+      old <- options(keep.source = FALSE)
+      on.exit(options(old))
       tools:::makeLazyLoadDB(envir, target)
-      message(paste("Successfully created lazy load database at:", target))
+      message("成功创建: ", target)
     }, error = function(e) {
-      stop(paste("Failed to create lazy load database at:", target, "Error:", e$message))
+      stop("创建失败: ", target, " - ", e$message)
     })
     
-    # 返回数据文件路径
-    return(target)
+    invisible(target)
   }
 
   #' 批量加载包
