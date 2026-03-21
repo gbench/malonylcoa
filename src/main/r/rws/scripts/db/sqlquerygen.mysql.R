@@ -31,7 +31,8 @@ pack_int <- \(x, n = 4) {
 #' 
 #' @param bytes 字节数组
 #' @param pos 位置索引
-#' @param eval_bs value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive, lenenc_meta: 长度编码整数的元信息)
+#' @param eval_bs value值的字节数组计算函数(bs:字节数组, start:开始索引, end：结束索引inclusive, lenenc_meta: 长度编码整数的元信息,
+#' 注意：start, end 是按照String数据类型进行计算的，对于Integer数据则需要自己根据lenenc_meta结构进行求值)
 read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end, lenenc_meta) if (start > end) "" else rawToChar(bs[start:end])) {
   if (pos > length(bytes)) return(NULL)
   
@@ -50,13 +51,12 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end, lenenc_meta) if (start > 
   if (is.null(lenenc_meta)) list(value = NULL, next_pos = pos + 1, is_null = FALSE, is_error = TRUE)
   else if (lenenc_meta$null) list(value = NA, next_pos = pos + 1, is_null = TRUE, is_error = FALSE)
   else { 
-    data_len <- ifelse(lenenc_meta$extra == 0, lenenc_meta$len, bytes_to_int(bytes, pos + 1, lenenc_meta$len)) 
-    data_start <- pos + 1 + max(0, lenenc_meta$extra - 1) # max(0, lenenc_meta$extra - 1) 等价于 ifelse(lenenc_meta$extra == 0, 0, lenenc_meta$extra - 1)
-    data_end <- data_start + data_len - 1
-    
-    if (data_end > length(bytes)) list(value = NULL, next_pos = pos + 1 + lenenc_meta$extra, is_null = FALSE, is_error = TRUE)
-    else list( # 注意，这是按照字符串逻辑计算的范围，对于整数需要lenenc_meta根据lenenc_meta调节
-      value = eval_bs(bytes, data_start, data_end, lenenc_meta), next_pos = data_end + 1, is_null = FALSE, is_error = FALSE) 
+    len <- ifelse(lenenc_meta$extra == 0, lenenc_meta$len, bytes_to_int(bytes, pos + 1, lenenc_meta$len)) 
+    start <- pos + 1 + max(0, lenenc_meta$extra - 1) # max(0, lenenc_meta$extra - 1) 等价于 ifelse(lenenc_meta$extra == 0, 0, lenenc_meta$extra - 1)
+    end <- start + len - 1 # 末端索引
+    value <- eval_bs(bytes, start, end, lenenc_meta) # 数据求值
+    if (end > length(bytes)) list(value=value, next_pos = pos + 1 + lenenc_meta$extra, is_null = FALSE, is_error = TRUE)
+    else list(value = value, next_pos = end + 1, is_null = FALSE, is_error = FALSE) 
   } # if
 }
 
@@ -410,14 +410,24 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
       # EOF 包
       self$read_packet()
       # 读取行数据
-      rows <- callCC(\(exit) {
-        (\(f, acc = list()) { # f 表示当前函数本身, acc:累计行集
-          row_pkt <- self$read_packet()
-          if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
-          row <- list(self$parse_row(row_pkt, columns)) # 把行向量封装成list对象,确保append到acc成为独立行元素,否则append向量会扁平化，造成行无法区分！
-          f(f, append(acc, row)) # 递归追加数据行
-        }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
-      }) # rows
+      
+      rows <- if(F) { # 递归模式
+          callCC(\(exit) {
+            (\(f, acc = list()) { # f 表示当前函数本身, acc:累计行集
+              row_pkt <- self$read_packet()
+              if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
+              row <- list(self$parse_row(row_pkt, columns)) # 把行向量封装成list对象,确保append到acc成为独立行元素,否则append向量会扁平化，造成行无法区分！
+              f(f, append(acc, row)) # 递归追加数据行
+            }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
+          }) # callCC
+        } else { # 非递归模式
+          acc <- list()
+          callCC(\(exit) repeat {
+            row_pkt <- self$read_packet()
+            if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
+            acc[[length(acc) + 1]] <- self$parse_row(row_pkt, columns) # 尾部追加
+          }) # callCC
+        } # rows if
       row_count <- length(rows)
       
       # 转换为数据框
@@ -660,16 +670,22 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
     # 添加一个通用的长度编码整数解析辅助函数
     read_lenenc_int = \(bytes, pos) {
       .lenenc_meta <- NULL # 长度编码整数的元信息
-      read_lenenc(bytes, pos, eval_bs = \(bs, start, end, lenenc_meta) {
+      read_lenenc(bytes, pos, eval_bs = \(bs, start, end, lenenc_meta) { # 自定义求值
         .lenenc_meta <<- lenenc_meta # 保存到本地
-        if(lenenc_meta$extra==0) lenenc_meta$len # 基础数值
-        else if (start > end) as.integer(bs[pos]) 
-        else bytes_to_int(bs, start, end - start + 1)
+        value <- lenenc_meta |> with( # 根据长度编码元数据lenenc_meta直接计算数值
+          if(extra==0) len # extra 为0时, len本身就是数值数据
+          else bytes_to_int(bs, pos + 1, len) # extra 非0时, pos + 1 是数据开始位置, len是字节长度
+        ) # value
+        # print("------------------------------------------------------")
+        # cat("value", value, "start", start, "end", end, "lenenc_meta", jsonlite::toJSON(lenenc_meta, auto_unbox=T),"\n")
+        value
       }) |> with({
         .value = if (is.null(value)) 0 else value
-        attr(.value, "next_pos") <- if(!is.null(.lenenc_meta) && .lenenc_meta$extra==0) pos + 1 else next_pos
+        attr(.value, "next_pos") <- if(is.null(.lenenc_meta)) next_pos # 默认
+          else if(.lenenc_meta$extra==0) pos + 1 
+          else pos + .lenenc_meta$extra + 1
         attr(.value, "is_null") <- is_null %||% FALSE
-        attr(.value, "is_error") <- is_error %||% FALSE
+        attr(.value, "is_error") <- FALSE # 取消错误
         .value
       }) # with
     },
@@ -782,6 +798,6 @@ if (F) {
   sqlquery("select * from t_pineapple_20251113") |> as_tibble() |> print()
   sqlquery("drop table mtcars") |> print()
   sqlquery(ctsql(mtcars)) |> print()
-  sqlquery(insql(mtcars)) |> print()
+  sqlquery(insql(lapply(1:100, \(i) mtcars) |> do.call(rbind, args=_) |> head(3000) , mtcars)) |> print()
   sqlquery("select * from mtcars") |> as_tibble() |> print()
 }
