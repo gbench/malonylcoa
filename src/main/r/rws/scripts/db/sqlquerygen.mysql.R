@@ -425,9 +425,9 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
           callCC(\(exit) repeat {
             row_pkt <- self$read_packet()
             if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
-            acc[[length(acc) + 1]] <- self$parse_row(row_pkt, columns)
+            acc[[length(acc) + 1]] <- self$parse_row(row_pkt, columns) # 尾部追加
           }) # callCC
-        }# rows if
+        } # rows if
       row_count <- length(rows)
       
       # 转换为数据框
