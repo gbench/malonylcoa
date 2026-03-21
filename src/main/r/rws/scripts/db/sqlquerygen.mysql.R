@@ -60,6 +60,27 @@ read_lenenc <- \(bytes, pos, eval_bs=\(bs, start, end, lenenc_meta) if (start > 
   } # if
 }
 
+# 数组list，具有动态扩容功能
+arraylist <- \(capacity=1e3, parent=parent.frame()) (env <- new.env()) |> with({
+  this <- env; data <- vector("list", capacity); offset <- 0
+  .capacity <- capacity # 缓存capacity
+  # 更改了this父亲环境以便可以 arraylist(parent) |> with(xxxx)的在this中链式编程,访问到parent中的变量
+  # 但由于当前环境就是this，因此"parent.env(this) <-" 以后capacity就不可见了，故此处把capacity缓存this之中
+  parent.env(this) <- parent # 更改this父亲环境
+  
+  add <- \(e, i=NA) {
+    j <- if(is.na(i)) offset + 1 else i
+    n <- length(data)
+    if(j>n ) (length(data) <<- .capacity * (1 + length(data) %/% .capacity)) |> gettextf(fmt="arraylist容量扩增至：%s") |> message()
+    data[[j]] <<- e
+    offset <<- max(offset, j)
+  }
+  size <- \() offset 
+  aslist <- \() if(offset>0) head(data, offset) else list()
+  unlist <- \() base::unlist(aslist())
+  this
+})
+
 # MySQLConnection 数据库连接对象
 MySQLConnection <- R6::R6Class("MySQLConnection",
   public = list(
@@ -421,12 +442,11 @@ MySQLConnection <- R6::R6Class("MySQLConnection",
             }) |> (\(g) g(g)) () # 把 lambda 表达式命名为g，进而模拟递归
           }) # callCC
         } else { # 非递归模式
-          acc <- list()
-          callCC(\(exit) repeat {
+          arraylist() |> with(callCC(\(exit) repeat { # 使用arraylist进行动态数据行追加
             row_pkt <- self$read_packet()
-            if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(acc)
-            acc[[length(acc) + 1]] <- self$parse_row(row_pkt, columns) # 尾部追加
-          }) # callCC
+            if (length(row_pkt) == 0 || as.integer(row_pkt[1]) == 0xfe) exit(aslist()) # arraylist的aslist
+            add(self$parse_row(row_pkt, columns)) # arraylist的尾部追加
+          })) # arraylist
         } # rows if
       row_count <- length(rows)
       
