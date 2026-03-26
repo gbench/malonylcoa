@@ -1,0 +1,30 @@
+library(jsonlite); library(purrr);library(tibble)
+
+# 连接 ctp_daemon2 服务器
+ctp_daemon2_connect <- \(host="192.168.1.41", port=9898, timeout=10) socketConnection(host=host, port=port, blocking=F, open="r+", timeout=timeout)
+readline <-\() readLines(conn) |>  gsub("^[\\s>]+", "", x=_, perl=T)
+writeline <- \(line) writeLines(line, conn)
+
+# 系统登陆
+conn <- ctp_daemon2_connect()
+readline()
+
+#  日期
+writeline("hi")
+# 读取数据
+readline()
+
+#  日期
+writeline("date")
+# 读取数据
+readline()
+
+#  合约
+writeline("instruments")
+#  查看合约
+readline() |> strsplit(",")
+
+#  合约
+writeline("dump 10")
+#  查看合约
+xs <- readline() |> grep("^\\{", value=T, x=_) |> paste(collapse=",") |> gettextf(fmt="[%s]") |> fromJSON() |> as_tibble(); xs
