@@ -1,4 +1,4 @@
-library(jsonlite); library(purrr);library(tibble)
+library(jsonlite); library(purrr);library(tidyverse)
 
 # 连接 ctp_daemon2 服务器
 ctp_daemon2_connect <- \(host="192.168.1.41", port=9898, timeout=10) socketConnection(host=host, port=port, blocking=F, open="r+", timeout=timeout)
@@ -12,7 +12,10 @@ readline()
 #  日期
 writeline("hi")
 # 读取数据
-readline()
+loginfo <- readline(); meta
+# "hello, my friend[6], i am ctp_monitor[/opt/slicef/ws/gitws/mytrader/linuxctp/build/ctp_daemon2], port:9898, pid:4182, conf:[/opt/slicef/ws/gitws/mytrader/linuxctp/src0/config.ini], peer2peer:9898<->58912, start_time:2026-03-05 10:04:50, now:2026-03-27 01:11:40!"
+# 提取会话文件描述符
+session_fd <- loginfo |> sub(".*my friend\\[([0-9]+)\\].*", "\\1", x=_, perl=TRUE); session_fd
 
 #  日期
 writeline("date")
@@ -24,7 +27,16 @@ writeline("instruments")
 #  查看合约
 readline() |> strsplit(",")
 
-#  合约
-writeline("dump 10")
+#  合约(无限数量）
+writeline("dump -1")
 #  查看合约
-xs <- readline() |> grep("^\\{", value=T, x=_) |> paste(collapse=",") |> gettextf(fmt="[%s]") |> fromJSON() |> as_tibble(); xs
+xs <- readline() |> grep("^\\{", value=T, x=_) |> paste(collapse=",") |> gettextf(fmt="[%s]") |> fromJSON() |> as_tibble(); 
+xs |> select(InstrumentID, LastPrice)
+
+#  关闭合约
+writeline(gettextf("undump %s", fd))
+readline()
+
+#  查看合约
+xs <- readline() |> grep("^\\{", value=T, x=_) |> paste(collapse=",") |> gettextf(fmt="[%s]") |> fromJSON() |> as_tibble(); 
+xs |> select(InstrumentID, LastPrice)
