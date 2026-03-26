@@ -1,0 +1,251 @@
+R的所有对象都是通过一种结构（模板）: SEXP_REC 生成实例， 该实例的地址用SEXP来标记，可以说 SEXP <-> R对象。
+因此，这里我采用地址&引用的方式。把  SEXP 称为 R对象的在载体，更激进一点我们直接把SEXP成为R对象。
+这里先看一下R对象的结构：
+
+> a <- 1
+> b <- "hello world"
+> f <- \(a,b,c=100) gettextf("a:%s,b:%s,c:%s",a,b,c)
+> .Internal(inspect(a))
+@0x00000269109bdd80 14 REALSXP g0c1 [REF(2)] (len=1, tl=0) 1
+> .Internal(inspect(b))
+@0x00000269109bdcd8 16 STRSXP g0c1 [REF(2)] (len=1, tl=0)
+  @0x000002690e51da68 09 CHARSXP g0c2 [REF(3),gp=0x60] [ASCII] [cached] "hello world"
+> .Internal(inspect(f))
+@0x00000269109b6d18 03 CLOSXP g0c0 [REF(1),ATT] 
+FORMALS:
+  @0x00000269109b7450 02 LISTSXP g0c0 [REF(3)] 
+    TAG: @0x000002690e2bf450 01 SYMSXP g0c0 [MARK,REF(28)] "a"
+    @0x0000026908e526a0 01 SYMSXP g0c0 [MARK,REF(6061)] [missing argument]
+    TAG: @0x00000269109b7728 01 SYMSXP g0c0 [REF(9)] "b"
+    @0x0000026908e526a0 01 SYMSXP g0c0 [MARK,REF(6061)] [missing argument]
+    TAG: @0x0000026908ea9b30 01 SYMSXP g0c0 [MARK,REF(412),LCK,gp=0x4000] "c" (has value)
+    @0x00000269109bdbf8 14 REALSXP g0c1 [REF(1)] (len=1, tl=0) 100
+BODY:
+  @0x00000269109b70d0 06 LANGSXP g0c0 [REF(2)] 
+    @0x000002690cf3ab78 01 SYMSXP g0c0 [MARK,REF(682),LCK,gp=0x4000] "gettextf" (has value)
+    @0x00000269109bdb88 16 STRSXP g0c1 [REF(2)] (len=1, tl=0)
+      @0x000002690e51dce8 09 CHARSXP g0c2 [REF(3),gp=0x60] [ASCII] [cached] "a:%s,b:%s,c:%s"
+    @0x000002690e2bf450 01 SYMSXP g0c0 [MARK,REF(28)] "a"
+    @0x00000269109b7728 01 SYMSXP g0c0 [REF(9)] "b"
+    @0x0000026908ea9b30 01 SYMSXP g0c0 [MARK,REF(412),LCK,gp=0x4000] "c" (has value)
+CLOENV:
+  @0x000002690ce65918 04 ENVSXP g0c0 [MARK,REF(65535),GL,gp=0x8000] <R_GlobalEnv>
+ATTRIB:
+  @0x00000269109b6ce0 02 LISTSXP g0c0 [REF(1)] 
+    TAG: @0x0000026908e51830 01 SYMSXP g0c0 [MARK,REF(2),LCK,gp=0x4000] "srcref" (has value)
+    @0x00000269109ac608 13 INTSXP g0c3 [OBJ,REF(2),ATT] (len=8, tl=0) 1,6,1,50,6,...
+    ATTRIB:
+      @0x00000269109b7098 02 LISTSXP g0c0 [REF(1)] 
+        TAG: @0x0000026908e518a0 01 SYMSXP g0c0 [MARK,REF(65535),LCK,gp=0x4000] "srcfile" (has value)
+        @0x00000269109b74c0 04 ENVSXP g0c0 [OBJ,REF(2),ATT] <0x00000269109b74c0>
+        FRAME:
+          @0x00000269109b6d88 02 LISTSXP g0c0 [REF(1)] 
+            TAG: @0x000002690e5573b0 01 SYMSXP g0c0 [MARK,REF(28)] "lines"
+            @0x00000269109bdaa8 16 STRSXP g0c1 [REF(1)] (len=1, tl=0)
+              @0x000002690e521258 09 CHARSXP g0c4 [REF(2),gp=0x60] [ASCII] [cached] "f <- \(a,b,c=100) gettextf("a:%s,b:%s,c:%s",a,b,c)
+"
+            TAG: @0x000002690e568b18 01 SYMSXP g0c0 [MARK,REF(20)] "filename"
+            @0x00000269109bdae0 16 STRSXP g0c1 [REF(1)] (len=1, tl=0)
+              @0x0000026908ea1c88 09 CHARSXP g0c1 [MARK,REF(7),gp=0x60] [ASCII] [cached] ""
+        ENCLOS:
+          @0x0000026908e52748 04 ENVSXP g0c0 [MARK,REF(17996)] <R_EmptyEnv>
+        ATTRIB:
+          @0x00000269109b6d50 02 LISTSXP g0c0 [REF(1)] 
+            TAG: @0x0000026908e52470 01 SYMSXP g0c0 [MARK,REF(14073),LCK,gp=0x4000] "class" (has value)
+            @0x000002690e51dd68 16 STRSXP g0c2 [REF(65535)] (len=2, tl=0)
+              @0x000002690ced0318 09 CHARSXP g0c2 [MARK,REF(15),gp=0x61] [ASCII] [cached] "srcfilecopy"
+              @0x0000026908ea1710 09 CHARSXP g0c1 [MARK,REF(21),gp=0x61] [ASCII] [cached] "srcfile"
+        TAG: @0x0000026908e52470 01 SYMSXP g0c0 [MARK,REF(14073),LCK,gp=0x4000] "class" (has value)
+        @0x00000269109bdb50 16 STRSXP g0c1 [REF(1)] (len=1, tl=0)
+          @0x0000026908ea16d8 09 CHARSXP g0c1 [MARK,REF(25),gp=0x61] [ASCII] [cached] "srcref"
+> 
+
+# pairlist 类似于 LinkedHashMap
+> .Internal(inspect(pairlist(x=1, y=2, z=3)))
+@0x0000026910c43458 02 LISTSXP g0c0 [] 
+  TAG: @0x000002690ce7ea28 01 SYMSXP g0c0 [MARK,REF(7940)] "x"
+  @0x0000026910c3da70 14 REALSXP g0c1 [REF(4)] (len=1, tl=0) 1
+  TAG: @0x000002690cfbfa30 01 SYMSXP g0c0 [MARK,REF(1004)] "y"
+  @0x0000026910c3da38 14 REALSXP g0c1 [REF(4)] (len=1, tl=0) 2
+  TAG: @0x000002690cf898a0 01 SYMSXP g0c0 [MARK,REF(100)] "z"
+  @0x0000026910c3da00 14 REALSXP g0c1 [REF(4)] (len=1, tl=0) 3
+
+# list 类似于 ArrayList + LinkedHashMap 结构的ATTRIB 的合体！
+> .Internal(inspect(list(x=1, y=2, z=3)))
+@0x0000026910c3f968 19 VECSXP g0c3 [ATT] (len=3, tl=0)
+  @0x0000026910c3d990 14 REALSXP g0c1 [REF(3)] (len=1, tl=0) 1
+  @0x0000026910c3d958 14 REALSXP g0c1 [REF(3)] (len=1, tl=0) 2
+  @0x0000026910c3d920 14 REALSXP g0c1 [REF(3)] (len=1, tl=0) 3
+ATTRIB:
+  @0x0000026910c4cca0 02 LISTSXP g0c0 [REF(1)] 
+    TAG: @0x0000026908e51ec0 01 SYMSXP g0c0 [MARK,REF(6568),LCK,gp=0x4000] "names" (has value)
+    @0x0000026910c3f918 16 STRSXP g0c3 [REF(1)] (len=3, tl=0)
+      @0x000002690ce75de8 09 CHARSXP g0c1 [MARK,REF(123),gp=0x61] [ASCII] [cached] "x"
+      @0x000002690cfb9a30 09 CHARSXP g0c1 [MARK,REF(23),gp=0x61] [ASCII] [cached] "y"
+      @0x000002690cf79758 09 CHARSXP g0c1 [MARK,REF(5),gp=0x61] [ASCII] [cached] "z"
+> 
+
+# ATTRIB 可以嵌套！
+# ATTRIB 类似于  LinkedHashMap<SYMSXP, SEXP> 。 这里的  Map.entry = {TAG,CARVAL,CDRVAL} 元组结构。
+# STRSXP 类似一 ArrayList<CHARSXP>
+> .Internal(inspect(structure(list(x=1, y=2, z=3), time=Sys.time())))
+@0x0000026911218608 19 VECSXP g0c3 [ATT] (len=3, tl=0)
+  @0x000002691123bca0 14 REALSXP g0c1 [REF(4)] (len=1, tl=0) 1
+  @0x000002691123bc68 14 REALSXP g0c1 [REF(4)] (len=1, tl=0) 2
+  @0x000002691123bc30 14 REALSXP g0c1 [REF(4)] (len=1, tl=0) 3
+ATTRIB:
+  @0x000002691123f4c0 02 LISTSXP g0c0 [REF(1)] 
+    TAG: @0x0000026908e51ec0 01 SYMSXP g0c0 [MARK,REF(6681),LCK,gp=0x4000] "names" (has value)
+    @0x0000026911218658 16 STRSXP g0c3 [REF(65535)] (len=3, tl=0)
+      @0x000002690ce75de8 09 CHARSXP g0c1 [MARK,REF(132),gp=0x61] [ASCII] [cached] "x"
+      @0x000002690cfb9a30 09 CHARSXP g0c1 [MARK,REF(42),gp=0x61] [ASCII] [cached] "y"
+      @0x000002690cf79758 09 CHARSXP g0c1 [MARK,REF(12),gp=0x61] [ASCII] [cached] "z"
+    TAG: @0x000002691007c418 01 SYMSXP g0c0 [REF(9)] "time"
+    @0x000002691123bb88 14 REALSXP g0c1 [OBJ,REF(3),ATT] (len=1, tl=0) 1.77451e+09
+    ATTRIB:
+      @0x000002691123fe28 02 LISTSXP g0c0 [REF(1)] 
+        TAG: @0x0000026908e52470 01 SYMSXP g0c0 [MARK,REF(14253),LCK,gp=0x4000] "class" (has value)
+        @0x000002691121cee8 16 STRSXP g0c2 [REF(2)] (len=2, tl=0)
+          @0x000002690e019b18 09 CHARSXP g0c1 [MARK,REF(94),gp=0x61] [ASCII] [cached] "POSIXct"
+          @0x000002690e019bc0 09 CHARSXP g0c1 [MARK,REF(138),gp=0x61] [ASCII] [cached] "POSIXt"
+
+# --------------------------------------------------------------
+# sys.frames
+
+g <- \(e){
+   print(e)
+}
+debug(g) 
+.Internal(inspect(g))
+
+# 需要注意此时出现了 DBG 标志。
+# > .Internal(inspect(g))
+# @0x000002691124bd18 03 CLOSXP g0c0 [REF(1),DBG,ATT] 
+# ...
+
+# 调用
+1:10 |> lapply(g)
+
+# 
+> 1:10 |> lapply(g)
+debugging in: FUN(X[[i]], ...)
+debug at #1: {
+    print(e)
+}
+
+# 查看当前调用（即我么正在执行函数：FUN(e = X[[i]])），匹配到形式参数的实际绑定
+Browse[1]> match.call()
+FUN(e = X[[i]])
+
+# 实际的用形式
+Browse[1]> sys.call()
+FUN(X[[i]], ...)
+
+#  正在执行FUN 的方法内容（不带有形式参数的实际绑定）
+Browse[1]> sys.function()
+\(e){
+   print(e)
+}
+<bytecode: 0x000002690fc8d648>
+
+ # 打印调用堆栈: 注意：frame 的栈顶在列表的last，而非（常见的过程式语言的first）, 即 2号是当前位置！
+Browse[1]> sys.frames()
+[[1]]
+<environment: 0x000002691183cc70>
+
+[[2]]
+<environment: 0x000002691183c650>
+
+# 堆栈的具体调用内容
+Browse[1]> sys.calls()
+[[1]]
+lapply(1:10, g)
+
+[[2]]
+FUN(X[[i]], ...)
+
+# 当前调用堆栈的父亲堆栈的内容
+Browse[1]> sys.frame(sys.nframe()-1) |> ls() 
+[1] "FUN" "i"   "X"  
+Browse[1]> sys.frame(1)$FUN
+\(e){
+   print(e)
+}
+
+# sys.frame(sys.nframe()-1)$FUN 就是我们写的lambda表达式，他的 闭包环境就是：调用 # 调用1:10 |> lapply(g) 的环境
+Browse[1]> environment(sys.frame(sys.nframe()-1)$FUN)
+<environment: R_GlobalEnv>
+
+# 查看当前堆栈中的变量内容！
+Browse[1]> ls()
+[1] "e"
+Browse[1]> sys.nframe()
+[1] 2
+Browse[1]> sys.frame(sys.nframe()) |> ls()
+[1] "e"
+
+# 退出执行
+Browse[1]> Q
+
+
+# --------------------------------------------------------------
+
+
+/* .Internal(lapply(X, FUN)) */
+
+/* This is a special .Internal, so has unevaluated arguments.  It is
+   called from a closure wrapper, so X and FUN will be symbols that
+   are bound to promises in rho.
+
+   FUN must be unevaluated for use in e.g. bquote .
+*/
+attribute_hidden SEXP do_lapply(SEXP call, SEXP op, SEXP args, SEXP rho)
+{
+    PROTECT_INDEX pidx, cidx;
+
+    checkArity(op, args);
+    SEXP X, XX, FUN;
+    X = checkArgIsSymbol(CAR(args));
+    XX = PROTECT(eval(CAR(args), rho));
+    R_xlen_t n = xlength(XX);  // a vector, so will be valid.
+    FUN = checkArgIsSymbol(CADR(args));
+    bool realIndx = n > INT_MAX;
+
+    SEXP ans = PROTECT(allocVector(VECSXP, n));
+    SEXP names = getAttrib(XX, R_NamesSymbol);
+    if(!isNull(names)) setAttrib(ans, R_NamesSymbol, names);
+
+    /* Build call: FUN(X[[<ind>]], ...) */
+    SEXP isym = install("i");
+    SEXP tmp = PROTECT(lang3(R_Bracket2Symbol, X, isym));
+    SEXP R_fcall = PROTECT(lang3(FUN, tmp, R_DotsSymbol));
+    MARK_NOT_MUTABLE(R_fcall);
+
+    /* Create the loop index variable and value */
+    SEXP ind = allocVector(realIndx ? REALSXP : INTSXP, 1);
+    PROTECT_WITH_INDEX(ind, &pidx);
+    defineVar(isym, ind, rho);
+    INCREMENT_NAMED(ind);
+    R_varloc_t loc = R_findVarLocInFrame(rho, isym);
+    PROTECT_WITH_INDEX(loc.cell, &cidx);
+
+
+    for(R_xlen_t i = 0; i < n; i++) {
+	if (realIndx) REAL(ind)[0] = (double)(i + 1);
+	else INTEGER(ind)[0] = (int)(i + 1);
+	tmp = R_forceAndCall(R_fcall, 1, rho);
+	if (MAYBE_REFERENCED(tmp)) tmp = lazy_duplicate(tmp);
+	SET_VECTOR_ELT(ans, i, tmp);
+	if (ind != R_GetVarLocValue(loc) || MAYBE_SHARED(ind)) {
+	    /* ind has been captured or removed by FUN so fix it up */
+	    REPROTECT(ind = duplicate(ind), pidx);
+	    defineVar(isym, ind, rho);
+	    INCREMENT_NAMED(ind);
+	    loc = R_findVarLocInFrame(rho, isym);
+	    REPROTECT(loc.cell, cidx);
+	}
+    }
+
+    UNPROTECT(6);
+    return ans;
+}
