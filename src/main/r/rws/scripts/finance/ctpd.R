@@ -135,7 +135,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
       ticks <- envir$get_ticks(instrument_id)
       if(length(ticks) == 0) return(NULL)
       last_prices <- ticks$LastPrice
-      n <- length(ticks)
+      n <- length(last_prices)
       list(
         n = n,
         mean = mean(last_prices),
