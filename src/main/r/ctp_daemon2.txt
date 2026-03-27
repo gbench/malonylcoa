@@ -69,6 +69,6 @@ fetch_loop <- \(n=100, instids="rb2605", keys=c("InstrumentID", "UpdateTime", "L
  as.data.frame()
 ))
 
-#  关闭合约
+#  关闭合约注册
 writeline(gettextf("undump %s", session_fd))
 readline() |> grep("^\\s*$", x=_, perl=T, invert=T, value=T)
