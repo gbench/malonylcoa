@@ -117,7 +117,8 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
       for(id in envir$instrument_ids) {
         ticks <- envir$get_ticks(id)
         if(length(ticks) > 0) {
-          last_prices <- sapply(ticks, `[[`, "LastPrice")
+          last_prices <- ticks$LastPrice
+          n <- length(ticks)
           stats[[id]] <- list(
             n = length(ticks),
             mean = mean(last_prices),
@@ -125,7 +126,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
             min = min(last_prices),
             max = max(last_prices),
             last = utils::tail(last_prices, 1),
-            update_time = ticks[[length(ticks)]]$UpdateTime
+            update_time = ticks$UpdateTime[n]
           )
         }
       }
@@ -133,15 +134,16 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
     } else {
       ticks <- envir$get_ticks(instrument_id)
       if(length(ticks) == 0) return(NULL)
-      last_prices <- sapply(ticks, `[[`, "LastPrice")
+      last_prices <- ticks$LastPrice
+      n <- length(ticks)
       list(
-        n = length(ticks),
+        n = n,
         mean = mean(last_prices),
         sd = sd(last_prices),
         min = min(last_prices),
         max = max(last_prices),
         last = utils::tail(last_prices, 1),
-        update_time = ticks[[length(ticks)]]$UpdateTime
+        update_time = ticks$UpdateTime[n]
       )
     }
   }
@@ -167,6 +169,10 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
   envir
 }
 
-env <- ctpd_async()
-env$print_status() |> print()
-env$get_ticks("ao2609") |> print()
+if(F) {
+  env <- ctpd_async()
+  env$print_status()
+  env$get_stats("ao2609")
+  env$get_ticks("ao2609")
+  env$stop()
+}
