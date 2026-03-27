@@ -14,7 +14,7 @@ readline()
 # [2] "欢迎使用CTP后台服务监控系统 "                              
 # [3] "========================================================= "
 
-#  日期
+#  握手连接
 writeline("hi")
 # 读取数据
 loginfo <- readline(); loginfo
@@ -37,6 +37,36 @@ writeline("dump -1")
 #  查看合约交易tickdata
 xs <- readline() |> grep("^\\{", value=T, x=_) |> paste(collapse=",") |> gettextf(fmt="[%s]") |> fromJSON() |> as_tibble(); xs
 # xs |> select(InstrumentID, LastPrice)
+
+library(jsonlite)
+library(dplyr)
+
+# 实时打印
+loop <- \(n=100, timeout=1, instids="rb2605", keys=c("InstrumentID", "UpdateTime", "LastPrice")) {
+  repeat {
+    n <- n-1
+    if(n < 0) break
+    
+    # 读取输入
+    input <- readline()
+    json_lines <- grep("^\\{", value=TRUE, x=input)
+    
+    if (length(json_lines) == 0) next  # 没有有效输入则跳过
+    xs <- paste(json_lines, collapse=",") |> sprintf(fmt="[%s]") |> fromJSON() |> as_tibble()
+    
+    # 实时输出关键：使用 cat() + \r 覆盖或 \n 换行，并强制刷新
+    result <- xs |> filter(InstrumentID %in% instids) |> select(!!keys)
+    
+    # 方法A: 清屏后打印（模拟实时更新）
+    cat("\014")  # 清屏 (Windows用 \014, Unix用 \033[2J\033[H)
+    cat(paste("\n[", n ,"]"), format(Sys.time()), "\n")
+    print(result)  # 仍然用print显示表格
+    flush.console()  # 强制刷新控制台输出！！关键！！
+    
+    Sys.sleep(timeout)
+  } # repeat
+}
+loop(10)
 
 #  关闭合约
 writeline(gettextf("undump %s", session_fd))
