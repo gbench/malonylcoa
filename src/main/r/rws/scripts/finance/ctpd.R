@@ -1,6 +1,11 @@
-ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e<-environment(); attr(e, "name") <- "TickDataEnv"; e})) {
+#' 异步调用 接受ctp daemon2 的数据推送，并把结果保存到本地数据环境envir
+#' @param host ctp daemon2服务器/中间件IP地址 
+#' @param port ctp daemon2的监听端口 
+#' @param envir 本地数据环境 
+#' @param delay 下次回调时间
+ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), {e<-environment(); attr(e, "name") <- "TickDataEnv"; e}), delay=0.1) {
   
-  c("later", "jsonlite", "dplyr") |> sapply(\(x) tryCatch({ #尝试加载&安装x包
+  strsplit("later,jsonlite,dplyr", "[,]+") |> unlist() |> sapply(\(x) tryCatch({ # 尝试加载&安装x包
       if(!require(x, character.only=TRUE)) install.packages(x);
       (if(flag) require else library) (x, character.only=TRUE)
     }, error=\(e) e))
@@ -12,32 +17,32 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
   envir$last_update <- Sys.time()
   envir$.running <- FALSE
   
-  # arraylist 创建函数
-  make_arraylist <- function(capacity=1000) {
-    env <- new.env()
-    env$data <- vector("list", capacity)
-    env$offset <- 0
-    env$.capacity <- capacity
-    env$add <- function(e, i=NA) {
-      j <- if(is.na(i)) env$offset + 1 else i
-      n <- length(env$data)
+  # arraylist 私有创建函数
+  .arraylist <- function(capacity=1000, parent=envir) {
+    arrenv <- new.env(T, parent) # 实质
+    arrenv$data <- vector("list", capacity)
+    arrenv$offset <- 0
+    arrenv$.capacity <- capacity
+    arrenv$add <- function(e, i=NA) {
+      j <- if(is.na(i)) arrenv$offset + 1 else i
+      n <- length(arrenv$data)
       if(j > n) {
-        length(env$data) <<- env$.capacity * (1 + length(env$data) %/% env$.capacity)
+        length(arrenv$data) <<- arrenv$.capacity * (1 + length(arrenv$data) %/% arrenv$.capacity)
       }
-      env$data[[j]] <- e
-      env$offset <<- max(env$offset, j)
+      arrenv$data[[j]] <- e
+      arrenv$offset <<- max(arrenv$offset, j)
     }
-    env$size <- function() env$offset
-    env$aslist <- function() if(env$offset > 0) head(env$data, env$offset) else list()
-    env$unlist <- function() base::unlist(env$aslist())
-    env
+    arrenv$size <- function() arrenv$offset
+    arrenv$aslist <- function() if(arrenv$offset > 0) head(arrenv$data, arrenv$offset) else list()
+    arrenv$unlist <- function() base::unlist(arrenv$aslist())
+    arrenv
   }
   
   # 添加 tick 函数
   envir$add_tick <- function(tick_data) {
     inst_id <- tick_data$InstrumentID
     if(is.null(envir$instruments[[inst_id]])) {
-      envir$instruments[[inst_id]] <- make_arraylist(1000)
+      envir$instruments[[inst_id]] <- .arraylist(1000)
       envir$instrument_ids <- unique(c(envir$instrument_ids, inst_id))
     }
     envir$instruments[[inst_id]]$add(tick_data)
@@ -53,13 +58,16 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
   if(is.null(envir$.conn)) {
     stop("无法连接到 CTP 服务器")
   }
-  
+
+  # 过滤左侧提示符号
+  ltrim <- \(x, prompt="^[\\s>]+") if(is.null(prompt)) x else gsub(prompt, "", x=x, perl=T) 
+
   # 握手
   Sys.sleep(0.3)
-  welcome <- readLines(envir$.conn)
+  welcome <- readLines(envir$.conn) |> ltrim()
   writeLines("hi", envir$.conn)
   Sys.sleep(0.3)
-  loginfo <- readLines(envir$.conn)
+  loginfo <- readLines(envir$.conn) |> ltrim()
   envir$.session_fd <- sub(".*my friend\\[([0-9]+)\\].*", "\\1", loginfo, perl=TRUE)
   writeLines("dump -1", envir$.conn)
   
@@ -72,25 +80,22 @@ ctpd_async <- function(host="192.168.1.41", port=9898,  envir=with(new.env(), {e
     # 批量读取所有可用数据
     n_read <- 0
     repeat {
-      line <- tryCatch(readLines(envir$.conn, n=1), error=function(e) NULL)
-      if(is.null(line) || length(line) == 0) break
+      line <- tryCatch( readLines(envir$.conn, n=1) |> ltrim(), error=function(e) { message(as.character(e)); NULL } )
+      if(is.null(line) || length(line) < 1) break # 一直读到出错或是没有数据为止
       
-      n_read <- n_read + 1
-      if(grepl("^\\{", line)) {
-        tryCatch({
-          tick <- jsonlite::fromJSON(line)
-          envir$add_tick(tick)
-        }, error=function(e) {})
+      n_read <- n_read + 1 # 记录循环次数
+      if(grepl("^\\{", line)) { # json 标记
+        tryCatch(envir$add_tick(fromJSON(line)), error=function(e) {})
       }
-    }
+    } # repeat
     
-    # 安排下一次回调（10ms后，可根据需要调整）
-    later::later(envir$.read_callback, delay=0.01)
+    # 安排下一次回调
+    later::later(envir$.read_callback, delay=delay)
   }
   
   # 启动
   envir$.running <- TRUE
-  later::later(envir$.read_callback, delay=0.1)
+  later::later(envir$.read_callback, delay=delay)
   
   # 停止函数
   envir$stop <- function() {
