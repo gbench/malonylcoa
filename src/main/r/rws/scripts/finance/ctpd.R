@@ -39,13 +39,13 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), {e<
   }
   
   # 添加 tick 函数
-  envir$add_tick <- function(tick_data) {
-    inst_id <- tick_data$InstrumentID
-    if(is.null(envir$instruments[[inst_id]])) {
-      envir$instruments[[inst_id]] <- .arraylist(1000)
-      envir$instrument_ids <- unique(c(envir$instrument_ids, inst_id))
+  envir$addtick <- function(tickdata) {
+    id <- tickdata$InstrumentID # 依据InstrumentID进行分组 
+    if(is.null(envir$instruments[[id]])) {
+      envir$instruments[[id]] <- .arraylist(1e3)
+      envir$instrument_ids <- unique(c(envir$instrument_ids, id))
     }
-    envir$instruments[[inst_id]]$add(tick_data)
+    envir$instruments[[id]]$add(tickdata) # 记录数据
     envir$total_ticks <- envir$total_ticks + 1
     envir$last_update <- Sys.time()
   }
@@ -85,7 +85,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), {e<
       
       n_read <- n_read + 1 # 记录循环次数
       if(grepl("^\\{", line)) { # json 标记
-        tryCatch(envir$add_tick(fromJSON(line)), error=function(e) {})
+        tryCatch(envir$addtick(fromJSON(line)), error=function(e) {})
       }
     } # repeat
     
