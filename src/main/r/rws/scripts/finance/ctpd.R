@@ -7,6 +7,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), {e<
   
   strsplit("later,jsonlite,dplyr", "[,]+") |> unlist() |> sapply(\(x) tryCatch({ # 尝试加载&安装x包
       if(!require(x, character.only=TRUE)) install.packages(x);
+      flag <- T # require library 的选择标志 
       (if(flag) require else library) (x, character.only=TRUE)
     }, error=\(e) e))
   
@@ -119,7 +120,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), {e<
   # 价格统计 
   envir$stats <- function(instrumentid=NULL) {
     do_stat <- \(id) { # 根据id进行统计
-      ticks <- evir$ticks(id)
+      ticks <- envir$ticks(id)
       if(length(ticks) == 0) return(NULL)
       lastprices <- ticks$LastPrice
       n <- length(lastprices)
@@ -135,7 +136,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), {e<
     } # do_stat
 
     if(is.null(instrumentid)) envir$instrumentids |> setNames(nm=_) |> lapply(do_stat)
-    else do_stat(envir$ticks(instrumentid))
+    else do_stat(instrumentid)
   }
   
   envir$status <- function() {
