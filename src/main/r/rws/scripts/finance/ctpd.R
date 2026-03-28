@@ -3,7 +3,7 @@
 #' @param port ctp daemon2的监听端口 
 #' @param envir 本地数据环境 
 #' @param delay 下次回调时间
-ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e <- environment(); attr(e, "name") <- "TickDataEnv"; e }), delay=0.1) {
+ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e <- environment(); attr(e, "name") <- "TickDataEnv"; e }), delay=0.3) {
   
   strsplit("later,jsonlite,tibble,dplyr", "[,]+") |> unlist() |> sapply(\(x) tryCatch({ # 尝试加载&安装x包
       if(!require(x, character.only=TRUE)) install.packages(x);
@@ -90,9 +90,9 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
       }
     } # repeat
     
-    # 安排下一次回调
+    # 安排下一次递归回调
     later::later(envir$.rdcb, delay=delay)
-  }
+  } # .rdcb
   
   # 启动
   envir$.running <- TRUE
