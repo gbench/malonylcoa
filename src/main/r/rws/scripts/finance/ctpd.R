@@ -5,7 +5,7 @@
 #' @param delay 下次回调时间
 ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e <- environment(); attr(e, "name") <- "TickDataEnv"; e }), delay=0.1) {
   
-  strsplit("later,jsonlite,dplyr", "[,]+") |> unlist() |> sapply(\(x) tryCatch({ # 尝试加载&安装x包
+  strsplit("later,jsonlite,tibble,dplyr", "[,]+") |> unlist() |> sapply(\(x) tryCatch({ # 尝试加载&安装x包
       if(!require(x, character.only=TRUE)) install.packages(x);
       flag <- T # require library 的选择标志 
       (if(flag) require else library) (x, character.only=TRUE)
@@ -86,7 +86,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
       
       nread <- nread + 1 # 记录循环次数
       if(grepl("^\\{", line)) { # json 标记
-        tryCatch(envir$addtick(fromJSON(line)), error=function(e) {})
+        tryCatch(envir$addtick(jsonlite::fromJSON(line)), error=function(e) {})
       }
     } # repeat
     
@@ -113,15 +113,15 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
   
   # 查询函数
   envir$ticks <- function(instrumentid) {
-    if(is.null(envir$instruments[[instrumentid]])) return(list())
-    envir$instruments[[instrumentid]]$aslist() |> do.call(bind_rows, args=_) |> as_tibble()
+    if(is.null(envir$instruments[[instrumentid]])) return(tibble::tibble())
+    envir$instruments[[instrumentid]]$aslist() |> do.call(dplyr::bind_rows, args=_) |> tibble::as_tibble()
   }
 
   # 价格统计 
   envir$stats <- function(instrumentid=NULL) {
     do_stat <- \(id) { # 根据id进行统计
       ticks <- envir$ticks(id)
-      if(length(ticks) == 0) return(NULL)
+      if(nrow(ticks) < 1) return(NULL)
       lastprices <- ticks$LastPrice
       n <- length(lastprices)
       list(
@@ -148,7 +148,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
     stats <- envir$stats()
     for(id in names(stats)) {
       s <- stats[[id]]
-      cat(sprintf("  %s: n=%d, last=%.2f, mean=%.2f, sd=%.2f\n", id, s$n, s$last, s$mean, s$sd))
+      if(!is.null(s)) cat(sprintf("  %s: n=%d, last=%.2f, mean=%.2f, sd=%.2f\n", id, s$n, s$last, s$mean, s$sd))
     }
     cat("=======================================\n")
   }
