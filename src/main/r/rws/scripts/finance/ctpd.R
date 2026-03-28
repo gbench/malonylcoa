@@ -28,7 +28,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
       j <- if(is.na(i)) arrenv$offset + 1 else i
       n <- length(arrenv$data)
       if(j > n) {
-        length(arrenv$data) <<- arrenv$.capacity * (1 + length(arrenv$data) %/% arrenv$.capacity)
+        length(arrenv$data) <<- arrenv$.capacity * (1 + n %/% arrenv$.capacity)
       }
       arrenv$data[[j]] <- e
       arrenv$offset <<- max(arrenv$offset, j)
