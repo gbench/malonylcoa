@@ -62,15 +62,16 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
 
   # 过滤左侧提示符号
   ltrim <- \(x, prompt="^[\\s>]+") if(is.null(prompt)) x else gsub(prompt, "", x=x, perl=T) 
+  flush <- \() flush.connection(envir$.conn) 
 
   # 握手
   Sys.sleep(0.3)
   welcome <- readLines(envir$.conn) |> ltrim()
-  writeLines("hi", envir$.conn)
+  writeLines("hi", envir$.conn); flush()
   Sys.sleep(0.3)
   loginfo <- readLines(envir$.conn) |> ltrim()
   envir$.sessionfd <- sub(".*my friend\\[([0-9]+)\\].*", "\\1", loginfo, perl=TRUE)
-  writeLines("dump -1", envir$.conn)
+  writeLines("dump -1", envir$.conn); flush()
   
   message("CTPD 已连接，sessionfd: ", envir$.sessionfd)
   
@@ -103,7 +104,7 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
     envir$.running <- FALSE
     if(!is.null(envir$.conn)) {
       tryCatch({
-        writeLines(sprintf("undump %s", envir$.sessionfd), envir$.conn)
+        writeLines(sprintf("undump %s", envir$.sessionfd), envir$.conn); flush()
         close(envir$.conn)
       }, error=function(e) {})
       envir$.conn <- NULL
@@ -121,7 +122,8 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
   envir$stats <- function(instrumentid=NULL) {
     do_stat <- \(id) { # 根据id进行统计
       ticks <- envir$ticks(id)
-      if(nrow(ticks) < 1) return(NULL)
+      if (!inherits(ticks, "data.frame") || nrow(ticks) == 0) return(NULL)
+      if (!"LastPrice" %in% colnames(ticks)) return(NULL)
       lastprices <- ticks$LastPrice
       n <- length(lastprices)
       list(
