@@ -129,9 +129,10 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
   envir$ts <- function(instrumentid) envir$tickdata(instrumentid) |> with(as.xts(data.frame(LastPrice=LastPrice,Volume=Volume), order.by=Index))
 
   # K线
-  envir$ohlc <- function(instrumentid) {
+  envir$ohlc <- function(instrumentid, k=1) {
     dfm <- envir$ticks(instrumentid)
-    compute_kline(dfm |> mutate(Id=seq(nrow(dfm)))) 
+    kline1m <- compute_kline(dfm |> mutate(Id=seq(nrow(dfm)))) 
+    if(k<1) kline1m else to.minutes(kline1m, k)
   }
 
   # 价格统计 
