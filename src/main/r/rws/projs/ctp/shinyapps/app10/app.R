@@ -6,7 +6,7 @@ library(plotly)
 library(jsonlite)
 library(later)
 library(lubridate)
-library(DT)  # 添加DT包用于表格显示
+library(DT)
 
 # 加载必要的包
 required_packages <- c("later", "jsonlite", "tibble", "dplyr", "xts", "plotly", "shiny", "shinydashboard", "lubridate", "DT")
@@ -184,6 +184,7 @@ server <- function(input, output, session) {
   price_direction <- reactiveVal(list())
   # 使用普通变量存储定时器ID
   timer_id <- NULL
+  price_timer_id <- NULL
   # 连接状态标志
   is_connected <- reactiveVal(FALSE)
   
@@ -206,9 +207,12 @@ server <- function(input, output, session) {
   }
   
   # 停止定时器
-  stop_timer <- function() {
+  stop_timers <- function() {
     if(!is.null(timer_id)) {
       timer_id <<- NULL
+    }
+    if(!is.null(price_timer_id)) {
+      price_timer_id <<- NULL
     }
   }
   
@@ -242,7 +246,7 @@ server <- function(input, output, session) {
       reset_env()
     }
     
-    stop_timer()
+    stop_timers()
     safe_notification("正在连接CTP服务器...")
     
     tryCatch({
@@ -274,7 +278,9 @@ server <- function(input, output, session) {
   start_price_monitor <- function() {
     monitor_prices <- function() {
       client <- isolate(ctpclient())
-      if(is.null(client)) return()
+      if(is.null(client)) {
+        return()
+      }
       
       # 获取所有合约的最新价格
       tryCatch({
@@ -311,9 +317,9 @@ server <- function(input, output, session) {
         message("监控价格错误: ", e$message)
       })
       
-      # 继续监控
+      # 继续监控 - 每0.3秒更新一次，确保实时性
       if(!is.null(isolate(ctpclient()))) {
-        timer_id <<- later::later(monitor_prices, 0.5)  # 每0.5秒更新一次
+        price_timer_id <<- later::later(monitor_prices, 0.3)
       }
     }
     
@@ -350,7 +356,7 @@ server <- function(input, output, session) {
   # 停止并清空
   observeEvent(input$disconnect_btn, {
     if(!is.null(ctpclient())) {
-      stop_timer()
+      stop_timers()
       reset_env()
       showModal(modalDialog(
         title = "已停止",
@@ -369,7 +375,8 @@ server <- function(input, output, session) {
     client <- ctpclient()
     if(is.null(client)) return(NULL)
     
-    invalidateLater(500)  # 每0.5秒刷新
+    # 每0.3秒刷新一次
+    invalidateLater(300)
     
     tryCatch({
       ticks_df <- client$ticks(input$instrument_realtime)
@@ -399,7 +406,13 @@ server <- function(input, output, session) {
   output$latest_price_info <- renderPrint({
     req(input$instrument_realtime)
     client <- ctpclient()
-    if(is.null(client)) return(cat("未连接"))
+    if(is.null(client)) {
+      cat("未连接")
+      return()
+    }
+    
+    # 每0.3秒刷新
+    invalidateLater(300)
     
     tryCatch({
       stats <- client$stats(input$instrument_realtime)
@@ -421,7 +434,7 @@ server <- function(input, output, session) {
         cat("暂无数据")
       }
     }, error = function(e) {
-      cat("获取数据失败")
+      cat("获取数据失败: ", e$message)
     })
   })
   
@@ -445,7 +458,7 @@ server <- function(input, output, session) {
     p
   })
   
-  # 最近Tick数据表
+  # 最近Tick数据表 - 修复列名问题
   output$recent_ticks <- renderDT({
     df <- realtime_price_data()
     if(is.null(df) || nrow(df) == 0) {
@@ -457,10 +470,18 @@ server <- function(input, output, session) {
       select(DateTime, LastPrice, Volume) %>%
       arrange(desc(DateTime))
     
+    # 使用英文列名避免编码问题
     datatable(recent, 
-              options = list(pageLength = 10, autoWidth = TRUE),
+              options = list(
+                pageLength = 10, 
+                autoWidth = TRUE,
+                language = list(
+                  url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Chinese.json'
+                )
+              ),
               colnames = c("时间", "最新价", "成交量")) %>%
-      formatRound(columns = "最新价", digits = 2)
+      formatRound(columns = "LastPrice", digits = 2) %>%
+      formatRound(columns = "Volume", digits = 0)
   })
   
   # K线数据
@@ -471,7 +492,9 @@ server <- function(input, output, session) {
     
     input$refresh_k
     k_period <- input$k_period
-    invalidateLater(1000)  # 每秒刷新K线数据
+    
+    # 每1秒刷新K线数据
+    invalidateLater(1000)
     
     isolate({
       tryCatch({
@@ -499,7 +522,13 @@ server <- function(input, output, session) {
   output$price_stats <- renderPrint({
     req(input$instrument_kline)
     client <- ctpclient()
-    if(is.null(client)) return(cat("未连接"))
+    if(is.null(client)) {
+      cat("未连接")
+      return()
+    }
+    
+    # 每0.5秒刷新
+    invalidateLater(500)
     
     tryCatch({
       stats <- client$stats(input$instrument_kline)
@@ -512,9 +541,11 @@ server <- function(input, output, session) {
         cat(sprintf("最低价: %.2f\n", stats$min))
         cat(sprintf("Tick数量: %d\n", stats$n))
         cat(sprintf("最后更新: %s\n", stats$updatetime))
+      } else {
+        cat("暂无统计数据")
       }
     }, error = function(e) {
-      cat("获取统计失败")
+      cat("获取统计失败: ", e$message)
     })
   })
   
@@ -560,6 +591,9 @@ server <- function(input, output, session) {
       return()
     }
     
+    # 每0.5秒刷新
+    invalidateLater(500)
+    
     tryCatch({
       cat("========== CTP客户端状态 ==========\n")
       cat(sprintf("连接状态: %s\n", ifelse(is_connected(), "✓ 已连接", "✗ 未连接")))
@@ -586,6 +620,8 @@ server <- function(input, output, session) {
                          "same" = "→")
           cat(sprintf("%s: %.2f %s\n", id, prices[[id]], arrow))
         }
+      } else {
+        cat("等待价格数据...\n")
       }
       cat("====================================\n")
     }, error = function(e) {
@@ -595,7 +631,7 @@ server <- function(input, output, session) {
   
   # 应用退出时清理
   session$onSessionEnded(function() {
-    stop_timer()
+    stop_timers()
     client <- isolate(ctpclient())
     if(!is.null(client)) {
       tryCatch({
