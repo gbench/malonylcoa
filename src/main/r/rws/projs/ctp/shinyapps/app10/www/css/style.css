@@ -1,0 +1,21 @@
+
+/* www/css/style.css */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.shiny-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.chart-container {
+  background-color: #1e1e2f;
+}
+
+.klinecharts-pro {
+  background-color: #1e1e2f;
+}
+
