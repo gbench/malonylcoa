@@ -71,7 +71,7 @@ arraylist <- \(capacity=1e3, parent=parent.frame()) (env <- new.env()) |> with({
   add <- \(e, i=NA) {
     j <- if(is.na(i)) offset + 1 else i
     n <- length(data)
-    if(j>n ) (length(data) <<- .capacity * (1 + length(data) %/% .capacity)) |> gettextf(fmt="arraylist容量扩增至：%s") |> message()
+    if(j>n ) (length(data) <<- .capacity * (1 + n %/% .capacity)) |> gettextf(fmt="arraylist容量扩增至：%s") |> message()
     data[[j]] <<- e
     offset <<- max(offset, j)
   }

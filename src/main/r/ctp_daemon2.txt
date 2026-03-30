@@ -1,0 +1,74 @@
+library(jsonlite); library(tidyverse)
+
+# 连接 ctp_daemon2 服务器
+ctp_daemon2_connect <- \(host="192.168.1.41", port=9898, timeout=10) socketConnection(host=host, port=port, blocking=F, open="r+", timeout=timeout)
+readline <-\() readLines(conn) |>  gsub("^[\\s>]+", "", x=_, perl=T)
+writeline <- \(line) writeLines(line, conn)
+
+# 系统登陆
+conn <- ctp_daemon2_connect()
+readline()
+
+# > readline()
+# [1] "========================================================= "
+# [2] "欢迎使用CTP后台服务监控系统 "                              
+# [3] "========================================================= "
+
+#  握手连接
+writeline("hi")
+# 读取数据
+loginfo <- readline(); loginfo
+# "hello, my friend[6], i am ctp_monitor[/opt/slicef/ws/gitws/mytrader/linuxctp/build/ctp_daemon2], port:9898, pid:4182, conf:[/opt/slicef/ws/gitws/mytrader/linuxctp/src0/config.ini], peer2peer:9898<->58912, start_time:2026-03-05 10:04:50, now:2026-03-27 01:11:40!"
+# 提取会话文件描述符, 可以用于 undump 合约交易的实时tickdata
+session_fd <- loginfo |> sub(".*my friend\\[([0-9]+)\\].*", "\\1", x=_, perl=TRUE); session_fd
+
+#  日期
+writeline("date")
+# 读取数据
+readline()
+
+#  合约
+writeline("instruments")
+#  查看合约
+readline() |> strsplit(",")
+
+#  提取合约交易tickdata(-1, 表示无限数量，显示所有, 正整数表示数量上限）
+writeline("dump -1")
+#  查看合约交易tickdata
+xs <- readline() |> grep("^\\{", value=T, x=_) |> paste(collapse=",") |> gettextf(fmt="[%s]") |> fromJSON() |> as_tibble(); xs
+# xs |> select(InstrumentID, LastPrice)
+
+#  循环&实时打印
+fetch_loop <- \(n=100, instids="rb2605", keys=c("InstrumentID", "UpdateTime", "LastPrice"), timeout=1) {
+  buffer <- arraylist(n) # 结果缓存
+  i <- n
+
+  repeat {
+    i <- i-1
+    if(i < 0) break
+    json_lines <- grep("^\\{", value=TRUE, x=readline())
+    if (length(json_lines) == 0) next  # 没有有效输入则跳过
+    .xs <- paste(json_lines, collapse=",") |> sprintf(fmt="[%s]") |> fromJSON() |> as_tibble() # 原数据
+    xs <- .xs |> filter(InstrumentID %in% instids) |> select(!!keys)
+    # 清屏后打印（模拟实时更新）
+    cat("\014")  # 清屏 (Windows用 \014, Unix用 \033[2J\033[H)
+    cat(paste("[", n ,"]"), format(Sys.time()), "\n")
+    print(xs)  # 仍然用print显示表格
+    flush.console()  # 强制刷新控制台输出！！关键！！
+    if(nrow(xs)) buffer$add(.xs) # 追加原数据
+    Sys.sleep(timeout)
+  } # repeat
+  
+  do.call(rbind, buffer$aslist()) |> (\(.) if(length(.)<1) list() else split(., .$InstrumentID)) () # 按照合约ID进行分组
+}
+
+# 提取历史数据
+(xs <- fetch_loop(10, "rb2605")) |> lapply(\(e) e |> with(
+  modifyList(as.list(summary(LastPrice)), 
+    list(n=length(LastPrice), sd=sd(LastPrice))) |>
+ as.data.frame()
+))
+
+#  关闭合约注册
+writeline(gettextf("undump %s", session_fd))
+readline() |> grep("^\\s*$", x=_, perl=T, invert=T, value=T)
