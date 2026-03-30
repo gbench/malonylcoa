@@ -5,7 +5,7 @@
 #' @param delay 下次回调时间
 ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e <- environment(); attr(e, "name") <- "TickDataEnv"; e }), delay=0.3) {
   
-  strsplit("later,jsonlite,tibble,dplyr", "[,]+") |> unlist() |> sapply(\(x) tryCatch({ # 尝试加载&安装x包
+  strsplit("later,jsonlite,tibble,dplyr,xts", "[,]+") |> unlist() |> sapply(\(x) tryCatch({ # 尝试加载&安装x包
       if(!require(x, character.only=TRUE)) install.packages(x);
       flag <- T # require library 的选择标志 
       (if(flag) require else library) (x, character.only=TRUE)
@@ -116,6 +116,22 @@ ctpd_async <- function(host="192.168.1.41", port=9898, envir=with(new.env(), { e
   envir$ticks <- function(instrumentid) {
     if(is.null(envir$instruments[[instrumentid]])) return(tibble::tibble())
     envir$instruments[[instrumentid]]$aslist() |> do.call(dplyr::bind_rows, args=_) |> tibble::as_tibble()
+  }
+
+  # 时间序列
+  envir$tickdata <- function(instrumentid) {
+    dfm <- envir$ticks(instrumentid)
+    ind <- as.POSIXct(paste0(dfm$ActionDay, " ", dfm$UpdateTime, ".", dfm$UpdateMillisec), format="%Y%m%d %H:%M:%S:%OS")
+    dfm |> mutate(Index=ind)
+  }
+
+  # 时间序列
+  envir$ts <- function(instrumentid) envir$tickdata(instrumentid) |> with(as.xts(data.frame(LastPrice=LastPrice,Volume=Volume), order.by=Index))
+
+  # K线
+  envir$ohlc <- function(instrumentid) {
+    dfm <- envir$ticks(instrumentid)
+    compute_kline(dfm |> mutate(Id=seq(nrow(dfm)))) 
   }
 
   # 价格统计 
