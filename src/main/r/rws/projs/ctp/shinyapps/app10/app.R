@@ -6,9 +6,10 @@ library(plotly)
 library(jsonlite)
 library(later)
 library(lubridate)
+library(DT)  # 添加DT包用于表格显示
 
 # 加载必要的包
-required_packages <- c("later", "jsonlite", "tibble", "dplyr", "xts", "plotly", "shiny", "shinydashboard", "lubridate")
+required_packages <- c("later", "jsonlite", "tibble", "dplyr", "xts", "plotly", "shiny", "shinydashboard", "lubridate", "DT")
 for(pkg in required_packages) {
   if(!require(pkg, character.only = TRUE)) {
     install.packages(pkg)
@@ -81,11 +82,12 @@ to.minutes <- function(df, k) {
 
 # UI
 ui <- dashboardPage(
-  dashboardHeader(title = "CTP 行情监控"),
+  dashboardHeader(title = "CTP 行情监控 - 实时动态刷新"),
   dashboardSidebar(
     sidebarMenu(
-      menuItem("K线图", tabName = "kline", icon = icon("chart-line")),
-      menuItem("状态", tabName = "status", icon = icon("info-circle"))
+      menuItem("实时行情", tabName = "realtime", icon = icon("chart-line")),
+      menuItem("K线图", tabName = "kline", icon = icon("candlestick-chart")),
+      menuItem("合约状态", tabName = "status", icon = icon("info-circle"))
     )
   ),
   dashboardBody(
@@ -98,10 +100,30 @@ ui <- dashboardPage(
           top: calc(50% - 25px);
           left: calc(50% - 150px);
         }
+        .price-up {
+          color: red;
+          font-weight: bold;
+        }
+        .price-down {
+          color: green;
+          font-weight: bold;
+        }
+        .price-box {
+          padding: 15px;
+          margin: 10px;
+          border-radius: 5px;
+          background-color: #f8f9fa;
+          text-align: center;
+        }
+        .latest-price {
+          font-size: 24px;
+          font-weight: bold;
+        }
       "))
     ),
     tabItems(
-      tabItem(tabName = "kline",
+      # 实时行情标签页
+      tabItem(tabName = "realtime",
         fluidRow(
           box(width = 4, title = "连接配置", status = "primary", solidHeader = TRUE,
             textInput("host", "服务器地址", value = "localhost"),
@@ -109,15 +131,36 @@ ui <- dashboardPage(
             actionButton("connect_btn", "启动连接", class = "btn-primary", icon = icon("play")),
             actionButton("disconnect_btn", "停止并清空", class = "btn-danger", icon = icon("stop")),
             hr(),
-            selectInput("instrument", "选择合约", choices = NULL),
-            numericInput("k_period", "K线周期(分钟)", value = 1, min = 1, step = 1),
-            actionButton("refresh_k", "刷新K线", icon = icon("sync"))
+            selectInput("instrument_realtime", "选择合约", choices = NULL),
+            hr(),
+            h4("最新价格监控"),
+            verbatimTextOutput("latest_price_info")
           ),
-          box(width = 8, title = "K线图", status = "success", solidHeader = TRUE,
+          box(width = 8, title = "实时价格走势", status = "success", solidHeader = TRUE,
+            plotlyOutput("realtime_price_chart", height = "400px"),
+            hr(),
+            h4("最近20笔Tick数据"),
+            DTOutput("recent_ticks")
+          )
+        )
+      ),
+      # K线图标签页
+      tabItem(tabName = "kline",
+        fluidRow(
+          box(width = 3, title = "K线设置", status = "primary", solidHeader = TRUE,
+            selectInput("instrument_kline", "选择合约", choices = NULL),
+            numericInput("k_period", "K线周期(分钟)", value = 1, min = 1, step = 1),
+            actionButton("refresh_k", "刷新K线", icon = icon("sync")),
+            hr(),
+            h4("价格统计"),
+            verbatimTextOutput("price_stats")
+          ),
+          box(width = 9, title = "K线图", status = "success", solidHeader = TRUE,
             plotlyOutput("kline_plot", height = "600px")
           )
         )
       ),
+      # 合约状态标签页
       tabItem(tabName = "status",
         fluidRow(
           box(width = 12, title = "运行状态", status = "info", solidHeader = TRUE,
@@ -135,6 +178,10 @@ server <- function(input, output, session) {
   ctpclient <- reactiveVal(NULL)
   # 存储当前选择的合约列表
   available_instruments <- reactiveVal(character())
+  # 存储最新价格数据
+  latest_prices <- reactiveVal(list())
+  # 存储价格变化方向
+  price_direction <- reactiveVal(list())
   # 使用普通变量存储定时器ID
   timer_id <- NULL
   # 连接状态标志
@@ -144,16 +191,16 @@ server <- function(input, output, session) {
   reset_env <- function() {
     client <- ctpclient()
     if(!is.null(client)) {
-      # 停止并清理连接
       tryCatch({
         client$stop()
       }, error = function(e) {
         message("停止连接时出错: ", e$message)
       })
     }
-    # 将ctpclient设为NULL
     ctpclient(NULL)
     available_instruments(character())
+    latest_prices(list())
+    price_direction(list())
     is_connected(FALSE)
     message("环境已重置")
   }
@@ -171,7 +218,6 @@ server <- function(input, output, session) {
       if(is.null(type)) {
         showNotification(message, duration = duration)
       } else {
-        # 只允许有效的type值
         valid_types <- c("default", "message", "warning", "error")
         if(type %in% valid_types) {
           showNotification(message, type = type, duration = duration)
@@ -180,14 +226,12 @@ server <- function(input, output, session) {
         }
       }
     }, error = function(e) {
-      # 如果通知失败，只打印到控制台
       message("通知失败: ", message)
     })
   }
   
   # 启动连接
   observeEvent(input$connect_btn, {
-    # 如果已有连接，先停止并清空
     if(!is.null(ctpclient())) {
       showModal(modalDialog(
         title = "提示",
@@ -198,15 +242,10 @@ server <- function(input, output, session) {
       reset_env()
     }
     
-    # 停止旧的定时器
     stop_timer()
-    
-    # 显示连接中提示
     safe_notification("正在连接CTP服务器...")
     
-    # 尝试连接
     tryCatch({
-      # 确保 ctpd_async 函数存在
       if(!exists("ctpd_async")) {
         stop("ctpd_async 函数未定义，请确保已加载 ctpd.R 文件")
       }
@@ -215,11 +254,11 @@ server <- function(input, output, session) {
       ctpclient(client)
       is_connected(TRUE)
       
-      # 显示成功通知
       safe_notification("连接成功", type = "success", duration = 3)
       
-      # 启动定时更新合约列表
+      # 启动定时更新
       update_instruments_async()
+      start_price_monitor()
       
     }, error = function(e) {
       showModal(modalDialog(
@@ -231,15 +270,61 @@ server <- function(input, output, session) {
     })
   })
   
-  # 异步更新合约列表
-  update_instruments_async <- function() {
-    # 检查是否还有活动的连接
-    client <- isolate(ctpclient())
-    if(is.null(client)) {
-      return()
+  # 启动价格监控
+  start_price_monitor <- function() {
+    monitor_prices <- function() {
+      client <- isolate(ctpclient())
+      if(is.null(client)) return()
+      
+      # 获取所有合约的最新价格
+      tryCatch({
+        stats <- client$stats()
+        if(length(stats) > 0) {
+          current_prices <- list()
+          directions <- list()
+          
+          for(id in names(stats)) {
+            s <- stats[[id]]
+            if(!is.null(s) && !is.null(s$last)) {
+              old_price <- isolate(latest_prices())[[id]]
+              current_prices[[id]] <- s$last
+              
+              # 判断价格方向
+              if(!is.null(old_price)) {
+                if(s$last > old_price) {
+                  directions[[id]] <- "up"
+                } else if(s$last < old_price) {
+                  directions[[id]] <- "down"
+                } else {
+                  directions[[id]] <- "same"
+                }
+              } else {
+                directions[[id]] <- "same"
+              }
+            }
+          }
+          
+          isolate(latest_prices(current_prices))
+          isolate(price_direction(directions))
+        }
+      }, error = function(e) {
+        message("监控价格错误: ", e$message)
+      })
+      
+      # 继续监控
+      if(!is.null(isolate(ctpclient()))) {
+        timer_id <<- later::later(monitor_prices, 0.5)  # 每0.5秒更新一次
+      }
     }
     
-    # 从环境中获取合约ID列表
+    monitor_prices()
+  }
+  
+  # 异步更新合约列表
+  update_instruments_async <- function() {
+    client <- isolate(ctpclient())
+    if(is.null(client)) return()
+    
     instr <- tryCatch({
       if(!is.null(client$instrumentids)) {
         client$instrumentids
@@ -253,11 +338,10 @@ server <- function(input, output, session) {
     
     if(length(instr) > 0) {
       isolate(available_instruments(instr))
-      # 在shiny会话中更新UI
-      updateSelectInput(session, "instrument", choices = instr, selected = instr[1])
+      updateSelectInput(session, "instrument_realtime", choices = instr, selected = instr[1])
+      updateSelectInput(session, "instrument_kline", choices = instr, selected = instr[1])
     }
     
-    # 继续定时更新
     if(!is.null(isolate(ctpclient()))) {
       timer_id <<- later::later(update_instruments_async, 2)
     }
@@ -279,42 +363,131 @@ server <- function(input, output, session) {
     }
   })
   
-  # 生成K线数据
-  kline_data <- reactive({
-    req(input$instrument)
+  # 实时价格走势图数据
+  realtime_price_data <- reactive({
+    req(input$instrument_realtime)
     client <- ctpclient()
     if(is.null(client)) return(NULL)
     
-    # 刷新按钮或周期变化时重新获取
+    invalidateLater(500)  # 每0.5秒刷新
+    
+    tryCatch({
+      ticks_df <- client$ticks(input$instrument_realtime)
+      if(is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+      
+      # 获取最近100个tick用于走势图
+      recent_ticks <- tail(ticks_df, 100)
+      
+      # 创建时间序列
+      if("ActionDay" %in% colnames(recent_ticks) && "UpdateTime" %in% colnames(recent_ticks)) {
+        recent_ticks$DateTime <- as.POSIXct(paste0(recent_ticks$ActionDay, " ", recent_ticks$UpdateTime), 
+                                           format="%Y%m%d %H:%M:%S")
+        if("UpdateMillisec" %in% colnames(recent_ticks)) {
+          recent_ticks$DateTime <- recent_ticks$DateTime + recent_ticks$UpdateMillisec / 1000
+        }
+        
+        return(recent_ticks %>% select(DateTime, LastPrice, Volume, UpdateTime))
+      }
+      return(NULL)
+    }, error = function(e) {
+      message("获取实时数据错误: ", e$message)
+      NULL
+    })
+  })
+  
+  # 最新价格信息显示
+  output$latest_price_info <- renderPrint({
+    req(input$instrument_realtime)
+    client <- ctpclient()
+    if(is.null(client)) return(cat("未连接"))
+    
+    tryCatch({
+      stats <- client$stats(input$instrument_realtime)
+      if(!is.null(stats) && is.list(stats)) {
+        direction <- isolate(price_direction())[[input$instrument_realtime]]
+        arrow <- switch(direction,
+                       "up" = " ↑↑↑",
+                       "down" = " ↓↓↓",
+                       "same" = " →")
+        
+        cat("合约: ", input$instrument_realtime, "\n")
+        cat("最新价: ", sprintf("%.2f", stats$last), arrow, "\n")
+        cat("均价: ", sprintf("%.2f", stats$mean), "\n")
+        cat("最高价: ", sprintf("%.2f", stats$max), "\n")
+        cat("最低价: ", sprintf("%.2f", stats$min), "\n")
+        cat("Tick数: ", stats$n, "\n")
+        cat("更新时间: ", stats$updatetime, "\n")
+      } else {
+        cat("暂无数据")
+      }
+    }, error = function(e) {
+      cat("获取数据失败")
+    })
+  })
+  
+  # 实时价格走势图
+  output$realtime_price_chart <- renderPlotly({
+    df <- realtime_price_data()
+    if(is.null(df) || nrow(df) == 0) {
+      return(plot_ly() %>% layout(title = "等待数据..."))
+    }
+    
+    p <- plot_ly(df, x = ~DateTime, y = ~LastPrice, 
+                 type = 'scatter', mode = 'lines+markers',
+                 name = input$instrument_realtime,
+                 line = list(color = 'blue', width = 2),
+                 marker = list(size = 4)) %>%
+      layout(title = paste(input$instrument_realtime, "实时价格走势"),
+             xaxis = list(title = "时间", rangeslider = list(visible = TRUE)),
+             yaxis = list(title = "价格"),
+             hovermode = "x unified")
+    
+    p
+  })
+  
+  # 最近Tick数据表
+  output$recent_ticks <- renderDT({
+    df <- realtime_price_data()
+    if(is.null(df) || nrow(df) == 0) {
+      return(datatable(data.frame(消息 = "暂无数据")))
+    }
+    
+    # 获取最近20个tick
+    recent <- tail(df, 20) %>%
+      select(DateTime, LastPrice, Volume) %>%
+      arrange(desc(DateTime))
+    
+    datatable(recent, 
+              options = list(pageLength = 10, autoWidth = TRUE),
+              colnames = c("时间", "最新价", "成交量")) %>%
+      formatRound(columns = "最新价", digits = 2)
+  })
+  
+  # K线数据
+  kline_data <- reactive({
+    req(input$instrument_kline)
+    client <- ctpclient()
+    if(is.null(client)) return(NULL)
+    
     input$refresh_k
     k_period <- input$k_period
+    invalidateLater(1000)  # 每秒刷新K线数据
     
     isolate({
       tryCatch({
-        # 先获取tick数据，然后手动计算K线
-        if(!is.null(client$ticks)) {
-          ticks_df <- client$ticks(input$instrument)
-          if(is.null(ticks_df) || nrow(ticks_df) == 0) {
-            return(NULL)
-          }
-          
-          # 手动计算K线
-          minute_k <- compute_kline(ticks_df)
-          if(is.null(minute_k) || nrow(minute_k) == 0) {
-            return(NULL)
-          }
-          
-          # 根据周期聚合
-          if(k_period > 1) {
-            result <- to.minutes(minute_k, k_period)
-          } else {
-            result <- minute_k
-          }
-          
-          return(result)
+        ticks_df <- client$ticks(input$instrument_kline)
+        if(is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+        
+        minute_k <- compute_kline(ticks_df)
+        if(is.null(minute_k) || nrow(minute_k) == 0) return(NULL)
+        
+        if(k_period > 1) {
+          result <- to.minutes(minute_k, k_period)
         } else {
-          NULL
+          result <- minute_k
         }
+        
+        return(result)
       }, error = function(e) {
         message("获取K线数据错误: ", e$message)
         NULL
@@ -322,12 +495,27 @@ server <- function(input, output, session) {
     })
   })
   
-  # 自动刷新K线数据（每2秒）
-  auto_refresh <- reactiveTimer(2000)
-  observe({
-    auto_refresh()
-    # 触发K线数据重新计算
-    kline_data()
+  # 价格统计
+  output$price_stats <- renderPrint({
+    req(input$instrument_kline)
+    client <- ctpclient()
+    if(is.null(client)) return(cat("未连接"))
+    
+    tryCatch({
+      stats <- client$stats(input$instrument_kline)
+      if(!is.null(stats) && is.list(stats)) {
+        cat("========== 价格统计 ==========\n")
+        cat(sprintf("最新价: %.2f\n", stats$last))
+        cat(sprintf("均价: %.2f\n", stats$mean))
+        cat(sprintf("标准差: %.2f\n", stats$sd))
+        cat(sprintf("最高价: %.2f\n", stats$max))
+        cat(sprintf("最低价: %.2f\n", stats$min))
+        cat(sprintf("Tick数量: %d\n", stats$n))
+        cat(sprintf("最后更新: %s\n", stats$updatetime))
+      }
+    }, error = function(e) {
+      cat("获取统计失败")
+    })
   })
   
   # 绘制K线图
@@ -340,20 +528,18 @@ server <- function(input, output, session) {
                       yaxis = list(title = "价格")))
     }
     
-    # 准备OHLC数据
     p <- plot_ly(df, x = ~Index, type = "candlestick",
                  open = ~Open, close = ~Close,
                  high = ~High, low = ~Low,
-                 name = input$instrument,
+                 name = input$instrument_kline,
                  showlegend = TRUE,
                  increasing = list(line = list(color = "red")),
                  decreasing = list(line = list(color = "green"))) %>%
-      layout(title = paste(input$instrument, "K线图 (", input$k_period, "分钟)"),
+      layout(title = paste(input$instrument_kline, "K线图 (", input$k_period, "分钟)"),
              xaxis = list(title = "时间", rangeslider = list(visible = FALSE)),
              yaxis = list(title = "价格"),
              hovermode = "x unified")
     
-    # 添加成交量条形图
     if("Volume" %in% names(df) && nrow(df) > 0 && sum(df$Volume, na.rm = TRUE) > 0) {
       p <- p %>% add_trace(x = ~Index, y = ~Volume, type = "bar", 
                           name = "成交量", yaxis = "y2",
@@ -376,7 +562,7 @@ server <- function(input, output, session) {
     
     tryCatch({
       cat("========== CTP客户端状态 ==========\n")
-      cat(sprintf("连接状态: %s\n", ifelse(is_connected(), "已连接", "未连接")))
+      cat(sprintf("连接状态: %s\n", ifelse(is_connected(), "✓ 已连接", "✗ 未连接")))
       
       if(!is.null(client$totalticks)) {
         cat(sprintf("总Tick数: %d\n", client$totalticks))
@@ -389,24 +575,16 @@ server <- function(input, output, session) {
         cat(sprintf("最后更新: %s\n", as.character(client$lastupdate)))
       }
       
-      cat("\n--- 合约详细统计 ---\n")
-      if(!is.null(client$stats)) {
-        stats <- client$stats()
-        if(length(stats) > 0) {
-          for(id in names(stats)) {
-            s <- stats[[id]]
-            if(!is.null(s) && is.list(s)) {
-              cat(sprintf("%s: 最新价=%.2f, 数量=%d, 均价=%.2f, 最高=%.2f, 最低=%.2f\n", 
-                         id, 
-                         ifelse(!is.null(s$last), s$last, NA), 
-                         ifelse(!is.null(s$n), s$n, 0), 
-                         ifelse(!is.null(s$mean), s$mean, NA),
-                         ifelse(!is.null(s$max), s$max, NA),
-                         ifelse(!is.null(s$min), s$min, NA)))
-            }
-          }
-        } else {
-          cat("暂无合约数据\n")
+      cat("\n--- 最新价格快照 ---\n")
+      prices <- isolate(latest_prices())
+      if(length(prices) > 0) {
+        for(id in names(prices)) {
+          direction <- isolate(price_direction())[[id]]
+          arrow <- switch(direction,
+                         "up" = "↑",
+                         "down" = "↓",
+                         "same" = "→")
+          cat(sprintf("%s: %.2f %s\n", id, prices[[id]], arrow))
         }
       }
       cat("====================================\n")
