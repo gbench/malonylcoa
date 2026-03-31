@@ -23,8 +23,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
   
   # 创建时间戳
   if("ActionDay" %in% colnames(ticks_df) && "UpdateTime" %in% colnames(ticks_df)) {
-    ticks_df$DateTime <- as.POSIXct(paste0(ticks_df$ActionDay, " ", ticks_df$UpdateTime), 
-                                    format="%Y%m%d %H:%M:%S")
+    ticks_df$DateTime <- as.POSIXct(paste0(ticks_df$ActionDay, " ", ticks_df$UpdateTime), format="%Y%m%d %H:%M:%S")
     if("UpdateMillisec" %in% colnames(ticks_df)) {
       ticks_df$DateTime <- ticks_df$DateTime + ticks_df$UpdateMillisec / 1000
     }
@@ -338,9 +337,9 @@ server <- function(input, output, session) {
       add_debug(paste("全量加载:", instrument_id, "K线数量:", length(full_kline$timestamp)))
       if(length(full_kline$timestamp) > 0) {
         add_debug(paste("K线时间范围:", 
-                       as.POSIXct(full_kline$timestamp[1]/1000, origin="1970-01-01"),
-                       "到",
-                       as.POSIXct(full_kline$timestamp[length(full_kline$timestamp)]/1000, origin="1970-01-01")))
+          as.POSIXct(full_kline$timestamp[1]/1000, origin="1970-01-01"),
+          "到",
+          as.POSIXct(full_kline$timestamp[length(full_kline$timestamp)]/1000, origin="1970-01-01")))
       }
       return(list(
         type = "full",
@@ -537,7 +536,7 @@ server <- function(input, output, session) {
           if(!is.null(result)) {
             # 准备发送到前端的数据
             if(result$type == "full") {
-              ds_list <- list()
+              ds_list <- vector("list", length(result$data$timestamp)) 
               for(i in seq_along(result$data$timestamp)) {
                 ds_list[[i]] <- list(
                   timestamp = result$data$timestamp[i],
@@ -554,7 +553,7 @@ server <- function(input, output, session) {
               session$sendCustomMessage("push", send_data)
               
             } else if(result$type == "incremental") {
-              ds_list <- list()
+              ds_list <- vector("list", length(result$data$timestamp)) 
               for(i in seq_along(result$data$timestamp)) {
                 ds_list[[i]] <- list(
                   timestamp = result$data$timestamp[i],
