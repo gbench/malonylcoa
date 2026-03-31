@@ -181,6 +181,12 @@ ui <- fluidPage(
     sidebarPanel(
       width = 3,
       class = "sidebar-panel",
+
+      div(class = "info-box",
+        h4("实时信息"),
+        verbatimTextOutput("price_info", placeholder = TRUE),
+        hr()
+      ),
       
       div(class = "control-group",
         tags$label("服务器配置"),
@@ -202,11 +208,6 @@ ui <- fluidPage(
         numericInput("kline_period", "K线周期(分钟)", value = 1, min = 1, max = 60, step = 1),
         actionButton("refresh_btn", "刷新K线", icon = icon("sync"), width = "100%"),
         hr()
-      ),
-      
-      div(class = "info-box",
-        h4("实时信息"),
-        verbatimTextOutput("price_info", placeholder = TRUE)
       ),
       
       div(class = "debug-panel",
@@ -649,7 +650,7 @@ server <- function(input, output, session) {
           stats <- client_val$stats(req_instrument_val)
           if(!is.null(stats) && is.list(stats)) {
             output$price_info <- renderPrint({
-              cat("========== 实时行情 ==========\n")
+              cat("======== 实时行情 ========\n")
               cat(sprintf("合约: %s\n", req_instrument_val))
               cat(sprintf("最新价: %.2f\n", stats$last))
               cat(sprintf("均价: %.2f\n", stats$mean))
@@ -657,7 +658,7 @@ server <- function(input, output, session) {
               cat(sprintf("最低价: %.2f\n", stats$min))
               cat(sprintf("Tick数: %d\n", stats$n))
               cat(sprintf("更新时间: %s\n", stats$updatetime))
-              cat("===============================\n")
+              cat("===========================\n")
             })
           }
         }, error = function(e) {
@@ -931,6 +932,7 @@ writeLines('
 
   chart.createIndicator("VOL");
   chart.createIndicator("MA", true, { id: "candle_pane" });
+  chart.createIndicator("KDJ");
   chart.createIndicator("MACD");
 
   function loadInstrumentData(instrument, data, type) {
