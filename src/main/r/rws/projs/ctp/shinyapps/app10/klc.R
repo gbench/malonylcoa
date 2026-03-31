@@ -266,6 +266,10 @@ server <- function(input, output, session) {
   reset_env <- function() {
     if(!is.null(.state$ctpclient)) {
       tryCatch({
+        undump_cmd <- gettextf("undump %s", .state$ctpclient$.sessionfd)
+        add_debug(gettextf("尝试UNDUMP：'%s'", undump_cmd))
+        writeLines(undump_cmd, .state$ctpclient$.conn)
+        add_debug(gettextf("UNDUMP后返回数据被丢弃：'%s'", readLines(.state$ctpclient$.conn)))
         .state$ctpclient$stop()
       }, error = function(e) {
         message("停止连接时出错: ", e$message)
