@@ -55,7 +55,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
         low = min(LastPrice),
         close = last(LastPrice),
         volume = if(n() > 0) max(Volume, na.rm = TRUE) - min(Volume, na.rm = TRUE) else 0,
-        oint = if(n() > 0) max(OpenInterest, na.rm = TRUE), # 持仓量
+        oint = if(n() > 0) last(OpenInterest), # 持仓量
         .groups = 'drop'
       ) %>%
       arrange(Period)
