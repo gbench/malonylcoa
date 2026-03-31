@@ -269,7 +269,7 @@ server <- function(input, output, session) {
         undump_cmd <- gettextf("undump %s", .state$ctpclient$.sessionfd)
         add_debug(gettextf("尝试UNDUMP：'%s'", undump_cmd))
         writeLines(undump_cmd, .state$ctpclient$.conn)
-        add_debug(gettextf("UNDUMP后返回数据被丢弃：'%s'", readLines(.state$ctpclient$.conn)))
+        add_debug(gettextf("UNDUMP后返回数据被丢弃：[%s]", base::paste0(base::readLines(.state$ctpclient$.conn), collapse=",")))
         .state$ctpclient$stop()
       }, error = function(e) {
         message("停止连接时出错: ", e$message)
