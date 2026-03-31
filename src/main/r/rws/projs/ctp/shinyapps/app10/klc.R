@@ -55,6 +55,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
         low = min(LastPrice),
         close = last(LastPrice),
         volume = if(n() > 0) max(Volume, na.rm = TRUE) - min(Volume, na.rm = TRUE) else 0,
+        oint = if(n() > 0) max(OpenInterest, na.rm = TRUE), # 持仓量
         .groups = 'drop'
       ) %>%
       arrange(Period)
@@ -70,7 +71,8 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
       high = as.numeric(kline$high),
       low = as.numeric(kline$low),
       close = as.numeric(kline$close),
-      volume = as.numeric(kline$volume)
+      volume = as.numeric(kline$volume),
+      oint = as.numeric(kline$oint)
     )
     
     # 如果有基准数据且不是全量计算，需要合并
@@ -82,6 +84,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
       all_low <- c(base_kline$low, result$low)
       all_close <- c(base_kline$close, result$close)
       all_volume <- c(base_kline$volume, result$volume)
+      all_oint <- c(base_kline$oint, result$oint)
       
       # 去重（如果时间戳重复，保留新的）
       unique_indices <- !duplicated(all_timestamps, fromLast = TRUE)
@@ -92,7 +95,8 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
         high = all_high[unique_indices],
         low = all_low[unique_indices],
         close = all_close[unique_indices],
-        volume = all_volume[unique_indices]
+        volume = all_volume[unique_indices],
+        oint = all_oint[unique_indices]
       )
     }
     
@@ -221,7 +225,7 @@ ui <- fluidPage(
     mainPanel(
       width = 9,
       class = "main-panel",
-      div(id = "chart", style = "width:100%; height:600px; background-color: #1e1e2f; border: 1px solid #4a5568; border-radius: 5px;"),
+      div(id = "chart", style = "width:100%; height:800px; background-color: #1e1e2f; border: 1px solid #4a5568; border-radius: 5px;"),
       tags$script(src = "js/klinecharts.min.js"),
       tags$script(src = "js/chartapp.js"),
       tags$script(src = "js/exit.js")
@@ -321,7 +325,8 @@ server <- function(input, output, session) {
           high = sapply(cached_data, function(x) x$high),
           low = sapply(cached_data, function(x) x$low),
           close = sapply(cached_data, function(x) x$close),
-          volume = sapply(cached_data, function(x) x$volume)
+          volume = sapply(cached_data, function(x) x$volume),
+          oint = sapply(cached_data, function(x) x$oint)
         )
       }
     }
@@ -372,7 +377,8 @@ server <- function(input, output, session) {
         high = full_kline$high[update_indices[1]],
         low = full_kline$low[update_indices[1]],
         close = full_kline$close[update_indices[1]],
-        volume = full_kline$volume[update_indices[1]]
+        volume = full_kline$volume[update_indices[1]],
+        oint = full_kline$oint[update_indices[1]]
       )
       
       # 如果有更多新K线（时间戳大于缓存最后时间戳）
@@ -385,7 +391,8 @@ server <- function(input, output, session) {
             high = full_kline$high[new_indices],
             low = full_kline$low[new_indices],
             close = full_kline$close[new_indices],
-            volume = full_kline$volume[new_indices]
+            volume = full_kline$volume[new_indices],
+            oint = full_kline$oint[new_indices]
           )
           add_debug(paste("同时有新增K线:", length(new_indices)))
           return(list(
@@ -412,7 +419,8 @@ server <- function(input, output, session) {
         high = full_kline$high[update_indices],
         low = full_kline$low[update_indices],
         close = full_kline$close[update_indices],
-        volume = full_kline$volume[update_indices]
+        volume = full_kline$volume[update_indices],
+        oint = full_kline$oint[update_indices]
       )
       
       add_debug(paste("增量更新:", instrument_id, "新增K线:", length(update_indices)))
@@ -444,7 +452,8 @@ server <- function(input, output, session) {
           high = result$data$high[i],
           low = result$data$low[i],
           close = result$data$close[i],
-          volume = result$data$volume[i]
+          volume = result$data$volume[i],
+          oint = result$data$oint[i]
         )
       }
       .state$kline_cache[[instrument_id]]$data <- cache_data
@@ -459,7 +468,8 @@ server <- function(input, output, session) {
           high = result$data$high[i],
           low = result$data$low[i],
           close = result$data$close[i],
-          volume = result$data$volume[i]
+          volume = result$data$volume[i],
+          oint = result$data$oint[i]
         )
       }
       add_debug(paste("增量缓存更新:", instrument_id, "新增K线数量:", length(result$data$timestamp)))
@@ -474,7 +484,8 @@ server <- function(input, output, session) {
           high = result$data$high,
           low = result$data$low,
           close = result$data$close,
-          volume = result$data$volume
+          volume = result$data$volume,
+          oint = result$data$oint
         )
         add_debug(paste("更新缓存最后一根K线:", instrument_id))
       }
@@ -488,7 +499,8 @@ server <- function(input, output, session) {
           high = result$update_data$high,
           low = result$update_data$low,
           close = result$update_data$close,
-          volume = result$update_data$volume
+          volume = result$update_data$volume,
+          oint = result$update_data$oint
         )
       }
       # 添加新K线
@@ -499,7 +511,8 @@ server <- function(input, output, session) {
           high = result$new_data$high[i],
           low = result$new_data$low[i],
           close = result$new_data$close[i],
-          volume = result$new_data$volume[i]
+          volume = result$new_data$volume[i],
+          oint = result$new_data$oint[i]
         )
       }
       add_debug(paste("更新缓存: 更新最后一根 + 新增", length(result$new_data$timestamp), "根K线"))
@@ -545,7 +558,8 @@ server <- function(input, output, session) {
                   high = result$data$high[i],
                   low = result$data$low[i],
                   close = result$data$close[i],
-                  volume = result$data$volume[i]
+                  volume = result$data$volume[i],
+                  oint = result$data$oint[i]
                 )
               }
               send_data <- list(instrument = req_instrument_val, type = "full", ds = ds_list)
@@ -562,7 +576,8 @@ server <- function(input, output, session) {
                   high = result$data$high[i],
                   low = result$data$low[i],
                   close = result$data$close[i],
-                  volume = result$data$volume[i]
+                  volume = result$data$volume[i],
+                  oint = result$data$oint[i]
                 )
               }
               send_data <- list(instrument = req_instrument_val, type = "incremental", ds = ds_list)
@@ -580,7 +595,8 @@ server <- function(input, output, session) {
                   high = result$data$high,
                   low = result$data$low,
                   close = result$data$close,
-                  volume = result$data$volume
+                  volume = result$data$volume,
+                  oint = result$data$oint
                 )
               )
               update_cache(req_instrument_val, result)
@@ -598,7 +614,8 @@ server <- function(input, output, session) {
                   high = result$update_data$high,
                   low = result$update_data$low,
                   close = result$update_data$close,
-                  volume = result$update_data$volume
+                  volume = result$update_data$volume,
+                  oint = result$update_data$oint
                 )
               )
               session$sendCustomMessage("push", update_data)
@@ -612,7 +629,8 @@ server <- function(input, output, session) {
                   high = result$new_data$high[i],
                   low = result$new_data$low[i],
                   close = result$new_data$close[i],
-                  volume = result$new_data$volume[i]
+                  volume = result$new_data$volume[i],
+                  oint = result$new_data$oint[i]
                 )
               }
               new_data <- list(instrument = req_instrument_val, type = "incremental", ds = ds_list)
@@ -930,8 +948,36 @@ writeLines('
     }
   });
 
+  // 持仓量
+  klinecharts.registerIndicator({
+    name: "OINT", // 指标名，之后用这个名字挂载
+    shortName: "OINT", // 左上角缩写
+    calcParams: [], // 本例不需要参数
+    shouldFormatBigNumber: true, // 格式化参数
+    figures: [
+      {
+        key: "oint",
+        title: "持仓量: ",
+        type: "line",
+      },
+      {
+        key: "preoint",
+        title: "前仓量: ",
+        type: "line",
+      },
+    ],
+    calc: (kLineDataList, _) => {
+      // 核心：把 K 线数据里的 openInterest 抽出来返回
+      return kLineDataList.map((k, i, ks) => ({
+        oint: k.oint,
+        preoint: i < 1 ? k.oint : ks[i - 1].oint,
+      }));
+    },
+  });
+
   chart.createIndicator("VOL");
   chart.createIndicator("MA", true, { id: "candle_pane" });
+   chart.createIndicator("OINT");
   chart.createIndicator("KDJ");
   chart.createIndicator("MACD");
 
