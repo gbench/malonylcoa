@@ -1,4 +1,4 @@
-# app.R - 修复时间戳比较逻辑
+# app.R - 优化的K线图应用，支持增量K线计算
 library(shiny)
 library(shinydashboard)
 library(dplyr)
@@ -15,8 +15,8 @@ for(pkg in required_packages) {
   }
 }
 
-# 将tick数据转换为K线数据
-ticks_to_kline <- function(ticks_df, period_minutes = 1) {
+# 优化的ticks_to_kline函数 - 支持增量更新
+ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
   if(is.null(ticks_df) || nrow(ticks_df) == 0) {
     return(NULL)
   }
@@ -32,6 +32,22 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1) {
     # 按周期聚合
     ticks_df$Period <- lubridate::floor_date(ticks_df$DateTime, paste0(period_minutes, " mins"))
     
+    # 如果有基准K线数据，只计算新增的部分
+    if(!is.null(base_kline) && length(base_kline$timestamp) > 0) {
+      # 获取基准数据的最后时间戳
+      last_timestamp <- max(base_kline$timestamp)
+      last_period <- as.POSIXct(last_timestamp / 1000, origin = "1970-01-01")
+      
+      # 只保留大于等于最后时间戳的数据（包括最后一根K线，因为可能更新）
+      ticks_df <- ticks_df %>% filter(Period >= last_period)
+      
+      if(nrow(ticks_df) == 0) {
+        # 没有新数据，返回NULL
+        return(NULL)
+      }
+    }
+    
+    # 计算K线
     kline <- ticks_df %>%
       group_by(Period) %>%
       summarise(
@@ -39,7 +55,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1) {
         high = max(LastPrice),
         low = min(LastPrice),
         close = last(LastPrice),
-        volume = max(Volume, na.rm = TRUE) - min(Volume, na.rm = TRUE),
+        volume = if(n() > 0) max(Volume, na.rm = TRUE) - min(Volume, na.rm = TRUE) else 0,
         .groups = 'drop'
       ) %>%
       arrange(Period)
@@ -50,13 +66,36 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1) {
     
     # 转换为klinecharts需要的格式
     result <- list(
-      timestamp = as.numeric(kline$Period) * 1000,  # 毫秒时间戳
+      timestamp = as.numeric(kline$Period) * 1000,
       open = as.numeric(kline$open),
       high = as.numeric(kline$high),
       low = as.numeric(kline$low),
       close = as.numeric(kline$close),
       volume = as.numeric(kline$volume)
     )
+    
+    # 如果有基准数据且不是全量计算，需要合并
+    if(!is.null(base_kline) && length(base_kline$timestamp) > 0) {
+      # 合并基准数据和新增数据
+      all_timestamps <- c(base_kline$timestamp, result$timestamp)
+      all_open <- c(base_kline$open, result$open)
+      all_high <- c(base_kline$high, result$high)
+      all_low <- c(base_kline$low, result$low)
+      all_close <- c(base_kline$close, result$close)
+      all_volume <- c(base_kline$volume, result$volume)
+      
+      # 去重（如果时间戳重复，保留新的）
+      unique_indices <- !duplicated(all_timestamps, fromLast = TRUE)
+      
+      result <- list(
+        timestamp = all_timestamps[unique_indices],
+        open = all_open[unique_indices],
+        high = all_high[unique_indices],
+        low = all_low[unique_indices],
+        close = all_close[unique_indices],
+        volume = all_volume[unique_indices]
+      )
+    }
     
     return(result)
   }
@@ -260,25 +299,39 @@ server <- function(input, output, session) {
     })
   }
   
-  # 获取增量K线数据 - 修复比较逻辑
+  # 优化的get_incremental_kline函数
   get_incremental_kline <- function(ticks_df, period_minutes, instrument_id, cache) {
     if(is.null(ticks_df) || nrow(ticks_df) == 0) {
       return(NULL)
     }
     
-    full_kline <- ticks_to_kline(ticks_df, period_minutes)
+    # 获取缓存的K线数据
+    cached_kline <- NULL
+    if(!is.null(cache[[instrument_id]]) && !is.null(cache[[instrument_id]]$data)) {
+      # 将缓存的data转换为kline格式
+      cached_data <- cache[[instrument_id]]$data
+      if(length(cached_data) > 0) {
+        cached_kline <- list(
+          timestamp = sapply(cached_data, function(x) x$timestamp),
+          open = sapply(cached_data, function(x) x$open),
+          high = sapply(cached_data, function(x) x$high),
+          low = sapply(cached_data, function(x) x$low),
+          close = sapply(cached_data, function(x) x$close),
+          volume = sapply(cached_data, function(x) x$volume)
+        )
+      }
+    }
+    
+    # 使用优化的ticks_to_kline，传入基准K线数据
+    full_kline <- ticks_to_kline(ticks_df, period_minutes, cached_kline)
+    
     if(is.null(full_kline) || length(full_kline$timestamp) == 0) {
       return(NULL)
     }
     
-    add_debug(paste("K线时间戳:", paste(full_kline$timestamp, collapse=",")))
-    
-    cached <- cache[[instrument_id]]
-    
     # 如果没有缓存，返回全量数据
-    if(is.null(cached) || is.null(cached$data) || length(cached$data) == 0) {
+    if(is.null(cached_kline) || length(cached_kline$timestamp) == 0) {
       add_debug(paste("全量加载:", instrument_id, "K线数量:", length(full_kline$timestamp)))
-      # 打印第一根和最后一根K线的时间
       if(length(full_kline$timestamp) > 0) {
         add_debug(paste("K线时间范围:", 
                        as.POSIXct(full_kline$timestamp[1]/1000, origin="1970-01-01"),
@@ -293,12 +346,10 @@ server <- function(input, output, session) {
       ))
     }
     
-    # 获取缓存的最后一根K线
-    cached_last_ts <- max(sapply(cached$data, function(x) x$timestamp))
-    add_debug(paste("缓存最后时间戳:", cached_last_ts))
+    # 比较新旧数据，找出变化
+    cached_last_ts <- max(cached_kline$timestamp)
     
-    # 找出需要更新的K线（时间戳 >= 缓存最后时间戳）
-    # 注意：这里使用 >= 是为了更新最后一根K线
+    # 找出新增或更新的K线索引
     update_indices <- which(full_kline$timestamp >= cached_last_ts)
     
     if(length(update_indices) == 0) {
@@ -306,12 +357,12 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
-    # 检查是否需要更新最后一根K线（时间戳相等）
+    # 检查第一根需要更新的K线是否与缓存最后时间戳相同
     if(full_kline$timestamp[update_indices[1]] == cached_last_ts) {
       # 更新最后一根K线
       add_debug(paste("更新最后一根K线，时间戳:", full_kline$timestamp[update_indices[1]]))
       
-      last_kline <- list(
+      new_last <- list(
         timestamp = full_kline$timestamp[update_indices[1]],
         open = full_kline$open[update_indices[1]],
         high = full_kline$high[update_indices[1]],
@@ -336,7 +387,7 @@ server <- function(input, output, session) {
           return(list(
             type = "update_and_incremental",
             instrument = instrument_id,
-            update_data = last_kline,
+            update_data = new_last,
             new_data = new_kline,
             last_timestamp = max(full_kline$timestamp)
           ))
@@ -346,7 +397,7 @@ server <- function(input, output, session) {
       return(list(
         type = "update",
         instrument = instrument_id,
-        data = last_kline,
+        data = new_last,
         last_timestamp = max(full_kline$timestamp)
       ))
     } else {
@@ -1018,4 +1069,5 @@ document.addEventListener("DOMContentLoaded", function() {
 message("请确保 klinecharts.min.js 文件已放置在 www/js/ 目录下")
 message("可以从 https://cdn.jsdelivr.net/npm/klinecharts@latest/dist/klinecharts.min.js 下载")
 
+# 运行应用
 shinyApp(ui, server)
