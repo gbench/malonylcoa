@@ -1,13 +1,7 @@
 # app.R - 优化的K线图应用，支持增量K线计算
-library(shiny)
-library(shinydashboard)
-library(dplyr)
-library(jsonlite)
-library(later)
-library(lubridate)
 
 # 加载必要的包
-required_packages <- c("later", "jsonlite", "dplyr", "shiny", "shinydashboard", "lubridate")
+required_packages <- c("later", "shiny", "shinydashboard", "dplyr", "jsonlite", "lubridate", "data.table", "purrr")
 for(pkg in required_packages) {
   if(!require(pkg, character.only = TRUE)) {
     install.packages(pkg)
@@ -15,94 +9,145 @@ for(pkg in required_packages) {
   }
 }
 
+# 向量化的floor_date实现
+floor_date_vectorized <- function(datetime, period_seconds) {
+  # 将POSIXct转换为数值并执行向量化地板除法
+  timestamp <- as.numeric(datetime)
+  floor_timestamp <- floor(timestamp / period_seconds) * period_seconds
+  as.POSIXct(floor_timestamp, origin = "1970-01-01")
+}
+
+# data.table聚合函数
+aggregate_with_dt <- function(ticks_df) {
+  dt <- data.table::as.data.table(ticks_df)
+  
+  # 使用data.table的向量化聚合
+  kline <- dt[, .(
+    open = first(LastPrice),
+    high = max(LastPrice),
+    low = min(LastPrice),
+    close = last(LastPrice),
+    volume = last(Volume) - first(Volume),
+    oint = last(OpenInterest) else NA_real_
+  ), by = Period]
+  
+  # 排序（data.table默认按分组排序）
+  data.table::setorder(kline, Period)
+  
+  return(as.data.frame(kline))
+}
+
+# dplyr聚合函数（优化版）
+aggregate_with_dplyr <- function(ticks_df) {
+  # 使用dplyr但避免重复计算
+  ticks_df %>%
+    dplyr::group_by(Period) %>%
+    dplyr::summarise(
+      open = dplyr::first(LastPrice),
+      high = max(LastPrice),
+      low = min(LastPrice),
+      close = dplyr::last(LastPrice),
+      volume = dplyr::last(Volume) - dplyr::first(Volume),
+      oint = dplyr::last(OpenInterest) else NA_real_,
+      .groups = "drop"
+    ) %>%
+    dplyr::arrange(Period)
+}
+
+# 函数式合并K线数据
+merge_kline_data <- function(base, new) {
+  # 使用purrr进行函数式组合（如果可用）
+  if (requireNamespace("purrr", quietly = TRUE)) {
+    merge_fields <- function(field) {
+      c(base[[field]], new[[field]])
+    }
+    
+    all_fields <- purrr::map(names(base), merge_fields)
+    names(all_fields) <- names(base)
+    
+    # 去重（保留新的）
+    unique_indices <- !duplicated(all_fields$timestamp, fromLast = TRUE)
+    
+    purrr::map(all_fields, ~ .[unique_indices])
+  } else {
+    # 基础R实现
+    all_timestamps <- c(base$timestamp, new$timestamp)
+    unique_indices <- !duplicated(all_timestamps, fromLast = TRUE)
+    
+    list(
+      timestamp = all_timestamps[unique_indices],
+      open = c(base$open, new$open)[unique_indices],
+      high = c(base$high, new$high)[unique_indices],
+      low = c(base$low, new$low)[unique_indices],
+      close = c(base$close, new$close)[unique_indices],
+      volume = c(base$volume, new$volume)[unique_indices],
+      oint = c(base$oint, new$oint)[unique_indices]
+    )
+  }
+}
+
 # 优化的ticks_to_kline函数 - 支持增量更新
 ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
-  if(is.null(ticks_df) || nrow(ticks_df) == 0) {
-    return(NULL)
+  # 早期返回检查
+  if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+  
+  # 检查必要列
+  required_cols <- c("ActionDay", "UpdateTime", "LastPrice", "Volume")
+  if (!all(required_cols %in% colnames(ticks_df))) return(NULL)
+  
+  # 使用向量化操作创建时间戳
+  datetime_str <- paste(ticks_df$ActionDay, ticks_df$UpdateTime)
+  ticks_df$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S")
+  
+  # 向量化添加毫秒
+  if ("UpdateMillisec" %in% colnames(ticks_df)) {
+    ticks_df$DateTime <- ticks_df$DateTime + ticks_df$UpdateMillisec / 1000
   }
   
-  # 创建时间戳
-  if("ActionDay" %in% colnames(ticks_df) && "UpdateTime" %in% colnames(ticks_df)) {
-    ticks_df$DateTime <- as.POSIXct(paste0(ticks_df$ActionDay, " ", ticks_df$UpdateTime), format="%Y%m%d %H:%M:%S")
-    if("UpdateMillisec" %in% colnames(ticks_df)) {
-      ticks_df$DateTime <- ticks_df$DateTime + ticks_df$UpdateMillisec / 1000
-    }
-    
-    # 按周期聚合
-    ticks_df$Period <- lubridate::floor_date(ticks_df$DateTime, paste0(period_minutes, " mins"))
-    
-    # 如果有基准K线数据，只计算新增的部分
-    if(!is.null(base_kline) && length(base_kline$timestamp) > 0) {
-      # 获取基准数据的最后时间戳
-      last_timestamp <- max(base_kline$timestamp)
-      last_period <- as.POSIXct(last_timestamp / 1000, origin = "1970-01-01")
-      
-      # 只保留大于等于最后时间戳的数据（包括最后一根K线，因为可能更新）
-      ticks_df <- ticks_df %>% filter(Period >= last_period)
-      
-      if(nrow(ticks_df) == 0) {
-        # 没有新数据，返回NULL
-        return(NULL)
-      }
-    }
-    
-    # 计算K线
-    kline <- ticks_df %>%
-      group_by(Period) %>%
-      summarise(
-        open = first(LastPrice),
-        high = max(LastPrice),
-        low = min(LastPrice),
-        close = last(LastPrice),
-        volume = if(n() > 0) max(Volume, na.rm = TRUE) - min(Volume, na.rm = TRUE) else 0,
-        oint = if(n() > 0) last(OpenInterest), # 持仓量
-        .groups = 'drop'
-      ) %>%
-      arrange(Period)
-    
-    if(nrow(kline) == 0) {
-      return(NULL)
-    }
-    
-    # 转换为klinecharts需要的格式
-    result <- list(
-      timestamp = as.numeric(kline$Period) * 1000,
-      open = as.numeric(kline$open),
-      high = as.numeric(kline$high),
-      low = as.numeric(kline$low),
-      close = as.numeric(kline$close),
-      volume = as.numeric(kline$volume),
-      oint = as.numeric(kline$oint)
+  # 向量化计算周期（避免lubridate的逐行操作开销）
+  period_seconds <- period_minutes * 60
+  ticks_df$Period <- floor_date_vectorized(ticks_df$DateTime, period_seconds)
+  
+  # 处理基准数据过滤 - 向量化比较
+  if (!is.null(base_kline) && length(base_kline$timestamp) > 0) {
+    last_period <- floor_date_vectorized(
+      as.POSIXct(max(base_kline$timestamp) / 1000, origin = "1970-01-01"),
+      period_seconds
     )
     
-    # 如果有基准数据且不是全量计算，需要合并
-    if(!is.null(base_kline) && length(base_kline$timestamp) > 0) {
-      # 合并基准数据和新增数据
-      all_timestamps <- c(base_kline$timestamp, result$timestamp)
-      all_open <- c(base_kline$open, result$open)
-      all_high <- c(base_kline$high, result$high)
-      all_low <- c(base_kline$low, result$low)
-      all_close <- c(base_kline$close, result$close)
-      all_volume <- c(base_kline$volume, result$volume)
-      all_oint <- c(base_kline$oint, result$oint)
-      
-      # 去重（如果时间戳重复，保留新的）
-      unique_indices <- !duplicated(all_timestamps, fromLast = TRUE)
-      
-      result <- list(
-        timestamp = all_timestamps[unique_indices],
-        open = all_open[unique_indices],
-        high = all_high[unique_indices],
-        low = all_low[unique_indices],
-        close = all_close[unique_indices],
-        volume = all_volume[unique_indices],
-        oint = all_oint[unique_indices]
-      )
-    }
+    # 向量化过滤
+    keep_indices <- ticks_df$Period >= last_period
+    ticks_df <- ticks_df[keep_indices, ]
     
-    return(result)
+    if (nrow(ticks_df) == 0) return(NULL)
   }
-  return(NULL)
+  
+  # 使用data.table进行高性能聚合（如果可用）
+  if (requireNamespace("data.table", quietly = TRUE)) {
+    kline <- aggregate_with_dt(ticks_df)
+  } else {
+    kline <- aggregate_with_dplyr(ticks_df)
+  }
+  
+  if (nrow(kline) == 0) return(NULL)
+  
+  # 构建结果列表
+  result <- list(
+    timestamp = as.numeric(kline$Period) * 1000,
+    open = kline$open,
+    high = kline$high,
+    low = kline$low,
+    close = kline$close,
+    volume = kline$volume,
+    oint = if ("oint" %in% names(kline)) kline$oint else numeric(nrow(kline))
+  )
+  
+  # 合并基准数据（函数式合并）
+  if (!is.null(base_kline) && length(base_kline$timestamp) > 0) {
+    result <- merge_kline_data(base_kline, result)
+  }
+  
+  return(result)
 }
 
 # UI
