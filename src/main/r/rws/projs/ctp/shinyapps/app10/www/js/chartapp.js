@@ -52,8 +52,8 @@
 
   chart.createIndicator("VOL");
   chart.createIndicator("MA", true, { id: "candle_pane" });
-  chart.createIndicator("MACD");
   chart.createIndicator("KDJ");
+  chart.createIndicator("MACD");
 
   function loadInstrumentData(instrument, data, type) {
     debugLog("loadInstrumentData: " + instrument + ", type: " + type);
