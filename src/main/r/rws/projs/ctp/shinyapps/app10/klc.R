@@ -110,10 +110,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
   
   # 处理基准数据过滤 - 向量化比较
   if (!is.null(base_kline) && length(base_kline$timestamp) > 0) {
-    last_period <- floor_date_vectorized(
-      as.POSIXct(max(base_kline$timestamp) / 1000, origin = "1970-01-01"),
-      period_seconds
-    )
+    last_period <- floor_date_vectorized(as.POSIXct(max(base_kline$timestamp) / 1000, origin = "1970-01-01"), period_seconds)
     
     # 向量化过滤
     keep_indices <- ticks_df$Period >= last_period
@@ -139,7 +136,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
     low = kline$low,
     close = kline$close,
     volume = kline$volume,
-    oint = if ("oint" %in% names(kline)) kline$oint else numeric(nrow(kline))
+    oint = kline$oint
   )
   
   # 合并基准数据（函数式合并）
