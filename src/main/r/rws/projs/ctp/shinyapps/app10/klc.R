@@ -23,8 +23,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
   
   # 创建时间戳
   if("ActionDay" %in% colnames(ticks_df) && "UpdateTime" %in% colnames(ticks_df)) {
-    ticks_df$DateTime <- as.POSIXct(paste0(ticks_df$ActionDay, " ", ticks_df$UpdateTime), 
-                                    format="%Y%m%d %H:%M:%S")
+    ticks_df$DateTime <- as.POSIXct(paste0(ticks_df$ActionDay, " ", ticks_df$UpdateTime), format="%Y%m%d %H:%M:%S")
     if("UpdateMillisec" %in% colnames(ticks_df)) {
       ticks_df$DateTime <- ticks_df$DateTime + ticks_df$UpdateMillisec / 1000
     }
@@ -182,6 +181,12 @@ ui <- fluidPage(
     sidebarPanel(
       width = 3,
       class = "sidebar-panel",
+
+      div(class = "info-box",
+        h4("实时信息"),
+        verbatimTextOutput("price_info", placeholder = TRUE),
+        hr()
+      ),
       
       div(class = "control-group",
         tags$label("服务器配置"),
@@ -203,11 +208,6 @@ ui <- fluidPage(
         numericInput("kline_period", "K线周期(分钟)", value = 1, min = 1, max = 60, step = 1),
         actionButton("refresh_btn", "刷新K线", icon = icon("sync"), width = "100%"),
         hr()
-      ),
-      
-      div(class = "info-box",
-        h4("实时信息"),
-        verbatimTextOutput("price_info", placeholder = TRUE)
       ),
       
       div(class = "debug-panel",
@@ -266,6 +266,10 @@ server <- function(input, output, session) {
   reset_env <- function() {
     if(!is.null(.state$ctpclient)) {
       tryCatch({
+        undump_cmd <- gettextf("undump %s", .state$ctpclient$.sessionfd)
+        add_debug(gettextf("尝试UNDUMP：'%s'", undump_cmd))
+        writeLines(undump_cmd, .state$ctpclient$.conn)
+        add_debug(gettextf("UNDUMP后返回数据被丢弃：[%s]", base::paste0(base::readLines(.state$ctpclient$.conn), collapse=",")))
         .state$ctpclient$stop()
       }, error = function(e) {
         message("停止连接时出错: ", e$message)
@@ -334,9 +338,9 @@ server <- function(input, output, session) {
       add_debug(paste("全量加载:", instrument_id, "K线数量:", length(full_kline$timestamp)))
       if(length(full_kline$timestamp) > 0) {
         add_debug(paste("K线时间范围:", 
-                       as.POSIXct(full_kline$timestamp[1]/1000, origin="1970-01-01"),
-                       "到",
-                       as.POSIXct(full_kline$timestamp[length(full_kline$timestamp)]/1000, origin="1970-01-01")))
+          as.POSIXct(full_kline$timestamp[1]/1000, origin="1970-01-01"),
+          "到",
+          as.POSIXct(full_kline$timestamp[length(full_kline$timestamp)]/1000, origin="1970-01-01")))
       }
       return(list(
         type = "full",
@@ -533,7 +537,7 @@ server <- function(input, output, session) {
           if(!is.null(result)) {
             # 准备发送到前端的数据
             if(result$type == "full") {
-              ds_list <- list()
+              ds_list <- vector("list", length(result$data$timestamp)) 
               for(i in seq_along(result$data$timestamp)) {
                 ds_list[[i]] <- list(
                   timestamp = result$data$timestamp[i],
@@ -550,7 +554,7 @@ server <- function(input, output, session) {
               session$sendCustomMessage("push", send_data)
               
             } else if(result$type == "incremental") {
-              ds_list <- list()
+              ds_list <- vector("list", length(result$data$timestamp)) 
               for(i in seq_along(result$data$timestamp)) {
                 ds_list[[i]] <- list(
                   timestamp = result$data$timestamp[i],
@@ -646,7 +650,7 @@ server <- function(input, output, session) {
           stats <- client_val$stats(req_instrument_val)
           if(!is.null(stats) && is.list(stats)) {
             output$price_info <- renderPrint({
-              cat("========== 实时行情 ==========\n")
+              cat("======== 实时行情 ========\n")
               cat(sprintf("合约: %s\n", req_instrument_val))
               cat(sprintf("最新价: %.2f\n", stats$last))
               cat(sprintf("均价: %.2f\n", stats$mean))
@@ -654,7 +658,7 @@ server <- function(input, output, session) {
               cat(sprintf("最低价: %.2f\n", stats$min))
               cat(sprintf("Tick数: %d\n", stats$n))
               cat(sprintf("更新时间: %s\n", stats$updatetime))
-              cat("===============================\n")
+              cat("===========================\n")
             })
           }
         }, error = function(e) {
@@ -928,6 +932,7 @@ writeLines('
 
   chart.createIndicator("VOL");
   chart.createIndicator("MA", true, { id: "candle_pane" });
+  chart.createIndicator("KDJ");
   chart.createIndicator("MACD");
 
   function loadInstrumentData(instrument, data, type) {
