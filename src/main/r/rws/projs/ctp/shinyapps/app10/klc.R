@@ -135,8 +135,8 @@ ui <- fluidPage(
       
       div(class = "control-group",
         tags$label("服务器配置"),
-        textInput("host", "服务器地址", value = "localhost"),
-        numericInput("port", "端口", value = 9892, min = 1, max = 65535),
+        textInput("host", "服务器地址", value = "192.168.1.41"),
+        numericInput("port", "端口", value = 9898, min = 1, max = 65535),
         actionButton("connect_btn", "启动连接", class = "btn-primary", icon = icon("play"), width = "100%"),
         actionButton("disconnect_btn", "停止连接", class = "btn-danger", icon = icon("stop"), width = "100%"),
         hr()
@@ -182,6 +182,10 @@ server <- function(input, output, session) {
   is_connected <- reactiveVal(FALSE)
   timer_id <- NULL
   price_timer_id <- NULL
+  kline_timer_id <- NULL
+  
+  # 记录每个合约的最后更新时间戳
+  last_update_timestamp <- reactiveVal(list())
   
   # 辅助函数: 清空环境
   reset_env <- function() {
@@ -196,6 +200,7 @@ server <- function(input, output, session) {
     ctpclient(NULL)
     available_instruments(character())
     is_connected(FALSE)
+    last_update_timestamp(list())  # 清空时间戳记录
     message("环境已重置")
   }
   
@@ -203,6 +208,7 @@ server <- function(input, output, session) {
   stop_timers <- function() {
     if(!is.null(timer_id)) timer_id <<- NULL
     if(!is.null(price_timer_id)) price_timer_id <<- NULL
+    if(!is.null(kline_timer_id)) kline_timer_id <<- NULL
   }
   
   # 安全显示通知
@@ -218,48 +224,66 @@ server <- function(input, output, session) {
     })
   }
   
-  # 启动连接
-  observeEvent(input$connect_btn, {
-    if(!is.null(ctpclient())) {
-      showModal(modalDialog(
-        title = "提示",
-        "当前已有连接，将先停止并清空现有环境后再启动新连接。",
-        easyClose = TRUE,
-        footer = NULL
+  # 获取增量K线数据
+  get_incremental_kline <- function(ticks_df, period_minutes, instrument_id, last_timestamp) {
+    if(is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+    
+    # 转换为K线数据
+    full_kline <- ticks_to_kline(ticks_df, period_minutes)
+    if(is.null(full_kline) || length(full_kline$timestamp) == 0) return(NULL)
+    
+    # 如果last_timestamp为NULL，返回全部数据
+    if(is.null(last_timestamp)) {
+      return(list(
+        type = "full",
+        instrument = instrument_id,
+        data = full_kline
       ))
-      reset_env()
     }
     
-    stop_timers()
-    safe_notification("正在连接CTP服务器...")
+    # 找出新增的K线（时间戳大于上次更新时间）
+    new_indices <- which(full_kline$timestamp > last_timestamp)
     
-    tryCatch({
-      if(!exists("ctpd_async")) {
-        stop("ctpd_async 函数未定义，请确保已加载 ctpd.R 文件")
+    if(length(new_indices) == 0) {
+      # 没有新数据，但需要检查最后一根K线是否被更新（同一时间戳的close变化）
+      last_idx <- which(full_kline$timestamp == last_timestamp)
+      if(length(last_idx) > 0 && length(last_idx) == 1) {
+        # 更新最后一根K线
+        last_kline <- list(
+          timestamp = full_kline$timestamp[last_idx],
+          open = full_kline$open[last_idx],
+          high = full_kline$high[last_idx],
+          low = full_kline$low[last_idx],
+          close = full_kline$close[last_idx],
+          volume = full_kline$volume[last_idx]
+        )
+        return(list(
+          type = "update",
+          instrument = instrument_id,
+          data = last_kline
+        ))
       }
-      
-      client <- ctpd_async(host = input$host, port = input$port)
-      ctpclient(client)
-      is_connected(TRUE)
-      
-      safe_notification("连接成功", type = "success", duration = 3)
-      
-      # 启动定时更新
-      update_instruments_async()
-      start_kline_updater()
-      start_price_monitor()
-      
-    }, error = function(e) {
-      showModal(modalDialog(
-        title = "连接失败",
-        paste("无法连接到服务器:", e$message),
-        easyClose = TRUE,
-        footer = modalButton("关闭")
-      ))
-    })
-  })
+      return(NULL)
+    }
+    
+    # 有新增数据
+    new_kline <- list(
+      timestamp = full_kline$timestamp[new_indices],
+      open = full_kline$open[new_indices],
+      high = full_kline$high[new_indices],
+      low = full_kline$low[new_indices],
+      close = full_kline$close[new_indices],
+      volume = full_kline$volume[new_indices]
+    )
+    
+    return(list(
+      type = "incremental",
+      instrument = instrument_id,
+      data = new_kline
+    ))
+  }
   
-  # 启动K线更新器
+  # 启动K线更新器（优化版）
   start_kline_updater <- function() {
     update_kline <- function() {
       client <- isolate(ctpclient())
@@ -272,25 +296,82 @@ server <- function(input, output, session) {
         # 获取tick数据
         ticks_df <- client$ticks(req_instrument)
         if(!is.null(ticks_df) && nrow(ticks_df) > 0) {
-          # 转换为K线数据
+          # 获取该合约的最后更新时间戳
+          timestamps_map <- isolate(last_update_timestamp())
+          last_ts <- timestamps_map[[req_instrument]]
           period <- isolate(input$kline_period)
-          kline_data <- ticks_to_kline(ticks_df, period)
           
-          if(!is.null(kline_data) && length(kline_data$timestamp) > 0) {
-            # 构建发送数据
-            send_data <- list(
-              instrument = req_instrument,
-              ds = lapply(seq_along(kline_data$timestamp), function(i) {
-                list(
-                  timestamp = kline_data$timestamp[i],
-                  open = kline_data$open[i],
-                  high = kline_data$high[i],
-                  low = kline_data$low[i],
-                  close = kline_data$close[i],
-                  volume = kline_data$volume[i]
+          # 获取增量数据
+          result <- get_incremental_kline(ticks_df, period, req_instrument, last_ts)
+          
+          if(!is.null(result)) {
+            # 更新最后时间戳
+            if(result$type == "full") {
+              # 全量推送
+              send_data <- list(
+                instrument = req_instrument,
+                type = "full",
+                ds = lapply(seq_along(result$data$timestamp), function(i) {
+                  list(
+                    timestamp = result$data$timestamp[i],
+                    open = result$data$open[i],
+                    high = result$data$high[i],
+                    low = result$data$low[i],
+                    close = result$data$close[i],
+                    volume = result$data$volume[i]
+                  )
+                })
+              )
+              
+              # 更新最后时间戳
+              if(length(result$data$timestamp) > 0) {
+                new_map <- isolate(last_update_timestamp())
+                new_map[[req_instrument]] <- max(result$data$timestamp)
+                last_update_timestamp(new_map)
+              }
+              
+            } else if(result$type == "incremental") {
+              # 增量推送
+              send_data <- list(
+                instrument = req_instrument,
+                type = "incremental",
+                ds = lapply(seq_along(result$data$timestamp), function(i) {
+                  list(
+                    timestamp = result$data$timestamp[i],
+                    open = result$data$open[i],
+                    high = result$data$high[i],
+                    low = result$data$low[i],
+                    close = result$data$close[i],
+                    volume = result$data$volume[i]
+                  )
+                })
+              )
+              
+              # 更新最后时间戳
+              if(length(result$data$timestamp) > 0) {
+                new_map <- isolate(last_update_timestamp())
+                new_map[[req_instrument]] <- max(result$data$timestamp)
+                last_update_timestamp(new_map)
+              }
+              
+            } else if(result$type == "update") {
+              # 更新最后一根K线
+              send_data <- list(
+                instrument = req_instrument,
+                type = "update",
+                ds = list(
+                  timestamp = result$data$timestamp,
+                  open = result$data$open,
+                  high = result$data$high,
+                  low = result$data$low,
+                  close = result$data$close,
+                  volume = result$data$volume
                 )
-              })
-            )
+              )
+              # 时间戳不变，不需要更新
+            } else {
+              return()
+            }
             
             # 发送到前端
             session$sendCustomMessage("push", send_data)
@@ -302,7 +383,7 @@ server <- function(input, output, session) {
       
       # 继续定时更新
       if(!is.null(isolate(ctpclient()))) {
-        timer_id <<- later::later(update_kline, 1)  # 每秒更新一次
+        kline_timer_id <<- later::later(update_kline, 1)  # 每秒更新一次
       }
     }
     
@@ -375,6 +456,47 @@ server <- function(input, output, session) {
     }
   }
   
+  # 启动连接
+  observeEvent(input$connect_btn, {
+    if(!is.null(ctpclient())) {
+      showModal(modalDialog(
+        title = "提示",
+        "当前已有连接，将先停止并清空现有环境后再启动新连接。",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+      reset_env()
+    }
+    
+    stop_timers()
+    safe_notification("正在连接CTP服务器...")
+    
+    tryCatch({
+      if(!exists("ctpd_async")) {
+        stop("ctpd_async 函数未定义，请确保已加载 ctpd.R 文件")
+      }
+      
+      client <- ctpd_async(host = input$host, port = input$port)
+      ctpclient(client)
+      is_connected(TRUE)
+      
+      safe_notification("连接成功", type = "success", duration = 3)
+      
+      # 启动定时更新
+      update_instruments_async()
+      start_kline_updater()
+      start_price_monitor()
+      
+    }, error = function(e) {
+      showModal(modalDialog(
+        title = "连接失败",
+        paste("无法连接到服务器:", e$message),
+        easyClose = TRUE,
+        footer = modalButton("关闭")
+      ))
+    })
+  })
+  
   # 停止连接
   observeEvent(input$disconnect_btn, {
     if(!is.null(ctpclient())) {
@@ -396,19 +518,30 @@ server <- function(input, output, session) {
     }
   })
   
-  # 手动刷新
+  # 手动刷新 - 重置该合约的最后时间戳，强制全量刷新
   observeEvent(input$refresh_btn, {
     if(!is.null(ctpclient())) {
-      safe_notification("正在刷新K线数据...")
-      # 触发一次更新
-      start_kline_updater()
+      req_instrument <- isolate(input$instrument)
+      if(!is.null(req_instrument) && req_instrument != "") {
+        # 清空该合约的最后时间戳，下次更新将全量推送
+        timestamps_map <- isolate(last_update_timestamp())
+        timestamps_map[[req_instrument]] <- NULL
+        last_update_timestamp(timestamps_map)
+        safe_notification("正在刷新K线数据...")
+        # 触发一次更新
+        start_kline_updater()
+      }
     }
   })
   
-  # 切换合约时重新加载
+  # 切换合约时重置该合约的最后时间戳
   observeEvent(input$instrument, {
     if(!is.null(ctpclient()) && input$instrument != "") {
-      # 清空现有数据，让前端重新加载
+      # 重置新合约的时间戳，确保全量加载
+      timestamps_map <- isolate(last_update_timestamp())
+      timestamps_map[[input$instrument]] <- NULL
+      last_update_timestamp(timestamps_map)
+      # 通知前端切换合约
       session$sendCustomMessage("switchInstrument", input$instrument)
     }
   })
@@ -474,7 +607,7 @@ body {
 }
 ', "www/css/style.css")
 
-# 创建 chartapp.js
+# 创建 chartapp.js (优化版)
 writeLines('
 // www/js/chartapp.js
 (function () {
@@ -529,9 +662,9 @@ writeLines('
 
   /* ========== 监听 Shiny 推送 ========== */
   Shiny.addCustomMessageHandler("push", function(data) {
-    const { instrument, ds } = data;
+    const { instrument, type, ds } = data;
     
-    if (!ds || ds.length === 0) {
+    if (!ds || (Array.isArray(ds) && ds.length === 0 && !ds.timestamp)) {
       console.log("数据无效！");
       return;
     }
@@ -540,17 +673,35 @@ writeLines('
       // 新品种：清空并加载全量数据
       currentInstrument = instrument;
       chart.clearData();
-      chart.applyNewData(ds);
-      console.log("切换到新品种:", instrument, "数据量:", ds.length);
-    } else {
-      // 同一品种：增量更新
-      const currentData = chart.getDataList();
-      if (!currentData || currentData.length === 0) {
+      if (type === "full" && Array.isArray(ds)) {
         chart.applyNewData(ds);
-      } else {
-        ds.forEach(function(bar) {
-          chart.updateData(bar);
-        });
+        console.log("切换到新品种:", instrument, "数据量:", ds.length);
+      } else if (type === "incremental" && Array.isArray(ds)) {
+        chart.applyNewData(ds);
+        console.log("新品种增量数据:", instrument, "数据量:", ds.length);
+      }
+    } else {
+      // 同一品种：根据类型处理
+      if (type === "full" && Array.isArray(ds)) {
+        // 全量刷新
+        chart.clearData();
+        chart.applyNewData(ds);
+        console.log("全量刷新:", instrument, "数据量:", ds.length);
+      } else if (type === "incremental" && Array.isArray(ds)) {
+        // 增量添加新K线
+        const currentData = chart.getDataList();
+        if (!currentData || currentData.length === 0) {
+          chart.applyNewData(ds);
+        } else {
+          ds.forEach(function(bar) {
+            chart.updateData(bar);
+          });
+        }
+        console.log("增量更新:", instrument, "新增:", ds.length);
+      } else if (type === "update" && ds && ds.timestamp) {
+        // 更新最后一根K线
+        chart.updateData(ds);
+        console.log("更新最后一根K线:", instrument, "时间:", ds.timestamp);
       }
     }
   });
@@ -569,7 +720,7 @@ writeLines('
     if (updateTimer) clearInterval(updateTimer);
   });
 
-  console.log("K线图表初始化完成");
+  console.log("K线图表初始化完成（增量更新模式）");
 })();
 ', "www/js/chartapp.js")
 

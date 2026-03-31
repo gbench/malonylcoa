@@ -52,9 +52,9 @@
 
   /* ========== 监听 Shiny 推送 ========== */
   Shiny.addCustomMessageHandler("push", function(data) {
-    const { instrument, ds } = data;
+    const { instrument, type, ds } = data;
     
-    if (!ds || ds.length === 0) {
+    if (!ds || (Array.isArray(ds) && ds.length === 0 && !ds.timestamp)) {
       console.log("数据无效！");
       return;
     }
@@ -63,17 +63,35 @@
       // 新品种：清空并加载全量数据
       currentInstrument = instrument;
       chart.clearData();
-      chart.applyNewData(ds);
-      console.log("切换到新品种:", instrument, "数据量:", ds.length);
-    } else {
-      // 同一品种：增量更新
-      const currentData = chart.getDataList();
-      if (!currentData || currentData.length === 0) {
+      if (type === "full" && Array.isArray(ds)) {
         chart.applyNewData(ds);
-      } else {
-        ds.forEach(function(bar) {
-          chart.updateData(bar);
-        });
+        console.log("切换到新品种:", instrument, "数据量:", ds.length);
+      } else if (type === "incremental" && Array.isArray(ds)) {
+        chart.applyNewData(ds);
+        console.log("新品种增量数据:", instrument, "数据量:", ds.length);
+      }
+    } else {
+      // 同一品种：根据类型处理
+      if (type === "full" && Array.isArray(ds)) {
+        // 全量刷新
+        chart.clearData();
+        chart.applyNewData(ds);
+        console.log("全量刷新:", instrument, "数据量:", ds.length);
+      } else if (type === "incremental" && Array.isArray(ds)) {
+        // 增量添加新K线
+        const currentData = chart.getDataList();
+        if (!currentData || currentData.length === 0) {
+          chart.applyNewData(ds);
+        } else {
+          ds.forEach(function(bar) {
+            chart.updateData(bar);
+          });
+        }
+        console.log("增量更新:", instrument, "新增:", ds.length);
+      } else if (type === "update" && ds && ds.timestamp) {
+        // 更新最后一根K线
+        chart.updateData(ds);
+        console.log("更新最后一根K线:", instrument, "时间:", ds.timestamp);
       }
     }
   });
@@ -92,6 +110,6 @@
     if (updateTimer) clearInterval(updateTimer);
   });
 
-  console.log("K线图表初始化完成");
+  console.log("K线图表初始化完成（增量更新模式）");
 })();
 
