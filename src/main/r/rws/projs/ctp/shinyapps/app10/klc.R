@@ -28,7 +28,7 @@ aggregate_with_dt <- function(ticks_df) {
     low = min(LastPrice),
     close = last(LastPrice),
     volume = last(Volume) - first(Volume),
-    oint = last(OpenInterest) else NA_real_
+    oint = last(OpenInterest)
   ), by = Period]
   
   # 排序（data.table默认按分组排序）
@@ -48,7 +48,7 @@ aggregate_with_dplyr <- function(ticks_df) {
       low = min(LastPrice),
       close = dplyr::last(LastPrice),
       volume = dplyr::last(Volume) - dplyr::first(Volume),
-      oint = dplyr::last(OpenInterest) else NA_real_,
+      oint = dplyr::last(OpenInterest),
       .groups = "drop"
     ) %>%
     dplyr::arrange(Period)
