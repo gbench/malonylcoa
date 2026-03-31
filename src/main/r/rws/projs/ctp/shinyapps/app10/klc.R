@@ -39,7 +39,7 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1) {
         high = max(LastPrice),
         low = min(LastPrice),
         close = last(LastPrice),
-        volume = sum(Volume, na.rm = TRUE),
+        volume = max(Volume, na.rm = TRUE) - min(Volume, na.rm = TRUE),
         .groups = 'drop'
       ) %>%
       arrange(Period)
