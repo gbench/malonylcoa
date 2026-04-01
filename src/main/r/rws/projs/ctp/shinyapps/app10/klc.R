@@ -619,9 +619,9 @@ server <- function(input, output, session) {
         if (!is.null(stats) && is.list(stats)) {
           output$price_info <- renderPrint({
             cat(current, "\n")
-            cat("最新: ", sprintf("%.2f", stats$last), "  均: ", sprintf("%.2f", stats$mean), "\n")
-            cat("最高: ", sprintf("%.2f", stats$max), "  低: ", sprintf("%.2f", stats$min), "\n")
-            cat("Ticks: ", stats$n, "  时间: ", stats$updatetime, "\n")
+            cat("最新: ", sprintf("%.2f", stats$last), " 均: ", sprintf("%.2f", stats$mean), "\n")
+            cat("最高: ", sprintf("%.2f", stats$max), " 低: ", sprintf("%.2f", stats$min), "\n")
+            cat("Ticks:", stats$n, " 时间: ", stats$updatetime, "\n")
           })
         }
         ticks_df <- ctp_client$ticks(current)
