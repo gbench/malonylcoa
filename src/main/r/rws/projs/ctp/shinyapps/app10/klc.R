@@ -34,12 +34,14 @@ aggregate_kline <- function(ticks_df) {
   as.data.frame(kline[, .(timestamp, open, high, low, close, volume, oint)])
 }
 
-# 合并K线数据框
+# 合并K线数据框 - 修复版：新的数据覆盖旧的数据
 merge_kline_df <- function(base_df, new_df) {
   if (is.null(base_df) || nrow(base_df) == 0) return(new_df)
   if (is.null(new_df) || nrow(new_df) == 0) return(base_df)
   
-  combined <- rbind(base_df, new_df)
+  # 新的数据放在前面，这样重复时间戳时新的会覆盖旧的
+  combined <- rbind(new_df, base_df)
+  # 去重时保留第一个（即新的数据）
   combined <- combined[!duplicated(combined$timestamp), ]
   combined[order(combined$timestamp), ]
 }
@@ -79,15 +81,8 @@ ticks_to_kline <- function(ticks_df, period_minutes, base_kline = NULL) {
   new_kline <- aggregate_kline(ticks_df)
   if (nrow(new_kline) == 0) return(NULL)
   
-  # 如果有base_kline，处理重叠的最后一根K线
+  # 如果有base_kline，直接合并（新的会覆盖旧的）
   if (!is.null(base_kline) && nrow(base_kline) > 0) {
-    last_base_ts <- max(base_kline$timestamp)
-    first_new_ts <- min(new_kline$timestamp)
-    
-    if (first_new_ts == last_base_ts) {
-      base_kline <- base_kline[base_kline$timestamp < last_base_ts, ]
-    }
-    
     result <- merge_kline_df(base_kline, new_kline)
   } else {
     result <- new_kline
