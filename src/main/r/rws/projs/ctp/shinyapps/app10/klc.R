@@ -875,7 +875,7 @@ pre.price-info {
   border: none !important;
   color: #e0e0e0 !important;
   font-family: "Fira Code", Consolas, monospace !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   padding: 0 !important;
   margin: 0 0 10px 0 !important;
   line-height: 1.5 !important;
