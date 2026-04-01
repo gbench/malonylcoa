@@ -466,8 +466,8 @@ server <- function(input, output, session) {
     }
   }
   
-  # K线更新
-  update_and_send_kline <- function(instrument_id, period) {
+  # K线更新：flag 用于标记是否强制执行全量更新，默认为FALSE，表示系统自行判断！
+  update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
     if (is.null(ctp_client)) return(NULL)
     
     tryCatch({
@@ -488,10 +488,11 @@ server <- function(input, output, session) {
       state$set_kline_df(instrument_id, new_kline)
       
       if (instrument_id == state$current_instrument) {
-        is_full <- is.null(base_kline) || nrow(base_kline) == 0
-        send_data <- list( instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = purrr::transpose(new_kline))
+        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0 # 是否进行全量更新，flag 表示强制全量！
+        ds <- purrr::transpose(if(is_full) new_kline else new_kline[new_kline$timestamp >= max(base_kline$timestamp), ]) # base_kline不再发送
+        send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
-        add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", nrow(new_kline), "条"))
+        add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
       }
       
     }, error = function(e) {
@@ -552,6 +553,7 @@ server <- function(input, output, session) {
       current_tick(NULL)
       session$sendCustomMessage("switchInstrument", list(instrument = new_instrument))
       show_notification(paste0("已切换: ", new_instrument), "message", 2)
+      update_and_send_kline(new_instrument, input$kline_period, TRUE) # 强制对新合约执行K线数据的全量更新操作！
     }
   }, ignoreNULL = TRUE, ignoreInit = FALSE)
   
