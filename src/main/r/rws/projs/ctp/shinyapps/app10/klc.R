@@ -1,4 +1,4 @@
-# app.R - 重构版：修复合约切换 A->B->A 数据不一致问题
+# app.R - 修复版v2.2：修复停止时未发送undump导致的资源泄漏
 
 # 加载必要的包
 required_packages <- c("later", "shiny", "shinydashboard", "dplyr", "jsonlite", "lubridate", "data.table", "purrr", "R6")
@@ -11,7 +11,6 @@ for(pkg in required_packages) {
 
 # ============ 工具函数模块 ============
 
-#' 向量化时间戳计算
 floor_date_vectorized <- function(datetime, period_seconds) {
   if (length(datetime) == 0) return(datetime)
   timestamp <- as.numeric(datetime)
@@ -19,7 +18,6 @@ floor_date_vectorized <- function(datetime, period_seconds) {
   as.POSIXct(floor_timestamp, origin = "1970-01-01")
 }
 
-#' 使用 data.table 高性能聚合K线
 aggregate_with_dt <- function(ticks_df) {
   dt <- data.table::as.data.table(ticks_df)
   kline <- dt[, .(
@@ -34,7 +32,6 @@ aggregate_with_dt <- function(ticks_df) {
   as.data.frame(kline)
 }
 
-#' 使用 dplyr 聚合K线（备用）
 aggregate_with_dplyr <- function(ticks_df) {
   ticks_df %>%
     dplyr::group_by(Period) %>%
@@ -50,7 +47,6 @@ aggregate_with_dplyr <- function(ticks_df) {
     dplyr::arrange(Period)
 }
 
-#' 合并K线数据（函数式）
 merge_kline_data <- function(base, new) {
   if (is.null(base) || length(base$timestamp) == 0) return(new)
   if (is.null(new) || length(new$timestamp) == 0) return(base)
@@ -65,12 +61,10 @@ merge_kline_data <- function(base, new) {
     oint = c(base$oint, new$oint)
   )
 
-  # 去重保留最新的
   unique_indices <- !duplicated(all_fields$timestamp, fromLast = TRUE)
   lapply(all_fields, function(x) x[unique_indices])
 }
 
-#' 将K线列表转换为前端格式
 convert_to_frontend_format <- function(kline_list) {
   if (is.null(kline_list) || length(kline_list$timestamp) == 0) return(list())
 
@@ -89,14 +83,12 @@ convert_to_frontend_format <- function(kline_list) {
 
 # ============ K线计算模块 ============
 
-#' 优化的 ticks_to_kline 函数 - 支持增量更新
 ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
   if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
 
   required_cols <- c("ActionDay", "UpdateTime", "LastPrice", "Volume")
   if (!all(required_cols %in% colnames(ticks_df))) return(NULL)
 
-  # 向量化时间戳创建
   datetime_str <- paste(ticks_df$ActionDay, ticks_df$UpdateTime)
   ticks_df$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S")
 
@@ -107,7 +99,6 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
   period_seconds <- period_minutes * 60
   ticks_df$Period <- floor_date_vectorized(ticks_df$DateTime, period_seconds)
 
-  # 过滤已处理的数据（关键优化：避免重复计算）
   if (!is.null(base_kline) && length(base_kline$timestamp) > 0) {
     last_ts <- max(base_kline$timestamp) / 1000
     last_period <- floor_date_vectorized(
@@ -115,14 +106,12 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
       period_seconds
     )
 
-    # 只保留 >= 最后周期的数据（包括需要更新的最后一根K线）
     keep_indices <- ticks_df$Period >= last_period
     ticks_df <- ticks_df[keep_indices, ]
 
     if (nrow(ticks_df) == 0) return(NULL)
   }
 
-  # 高性能聚合
   kline <- if (requireNamespace("data.table", quietly = TRUE)) {
     aggregate_with_dt(ticks_df)
   } else {
@@ -150,29 +139,21 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
 
 # ============ 状态管理类 ============
 
-#' R6类：合约状态管理器（解决多合约数据隔离问题）
 InstrumentStateManager <- R6::R6Class(
   "InstrumentStateManager",
 
   public = list(
-    # 每个合约的完整K线缓存
     kline_cache = list(),
-    # 每个合约的tick计数（用于检测变化）
     tick_counts = list(),
-    # 每个合约的最后更新时间
     last_update_times = list(),
-    # 当前激活的合约
     current_instrument = NULL,
-    # 当前周期
     current_period = 1,
 
-    #' 获取合约缓存
     get_cache = function(instrument_id) {
       if (is.null(instrument_id)) return(NULL)
       cache <- self$kline_cache[[instrument_id]]
       if (is.null(cache)) return(NULL)
 
-      # 转换为kline格式
       if (length(cache) > 0) {
         list(
           timestamp = sapply(cache, function(x) x$timestamp),
@@ -188,23 +169,17 @@ InstrumentStateManager <- R6::R6Class(
       }
     },
 
-    #' 更新缓存（支持全量/增量/更新三种模式）
     update_cache = function(instrument_id, result) {
       if (is.null(instrument_id)) return()
 
       if (result$type == "full") {
-        # 全量替换
         self$kline_cache[[instrument_id]] <- convert_to_frontend_format(result$data)
-
       } else if (result$type == "incremental") {
-        # 增量添加
         new_data <- convert_to_frontend_format(result$data)
         existing <- self$kline_cache[[instrument_id]]
         if (is.null(existing)) existing <- list()
         self$kline_cache[[instrument_id]] <- c(existing, new_data)
-
       } else if (result$type == "update") {
-        # 更新最后一根
         cache <- self$kline_cache[[instrument_id]]
         if (!is.null(cache) && length(cache) > 0) {
           cache[[length(cache)]] <- list(
@@ -218,9 +193,7 @@ InstrumentStateManager <- R6::R6Class(
           )
           self$kline_cache[[instrument_id]] <- cache
         }
-
       } else if (result$type == "update_and_incremental") {
-        # 更新最后一根 + 新增
         cache <- self$kline_cache[[instrument_id]]
         if (!is.null(cache) && length(cache) > 0) {
           cache[[length(cache)]] <- list(
@@ -237,11 +210,9 @@ InstrumentStateManager <- R6::R6Class(
         self$kline_cache[[instrument_id]] <- c(cache, new_data)
       }
 
-      # 更新最后更新时间
       self$last_update_times[[instrument_id]] <- Sys.time()
     },
 
-    #' 清除特定合约缓存
     clear_instrument_cache = function(instrument_id) {
       if (!is.null(instrument_id)) {
         self$kline_cache[[instrument_id]] <- NULL
@@ -250,7 +221,13 @@ InstrumentStateManager <- R6::R6Class(
       }
     },
 
-    #' 设置当前合约
+    clear_all_cache = function() {
+      self$kline_cache <- list()
+      self$tick_counts <- list()
+      self$last_update_times <- list()
+      self$current_instrument <- NULL
+    },
+
     set_current = function(instrument_id, period = NULL) {
       self$current_instrument <- instrument_id
       if (!is.null(period)) {
@@ -258,12 +235,10 @@ InstrumentStateManager <- R6::R6Class(
       }
     },
 
-    #' 获取当前合约缓存
     get_current_cache = function() {
       self$get_cache(self$current_instrument)
     },
 
-    #' 检查是否需要刷新（缓存过期检测）
     needs_refresh = function(instrument_id, max_age_seconds = 30) {
       last_update <- self$last_update_times[[instrument_id]]
       if (is.null(last_update)) return(TRUE)
@@ -372,7 +347,7 @@ ui <- fluidPage(
   ),
 
   div(class = "title-panel", 
-      titlePanel("CTP 实时K线图 - 重构版 v2.0")),
+      titlePanel("CTP 实时K线图 - 修复版 v2.2")),
 
   sidebarLayout(
     sidebarPanel(
@@ -383,9 +358,9 @@ ui <- fluidPage(
       div(class = "info-box",
         h4("连接状态"),
         div(
-          style = "display: flex; align-items: center;",
-          uiOutput("connection_status"),
-          textOutput("active_instrument_display")
+          style = "display: flex; align-items: center; justify-content: space-between;",
+          uiOutput("connection_status_ui", inline = TRUE),
+          textOutput("active_instrument_display", inline = TRUE)
         )
       ),
 
@@ -403,6 +378,13 @@ ui <- fluidPage(
           actionButton("connect_btn", "启动", class = "btn-primary", icon = icon("play")),
           actionButton("disconnect_btn", "停止", class = "btn-danger", icon = icon("stop"))
         )
+      ),
+
+      div(class = "control-group",
+        tags$label("推送设置"),
+        sliderInput("push_interval", "推送周期(秒)", 
+                   min = 0.1, max = 5, value = 1, step = 0.1),
+        helpText("默认1秒，数值越小刷新越频繁", style = "color: #718096; font-size: 11px;")
       ),
 
       div(class = "control-group",
@@ -441,12 +423,12 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
 
-  # 使用R6状态管理器替代原始的环境变量
+  # 使用R6状态管理器
   state <- InstrumentStateManager$new()
 
-  # 基础状态
+  # 基础状态 - 使用reactiveVal确保UI更新
   ctp_client <- NULL
-  is_connected <- FALSE
+  is_connected <- reactiveVal(FALSE)
   available_instruments <- character()
   running <- TRUE
   debug_messages <- character()
@@ -475,8 +457,8 @@ server <- function(input, output, session) {
   }
 
   # 连接状态显示
-  output$connection_status <- renderUI({
-    if (is_connected) {
+  output$connection_status_ui <- renderUI({
+    if (is_connected()) {
       HTML(paste0(
         "<span class='status-indicator status-connected'></span>",
         "<span style='color: #48bb78; font-weight: 600;'>已连接</span>"
@@ -489,33 +471,71 @@ server <- function(input, output, session) {
     }
   })
 
+  # 当前合约显示
   output$active_instrument_display <- renderText({
-    if (!is.null(state$current_instrument)) {
-      paste0(" | 当前: ", state$current_instrument)
-    } else {
-      ""
-    }
+    req(state$current_instrument)
+    paste0("当前: ", state$current_instrument)
   })
 
-  # 清理环境
-  reset_env <- function() {
-    if (!is.null(ctp_client)) {
-      tryCatch({
-        undump_cmd <- gettextf("undump %s", ctp_client$.sessionfd)
+  # ============ 关键修复：正确的清理顺序 ============
+
+  # 步骤1：发送 undump 命令到服务器（必须在 stop 之前）
+  send_undump_command <- function() {
+    if (is.null(ctp_client)) return(FALSE)
+
+    tryCatch({
+      if (!is.null(ctp_client$.sessionfd) && !is.null(ctp_client$.conn)) {
+        undump_cmd <- sprintf("undump %s", ctp_client$.sessionfd)
+        add_debug(paste0("发送 undump 命令: ", undump_cmd))
+
         writeLines(undump_cmd, ctp_client$.conn)
-        ctp_client$stop()
-        add_debug("CTP客户端已停止")
-      }, error = function(e) {
-        message("停止连接时出错: ", e$message)
-      })
+
+        # 读取并丢弃返回数据（等待服务器确认）
+        response <- base::readLines(ctp_client$.conn, n = 1, warn = FALSE)
+        add_debug(paste0("undump 响应: ", paste(response, collapse = ", ")))
+
+        Sys.sleep(0.1)  # 给服务器一点时间处理
+        return(TRUE)
+      }
+    }, error = function(e) {
+      add_debug(paste0("发送 undump 失败: ", e$message))
+      return(FALSE)
+    })
+    return(FALSE)
+  }
+
+  # 步骤2：停止客户端连接
+  stop_client <- function() {
+    if (is.null(ctp_client)) return()
+
+    tryCatch({
+      ctp_client$stop()
+      add_debug("CTP客户端已停止")
+    }, error = function(e) {
+      add_debug(paste0("停止客户端出错: ", e$message))
+    })
+  }
+
+  # 完整的清理流程
+  reset_env <- function(full_reset = TRUE) {
+    add_debug("开始完整清理流程...")
+
+    # 关键顺序：1.发送undump -> 2.停止客户端 -> 3.清理变量
+    if (!is.null(ctp_client)) {
+      send_undump_command()  # 先通知服务器停止写入
+      stop_client()          # 再停止本地连接
     }
+
     ctp_client <<- NULL
-    is_connected <<- FALSE
+    is_connected(FALSE)  # 更新UI状态
     available_instruments <<- character()
-    state$kline_cache <- list()
-    state$tick_counts <- list()
-    state$current_instrument <- NULL
-    add_debug("环境已完全重置")
+
+    if (full_reset) {
+      state$clear_all_cache()
+      add_debug("所有缓存已清除")
+    }
+
+    add_debug("环境清理完成")
   }
 
   # 停止所有定时器
@@ -530,23 +550,18 @@ server <- function(input, output, session) {
 
   # ============ K线更新核心逻辑 ============
 
-  #' 计算增量K线数据（关键修复：正确处理基准数据）
   get_incremental_kline <- function(ticks_df, period_minutes, instrument_id) {
     if (is.null(ticks_df) || nrow(ticks_df) == 0) {
       return(NULL)
     }
 
-    # 获取当前合约的缓存作为基准
     base_kline <- state$get_cache(instrument_id)
-
-    # 计算完整K线（包含历史+新增）
     full_kline <- ticks_to_kline(ticks_df, period_minutes, base_kline)
 
     if (is.null(full_kline) || length(full_kline$timestamp) == 0) {
       return(NULL)
     }
 
-    # 首次加载：返回全量
     if (is.null(base_kline) || length(base_kline$timestamp) == 0) {
       return(list(
         type = "full",
@@ -556,17 +571,14 @@ server <- function(input, output, session) {
       ))
     }
 
-    # 比较新旧数据
     cached_last_ts <- max(base_kline$timestamp)
     update_indices <- which(full_kline$timestamp >= cached_last_ts)
 
     if (length(update_indices) == 0) {
-      return(NULL)  # 无变化
+      return(NULL)
     }
 
-    # 检查第一根需要更新的K线是否与缓存最后时间戳相同
     if (full_kline$timestamp[update_indices[1]] == cached_last_ts) {
-      # 需要更新最后一根K线
       new_last <- list(
         timestamp = full_kline$timestamp[update_indices[1]],
         open = full_kline$open[update_indices[1]],
@@ -577,9 +589,8 @@ server <- function(input, output, session) {
         oint = full_kline$oint[update_indices[1]]
       )
 
-      # 检查是否有更多新K线
       if (length(update_indices) > 1) {
-        new_indices <- update_indices[-1]  # 排除第一个（已更新的）
+        new_indices <- update_indices[-1]
         new_kline <- list(
           timestamp = full_kline$timestamp[new_indices],
           open = full_kline$open[new_indices],
@@ -607,7 +618,6 @@ server <- function(input, output, session) {
       ))
 
     } else {
-      # 只有新增K线
       new_indices <- update_indices
       new_kline <- list(
         timestamp = full_kline$timestamp[new_indices],
@@ -628,14 +638,12 @@ server <- function(input, output, session) {
     }
   }
 
-  #' 发送K线数据到前端（关键修复：确保数据同步）
   send_kline_to_frontend <- function(result) {
     if (is.null(result)) return()
 
     instrument <- result$instrument
     type <- result$type
 
-    # 构造发送数据
     send_data <- switch(type,
       "full" = list(
         instrument = instrument,
@@ -678,10 +686,8 @@ server <- function(input, output, session) {
     )
 
     if (!is.null(send_data)) {
-      # 更新服务器端缓存
       state$update_cache(instrument, result)
 
-      # 发送到前端（只有当前合约才发送）
       if (instrument == state$current_instrument) {
         session$sendCustomMessage("push", send_data)
         add_debug(paste0("发送[", type, "]到前端: ", instrument, ", K线数: ", 
@@ -692,7 +698,6 @@ server <- function(input, output, session) {
 
   # ============ 定时器回调 ============
 
-  #' K线更新定时器
   start_kline_updater <- function() {
     update_kline <- function() {
       if (!running || is.null(ctp_client)) return()
@@ -709,14 +714,12 @@ server <- function(input, output, session) {
         ticks_df <- ctp_client$ticks(current)
 
         if (!is.null(ticks_df) && nrow(ticks_df) > 0) {
-          # 检测tick数量变化
           current_count <- nrow(ticks_df)
           last_count <- state$tick_counts[[current]] %||% 0
 
           if (current_count != last_count) {
             state$tick_counts[[current]] <- current_count
 
-            # 计算并发送增量数据
             result <- get_incremental_kline(ticks_df, period, current)
             send_kline_to_frontend(result)
           }
@@ -725,16 +728,16 @@ server <- function(input, output, session) {
         add_debug(paste0("K线更新错误: ", e$message))
       })
 
+      push_interval <- isolate(input$push_interval) %||% 1
       if (running && !is.null(ctp_client)) {
-        timers$kline <<- later::later(update_kline, 1)
+        timers$kline <<- later::later(update_kline, push_interval)
       }
     }
 
-    add_debug("K线更新器已启动")
+    add_debug(paste0("K线更新器已启动，推送周期: ", input$push_interval, "秒"))
     update_kline()
   }
 
-  #' 价格监控定时器
   start_price_monitor <- function() {
     monitor_prices <- function() {
       if (!running || is.null(ctp_client)) return()
@@ -759,7 +762,7 @@ server <- function(input, output, session) {
           })
         }
       }, error = function(e) {
-        # 静默处理价格监控错误
+        # 静默处理
       })
 
       if (running && !is.null(ctp_client)) {
@@ -770,7 +773,6 @@ server <- function(input, output, session) {
     monitor_prices()
   }
 
-  #' 合约列表更新定时器
   start_instrument_updater <- function() {
     update_instruments <- function() {
       if (!running || is.null(ctp_client)) return()
@@ -785,7 +787,6 @@ server <- function(input, output, session) {
         if (length(instr) > 0 && !identical(sort(instr), sort(available_instruments))) {
           available_instruments <<- instr
 
-          # 保持当前选择，如果可用
           current_selection <- isolate(input$instrument)
           new_selection <- if (!is.null(current_selection) && current_selection %in% instr) {
             current_selection
@@ -810,42 +811,34 @@ server <- function(input, output, session) {
 
   # ============ 事件处理器 ============
 
-  # 合约选择变化（关键修复：正确处理切换）
   observeEvent(input$instrument, {
     new_instrument <- input$instrument
     if (is.null(new_instrument) || new_instrument == "") return()
 
     old_instrument <- state$current_instrument
 
-    # 如果切换到不同合约
     if (!identical(new_instrument, old_instrument)) {
       add_debug(paste0("合约切换: ", old_instrument, " -> ", new_instrument))
 
-      # 更新当前合约
       state$set_current(new_instrument, input$kline_period)
-
-      # 清除该合约的tick计数，强制刷新
       state$tick_counts[[new_instrument]] <- 0
 
-      # 发送切换消息到前端（前端会处理缓存恢复）
       session$sendCustomMessage("switchInstrument", list(
         instrument = new_instrument,
         from_instrument = old_instrument,
-        clearCache = FALSE  # 前端不清除，尝试从缓存恢复
+        clearCache = FALSE
       ))
 
       show_notification(paste0("已切换到: ", new_instrument), "message", 2)
     }
   }, ignoreNULL = TRUE, ignoreInit = FALSE)
 
-  # K线周期变化
   observeEvent(input$kline_period, {
     new_period <- input$kline_period
     if (!is.null(new_period) && !identical(new_period, state$current_period)) {
       add_debug(paste0("周期变更: ", state$current_period, " -> ", new_period, " 分钟"))
       state$current_period <- new_period
 
-      # 清除当前合约缓存，强制重新计算
       current <- state$current_instrument
       if (!is.null(current)) {
         state$clear_instrument_cache(current)
@@ -859,6 +852,10 @@ server <- function(input, output, session) {
 
       show_notification(paste0("K线周期已更改为: ", new_period, " 分钟"), "message", 2)
     }
+  })
+
+  observeEvent(input$push_interval, {
+    add_debug(paste0("推送周期已设置为: ", input$push_interval, " 秒"))
   })
 
   # 启动连接
@@ -897,17 +894,17 @@ server <- function(input, output, session) {
 
       client <- ctpd_async(host = input$host, port = input$port)
       ctp_client <<- client
-      is_connected <<- TRUE
+      is_connected(TRUE)
 
       add_debug("CTP连接成功建立")
       show_notification("连接成功", "message", 3)
 
-      # 启动所有定时器
       start_instrument_updater()
       start_kline_updater()
       start_price_monitor()
 
     }, error = function(e) {
+      is_connected(FALSE)
       add_debug(paste0("连接失败: ", e$message))
       showModal(modalDialog(
         title = "连接失败",
@@ -918,37 +915,41 @@ server <- function(input, output, session) {
     })
   }
 
-  # 停止连接
+  # ============ 关键修复：正确的停止顺序 ============
   observeEvent(input$disconnect_btn, {
     if (!is.null(ctp_client)) {
       add_debug("正在停止CTP连接...")
       running <<- FALSE
       stop_timers()
-      reset_env()
+
+      # 关键：先通知前端重置，再执行清理
+      session$sendCustomMessage("resetAll", list(
+        reason = "disconnect",
+        timestamp = as.numeric(Sys.time())
+      ))
+
+      # 关键：正确的清理顺序
+      reset_env(full_reset = TRUE)
 
       output$price_info <- renderPrint({
         cat("CTP客户端未启动\n")
         cat("请点击'启动'按钮连接\n")
       })
 
-      session$sendCustomMessage("clearAll", list())
-      show_notification("连接已停止", "message", 3)
+      show_notification("连接已停止，资源已释放", "message", 3)
     } else {
       show_notification("当前没有活动连接", "warning", 3)
     }
   })
 
-  # 强制刷新按钮
   observeEvent(input$refresh_btn, {
     current <- state$current_instrument
     if (!is.null(current) && !is.null(ctp_client)) {
       add_debug(paste0("强制刷新合约: ", current))
 
-      # 清除服务器端缓存
       state$clear_instrument_cache(current)
       state$tick_counts[[current]] <- 0
 
-      # 通知前端清除并重新加载
       session$sendCustomMessage("clearChartForInstrument", list(
         instrument = current,
         reason = "manual_refresh"
@@ -958,7 +959,6 @@ server <- function(input, output, session) {
     }
   })
 
-  # 退出应用
   observeEvent(input$exit, {
     showModal(modalDialog(
       title = "确认退出",
@@ -978,18 +978,17 @@ server <- function(input, output, session) {
     stopApp()
   })
 
-  # 会话结束清理
   session$onSessionEnded(function() {
     running <<- FALSE
     stop_timers()
+    # 会话结束时也要正确清理
     if (!is.null(ctp_client)) {
-      tryCatch({
-        ctp_client$stop()
-      }, error = function(e) NULL)
+      send_undump_command()
+      stop_client()
     }
   })
 
-  # 初始化价格信息显示
+  # 初始化
   output$price_info <- renderPrint({
     cat("等待连接...\n")
     cat("请点击'启动'按钮\n")
@@ -999,46 +998,36 @@ server <- function(input, output, session) {
 # ============ 创建前端文件 ============
 
 create_frontend_files <- function() {
-  # 创建目录
   if (!dir.exists("www")) dir.create("www")
   if (!dir.exists("www/js")) dir.create("www/js")
   if (!dir.exists("www/css")) dir.create("www/css")
 
-  # CSS文件
   writeLines('
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 .shiny-notification { position: fixed; top: 20px; right: 20px; z-index: 9999; }
 ', "www/css/style.css")
 
-  # 重构后的 chartapp.js（关键修复：正确处理合约切换）
   writeLines('
-// chartapp.js - 重构版：修复合约切换 A->B->A 数据不一致问题
+// chartapp.js - 修复版v2.2
 (function () {
   "use strict";
 
-  // ============ 配置与状态 ============
   const CONFIG = {
     debug: true,
-    maxCacheAge: 300000,  // 缓存最大年龄：5分钟
+    maxCacheAge: 300000,
     chartHeight: 800
   };
 
-  // 状态管理
   const State = {
     chart: null,
     currentInstrument: null,
     previousInstrument: null,
-    // 多合约数据缓存：{ instrumentId -> { data: [], lastUpdate: timestamp, version: number } }
     instrumentCache: new Map(),
-    // 数据版本号（用于检测变更）
     dataVersion: 0,
-    // 是否正在切换合约（防止并发操作）
     isSwitching: false,
-    // 待处理的数据更新（切换期间暂存）
-    pendingUpdates: new Map()
+    pendingUpdates: new Map(),
+    isRunning: false
   };
-
-  // ============ 工具函数 ============
 
   function debugLog(msg, data) {
     if (!CONFIG.debug) return;
@@ -1056,7 +1045,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     console.error(`[${timestamp}] [ChartApp] ERROR:`, msg, error);
   }
 
-  // 深拷贝数据（防止引用污染）
   function deepClone(obj) {
     if (obj === null || typeof obj !== "object") return obj;
     if (obj instanceof Date) return new Date(obj.getTime());
@@ -1070,7 +1058,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     return cloned;
   }
 
-  // 验证K线数据格式
   function validateKlineData(data) {
     if (!data || !Array.isArray(data)) return false;
     if (data.length === 0) return true;
@@ -1080,15 +1067,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     return required.every(field => field in first && typeof first[field] === "number");
   }
 
-  // ============ 缓存管理 ============
-
   const CacheManager = {
-    // 获取缓存
     get(instrumentId) {
       return State.instrumentCache.get(instrumentId);
     },
 
-    // 设置缓存（带版本控制）
     set(instrumentId, data, type = "full") {
       if (!validateKlineData(data)) {
         errorLog("尝试缓存无效数据", { instrumentId, data });
@@ -1101,14 +1084,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       if (type === "full" || !existing) {
         newData = deepClone(data);
       } else if (type === "incremental") {
-        // 合并增量数据
         newData = [...existing.data, ...deepClone(data)];
-        // 按时间戳去重（保留后出现的）
         const seen = new Map();
         newData.forEach(k => seen.set(k.timestamp, k));
         newData = Array.from(seen.values()).sort((a, b) => a.timestamp - b.timestamp);
       } else if (type === "update") {
-        // 更新最后一根
         newData = [...existing.data];
         if (newData.length > 0) {
           const lastIdx = newData.length - 1;
@@ -1124,10 +1104,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
         version: (existing?.version || 0) + 1
       });
 
-      debugLog(`缓存[${type}]更新: ${instrumentId}, K线数: ${newData.length}, 版本: ${State.instrumentCache.get(instrumentId).version}`);
+      debugLog(`缓存[${type}]更新: ${instrumentId}, K线数: ${newData.length}`);
     },
 
-    // 清除特定合约缓存
     clear(instrumentId) {
       if (State.instrumentCache.has(instrumentId)) {
         State.instrumentCache.delete(instrumentId);
@@ -1135,13 +1114,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       }
     },
 
-    // 清除所有缓存
     clearAll() {
       State.instrumentCache.clear();
       debugLog("清除所有缓存");
     },
 
-    // 获取缓存统计
     getStats() {
       const stats = [];
       State.instrumentCache.forEach((value, key) => {
@@ -1151,10 +1128,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     }
   };
 
-  // ============ 图表操作 ============
-
   const ChartController = {
-    // 初始化图表
     init() {
       if (State.chart) {
         debugLog("图表已存在，跳过初始化");
@@ -1164,7 +1138,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       try {
         State.chart = klinecharts.init("chart");
 
-        // 设置样式
         State.chart.setStyles({
           grid: {
             horizontal: { color: "#2d2d3f", size: 1 },
@@ -1189,7 +1162,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
           }
         });
 
-        // 注册并创建指标
         this.registerIndicators();
         this.createIndicators();
 
@@ -1199,9 +1171,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       }
     },
 
-    // 注册自定义指标
     registerIndicators() {
-      // 持仓量指标
       klinecharts.registerIndicator({
         name: "OINT",
         shortName: "OINT",
@@ -1222,7 +1192,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       });
     },
 
-    // 创建指标面板
     createIndicators() {
       if (!State.chart) return;
 
@@ -1238,7 +1207,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       }
     },
 
-    // 加载数据（关键修复：正确处理全量/增量）
     loadData(data, type) {
       if (!State.chart || !data) {
         errorLog("无法加载数据：图表或数据无效");
@@ -1253,19 +1221,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       try {
         switch (type) {
           case "full":
-            // 全量替换：使用 applyNewData（自动清空旧数据）
             State.chart.applyNewData(data);
             debugLog("全量数据加载完成", { count: data.length });
             break;
 
           case "incremental":
-            // 增量添加：逐个使用 updateData（klinecharts 会自动追加）
             data.forEach(bar => State.chart.updateData(bar));
             debugLog("增量数据添加完成", { count: data.length });
             break;
 
           case "update":
-            // 更新最后一根
             State.chart.updateData(data);
             debugLog("最后一根K线已更新", { timestamp: data.timestamp });
             break;
@@ -1281,12 +1246,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       }
     },
 
-    // 清空图表
     clear() {
       if (!State.chart) return;
       try {
-        // klinecharts v9: clearData 只清除数据，不触发重绘
-        // applyNewData([], true) 是更好的清空方式
         State.chart.applyNewData([], true);
         debugLog("图表已清空");
       } catch (e) {
@@ -1294,7 +1256,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       }
     },
 
-    // 获取当前数据
     getCurrentData() {
       if (!State.chart) return [];
       try {
@@ -1302,13 +1263,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       } catch (e) {
         return [];
       }
+    },
+
+    destroy() {
+      if (!State.chart) return;
+      try {
+        klinecharts.dispose("chart");
+        State.chart = null;
+        debugLog("图表已销毁");
+      } catch (e) {
+        errorLog("销毁图表失败", e);
+      }
     }
   };
 
-  // ============ 合约切换逻辑（核心修复） ============
-
   const InstrumentSwitcher = {
-    // 执行合约切换
     switchTo(newInstrument, fromInstrument) {
       if (State.isSwitching) {
         debugLog("切换进行中，忽略重复请求");
@@ -1332,41 +1301,35 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       debugLog(`开始切换合约: ${State.previousInstrument} -> ${newInstrument}`);
 
       try {
-        // 1. 保存当前合约数据到缓存（如果存在）
         if (State.previousInstrument) {
           const currentData = ChartController.getCurrentData();
           if (currentData && currentData.length > 0) {
             CacheManager.set(State.previousInstrument, currentData, "full");
-            debugLog(`保存当前合约数据到缓存: ${State.previousInstrument}, ${currentData.length}条`);
+            debugLog(`保存当前合约数据: ${State.previousInstrument}, ${currentData.length}条`);
           }
         }
 
-        // 2. 清空图表（关键：确保旧数据不残留）
         ChartController.clear();
 
-        // 3. 尝试从缓存恢复目标合约数据
         const cached = CacheManager.get(newInstrument);
         if (cached && cached.data.length > 0) {
-          debugLog(`从缓存恢复数据: ${newInstrument}, ${cached.data.length}条, 版本${cached.version}`);
+          debugLog(`从缓存恢复: ${newInstrument}, ${cached.data.length}条`);
 
-          // 验证缓存数据完整性
-          const isValid = validateKlineData(cached.data);
-          if (isValid) {
+          if (validateKlineData(cached.data)) {
             const success = ChartController.loadData(cached.data, "full");
             if (success) {
-              debugLog("缓存数据恢复成功");
+              debugLog("缓存恢复成功");
             } else {
-              errorLog("缓存数据恢复失败，等待服务器推送");
+              errorLog("缓存恢复失败");
             }
           } else {
-            errorLog("缓存数据无效，清除并等待服务器推送");
+            errorLog("缓存数据无效");
             CacheManager.clear(newInstrument);
           }
         } else {
-          debugLog(`无缓存数据，等待服务器推送: ${newInstrument}`);
+          debugLog(`无缓存，等待推送: ${newInstrument}`);
         }
 
-        // 4. 处理切换期间暂存的更新
         this.applyPendingUpdates(newInstrument);
 
       } catch (e) {
@@ -1377,12 +1340,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       }
     },
 
-    // 应用暂存的更新
     applyPendingUpdates(instrumentId) {
       const pending = State.pendingUpdates.get(instrumentId);
       if (!pending || pending.length === 0) return;
 
-      debugLog(`应用暂存的更新: ${instrumentId}, ${pending.length}条`);
+      debugLog(`应用暂存更新: ${instrumentId}, ${pending.length}条`);
 
       pending.forEach(update => {
         this.handleDataUpdate(update, true);
@@ -1391,7 +1353,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       State.pendingUpdates.delete(instrumentId);
     },
 
-    // 处理数据更新（支持暂存机制）
     handleDataUpdate(data, isPending = false) {
       const instrument = data.instrument;
       const type = data.type;
@@ -1401,9 +1362,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
         return;
       }
 
-      // 如果不是当前合约，更新缓存但不更新图表
       if (instrument !== State.currentInstrument) {
-        debugLog(`非当前合约更新，仅缓存: ${instrument}`);
+        debugLog(`非当前合约，仅缓存: ${instrument}`);
 
         if (type === "full" && data.ds) {
           CacheManager.set(instrument, data.ds, "full");
@@ -1415,9 +1375,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
         return;
       }
 
-      // 如果正在切换，暂存更新
       if (State.isSwitching && !isPending) {
-        debugLog(`切换中，暂存更新: ${instrument}`);
+        debugLog(`切换中，暂存: ${instrument}`);
         if (!State.pendingUpdates.has(instrument)) {
           State.pendingUpdates.set(instrument, []);
         }
@@ -1425,7 +1384,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
         return;
       }
 
-      // 更新图表和缓存
       try {
         switch (type) {
           case "full":
@@ -1447,18 +1405,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
             break;
 
           case "update_and_incremental":
-            // 先更新，再添加增量
             if (data.update_data) {
               ChartController.loadData(data.update_data, "update");
             }
             if (data.new_data && ChartController.loadData(data.new_data, "incremental")) {
-              // 合并到缓存
               const existing = CacheManager.get(instrument);
               if (existing) {
                 const combined = [...existing.data];
-                if (combined.length > 0) combined.pop(); // 移除旧的最后一根
-                combined.push(data.update_data); // 添加更新后的
-                combined.push(...data.new_data); // 添加新增的
+                if (combined.length > 0) combined.pop();
+                combined.push(data.update_data);
+                combined.push(...data.new_data);
                 CacheManager.set(instrument, combined, "full");
               }
             }
@@ -1470,7 +1426,24 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     }
   };
 
-  // ============ Shiny 消息处理器 ============
+  function resetAllState(reason) {
+    debugLog(`执行完全重置，原因: ${reason}`);
+
+    ChartController.destroy();
+    CacheManager.clearAll();
+
+    State.currentInstrument = null;
+    State.previousInstrument = null;
+    State.isSwitching = false;
+    State.pendingUpdates.clear();
+    State.dataVersion = 0;
+    State.isRunning = false;
+
+    setTimeout(() => {
+      ChartController.init();
+      debugLog("状态已完全重置，图表重新初始化");
+    }, 100);
+  }
 
   function initShinyHandlers() {
     if (typeof Shiny === "undefined") {
@@ -1478,19 +1451,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       return;
     }
 
-    // 数据推送
     Shiny.addCustomMessageHandler("push", function(data) {
       debugLog("收到推送", { instrument: data.instrument, type: data.type });
       InstrumentSwitcher.handleDataUpdate(data);
     });
 
-    // 合约切换指令
     Shiny.addCustomMessageHandler("switchInstrument", function(msg) {
       debugLog("收到切换指令", msg);
       InstrumentSwitcher.switchTo(msg.instrument, msg.from_instrument);
     });
 
-    // 清空特定合约
     Shiny.addCustomMessageHandler("clearChartForInstrument", function(msg) {
       debugLog("收到清空指令", msg);
       if (msg.instrument === State.currentInstrument) {
@@ -1499,7 +1469,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       }
     });
 
-    // 清空所有
     Shiny.addCustomMessageHandler("clearAll", function() {
       debugLog("收到清空所有指令");
       ChartController.clear();
@@ -1508,15 +1477,17 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       State.previousInstrument = null;
     });
 
+    Shiny.addCustomMessageHandler("resetAll", function(msg) {
+      debugLog("收到完全重置指令", msg);
+      resetAllState(msg.reason || "unknown");
+    });
+
     debugLog("Shiny消息处理器已注册");
   }
-
-  // ============ 初始化 ============
 
   function init() {
     debugLog("应用初始化开始");
 
-    // 等待DOM和klinecharts加载
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", init);
       return;
@@ -1528,13 +1499,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       return;
     }
 
-    // 初始化图表
     ChartController.init();
-
-    // 注册Shiny处理器
     initShinyHandlers();
+    State.isRunning = true;
 
-    // 页面卸载时清理
     window.addEventListener("beforeunload", function() {
       CacheManager.clearAll();
       if (State.chart) {
@@ -1547,18 +1515,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     debugLog("应用初始化完成");
   }
 
-  // 启动
   init();
 
 })();
 ', "www/js/chartapp.js")
 
   message("前端文件创建完成")
-  message("请确保 klinecharts.min.js 已放置在 www/js/ 目录")
 }
 
-# 执行文件创建
 create_frontend_files()
 
-# 启动应用
 shinyApp(ui, server)
