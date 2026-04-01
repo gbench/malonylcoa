@@ -1,4 +1,4 @@
-# app.R - 修复版v3.6：仅修复show_notification函数缺失，保持布局不变
+# app.R - 修复版v4.2：恢复完整指标，保持布局不变
 
 # 加载必要的包
 required_packages <- c("later", "shiny", "shinydashboard", "dplyr", "jsonlite", "lubridate", "data.table", "purrr", "R6")
@@ -18,9 +18,11 @@ floor_date_vectorized <- function(datetime, period_seconds) {
   as.POSIXct(floor_timestamp, origin = "1970-01-01")
 }
 
-aggregate_with_dt <- function(ticks_df) {
+# 使用data.table聚合K线
+aggregate_kline <- function(ticks_df) {
   dt <- data.table::as.data.table(ticks_df)
   kline <- dt[, .(
+    timestamp = as.numeric(first(Period)) * 1000,
     open = first(LastPrice),
     high = max(LastPrice),
     low = min(LastPrice),
@@ -28,121 +30,69 @@ aggregate_with_dt <- function(ticks_df) {
     volume = last(Volume) - first(Volume),
     oint = last(OpenInterest)
   ), by = Period]
-  data.table::setorder(kline, Period)
-  as.data.frame(kline)
+  data.table::setorder(kline, timestamp)
+  as.data.frame(kline[, .(timestamp, open, high, low, close, volume, oint)])
 }
 
-aggregate_with_dplyr <- function(ticks_df) {
-  ticks_df %>%
-    dplyr::group_by(Period) %>%
-    dplyr::summarise(
-      open = dplyr::first(LastPrice),
-      high = max(LastPrice),
-      low = min(LastPrice),
-      close = dplyr::last(LastPrice),
-      volume = dplyr::last(Volume) - dplyr::first(Volume),
-      oint = dplyr::last(OpenInterest),
-      .groups = "drop"
-    ) %>%
-    dplyr::arrange(Period)
-}
-
-merge_kline_data <- function(base, new) {
-  if (is.null(base) || length(base$timestamp) == 0) return(new)
-  if (is.null(new) || length(new$timestamp) == 0) return(base)
-
-  all_fields <- list(
-    timestamp = c(base$timestamp, new$timestamp),
-    open = c(base$open, new$open),
-    high = c(base$high, new$high),
-    low = c(base$low, new$low),
-    close = c(base$close, new$close),
-    volume = c(base$volume, new$volume),
-    oint = c(base$oint, new$oint)
-  )
-
-  order_idx <- order(all_fields$timestamp)
-  for (name in names(all_fields)) {
-    all_fields[[name]] <- all_fields[[name]][order_idx]
-  }
-
-  unique_indices <- !duplicated(all_fields$timestamp, fromLast = TRUE)
-  for (name in names(all_fields)) {
-    all_fields[[name]] <- all_fields[[name]][unique_indices]
-  }
-
-  all_fields
-}
-
-convert_to_frontend_format <- function(kline_list) {
-  if (is.null(kline_list) || length(kline_list$timestamp) == 0) return(list())
-
-  lapply(seq_along(kline_list$timestamp), function(i) {
-    list(
-      timestamp = kline_list$timestamp[i],
-      open = kline_list$open[i],
-      high = kline_list$high[i],
-      low = kline_list$low[i],
-      close = kline_list$close[i],
-      volume = kline_list$volume[i],
-      oint = kline_list$oint[i]
-    )
-  })
+# 合并K线数据框
+merge_kline_df <- function(base_df, new_df) {
+  if (is.null(base_df) || nrow(base_df) == 0) return(new_df)
+  if (is.null(new_df) || nrow(new_df) == 0) return(base_df)
+  
+  combined <- rbind(base_df, new_df)
+  combined <- combined[!duplicated(combined$timestamp), ]
+  combined[order(combined$timestamp), ]
 }
 
 # ============ K线计算模块 ============
 
-ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
+ticks_to_kline <- function(ticks_df, period_minutes, base_kline = NULL) {
   if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
-
+  
   required_cols <- c("ActionDay", "UpdateTime", "LastPrice", "Volume")
   if (!all(required_cols %in% colnames(ticks_df))) return(NULL)
-
+  
+  # 构建DateTime
   datetime_str <- paste(ticks_df$ActionDay, ticks_df$UpdateTime)
   ticks_df$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S")
-
+  
   if ("UpdateMillisec" %in% colnames(ticks_df)) {
     ticks_df$DateTime <- ticks_df$DateTime + ticks_df$UpdateMillisec / 1000
   }
-
+  
   period_seconds <- period_minutes * 60
   ticks_df$Period <- floor_date_vectorized(ticks_df$DateTime, period_seconds)
-
-  if (!is.null(base_kline) && length(base_kline$timestamp) > 0) {
+  
+  # 如果有base_kline，只保留 >= 最后一根K线时间戳的tick数据
+  if (!is.null(base_kline) && nrow(base_kline) > 0) {
     last_ts <- max(base_kline$timestamp) / 1000
     last_period <- floor_date_vectorized(
       as.POSIXct(last_ts, origin = "1970-01-01"), 
       period_seconds
     )
-
-    keep_indices <- ticks_df$Period >= last_period
-    ticks_df <- ticks_df[keep_indices, ]
-
+    
+    ticks_df <- ticks_df[ticks_df$Period >= last_period, ]
     if (nrow(ticks_df) == 0) return(NULL)
   }
-
-  kline <- if (requireNamespace("data.table", quietly = TRUE)) {
-    aggregate_with_dt(ticks_df)
+  
+  # 生成新K线
+  new_kline <- aggregate_kline(ticks_df)
+  if (nrow(new_kline) == 0) return(NULL)
+  
+  # 如果有base_kline，处理重叠的最后一根K线
+  if (!is.null(base_kline) && nrow(base_kline) > 0) {
+    last_base_ts <- max(base_kline$timestamp)
+    first_new_ts <- min(new_kline$timestamp)
+    
+    if (first_new_ts == last_base_ts) {
+      base_kline <- base_kline[base_kline$timestamp < last_base_ts, ]
+    }
+    
+    result <- merge_kline_df(base_kline, new_kline)
   } else {
-    aggregate_with_dplyr(ticks_df)
+    result <- new_kline
   }
-
-  if (nrow(kline) == 0) return(NULL)
-
-  result <- list(
-    timestamp = as.numeric(kline$Period) * 1000,
-    open = kline$open,
-    high = kline$high,
-    low = kline$low,
-    close = kline$close,
-    volume = kline$volume,
-    oint = kline$oint
-  )
-
-  if (!is.null(base_kline) && length(base_kline$timestamp) > 0) {
-    result <- merge_kline_data(base_kline, result)
-  }
-
+  
   return(result)
 }
 
@@ -150,93 +100,45 @@ ticks_to_kline <- function(ticks_df, period_minutes = 1, base_kline = NULL) {
 
 InstrumentStateManager <- R6::R6Class(
   "InstrumentStateManager",
-
+  
   public = list(
     kline_cache = list(),
     tick_counts = list(),
     last_update_times = list(),
     current_instrument = NULL,
     current_period = 1,
-
-    get_cache = function(instrument_id) {
+    
+    get_kline_df = function(instrument_id) {
       if (is.null(instrument_id)) return(NULL)
       self$kline_cache[[instrument_id]]
     },
-
-    update_cache = function(instrument_id, result) {
+    
+    set_kline_df = function(instrument_id, df) {
       if (is.null(instrument_id)) return()
-
-      if (result$type == "full") {
-        self$kline_cache[[instrument_id]] <- convert_to_frontend_format(result$data)
-      } else if (result$type == "incremental") {
-        new_data <- convert_to_frontend_format(result$data)
-        existing <- self$kline_cache[[instrument_id]]
-        if (is.null(existing)) existing <- list()
-        self$kline_cache[[instrument_id]] <- c(existing, new_data)
-      } else if (result$type == "update") {
-        cache <- self$kline_cache[[instrument_id]]
-        if (!is.null(cache) && length(cache) > 0) {
-          cache[[length(cache)]] <- list(
-            timestamp = result$data$timestamp,
-            open = result$data$open,
-            high = result$data$high,
-            low = result$data$low,
-            close = result$data$close,
-            volume = result$data$volume,
-            oint = result$data$oint
-          )
-          self$kline_cache[[instrument_id]] <- cache
-        }
-      } else if (result$type == "update_and_incremental") {
-        cache <- self$kline_cache[[instrument_id]]
-        if (!is.null(cache) && length(cache) > 0) {
-          cache[[length(cache)]] <- list(
-            timestamp = result$update_data$timestamp,
-            open = result$update_data$open,
-            high = result$update_data$high,
-            low = result$update_data$low,
-            close = result$update_data$close,
-            volume = result$update_data$volume,
-            oint = result$update_data$oint
-          )
-        }
-        new_data <- convert_to_frontend_format(result$new_data)
-        self$kline_cache[[instrument_id]] <- c(cache, new_data)
-      }
-
+      self$kline_cache[[instrument_id]] <- df
       self$last_update_times[[instrument_id]] <- Sys.time()
     },
-
-    clear_instrument_cache = function(instrument_id) {
+    
+    clear_instrument = function(instrument_id) {
       if (!is.null(instrument_id)) {
         self$kline_cache[[instrument_id]] <- NULL
         self$tick_counts[[instrument_id]] <- 0
         self$last_update_times[[instrument_id]] <- NULL
       }
     },
-
-    clear_all_cache = function() {
+    
+    clear_all = function() {
       self$kline_cache <- list()
       self$tick_counts <- list()
       self$last_update_times <- list()
       self$current_instrument <- NULL
     },
-
+    
     set_current = function(instrument_id, period = NULL) {
       self$current_instrument <- instrument_id
       if (!is.null(period)) {
         self$current_period <- period
       }
-    },
-
-    get_current_cache = function() {
-      self$get_cache(self$current_instrument)
-    },
-
-    needs_refresh = function(instrument_id, max_age_seconds = 30) {
-      last_update <- self$last_update_times[[instrument_id]]
-      if (is.null(last_update)) return(TRUE)
-      as.numeric(Sys.time() - last_update, units = "secs") > max_age_seconds
     }
   )
 )
@@ -247,84 +149,84 @@ ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/style.css")
   ),
-
+  
   div(class = "title-panel", 
-      titlePanel("CTP 实时K线图 - v3.6")),
-
+      titlePanel("CTP 实时K线图 - v4.2")),
+  
   sidebarLayout(
     sidebarPanel(
       width = 3,
       class = "sidebar-panel",
-
+      
       div(class = "status-bar",
-        uiOutput("connection_status_ui", inline = TRUE),
-        textOutput("active_instrument_display", inline = TRUE)
+          uiOutput("connection_status_ui", inline = TRUE),
+          textOutput("active_instrument_display", inline = TRUE)
       ),
-
+      
       div(class = "market-data",
-        div(class = "section-title", "实时行情"),
-        uiOutput("price_info"),
-        div(class = "order-book",
-          div(class = "order-book-section",
-            div(class = "order-book-title", "卖盘 Ask"),
-            uiOutput("ask_levels")
-          ),
-          div(class = "order-book-section",
-            div(class = "order-book-title", "买盘 Bid"),
-            uiOutput("bid_levels")
+          div(class = "section-title", "实时行情"),
+          uiOutput("price_info"),
+          div(class = "order-book",
+              div(class = "order-book-section",
+                  div(class = "order-book-title", "卖盘 Ask"),
+                  uiOutput("ask_levels")
+              ),
+              div(class = "order-book-section",
+                  div(class = "order-book-title", "买盘 Bid"),
+                  uiOutput("bid_levels")
+              )
           )
-        )
       ),
-
+      
       div(class = "control-group compact",
-        div(class = "section-title", "服务器"),
-        div(class = "host-port-row",
-          div(class = "host-input",
-            tags$label("主机"),
-            textInput("host", NULL, value = "192.168.1.41", placeholder = "IP地址")
+          div(class = "section-title", "服务器"),
+          div(class = "host-port-row",
+              div(class = "host-input",
+                  tags$label("主机"),
+                  textInput("host", NULL, value = "192.168.1.41", placeholder = "IP地址")
+              ),
+              div(class = "port-input",
+                  tags$label("端口"),
+                  numericInput("port", NULL, value = 9898, min = 1, max = 65535)
+              )
           ),
-          div(class = "port-input",
-            tags$label("端口"),
-            numericInput("port", NULL, value = 9898, min = 1, max = 65535)
+          div(class = "btn-row",
+              actionButton("connect_btn", "启动", class = "btn-primary btn-small"),
+              actionButton("disconnect_btn", "停止", class = "btn-danger btn-small")
           )
-        ),
-        div(class = "btn-row",
-          actionButton("connect_btn", "启动", class = "btn-primary btn-small"),
-          actionButton("disconnect_btn", "停止", class = "btn-danger btn-small")
-        )
       ),
-
+      
       div(class = "control-group compact",
-        div(class = "section-title", "推送周期"),
-        sliderInput("push_interval", NULL, min = 0.1, max = 5, value = 1, step = 0.1),
-        div(class = "help-text", "默认1秒，越小越频繁")
+          div(class = "section-title", "推送周期"),
+          sliderInput("push_interval", NULL, min = 0.1, max = 5, value = 1, step = 0.1),
+          div(class = "help-text", "默认1秒，越小越频繁")
       ),
-
+      
       div(class = "control-group compact",
-        div(class = "section-title", "合约"),
-        selectInput("instrument", NULL, choices = NULL),
-        actionButton("refresh_btn", "刷新", icon = icon("sync"), class = "btn-primary btn-small btn-full")
+          div(class = "section-title", "合约"),
+          selectInput("instrument", NULL, choices = NULL),
+          actionButton("refresh_btn", "刷新", icon = icon("sync"), class = "btn-primary btn-small btn-full")
       ),
-
+      
       div(class = "control-group compact",
-        div(class = "section-title", "K线周期"),
-        div(class = "period-row",
-          numericInput("kline_period", NULL, value = 1, min = 1, max = 1440, step = 1),
-          span(class = "unit", "分钟")
-        )
+          div(class = "section-title", "K线周期"),
+          div(class = "period-row",
+              numericInput("kline_period", NULL, value = 1, min = 1, max = 1440, step = 1),
+              span(class = "unit", "分钟")
+          )
       ),
-
+      
       div(class = "debug-panel",
-        div(class = "debug-header", 
-          span("调试日志"),
-          actionButton("clear_log", "清除", class = "btn-tiny")
-        ),
-        uiOutput("debug_info")
+          div(class = "debug-header", 
+              span("调试日志"),
+              actionButton("clear_log", "清除", class = "btn-tiny")
+          ),
+          uiOutput("debug_info")
       ),
-
+      
       actionButton("exit", "退出", icon = icon("power-off"), class = "btn-danger btn-full")
     ),
-
+    
     mainPanel(
       width = 9,
       class = "main-panel",
@@ -338,7 +240,7 @@ ui <- fluidPage(
 # ============ 服务器模块 ============
 
 server <- function(input, output, session) {
-
+  
   state <- InstrumentStateManager$new()
   ctp_client <- NULL
   is_connected <- reactiveVal(FALSE)
@@ -347,14 +249,13 @@ server <- function(input, output, session) {
   debug_messages <- character()
   current_tick <- reactiveVal(NULL)
   
-  # 缓存上次的价格数据
   last_price_data <- reactiveValues(
     last = NULL, mean = NULL, max = NULL, min = NULL, 
     n = NULL, updatetime = NULL, instrument = NULL
   )
-
+  
   timers <- list(instrument = NULL, kline = NULL)
-
+  
   add_debug <- function(msg) {
     timestamp <- format(Sys.time(), "%H:%M:%S.%OS3")
     debug_msg <- paste0("<div class='debug-entry'><span class='debug-timestamp'>[", timestamp, "]</span> ", msg, "</div>")
@@ -365,7 +266,6 @@ server <- function(input, output, session) {
     message(paste0("[", timestamp, "] ", msg))
   }
   
-  # 添加缺失的 show_notification 函数
   show_notification <- function(message, type = "default", duration = 3) {
     tryCatch({
       showNotification(message, type = type, duration = duration)
@@ -373,12 +273,12 @@ server <- function(input, output, session) {
       add_debug(paste0("通知失败: ", message))
     })
   }
-
+  
   observeEvent(input$clear_log, {
     debug_messages <<- character()
     output$debug_info <- renderUI({ HTML("") })
   })
-
+  
   output$connection_status_ui <- renderUI({
     if (is_connected()) {
       HTML("<span class='status-indicator status-connected'></span><span class='status-text connected'>已连接</span>")
@@ -386,12 +286,12 @@ server <- function(input, output, session) {
       HTML("<span class='status-indicator status-disconnected'></span><span class='status-text disconnected'>未连接</span>")
     }
   })
-
+  
   output$active_instrument_display <- renderText({
     req(state$current_instrument)
     paste0(" | ", state$current_instrument)
   })
-
+  
   # 价格数据轮询
   price_data <- reactivePoll(
     intervalMillis = 500, session = session,
@@ -419,7 +319,6 @@ server <- function(input, output, session) {
     stats <- data$stats
     current_instr <- state$current_instrument
     
-    # 检查数据是否变化
     has_changed <- FALSE
     if (is.null(last_price_data$last) || !identical(stats$last, last_price_data$last)) {
       last_price_data$last <- stats$last
@@ -449,44 +348,44 @@ server <- function(input, output, session) {
     if (has_changed) {
       output$price_info <- renderUI({
         tags$div(class = "price-info",
-          tags$div(class = "price-current", current_instr),
-          tags$div(class = "price-stats-row",
-            tags$span(class = "price-label", "最新: "),
-            tags$span(class = "price-value", sprintf("%.2f", stats$last)),
-            tags$span(class = "price-label", " 均: "),
-            tags$span(class = "price-value", sprintf("%.2f", stats$mean))
-          ),
-          tags$div(class = "price-stats-row",
-            tags$span(class = "price-label", "最高: "),
-            tags$span(class = "price-value", sprintf("%.2f", stats$max)),
-            tags$span(class = "price-label", " 低: "),
-            tags$span(class = "price-value", sprintf("%.2f", stats$min))
-          ),
-          tags$div(class = "price-meta",
-            tags$span("Ticks: ", tags$strong(stats$n)),
-            tags$span(" 时间: ", stats$updatetime)
-          )
+                 tags$div(class = "price-current", current_instr),
+                 tags$div(class = "price-stats-row",
+                          tags$span(class = "price-label", "最新: "),
+                          tags$span(class = "price-value", sprintf("%.2f", stats$last)),
+                          tags$span(class = "price-label", " 均: "),
+                          tags$span(class = "price-value", sprintf("%.2f", stats$mean))
+                 ),
+                 tags$div(class = "price-stats-row",
+                          tags$span(class = "price-label", "最高: "),
+                          tags$span(class = "price-value", sprintf("%.2f", stats$max)),
+                          tags$span(class = "price-label", " 低: "),
+                          tags$span(class = "price-value", sprintf("%.2f", stats$min))
+                 ),
+                 tags$div(class = "price-meta",
+                          tags$span("Ticks: ", tags$strong(stats$n)),
+                          tags$span(" 时间: ", stats$updatetime)
+                 )
         )
       })
     }
     
     if (!is.null(data$tick)) current_tick(data$tick)
   })
-
+  
   # 盘口显示
   output$ask_levels <- renderUI({
     tick <- current_tick()
     if (is.null(tick)) {
       return(HTML("<div class='waiting'>等待数据...</div>"))
     }
-
+    
     rows <- lapply(5:1, function(i) {
       price <- tick[[paste0("AskPrice", i)]] %||% 0
       vol <- tick[[paste0("AskVolume", i)]] %||% 0
       if (price > 0) {
         div(class = "order-row",
-          span(class = "ask-price", sprintf("%.2f", price)),
-          span(class = "order-volume", vol)
+            span(class = "ask-price", sprintf("%.2f", price)),
+            span(class = "order-volume", vol)
         )
       } else {
         div(class = "order-row empty", HTML("—"))
@@ -494,20 +393,20 @@ server <- function(input, output, session) {
     })
     do.call(tagList, rows)
   })
-
+  
   output$bid_levels <- renderUI({
     tick <- current_tick()
     if (is.null(tick)) {
       return(HTML("<div class='waiting'>等待数据...</div>"))
     }
-
+    
     rows <- lapply(1:5, function(i) {
       price <- tick[[paste0("BidPrice", i)]] %||% 0
       vol <- tick[[paste0("BidVolume", i)]] %||% 0
       if (price > 0) {
         div(class = "order-row",
-          span(class = "bid-price", sprintf("%.2f", price)),
-          span(class = "order-volume", vol)
+            span(class = "bid-price", sprintf("%.2f", price)),
+            span(class = "order-volume", vol)
         )
       } else {
         div(class = "order-row empty", HTML("—"))
@@ -515,7 +414,7 @@ server <- function(input, output, session) {
     })
     do.call(tagList, rows)
   })
-
+  
   # 清理函数
   send_undump_command <- function() {
     if (is.null(ctp_client)) return(FALSE)
@@ -534,7 +433,7 @@ server <- function(input, output, session) {
     })
     return(FALSE)
   }
-
+  
   stop_client <- function() {
     if (is.null(ctp_client)) return()
     tryCatch({
@@ -544,7 +443,7 @@ server <- function(input, output, session) {
       add_debug(paste0("停止客户端出错: ", e$message))
     })
   }
-
+  
   reset_env <- function(full_reset = TRUE) {
     add_debug("开始清理...")
     if (!is.null(ctp_client)) {
@@ -564,128 +463,88 @@ server <- function(input, output, session) {
     last_price_data$updatetime <- NULL
     
     if (full_reset) {
-      state$clear_all_cache()
+      state$clear_all()
     }
     add_debug("清理完成")
   }
-
+  
   stop_timers <- function() {
     for (name in names(timers)) {
       if (!is.null(timers[[name]])) timers[[name]] <- NULL
     }
   }
-
+  
   # K线更新
-  get_incremental_kline <- function(ticks_df, period_minutes, instrument_id) {
-    if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
-
-    base_kline <- state$get_cache(instrument_id)
-    full_kline <- ticks_to_kline(ticks_df, period_minutes, base_kline)
-    if (is.null(full_kline) || length(full_kline$timestamp) == 0) return(NULL)
-
-    if (is.null(base_kline) || length(base_kline$timestamp) == 0) {
-      return(list(type = "full", instrument = instrument_id, data = full_kline, last_timestamp = max(full_kline$timestamp)))
-    }
-
-    cached_last_ts <- max(base_kline$timestamp)
-    update_indices <- which(full_kline$timestamp >= cached_last_ts)
-    if (length(update_indices) == 0) return(NULL)
-
-    if (full_kline$timestamp[update_indices[1]] == cached_last_ts) {
-      new_last <- list(
-        timestamp = full_kline$timestamp[update_indices[1]],
-        open = full_kline$open[update_indices[1]],
-        high = full_kline$high[update_indices[1]],
-        low = full_kline$low[update_indices[1]],
-        close = full_kline$close[update_indices[1]],
-        volume = full_kline$volume[update_indices[1]],
-        oint = full_kline$oint[update_indices[1]]
-      )
-
-      if (length(update_indices) > 1) {
-        new_indices <- update_indices[-1]
-        new_kline <- list(
-          timestamp = full_kline$timestamp[new_indices],
-          open = full_kline$open[new_indices],
-          high = full_kline$high[new_indices],
-          low = full_kline$low[new_indices],
-          close = full_kline$close[new_indices],
-          volume = full_kline$volume[new_indices],
-          oint = full_kline$oint[new_indices]
+  update_and_send_kline <- function(instrument_id, period) {
+    if (is.null(ctp_client)) return(NULL)
+    
+    tryCatch({
+      ticks_df <- ctp_client$ticks(instrument_id)
+      if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+      
+      current_count <- nrow(ticks_df)
+      last_count <- state$tick_counts[[instrument_id]] %||% 0
+      
+      if (current_count == last_count) return(NULL)
+      
+      state$tick_counts[[instrument_id]] <- current_count
+      
+      base_kline <- state$get_kline_df(instrument_id)
+      new_kline <- ticks_to_kline(ticks_df, period, base_kline)
+      
+      if (is.null(new_kline) || nrow(new_kline) == 0) return(NULL)
+      
+      state$set_kline_df(instrument_id, new_kline)
+      
+      if (instrument_id == state$current_instrument) {
+        is_full <- is.null(base_kline) || nrow(base_kline) == 0
+        
+        # 转换为前端格式
+        kline_list <- lapply(1:nrow(new_kline), function(i) {
+          list(
+            timestamp = new_kline$timestamp[i],
+            open = new_kline$open[i],
+            high = new_kline$high[i],
+            low = new_kline$low[i],
+            close = new_kline$close[i],
+            volume = new_kline$volume[i],
+            oint = new_kline$oint[i]
+          )
+        })
+        
+        send_data <- list(
+          instrument = instrument_id,
+          type = if(is_full) "full" else "incremental",
+          ds = kline_list
         )
-        return(list(type = "update_and_incremental", instrument = instrument_id, update_data = new_last, new_data = new_kline, last_timestamp = max(full_kline$timestamp)))
+        
+        session$sendCustomMessage("updateKline", send_data)
+        add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", nrow(new_kline), "条"))
       }
-      return(list(type = "update", instrument = instrument_id, data = new_last, last_timestamp = max(full_kline$timestamp)))
-    } else {
-      new_indices <- update_indices
-      new_kline <- list(
-        timestamp = full_kline$timestamp[new_indices],
-        open = full_kline$open[new_indices],
-        high = full_kline$high[new_indices],
-        low = full_kline$low[new_indices],
-        close = full_kline$close[new_indices],
-        volume = full_kline$volume[new_indices],
-        oint = full_kline$oint[new_indices]
-      )
-      return(list(type = "incremental", instrument = instrument_id, data = new_kline, last_timestamp = max(full_kline$timestamp)))
-    }
+      
+    }, error = function(e) {
+      add_debug(paste0("K线错误: ", e$message))
+    })
   }
-
-  send_kline_to_frontend <- function(result) {
-    if (is.null(result)) return()
-    instrument <- result$instrument
-    type <- result$type
-
-    send_data <- switch(type,
-      "full" = list(instrument = instrument, type = "full", ds = convert_to_frontend_format(result$data)),
-      "incremental" = list(instrument = instrument, type = "incremental", ds = convert_to_frontend_format(result$data)),
-      "update" = list(instrument = instrument, type = "update", ds = list(timestamp = result$data$timestamp, open = result$data$open, high = result$data$high, low = result$data$low, close = result$data$close, volume = result$data$volume, oint = result$data$oint)),
-      "update_and_incremental" = list(instrument = instrument, type = "update_and_incremental", update_data = list(timestamp = result$update_data$timestamp, open = result$update_data$open, high = result$update_data$high, low = result$update_data$low, close = result$update_data$close, volume = result$update_data$volume, oint = result$update_data$oint), new_data = convert_to_frontend_format(result$new_data)),
-      NULL
-    )
-
-    if (!is.null(send_data)) {
-      state$update_cache(instrument, result)
-      if (instrument == state$current_instrument) {
-        session$sendCustomMessage("push", send_data)
-        add_debug(paste0("发送[", type, "]: ", instrument))
-      }
-    }
-  }
-
+  
   # K线更新定时器
   start_kline_updater <- function() {
     update_kline <- function() {
       if (!running || is.null(ctp_client)) return()
       current <- state$current_instrument
       period <- state$current_period
-      if (is.null(current) || current == "") {
-        timers$kline <<- later::later(update_kline, 1)
-        return()
+      if (!is.null(current) && current != "") {
+        update_and_send_kline(current, period)
       }
-      tryCatch({
-        ticks_df <- ctp_client$ticks(current)
-        if (!is.null(ticks_df) && nrow(ticks_df) > 0) {
-          current_count <- nrow(ticks_df)
-          last_count <- state$tick_counts[[current]] %||% 0
-          if (current_count != last_count) {
-            state$tick_counts[[current]] <- current_count
-            result <- get_incremental_kline(ticks_df, period, current)
-            send_kline_to_frontend(result)
-          }
-        }
-      }, error = function(e) {
-        add_debug(paste0("K线错误: ", e$message))
-      })
       push_interval <- isolate(input$push_interval) %||% 1
       if (running && !is.null(ctp_client)) {
         timers$kline <<- later::later(update_kline, push_interval)
       }
     }
-    add_debug(paste0("K线更新器: ", input$push_interval, "s"))
+    add_debug(paste0("K线更新器启动: 周期=", state$current_period, "分钟"))
     update_kline()
   }
-
+  
   # 合约列表更新
   start_instrument_updater <- function() {
     update_instruments <- function() {
@@ -708,7 +567,7 @@ server <- function(input, output, session) {
     }
     update_instruments()
   }
-
+  
   # 事件处理
   observeEvent(input$instrument, {
     new_instrument <- input$instrument
@@ -719,11 +578,11 @@ server <- function(input, output, session) {
       state$set_current(new_instrument, input$kline_period)
       state$tick_counts[[new_instrument]] <- 0
       current_tick(NULL)
-      session$sendCustomMessage("switchInstrument", list(instrument = new_instrument, from_instrument = old_instrument, clearCache = FALSE))
+      session$sendCustomMessage("switchInstrument", list(instrument = new_instrument))
       show_notification(paste0("已切换: ", new_instrument), "message", 2)
     }
   }, ignoreNULL = TRUE, ignoreInit = FALSE)
-
+  
   observeEvent(input$kline_period, {
     new_period <- input$kline_period
     if (!is.null(new_period) && !identical(new_period, state$current_period)) {
@@ -731,18 +590,18 @@ server <- function(input, output, session) {
       state$current_period <- new_period
       current <- state$current_instrument
       if (!is.null(current)) {
-        state$clear_instrument_cache(current)
+        state$clear_instrument(current)
         state$tick_counts[[current]] <- 0
-        session$sendCustomMessage("clearChartForInstrument", list(instrument = current, reason = "period_change"))
+        session$sendCustomMessage("clearChart", list(instrument = current))
       }
       show_notification(paste0("周期: ", new_period, "分钟"), "message", 2)
     }
   })
-
+  
   observeEvent(input$push_interval, {
-    add_debug(paste0("推送: ", input$push_interval, "s"))
+    add_debug(paste0("推送间隔: ", input$push_interval, "s"))
   })
-
+  
   observeEvent(input$connect_btn, {
     add_debug("启动连接...")
     if (!is.null(ctp_client)) {
@@ -752,11 +611,11 @@ server <- function(input, output, session) {
     }
     do_connect()
   })
-
+  
   do_connect <- function() {
     stop_timers()
     running <<- TRUE
-    state$clear_all_cache()
+    state$clear_all()
     current_tick(NULL)
     
     last_price_data$last <- NULL
@@ -781,13 +640,13 @@ server <- function(input, output, session) {
       showModal(modalDialog(title = "连接失败", paste("错误:", e$message), easyClose = TRUE, footer = modalButton("关闭")))
     })
   }
-
+  
   observeEvent(input$disconnect_btn, {
     if (!is.null(ctp_client)) {
       add_debug("停止连接...")
       running <<- FALSE
       stop_timers()
-      session$sendCustomMessage("resetAll", list(reason = "disconnect", timestamp = as.numeric(Sys.time())))
+      session$sendCustomMessage("resetAll", list(reason = "disconnect"))
       reset_env(full_reset = TRUE)
       output$price_info <- renderUI({
         tags$div(class = "price-info", tags$div(class = "price-current", "未连接"), tags$div("点击启动"))
@@ -797,30 +656,30 @@ server <- function(input, output, session) {
       show_notification("无连接", "warning", 3)
     }
   })
-
+  
   observeEvent(input$refresh_btn, {
     current <- state$current_instrument
     if (!is.null(current) && !is.null(ctp_client)) {
       add_debug(paste0("刷新: ", current))
-      state$clear_instrument_cache(current)
+      state$clear_instrument(current)
       state$tick_counts[[current]] <- 0
       current_tick(NULL)
-      session$sendCustomMessage("clearChartForInstrument", list(instrument = current, reason = "manual_refresh"))
+      session$sendCustomMessage("clearChart", list(instrument = current))
       show_notification("刷新中...", "message", 2)
     }
   })
-
+  
   observeEvent(input$exit, {
     showModal(modalDialog(title = "确认退出", "确定退出?", easyClose = TRUE, footer = tagList(modalButton("取消"), actionButton("confirm_exit", "确定", class = "btn-danger"))))
   })
-
+  
   observeEvent(input$confirm_exit, {
     running <<- FALSE
     stop_timers()
     reset_env()
     stopApp()
   })
-
+  
   session$onSessionEnded(function() {
     running <<- FALSE
     stop_timers()
@@ -829,7 +688,7 @@ server <- function(input, output, session) {
       stop_client()
     }
   })
-
+  
   output$price_info <- renderUI({
     tags$div(class = "price-info", tags$div(class = "price-current", "等待连接..."))
   })
@@ -841,11 +700,9 @@ create_frontend_files <- function() {
   if (!dir.exists("www")) dir.create("www")
   if (!dir.exists("www/js")) dir.create("www/js")
   if (!dir.exists("www/css")) dir.create("www/css")
-
-  # 保持原有的CSS文件不变
+  
+  # CSS保持原样
   css_content <- '
-/* CTP K线图应用样式 - 紧凑布局 v3.6 */
-
 * { box-sizing: border-box; }
 
 body {
@@ -859,19 +716,6 @@ body {
 
 .title-panel {
   display: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 10px 10px;
-  border-radius: 6px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-.title-panel h2 {
-  margin: 0;
-  color: white;
-  text-align: center;
-  font-weight: 600;
-  font-size: 18px;
 }
 
 .sidebar-panel {
@@ -1048,12 +892,6 @@ body {
 .host-input { flex: 2; }
 .port-input { flex: 1; }
 
-.host-input label,
-.port-input label {
-  font-size: 9px;
-  margin-bottom: 2px;
-}
-
 .form-control {
   background-color: #1e1e2f !important;
   border: 1px solid #4a5568 !important;
@@ -1063,13 +901,6 @@ body {
   font-size: 12px !important;
   height: 28px !important;
 }
-
-.form-control:focus {
-  border-color: #667eea !important;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2) !important;
-}
-
-select.form-control { padding-right: 20px !important; }
 
 .btn-row {
   display: flex;
@@ -1083,17 +914,11 @@ select.form-control { padding-right: 20px !important; }
   font-size: 12px;
   padding: 6px 12px;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 .btn-danger {
@@ -1103,13 +928,7 @@ select.form-control { padding-right: 20px !important; }
 
 .btn-small { padding: 4px 10px; font-size: 11px; flex: 1; }
 .btn-full { width: 100%; margin-top: 6px; }
-.btn-tiny { 
-  padding: 2px 8px; 
-  font-size: 9px; 
-  background: #4a5568;
-  color: white;
-  float: right;
-}
+.btn-tiny { padding: 2px 8px; font-size: 9px; background: #4a5568; color: white; float: right; }
 
 .period-row {
   display: flex;
@@ -1122,42 +941,6 @@ select.form-control { padding-right: 20px !important; }
 .unit {
   color: #718096;
   font-size: 11px;
-}
-
-.irs-line {
-  background: #4a5568 !important;
-  border-radius: 2px;
-  height: 4px !important;
-}
-
-.irs-bar {
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
-  height: 4px !important;
-}
-
-.irs-handle {
-  background: #667eea !important;
-  border: 2px solid white !important;
-  width: 14px !important;
-  height: 14px !important;
-  top: 19px !important;
-}
-
-.irs-single {
-  background: #667eea !important;
-  font-size: 10px !important;
-  padding: 2px 6px !important;
-}
-
-.irs-min, .irs-max {
-  color: #718096 !important;
-  font-size: 9px !important;
-}
-
-.help-text {
-  color: #718096;
-  font-size: 10px;
-  margin-top: 4px;
 }
 
 .debug-panel {
@@ -1201,7 +984,6 @@ select.form-control { padding-right: 20px !important; }
   background-color: #1e1e2f;
   border: 1px solid #3d3d5c;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .shiny-notification {
@@ -1211,211 +993,29 @@ select.form-control { padding-right: 20px !important; }
   z-index: 9999;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
-  border: none !important;
-  border-radius: 6px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-  padding: 10px 15px !important;
-  font-size: 12px !important;
-}
-
-.modal-content {
-  background-color: #2d2d3f !important;
-  color: #e0e0e0 !important;
-  border: 1px solid #4a5568 !important;
-  border-radius: 8px !important;
-}
-
-.modal-header {
-  border-bottom: 1px solid #3d3d5c !important;
-  padding: 12px 15px !important;
-}
-
-.modal-title { font-size: 14px !important; font-weight: 600 !important; }
-
-.modal-body { padding: 15px !important; font-size: 13px !important; }
-
-.modal-footer {
-  border-top: 1px solid #3d3d5c !important;
-  padding: 10px 15px !important;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #1e1e2f;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #4a5568;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #667eea;
 }
 '
+writeLines(css_content, "www/css/style.css")
 
-  writeLines(css_content, "www/css/style.css")
-
-  # 保持原有的JS文件不变
-  js_content <- '
-// chartapp.js - v3.6
+# JS文件 - 恢复完整指标
+js_content <- '
+// chartapp.js - v4.2 恢复完整指标
 (function () {
   "use strict";
-
-  const CONFIG = {
-    debug: true,
-    maxCacheAge: 300000,
-    chartHeight: 800
-  };
-
-  const State = {
-    chart: null,
-    currentInstrument: null,
-    previousInstrument: null,
-    instrumentCache: new Map(),
-    dataVersion: 0,
-    isSwitching: false,
-    pendingUpdates: new Map(),
-    isRunning: false,
-    isInitialized: false
-  };
-
-  function debugLog(msg, data) {
-    if (!CONFIG.debug) return;
+  
+  let chart = null;
+  let currentInstrument = null;
+  
+  function debugLog(msg) {
     const timestamp = new Date().toLocaleTimeString();
-    const prefix = `[${timestamp}] [ChartApp]`;
-    if (data !== undefined) {
-      console.log(prefix, msg, data);
-    } else {
-      console.log(prefix, msg);
-    }
+    console.log(`[${timestamp}] [Chart]`, msg);
   }
-
-  function errorLog(msg, error) {
-    const timestamp = new Date().toLocaleTimeString();
-    console.error(`[${timestamp}] [ChartApp] ERROR:`, msg, error);
-  }
-
-  function deepClone(obj) {
-    if (obj === null || typeof obj !== "object") return obj;
-    if (obj instanceof Date) return new Date(obj.getTime());
-    if (Array.isArray(obj)) return obj.map(deepClone);
-    const cloned = {};
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        cloned[key] = deepClone(obj[key]);
-      }
-    }
-    return cloned;
-  }
-
-  function validateKlineData(data) {
-    if (!data || !Array.isArray(data)) return false;
-    if (data.length === 0) return true;
-    const required = ["timestamp", "open", "high", "low", "close"];
-    const first = data[0];
-    return required.every(field => field in first && typeof first[field] === "number");
-  }
-
-  const CacheManager = {
-    get(instrumentId) {
-      return State.instrumentCache.get(instrumentId);
-    },
-
-    set(instrumentId, data, type = "full") {
-      if (!validateKlineData(data)) {
-        errorLog("无效数据", { instrumentId });
-        return;
-      }
-
-      const existing = State.instrumentCache.get(instrumentId);
-      let newData;
-
-      if (type === "full" || !existing) {
-        newData = deepClone(data);
-      } else if (type === "incremental") {
-        newData = [...existing.data, ...deepClone(data)];
-        const seen = new Map();
-        newData.forEach(k => seen.set(k.timestamp, k));
-        newData = Array.from(seen.values()).sort((a, b) => a.timestamp - b.timestamp);
-      } else if (type === "update") {
-        newData = [...existing.data];
-        if (newData.length > 0) {
-          const lastIdx = newData.length - 1;
-          if (newData[lastIdx].timestamp === data.timestamp) {
-            newData[lastIdx] = deepClone(data);
-          }
-        }
-      }
-
-      State.instrumentCache.set(instrumentId, {
-        data: newData,
-        lastUpdate: Date.now(),
-        version: (existing?.version || 0) + 1
-      });
-
-      debugLog(`缓存[${type}]: ${instrumentId}, ${newData.length}条`);
-    },
-
-    clear(instrumentId) {
-      if (State.instrumentCache.has(instrumentId)) {
-        State.instrumentCache.delete(instrumentId);
-        debugLog(`清除: ${instrumentId}`);
-      }
-    },
-
-    clearAll() {
-      State.instrumentCache.clear();
-      debugLog("清除所有缓存");
-    }
-  };
-
-  const ChartController = {
-    init() {
-      if (State.chart) {
-        debugLog("销毁旧图表");
-        this.destroy();
-      }
-
-      try {
-        State.chart = klinecharts.init("chart");
-
-        State.chart.setStyles({
-          grid: {
-            horizontal: { color: "#2d2d3f", size: 1 },
-            vertical: { color: "#2d2d3f", size: 1 }
-          },
-          candle: {
-            candle: {
-              bar: { upColor: "#ef5350", downColor: "#26a69a", noChangeColor: "#888888" }
-            }
-          },
-          xAxis: {
-            line: { color: "#4a5568" },
-            tick: { color: "#e0e0e0" }
-          },
-          yAxis: {
-            line: { color: "#4a5568" },
-            tick: { color: "#e0e0e0" }
-          }
-        });
-
-        this.registerIndicators();
-        this.createIndicators();
-
-        State.isInitialized = true;
-        debugLog("图表初始化完成");
-      } catch (e) {
-        errorLog("图表初始化失败", e);
-      }
-    },
-
-    registerIndicators() {
+  
+  // 注册自定义指标
+  function registerIndicators() {
+    if (typeof klinecharts === "undefined") return;
+    
+    try {
       klinecharts.registerIndicator({
         name: "OINT",
         shortName: "OINT",
@@ -1434,291 +1034,164 @@ select.form-control { padding-right: 20px !important; }
           });
         }
       });
-    },
-
-    createIndicators() {
-      if (!State.chart) return;
-      try {
-        State.chart.createIndicator("VOL", false);
-        State.chart.createIndicator("MA", true, { id: "candle_pane" });
-        State.chart.createIndicator("OINT", false);
-        State.chart.createIndicator("KDJ", false);
-        State.chart.createIndicator("MACD", false);
-        debugLog("指标创建完成");
-      } catch (e) {
-        errorLog("创建指标失败", e);
-      }
-    },
-
-    loadData(data, type) {
-      if (!State.chart || !data) {
-        errorLog("无效数据");
-        return false;
-      }
-
-      if (!validateKlineData(type === "update" ? [data] : data)) {
-        errorLog("格式错误");
-        return false;
-      }
-
-      try {
-        switch (type) {
-          case "full":
-            State.chart.applyNewData(data);
-            debugLog("全量", data.length);
-            break;
-          case "incremental":
-            data.forEach(bar => State.chart.updateData(bar));
-            debugLog("增量", data.length);
-            break;
-          case "update":
-            State.chart.updateData(data);
-            debugLog("更新");
-            break;
-          default:
-            return false;
-        }
-        return true;
-      } catch (e) {
-        errorLog("加载失败", e);
-        return false;
-      }
-    },
-
-    clear() {
-      if (!State.chart) return;
-      try {
-        State.chart.applyNewData([], true);
-        debugLog("清空");
-      } catch (e) {
-        errorLog("清空失败", e);
-      }
-    },
-
-    getCurrentData() {
-      if (!State.chart) return [];
-      try {
-        return State.chart.getDataList() || [];
-      } catch (e) {
-        return [];
-      }
-    },
-
-    destroy() {
-      if (!State.chart) return;
-      try {
-        klinecharts.dispose("chart");
-        State.chart = null;
-        State.isInitialized = false;
-        debugLog("图表销毁");
-      } catch (e) {
-        errorLog("销毁失败", e);
-      }
+      debugLog("指标注册完成");
+    } catch(e) {
+      console.error("指标注册失败", e);
     }
-  };
-
-  const InstrumentSwitcher = {
-    switchTo(newInstrument, fromInstrument) {
-      if (State.isSwitching) {
-        debugLog("切换中...");
-        return;
-      }
-
-      if (!newInstrument || newInstrument === State.currentInstrument) {
-        return;
-      }
-
-      State.isSwitching = true;
-      State.previousInstrument = fromInstrument || State.currentInstrument;
-      State.currentInstrument = newInstrument;
-
-      debugLog(`切换: ${State.previousInstrument} -> ${newInstrument}`);
-
-      try {
-        if (State.previousInstrument) {
-          const currentData = ChartController.getCurrentData();
-          if (currentData && currentData.length > 0) {
-            CacheManager.set(State.previousInstrument, currentData, "full");
-          }
-        }
-
-        ChartController.clear();
-
-        const cached = CacheManager.get(newInstrument);
-        if (cached && cached.data.length > 0) {
-          debugLog(`恢复: ${newInstrument}, ${cached.data.length}条`);
-          if (validateKlineData(cached.data)) {
-            ChartController.loadData(cached.data, "full");
-          } else {
-            CacheManager.clear(newInstrument);
-          }
-        }
-
-        this.applyPendingUpdates(newInstrument);
-      } catch (e) {
-        errorLog("切换失败", e);
-      } finally {
-        State.isSwitching = false;
-      }
-    },
-
-    applyPendingUpdates(instrumentId) {
-      const pending = State.pendingUpdates.get(instrumentId);
-      if (!pending) return;
-      pending.forEach(update => this.handleDataUpdate(update, true));
-      State.pendingUpdates.delete(instrumentId);
-    },
-
-    handleDataUpdate(data, isPending = false) {
-      const instrument = data.instrument;
-      const type = data.type;
-
-      if (!instrument || !type) return;
-
-      if (instrument !== State.currentInstrument) {
-        if (type === "full" && data.ds) CacheManager.set(instrument, data.ds, "full");
-        else if (type === "incremental" && data.ds) CacheManager.set(instrument, data.ds, "incremental");
-        else if (type === "update" && data.ds) CacheManager.set(instrument, [data.ds], "update");
-        return;
-      }
-
-      if (State.isSwitching && !isPending) {
-        if (!State.pendingUpdates.has(instrument)) State.pendingUpdates.set(instrument, []);
-        State.pendingUpdates.get(instrument).push(data);
-        return;
-      }
-
-      try {
-        switch (type) {
-          case "full":
-            if (data.ds && ChartController.loadData(data.ds, "full")) {
-              CacheManager.set(instrument, data.ds, "full");
-            }
-            break;
-          case "incremental":
-            if (data.ds && ChartController.loadData(data.ds, "incremental")) {
-              CacheManager.set(instrument, data.ds, "incremental");
-            }
-            break;
-          case "update":
-            if (data.ds && ChartController.loadData(data.ds, "update")) {
-              CacheManager.set(instrument, [data.ds], "update");
-            }
-            break;
-          case "update_and_incremental":
-            if (data.update_data) ChartController.loadData(data.update_data, "update");
-            if (data.new_data && ChartController.loadData(data.new_data, "incremental")) {
-              const existing = CacheManager.get(instrument);
-              if (existing) {
-                const combined = [...existing.data];
-                if (combined.length > 0) combined.pop();
-                combined.push(data.update_data);
-                combined.push(...data.new_data);
-                CacheManager.set(instrument, combined, "full");
-              }
-            }
-            break;
-        }
-      } catch (e) {
-        errorLog("更新失败", e);
-      }
-    }
-  };
-
-  function resetAllState(reason) {
-    debugLog(`重置: ${reason}`);
-    ChartController.destroy();
-    CacheManager.clearAll();
-    State.currentInstrument = null;
-    State.previousInstrument = null;
-    State.isSwitching = false;
-    State.pendingUpdates.clear();
-    State.dataVersion = 0;
-    State.isRunning = false;
-    State.isInitialized = false;
-
-    setTimeout(() => {
-      ChartController.init();
-      debugLog("重置完成");
-    }, 100);
   }
-
+  
+  // 初始化图表
+  function initChart() {
+    if (chart) {
+      try { 
+        klinecharts.dispose("chart"); 
+      } catch(e) {}
+      chart = null;
+    }
+    
+    try {
+      chart = klinecharts.init("chart");
+      chart.setStyles({
+        grid: { 
+          horizontal: { color: "#2d2d3f", size: 1 }, 
+          vertical: { color: "#2d2d3f", size: 1 } 
+        },
+        candle: { 
+          candle: { 
+            bar: { upColor: "#ef5350", downColor: "#26a69a", noChangeColor: "#888888" } 
+          } 
+        },
+        xAxis: { 
+          line: { color: "#4a5568" }, 
+          tick: { color: "#e0e0e0" } 
+        },
+        yAxis: { 
+          line: { color: "#4a5568" }, 
+          tick: { color: "#e0e0e0" } 
+        }
+      });
+      
+      // 创建所有指标
+      chart.createIndicator("VOL", false);
+      chart.createIndicator("MA", true, { id: "candle_pane" });
+      chart.createIndicator("OINT", false);
+      chart.createIndicator("KDJ", false);
+      chart.createIndicator("MACD", false);
+      
+      debugLog("图表初始化完成，指标已加载");
+    } catch(e) {
+      console.error("图表初始化失败", e);
+    }
+  }
+  
+  // 更新K线数据
+  function updateKline(data) {
+    if (!chart) {
+      debugLog("图表未初始化");
+      return;
+    }
+    
+    if (!data || !data.ds) {
+      return;
+    }
+    
+    const klineData = data.ds;
+    if (!Array.isArray(klineData) || klineData.length === 0) {
+      return;
+    }
+    
+    try {
+      if (data.type === "full") {
+        chart.applyNewData(klineData);
+        debugLog(`全量更新: ${klineData.length}条K线`);
+      } else {
+        for (let i = 0; i < klineData.length; i++) {
+          chart.updateData(klineData[i]);
+        }
+        debugLog(`增量更新: ${klineData.length}条K线`);
+      }
+    } catch(e) {
+      console.error("更新K线失败", e);
+    }
+  }
+  
+  // 清空图表
+  function clearChart() {
+    if (!chart) return;
+    try {
+      chart.applyNewData([], true);
+      debugLog("清空图表");
+    } catch(e) {}
+  }
+  
+  // 重置
+  function resetAll() {
+    clearChart();
+    currentInstrument = null;
+    debugLog("重置完成");
+  }
+  
+  // 切换合约
+  function switchInstrument(instrument) {
+    if (!instrument) return;
+    currentInstrument = instrument;
+    clearChart();
+    debugLog(`切换合约: ${instrument}`);
+  }
+  
+  // 注册Shiny消息处理
   function initShinyHandlers() {
     if (typeof Shiny === "undefined") {
-      console.error("Shiny 未加载");
+      console.error("Shiny未加载");
       return;
     }
-
-    Shiny.addCustomMessageHandler("push", function(data) {
-      debugLog("推送", { instrument: data.instrument, type: data.type });
-      InstrumentSwitcher.handleDataUpdate(data);
+    
+    Shiny.addCustomMessageHandler("updateKline", function(data) {
+      if (data.instrument === currentInstrument) {
+        updateKline(data);
+      }
     });
-
+    
     Shiny.addCustomMessageHandler("switchInstrument", function(msg) {
-      debugLog("切换指令", msg);
-      InstrumentSwitcher.switchTo(msg.instrument, msg.from_instrument);
+      switchInstrument(msg.instrument);
     });
-
-    Shiny.addCustomMessageHandler("clearChartForInstrument", function(msg) {
-      debugLog("清空", msg);
-      if (msg.instrument === State.currentInstrument) {
-        ChartController.clear();
-        CacheManager.clear(msg.instrument);
+    
+    Shiny.addCustomMessageHandler("clearChart", function(msg) {
+      if (!msg.instrument || msg.instrument === currentInstrument) {
+        clearChart();
       }
     });
-
-    Shiny.addCustomMessageHandler("clearAll", function() {
-      debugLog("清空所有");
-      ChartController.clear();
-      CacheManager.clearAll();
-      State.currentInstrument = null;
-      State.previousInstrument = null;
+    
+    Shiny.addCustomMessageHandler("resetAll", function() {
+      resetAll();
     });
-
-    Shiny.addCustomMessageHandler("resetAll", function(msg) {
-      debugLog("完全重置", msg);
-      resetAllState(msg.reason || "unknown");
-    });
-
-    debugLog("处理器已注册");
+    
+    debugLog("消息处理器注册完成");
   }
-
-  function init() {
-    debugLog("初始化开始");
-
+  
+  // 启动
+  function start() {
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", init);
-      return;
+      document.addEventListener("DOMContentLoaded", function() {
+        registerIndicators();
+        initChart();
+        initShinyHandlers();
+        debugLog("应用启动完成");
+      });
+    } else {
+      registerIndicators();
+      initChart();
+      initShinyHandlers();
+      debugLog("应用启动完成");
     }
-
-    if (typeof klinecharts === "undefined") {
-      console.error("klinecharts 未加载");
-      setTimeout(init, 100);
-      return;
-    }
-
-    ChartController.init();
-    initShinyHandlers();
-    State.isRunning = true;
-
-    window.addEventListener("beforeunload", function() {
-      CacheManager.clearAll();
-      if (State.chart) {
-        try { klinecharts.dispose("chart"); } catch (e) {}
-      }
-    });
-
-    debugLog("初始化完成");
   }
-
-  init();
-
+  
+  start();
 })();
 '
+writeLines(js_content, "www/js/chartapp.js")
 
-  writeLines(js_content, "www/js/chartapp.js")
-
-  message("前端文件创建完成")
+message("前端文件创建完成")
 }
 
 create_frontend_files()
