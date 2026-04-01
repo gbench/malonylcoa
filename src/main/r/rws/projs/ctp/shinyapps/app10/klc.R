@@ -31,7 +31,7 @@ aggregate_kline <- function(ticks_df) {
     oint = last(OpenInterest)
   ), by = Period]
   data.table::setorder(kline, timestamp)
-  as.data.frame(kline[, .(timestamp, open, high, low, close, volume, oint)])
+  kline[, .(timestamp, open, high, low, close, volume, oint)]
 }
 
 # 合并K线数据框 - 修复版：新的数据覆盖旧的数据
@@ -66,13 +66,10 @@ ticks_to_kline <- function(ticks_df, period_minutes, base_kline = NULL) {
   ticks_df$Period <- floor_date_vectorized(ticks_df$DateTime, period_seconds)
   
   # 如果有base_kline，只保留 >= 最后一根K线时间戳的tick数据
-  if (!is.null(base_kline) && nrow(base_kline) > 0) {
+  flag <- !is.null(base_kline) && nrow(base_kline) > 0
+  if (flag) {
     last_ts <- max(base_kline$timestamp) / 1000
-    last_period <- floor_date_vectorized(
-      as.POSIXct(last_ts, origin = "1970-01-01"), 
-      period_seconds
-    )
-    
+    last_period <- floor_date_vectorized(as.POSIXct(last_ts, origin = "1970-01-01"), period_seconds)
     ticks_df <- ticks_df[ticks_df$Period >= last_period, ]
     if (nrow(ticks_df) == 0) return(NULL)
   }
@@ -82,7 +79,7 @@ ticks_to_kline <- function(ticks_df, period_minutes, base_kline = NULL) {
   if (nrow(new_kline) == 0) return(NULL)
   
   # 如果有base_kline，直接合并（新的会覆盖旧的）
-  if (!is.null(base_kline) && nrow(base_kline) > 0) {
+  if (flag) {
     result <- merge_kline_df(base_kline, new_kline)
   } else {
     result <- new_kline
@@ -483,7 +480,6 @@ server <- function(input, output, session) {
       if (current_count == last_count) return(NULL)
       
       state$tick_counts[[instrument_id]] <- current_count
-      
       base_kline <- state$get_kline_df(instrument_id)
       new_kline <- ticks_to_kline(ticks_df, period, base_kline)
       
@@ -493,26 +489,7 @@ server <- function(input, output, session) {
       
       if (instrument_id == state$current_instrument) {
         is_full <- is.null(base_kline) || nrow(base_kline) == 0
-        
-        # 转换为前端格式
-        kline_list <- lapply(1:nrow(new_kline), function(i) {
-          list(
-            timestamp = new_kline$timestamp[i],
-            open = new_kline$open[i],
-            high = new_kline$high[i],
-            low = new_kline$low[i],
-            close = new_kline$close[i],
-            volume = new_kline$volume[i],
-            oint = new_kline$oint[i]
-          )
-        })
-        
-        send_data <- list(
-          instrument = instrument_id,
-          type = if(is_full) "full" else "incremental",
-          ds = kline_list
-        )
-        
+        send_data <- list( instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = purrr::transpose(new_kline))
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", nrow(new_kline), "条"))
       }
@@ -1092,6 +1069,9 @@ js_content <- '
     
     const klineData = data.ds;
     if (!Array.isArray(klineData) || klineData.length === 0) {
+      debugLog(`klineData数据格式错误!
+        数据需要采用行记录数组格式: [{timestamp,open,high,low,close,volume,oint}] !
+        当前数据${JSON.stringify(klineData)}`);
       return;
     }
     
