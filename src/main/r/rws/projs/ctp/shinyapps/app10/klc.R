@@ -351,240 +351,343 @@ server <- function(input, output, session) {
   
   # 优化的get_incremental_kline函数
   get_incremental_kline <- function(ticks_df, period_minutes, instrument_id, cache) {
-    # 卫语句：早期返回
-    if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
-    
-    # 辅助函数：从缓存数据提取K线列表（向量化替代多个sapply）
-    extract_cached_kline <- function(cached_data) {
-      if (length(cached_data) == 0) return(NULL)
-      fields <- c("timestamp", "open", "high", "low", "close", "volume", "oint")
-      setNames(
-        lapply(fields, function(f) vapply(cached_data, `[[`, numeric(1), f)),
-        fields
-      )
-    }
-    
-    # 辅助函数：提取K线索引子集（函数式提取）
-    subset_kline <- function(kline, indices) {
-      if (length(indices) == 0) return(NULL)
-      lapply(kline, `[`, indices)
-    }
-    
-    # 辅助函数：格式化时间戳调试信息
-    format_ts_range <- function(timestamps) {
-      fmt <- function(ts) format(as.POSIXct(ts / 1000, origin = "1970-01-01"))
-      sprintf("K线时间范围: %s 到 %s", fmt(timestamps[1]), fmt(tail(timestamps, 1)))
-    }
-    
-    # 获取缓存数据（简化嵌套判断）
-    cached_entry <- cache[[instrument_id]]
-    cached_data <- if (!is.null(cached_entry)) cached_entry$data else NULL
-    cached_kline <- extract_cached_kline(cached_data)
-    
-    # 生成完整K线
-    full_kline <- ticks_to_kline(ticks_df, period_minutes, cached_kline)
-    if (is.null(full_kline) || length(full_kline$timestamp) == 0) return(NULL)
-    
-    last_ts <- max(full_kline$timestamp)
-    
-    # 无缓存：返回全量
-    if (is.null(cached_kline) || length(cached_kline$timestamp) == 0) {
-      # 修复：%d -> %.0f（时间戳可能是numeric）
-      add_debug(sprintf("全量加载: %s K线数量: %.0f", instrument_id, length(full_kline$timestamp)))
-      add_debug(format_ts_range(full_kline$timestamp))
-      return(list(type = "full", instrument = instrument_id, data = full_kline, last_timestamp = last_ts))
-    }
-    
-    cached_last_ts <- max(cached_kline$timestamp)
-    update_indices <- which(full_kline$timestamp >= cached_last_ts)
-    
-    if (length(update_indices) == 0) {
-      add_debug(sprintf("无新K线: %s", instrument_id))
+    if(is.null(ticks_df) || nrow(ticks_df) == 0) {
       return(NULL)
     }
     
-    # 提取最后一根K线
-    last_kline <- subset_kline(full_kline, update_indices[1])
+    # 获取缓存的K线数据
+    cached_kline <- NULL
+    if(!is.null(cache[[instrument_id]]) && !is.null(cache[[instrument_id]]$data)) {
+      # 将缓存的data转换为kline格式
+      cached_data <- cache[[instrument_id]]$data
+      if(length(cached_data) > 0) {
+        cached_kline <- list(
+          timestamp = sapply(cached_data, function(x) x$timestamp),
+          open = sapply(cached_data, function(x) x$open),
+          high = sapply(cached_data, function(x) x$high),
+          low = sapply(cached_data, function(x) x$low),
+          close = sapply(cached_data, function(x) x$close),
+          volume = sapply(cached_data, function(x) x$volume),
+          oint = sapply(cached_data, function(x) x$oint)
+        )
+      }
+    }
     
-    # 检查是否有新增K线（时间戳严格大于缓存最后时间戳）
-    new_indices <- update_indices[full_kline$timestamp[update_indices] > cached_last_ts]
-    new_kline <- subset_kline(full_kline, new_indices)
+    # 使用优化的ticks_to_kline，传入基准K线数据
+    full_kline <- ticks_to_kline(ticks_df, period_minutes, cached_kline)
     
-    has_update <- full_kline$timestamp[update_indices[1]] == cached_last_ts
-    has_new <- length(new_indices) > 0
+    if(is.null(full_kline) || length(full_kline$timestamp) == 0) {
+      return(NULL)
+    }
     
-    # 使用switch处理不同返回类型（替代深层if嵌套）
-    switch(
-      paste0(has_update, "_", has_new),
-      "TRUE_TRUE" = {
-        add_debug(sprintf("更新最后一根K线，时间戳: %.0f", last_kline$timestamp))
-        add_debug(sprintf("同时有新增K线: %.0f", length(new_indices)))
-        list(type = "update_and_incremental", instrument = instrument_id,
-            update_data = last_kline, new_data = new_kline, last_timestamp = last_ts)
-      },
-      "TRUE_FALSE" = {
-        add_debug(sprintf("更新最后一根K线，时间戳: %.0f", last_kline$timestamp))
-        list(type = "update", instrument = instrument_id, data = last_kline, last_timestamp = last_ts)
-      },
-      "FALSE_TRUE" = {
-        add_debug(sprintf("增量更新: %s 新增K线: %.0f", instrument_id, length(new_indices)))
-        list(type = "incremental", instrument = instrument_id, data = new_kline, last_timestamp = last_ts)
-      },
-      NULL
-    )
+    # 如果没有缓存，返回全量数据
+    if(is.null(cached_kline) || length(cached_kline$timestamp) == 0) {
+      add_debug(paste("全量加载:", instrument_id, "K线数量:", length(full_kline$timestamp)))
+      if(length(full_kline$timestamp) > 0) {
+        add_debug(paste("K线时间范围:", 
+          as.POSIXct(full_kline$timestamp[1]/1000, origin="1970-01-01"),
+          "到",
+          as.POSIXct(full_kline$timestamp[length(full_kline$timestamp)]/1000, origin="1970-01-01")))
+      }
+      return(list(
+        type = "full",
+        instrument = instrument_id,
+        data = full_kline,
+        last_timestamp = max(full_kline$timestamp)
+      ))
+    }
+    
+    # 比较新旧数据，找出变化
+    cached_last_ts <- max(cached_kline$timestamp)
+    
+    # 找出新增或更新的K线索引
+    update_indices <- which(full_kline$timestamp >= cached_last_ts)
+    
+    if(length(update_indices) == 0) {
+      add_debug(paste("无新K线:", instrument_id))
+      return(NULL)
+    }
+    
+    # 检查第一根需要更新的K线是否与缓存最后时间戳相同
+    if(full_kline$timestamp[update_indices[1]] == cached_last_ts) {
+      # 更新最后一根K线
+      add_debug(paste("更新最后一根K线，时间戳:", full_kline$timestamp[update_indices[1]]))
+      
+      new_last <- list(
+        timestamp = full_kline$timestamp[update_indices[1]],
+        open = full_kline$open[update_indices[1]],
+        high = full_kline$high[update_indices[1]],
+        low = full_kline$low[update_indices[1]],
+        close = full_kline$close[update_indices[1]],
+        volume = full_kline$volume[update_indices[1]],
+        oint = full_kline$oint[update_indices[1]]
+      )
+      
+      # 如果有更多新K线（时间戳大于缓存最后时间戳）
+      if(length(update_indices) > 1) {
+        new_indices <- update_indices[update_indices > which(full_kline$timestamp == cached_last_ts)]
+        if(length(new_indices) > 0) {
+          new_kline <- list(
+            timestamp = full_kline$timestamp[new_indices],
+            open = full_kline$open[new_indices],
+            high = full_kline$high[new_indices],
+            low = full_kline$low[new_indices],
+            close = full_kline$close[new_indices],
+            volume = full_kline$volume[new_indices],
+            oint = full_kline$oint[new_indices]
+          )
+          add_debug(paste("同时有新增K线:", length(new_indices)))
+          return(list(
+            type = "update_and_incremental",
+            instrument = instrument_id,
+            update_data = new_last,
+            new_data = new_kline,
+            last_timestamp = max(full_kline$timestamp)
+          ))
+        }
+      }
+      
+      return(list(
+        type = "update",
+        instrument = instrument_id,
+        data = new_last,
+        last_timestamp = max(full_kline$timestamp)
+      ))
+    } else {
+      # 只有新增K线（时间戳大于缓存最后时间戳）
+      new_kline <- list(
+        timestamp = full_kline$timestamp[update_indices],
+        open = full_kline$open[update_indices],
+        high = full_kline$high[update_indices],
+        low = full_kline$low[update_indices],
+        close = full_kline$close[update_indices],
+        volume = full_kline$volume[update_indices],
+        oint = full_kline$oint[update_indices]
+      )
+      
+      add_debug(paste("增量更新:", instrument_id, "新增K线:", length(update_indices)))
+      
+      return(list(
+        type = "incremental",
+        instrument = instrument_id,
+        data = new_kline,
+        last_timestamp = max(full_kline$timestamp)
+      ))
+    }
   }
   
   # 更新缓存
   update_cache <- function(instrument_id, result) {
-    cache <- .state$kline_cache
-    if (is.null(cache[[instrument_id]])) {
-      cache[[instrument_id]] <- list(data = list())
-      .state$kline_cache <- cache
+    # 获取或创建缓存
+    if(is.null(.state$kline_cache[[instrument_id]])) {
+      .state$kline_cache[[instrument_id]] <- list(data = list())
     }
     
-    # 向量化：将kline list转换为list of records
-    kline_to_records <- function(kline) {
-      if (is.null(kline) || length(kline$timestamp) == 0) return(list())
-      fields <- c("timestamp", "open", "high", "low", "close", "volume", "oint")
-      n <- length(kline$timestamp)
-      lapply(seq_len(n), function(i) {
-        setNames(lapply(fields, function(f) kline[[f]][i]), fields)
-      })
-    }
-    
-    # 获取当前缓存数据
-    cache_data <- cache[[instrument_id]]$data
-    
-    # 统一处理四种类型
-    switch(result$type,
-      "full" = {
-        cache_data <- kline_to_records(result$data)
-        msg <- sprintf("全量缓存更新: %s 缓存K线数量: %d", instrument_id, length(cache_data))
-      },
-      "incremental" = {
-        new_records <- kline_to_records(result$data)
-        cache_data <- c(cache_data, new_records)
-        msg <- sprintf("增量缓存更新: %s 新增K线数量: %d", instrument_id, length(new_records))
-      },
-      "update" = {
-        if (length(cache_data) > 0) {
-          cache_data[[length(cache_data)]] <- setNames(
-            lapply(c("timestamp", "open", "high", "low", "close", "volume", "oint"), 
-                  function(f) result$data[[f]]),
-            c("timestamp", "open", "high", "low", "close", "volume", "oint")
-          )
-        }
-        msg <- sprintf("更新缓存最后一根K线: %s", instrument_id)
-      },
-      "update_and_incremental" = {
-        if (length(cache_data) > 0) {
-          cache_data[[length(cache_data)]] <- setNames(
-            lapply(c("timestamp", "open", "high", "low", "close", "volume", "oint"), 
-                  function(f) result$update_data[[f]]),
-            c("timestamp", "open", "high", "low", "close", "volume", "oint")
-          )
-        }
-        new_records <- kline_to_records(result$new_data)
-        cache_data <- c(cache_data, new_records)
-        msg <- sprintf("更新缓存: 更新最后一根 + 新增 %d 根K线", length(new_records))
+    # 根据类型更新缓存
+    if(result$type == "full") {
+      # 全量替换
+      cache_data <- list()
+      for(i in seq_along(result$data$timestamp)) {
+        cache_data[[i]] <- list(
+          timestamp = result$data$timestamp[i],
+          open = result$data$open[i],
+          high = result$data$high[i],
+          low = result$data$low[i],
+          close = result$data$close[i],
+          volume = result$data$volume[i],
+          oint = result$data$oint[i]
+        )
       }
-    )
-    
-    .state$kline_cache[[instrument_id]]$data <- cache_data
-    add_debug(msg)
+      .state$kline_cache[[instrument_id]]$data <- cache_data
+      add_debug(paste("全量缓存更新:", instrument_id, "缓存K线数量:", length(cache_data)))
+      
+    } else if(result$type == "incremental") {
+      # 增量添加
+      for(i in seq_along(result$data$timestamp)) {
+        .state$kline_cache[[instrument_id]]$data[[length(.state$kline_cache[[instrument_id]]$data) + 1]] <- list(
+          timestamp = result$data$timestamp[i],
+          open = result$data$open[i],
+          high = result$data$high[i],
+          low = result$data$low[i],
+          close = result$data$close[i],
+          volume = result$data$volume[i],
+          oint = result$data$oint[i]
+        )
+      }
+      add_debug(paste("增量缓存更新:", instrument_id, "新增K线数量:", length(result$data$timestamp)))
+      
+    } else if(result$type == "update") {
+      # 更新最后一根K线
+      if(length(.state$kline_cache[[instrument_id]]$data) > 0) {
+        last_idx <- length(.state$kline_cache[[instrument_id]]$data)
+        .state$kline_cache[[instrument_id]]$data[[last_idx]] <- list(
+          timestamp = result$data$timestamp,
+          open = result$data$open,
+          high = result$data$high,
+          low = result$data$low,
+          close = result$data$close,
+          volume = result$data$volume,
+          oint = result$data$oint
+        )
+        add_debug(paste("更新缓存最后一根K线:", instrument_id))
+      }
+    } else if(result$type == "update_and_incremental") {
+      # 更新最后一根并添加新K线
+      if(length(.state$kline_cache[[instrument_id]]$data) > 0) {
+        last_idx <- length(.state$kline_cache[[instrument_id]]$data)
+        .state$kline_cache[[instrument_id]]$data[[last_idx]] <- list(
+          timestamp = result$update_data$timestamp,
+          open = result$update_data$open,
+          high = result$update_data$high,
+          low = result$update_data$low,
+          close = result$update_data$close,
+          volume = result$update_data$volume,
+          oint = result$update_data$oint
+        )
+      }
+      # 添加新K线
+      for(i in seq_along(result$new_data$timestamp)) {
+        .state$kline_cache[[instrument_id]]$data[[length(.state$kline_cache[[instrument_id]]$data) + 1]] <- list(
+          timestamp = result$new_data$timestamp[i],
+          open = result$new_data$open[i],
+          high = result$new_data$high[i],
+          low = result$new_data$low[i],
+          close = result$new_data$close[i],
+          volume = result$new_data$volume[i],
+          oint = result$new_data$oint[i]
+        )
+      }
+      add_debug(paste("更新缓存: 更新最后一根 + 新增", length(result$new_data$timestamp), "根K线"))
+    }
   }
-
+  
+  # 启动K线更新器
   start_kline_updater <- function() {
-    # 辅助函数：构建发送数据（向量化）
-    build_send_data <- function(instrument, type, kline) {
-      fields <- c("timestamp", "open", "high", "low", "close", "volume", "oint")
-      ds <- if (type == "update" && !is.list(kline$timestamp)) {
-        # 单条记录（timestamp是标量）
-        setNames(lapply(fields, function(f) kline[[f]]), fields)
-      } else {
-        # 多条记录
-        n <- length(kline$timestamp)
-        lapply(seq_len(n), function(i) {
-          setNames(lapply(fields, function(f) kline[[f]][i]), fields)
-        })
-      }
-      list(instrument = instrument, type = type, ds = ds)
-    }
-    
     update_kline <- function() {
-      if (!.state$running) return()
+      if(!.state$running) return()
       
-      req_instrument <- .state$current_instrument
-      req_period <- .state$current_period
+      client_val <- .state$ctpclient
+      req_instrument_val <- .state$current_instrument
+      period_val <- .state$current_period
       
-      # 辅助函数：发送并缓存（定义在内部以捕获req_instrument）
-      send_and_cache <- function(send_data, result, debug_msg) {
-        update_cache(req_instrument, result)
-        add_debug(debug_msg)
-        session$sendCustomMessage("push", send_data)
-      }
-      
-      # 早期返回条件
-      if (is.null(.state$ctpclient) || req_instrument == "") {
-        schedule_next()
+      if(is.null(client_val) || req_instrument_val == "") {
+        if(.state$running) {
+          timers$kline_timer <- later::later(update_kline, 1)
+        }
         return()
       }
       
       tryCatch({
-        ticks_df <- .state$ctpclient$ticks(req_instrument)
+        ticks_df <- client_val$ticks(req_instrument_val)
         
-        if (!is.null(ticks_df) && nrow(ticks_df) > 0) {
-          # 更新tick计数
+        if(!is.null(ticks_df) && nrow(ticks_df) > 0) {
           current_tick_count <- nrow(ticks_df)
-          if (current_tick_count != .state$last_tick_count) {
-            add_debug(sprintf("Tick更新: %s 数量: %d", req_instrument, current_tick_count))
+          if(current_tick_count != .state$last_tick_count) {
+            add_debug(paste("Tick更新:", req_instrument_val, "数量:", current_tick_count))
             .state$last_tick_count <- current_tick_count
           }
           
-          result <- get_incremental_kline(ticks_df, req_period, req_instrument, .state$kline_cache)
-          if (is.null(result)) {
-            schedule_next()
-            return()
-          }
+          result <- get_incremental_kline(ticks_df, period_val, req_instrument_val, .state$kline_cache)
           
-          # 统一处理所有类型
-          switch(result$type,
-            "full" = {
-              send_data <- build_send_data(req_instrument, "full", result$data)
-              send_and_cache(send_data, result, 
-                            sprintf("发送全量数据: %d 根K线", length(result$data$timestamp)))
-            },
-            "incremental" = {
-              send_data <- build_send_data(req_instrument, "incremental", result$data)
-              send_and_cache(send_data, result,
-                            sprintf("发送增量数据: %d 根新K线", length(result$data$timestamp)))
-            },
-            "update" = {
-              send_data <- build_send_data(req_instrument, "update", result$data)
-              send_and_cache(send_data, result, "发送更新数据: 更新最后一根K线")
-            },
-            "update_and_incremental" = {
+          if(!is.null(result)) {
+            # 准备发送到前端的数据
+            if(result$type == "full") {
+              ds_list <- vector("list", length(result$data$timestamp)) 
+              for(i in seq_along(result$data$timestamp)) {
+                ds_list[[i]] <- list(
+                  timestamp = result$data$timestamp[i],
+                  open = result$data$open[i],
+                  high = result$data$high[i],
+                  low = result$data$low[i],
+                  close = result$data$close[i],
+                  volume = result$data$volume[i],
+                  oint = result$data$oint[i]
+                )
+              }
+              send_data <- list(instrument = req_instrument_val, type = "full", ds = ds_list)
+              update_cache(req_instrument_val, result)
+              add_debug(paste("发送全量数据:", length(ds_list), "根K线"))
+              session$sendCustomMessage("push", send_data)
+              
+            } else if(result$type == "incremental") {
+              ds_list <- vector("list", length(result$data$timestamp)) 
+              for(i in seq_along(result$data$timestamp)) {
+                ds_list[[i]] <- list(
+                  timestamp = result$data$timestamp[i],
+                  open = result$data$open[i],
+                  high = result$data$high[i],
+                  low = result$data$low[i],
+                  close = result$data$close[i],
+                  volume = result$data$volume[i],
+                  oint = result$data$oint[i]
+                )
+              }
+              send_data <- list(instrument = req_instrument_val, type = "incremental", ds = ds_list)
+              update_cache(req_instrument_val, result)
+              add_debug(paste("发送增量数据:", length(ds_list), "根新K线"))
+              session$sendCustomMessage("push", send_data)
+              
+            } else if(result$type == "update") {
+              send_data <- list(
+                instrument = req_instrument_val,
+                type = "update",
+                ds = list(
+                  timestamp = result$data$timestamp,
+                  open = result$data$open,
+                  high = result$data$high,
+                  low = result$data$low,
+                  close = result$data$close,
+                  volume = result$data$volume,
+                  oint = result$data$oint
+                )
+              )
+              update_cache(req_instrument_val, result)
+              add_debug(paste("发送更新数据: 更新最后一根K线"))
+              session$sendCustomMessage("push", send_data)
+              
+            } else if(result$type == "update_and_incremental") {
               # 先发送更新
-              update_data <- build_send_data(req_instrument, "update", result$update_data)
+              update_data <- list(
+                instrument = req_instrument_val,
+                type = "update",
+                ds = list(
+                  timestamp = result$update_data$timestamp,
+                  open = result$update_data$open,
+                  high = result$update_data$high,
+                  low = result$update_data$low,
+                  close = result$update_data$close,
+                  volume = result$update_data$volume,
+                  oint = result$update_data$oint
+                )
+              )
               session$sendCustomMessage("push", update_data)
+              
               # 再发送新增
-              new_data <- build_send_data(req_instrument, "incremental", result$new_data)
+              ds_list <- list()
+              for(i in seq_along(result$new_data$timestamp)) {
+                ds_list[[i]] <- list(
+                  timestamp = result$new_data$timestamp[i],
+                  open = result$new_data$open[i],
+                  high = result$new_data$high[i],
+                  low = result$new_data$low[i],
+                  close = result$new_data$close[i],
+                  volume = result$new_data$volume[i],
+                  oint = result$new_data$oint[i]
+                )
+              }
+              new_data <- list(instrument = req_instrument_val, type = "incremental", ds = ds_list)
               session$sendCustomMessage("push", new_data)
-              # 更新缓存
-              update_cache(req_instrument, result)
-              add_debug("发送更新+增量数据")
+              
+              update_cache(req_instrument_val, result)
+              add_debug(paste("发送更新+增量数据"))
             }
-          )
+          }
         }
       }, error = function(e) {
-        add_debug(sprintf("更新K线错误: %s", e$message))
+        add_debug(paste("更新K线错误:", e$message))
       })
       
-      schedule_next()
-    }
-    
-    schedule_next <- function() {
-      if (.state$running && !is.null(.state$ctpclient)) {
+      if(.state$running && !is.null(.state$ctpclient)) {
         timers$kline_timer <- later::later(update_kline, 1)
       }
     }
@@ -598,16 +701,17 @@ server <- function(input, output, session) {
     monitor_prices <- function() {
       if(!.state$running) return()
       
-      req_instrument <- .state$current_instrument
+      client_val <- .state$ctpclient
+      req_instrument_val <- .state$current_instrument
       
-      if(is.null(.state$ctpclient)) return()
-      if(req_instrument != "") {
+      if(is.null(client_val)) return()
+      if(req_instrument_val != "") {
         tryCatch({
-          stats <- .state$ctpclient$stats(req_instrument)
+          stats <- client_val$stats(req_instrument_val)
           if(!is.null(stats) && is.list(stats)) {
             output$price_info <- renderPrint({
               cat("======== 实时行情 ========\n")
-              cat(sprintf("合约: %s\n", req_instrument))
+              cat(sprintf("合约: %s\n", req_instrument_val))
               cat(sprintf("最新价: %.2f\n", stats$last))
               cat(sprintf("均价: %.2f\n", stats$mean))
               cat(sprintf("最高价: %.2f\n", stats$max))
@@ -634,7 +738,9 @@ server <- function(input, output, session) {
   update_instruments_async <- function() {
     if(!.state$running) return()
     
-    if(is.null(.state$ctpclient)) {
+    client_val <- .state$ctpclient
+    
+    if(is.null(client_val)) {
       if(.state$running && !is.null(.state$ctpclient)) {
         timers$instrument_timer <- later::later(update_instruments_async, 3)
       }
@@ -642,8 +748,8 @@ server <- function(input, output, session) {
     }
     
     instr <- tryCatch({
-      if(!is.null(.state$ctpclient$instrumentids)) {
-        .state$ctpclient$instrumentids
+      if(!is.null(client_val$instrumentids)) {
+        client_val$instrumentids
       } else {
         character()
       }
