@@ -490,7 +490,7 @@ server <- function(input, output, session) {
       if (instrument_id == state$current_instrument) {
         is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0 # 是否进行全量更新，flag 表示强制全量！
         ds <- purrr::transpose(if(is_full) new_kline else new_kline[new_kline$timestamp >= max(base_kline$timestamp), ]) # base_kline不再发送
-        send_data <- list( instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
+        send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
       }
