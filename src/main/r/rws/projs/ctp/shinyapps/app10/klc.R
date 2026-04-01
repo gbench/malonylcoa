@@ -1071,7 +1071,7 @@ js_content <- '
     if (!Array.isArray(klineData) || klineData.length === 0) {
       debugLog(`klineData数据格式错误!
         数据需要采用行记录数组格式: [{timestamp,open,high,low,close,volume,oint}] !
-        当前数据${JSON.stringify(klineData)}`);
+        当前数据: ${JSON.stringify(klineData).substr(0, 100)} ...`);
       return;
     }
     
