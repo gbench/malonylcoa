@@ -1,4 +1,4 @@
-# app.R - 修复版v2.2：修复停止时未发送undump导致的资源泄漏
+# app.R - 修复版v3.0：解决启动停止数据同步，合并CSS，增加盘口档位
 
 # 加载必要的包
 required_packages <- c("later", "shiny", "shinydashboard", "dplyr", "jsonlite", "lubridate", "data.table", "purrr", "R6")
@@ -247,11 +247,12 @@ InstrumentStateManager <- R6::R6Class(
   )
 )
 
-# ============ UI模块 ============
+# ============ UI模块 - CSS已合并到HTML中 ============
 
 ui <- fluidPage(
   tags$head(
     tags$style(HTML("
+      /* 合并后的CSS样式 */
       body {
         background-color: #1e1e2f;
         color: #e0e0e0;
@@ -343,11 +344,54 @@ ui <- fluidPage(
       }
       .debug-timestamp { color: #667eea; }
       .shiny-input-container { margin-bottom: 0; }
+
+      /* 盘口档位样式 */
+      .order-book {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .order-book-section {
+        background: rgba(0,0,0,0.2);
+        border-radius: 6px;
+        padding: 10px;
+      }
+      .order-book-title {
+        font-size: 11px;
+        color: #a0aec0;
+        margin-bottom: 8px;
+        text-align: center;
+        font-weight: 600;
+      }
+      .order-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        padding: 2px 0;
+        font-family: 'Fira Code', monospace;
+      }
+      .ask-price { color: #ef5350; }
+      .bid-price { color: #26a69a; }
+      .order-volume { color: #e0e0e0; }
+
+      /* 通知样式 */
+      .shiny-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      }
     "))
   ),
 
   div(class = "title-panel", 
-      titlePanel("CTP 实时K线图 - 修复版 v2.2")),
+      titlePanel("CTP 实时K线图 - 修复版 v3.0")),
 
   sidebarLayout(
     sidebarPanel(
@@ -364,10 +408,21 @@ ui <- fluidPage(
         )
       ),
 
-      # 实时价格信息
+      # 实时行情信息 - 包含盘口档位
       div(class = "info-box",
         h4("实时行情"),
-        verbatimTextOutput("price_info", placeholder = TRUE)
+        verbatimTextOutput("price_info", placeholder = TRUE),
+        # 盘口档位显示
+        div(class = "order-book",
+          div(class = "order-book-section",
+            div(class = "order-book-title", "卖盘 Ask"),
+            uiOutput("ask_levels")
+          ),
+          div(class = "order-book-section",
+            div(class = "order-book-title", "买盘 Bid"),
+            uiOutput("bid_levels")
+          )
+        )
       ),
 
       div(class = "control-group",
@@ -433,6 +488,9 @@ server <- function(input, output, session) {
   running <- TRUE
   debug_messages <- character()
 
+  # 当前tick数据缓存（用于盘口显示）
+  current_tick <- reactiveVal(NULL)
+
   # 定时器句柄
   timers <- list(instrument = NULL, price = NULL, kline = NULL)
 
@@ -477,9 +535,63 @@ server <- function(input, output, session) {
     paste0("当前: ", state$current_instrument)
   })
 
+  # 盘口档位显示 - 卖盘
+  output$ask_levels <- renderUI({
+    tick <- current_tick()
+    if (is.null(tick)) {
+      return(HTML("<div style='color: #718096; text-align: center;'>等待数据...</div>"))
+    }
+
+    # 获取5档卖盘数据
+    rows <- lapply(5:1, function(i) {
+      price_key <- paste0("AskPrice", i)
+      vol_key <- paste0("AskVolume", i)
+      price <- tick[[price_key]] %||% 0
+      vol <- tick[[vol_key]] %||% 0
+
+      if (price > 0) {
+        div(class = "order-row",
+          span(class = "ask-price", sprintf("%.2f", price)),
+          span(class = "order-volume", sprintf("%d", vol))
+        )
+      } else {
+        div(class = "order-row", span("--"), span("--"))
+      }
+    })
+
+    do.call(tagList, rows)
+  })
+
+  # 盘口档位显示 - 买盘
+  output$bid_levels <- renderUI({
+    tick <- current_tick()
+    if (is.null(tick)) {
+      return(HTML("<div style='color: #718096; text-align: center;'>等待数据...</div>"))
+    }
+
+    # 获取5档买盘数据
+    rows <- lapply(1:5, function(i) {
+      price_key <- paste0("BidPrice", i)
+      vol_key <- paste0("BidVolume", i)
+      price <- tick[[price_key]] %||% 0
+      vol <- tick[[vol_key]] %||% 0
+
+      if (price > 0) {
+        div(class = "order-row",
+          span(class = "bid-price", sprintf("%.2f", price)),
+          span(class = "order-volume", sprintf("%d", vol))
+        )
+      } else {
+        div(class = "order-row", span("--"), span("--"))
+      }
+    })
+
+    do.call(tagList, rows)
+  })
+
   # ============ 关键修复：正确的清理顺序 ============
 
-  # 步骤1：发送 undump 命令到服务器（必须在 stop 之前）
+  # 步骤1：发送 undump 命令到服务器
   send_undump_command <- function() {
     if (is.null(ctp_client)) return(FALSE)
 
@@ -490,11 +602,11 @@ server <- function(input, output, session) {
 
         writeLines(undump_cmd, ctp_client$.conn)
 
-        # 读取并丢弃返回数据（等待服务器确认）
+        # 读取并丢弃返回数据
         response <- base::readLines(ctp_client$.conn, n = 1, warn = FALSE)
         add_debug(paste0("undump 响应: ", paste(response, collapse = ", ")))
 
-        Sys.sleep(0.1)  # 给服务器一点时间处理
+        Sys.sleep(0.1)
         return(TRUE)
       }
     }, error = function(e) {
@@ -516,19 +628,19 @@ server <- function(input, output, session) {
     })
   }
 
-  # 完整的清理流程
+  # 完整的清理流程 - 关键修复：确保完全重置
   reset_env <- function(full_reset = TRUE) {
     add_debug("开始完整清理流程...")
 
-    # 关键顺序：1.发送undump -> 2.停止客户端 -> 3.清理变量
     if (!is.null(ctp_client)) {
-      send_undump_command()  # 先通知服务器停止写入
-      stop_client()          # 再停止本地连接
+      send_undump_command()
+      stop_client()
     }
 
     ctp_client <<- NULL
-    is_connected(FALSE)  # 更新UI状态
+    is_connected(FALSE)
     available_instruments <<- character()
+    current_tick(NULL)  # 清空当前tick
 
     if (full_reset) {
       state$clear_all_cache()
@@ -738,6 +850,7 @@ server <- function(input, output, session) {
     update_kline()
   }
 
+  # 关键修复：价格监控同时更新盘口数据
   start_price_monitor <- function() {
     monitor_prices <- function() {
       if (!running || is.null(ctp_client)) return()
@@ -749,6 +862,7 @@ server <- function(input, output, session) {
       }
 
       tryCatch({
+        # 获取stats用于基础行情显示
         stats <- ctp_client$stats(current)
         if (!is.null(stats) && is.list(stats)) {
           output$price_info <- renderPrint({
@@ -761,6 +875,15 @@ server <- function(input, output, session) {
             cat("时间:   ", stats$updatetime, "\n")
           })
         }
+
+        # 关键：获取最新tick数据用于盘口显示
+        ticks_df <- ctp_client$ticks(current)
+        if (!is.null(ticks_df) && nrow(ticks_df) > 0) {
+          # 获取最后一行作为当前tick
+          latest_tick <- as.list(ticks_df[nrow(ticks_df), ])
+          current_tick(latest_tick)
+        }
+
       }, error = function(e) {
         # 静默处理
       })
@@ -822,6 +945,7 @@ server <- function(input, output, session) {
 
       state$set_current(new_instrument, input$kline_period)
       state$tick_counts[[new_instrument]] <- 0
+      current_tick(NULL)  # 清空当前tick，等待新数据
 
       session$sendCustomMessage("switchInstrument", list(
         instrument = new_instrument,
@@ -858,34 +982,27 @@ server <- function(input, output, session) {
     add_debug(paste0("推送周期已设置为: ", input$push_interval, " 秒"))
   })
 
-  # 启动连接
+  # 启动连接 - 关键修复：确保状态完全重置
   observeEvent(input$connect_btn, {
     add_debug("正在启动CTP连接...")
 
+    # 关键：如果已有连接，先完全清理
     if (!is.null(ctp_client)) {
-      showModal(modalDialog(
-        title = "确认重连",
-        "当前已有连接，是否重新启动？",
-        easyClose = FALSE,
-        footer = tagList(
-          modalButton("取消"),
-          actionButton("confirm_reconnect", "确认", class = "btn-primary")
-        )
-      ))
-      return()
+      add_debug("检测到已有连接，先执行清理...")
+      reset_env(full_reset = TRUE)
+      Sys.sleep(0.5)  # 给清理留出时间
     }
 
-    do_connect()
-  })
-
-  observeEvent(input$confirm_reconnect, {
-    removeModal()
     do_connect()
   })
 
   do_connect <- function() {
     stop_timers()
     running <<- TRUE
+
+    # 关键：重置状态确保数据同步
+    state$clear_all_cache()
+    current_tick(NULL)
 
     tryCatch({
       if (!exists("ctpd_async")) {
@@ -915,20 +1032,19 @@ server <- function(input, output, session) {
     })
   }
 
-  # ============ 关键修复：正确的停止顺序 ============
+  # 停止连接
   observeEvent(input$disconnect_btn, {
     if (!is.null(ctp_client)) {
       add_debug("正在停止CTP连接...")
       running <<- FALSE
       stop_timers()
 
-      # 关键：先通知前端重置，再执行清理
+      # 通知前端重置
       session$sendCustomMessage("resetAll", list(
         reason = "disconnect",
         timestamp = as.numeric(Sys.time())
       ))
 
-      # 关键：正确的清理顺序
       reset_env(full_reset = TRUE)
 
       output$price_info <- renderPrint({
@@ -949,6 +1065,7 @@ server <- function(input, output, session) {
 
       state$clear_instrument_cache(current)
       state$tick_counts[[current]] <- 0
+      current_tick(NULL)
 
       session$sendCustomMessage("clearChartForInstrument", list(
         instrument = current,
@@ -981,7 +1098,6 @@ server <- function(input, output, session) {
   session$onSessionEnded(function() {
     running <<- FALSE
     stop_timers()
-    # 会话结束时也要正确清理
     if (!is.null(ctp_client)) {
       send_undump_command()
       stop_client()
@@ -1002,13 +1118,12 @@ create_frontend_files <- function() {
   if (!dir.exists("www/js")) dir.create("www/js")
   if (!dir.exists("www/css")) dir.create("www/css")
 
-  writeLines('
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-.shiny-notification { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-', "www/css/style.css")
+  # CSS已合并到HTML中，但保留空文件避免404
+  writeLines('/* CSS已合并到app.R的HTML中 */', "www/css/style.css")
 
+  # 前端JS - 关键修复：确保启动时重新加载数据
   writeLines('
-// chartapp.js - 修复版v2.2
+// chartapp.js - 修复版v3.0：解决启动停止数据同步问题
 (function () {
   "use strict";
 
@@ -1026,7 +1141,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     dataVersion: 0,
     isSwitching: false,
     pendingUpdates: new Map(),
-    isRunning: false
+    isRunning: false,
+    isInitialized: false  // 新增：标记是否已初始化
   };
 
   function debugLog(msg, data) {
@@ -1117,22 +1233,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     clearAll() {
       State.instrumentCache.clear();
       debugLog("清除所有缓存");
-    },
-
-    getStats() {
-      const stats = [];
-      State.instrumentCache.forEach((value, key) => {
-        stats.push(`${key}: ${value.data.length}条(v${value.version})`);
-      });
-      return stats.join(", ");
     }
   };
 
   const ChartController = {
     init() {
+      // 关键修复：如果已存在，先销毁
       if (State.chart) {
-        debugLog("图表已存在，跳过初始化");
-        return;
+        debugLog("图表已存在，先销毁再重建");
+        this.destroy();
       }
 
       try {
@@ -1165,6 +1274,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
         this.registerIndicators();
         this.createIndicators();
 
+        State.isInitialized = true;
         debugLog("图表初始化完成");
       } catch (e) {
         errorLog("图表初始化失败", e);
@@ -1270,6 +1380,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       try {
         klinecharts.dispose("chart");
         State.chart = null;
+        State.isInitialized = false;
         debugLog("图表已销毁");
       } catch (e) {
         errorLog("销毁图表失败", e);
@@ -1426,22 +1537,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     }
   };
 
+  // 关键修复：完全重置所有状态
   function resetAllState(reason) {
     debugLog(`执行完全重置，原因: ${reason}`);
 
+    // 1. 销毁图表
     ChartController.destroy();
+
+    // 2. 清除所有缓存
     CacheManager.clearAll();
 
+    // 3. 重置状态变量
     State.currentInstrument = null;
     State.previousInstrument = null;
     State.isSwitching = false;
     State.pendingUpdates.clear();
     State.dataVersion = 0;
     State.isRunning = false;
+    State.isInitialized = false;
 
+    // 4. 重新初始化图表
     setTimeout(() => {
       ChartController.init();
-      debugLog("状态已完全重置，图表重新初始化");
+      debugLog("状态已完全重置，图表重新初始化完成");
     }, 100);
   }
 
@@ -1499,10 +1617,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
       return;
     }
 
+    // 初始化图表
     ChartController.init();
+
+    // 注册Shiny处理器
     initShinyHandlers();
+
     State.isRunning = true;
 
+    // 页面卸载时清理
     window.addEventListener("beforeunload", function() {
       CacheManager.clearAll();
       if (State.chart) {
@@ -1515,6 +1638,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
     debugLog("应用初始化完成");
   }
 
+  // 启动
   init();
 
 })();
