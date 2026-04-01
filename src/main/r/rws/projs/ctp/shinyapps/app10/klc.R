@@ -1,4 +1,4 @@
-# app.R - 修复版v3.1：CSS分离，布局紧凑
+# app.R - 修复版v3.2：使用reactivePoll优化闪屏问题
 
 # 加载必要的包
 required_packages <- c("later", "shiny", "shinydashboard", "dplyr", "jsonlite", "lubridate", "data.table", "purrr", "R6")
@@ -256,7 +256,7 @@ ui <- fluidPage(
   ),
 
   div(class = "title-panel", 
-      titlePanel("CTP 实时K线图 - v3.1")),
+      titlePanel("CTP 实时K线图 - v3.2")),
 
   sidebarLayout(
     sidebarPanel(
@@ -272,7 +272,7 @@ ui <- fluidPage(
       # 实时行情 - 包含盘口档位
       div(class = "market-data",
         div(class = "section-title", "实时行情"),
-        verbatimTextOutput("price_info", placeholder = TRUE),
+        uiOutput("price_info"),
         # 盘口档位
         div(class = "order-book",
           div(class = "order-book-section",
@@ -361,8 +361,14 @@ server <- function(input, output, session) {
   running <- TRUE
   debug_messages <- character()
   current_tick <- reactiveVal(NULL)
+  
+  # 缓存上次的价格数据，用于检测变化
+  last_price_data <- reactiveValues(
+    last = NULL, mean = NULL, max = NULL, min = NULL, 
+    n = NULL, updatetime = NULL, instrument = NULL
+  )
 
-  timers <- list(instrument = NULL, price = NULL, kline = NULL)
+  timers <- list(instrument = NULL, kline = NULL)
 
   add_debug <- function(msg) {
     timestamp <- format(Sys.time(), "%H:%M:%S.%OS3")
@@ -399,6 +405,128 @@ server <- function(input, output, session) {
   output$active_instrument_display <- renderText({
     req(state$current_instrument)
     paste0(" | ", state$current_instrument)
+  })
+
+  # 使用 reactivePoll 优化价格数据获取
+  price_data <- reactivePoll(
+    intervalMillis = 500,  # 500ms 检查一次
+    session = session,
+    checkFunc = function() {
+      # 检查数据是否有更新
+      if (is.null(ctp_client) || is.null(state$current_instrument)) {
+        return(list(timestamp = NULL, instrument = NULL))
+      }
+      
+      stats <- tryCatch(ctp_client$stats(state$current_instrument), error = function(e) NULL)
+      ticks_df <- tryCatch(ctp_client$ticks(state$current_instrument), error = function(e) NULL)
+      
+      list(
+        timestamp = if(!is.null(stats)) stats$updatetime else NULL,
+        instrument = state$current_instrument,
+        tick_count = if(!is.null(ticks_df)) nrow(ticks_df) else 0
+      )
+    },
+    valueFunc = function() {
+      # 获取最新数据
+      if (is.null(ctp_client) || is.null(state$current_instrument)) {
+        return(list(stats = NULL, current_tick = NULL))
+      }
+      
+      stats <- tryCatch(ctp_client$stats(state$current_instrument), error = function(e) NULL)
+      ticks_df <- tryCatch(ctp_client$ticks(state$current_instrument), error = function(e) NULL)
+      
+      current_tick_val <- NULL
+      if (!is.null(ticks_df) && nrow(ticks_df) > 0) {
+        current_tick_val <- as.list(ticks_df[nrow(ticks_df), ])
+      }
+      
+      list(
+        stats = stats,
+        current_tick = current_tick_val
+      )
+    }
+  )
+  
+  # 监听价格数据变化并更新UI
+  observe({
+    data <- price_data()
+    
+    if (!is.null(data$stats) && !is.null(data$stats$last)) {
+      stats <- data$stats
+      current_instr <- state$current_instrument
+      
+      # 检测数据是否真正发生变化
+      has_changed <- FALSE
+      
+      if (is.null(last_price_data$last) || !identical(stats$last, last_price_data$last)) {
+        last_price_data$last <- stats$last
+        has_changed <- TRUE
+      }
+      if (is.null(last_price_data$mean) || !identical(stats$mean, last_price_data$mean)) {
+        last_price_data$mean <- stats$mean
+        has_changed <- TRUE
+      }
+      if (is.null(last_price_data$max) || !identical(stats$max, last_price_data$max)) {
+        last_price_data$max <- stats$max
+        has_changed <- TRUE
+      }
+      if (is.null(last_price_data$min) || !identical(stats$min, last_price_data$min)) {
+        last_price_data$min <- stats$min
+        has_changed <- TRUE
+      }
+      if (is.null(last_price_data$n) || !identical(stats$n, last_price_data$n)) {
+        last_price_data$n <- stats$n
+        has_changed <- TRUE
+      }
+      if (is.null(last_price_data$updatetime) || !identical(stats$updatetime, last_price_data$updatetime)) {
+        last_price_data$updatetime <- stats$updatetime
+        has_changed <- TRUE
+      }
+      if (is.null(last_price_data$instrument) || !identical(current_instr, last_price_data$instrument)) {
+        last_price_data$instrument <- current_instr
+        has_changed <- TRUE
+      }
+      
+      # 只有数据变化时才更新UI
+      if (has_changed) {
+        output$price_info <- renderUI({
+          tags$div(
+            class = "price-info",
+            tags$div(class = "price-current", current_instr),
+            tags$div(
+              class = "price-stats-row",
+              tags$span(class = "price-label", "最新: "),
+              tags$span(class = "price-value", sprintf("%.2f", stats$last)),
+              tags$span(class = "price-label", " 均: "),
+              tags$span(class = "price-value", sprintf("%.2f", stats$mean))
+            ),
+            tags$div(
+              class = "price-stats-row",
+              tags$span(class = "price-label", "最高: "),
+              tags$span(class = "price-value", sprintf("%.2f", stats$max)),
+              tags$span(class = "price-label", " 低: "),
+              tags$span(class = "price-value", sprintf("%.2f", stats$min))
+            ),
+            tags$div(
+              class = "price-meta",
+              tags$span("Ticks: ", tags$strong(stats$n)),
+              tags$span(" 时间: ", stats$updatetime)
+            )
+          )
+        })
+      }
+    }
+    
+    # 更新盘口数据
+    if (!is.null(data$current_tick)) {
+      current_tick_val <- current_tick()
+      # 检查盘口数据是否变化（比较最新价）
+      if (is.null(current_tick_val) || 
+          !identical(data$current_tick$LastPrice, current_tick_val$LastPrice) ||
+          !identical(data$current_tick$AskPrice1, current_tick_val$AskPrice1)) {
+        current_tick(data$current_tick)
+      }
+    }
   })
 
   # 盘口显示
@@ -483,6 +611,16 @@ server <- function(input, output, session) {
     is_connected(FALSE)
     available_instruments <<- character()
     current_tick(NULL)
+    
+    # 重置缓存数据
+    last_price_data$last <- NULL
+    last_price_data$mean <- NULL
+    last_price_data$max <- NULL
+    last_price_data$min <- NULL
+    last_price_data$n <- NULL
+    last_price_data$updatetime <- NULL
+    last_price_data$instrument <- NULL
+    
     if (full_reset) {
       state$clear_all_cache()
     }
@@ -573,7 +711,7 @@ server <- function(input, output, session) {
     }
   }
 
-  # 定时器
+  # K线更新定时器
   start_kline_updater <- function() {
     update_kline <- function() {
       if (!running || is.null(ctp_client)) return()
@@ -606,36 +744,7 @@ server <- function(input, output, session) {
     update_kline()
   }
 
-  start_price_monitor <- function() {
-    monitor_prices <- function() {
-      if (!running || is.null(ctp_client)) return()
-      current <- state$current_instrument
-      if (is.null(current) || current == "") {
-        timers$price <<- later::later(monitor_prices, 1)
-        return()
-      }
-      tryCatch({
-        stats <- ctp_client$stats(current)
-        if (!is.null(stats) && is.list(stats)) {
-          output$price_info <- renderText(paste0(
-            current, "\n",
-            "最新: ", sprintf("%.2f", stats$last), "  均: ", sprintf("%.2f", stats$mean), "\n",
-            "最高: ", sprintf("%.2f", stats$max), "  低: ", sprintf("%.2f", stats$min), "\n",
-            "Ticks:", stats$n, " 时间: ", stats$updatetime
-          ))
-        }
-        ticks_df <- ctp_client$ticks(current)
-        if (!is.null(ticks_df) && nrow(ticks_df) > 0) {
-          current_tick(as.list(ticks_df[nrow(ticks_df), ]))
-        }
-      }, error = function(e) {})
-      if (running && !is.null(ctp_client)) {
-        timers$price <<- later::later(monitor_prices, 1)
-      }
-    }
-    monitor_prices()
-  }
-
+  # 合约列表更新定时器
   start_instrument_updater <- function() {
     update_instruments <- function() {
       if (!running || is.null(ctp_client)) return()
@@ -668,6 +777,11 @@ server <- function(input, output, session) {
       state$set_current(new_instrument, input$kline_period)
       state$tick_counts[[new_instrument]] <- 0
       current_tick(NULL)
+      
+      # 重置价格缓存，强制刷新
+      last_price_data$instrument <- NULL
+      last_price_data$last <- NULL
+      
       session$sendCustomMessage("switchInstrument", list(instrument = new_instrument, from_instrument = old_instrument, clearCache = FALSE))
       show_notification(paste0("已切换: ", new_instrument), "message", 2)
     }
@@ -707,6 +821,16 @@ server <- function(input, output, session) {
     running <<- TRUE
     state$clear_all_cache()
     current_tick(NULL)
+    
+    # 重置价格缓存
+    last_price_data$last <- NULL
+    last_price_data$mean <- NULL
+    last_price_data$max <- NULL
+    last_price_data$min <- NULL
+    last_price_data$n <- NULL
+    last_price_data$updatetime <- NULL
+    last_price_data$instrument <- NULL
+    
     tryCatch({
       if (!exists("ctpd_async")) stop("ctpd_async 未定义")
       client <- ctpd_async(host = input$host, port = input$port)
@@ -716,7 +840,6 @@ server <- function(input, output, session) {
       show_notification("连接成功", "message", 3)
       start_instrument_updater()
       start_kline_updater()
-      start_price_monitor()
     }, error = function(e) {
       is_connected(FALSE)
       add_debug(paste0("连接失败: ", e$message))
@@ -731,7 +854,9 @@ server <- function(input, output, session) {
       stop_timers()
       session$sendCustomMessage("resetAll", list(reason = "disconnect", timestamp = as.numeric(Sys.time())))
       reset_env(full_reset = TRUE)
-      output$price_info <- renderPrint({ cat("未连接\n点击启动\n") })
+      output$price_info <- renderUI({
+        tags$div(class = "price-info", tags$div(class = "price-current", "未连接"), tags$div("点击启动"))
+      })
       show_notification("已停止", "message", 3)
     } else {
       show_notification("无连接", "warning", 3)
@@ -770,7 +895,10 @@ server <- function(input, output, session) {
     }
   })
 
-  output$price_info <- renderPrint({ cat("等待连接...\n") })
+  # 初始显示
+  output$price_info <- renderUI({
+    tags$div(class = "price-info", tags$div(class = "price-current", "等待连接..."))
+  })
 }
 
 # ============ 创建前端文件 ============
@@ -782,7 +910,7 @@ create_frontend_files <- function() {
 
   # 完整的CSS文件
   css_content <- '
-/* CTP K线图应用样式 - 紧凑布局 */
+/* CTP K线图应用样式 - 紧凑布局 v3.2 */
 
 * { box-sizing: border-box; }
 
@@ -869,16 +997,54 @@ body {
   margin-bottom: 8px;
 }
 
-/* 价格信息 */
-pre.price-info {
-  background: transparent !important;
-  border: none !important;
-  color: #e0e0e0 !important;
-  font-family: "Fira Code", Consolas, monospace !important;
-  font-size: 12px !important;
-  padding: 0 !important;
-  margin: 0 0 10px 0 !important;
-  line-height: 1.5 !important;
+/* 价格信息 - 无闪屏优化 */
+.price-info {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+  padding: 8px;
+  margin: 0 0 10px 0;
+}
+
+.price-current {
+  font-size: 14px;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #4a5568;
+}
+
+.price-stats-row {
+  font-family: "Fira Code", Consolas, monospace;
+  font-size: 12px;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+.price-label {
+  color: #a0aec0;
+}
+
+.price-value {
+  color: #e0e0e0;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.price-meta {
+  font-size: 10px;
+  color: #718096;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #4a5568;
+}
+
+.price-meta span {
+  margin-right: 12px;
+}
+
+.price-meta strong {
+  color: #e0e0e0;
 }
 
 /* 盘口档位 */
@@ -1182,7 +1348,7 @@ select.form-control { padding-right: 20px !important; }
 
   # 前端JS
   js_content <- '
-// chartapp.js - v3.1
+// chartapp.js - v3.2
 (function () {
   "use strict";
 
