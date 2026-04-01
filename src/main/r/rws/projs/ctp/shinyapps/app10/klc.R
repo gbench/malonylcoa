@@ -617,12 +617,12 @@ server <- function(input, output, session) {
       tryCatch({
         stats <- ctp_client$stats(current)
         if (!is.null(stats) && is.list(stats)) {
-          output$price_info <- renderPrint({
-            cat(current, "\n")
-            cat("最新: ", sprintf("%.2f", stats$last), " 均: ", sprintf("%.2f", stats$mean), "\n")
-            cat("最高: ", sprintf("%.2f", stats$max), " 低: ", sprintf("%.2f", stats$min), "\n")
-            cat("Ticks:", stats$n, " 时间: ", stats$updatetime, "\n")
-          })
+          output$price_info <- renderText(paste0(
+            current, "\n",
+            "最新: ", sprintf("%.2f", stats$last), "  均: ", sprintf("%.2f", stats$mean), "\n",
+            "最高: ", sprintf("%.2f", stats$max), "  低: ", sprintf("%.2f", stats$min), "\n",
+            "Ticks:", stats$n, " 时间: ", stats$updatetime
+          ))
         }
         ticks_df <- ctp_client$ticks(current)
         if (!is.null(ticks_df) && nrow(ticks_df) > 0) {
@@ -875,7 +875,7 @@ pre.price-info {
   border: none !important;
   color: #e0e0e0 !important;
   font-family: "Fira Code", Consolas, monospace !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   padding: 0 !important;
   margin: 0 0 10px 0 !important;
   line-height: 1.5 !important;
