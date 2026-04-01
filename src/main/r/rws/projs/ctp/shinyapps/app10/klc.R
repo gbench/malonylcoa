@@ -38,12 +38,8 @@ aggregate_kline <- function(ticks_df) {
 merge_kline_df <- function(base_df, new_df) {
   if (is.null(base_df) || nrow(base_df) == 0) return(new_df)
   if (is.null(new_df) || nrow(new_df) == 0) return(base_df)
-  
-  # 新的数据放在前面，这样重复时间戳时新的会覆盖旧的
-  combined <- rbind(new_df, base_df)
-  # 去重时保留第一个（即新的数据）
-  combined <- combined[!duplicated(combined$timestamp), ]
-  combined[order(combined$timestamp), ]
+ 
+  rbind(base_df[!base_df$timestamp %in% new_df$timestamp], new_df) # base_df,new_df都是排序的故省略排序
 }
 
 # ============ K线计算模块 ============
