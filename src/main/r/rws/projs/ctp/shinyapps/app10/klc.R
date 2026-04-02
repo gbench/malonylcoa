@@ -125,7 +125,7 @@ InstrumentStateManager <- R6::R6Class(
     tick_counts = list(),
     last_update_times = list(),
     attrs = new.env(hash = TRUE),
-    current_instrument = NULL,
+    current_instrument_id = NULL,
     current_period = 1,
     
     get_kline_dt = function(instrument_id) {
@@ -153,11 +153,11 @@ InstrumentStateManager <- R6::R6Class(
       self$tick_counts <- list()
       self$last_update_times <- list()
       self$attrs <- new.env(hash = TRUE)
-      self$current_instrument <- NULL
+      self$current_instrument_id <- NULL
     },
     
     set_current = function(instrument_id, period = NULL) {
-      self$current_instrument <- instrument_id
+      self$current_instrument_id <- instrument_id
       if (!is.null(period)) {
         self$current_period <- period
       }
@@ -310,19 +310,19 @@ server <- function(input, output, session) {
   })
   
   output$active_instrument_display <- renderText({
-    req(state$current_instrument)
-    paste0(" | ", state$current_instrument)
+    req(state$current_instrument_id)
+    paste0(" | ", state$current_instrument_id)
   })
   
   # 价格数据轮询
   price_data <- reactivePoll(
     intervalMillis = 500, session = session,
     checkFunc = function() {
-      if (is.null(ctp_client) || is.null(state$current_instrument)) return(NULL) 
+      if (is.null(ctp_client) || is.null(state$current_instrument_id)) return(NULL) 
       tryCatch(ctp_client$lastupdate, error = function(e) NULL)
     },
     valueFunc = function() {
-      inst_id <- state$current_instrument
+      inst_id <- state$current_instrument_id
       if (is.null(ctp_client) || is.null(inst_id)) return(NULL) 
       
       inst_entity <- ctp_client$instruments[[inst_id]]
@@ -382,7 +382,7 @@ server <- function(input, output, session) {
     if (is.null(data) || is.null(data$stats)) return()
     
     stats <- data$stats
-    current_instr <- state$current_instrument
+    current_instr <- state$current_instrument_id
     
     has_changed <- FALSE
     if (is.null(last_price_data$last) || !identical(stats$last, last_price_data$last)) {
@@ -585,7 +585,7 @@ server <- function(input, output, session) {
       state$set_kline_dt(instrument_id, final_kline)
       
       # 发送到前端
-      if (instrument_id == state$current_instrument) {
+      if (instrument_id == state$current_instrument_id) {
         is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
         ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ]) 
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
@@ -607,7 +607,7 @@ server <- function(input, output, session) {
   start_kline_updater <- function() {
     update_kline <- function() {
       if (!running || is.null(ctp_client)) return()
-      current <- state$current_instrument
+      current <- state$current_instrument_id
       period <- state$current_period
       if (!is.null(current) && current != "") {
         update_and_send_kline(current, period)
@@ -648,7 +648,7 @@ server <- function(input, output, session) {
   observeEvent(input$instrument, {
     new_instrument <- input$instrument
     if (is.null(new_instrument) || new_instrument == "") return()
-    old_instrument <- state$current_instrument
+    old_instrument <- state$current_instrument_id
     if (!identical(new_instrument, old_instrument)) {
       add_debug(paste0("切换: ", old_instrument, " -> ", new_instrument))
       state$set_current(new_instrument, input$kline_period)
@@ -665,7 +665,7 @@ server <- function(input, output, session) {
     if (!is.null(new_period) && !identical(new_period, state$current_period)) {
       add_debug(paste0("周期: ", state$current_period, " -> ", new_period, "m"))
       state$current_period <- new_period
-      current <- state$current_instrument
+      current <- state$current_instrument_id
       if (!is.null(current)) {
         state$clear_instrument(current)
         state$tick_counts[[current]] <- 0
@@ -735,7 +735,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$refresh_btn, {
-    instrument_id <- state$current_instrument
+    instrument_id <- state$current_instrument_id
     if (!is.null(instrument_id) && !is.null(ctp_client)) {
       add_debug(paste0("刷新: ", instrument_id))
       state$clear_instrument(instrument_id)
