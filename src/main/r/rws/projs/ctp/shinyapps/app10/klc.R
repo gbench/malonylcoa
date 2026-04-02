@@ -21,6 +21,13 @@ floor_date_vectorized <- function(datetime, period_seconds) {
 # 使用data.table聚合K线
 aggregate_kline <- function(ticks_df) {
   dt <- data.table::as.data.table(ticks_df)
+  
+  # 添加调试信息
+  if (nrow(dt) == 0) return(data.table::data.table())
+  
+  # 检查Period列
+  if (length(unique(dt$Period)) == 0) return(data.table::data.table())
+  
   kline <- dt[, .(
     timestamp = as.numeric(first(Period)) * 1000,
     open = first(LastPrice),
@@ -30,56 +37,46 @@ aggregate_kline <- function(ticks_df) {
     volume = last(Volume) - first(Volume),
     oint = last(OpenInterest)
   ), by = Period]
+  
+  # 确保volume不为负数
+  kline[volume < 0, volume := 0]
+  
   data.table::setorder(kline, timestamp)
   kline[, .(timestamp, open, high, low, close, volume, oint)]
 }
 
 # 合并K线数据框 - 同一周期合并OHLCV数据
-merge_kline_dt <- function(base_df, new_df) {
-  if (is.null(base_df) || nrow(base_df) == 0) return(new_df)
-  if (is.null(new_df) || nrow(new_df) == 0) return(base_df)
+merge_kline_dt <- function(base_dt, new_dt) {
+  # 直接使用data.table操作，避免频繁转换
+  if (is.null(base_dt) || nrow(base_dt) == 0) return(new_dt)
+  if (is.null(new_dt) || nrow(new_dt) == 0) return(base_dt)
   
-  # 确保是data.table格式以便操作
-  base_dt <- data.table::as.data.table(base_df)
-  new_dt <- data.table::as.data.table(new_df)
+  # 确保是data.table
+  if (!data.table::is.data.table(base_dt)) base_dt <- data.table::as.data.table(base_dt)
+  if (!data.table::is.data.table(new_dt)) new_dt <- data.table::as.data.table(new_dt)
   
-  # 找出重叠的时间戳
-  common_timestamps <- intersect(base_dt$timestamp, new_dt$timestamp)
+  # 找出需要合并的键
+  setkey(base_dt, timestamp)
+  setkey(new_dt, timestamp)
   
-  if (length(common_timestamps) == 0) {
-    # 没有重叠，直接合并
-    result <- rbind(base_dt, new_dt)
-  } else {
-    # 分离不重叠的部分
-    base_unique <- base_dt[!timestamp %in% common_timestamps]
-    new_unique <- new_dt[!timestamp %in% common_timestamps]
-    
-    # 处理重叠的部分
-    # 合并base和new中重叠的K线
-    overlapping <- merge(
-      base_dt[timestamp %in% common_timestamps],
-      new_dt[timestamp %in% common_timestamps],
-      by = "timestamp",
-      suffixes = c("", "_new")
-    )
-    
-    # 按规则计算新的K线数据
-    overlapping_merged <- overlapping[, .(
-      timestamp = timestamp,
-      open = open,  # 使用base的开盘价（最早的开盘价）
-      high = pmax(high, high_new),  # 取两个周期中的最高价
-      low = pmin(low, low_new),  # 取两个周期中的最低价
-      close = close_new,  # 使用最新的收盘价
-      volume = volume + volume_new,  # 成交量相加
-      oint = oint_new  # 使用最新的持仓量
-    )]
-    
-    # 合并所有部分
-    result <- rbind(base_unique, new_unique, overlapping_merged)
-  }
+  # 使用data.table的merge
+  merged <- merge(base_dt, new_dt, by = "timestamp", all = TRUE, suffixes = c("", "_new"))
   
-  # 按时间戳排序
-  data.table::setorder(result, timestamp)
+  # 处理合并后的数据
+  merged[, `:=`(
+    open = ifelse(is.na(open), open_new, open),
+    high = ifelse(is.na(high), high_new, pmax(high, high_new, na.rm = TRUE)),
+    low = ifelse(is.na(low), low_new, pmin(low, low_new, na.rm = TRUE)),
+    close = ifelse(is.na(close), close_new, close_new),
+    volume = ifelse(is.na(volume), volume_new, volume + volume_new),
+    oint = ifelse(is.na(oint), oint_new, oint_new)
+  )]
+  
+  # 删除临时列
+  merged[, c("open_new", "high_new", "low_new", "close_new", "volume_new", "oint_new") := NULL]
+  
+  setorder(merged, timestamp)
+  merged
 }
 
 # ============ 状态管理类 ============
@@ -478,7 +475,7 @@ server <- function(input, output, session) {
       if (current_count == last_count) return(NULL)
       
       # 直接获取新增的tick数据（list of lists格式）
-      new_ticks_list <- inst_data$data[seq(last_count, current_count)]
+      new_ticks_list <- inst_data$data[seq(last_count + 1, current_count)]
       
       # 更新计数
       state$tick_counts[[instrument_id]] <- current_count
@@ -508,8 +505,7 @@ server <- function(input, output, session) {
       # 发送到前端
       if (instrument_id == state$current_instrument) {
         is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
-        .ds <- if(is_full) final_kline else final_kline[final_kline$timestamp >= max(new_kline_segment$timestamp), ]
-        ds <- purrr::transpose(.ds) 
+        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= max(new_kline_segment$timestamp), ]) 
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
