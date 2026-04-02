@@ -279,19 +279,23 @@ server <- function(input, output, session) {
   price_data <- reactivePoll(
     intervalMillis = 500, session = session,
     checkFunc = function() {
-      if (is.null(ctp_client) || is.null(state$current_instrument)) return(NULL)
-      tryCatch(ctp_client$stats(state$current_instrument)$updatetime, error = function(e) NULL)
-    },
+      if (is.null(ctp_client) || is.null(state$current_instrument)) return(NULL) 
+      tryCatch(ctp_client$lastupdate, error = function(e) NULL)
+    }, # checkFunc
     valueFunc = function() {
-      if (is.null(ctp_client) || is.null(state$current_instrument)) return(NULL)
-      list(
-        stats = tryCatch(ctp_client$stats(state$current_instrument), error = function(e) NULL),
-        tick = tryCatch({
-          df <- ctp_client$ticks(state$current_instrument)
-          if (!is.null(df) && nrow(df) > 0) as.list(df[nrow(df), ]) else NULL
-        }, error = function(e) NULL)
-      )
-    }
+      inst_id <- state$current_instrument
+      if (is.null(ctp_client) || is.null(inst_id)) return(NULL) 
+      instdata <- ctp_client$instruments[[inst_id]]
+      n <- instdata$offset
+      if (n < 1) return(NULL)
+      prices <- sapply(seq(n), \(i) instdata$data[[i]]$LastPrice)
+      tick <- instdata$data[[n]] # 最新记录
+      list( # 返回统计信息与最新收到的一条tick数据
+        stats = list( n = n, mean = mean(prices), sd = sd(prices), min = min(prices), 
+          max = max(prices), last=prices[n], updatetime=tick$UpdateTime ),
+        tick = tick
+      ) # list
+    } # valueFunc
   )
   
   # 更新价格显示
@@ -505,7 +509,7 @@ server <- function(input, output, session) {
       # 发送到前端
       if (instrument_id == state$current_instrument) {
         is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
-        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= max(new_kline_segment$timestamp), ]) 
+        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ]) 
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
