@@ -626,13 +626,13 @@ server <- function(input, output, session) {
     update_instruments <- function() {
       if (!running || is.null(ctp_client)) return()
       tryCatch({
-        instr <- if (!is.null(ctp_client$instrumentids)) ctp_client$instrumentids else character()
-        if (length(instr) > 0 && !identical(sort(instr), sort(available_instruments))) {
-          available_instruments <<- instr
+        instrument_ids <- if (!is.null(ctp_client$instrumentids)) ctp_client$instrumentids else character()
+        if (length(instrument_ids) > 0 && !identical(sort(instrument_ids), sort(available_instruments))) {
+          available_instruments <<- instrument_ids
           current_selection <- isolate(input$instrument)
-          new_selection <- if (!is.null(current_selection) && current_selection %in% instr) current_selection else instr[1]
-          updateSelectInput(session, "instrument", choices = instr, selected = new_selection)
-          add_debug(paste0("合约: ", length(instr), "个"))
+          new_selection <- if (!is.null(current_selection) && current_selection %in% instrument_ids) current_selection else instrument_ids[1]
+          updateSelectInput(session, "instrument", choices = instrument_ids, selected = new_selection)
+          add_debug(paste0("合约: ", length(instrument_ids), "个"))
         }
       }, error = function(e) {
         add_debug(paste0("合约列表错误: ", e$message))
