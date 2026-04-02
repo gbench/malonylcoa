@@ -347,7 +347,7 @@ server <- function(input, output, session) {
         # 保存首次提取的价格向量？不需要，只需要统计量
       } else if (current_n > prev_stats$n) {
         # 有新数据：只获取增量部分
-        new_prices <- sapply( seq(prev_stats$n + 1, current_n), \(i) inst_entity$data[[i]]$LastPrice)
+        new_prices <- sapply(seq(prev_stats$n + 1, current_n), \(i) inst_entity$data[[i]]$LastPrice)
         stats <- update_stats_batch(prev_stats, new_prices)
       } else {
         # 无新数据，保持原样
@@ -735,13 +735,13 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$refresh_btn, {
-    current <- state$current_instrument
-    if (!is.null(current) && !is.null(ctp_client)) {
-      add_debug(paste0("刷新: ", current))
-      state$clear_instrument(current)
-      state$tick_counts[[current]] <- 0
+    instrument_id <- state$current_instrument
+    if (!is.null(instrument_id) && !is.null(ctp_client)) {
+      add_debug(paste0("刷新: ", instrument_id))
+      state$clear_instrument(instrument_id)
+      state$tick_counts[[instrument_id]] <- 0
       current_tick(NULL)
-      session$sendCustomMessage("clearChart", list(instrument = current))
+      session$sendCustomMessage("clearChart", list(instrument = instrument_id))
       show_notification("刷新中...", "message", 2)
     }
   })
