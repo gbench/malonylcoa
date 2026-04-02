@@ -88,6 +88,7 @@ InstrumentStateManager <- R6::R6Class(
     kline_cache = list(),
     tick_counts = list(),
     last_update_times = list(),
+    attrs = new.env(hash = TRUE),
     current_instrument = NULL,
     current_period = 1,
     
@@ -107,6 +108,7 @@ InstrumentStateManager <- R6::R6Class(
         self$kline_cache[[instrument_id]] <- NULL
         self$tick_counts[[instrument_id]] <- 0
         self$last_update_times[[instrument_id]] <- NULL
+        self$attrs[[instrument_id]] <- NULL
       }
     },
     
@@ -114,6 +116,7 @@ InstrumentStateManager <- R6::R6Class(
       self$kline_cache <- list()
       self$tick_counts <- list()
       self$last_update_times <- list()
+      self$attrs <- new.env(hash = TRUE)
       self$current_instrument <- NULL
     },
     
@@ -281,23 +284,75 @@ server <- function(input, output, session) {
     checkFunc = function() {
       if (is.null(ctp_client) || is.null(state$current_instrument)) return(NULL) 
       tryCatch(ctp_client$lastupdate, error = function(e) NULL)
-    }, # checkFunc
+    },
     valueFunc = function() {
       inst_id <- state$current_instrument
       if (is.null(ctp_client) || is.null(inst_id)) return(NULL) 
+      
       instdata <- ctp_client$instruments[[inst_id]]
       n <- instdata$offset
       if (n < 1) return(NULL)
-      prices <- sapply(seq(n), \(i) instdata$data[[i]]$LastPrice)
-      tick <- instdata$data[[n]] # 最新记录
-      list( # 返回统计信息与最新收到的一条tick数据
-        stats = list( n = n, mean = mean(prices), sd = sd(prices), min = min(prices), 
-          max = max(prices), last=prices[n], updatetime=tick$UpdateTime ),
+      
+      # 获取最新tick数据
+      tick <- instdata$data[[n]]
+      current_price <- tick$LastPrice
+      
+      # 初始化或获取之前保存的统计状态
+      prev <- state$attrs[[inst_id]]
+      
+      if (is.null(prev) || prev$n == 0) {
+        # 第一次计算，使用完整统计
+        prices <- sapply(seq(n), \(i) instdata$data[[i]]$LastPrice)
+        stats <- list(
+          n = n,
+          mean = mean(prices),
+          sd = sd(prices),
+          min = min(prices),
+          max = max(prices),
+          last = current_price,
+          updatetime = tick$UpdateTime
+        )
+      } else {
+        # 递推更新统计（Welford算法）
+        new_n <- prev$n + 1
+        
+        # 更新均值
+        new_mean <- prev$mean + (current_price - prev$mean) / new_n
+        
+        # 更新平方和（用于方差）
+        # M2 = sum((x - mean)^2)
+        new_M2 <- prev$M2 + (current_price - prev$mean) * (current_price - new_mean)
+        
+        # 计算新的标准差
+        new_sd <- if (new_n > 1) sqrt(new_M2 / (new_n - 1)) else 0  # 样本标准差
+        
+        # 更新最小值和最大值
+        new_min <- min(prev$min, current_price)
+        new_max <- max(prev$max, current_price)
+        
+        stats <- list(
+          n = new_n,
+          mean = new_mean,
+          sd = new_sd,
+          min = new_min,
+          max = new_max,
+          last = current_price,
+          updatetime = tick$UpdateTime,
+          M2 = new_M2  # 保存M2供下次递推使用
+        ) # stats
+      } # if
+      
+      # 保存当前统计状态到state$attrs
+      state$attrs[[inst_id]] <- stats
+      
+      # 返回统计信息与最新收到的一条tick数据
+      list(
+        stats = stats[c("n", "mean", "sd", "min", "max", "last", "updatetime")],
         tick = tick
       ) # list
     } # valueFunc
-  )
-  
+  ) # price_data
+
   # 更新价格显示
   observe({
     data <- price_data()
