@@ -646,17 +646,17 @@ server <- function(input, output, session) {
   
   # 事件处理
   observeEvent(input$instrument, {
-    new_instrument <- input$instrument
-    if (is.null(new_instrument) || new_instrument == "") return()
-    old_instrument <- state$current_instrument_id
-    if (!identical(new_instrument, old_instrument)) {
-      add_debug(paste0("切换: ", old_instrument, " -> ", new_instrument))
-      state$set_current(new_instrument, input$kline_period)
-      state$tick_counts[[new_instrument]] <- 0
+    new_instrument_id <- input$instrument
+    if (is.null(new_instrument_id) || new_instrument_id == "") return()
+    old_instrument_id <- state$current_instrument_id
+    if (!identical(new_instrument_id, old_instrument_id)) {
+      add_debug(paste0("切换: ", old_instrument_id, " -> ", new_instrument_id))
+      state$set_current(new_instrument_id, input$kline_period)
+      state$tick_counts[[new_instrument_id]] <- 0
       current_tick(NULL)
-      session$sendCustomMessage("switchInstrument", list(instrument = new_instrument))
-      show_notification(paste0("已切换: ", new_instrument), "message", 2)
-      update_and_send_kline(new_instrument, input$kline_period, TRUE) # 强制对新合约执行K线数据的全量更新操作！
+      session$sendCustomMessage("switchInstrument", list(instrument = new_instrument_id))
+      show_notification(paste0("已切换: ", new_instrument_id), "message", 2)
+      update_and_send_kline(new_instrument_id, input$kline_period, TRUE) # 强制对新合约执行K线数据的全量更新操作！
     }
   }, ignoreNULL = TRUE, ignoreInit = FALSE)
   
@@ -665,11 +665,11 @@ server <- function(input, output, session) {
     if (!is.null(new_period) && !identical(new_period, state$current_period)) {
       add_debug(paste0("周期: ", state$current_period, " -> ", new_period, "m"))
       state$current_period <- new_period
-      current <- state$current_instrument_id
-      if (!is.null(current)) {
-        state$clear_instrument(current)
-        state$tick_counts[[current]] <- 0
-        session$sendCustomMessage("clearChart", list(instrument = current))
+      inst_id <- state$current_instrument_id
+      if (!is.null(inst_id)) {
+        state$clear_instrument(inst_id)
+        state$tick_counts[[inst_id]] <- 0
+        session$sendCustomMessage("clearChart", list(instrument = inst_id))
       }
       show_notification(paste0("周期: ", new_period, "分钟"), "message", 2)
     }
