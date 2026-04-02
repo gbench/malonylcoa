@@ -366,7 +366,7 @@ server <- function(input, output, session) {
       return(HTML("<div class='waiting'>等待数据...</div>"))
     }
     
-    rows <- lapply(5:1, function(i) {
+    rows <- lapply(1:5, function(i) {
       price <- tick[[paste0("AskPrice", i)]] %||% 0
       vol <- tick[[paste0("AskVolume", i)]] %||% 0
       if (price > 0) {
