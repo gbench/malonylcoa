@@ -325,8 +325,8 @@ server <- function(input, output, session) {
       inst_id <- state$current_instrument
       if (is.null(ctp_client) || is.null(inst_id)) return(NULL) 
       
-      instinfo <- ctp_client$instruments[[inst_id]]
-      current_n <- instinfo$offset
+      inst_entity <- ctp_client$instruments[[inst_id]]
+      current_n <- inst_entity$offset
       if (current_n < 1) return(NULL)
       
       # 获取之前保存的状态
@@ -334,7 +334,7 @@ server <- function(input, output, session) {
       
       if (is.null(prev_stats) || prev_stats$n == 0) {
         # 首次：提取所有价格并计算完整统计
-        all_prices <- sapply(seq(current_n), \(i) instinfo$data[[i]]$LastPrice)
+        all_prices <- sapply(seq(current_n), \(i) inst_entity$data[[i]]$LastPrice)
         stats <- list(
           n = current_n,
           mean = mean(all_prices),
@@ -347,7 +347,7 @@ server <- function(input, output, session) {
         # 保存首次提取的价格向量？不需要，只需要统计量
       } else if (current_n > prev_stats$n) {
         # 有新数据：只获取增量部分
-        new_prices <- sapply( seq(prev_stats$n + 1, current_n), \(i) instinfo$data[[i]]$LastPrice)
+        new_prices <- sapply( seq(prev_stats$n + 1, current_n), \(i) inst_entity$data[[i]]$LastPrice)
         stats <- update_stats_batch(prev_stats, new_prices)
       } else {
         # 无新数据，保持原样
@@ -358,7 +358,7 @@ server <- function(input, output, session) {
       state$attrs[[inst_id]] <- stats
       
       # 获取最新 tick 数据
-      tick <- instinfo$data[[current_n]]
+      tick <- inst_entity$data[[current_n]]
       
       # 返回结果
       list(
@@ -547,17 +547,17 @@ server <- function(input, output, session) {
     
     tryCatch({
       # 直接访问内部数据结构
-      inst_data <- ctp_client$instruments[[instrument_id]]
-      if (is.null(inst_data)) return(NULL)
+      inst_entity <- ctp_client$instruments[[instrument_id]]
+      if (is.null(inst_entity)) return(NULL)
       
-      current_count <- inst_data$size()
+      current_count <- inst_entity$size()
       last_count <- state$tick_counts[[instrument_id]] %||% 0
       
       # 没有新数据
       if (current_count == last_count) return(NULL)
       
       # 直接获取新增的tick数据（list of lists格式）
-      new_ticks_list <- inst_data$data[seq(last_count + 1, current_count)]
+      new_ticks_list <- inst_entity$data[seq(last_count + 1, current_count)]
       
       # 更新计数
       state$tick_counts[[instrument_id]] <- current_count
