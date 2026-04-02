@@ -607,10 +607,10 @@ server <- function(input, output, session) {
   start_kline_updater <- function() {
     update_kline <- function() {
       if (!running || is.null(ctp_client)) return()
-      current <- state$current_instrument_id
+      inst_id <- state$current_instrument_id
       period <- state$current_period
-      if (!is.null(current) && current != "") {
-        update_and_send_kline(current, period)
+      if (!is.null(inst_id) && inst_id != "") {
+        update_and_send_kline(inst_id, period)
       }
       push_interval <- isolate(input$push_interval) %||% 1
       if (running && !is.null(ctp_client)) {
