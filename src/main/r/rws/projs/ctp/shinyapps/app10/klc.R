@@ -21,6 +21,13 @@ floor_date_vectorized <- function(datetime, period_seconds) {
 # 使用data.table聚合K线
 aggregate_kline <- function(ticks_df) {
   dt <- data.table::as.data.table(ticks_df)
+  
+  # 添加调试信息
+  if (nrow(dt) == 0) return(data.table::data.table())
+  
+  # 检查Period列
+  if (length(unique(dt$Period)) == 0) return(data.table::data.table())
+  
   kline <- dt[, .(
     timestamp = as.numeric(first(Period)) * 1000,
     open = first(LastPrice),
@@ -30,62 +37,82 @@ aggregate_kline <- function(ticks_df) {
     volume = last(Volume) - first(Volume),
     oint = last(OpenInterest)
   ), by = Period]
+  
+  # 确保volume不为负数
+  kline[volume < 0, volume := 0]
+  
   data.table::setorder(kline, timestamp)
   kline[, .(timestamp, open, high, low, close, volume, oint)]
 }
 
-# 合并K线数据框 - 修复版：新的数据覆盖旧的数据
-merge_kline_df <- function(base_df, new_df) {
-  if (is.null(base_df) || nrow(base_df) == 0) return(new_df)
-  if (is.null(new_df) || nrow(new_df) == 0) return(base_df)
+# 合并K线数据框 - 同一周期合并OHLCV数据
+merge_kline_dt <- function(base_dt, new_dt) {
+  # 直接使用data.table操作，避免频繁转换
+  if (is.null(base_dt) || nrow(base_dt) == 0) return(new_dt)
+  if (is.null(new_dt) || nrow(new_dt) == 0) return(base_dt)
   
-  # 新的数据放在前面，这样重复时间戳时新的会覆盖旧的
-  combined <- rbind(new_df, base_df)
-  # 去重时保留第一个（即新的数据）
-  combined <- combined[!duplicated(combined$timestamp), ]
-  combined[order(combined$timestamp), ]
+  # 确保是data.table
+  if (!data.table::is.data.table(base_dt)) base_dt <- data.table::as.data.table(base_dt)
+  if (!data.table::is.data.table(new_dt)) new_dt <- data.table::as.data.table(new_dt)
+  
+  # 找出需要合并的键
+  setkey(base_dt, timestamp)
+  setkey(new_dt, timestamp)
+  
+  # 使用data.table的merge
+  merged <- merge(base_dt, new_dt, by = "timestamp", all = TRUE, suffixes = c("", "_new"))
+  
+  # 处理合并后的数据
+  merged[, `:=`(
+    open = ifelse(is.na(open), open_new, open),
+    high = ifelse(is.na(high), high_new, pmax(high, high_new, na.rm = TRUE)),
+    low = ifelse(is.na(low), low_new, pmin(low, low_new, na.rm = TRUE)),
+    close = ifelse(is.na(close), close_new, close_new),
+    volume = ifelse(is.na(volume), volume_new, volume + volume_new),
+    oint = ifelse(is.na(oint), oint_new, oint_new)
+  )]
+  
+  # 删除临时列
+  merged[, c("open_new", "high_new", "low_new", "close_new", "volume_new", "oint_new") := NULL]
+  
+  setorder(merged, timestamp)
+  merged
 }
 
-# ============ K线计算模块 ============
-
-ticks_to_kline <- function(ticks_df, period_minutes, base_kline = NULL) {
-  if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+# 批量递推更新统计量的函数
+update_stats_batch <- function(prev_stats, new_prices) {
+  if (length(new_prices) == 0) return(prev_stats)
   
-  required_cols <- c("ActionDay", "UpdateTime", "LastPrice", "Volume")
-  if (!all(required_cols %in% colnames(ticks_df))) return(NULL)
+  prev_n <- prev_stats$n
+  prev_mean <- prev_stats$mean
+  prev_M2 <- prev_stats$M2
+  prev_min <- prev_stats$min
+  prev_max <- prev_stats$max
   
-  # 构建DateTime
-  datetime_str <- paste(ticks_df$ActionDay, ticks_df$UpdateTime)
-  ticks_df$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S")
+  k <- length(new_prices)
+  new_n <- prev_n + k
   
-  if ("UpdateMillisec" %in% colnames(ticks_df)) {
-    ticks_df$DateTime <- ticks_df$DateTime + ticks_df$UpdateMillisec / 1000
-  }
+  # 批量更新均值和 M2
+  sum_new <- sum(new_prices)
+  new_mean <- (prev_n * prev_mean + sum_new) / new_n
   
-  period_seconds <- period_minutes * 60
-  ticks_df$Period <- floor_date_vectorized(ticks_df$DateTime, period_seconds)
+  # 更新 M2（离差平方和）
+  sum_sq_new <- sum((new_prices - new_mean)^2)
+  new_M2 <- prev_M2 + sum_sq_new + prev_n * (prev_mean - new_mean)^2
   
-  # 如果有base_kline，只保留 >= 最后一根K线时间戳的tick数据
-  flag <- !is.null(base_kline) && nrow(base_kline) > 0
-  if (flag) {
-    last_ts <- max(base_kline$timestamp) / 1000
-    last_period <- floor_date_vectorized(as.POSIXct(last_ts, origin = "1970-01-01"), period_seconds)
-    ticks_df <- ticks_df[ticks_df$Period >= last_period, ]
-    if (nrow(ticks_df) == 0) return(NULL)
-  }
+  # 更新最小最大值
+  new_min <- min(prev_min, min(new_prices))
+  new_max <- max(prev_max, max(new_prices))
   
-  # 生成新K线
-  new_kline <- aggregate_kline(ticks_df)
-  if (nrow(new_kline) == 0) return(NULL)
-  
-  # 如果有base_kline，直接合并（新的会覆盖旧的）
-  if (flag) {
-    result <- merge_kline_df(base_kline, new_kline)
-  } else {
-    result <- new_kline
-  }
-  
-  return(result)
+  list(
+    n = new_n,
+    mean = new_mean,
+    M2 = new_M2,
+    sd = if (new_n > 1) sqrt(new_M2 / (new_n - 1)) else 0,
+    min = new_min,
+    max = new_max,
+    last = new_prices[k]  # 保存最新价格
+  )
 }
 
 # ============ 状态管理类 ============
@@ -97,17 +124,18 @@ InstrumentStateManager <- R6::R6Class(
     kline_cache = list(),
     tick_counts = list(),
     last_update_times = list(),
-    current_instrument = NULL,
+    attrs = new.env(hash = TRUE),
+    current_instrument_id = NULL,
     current_period = 1,
     
-    get_kline_df = function(instrument_id) {
+    get_kline_dt = function(instrument_id) {
       if (is.null(instrument_id)) return(NULL)
       self$kline_cache[[instrument_id]]
     },
     
-    set_kline_df = function(instrument_id, df) {
+    set_kline_dt = function(instrument_id, dt) {
       if (is.null(instrument_id)) return()
-      self$kline_cache[[instrument_id]] <- df
+      self$kline_cache[[instrument_id]] <- dt
       self$last_update_times[[instrument_id]] <- Sys.time()
     },
     
@@ -116,6 +144,7 @@ InstrumentStateManager <- R6::R6Class(
         self$kline_cache[[instrument_id]] <- NULL
         self$tick_counts[[instrument_id]] <- 0
         self$last_update_times[[instrument_id]] <- NULL
+        self$attrs[[instrument_id]] <- NULL
       }
     },
     
@@ -123,11 +152,12 @@ InstrumentStateManager <- R6::R6Class(
       self$kline_cache <- list()
       self$tick_counts <- list()
       self$last_update_times <- list()
-      self$current_instrument <- NULL
+      self$attrs <- new.env(hash = TRUE)
+      self$current_instrument_id <- NULL
     },
     
     set_current = function(instrument_id, period = NULL) {
-      self$current_instrument <- instrument_id
+      self$current_instrument_id <- instrument_id
       if (!is.null(period)) {
         self$current_period <- period
       }
@@ -280,36 +310,79 @@ server <- function(input, output, session) {
   })
   
   output$active_instrument_display <- renderText({
-    req(state$current_instrument)
-    paste0(" | ", state$current_instrument)
+    req(state$current_instrument_id)
+    paste0(" | ", state$current_instrument_id)
   })
   
   # 价格数据轮询
   price_data <- reactivePoll(
     intervalMillis = 500, session = session,
     checkFunc = function() {
-      if (is.null(ctp_client) || is.null(state$current_instrument)) return(NULL)
-      tryCatch(ctp_client$stats(state$current_instrument)$updatetime, error = function(e) NULL)
+      if (is.null(ctp_client) || is.null(state$current_instrument_id)) return(NULL) 
+      tryCatch(ctp_client$lastupdate, error = function(e) NULL)
     },
     valueFunc = function() {
-      if (is.null(ctp_client) || is.null(state$current_instrument)) return(NULL)
+      inst_id <- state$current_instrument_id
+      if (is.null(ctp_client) || is.null(inst_id)) return(NULL) 
+      
+      inst_entity <- ctp_client$instruments[[inst_id]]
+      current_n <- inst_entity$offset
+      if (current_n < 1) return(NULL)
+      
+      # 获取之前保存的状态
+      prev_stats <- state$attrs[[inst_id]]
+      
+      if (is.null(prev_stats) || prev_stats$n == 0) {
+        # 首次：提取所有价格并计算完整统计
+        all_prices <- sapply(seq(current_n), \(i) inst_entity$data[[i]]$LastPrice)
+        stats <- list(
+          n = current_n,
+          mean = mean(all_prices),
+          M2 = sum((all_prices - mean(all_prices))^2),
+          sd = if (current_n > 1) sd(all_prices) else 0,
+          min = min(all_prices),
+          max = max(all_prices),
+          last = all_prices[current_n]
+        )
+        # 保存首次提取的价格向量？不需要，只需要统计量
+      } else if (current_n > prev_stats$n) {
+        # 有新数据：只获取增量部分
+        new_prices <- sapply(seq(prev_stats$n + 1, current_n), \(i) inst_entity$data[[i]]$LastPrice)
+        stats <- update_stats_batch(prev_stats, new_prices)
+      } else {
+        # 无新数据，保持原样
+        stats <- prev_stats
+      }
+      
+      # 保存到 state$attrs
+      state$attrs[[inst_id]] <- stats
+      
+      # 获取最新 tick 数据
+      tick <- inst_entity$data[[current_n]]
+      
+      # 返回结果
       list(
-        stats = tryCatch(ctp_client$stats(state$current_instrument), error = function(e) NULL),
-        tick = tryCatch({
-          df <- ctp_client$ticks(state$current_instrument)
-          if (!is.null(df) && nrow(df) > 0) as.list(df[nrow(df), ]) else NULL
-        }, error = function(e) NULL)
+        stats = list(
+          n = stats$n,
+          mean = stats$mean,
+          sd = stats$sd,
+          min = stats$min,
+          max = stats$max,
+          last = stats$last,
+          updatetime = tick$UpdateTime
+        ),
+        tick = tick
       )
     }
-  )
-  
+  ) # price_data
+
   # 更新价格显示
   observe({
     data <- price_data()
     if (is.null(data) || is.null(data$stats)) return()
     
     stats <- data$stats
-    current_instr <- state$current_instrument
+    current_instr <- state$current_instrument_id
     
     has_changed <- FALSE
     if (is.null(last_price_data$last) || !identical(stats$last, last_price_data$last)) {
@@ -371,7 +444,7 @@ server <- function(input, output, session) {
       return(HTML("<div class='waiting'>等待数据...</div>"))
     }
     
-    rows <- lapply(5:1, function(i) {
+    rows <- lapply(1:5, function(i) {
       price <- tick[[paste0("AskPrice", i)]] %||% 0
       vol <- tick[[paste0("AskVolume", i)]] %||% 0
       if (price > 0) {
@@ -469,27 +542,52 @@ server <- function(input, output, session) {
   # K线更新：flag 用于标记是否强制执行全量更新，默认为FALSE，表示系统自行判断！
   update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
     if (is.null(ctp_client)) return(NULL)
+
+    begtime <- Sys.time() # 开始时间锚点
     
     tryCatch({
-      ticks_df <- ctp_client$ticks(instrument_id)
-      if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+      # 直接访问内部数据结构
+      inst_entity <- ctp_client$instruments[[instrument_id]]
+      if (is.null(inst_entity)) return(NULL)
       
-      current_count <- nrow(ticks_df)
+      current_count <- inst_entity$size()
       last_count <- state$tick_counts[[instrument_id]] %||% 0
       
+      # 没有新数据
       if (current_count == last_count) return(NULL)
       
+      # 直接获取新增的tick数据（list of lists格式）
+      new_ticks_list <- inst_entity$data[seq(last_count + 1, current_count)]
+      
+      # 更新计数
       state$tick_counts[[instrument_id]] <- current_count
-      base_kline <- state$get_kline_df(instrument_id)
-      new_kline <- ticks_to_kline(ticks_df, period, base_kline)
+      add_debug(paste0("新增tick: ", length(new_ticks_list), "条"))
       
-      if (is.null(new_kline) || nrow(new_kline) == 0) return(NULL)
+      # 获取现有K线
+      base_kline <- state$get_kline_dt(instrument_id)
       
-      state$set_kline_df(instrument_id, new_kline)
+      # 添加DateTime和Period（需要先转换为data.table）
+      new_ticks_dt <- data.table::rbindlist(new_ticks_list) 
+      datetime_str <- paste(new_ticks_dt$ActionDay, new_ticks_dt$UpdateTime)
+      new_ticks_dt$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S") + new_ticks_dt$UpdateMillisec / 1000
+      period_seconds <- period * 60 # 转换成秒数
+      new_ticks_dt$Period <- floor_date_vectorized(new_ticks_dt$DateTime, period_seconds)
+      new_kline_segment <- aggregate_kline(new_ticks_dt) # 新数据聚合
+      if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
       
-      if (instrument_id == state$current_instrument) {
-        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0 # 是否进行全量更新，flag 表示强制全量！
-        ds <- purrr::transpose(if(is_full) new_kline else new_kline[new_kline$timestamp >= max(base_kline$timestamp), ]) # base_kline不再发送
+      # 合并K线
+      if (is.null(base_kline) || nrow(base_kline) == 0) {
+        final_kline <- new_kline_segment
+      } else {
+        final_kline <- merge_kline_dt(base_kline, new_kline_segment) # 新老合并
+      }
+      
+      state$set_kline_dt(instrument_id, final_kline)
+      
+      # 发送到前端
+      if (instrument_id == state$current_instrument_id) {
+        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
+        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ]) 
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
@@ -498,16 +596,21 @@ server <- function(input, output, session) {
     }, error = function(e) {
       add_debug(paste0("K线错误: ", e$message))
     })
+    
+    elapsed <- as.numeric(Sys.time() - begtime)
+    if (elapsed > 0.1) {
+      add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
+    }
   }
   
   # K线更新定时器
   start_kline_updater <- function() {
     update_kline <- function() {
       if (!running || is.null(ctp_client)) return()
-      current <- state$current_instrument
+      inst_id <- state$current_instrument_id
       period <- state$current_period
-      if (!is.null(current) && current != "") {
-        update_and_send_kline(current, period)
+      if (!is.null(inst_id) && inst_id != "") {
+        update_and_send_kline(inst_id, period)
       }
       push_interval <- isolate(input$push_interval) %||% 1
       if (running && !is.null(ctp_client)) {
@@ -523,13 +626,13 @@ server <- function(input, output, session) {
     update_instruments <- function() {
       if (!running || is.null(ctp_client)) return()
       tryCatch({
-        instr <- if (!is.null(ctp_client$instrumentids)) ctp_client$instrumentids else character()
-        if (length(instr) > 0 && !identical(sort(instr), sort(available_instruments))) {
-          available_instruments <<- instr
+        instrument_ids <- if (!is.null(ctp_client$instrumentids)) ctp_client$instrumentids else character()
+        if (length(instrument_ids) > 0 && !identical(sort(instrument_ids), sort(available_instruments))) {
+          available_instruments <<- instrument_ids
           current_selection <- isolate(input$instrument)
-          new_selection <- if (!is.null(current_selection) && current_selection %in% instr) current_selection else instr[1]
-          updateSelectInput(session, "instrument", choices = instr, selected = new_selection)
-          add_debug(paste0("合约: ", length(instr), "个"))
+          new_selection <- if (!is.null(current_selection) && current_selection %in% instrument_ids) current_selection else instrument_ids[1]
+          updateSelectInput(session, "instrument", choices = instrument_ids, selected = new_selection)
+          add_debug(paste0("合约: ", length(instrument_ids), "个"))
         }
       }, error = function(e) {
         add_debug(paste0("合约列表错误: ", e$message))
@@ -543,17 +646,17 @@ server <- function(input, output, session) {
   
   # 事件处理
   observeEvent(input$instrument, {
-    new_instrument <- input$instrument
-    if (is.null(new_instrument) || new_instrument == "") return()
-    old_instrument <- state$current_instrument
-    if (!identical(new_instrument, old_instrument)) {
-      add_debug(paste0("切换: ", old_instrument, " -> ", new_instrument))
-      state$set_current(new_instrument, input$kline_period)
-      state$tick_counts[[new_instrument]] <- 0
+    new_instrument_id <- input$instrument
+    if (is.null(new_instrument_id) || new_instrument_id == "") return()
+    old_instrument_id <- state$current_instrument_id
+    if (!identical(new_instrument_id, old_instrument_id)) {
+      add_debug(paste0("切换: ", old_instrument_id, " -> ", new_instrument_id))
+      state$set_current(new_instrument_id, input$kline_period)
+      state$tick_counts[[new_instrument_id]] <- 0
       current_tick(NULL)
-      session$sendCustomMessage("switchInstrument", list(instrument = new_instrument))
-      show_notification(paste0("已切换: ", new_instrument), "message", 2)
-      update_and_send_kline(new_instrument, input$kline_period, TRUE) # 强制对新合约执行K线数据的全量更新操作！
+      session$sendCustomMessage("switchInstrument", list(instrument = new_instrument_id))
+      show_notification(paste0("已切换: ", new_instrument_id), "message", 2)
+      update_and_send_kline(new_instrument_id, input$kline_period, TRUE) # 强制对新合约执行K线数据的全量更新操作！
     }
   }, ignoreNULL = TRUE, ignoreInit = FALSE)
   
@@ -562,11 +665,11 @@ server <- function(input, output, session) {
     if (!is.null(new_period) && !identical(new_period, state$current_period)) {
       add_debug(paste0("周期: ", state$current_period, " -> ", new_period, "m"))
       state$current_period <- new_period
-      current <- state$current_instrument
-      if (!is.null(current)) {
-        state$clear_instrument(current)
-        state$tick_counts[[current]] <- 0
-        session$sendCustomMessage("clearChart", list(instrument = current))
+      inst_id <- state$current_instrument_id
+      if (!is.null(inst_id)) {
+        state$clear_instrument(inst_id)
+        state$tick_counts[[inst_id]] <- 0
+        session$sendCustomMessage("clearChart", list(instrument = inst_id))
       }
       show_notification(paste0("周期: ", new_period, "分钟"), "message", 2)
     }
@@ -632,13 +735,13 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$refresh_btn, {
-    current <- state$current_instrument
-    if (!is.null(current) && !is.null(ctp_client)) {
-      add_debug(paste0("刷新: ", current))
-      state$clear_instrument(current)
-      state$tick_counts[[current]] <- 0
+    instrument_id <- state$current_instrument_id
+    if (!is.null(instrument_id) && !is.null(ctp_client)) {
+      add_debug(paste0("刷新: ", instrument_id))
+      state$clear_instrument(instrument_id)
+      state$tick_counts[[instrument_id]] <- 0
       current_tick(NULL)
-      session$sendCustomMessage("clearChart", list(instrument = current))
+      session$sendCustomMessage("clearChart", list(instrument = instrument_id))
       show_notification("刷新中...", "message", 2)
     }
   })
