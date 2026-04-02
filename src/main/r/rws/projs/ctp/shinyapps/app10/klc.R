@@ -111,7 +111,7 @@ update_stats_batch <- function(prev_stats, new_prices) {
     sd = if (new_n > 1) sqrt(new_M2 / (new_n - 1)) else 0,
     min = new_min,
     max = new_max,
-    last = new_prices[length(new_prices)]  # 保存最新价格
+    last = new_prices[k]  # 保存最新价格
   )
 }
 
