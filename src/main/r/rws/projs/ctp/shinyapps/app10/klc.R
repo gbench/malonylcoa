@@ -166,11 +166,11 @@ ui <- fluidPage(
           div(class = "host-port-row",
               div(class = "host-input",
                   tags$label("主机"),
-                  textInput("host", NULL, value = "localhost", placeholder = "IP地址")
+                  textInput("host", NULL, value = "192.168.1.41", placeholder = "IP地址")
               ),
               div(class = "port-input",
                   tags$label("端口"),
-                  numericInput("port", NULL, value = 9892, min = 1, max = 65535)
+                  numericInput("port", NULL, value = 9898, min = 1, max = 65535)
               )
           ),
           div(class = "btn-row",
@@ -461,7 +461,7 @@ server <- function(input, output, session) {
   update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
     if (is.null(ctp_client)) return(NULL)
 
-    s <- Sys.time()
+    begtime <- Sys.time() # 开始时间锚点
     
     tryCatch({
       # 直接访问内部数据结构
@@ -484,20 +484,20 @@ server <- function(input, output, session) {
       # 获取现有K线
       base_kline <- state$get_kline_dt(instrument_id)
       
-      # 添加DateTime和Period（需要先转换为data.frame）
+      # 添加DateTime和Period（需要先转换为data.table）
       new_ticks_dt <- data.table::rbindlist(new_ticks_list) 
       datetime_str <- paste(new_ticks_dt$ActionDay, new_ticks_dt$UpdateTime)
       new_ticks_dt$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S") + new_ticks_dt$UpdateMillisec / 1000
-      period_seconds <- period * 60
+      period_seconds <- period * 60 # 转换成秒数
       new_ticks_dt$Period <- floor_date_vectorized(new_ticks_dt$DateTime, period_seconds)
-      new_kline_segment <- aggregate_kline(new_ticks_dt)
+      new_kline_segment <- aggregate_kline(new_ticks_dt) # 新数据聚合
       if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
       
       # 合并K线
       if (is.null(base_kline) || nrow(base_kline) == 0) {
         final_kline <- new_kline_segment
       } else {
-        final_kline <- merge_kline_dt(base_kline, new_kline_segment)
+        final_kline <- merge_kline_dt(base_kline, new_kline_segment) # 新老合并
       }
       
       state$set_kline_dt(instrument_id, final_kline)
@@ -515,7 +515,7 @@ server <- function(input, output, session) {
       add_debug(paste0("K线错误: ", e$message))
     })
     
-    elapsed <- as.numeric(Sys.time() - s)
+    elapsed <- as.numeric(Sys.time() - begtime)
     if (elapsed > 0.1) {
       add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
     }
