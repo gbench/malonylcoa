@@ -34,54 +34,52 @@ aggregate_kline <- function(ticks_df) {
   kline[, .(timestamp, open, high, low, close, volume, oint)]
 }
 
-# 合并K线数据框 - 修复版：新的数据覆盖旧的数据
-merge_kline_df <- function(base_df, new_df) {
+# 合并K线数据框 - 同一周期合并OHLCV数据
+merge_kline_dt <- function(base_df, new_df) {
   if (is.null(base_df) || nrow(base_df) == 0) return(new_df)
   if (is.null(new_df) || nrow(new_df) == 0) return(base_df)
- 
-  rbind(base_df[!base_df$timestamp %in% new_df$timestamp], new_df) # base_df,new_df都是排序的故省略排序
-}
-
-# ============ K线计算模块 ============
-
-ticks_to_kline <- function(ticks_df, period_minutes, base_kline = NULL) {
-  if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
   
-  required_cols <- c("ActionDay", "UpdateTime", "LastPrice", "Volume")
-  if (!all(required_cols %in% colnames(ticks_df))) return(NULL)
+  # 确保是data.table格式以便操作
+  base_dt <- data.table::as.data.table(base_df)
+  new_dt <- data.table::as.data.table(new_df)
   
-  # 构建DateTime
-  datetime_str <- paste(ticks_df$ActionDay, ticks_df$UpdateTime)
-  ticks_df$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S")
+  # 找出重叠的时间戳
+  common_timestamps <- intersect(base_dt$timestamp, new_dt$timestamp)
   
-  if ("UpdateMillisec" %in% colnames(ticks_df)) {
-    ticks_df$DateTime <- ticks_df$DateTime + ticks_df$UpdateMillisec / 1000
-  }
-  
-  period_seconds <- period_minutes * 60
-  ticks_df$Period <- floor_date_vectorized(ticks_df$DateTime, period_seconds)
-  
-  # 如果有base_kline，只保留 >= 最后一根K线时间戳的tick数据
-  flag <- !is.null(base_kline) && nrow(base_kline) > 0
-  if (flag) {
-    last_ts <- max(base_kline$timestamp) / 1000
-    last_period <- floor_date_vectorized(as.POSIXct(last_ts, origin = "1970-01-01"), period_seconds)
-    ticks_df <- ticks_df[ticks_df$Period >= last_period, ]
-    if (nrow(ticks_df) == 0) return(NULL)
-  }
-  
-  # 生成新K线
-  new_kline <- aggregate_kline(ticks_df)
-  if (nrow(new_kline) == 0) return(NULL)
-  
-  # 如果有base_kline，直接合并（新的会覆盖旧的）
-  if (flag) {
-    result <- merge_kline_df(base_kline, new_kline)
+  if (length(common_timestamps) == 0) {
+    # 没有重叠，直接合并
+    result <- rbind(base_dt, new_dt)
   } else {
-    result <- new_kline
+    # 分离不重叠的部分
+    base_unique <- base_dt[!timestamp %in% common_timestamps]
+    new_unique <- new_dt[!timestamp %in% common_timestamps]
+    
+    # 处理重叠的部分
+    # 合并base和new中重叠的K线
+    overlapping <- merge(
+      base_dt[timestamp %in% common_timestamps],
+      new_dt[timestamp %in% common_timestamps],
+      by = "timestamp",
+      suffixes = c("", "_new")
+    )
+    
+    # 按规则计算新的K线数据
+    overlapping_merged <- overlapping[, .(
+      timestamp = timestamp,
+      open = open,  # 使用base的开盘价（最早的开盘价）
+      high = pmax(high, high_new),  # 取两个周期中的最高价
+      low = pmin(low, low_new),  # 取两个周期中的最低价
+      close = close_new,  # 使用最新的收盘价
+      volume = volume + volume_new,  # 成交量相加
+      oint = oint_new  # 使用最新的持仓量
+    )]
+    
+    # 合并所有部分
+    result <- rbind(base_unique, new_unique, overlapping_merged)
   }
   
-  return(result)
+  # 按时间戳排序
+  data.table::setorder(result, timestamp)
 }
 
 # ============ 状态管理类 ============
@@ -96,14 +94,14 @@ InstrumentStateManager <- R6::R6Class(
     current_instrument = NULL,
     current_period = 1,
     
-    get_kline_df = function(instrument_id) {
+    get_kline_dt = function(instrument_id) {
       if (is.null(instrument_id)) return(NULL)
       self$kline_cache[[instrument_id]]
     },
     
-    set_kline_df = function(instrument_id, df) {
+    set_kline_dt = function(instrument_id, dt) {
       if (is.null(instrument_id)) return()
-      self$kline_cache[[instrument_id]] <- df
+      self$kline_cache[[instrument_id]] <- dt
       self$last_update_times[[instrument_id]] <- Sys.time()
     },
     
@@ -171,11 +169,11 @@ ui <- fluidPage(
           div(class = "host-port-row",
               div(class = "host-input",
                   tags$label("主机"),
-                  textInput("host", NULL, value = "192.168.1.41", placeholder = "IP地址")
+                  textInput("host", NULL, value = "localhost", placeholder = "IP地址")
               ),
               div(class = "port-input",
                   tags$label("端口"),
-                  numericInput("port", NULL, value = 9898, min = 1, max = 65535)
+                  numericInput("port", NULL, value = 9892, min = 1, max = 65535)
               )
           ),
           div(class = "btn-row",
@@ -465,27 +463,53 @@ server <- function(input, output, session) {
   # K线更新：flag 用于标记是否强制执行全量更新，默认为FALSE，表示系统自行判断！
   update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
     if (is.null(ctp_client)) return(NULL)
+
+    s <- Sys.time()
     
     tryCatch({
-      ticks_df <- ctp_client$ticks(instrument_id)
-      if (is.null(ticks_df) || nrow(ticks_df) == 0) return(NULL)
+      # 直接访问内部数据结构
+      inst_data <- ctp_client$instruments[[instrument_id]]
+      if (is.null(inst_data)) return(NULL)
       
-      current_count <- nrow(ticks_df)
+      current_count <- inst_data$size()
       last_count <- state$tick_counts[[instrument_id]] %||% 0
       
+      # 没有新数据
       if (current_count == last_count) return(NULL)
       
+      # 直接获取新增的tick数据（list of lists格式）
+      new_ticks_list <- inst_data$data[seq(last_count, current_count)]
+      
+      # 更新计数
       state$tick_counts[[instrument_id]] <- current_count
-      base_kline <- state$get_kline_df(instrument_id)
-      new_kline <- ticks_to_kline(ticks_df, period, base_kline)
+      add_debug(paste0("新增tick: ", length(new_ticks_list), "条"))
       
-      if (is.null(new_kline) || nrow(new_kline) == 0) return(NULL)
+      # 获取现有K线
+      base_kline <- state$get_kline_dt(instrument_id)
       
-      state$set_kline_df(instrument_id, new_kline)
+      # 添加DateTime和Period（需要先转换为data.frame）
+      new_ticks_dt <- data.table::rbindlist(new_ticks_list) 
+      datetime_str <- paste(new_ticks_dt$ActionDay, new_ticks_dt$UpdateTime)
+      new_ticks_dt$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S") + new_ticks_dt$UpdateMillisec / 1000
+      period_seconds <- period * 60
+      new_ticks_dt$Period <- floor_date_vectorized(new_ticks_dt$DateTime, period_seconds)
+      new_kline_segment <- aggregate_kline(new_ticks_dt)
+      if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
       
+      # 合并K线
+      if (is.null(base_kline) || nrow(base_kline) == 0) {
+        final_kline <- new_kline_segment
+      } else {
+        final_kline <- merge_kline_dt(base_kline, new_kline_segment)
+      }
+      
+      state$set_kline_dt(instrument_id, final_kline)
+      
+      # 发送到前端
       if (instrument_id == state$current_instrument) {
-        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0 # 是否进行全量更新，flag 表示强制全量！
-        ds <- purrr::transpose(if(is_full) new_kline else new_kline[new_kline$timestamp >= max(base_kline$timestamp), ]) # base_kline不再发送
+        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
+        .ds <- if(is_full) final_kline else final_kline[final_kline$timestamp >= max(new_kline_segment$timestamp), ]
+        ds <- purrr::transpose(.ds) 
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
@@ -494,6 +518,11 @@ server <- function(input, output, session) {
     }, error = function(e) {
       add_debug(paste0("K线错误: ", e$message))
     })
+    
+    elapsed <- as.numeric(Sys.time() - s)
+    if (elapsed > 0.1) {
+      add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
+    }
   }
   
   # K线更新定时器
