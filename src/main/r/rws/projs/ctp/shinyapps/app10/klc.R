@@ -116,6 +116,52 @@ update_stats_batch <- function(prev_stats, new_prices) {
   )
 }
 
+# 随机分配可用端口号函数
+# 参数：
+#   min_port: 最小端口号（默认1024，系统端口以上）
+#   max_port: 最大端口号（默认65535，TCP/IP端口上限）
+#   max_tries: 最大重试次数（避免无限循环）
+# 返回值：可用的整数端口号，失败则返回NULL
+rand_port <- function(min_port = 1024, max_port = 65535, max_tries = 100) {
+  # 加载必要工具包（无依赖，纯基础R函数）
+  # 端口合法性校验
+  if (min_port < 1 || max_port > 65535 || min_port > max_port) {
+    stop("端口范围无效！请设置 1 ≤ 最小端口 ≤ 最大端口 ≤ 65535")
+  }
+  if (max_tries < 1) stop("重试次数必须大于0")
+  
+  # 循环尝试获取可用端口
+  for (i in seq_len(max_tries)) {
+    # 随机生成端口号
+    random_port <- sample(min_port:max_port, 1)
+    
+    # 核心：检测端口是否可用（跨平台兼容：Windows/Linux/macOS）
+    port_available <- tryCatch({
+      # 创建socket连接，超时0.1秒，连接失败=端口可用
+      con <- suppressWarnings(socketConnection(
+        host = "localhost",
+        port = random_port,
+        server = FALSE,  # 客户端模式（检测端口是否被监听）
+        blocking = FALSE,
+        timeout = 0.1
+      ))
+      close(con)
+      FALSE  # 能连接=端口被占用
+    }, error = function(e) {
+      TRUE   # 连接失败=端口可用
+    })
+    
+    # 找到可用端口，直接返回
+    if (port_available) {
+      return(random_port)
+    }
+  }
+  
+  # 重试多次仍未找到可用端口
+  warning(sprintf("尝试%d次后未找到可用端口，请扩大端口范围或重试", max_tries))
+  return(NULL)
+}
+
 # ============ 状态管理类 ============
 
 InstrumentStateManager <- R6::R6Class(
@@ -265,7 +311,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   state <- InstrumentStateManager$new()
-  ctp_client <- NULL
+  ctpclient <- NULL
   is_connected <- reactiveVal(FALSE)
   available_instruments <- character()
   running <- TRUE
@@ -319,14 +365,14 @@ server <- function(input, output, session) {
   price_data <- reactivePoll(
     intervalMillis = 500, session = session,
     checkFunc = function() {
-      if (is.null(ctp_client) || is.null(state$current_instrument_id)) return(NULL) 
-      tryCatch(ctp_client$lastupdate, error = function(e) NULL)
+      if (is.null(ctpclient) || is.null(state$current_instrument_id)) return(NULL) 
+      tryCatch(ctpclient$lastupdate, error = function(e) NULL)
     },
     valueFunc = function() {
       inst_id <- state$current_instrument_id
-      if (is.null(ctp_client) || is.null(inst_id)) return(NULL) 
+      if (is.null(ctpclient) || is.null(inst_id)) return(NULL) 
       
-      inst_entity <- ctp_client$instruments[[inst_id]]
+      inst_entity <- ctpclient$instruments[[inst_id]]
       current_n <- inst_entity$offset
       if (current_n < 1) return(NULL)
       
@@ -483,13 +529,13 @@ server <- function(input, output, session) {
   
   # 清理函数
   send_undump_command <- function() {
-    if (is.null(ctp_client)) return(FALSE)
+    if (is.null(ctpclient)) return(FALSE)
     tryCatch({
-      if (!is.null(ctp_client$.sessionfd) && !is.null(ctp_client$.conn)) {
-        undump_cmd <- sprintf("undump %s", ctp_client$.sessionfd)
+      if (!is.null(ctpclient$.sessionfd) && !is.null(ctpclient$.conn)) {
+        undump_cmd <- sprintf("undump %s", ctpclient$.sessionfd)
         add_debug(paste0("发送 undump: ", undump_cmd))
-        writeLines(undump_cmd, ctp_client$.conn)
-        response <- base::readLines(ctp_client$.conn, n = 1, warn = FALSE)
+        writeLines(undump_cmd, ctpclient$.conn)
+        response <- base::readLines(ctpclient$.conn, n = 1, warn = FALSE)
         Sys.sleep(0.1)
         return(TRUE)
       }
@@ -501,9 +547,9 @@ server <- function(input, output, session) {
   }
   
   stop_client <- function() {
-    if (is.null(ctp_client)) return()
+    if (is.null(ctpclient)) return()
     tryCatch({
-      ctp_client$stop()
+      ctpclient$stop()
       add_debug("客户端已停止")
     }, error = function(e) {
       add_debug(paste0("停止客户端出错: ", e$message))
@@ -512,11 +558,11 @@ server <- function(input, output, session) {
   
   reset_env <- function(full_reset = TRUE) {
     add_debug("开始清理...")
-    if (!is.null(ctp_client)) {
+    if (!is.null(ctpclient)) {
       send_undump_command()
       stop_client()
     }
-    ctp_client <<- NULL
+    ctpclient <<- NULL
     is_connected(FALSE)
     available_instruments <<- character()
     current_tick(NULL)
@@ -542,13 +588,13 @@ server <- function(input, output, session) {
   
   # K线更新：flag 用于标记是否强制执行全量更新，默认为FALSE，表示系统自行判断！
   update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
-    if (is.null(ctp_client)) return(NULL)
+    if (is.null(ctpclient)) return(NULL)
 
     begtime <- Sys.time() # 开始时间锚点
     
     tryCatch({
       # 直接访问内部数据结构
-      inst_entity <- ctp_client$instruments[[instrument_id]]
+      inst_entity <- ctpclient$instruments[[instrument_id]]
       if (is.null(inst_entity)) return(NULL)
       
       current_count <- inst_entity$size()
@@ -607,14 +653,14 @@ server <- function(input, output, session) {
   # K线更新定时器
   start_kline_updater <- function() {
     update_kline <- function() {
-      if (!running || is.null(ctp_client)) return()
+      if (!running || is.null(ctpclient)) return()
       inst_id <- state$current_instrument_id
       period <- state$current_period
       if (!is.null(inst_id) && inst_id != "") {
         update_and_send_kline(inst_id, period)
       }
       push_interval <- isolate(input$push_interval) %||% 1
-      if (running && !is.null(ctp_client)) {
+      if (running && !is.null(ctpclient)) {
         timers$kline <<- later::later(update_kline, push_interval)
       }
     }
@@ -625,9 +671,9 @@ server <- function(input, output, session) {
   # 合约列表更新
   start_instrument_updater <- function() {
     update_instruments <- function() {
-      if (!running || is.null(ctp_client)) return()
+      if (!running || is.null(ctpclient)) return()
       tryCatch({
-        instrument_ids <- if (!is.null(ctp_client$instrumentids)) ctp_client$instrumentids else character()
+        instrument_ids <- if (!is.null(ctpclient$instrumentids)) ctpclient$instrumentids else character()
         if (length(instrument_ids) > 0 && !identical(sort(instrument_ids), sort(available_instruments))) {
           available_instruments <<- instrument_ids
           current_selection <- isolate(input$instrument)
@@ -638,7 +684,7 @@ server <- function(input, output, session) {
       }, error = function(e) {
         add_debug(paste0("合约列表错误: ", e$message))
       })
-      if (running && !is.null(ctp_client)) {
+      if (running && !is.null(ctpclient)) {
         timers$instrument <<- later::later(update_instruments, 5)
       }
     }
@@ -682,7 +728,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$connect_btn, {
     add_debug("启动连接...")
-    if (!is.null(ctp_client)) {
+    if (!is.null(ctpclient)) {
       add_debug("清理旧连接...")
       reset_env(full_reset = TRUE)
       Sys.sleep(0.5)
@@ -702,12 +748,17 @@ server <- function(input, output, session) {
     last_price_data$min <- NULL
     last_price_data$n <- NULL
     last_price_data$updatetime <- NULL
+
+    registerapp <- \(app, envir = .GlobalEnv) {
+      if (is.null(.GlobalEnv$apps)) envir$apps <- new.env(hash = TRUE)
+      appkey <- gettextf("APP%05d", length(envir$apps) + 1)
+      assign(appkey, app, envir = envir$apps)
+    }
     
     tryCatch({
       if (!exists("ctpd_async")) stop("ctpd_async 未定义")
-      client <- ctpd_async(host = input$host, port = input$port)
-      assign("ctpclient", client, envir = as.environment(".SqlQueryEnv"))
-      ctp_client <<- client
+      ctpclient <<- ctpd_async(host = input$host, port = input$port)
+      registerapp(list(ctpclient = ctpclient, state = state))
       is_connected(TRUE)
       add_debug("连接成功")
       show_notification("连接成功", "message", 3)
@@ -721,7 +772,7 @@ server <- function(input, output, session) {
   }
   
   observeEvent(input$disconnect_btn, {
-    if (!is.null(ctp_client)) {
+    if (!is.null(ctpclient)) {
       add_debug("停止连接...")
       running <<- FALSE
       stop_timers()
@@ -738,7 +789,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$refresh_btn, {
     instrument_id <- state$current_instrument_id
-    if (!is.null(instrument_id) && !is.null(ctp_client)) {
+    if (!is.null(instrument_id) && !is.null(ctpclient)) {
       add_debug(paste0("刷新: ", instrument_id))
       state$clear_instrument(instrument_id)
       state$tick_counts[[instrument_id]] <- 0
@@ -762,7 +813,7 @@ server <- function(input, output, session) {
   session$onSessionEnded(function() {
     running <<- FALSE
     stop_timers()
-    if (!is.null(ctp_client)) {
+    if (!is.null(ctpclient)) {
       send_undump_command()
       stop_client()
     }
@@ -1284,7 +1335,8 @@ create_frontend_files()
 # 特别是修改操作,由于实时计算的tickdata数据量很大，print(MA605$data) 这种直接打印tickdata源数据的方式，会产生死锁
 # 因为，tickdata的推送间隔是500ms, 半秒钟是print不完的！
 #
-# # 连接方式：cat - | nc localhost 9111
+# # 连接方式：cat - | nc localhost ${svskt_port}
+#
 # # 使用示例：
 # # 查看内存合约
 #   ctpclient$instruments |> ls()
@@ -1300,9 +1352,19 @@ create_frontend_files()
 #   insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> write.csv("ma605.csv")
 # # 实时统计价格信息并绘图成pdf文件
 #   pdf("ma605_price_hist.pdf"); insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> with(hist(LastPrice)); dev.off();
+# # 查看应用信息
+#   apps |> ls() # 查看app
+#   apps$APP00001$state$attrs |> ls() # 查看app属性
+#   apps$APP00001$state$attrs$ao2505 |> unlist() # 查看属性
+#
 # # ...
+#
 later::later(\() {
-  svskt_port <- 9111L
+  svskt_port <- rand_port() # 随机端口号
+  if (is.null(svskt_port)) {
+    message(gettextf("无法分配有效端口号，放弃启动CTP R CONSOLE！"))
+    return (NULL)
+  }
   prompt_str <- "R > "
   welcomed <- new.env(parent = emptyenv())
   welcome_msg <- paste0("CTP R CONSOLE V1.0\n", Sys.time())
@@ -1338,7 +1400,7 @@ later::later(\() {
   ', svskt_port, welcome_msg, prompt_str)
   try(tcltk::tcl("eval", tcl_cmd), silent = TRUE)
   
-  message("svSocket 已启动 @ ", svskt_port)
+  message("CTP R CONSOLE Listening on ", svskt_port, "\n\n")
 }, delay = 3)
 
 shinyApp(ui, server)
