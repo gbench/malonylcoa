@@ -212,6 +212,189 @@ InstrumentStateManager <- R6::R6Class(
   )
 )
 
+# ctpd_async2 异步调用客户端
+ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.3) {
+    for (pkg in c("later", "jsonlite", "data.table")) {
+        if (!require(pkg, character.only = TRUE)) install.packages(pkg)
+        library(pkg, character.only = TRUE)
+    }
+    
+    envir <- new.env()
+    envir$instruments <- new.env()
+    envir$instrumentids <- character()
+    envir$totalticks <- 0
+    envir$lastupdate <- Sys.time()
+    envir$.running <- FALSE
+    
+    .create_instrument <- function(capacity = 20000) {
+        inst <- new.env()
+        inst$.capacity <- capacity
+        inst$.offset <- 0
+        
+        # 行情数据原子向量
+        inst$LastPrice <- numeric(capacity)
+        inst$Volume <- integer(capacity)
+        inst$OpenInterest <- integer(capacity)
+        inst$DateTime <- numeric(capacity)
+        
+        # 盘口数据 (5档)
+        for (i in 1:5) {
+            inst[[paste0("AskPrice", i)]] <- numeric(capacity)
+            inst[[paste0("AskVolume", i)]] <- integer(capacity)
+            inst[[paste0("BidPrice", i)]] <- numeric(capacity)
+            inst[[paste0("BidVolume", i)]] <- integer(capacity)
+        }
+        
+        inst$add <- function(tick) {
+            j <- inst$.offset + 1
+            n <- length(inst$LastPrice)
+            
+            # 线性扩容
+            if (j > n) {
+                new_cap <- inst$.capacity * (1 + n %/% inst$.capacity)
+                length(inst$LastPrice) <- new_cap
+                length(inst$Volume) <- new_cap
+                length(inst$OpenInterest) <- new_cap
+                length(inst$DateTime) <- new_cap
+                
+                for (i in 1:5) {
+                    length(inst[[paste0("AskPrice", i)]]) <- new_cap
+                    length(inst[[paste0("AskVolume", i)]]) <- new_cap
+                    length(inst[[paste0("BidPrice", i)]]) <- new_cap
+                    length(inst[[paste0("BidVolume", i)]]) <- new_cap
+                }
+            }
+            
+            # 行情数据
+            inst$LastPrice[j] <- tick$LastPrice
+            inst$Volume[j] <- tick$Volume
+            inst$OpenInterest[j] <- tick$OpenInterest %||% 0
+            
+            # 盘口数据
+            for (i in 1:5) {
+                inst[[paste0("AskPrice", i)]][j] <- tick[[paste0("AskPrice", i)]] %||% 0
+                inst[[paste0("AskVolume", i)]][j] <- tick[[paste0("AskVolume", i)]] %||% 0
+                inst[[paste0("BidPrice", i)]][j] <- tick[[paste0("BidPrice", i)]] %||% 0
+                inst[[paste0("BidVolume", i)]][j] <- tick[[paste0("BidVolume", i)]] %||% 0
+            }
+            
+            # 预计算 DateTime
+            dt_str <- paste(tick$ActionDay, tick$UpdateTime)
+            inst$DateTime[j] <- as.numeric(as.POSIXct(dt_str, format = "%Y%m%d %H:%M:%S") + tick$UpdateMillisec / 1000)
+            
+            inst$.offset <- j
+        }
+        
+        inst$size <- function() inst$.offset
+        
+        # 获取最新 tick（用于盘口显示）
+        inst$last_tick <- function() {
+            if (inst$.offset == 0) return(NULL)
+            j <- inst$.offset
+            tick <- list(
+                LastPrice = inst$LastPrice[j],
+                Volume = inst$Volume[j],
+                OpenInterest = inst$OpenInterest[j]
+            )
+            for (i in 1:5) {
+                tick[[paste0("AskPrice", i)]] <- inst[[paste0("AskPrice", i)]][j]
+                tick[[paste0("AskVolume", i)]] <- inst[[paste0("AskVolume", i)]][j]
+                tick[[paste0("BidPrice", i)]] <- inst[[paste0("BidPrice", i)]][j]
+                tick[[paste0("BidVolume", i)]] <- inst[[paste0("BidVolume", i)]][j]
+            }
+            tick
+        }
+        
+        # 获取 data.table 切片（用于K线聚合）
+        inst$ticks_dt <- function(idx, period_seconds = NULL) {
+            dt <- data.table::data.table(
+                LastPrice = inst$LastPrice[idx],
+                Volume = inst$Volume[idx],
+                OpenInterest = inst$OpenInterest[idx]
+            )
+            
+            if (!is.null(period_seconds)) {
+                dt$Period <- floor(inst$DateTime[idx] / period_seconds) * period_seconds
+            }
+            
+            dt
+        }
+        
+        inst
+    }
+    
+    envir$addtick <- function(tickdata) {
+        id <- tickdata$InstrumentID
+        if (is.null(envir$instruments[[id]])) {
+            envir$instruments[[id]] <- .create_instrument()
+            envir$instrumentids <- unique(c(envir$instrumentids, id))
+        }
+        envir$instruments[[id]]$add(tickdata)
+        envir$totalticks <- envir$totalticks + 1
+        envir$lastupdate <- Sys.time()
+    }
+    
+    # 获取最新 tick（供盘口显示）
+    envir$last_tick <- function(instrument_id) {
+        if (is.null(envir$instruments[[instrument_id]])) return(NULL)
+        envir$instruments[[instrument_id]]$last_tick()
+    }
+    
+    # 网络连接
+    envir$.conn <- tryCatch({
+        socketConnection(host = host, port = port, blocking = FALSE, open = "r+", timeout = 2)
+    }, error = function(e) NULL)
+    
+    if (is.null(envir$.conn)) stop("无法连接到 CTP 服务器")
+    
+    ltrim <- function(x) gsub("^[\\s>]+", "", x, perl = TRUE)
+    flush <- function() flush.connection(envir$.conn)
+    
+    Sys.sleep(0.3)
+    readLines(envir$.conn)
+    writeLines("hi", envir$.conn)
+    flush()
+    Sys.sleep(0.3)
+    loginfo <- ltrim(readLines(envir$.conn))
+    envir$.sessionfd <- sub(".*my friend\\[([0-9]+)\\].*", "\\1", loginfo, perl = TRUE)
+    writeLines("dump -1", envir$.conn)
+    flush()
+    
+    message("CTPD 已连接, sessionfd: ", envir$.sessionfd)
+    
+    envir$.rdcb <- function() {
+        if (!envir$.running) return()
+        repeat {
+            line <- tryCatch(ltrim(readLines(envir$.conn, n = 1)), error = function(e) NULL)
+            if (is.null(line) || length(line) < 1) break
+            if (grepl("^\\{", line)) {
+                tryCatch(envir$addtick(jsonlite::fromJSON(line)), error = function(e) {})
+            }
+        }
+        later::later(envir$.rdcb, delay = delay)
+    }
+    
+    envir$.running <- TRUE
+    later::later(envir$.rdcb, delay = delay)
+    
+    envir$stop <- function() {
+        envir$.running <- FALSE
+        if (!is.null(envir$.conn)) {
+            tryCatch({
+                writeLines(sprintf("undump %s", envir$.sessionfd), envir$.conn)
+                flush()
+                close(envir$.conn)
+            }, error = function(e) {})
+        }
+        message("CTPD 已停止")
+    }
+    
+    reg.finalizer(envir, function(e) if (!is.null(e$stop)) e$stop(), onexit = TRUE)
+    message("CTPD 异步守护进程已启动")
+    
+    envir
+}
+
 # ============ UI模块 ============
 
 ui <- fluidPage(
@@ -373,7 +556,7 @@ server <- function(input, output, session) {
       if (is.null(ctpclient) || is.null(inst_id)) return(NULL) 
       
       inst_entity <- ctpclient$instruments[[inst_id]]
-      current_n <- inst_entity$offset
+      current_n <- inst_entity$size()
       if (current_n < 1) return(NULL)
       
       # 获取之前保存的状态
@@ -381,7 +564,7 @@ server <- function(input, output, session) {
       
       if (is.null(prev_stats) || prev_stats$n == 0) {
         # 首次：提取所有价格并计算完整统计
-        all_prices <- sapply(seq(current_n), \(i) inst_entity$data[[i]]$LastPrice)
+        all_prices <- inst_entity$LastPrice[1:current_n]
         stats <- list(
           n = current_n,
           mean = mean(all_prices),
@@ -394,7 +577,7 @@ server <- function(input, output, session) {
         # 保存首次提取的价格向量？不需要，只需要统计量
       } else if (current_n > prev_stats$n) {
         # 有新数据：只获取增量部分
-        new_prices <- sapply(seq(prev_stats$n + 1, current_n), \(i) inst_entity$data[[i]]$LastPrice)
+        new_prices <- inst_entity$LastPrice[seq(prev_stats$n + 1, current_n)]
         stats <- update_stats_batch(prev_stats, new_prices)
       } else {
         # 无新数据，保持原样
@@ -405,7 +588,7 @@ server <- function(input, output, session) {
       state$attrs[[inst_id]] <- stats
       
       # 获取最新 tick 数据
-      tick <- inst_entity$data[[current_n]]
+      tick <- inst_entity$last_tick()
       
       # 返回结果
       list(
@@ -416,7 +599,7 @@ server <- function(input, output, session) {
           min = stats$min,
           max = stats$max,
           last = stats$last,
-          updatetime = tick$UpdateTime
+          updatetime = as.POSIXct(inst_entity$DateTime[current_n])
         ),
         tick = tick
       )
@@ -589,64 +772,54 @@ server <- function(input, output, session) {
   # K线更新：flag 用于标记是否强制执行全量更新，默认为FALSE，表示系统自行判断！
   update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
     if (is.null(ctpclient)) return(NULL)
-
-    begtime <- Sys.time() # 开始时间锚点
+    
+    begtime <- Sys.time()
     
     tryCatch({
-      # 直接访问内部数据结构
       inst_entity <- ctpclient$instruments[[instrument_id]]
       if (is.null(inst_entity)) return(NULL)
       
       current_count <- inst_entity$size()
       last_count <- state$tick_counts[[instrument_id]] %||% 0
       
-      # 没有新数据
-      if (current_count == last_count) return(NULL)
+      if (!flag && current_count == last_count) return(NULL)
       
-      # 直接获取新增的tick数据（list of lists格式）
-      new_ticks_list <- inst_entity$data[seq(last_count + 1, current_count)]
+      if (flag || last_count == 0) {
+          idx <- 1:current_count
+          add_debug(paste0("全量tick: ", current_count, "条"))
+      } else {
+          idx <- (last_count + 1):current_count
+          add_debug(paste0("新增tick: ", current_count - last_count, "条"))
+      }
       
-      # 更新计数
-      state$tick_counts[[instrument_id]] <- current_count
-      add_debug(paste0("新增tick: ", length(new_ticks_list), "条"))
+      new_kline_segment <- aggregate_kline(inst_entity$ticks_dt(idx, period * 60))
       
-      # 获取现有K线
-      base_kline <- state$get_kline_dt(instrument_id)
-      
-      # 添加DateTime和Period（需要先转换为data.table）
-      new_ticks_dt <- data.table::rbindlist(new_ticks_list) 
-      datetime_str <- paste(new_ticks_dt$ActionDay, new_ticks_dt$UpdateTime)
-      new_ticks_dt$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S") + new_ticks_dt$UpdateMillisec / 1000
-      period_seconds <- period * 60 # 转换成秒数
-      new_ticks_dt$Period <- floor_date_vectorized(new_ticks_dt$DateTime, period_seconds)
-      new_kline_segment <- aggregate_kline(new_ticks_dt) # 新数据聚合
       if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
       
-      # 合并K线
+      base_kline <- state$get_kline_dt(instrument_id)
       if (is.null(base_kline) || nrow(base_kline) == 0) {
-        final_kline <- new_kline_segment
+          final_kline <- new_kline_segment
       } else {
-        final_kline <- merge_kline_dt(base_kline, new_kline_segment) # 新老合并
+          final_kline <- merge_kline_dt(base_kline, new_kline_segment)
       }
       
       state$set_kline_dt(instrument_id, final_kline)
+      state$tick_counts[[instrument_id]] <- current_count
       
-      # 发送到前端
       if (instrument_id == state$current_instrument_id) {
         is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
-        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ]) 
+        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ])
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
       }
-      
     }, error = function(e) {
-      add_debug(paste0("K线错误: ", e$message))
+        add_debug(paste0("K线错误: ", e$message))
     })
     
     elapsed <- as.numeric(Sys.time() - begtime)
     if (elapsed > 0.1) {
-      add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
+        add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
     }
   }
   
@@ -756,8 +929,8 @@ server <- function(input, output, session) {
     }
     
     tryCatch({
-      if (!exists("ctpd_async")) stop("ctpd_async 未定义")
-      ctpclient <<- ctpd_async(host = input$host, port = input$port)
+      if (!exists("ctpd_async2")) stop("ctpd_async2 未定义")
+      ctpclient <<- ctpd_async2(host = input$host, port = input$port)
       registerapp(list(ctpclient = ctpclient, state = state))
       is_connected(TRUE)
       add_debug("连接成功")
