@@ -1297,6 +1297,8 @@ create_frontend_files()
 #   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> sd()
 # # 把tickdata 导出到本地文件
 #   insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> write.csv("ma605.csv")
+# # 实时统计价格信息并绘图成pdf文件
+#   pdf("ma605_price_hist.pdf"); insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> with(hist(LastPrice)); dev.off();
 # # ...
 later::later(\() {
   svskt_port <- 9111L
