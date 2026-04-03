@@ -1283,6 +1283,7 @@ create_frontend_files()
 # 特别是修改操作,由于实时计算的tickdata数据量很大，print(MA605$data) 这种直接打印tickdata源数据的方式，会产生死锁
 # 因为，tickdata的推送间隔是500ms, 半秒钟是print不完的！
 #
+# # 连接方式：cat - | nc localhost 9111
 # # 使用示例：
 # # 查看内存合约
 #   ctpclient$instruments |> ls()
@@ -1294,6 +1295,9 @@ create_frontend_files()
 #   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> summary()
 # # 实时查看合约MA605的数据统计：计算标准差
 #   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> sd()
+# # 把tickdata 导出到本地文件
+#   insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> write.csv("ma605.csv")
+# # ...
 later::later(\() {
   svskt_port <- 9111L
   prompt_str <- "R > "
