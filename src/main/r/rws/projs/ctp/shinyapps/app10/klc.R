@@ -54,29 +54,30 @@ merge_kline_dt <- function(base_dt, new_dt) {
   # 确保是data.table
   if (!data.table::is.data.table(base_dt)) base_dt <- data.table::as.data.table(base_dt)
   if (!data.table::is.data.table(new_dt)) new_dt <- data.table::as.data.table(new_dt)
+
+  # 核心逻辑：使用 data.table 的 [i, j, on] 语法进行更新连接
+  # i = new_dt (右表)
+  # x = base_dt (左表)
+  # on = "timestamp" (匹配键)
+  # j = `:=` (原地更新操作)
   
-  # 找出需要合并的键
-  setkey(base_dt, timestamp)
-  setkey(new_dt, timestamp)
-  
-  # 使用data.table的merge
-  merged <- merge(base_dt, new_dt, by = "timestamp", all = TRUE, suffixes = c("", "_new"))
-  
-  # 处理合并后的数据
-  merged[, `:=`(
-    open = ifelse(is.na(open), open_new, open),
-    high = ifelse(is.na(high), high_new, pmax(high, high_new, na.rm = TRUE)),
-    low = ifelse(is.na(low), low_new, pmin(low, low_new, na.rm = TRUE)),
-    close = ifelse(is.na(close), close_new, close_new),
-    volume = ifelse(is.na(volume), volume_new, volume + volume_new),
-    oint = ifelse(is.na(oint), oint_new, oint_new)
+  # 更新连接
+  base_dt[new_dt, on = "timestamp", `:=`(
+    high   = pmax(high, i.high),
+    low    = pmin(low, i.low),
+    close  = i.close,
+    volume = volume + i.volume,
+    oint   = i.oint
   )]
   
-  # 删除临时列
-  merged[, c("open_new", "high_new", "low_new", "close_new", "volume_new", "oint_new") := NULL]
+  # 追加新行
+  new_rows <- new_dt[!base_dt, on = "timestamp"]
+  if (nrow(new_rows) > 0) {
+    base_dt <- rbind(base_dt, new_rows)
+    data.table::setorder(base_dt, timestamp)  # 保持有序
+  }
   
-  setorder(merged, timestamp)
-  merged
+  return(base_dt)
 }
 
 # 批量递推更新统计量的函数
