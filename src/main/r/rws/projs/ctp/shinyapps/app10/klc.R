@@ -1329,6 +1329,7 @@ message("前端文件创建完成")
 
 create_frontend_files()
 
+# ----------------------------------------------------------------------------------------------------------------------------------
 # 创建R命令控制台
 #
 # 需要注意 ctpclient 是实时CTP内存数据库环境，需要要小心使用，因为此时shinyApp在对其进行数据读写！
@@ -1352,13 +1353,28 @@ create_frontend_files()
 #   insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> write.csv("ma605.csv")
 # # 实时统计价格信息并绘图成pdf文件
 #   pdf("ma605_price_hist.pdf"); insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> with(hist(LastPrice)); dev.off();
-# # 查看应用信息
+#
+# 一、Shiny 原生容器化特性
+# Shiny 架构天然隔离：每打开一个网页界面，就会分配独立 Server 实例，等价于轻量化内存应用容器（apps）；
+# 业务映射：页面 URL 等同于 Docker 容器镜像；重复加载 / 新开该 URL 页面，等价于执行容器创建：
+# Docker create --name APP00001 ${IMAGE_URL}，生成独立隔离的应用实例。
+# 二、全局注册与管控能力
+# 所有用户启动的 Shiny 应用实例，会自动纳入全局全景 apps 注册池；
+# 依托「CTP R 控制台」可登入系统，实现对所有内存应用容器的动态运维管理；
+# 落地场景：单合约多周期指标联动同步、关联合约套利价差实时跟踪等跨实例业务。
+# 三、CTP R 控制台：轻量化编排内核
+# 本质定位：CTP R CONSOLE 是搭建在内存层的容器编排系统（对标 Docker+K8s）；
+# 扩展能力：可通过控制台创建 socketConnection，动态推送 / 同步各 App 实例数据；
+# 最终效果：打通所有内存容器，自主构建私有化容器通信网络，实现跨实例数据互通、策略联动。
+#
+# # 查看应用容器信息
 #   apps |> ls() # 查看app
 #   apps$APP00001$state$attrs |> ls() # 查看app属性
 #   apps$APP00001$state$attrs$ao2505 |> unlist() # 查看属性
 #
 # # ...
 #
+# ----------------------------------------------------------------------------------------------------------------------------------
 later::later(\() {
   svskt_port <- rand_port() # 随机端口号
   if (is.null(svskt_port)) {
