@@ -1,7 +1,7 @@
 # app.R - 修复版v4.2：恢复完整指标，保持布局不变
 
 # 加载必要的包
-required_packages <- c("later", "shiny", "shinydashboard", "dplyr", "jsonlite", "lubridate", "data.table", "purrr", "R6")
+required_packages <- c("later", "shiny", "shinydashboard", "dplyr", "jsonlite", "lubridate", "data.table", "purrr", "R6", "svSocket")
 for(pkg in required_packages) {
   if(!require(pkg, character.only = TRUE)) {
     install.packages(pkg)
@@ -705,6 +705,7 @@ server <- function(input, output, session) {
     tryCatch({
       if (!exists("ctpd_async")) stop("ctpd_async 未定义")
       client <- ctpd_async(host = input$host, port = input$port)
+      assign("ctpclient", client, envir = as.environment(".SqlQueryEnv"))
       ctp_client <<- client
       is_connected(TRUE)
       add_debug("连接成功")
@@ -1275,5 +1276,46 @@ message("前端文件创建完成")
 }
 
 create_frontend_files()
+
+# 创建R命令控制台
+later::later(\() {
+  svskt_port <- 9111L
+  prompt_str <- "R > "
+  welcomed <- new.env(parent = emptyenv())
+  welcome_msg <- paste0("CTP R CONSOLE V1.0\n", Sys.time())
+
+  try(svSocket::stopSocketServer(port = svskt_port), silent = TRUE)
+  
+  svSocket::startSocketServer(
+    port = svskt_port,
+    procfun = \(msg, socket, server_port, ...) {
+      key <- paste0(server_port, "_", socket)
+      if (!exists(key, envir = welcomed)) {
+        assign(key, TRUE, envir = welcomed)
+        svSocket::par_socket_server( client = socket, server_port = server_port, bare = FALSE, prompt = prompt_str, continue = "+ ")
+      }
+      res <- svSocket::process_socket_server(msg, socket, server_port, ...)
+      send_socket_clients(prompt_str, sockets = socket, server_port = server_port) # 发送一个提示符作为输入与输出的分隔！
+      res
+    },
+    local = TRUE
+  ) # 只在本地主机打开控制台
+  
+  # 只修改欢迎消息，不干预提示符
+  tcl_cmd <- sprintf('
+    rename sock_accept_%1$d __orig_sock_accept_%1$d
+    proc sock_accept_%1$d {sock addr port} {
+      __orig_sock_accept_%1$d $sock $addr $port
+      catch {
+        puts $sock "%2$s"
+        puts -nonewline $sock "%3$s"
+        flush $sock
+      }
+    }
+  ', svskt_port, welcome_msg, prompt_str)
+  try(tcltk::tcl("eval", tcl_cmd), silent = TRUE)
+  
+  message("svSocket 已启动 @ ", svskt_port)
+}, delay = 3)
 
 shinyApp(ui, server)
