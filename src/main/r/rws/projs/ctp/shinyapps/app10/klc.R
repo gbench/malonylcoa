@@ -1278,6 +1278,22 @@ message("前端文件创建完成")
 create_frontend_files()
 
 # 创建R命令控制台
+#
+# 需要注意 ctpclient 是实时CTP内存数据库环境，需要要小心使用，因为此时shinyApp在对其进行数据读写！
+# 特别是修改操作,由于实时计算的tickdata数据量很大，print(MA605$data) 这种直接打印tickdata源数据的方式，会产生死锁
+# 因为，tickdata的推送间隔是500ms, 半秒钟是print不完的！
+#
+# # 使用示例：
+# # 查看内存合约
+#   ctpclient$instruments |> ls()
+# # 记录合约集合
+#   insts <- ctpclient$instruments
+# # 查看合约MA605 的 数据内容
+#   insts |> with(MA605$size())
+# # 实时查看合约MA605的数据统计：FG605$data中记录的就是合约交易的tickdata
+#   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> summary()
+# # 实时查看合约MA605的数据统计：计算标准差
+#   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> sd()
 later::later(\() {
   svskt_port <- 9111L
   prompt_str <- "R > "
