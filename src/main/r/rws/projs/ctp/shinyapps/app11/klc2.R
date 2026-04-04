@@ -779,7 +779,7 @@ server <- function(input, output, session) {
       if (!flag && current_n == last_n) return(NULL)
       
       idx <- if (flag || last_n == 0) { add_debug(paste0("全量tick: ", current_n, "条")); 1:current_n } 
-            else { add_debug(paste0("新增tick: ", current_n - last_n, "条")); (last_n + 1):current_n }
+             else { add_debug(paste0("新增tick: ", current_n - last_n, "条")); (last_n + 1):current_n }
       new_kline_segment <- aggregate_kline(inst_entity$ticks_dt(idx, period * 60)) # 聚合K线&生成K线片
       
       if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
@@ -1476,11 +1476,11 @@ create_frontend_files()
 #
 # # 使用示例：
 # # 查看应用列表
-# apps |> ls()
+#   apps |> ls()
 # # 查看应用对象结构
-# apps$APP00001 |> ls()
+#   apps$APP00001 |> ls()
 # # 提取ctpclient
-# ctpclient <- apps$APP00001$ctpclient; ctpclient |> ls()
+#   ctpclient <- apps$APP00001$ctpclient; ctpclient |> ls()
 # # 查看内存合约
 #   insts <- ctpclient$instruments; insts |> ls()
 # # 查看合约MA605的数据内容(数据容量)
