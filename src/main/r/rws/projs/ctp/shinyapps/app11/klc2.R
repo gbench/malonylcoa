@@ -212,8 +212,9 @@ InstrumentStateManager <- R6::R6Class(
   )
 )
 
-# ctpd_async2 异步调用客户端
+# CTPD 异步守护进程(驱动客户端)
 ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
+
     for (pkg in c("later", "jsonlite", "data.table")) {
         if (!require(pkg, character.only = TRUE)) install.packages(pkg)
         library(pkg, character.only = TRUE)
@@ -225,7 +226,8 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
     envir$totalticks <- 0
     envir$lastupdate <- Sys.time()
     envir$.running <- FALSE
-    
+   
+    # 创建合约 
     .create_instrument <- function(capacity = 20000) {
         inst <- new.env()
         inst$.capacity <- capacity
@@ -245,6 +247,7 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
             inst[[paste0("BidVolume", i)]] <- integer(capacity)
         }
         
+        # 增加一个tick	
         inst$add <- function(tick) {
             j <- inst$.offset + 1
             n <- length(inst$LastPrice)
@@ -284,7 +287,8 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
             
             inst$.offset <- j
         }
-        
+    
+        # ticks数量(合约大小)	
         inst$size <- function() inst$.offset
         
         # 获取最新 tick（用于盘口显示）
@@ -321,8 +325,9 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
         }
         
         inst
-    }
-    
+    } # .create_instrument 
+   
+    # 增加tick 
     envir$addtick <- function(tickdata) {
         id <- tickdata$InstrumentID
         if (is.null(envir$instruments[[id]])) {
@@ -350,18 +355,19 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
     ltrim <- function(x) gsub("^[\\s>]+", "", x, perl = TRUE)
     flush <- function() flush.connection(envir$.conn)
     
-    Sys.sleep(0.3)
+    Sys.sleep(0.2)
     readLines(envir$.conn)
     writeLines("hi", envir$.conn)
     flush()
-    Sys.sleep(0.3)
+    Sys.sleep(0.2)
     loginfo <- ltrim(readLines(envir$.conn))
     envir$.sessionfd <- sub(".*my friend\\[([0-9]+)\\].*", "\\1", loginfo, perl = TRUE)
     writeLines("dump -1", envir$.conn)
     flush()
     
     message("CTPD 已连接, sessionfd: ", envir$.sessionfd)
-    
+   
+    # read callback 读取回调 
     envir$.rdcb <- function() {
         if (!envir$.running) return()
         repeat {
@@ -372,28 +378,28 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
             }
         }
         later::later(envir$.rdcb, delay = delay)
-    }
+    } # .rdcb
     
     envir$.running <- TRUE
     later::later(envir$.rdcb, delay = delay)
-    
+   
+    # 停止接收合约
     envir$stop <- function() {
         envir$.running <- FALSE
         if (!is.null(envir$.conn)) {
             tryCatch({
-                writeLines(sprintf("undump %s", envir$.sessionfd), envir$.conn)
-                flush()
-                close(envir$.conn)
+                writeLines(sprintf("undump %s", envir$.sessionfd), envir$.conn); flush() # 注销数据接收会话 
+                close(envir$.conn) # 关闭连接 
             }, error = function(e) {})
-        }
+        } # if
         message("CTPD 已停止")
-    }
+    } # stop
     
-    reg.finalizer(envir, function(e) if (!is.null(e$stop)) e$stop(), onexit = TRUE)
+    reg.finalizer(envir, function(e) if (!is.null(e$stop)) e$stop(), onexit = TRUE) # 确保环境回收时ctp资源被关闭
     message("CTPD 异步守护进程已启动")
     
-    envir
-}
+    envir # 返回结果
+} # ctpd_async2
 
 # ============ UI模块 ============
 
@@ -538,66 +544,41 @@ server <- function(input, output, session) {
     paste0(" | ", state$current_instrument_id)
   })
   
-  # 价格数据轮询
+  # 价格数据轮询(固定间隔500毫秒轮询，因为ctp就是500毫秒的聚合周期)
   price_data <- reactivePoll(intervalMillis = 500, session = session,
-    checkFunc = function() {
-      if (is.null(ctpclient) || is.null(state$current_instrument_id)) return(NULL) 
-      tryCatch(ctpclient$lastupdate, error = function(e) NULL)
-    },
-    valueFunc = function() {
+    checkFunc = function() { # 轮询查验函数
+      if (is.null(ctpclient) || is.null(state$current_instrument_id)) NULL # 数据&状态筛查，无效直接返回
+      else tryCatch(ctpclient$lastupdate, error = function(e) NULL) # 检查最后更新时间
+    }, # checkFunc
+    valueFunc = function() { # 轮询求值函数
       inst_id <- state$current_instrument_id
       if (is.null(ctpclient) || is.null(inst_id)) return(NULL) 
       
-      inst_entity <- ctpclient$instruments[[inst_id]]
-      current_n <- inst_entity$size() # 现在的tick数量
+      inst_entity <- ctpclient$instruments[[inst_id]] # 提取合约对象(ticks数据集)
+      current_n <- inst_entity$size() # 最新的tick数量
       if (current_n < 1) return(NULL)
       
-      # 获取之前保存的状态
-      prev_stats <- state$attrs[[inst_id]]
-      
-      if (is.null(prev_stats) || prev_stats$n == 0) {
+      prev_stats <- state$attrs[[inst_id]] # 获取之前保存的状态
+      stats <- if (is.null(prev_stats) || prev_stats$n == 0) { # 初始统计
         # 首次：提取所有价格并计算完整统计
         all_prices <- inst_entity$LastPrice[1:current_n]
-        stats <- list(
-          n = current_n,
-          mean = mean(all_prices),
-          M2 = sum((all_prices - mean(all_prices))^2),
-          sd = if (current_n > 1) sd(all_prices) else 0,
-          min = min(all_prices),
-          max = max(all_prices),
-          last = all_prices[current_n]
-        )
-        # 保存首次提取的价格向量？不需要，只需要统计量
-      } else if (current_n > prev_stats$n) {
-        # 有新数据：只获取增量部分
-        new_prices <- inst_entity$LastPrice[seq(prev_stats$n + 1, current_n)]
-        stats <- update_stats_batch(prev_stats, new_prices) # 计算统计信息
+        list(n = current_n, mean = mean(all_prices), M2 = sum((all_prices - mean(all_prices))^2), 
+           sd = if (current_n > 1) sd(all_prices) else 0, min = min(all_prices), max = max(all_prices), last = all_prices[current_n]) 
+      } else if (current_n > prev_stats$n) { # 有tick数据到来
         update_and_send_kline(inst_id, state$current_period) # 聚合K线并重绘K线图
-      } else {
-        # 无新数据，保持原样
-        stats <- prev_stats
-      }
+        new_prices <- inst_entity$LastPrice[seq(prev_stats$n + 1, current_n)] # 有新数据：只获取增量部分
+        update_stats_batch(prev_stats, new_prices) # 计算统计信息
+      } else { # 无新数据，保持原样
+        prev_stats
+      } # stats
       
-      # 保存到 state$attrs
-      state$attrs[[inst_id]] <- stats
-      
-      # 获取最新 tick 数据
-      tick <- inst_entity$last_tick()
-      
+      state$attrs[[inst_id]] <- stats # 保存到 state$attrs
+      tick <- inst_entity$last_tick() # 获取最新 tick 数据
+
       # 返回结果
-      list(
-        stats = list(
-          n = stats$n,
-          mean = stats$mean,
-          sd = stats$sd,
-          min = stats$min,
-          max = stats$max,
-          last = stats$last,
-          updatetime = as.POSIXct(inst_entity$DateTime[current_n])
-        ),
-        tick = tick
-      )
-    }
+      list(stats = list(n = stats$n, mean = stats$mean, sd = stats$sd, min = stats$min, max = stats$max, last = stats$last,
+          updatetime = as.POSIXct(inst_entity$DateTime[current_n])), tick = tick)
+    } # valueFunc
   ) # price_data
 
   # 更新价格显示
