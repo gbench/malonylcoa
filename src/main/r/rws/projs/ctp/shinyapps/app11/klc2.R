@@ -1512,20 +1512,24 @@ create_frontend_files()
 # # 连接方式：cat - | nc localhost ${svskt_port}
 #
 # # 使用示例：
+# # 查看应用列表
+# apps |> ls()
+# # 查看应用对象结构
+# apps$APP00001 |> ls()
+# # 提取ctpclient
+# ctpclient <- apps$APP00001$ctpclient; ctpclient |> ls()
 # # 查看内存合约
-#   ctpclient$instruments |> ls()
-# # 记录合约集合
-#   insts <- ctpclient$instruments
-# # 查看合约MA605 的 数据内容
+#   insts <- ctpclient$instruments; insts |> ls()
+# # 查看合约MA605的数据内容(数据容量)
 #   insts |> with(MA605$size())
 # # 实时查看合约MA605的数据统计：FG605$data中记录的就是合约交易的tickdata
-#   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> summary()
+#   insts$MA605$LastPrice |> summary()
 # # 实时查看合约MA605的数据统计：计算标准差
-#   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> sd()
+#   insts$MA605$LastPrice |> sd(na.rm=T)
 # # 把tickdata 导出到本地文件
-#   insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> write.csv("ma605.csv")
+#   insts$MA605 |> with(data.table(as.POSIXct(DateTime), LastPrice, OpenInterest, AskPrice1, AskVolume1, BidPrice1, BidVolume1)) |> na.omit() |> write.csv("ma605.csv")
 # # 实时统计价格信息并绘图成pdf文件
-#   pdf("ma605_price_hist.pdf"); insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> with(hist(LastPrice)); dev.off();
+#   pdf("ma605_price_hist.pdf");  insts$MA605$LastPrice |> hist(); dev.off();
 #
 # 一、Shiny 原生容器化特性
 # Shiny 架构天然隔离：每打开一个网页界面，就会分配独立 Server 实例，等价于轻量化内存应用容器（apps）；

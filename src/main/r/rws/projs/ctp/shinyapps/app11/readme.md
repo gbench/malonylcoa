@@ -266,9 +266,9 @@ sequenceDiagram
     end
     
     loop 每1秒（可配置）
-        Chart->>Client: 请求K线数据
+        Poll->>Client: 检查lastupdate 
         Client->>Client: aggregate_kline
-        Client->>Chart: WebSocket消息
+        Client->>Chart: 推送WebSocket消息
         Chart->>Chart: 更新图表
     end
 ```
