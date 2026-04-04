@@ -266,12 +266,6 @@ ui <- fluidPage(
       ),
       
       div(class = "control-group compact",
-          div(class = "section-title", "推送周期"),
-          sliderInput("push_interval", NULL, min = 0.1, max = 5, value = 1, step = 0.1),
-          div(class = "help-text", "默认1秒，越小越频繁")
-      ),
-      
-      div(class = "control-group compact",
           div(class = "section-title", "合约"),
           selectInput("instrument", NULL, choices = NULL),
           actionButton("refresh_btn", "刷新", icon = icon("sync"), class = "btn-primary btn-small btn-full")
@@ -396,6 +390,7 @@ server <- function(input, output, session) {
         # 有新数据：只获取增量部分
         new_prices <- sapply(seq(prev_stats$n + 1, current_n), \(i) inst_entity$data[[i]]$LastPrice)
         stats <- update_stats_batch(prev_stats, new_prices)
+        update_and_send_kline(inst_id, state$current_period) # 聚合K线并重绘K线图
       } else {
         # 无新数据，保持原样
         stats <- prev_stats
@@ -587,86 +582,56 @@ server <- function(input, output, session) {
   }
   
   # K线更新：flag 用于标记是否强制执行全量更新，默认为FALSE，表示系统自行判断！
-  update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
+    update_and_send_kline <- function(instrument_id, period, flag = FALSE) {
     if (is.null(ctpclient)) return(NULL)
-
-    begtime <- Sys.time() # 开始时间锚点
+    
+    begtime <- Sys.time()
     
     tryCatch({
-      # 直接访问内部数据结构
-      inst_entity <- ctpclient$instruments[[instrument_id]]
+      inst_entity <- ctpclient$instruments[[instrument_id]] # 提取合约对象
       if (is.null(inst_entity)) return(NULL)
       
-      current_count <- inst_entity$size()
-      last_count <- state$tick_counts[[instrument_id]] %||% 0
+      current_n <- inst_entity$size() # 合约中最新的tick数量
+      last_n <- state$tick_counts[[instrument_id]] %||% 0 # 上次或者说最近更新中合约里的tick数量
       
-      # 没有新数据
-      if (current_count == last_count) return(NULL)
+      if (!flag && current_n == last_n) return(NULL)
       
-      # 直接获取新增的tick数据（list of lists格式）
-      new_ticks_list <- inst_entity$data[seq(last_count + 1, current_count)]
-      
-      # 更新计数
-      state$tick_counts[[instrument_id]] <- current_count
-      add_debug(paste0("新增tick: ", length(new_ticks_list), "条"))
-      
-      # 获取现有K线
-      base_kline <- state$get_kline_dt(instrument_id)
-      
-      # 添加DateTime和Period（需要先转换为data.table）
-      new_ticks_dt <- data.table::rbindlist(new_ticks_list) 
+      idx <- if (flag || last_n == 0) { add_debug(paste0("全量tick: ", current_n, "条")); 1:current_n } 
+             else { add_debug(paste0("新增tick: ", current_n - last_n, "条")); (last_n + 1):current_n }
+      new_ticks_ls <- inst_entity$data[seq(last_n + 1, current_n)]
+      new_ticks_dt <- data.table::rbindlist(new_ticks_ls) 
       datetime_str <- paste(new_ticks_dt$ActionDay, new_ticks_dt$UpdateTime)
       new_ticks_dt$DateTime <- as.POSIXct(datetime_str, format = "%Y%m%d %H:%M:%S") + new_ticks_dt$UpdateMillisec / 1000
       period_seconds <- period * 60 # 转换成秒数
       new_ticks_dt$Period <- floor_date_vectorized(new_ticks_dt$DateTime, period_seconds)
-      new_kline_segment <- aggregate_kline(new_ticks_dt) # 新数据聚合
+      new_kline_segment <- aggregate_kline(new_ticks_dt) # 聚合K线&生成K线片
+      
       if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
       
-      # 合并K线
-      if (is.null(base_kline) || nrow(base_kline) == 0) {
-        final_kline <- new_kline_segment
-      } else {
-        final_kline <- merge_kline_dt(base_kline, new_kline_segment) # 新老合并
-      }
-      
+      base_kline <- state$get_kline_dt(instrument_id) # 把上次计算&保存的k线作为基础参考
+      is_empty <- is.null(base_kline) || nrow(base_kline) == 0 # 是否没有基础参考
+      final_kline <- if (is_empty) new_kline_segment else merge_kline_dt(base_kline, new_kline_segment) # 有参考则合并，没参考直接用K线片
+
       state$set_kline_dt(instrument_id, final_kline)
+      state$tick_counts[[instrument_id]] <- current_n
       
-      # 发送到前端
       if (instrument_id == state$current_instrument_id) {
-        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
-        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ]) 
+        is_full <- flag || is_empty
+        ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ])
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
         add_debug(paste0("发送[", if(is_full) "全量" else "增量", "]: ", instrument_id, " | ", length(ds), "条"))
       }
-      
     }, error = function(e) {
-      add_debug(paste0("K线错误: ", e$message))
+        add_debug(paste0("K线错误: ", e$message))
     })
     
     elapsed <- as.numeric(Sys.time() - begtime)
     if (elapsed > 0.1) {
-      add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
+        add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
     }
-  }
-  
-  # K线更新定时器
-  start_kline_updater <- function() {
-    update_kline <- function() {
-      if (!running || is.null(ctpclient)) return()
-      inst_id <- state$current_instrument_id
-      period <- state$current_period
-      if (!is.null(inst_id) && inst_id != "") {
-        update_and_send_kline(inst_id, period)
-      }
-      push_interval <- isolate(input$push_interval) %||% 1
-      if (running && !is.null(ctpclient)) {
-        timers$kline <<- later::later(update_kline, push_interval)
-      }
-    }
-    add_debug(paste0("K线更新器启动: 周期=", state$current_period, "分钟"))
-    update_kline()
-  }
+
+  } # update_and_send_kline
   
   # 合约列表更新
   start_instrument_updater <- function() {
@@ -722,10 +687,6 @@ server <- function(input, output, session) {
     }
   })
   
-  observeEvent(input$push_interval, {
-    add_debug(paste0("推送间隔: ", input$push_interval, "s"))
-  })
-  
   observeEvent(input$connect_btn, {
     add_debug("启动连接...")
     if (!is.null(ctpclient)) {
@@ -763,7 +724,6 @@ server <- function(input, output, session) {
       add_debug("连接成功")
       show_notification("连接成功", "message", 3)
       start_instrument_updater()
-      start_kline_updater()
     }, error = function(e) {
       is_connected(FALSE)
       add_debug(paste0("连接失败: ", e$message))
@@ -1339,6 +1299,12 @@ create_frontend_files()
 # # 连接方式：cat - | nc localhost ${svskt_port}
 #
 # # 使用示例：
+# # 查看应用列表
+#   apps |> ls()
+# # 查看应用对象结构
+#   apps$APP00001 |> ls()
+# # 提取ctpclient
+#   ctpclient <- apps$APP00001$ctpclient; ctpclient |> ls()
 # # 查看内存合约
 #   ctpclient$instruments |> ls()
 # # 记录合约集合

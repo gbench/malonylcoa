@@ -213,7 +213,7 @@ InstrumentStateManager <- R6::R6Class(
 )
 
 # ctpd_async2 异步调用客户端
-ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.3) {
+ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
     for (pkg in c("later", "jsonlite", "data.table")) {
         if (!require(pkg, character.only = TRUE)) install.packages(pkg)
         library(pkg, character.only = TRUE)
@@ -251,7 +251,7 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.3) {
             
             # 线性扩容
             if (j > n) {
-                new_cap <- inst$.capacity * (1 + n %/% inst$.capacity)
+                new_cap <- inst$.capacity + n
                 length(inst$LastPrice) <- new_cap
                 length(inst$Volume) <- new_cap
                 length(inst$OpenInterest) <- new_cap
@@ -449,12 +449,6 @@ ui <- fluidPage(
       ),
       
       div(class = "control-group compact",
-          div(class = "section-title", "推送周期"),
-          sliderInput("push_interval", NULL, min = 0.1, max = 5, value = 1, step = 0.1),
-          div(class = "help-text", "默认1秒，越小越频繁")
-      ),
-      
-      div(class = "control-group compact",
           div(class = "section-title", "合约"),
           selectInput("instrument", NULL, choices = NULL),
           actionButton("refresh_btn", "刷新", icon = icon("sync"), class = "btn-primary btn-small btn-full")
@@ -545,8 +539,7 @@ server <- function(input, output, session) {
   })
   
   # 价格数据轮询
-  price_data <- reactivePoll(
-    intervalMillis = 500, session = session,
+  price_data <- reactivePoll(intervalMillis = 500, session = session,
     checkFunc = function() {
       if (is.null(ctpclient) || is.null(state$current_instrument_id)) return(NULL) 
       tryCatch(ctpclient$lastupdate, error = function(e) NULL)
@@ -556,7 +549,7 @@ server <- function(input, output, session) {
       if (is.null(ctpclient) || is.null(inst_id)) return(NULL) 
       
       inst_entity <- ctpclient$instruments[[inst_id]]
-      current_n <- inst_entity$size()
+      current_n <- inst_entity$size() # 现在的tick数量
       if (current_n < 1) return(NULL)
       
       # 获取之前保存的状态
@@ -578,7 +571,8 @@ server <- function(input, output, session) {
       } else if (current_n > prev_stats$n) {
         # 有新数据：只获取增量部分
         new_prices <- inst_entity$LastPrice[seq(prev_stats$n + 1, current_n)]
-        stats <- update_stats_batch(prev_stats, new_prices)
+        stats <- update_stats_batch(prev_stats, new_prices) # 计算统计信息
+        update_and_send_kline(inst_id, state$current_period) # 聚合K线并重绘K线图
       } else {
         # 无新数据，保持原样
         stats <- prev_stats
@@ -776,38 +770,29 @@ server <- function(input, output, session) {
     begtime <- Sys.time()
     
     tryCatch({
-      inst_entity <- ctpclient$instruments[[instrument_id]]
+      inst_entity <- ctpclient$instruments[[instrument_id]] # 提取合约对象
       if (is.null(inst_entity)) return(NULL)
       
-      current_count <- inst_entity$size()
-      last_count <- state$tick_counts[[instrument_id]] %||% 0
+      current_n <- inst_entity$size() # 合约中最新的tick数量
+      last_n <- state$tick_counts[[instrument_id]] %||% 0 # 上次或者说最近更新中合约里的tick数量
       
-      if (!flag && current_count == last_count) return(NULL)
+      if (!flag && current_n == last_n) return(NULL)
       
-      if (flag || last_count == 0) {
-          idx <- 1:current_count
-          add_debug(paste0("全量tick: ", current_count, "条"))
-      } else {
-          idx <- (last_count + 1):current_count
-          add_debug(paste0("新增tick: ", current_count - last_count, "条"))
-      }
-      
-      new_kline_segment <- aggregate_kline(inst_entity$ticks_dt(idx, period * 60))
+      idx <- if (flag || last_n == 0) { add_debug(paste0("全量tick: ", current_n, "条")); 1:current_n } 
+             else { add_debug(paste0("新增tick: ", current_n - last_n, "条")); (last_n + 1):current_n }
+      new_kline_segment <- aggregate_kline(inst_entity$ticks_dt(idx, period * 60)) # 聚合K线&生成K线片
       
       if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
       
-      base_kline <- state$get_kline_dt(instrument_id)
-      if (is.null(base_kline) || nrow(base_kline) == 0) {
-          final_kline <- new_kline_segment
-      } else {
-          final_kline <- merge_kline_dt(base_kline, new_kline_segment)
-      }
-      
+      base_kline <- state$get_kline_dt(instrument_id) # 把上次计算&保存的k线作为基础参考
+      is_empty <- is.null(base_kline) || nrow(base_kline) == 0 # 是否没有基础参考
+      final_kline <- if (is_empty) new_kline_segment else merge_kline_dt(base_kline, new_kline_segment) # 有参考则合并，没参考直接用K线片
+
       state$set_kline_dt(instrument_id, final_kline)
-      state$tick_counts[[instrument_id]] <- current_count
+      state$tick_counts[[instrument_id]] <- current_n
       
       if (instrument_id == state$current_instrument_id) {
-        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
+        is_full <- flag || is_empty
         ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ])
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
@@ -821,25 +806,8 @@ server <- function(input, output, session) {
     if (elapsed > 0.1) {
         add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
     }
-  }
-  
-  # K线更新定时器
-  start_kline_updater <- function() {
-    update_kline <- function() {
-      if (!running || is.null(ctpclient)) return()
-      inst_id <- state$current_instrument_id
-      period <- state$current_period
-      if (!is.null(inst_id) && inst_id != "") {
-        update_and_send_kline(inst_id, period)
-      }
-      push_interval <- isolate(input$push_interval) %||% 1
-      if (running && !is.null(ctpclient)) {
-        timers$kline <<- later::later(update_kline, push_interval)
-      }
-    }
-    add_debug(paste0("K线更新器启动: 周期=", state$current_period, "分钟"))
-    update_kline()
-  }
+
+  } # update_and_send_kline
   
   # 合约列表更新
   start_instrument_updater <- function() {
@@ -895,10 +863,6 @@ server <- function(input, output, session) {
     }
   })
   
-  observeEvent(input$push_interval, {
-    add_debug(paste0("推送间隔: ", input$push_interval, "s"))
-  })
-  
   observeEvent(input$connect_btn, {
     add_debug("启动连接...")
     if (!is.null(ctpclient)) {
@@ -936,7 +900,6 @@ server <- function(input, output, session) {
       add_debug("连接成功")
       show_notification("连接成功", "message", 3)
       start_instrument_updater()
-      start_kline_updater()
     }, error = function(e) {
       is_connected(FALSE)
       add_debug(paste0("连接失败: ", e$message))
@@ -1512,20 +1475,24 @@ create_frontend_files()
 # # 连接方式：cat - | nc localhost ${svskt_port}
 #
 # # 使用示例：
+# # 查看应用列表
+#   apps |> ls()
+# # 查看应用对象结构
+#   apps$APP00001 |> ls()
+# # 提取ctpclient
+#   ctpclient <- apps$APP00001$ctpclient; ctpclient |> ls()
 # # 查看内存合约
-#   ctpclient$instruments |> ls()
-# # 记录合约集合
-#   insts <- ctpclient$instruments
-# # 查看合约MA605 的 数据内容
+#   insts <- ctpclient$instruments; insts |> ls()
+# # 查看合约MA605的数据内容(数据容量)
 #   insts |> with(MA605$size())
 # # 实时查看合约MA605的数据统计：FG605$data中记录的就是合约交易的tickdata
-#   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> summary()
+#   insts$MA605$LastPrice |> summary()
 # # 实时查看合约MA605的数据统计：计算标准差
-#   insts |> with(lapply(MA605$data, \(e) e$LastPrice)) |> unlist() |> sd()
+#   insts$MA605$LastPrice |> sd(na.rm=T)
 # # 把tickdata 导出到本地文件
-#   insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> write.csv("ma605.csv")
+#   insts$MA605 |> with(data.table(as.POSIXct(DateTime), LastPrice, OpenInterest, AskPrice1, AskVolume1, BidPrice1, BidVolume1)) |> na.omit() |> write.csv("ma605.csv")
 # # 实时统计价格信息并绘图成pdf文件
-#   pdf("ma605_price_hist.pdf"); insts |> with(MA605$aslist() |> data.table::rbindlist() ) |> with(hist(LastPrice)); dev.off();
+#   pdf("ma605_price_hist.pdf");  insts$MA605$LastPrice |> hist(); dev.off();
 #
 # 一、Shiny 原生容器化特性
 # Shiny 架构天然隔离：每打开一个网页界面，就会分配独立 Server 实例，等价于轻量化内存应用容器（apps）；
