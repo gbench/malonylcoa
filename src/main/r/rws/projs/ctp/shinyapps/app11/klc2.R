@@ -449,12 +449,6 @@ ui <- fluidPage(
       ),
       
       div(class = "control-group compact",
-          div(class = "section-title", "推送周期"),
-          sliderInput("push_interval", NULL, min = 0.1, max = 5, value = 1, step = 0.1),
-          div(class = "help-text", "默认1秒，越小越频繁")
-      ),
-      
-      div(class = "control-group compact",
           div(class = "section-title", "合约"),
           selectInput("instrument", NULL, choices = NULL),
           actionButton("refresh_btn", "刷新", icon = icon("sync"), class = "btn-primary btn-small btn-full")
@@ -545,8 +539,7 @@ server <- function(input, output, session) {
   })
   
   # 价格数据轮询
-  price_data <- reactivePoll(
-    intervalMillis = 500, session = session,
+  price_data <- reactivePoll(intervalMillis = 500, session = session,
     checkFunc = function() {
       if (is.null(ctpclient) || is.null(state$current_instrument_id)) return(NULL) 
       tryCatch(ctpclient$lastupdate, error = function(e) NULL)
@@ -578,8 +571,8 @@ server <- function(input, output, session) {
       } else if (current_n > prev_stats$n) {
         # 有新数据：只获取增量部分
         new_prices <- inst_entity$LastPrice[seq(prev_stats$n + 1, current_n)]
-        stats <- update_stats_batch(prev_stats, new_prices)
-        update_and_send_kline(inst_id, state$current_period)
+        stats <- update_stats_batch(prev_stats, new_prices) # 计算统计信息
+        update_and_send_kline(inst_id, state$current_period) # 聚合K线并重绘K线图
       } else {
         # 无新数据，保持原样
         stats <- prev_stats
@@ -777,38 +770,29 @@ server <- function(input, output, session) {
     begtime <- Sys.time()
     
     tryCatch({
-      inst_entity <- ctpclient$instruments[[instrument_id]]
+      inst_entity <- ctpclient$instruments[[instrument_id]] # 提取合约对象
       if (is.null(inst_entity)) return(NULL)
       
-      current_count <- inst_entity$size()
-      last_count <- state$tick_counts[[instrument_id]] %||% 0
+      current_n <- inst_entity$size() # 合约中最新的tick数量
+      last_n <- state$tick_counts[[instrument_id]] %||% 0 # 上次或者说最近更新中合约里的tick数量
       
-      if (!flag && current_count == last_count) return(NULL)
+      if (!flag && current_n == last_n) return(NULL)
       
-      if (flag || last_count == 0) {
-          idx <- 1:current_count
-          add_debug(paste0("全量tick: ", current_count, "条"))
-      } else {
-          idx <- (last_count + 1):current_count
-          add_debug(paste0("新增tick: ", current_count - last_count, "条"))
-      }
-      
-      new_kline_segment <- aggregate_kline(inst_entity$ticks_dt(idx, period * 60))
+      idx <- if (flag || last_n == 0) { add_debug(paste0("全量tick: ", current_n, "条")); 1:current_n } 
+            else { add_debug(paste0("新增tick: ", current_n - last_n, "条")); (last_n + 1):current_n }
+      new_kline_segment <- aggregate_kline(inst_entity$ticks_dt(idx, period * 60)) # 聚合K线&生成K线片
       
       if (is.null(new_kline_segment) || nrow(new_kline_segment) == 0) return(NULL)
       
-      base_kline <- state$get_kline_dt(instrument_id)
-      if (is.null(base_kline) || nrow(base_kline) == 0) {
-          final_kline <- new_kline_segment
-      } else {
-          final_kline <- merge_kline_dt(base_kline, new_kline_segment)
-      }
-      
+      base_kline <- state$get_kline_dt(instrument_id) # 把上次计算&保存的k线作为基础参考
+      is_empty <- is.null(base_kline) || nrow(base_kline) == 0 # 是否没有基础参考
+      final_kline <- if (is_empty) new_kline_segment else merge_kline_dt(base_kline, new_kline_segment) # 有参考则合并，没参考直接用K线片
+
       state$set_kline_dt(instrument_id, final_kline)
-      state$tick_counts[[instrument_id]] <- current_count
+      state$tick_counts[[instrument_id]] <- current_n
       
       if (instrument_id == state$current_instrument_id) {
-        is_full <- flag || is.null(base_kline) || nrow(base_kline) == 0
+        is_full <- flag || is_empty
         ds <- purrr::transpose(if(is_full) final_kline else final_kline[final_kline$timestamp >= min(new_kline_segment$timestamp), ])
         send_data <- list(instrument = instrument_id, type = if(is_full) "full" else "incremental", ds = ds)
         session$sendCustomMessage("updateKline", send_data)
@@ -822,7 +806,8 @@ server <- function(input, output, session) {
     if (elapsed > 0.1) {
         add_debug(paste0("性能: K线更新耗时 ", round(elapsed, 3), "秒"))
     }
-  }
+
+  } # update_and_send_kline
   
   # 合约列表更新
   start_instrument_updater <- function() {
@@ -876,10 +861,6 @@ server <- function(input, output, session) {
       }
       show_notification(paste0("周期: ", new_period, "分钟"), "message", 2)
     }
-  })
-  
-  observeEvent(input$push_interval, {
-    add_debug(paste0("推送间隔: ", input$push_interval, "s"))
   })
   
   observeEvent(input$connect_btn, {
