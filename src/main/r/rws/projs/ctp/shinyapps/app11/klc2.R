@@ -213,7 +213,7 @@ InstrumentStateManager <- R6::R6Class(
 )
 
 # ctpd_async2 异步调用客户端
-ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.3) {
+ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.5) {
     for (pkg in c("later", "jsonlite", "data.table")) {
         if (!require(pkg, character.only = TRUE)) install.packages(pkg)
         library(pkg, character.only = TRUE)
@@ -251,7 +251,7 @@ ctpd_async2 <- function(host = "192.168.1.41", port = 9898, delay = 0.3) {
             
             # 线性扩容
             if (j > n) {
-                new_cap <- inst$.capacity * (1 + n %/% inst$.capacity)
+                new_cap <- inst$.capacity + n
                 length(inst$LastPrice) <- new_cap
                 length(inst$Volume) <- new_cap
                 length(inst$OpenInterest) <- new_cap
