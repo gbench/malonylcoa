@@ -556,7 +556,7 @@ server <- function(input, output, session) {
       if (is.null(ctpclient) || is.null(inst_id)) return(NULL) 
       
       inst_entity <- ctpclient$instruments[[inst_id]]
-      current_n <- inst_entity$size()
+      current_n <- inst_entity$size() # 现在的tick数量
       if (current_n < 1) return(NULL)
       
       # 获取之前保存的状态
@@ -579,6 +579,7 @@ server <- function(input, output, session) {
         # 有新数据：只获取增量部分
         new_prices <- inst_entity$LastPrice[seq(prev_stats$n + 1, current_n)]
         stats <- update_stats_batch(prev_stats, new_prices)
+        update_and_send_kline(inst_id, state$current_period)
       } else {
         # 无新数据，保持原样
         stats <- prev_stats
@@ -823,24 +824,6 @@ server <- function(input, output, session) {
     }
   }
   
-  # K线更新定时器
-  start_kline_updater <- function() {
-    update_kline <- function() {
-      if (!running || is.null(ctpclient)) return()
-      inst_id <- state$current_instrument_id
-      period <- state$current_period
-      if (!is.null(inst_id) && inst_id != "") {
-        update_and_send_kline(inst_id, period)
-      }
-      push_interval <- isolate(input$push_interval) %||% 1
-      if (running && !is.null(ctpclient)) {
-        timers$kline <<- later::later(update_kline, push_interval)
-      }
-    }
-    add_debug(paste0("K线更新器启动: 周期=", state$current_period, "分钟"))
-    update_kline()
-  }
-  
   # 合约列表更新
   start_instrument_updater <- function() {
     update_instruments <- function() {
@@ -936,7 +919,6 @@ server <- function(input, output, session) {
       add_debug("连接成功")
       show_notification("连接成功", "message", 3)
       start_instrument_updater()
-      start_kline_updater()
     }, error = function(e) {
       is_connected(FALSE)
       add_debug(paste0("连接失败: ", e$message))
