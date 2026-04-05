@@ -509,7 +509,7 @@ server <- function(input, output, session) {
   timers <- list(instrument = NULL, kline = NULL)
   
   add_debug <- function(msg) {
-    timestamp <- format(Sys.time(), "%H:%M:%S.%OS3")
+    timestamp <- format(Sys.time(), "%H:%M:%OS3")
     debug_msg <- paste0("<div class='debug-entry'><span class='debug-timestamp'>[", timestamp, "]</span> ", msg, "</div>")
     debug_messages <<- c(debug_msg, debug_messages)[1:50]
     output$debug_info <- renderUI({
