@@ -658,53 +658,70 @@ ui <- fluidPage(
           )
       ),
       
-      # ========== 模拟交易面板 ==========
-      div(class = "control-group compact trading-panel",
+      # ========== 模拟交易面板 - 优化布局 ==========
+      div(class = "control-group trading-panel",
           div(class = "section-title", "📈 模拟交易"),
           
+          # 账户摘要 - 网格布局
           div(class = "account-info",
-              style = "background: rgba(0,0,0,0.2); border-radius: 4px; padding: 8px; margin-bottom: 10px;",
               uiOutput("account_summary_ui")
           ),
           
+          # 银期转账 - 紧凑布局
           div(class = "transfer-section",
-              style = "margin-bottom: 10px;",
-              div(class = "transfer-title", style = "font-size: 11px; color: #a0aec0; margin-bottom: 5px;", "银期转账"),
-              div(class = "transfer-row", style = "display: flex; gap: 5px; margin-bottom: 5px;",
-                  numericInput("transfer_amount", NULL, value = 10000, min = 0, step = 1000, width = "100%"),
-                  actionButton("bank_to_futures_btn", "银行→期货", class = "btn-primary btn-small", style = "flex:1"),
-                  actionButton("futures_to_bank_btn", "期货→银行", class = "btn-primary btn-small", style = "flex:1")
+              div(class = "subsection-title", "银期转账"),
+              div(class = "transfer-row",
+                  div(class = "transfer-input-group", 
+                      numericInput("transfer_amount", "金额", value = 10000, min = 0, step = 1000)
+                  ),
+                  div(class = "transfer-buttons",
+                      actionButton("bank_to_futures_btn", "银行→期货", class = "btn-primary btn-transfer"),
+                      actionButton("futures_to_bank_btn", "期货→银行", class = "btn-primary btn-transfer")
+                  )
               )
           ),
           
-          div(class = "open-section",
-              style = "margin-bottom: 10px;",
-              div(class = "open-title", style = "font-size: 11px; color: #a0aec0; margin-bottom: 5px;", "开仓"),
-              div(class = "open-row", style = "display: flex; gap: 5px; margin-bottom: 5px;",
-                  numericInput("trade_volume", "手数", value = 1, min = 1, step = 1, width = "80px"),
-                  numericInput("trade_price", "价格", value = 0, min = 0, step = 1, width = "100px")
-              ),
-              div(class = "open-buttons", style = "display: flex; gap: 5px;",
-                  actionButton("open_long_btn", "买多", class = "btn-success", style = "flex:1;"),
-                  actionButton("open_short_btn", "卖空", class = "btn-warning", style = "flex:1;")
+          # 开仓 - 左右布局
+          div(class = "trade-section",
+              div(class = "subsection-title", "开仓"),
+              div(class = "trade-row",
+                  div(class = "trade-inputs",
+                      div(class = "input-group-small",
+                          numericInput("trade_volume", "手数", value = 1, min = 1, step = 1)
+                      ),
+                      div(class = "input-group-small",
+                          numericInput("trade_price", "价格", value = 0, min = 0, step = 1)
+                      )
+                  ),
+                  div(class = "trade-buttons",
+                      actionButton("open_long_btn", "买多", class = "btn-long"),
+                      actionButton("open_short_btn", "卖空", class = "btn-short")
+                  )
               )
           ),
           
-          div(class = "close-section",
-              style = "margin-bottom: 10px;",
-              div(class = "close-title", style = "font-size: 11px; color: #a0aec0; margin-bottom: 5px;", "平仓"),
-              div(class = "close-row", style = "display: flex; gap: 5px; margin-bottom: 5px;",
-                  selectInput("close_position_id", "持仓", choices = NULL, width = "180px"),
-                  numericInput("close_volume", "手数", value = 1, min = 1, step = 1, width = "40px")
-              ),
-              div(class = "close-buttons",
-                  actionButton("close_position_btn", "平仓", class = "btn-danger btn-small", style = "width:100%;")
+          # 平仓 - 左右布局
+          div(class = "trade-section",
+              div(class = "subsection-title", "平仓"),
+              div(class = "trade-row",
+                  div(class = "trade-inputs",
+                      div(class = "input-group-select",
+                          selectInput("close_position_id", "持仓", choices = NULL)
+                      ),
+                      div(class = "input-group-small",
+                          numericInput("close_volume", "手数", value = 1, min = 1, step = 1)
+                      )
+                  ),
+                  div(class = "trade-buttons",
+                      actionButton("close_position_btn", "平仓", class = "btn-close")
+                  )
               )
           ),
           
+          # 持仓列表 - 滚动区域
           div(class = "positions-section",
-              div(class = "positions-title", style = "font-size: 11px; color: #a0aec0; margin-bottom: 5px;", "📋 当前持仓"),
-              div(class = "positions-list", style = "max-height: 150px; overflow-y: auto; font-size: 11px;",
+              div(class = "subsection-title", "📋 当前持仓"),
+              div(class = "positions-list",
                   uiOutput("positions_ui")
               )
           )
@@ -971,7 +988,7 @@ server <- function(input, output, session) {
   
   # ========== 模拟交易相关Server逻辑 ==========
   
-  # 账户摘要显示
+  # 账户摘要显示 - 网格布局
   output$account_summary_ui <- renderUI({
     summary <- account_summary_data()
     if (is.null(summary)) {
@@ -981,29 +998,35 @@ server <- function(input, output, session) {
     }
     
     tags$div(
-      class = "account-summary",
-      style = "font-size: 11px;",
-      div(style = "display: flex; justify-content: space-between; margin-bottom: 3px;",
-          span("账户:", span(style = "color: #667eea;", summary$account_id))
-      ),
-      div(style = "display: flex; justify-content: space-between; margin-bottom: 3px;",
-          span("银行卡:", span(style = "color: #48bb78;", sprintf("%.2f", summary$bank_balance))),
-          span("可用资金:", span(style = "color: #48bb78;", sprintf("%.2f", summary$available)))
-      ),
-      div(style = "display: flex; justify-content: space-between; margin-bottom: 3px;",
-          span("权益:", span(style = "color: #e0e0e0;", sprintf("%.2f", summary$equity))),
-          span("保证金:", sprintf("%.2f", summary$margin))
-      ),
-      div(style = "display: flex; justify-content: space-between; margin-bottom: 3px;",
-          span("使用率:", span(style = if(summary$margin_usage > 80) "color: #ef5350;" else "color: #48bb78;", 
-                               sprintf("%.1f%%", summary$margin_usage))),
-          span("浮动盈亏:", span(style = if(summary$total_pnl >= 0) "color: #48bb78;" else "color: #ef5350;",
-                                 sprintf("%.2f", summary$total_pnl)))
-      ),
-      div(style = "display: flex; justify-content: space-between;",
-          span("持仓:", summary$position_count, "手"),
-          span("")
-      )
+      class = "account-summary-grid",
+      div(class = "summary-item", 
+          span(class = "summary-label", "账户"), 
+          span(class = "summary-value", summary$account_id)),
+      div(class = "summary-item", 
+          span(class = "summary-label", "银行卡"), 
+          span(class = "summary-value", sprintf("%.0f", summary$bank_balance))),
+      div(class = "summary-item", 
+          span(class = "summary-label", "可用"), 
+          span(class = "summary-value", sprintf("%.0f", summary$available))),
+      div(class = "summary-item", 
+          span(class = "summary-label", "权益"), 
+          span(class = "summary-value", sprintf("%.0f", summary$equity))),
+      div(class = "summary-item", 
+          span(class = "summary-label", "保证金"), 
+          span(class = "summary-value", sprintf("%.0f", summary$margin))),
+      div(class = "summary-item", 
+          span(class = "summary-label", "使用率"), 
+          span(class = "summary-value", 
+               style = if(summary$margin_usage > 80) "color: #ef5350;" else "color: #48bb78;",
+               sprintf("%.1f%%", summary$margin_usage))),
+      div(class = "summary-item", 
+          span(class = "summary-label", "盈亏"), 
+          span(class = "summary-value", 
+               style = if(summary$total_pnl >= 0) "color: #48bb78;" else "color: #ef5350;",
+               sprintf("%.0f", summary$total_pnl))),
+      div(class = "summary-item", 
+          span(class = "summary-label", "持仓"), 
+          span(class = "summary-value", paste0(summary$position_count, "手")))
     )
   })
   
@@ -1022,15 +1045,15 @@ server <- function(input, output, session) {
     
     rows <- lapply(1:nrow(positions_df), function(i) {
       pos <- positions_df[i, ]
-      pnl_class <- if(pos$浮动盈亏 >= 0) "color: #48bb78;" else "color: #ef5350;"
+      pnl_class <- if(pos$浮动盈亏 >= 0) "pnl-positive" else "pnl-negative"
       div(
-        style = "border-bottom: 1px solid #3d3d5c; padding: 5px 0;",
-        div(style = "display: flex; justify-content: space-between;",
-            span(style = "font-weight: bold;", pos$合约),
-            span(style = pnl_class, sprintf("¥%.2f", pos$浮动盈亏))
+        class = "position-item",
+        div(class = "position-header",
+            span(class = "position-instrument", pos$合约),
+            span(class = pnl_class, sprintf("%+.0f", pos$浮动盈亏))
         ),
-        div(style = "display: flex; justify-content: space-between; font-size: 10px; color: #a0aec0;",
-            span(sprintf("%s %d手@%.2f", pos$方向, pos$手数, pos$开仓价)),
+        div(class = "position-details",
+            span(sprintf("%s %d手 @%.1f", pos$方向, pos$手数, pos$开仓价)),
             span(sprintf("保证金: %.0f", pos$保证金))
         )
       )
@@ -1535,7 +1558,7 @@ create_frontend_files <- function() {
   if (!dir.exists("www/js")) dir.create("www/js")
   if (!dir.exists("www/css")) dir.create("www/css")
   
-  # CSS文件 - 包含所有样式（原始样式 + 交易面板样式）
+  # CSS文件 - 优化后的样式
   css_content <- '
 * { box-sizing: border-box; }
 
@@ -1603,6 +1626,15 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
+}
+
+.subsection-title {
+  font-size: 10px;
+  color: #a0aec0;
+  font-weight: 500;
+  margin-bottom: 6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #3d3d5c;
 }
 
 .price-info {
@@ -1764,35 +1796,222 @@ body {
 .btn-full { width: 100%; margin-top: 6px; }
 .btn-tiny { padding: 2px 8px; font-size: 9px; background: #4a5568; color: white; float: right; }
 
-/* 交易面板按钮样式 */
-.btn-success {
+/* 交易面板专用按钮样式 */
+.btn-long {
   background: linear-gradient(135deg, #26a69a 0%, #00897b 100%);
   color: white;
   border: none;
   border-radius: 4px;
   font-weight: 600;
   font-size: 12px;
-  padding: 6px 12px;
+  padding: 6px 16px;
   cursor: pointer;
+  flex: 1;
+  text-align: center;
 }
 
-.btn-warning {
+.btn-long:hover {
+  background: linear-gradient(135deg, #2bbbad 0%, #009688 100%);
+}
+
+.btn-short {
   background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
   color: white;
   border: none;
   border-radius: 4px;
   font-weight: 600;
   font-size: 12px;
-  padding: 6px 12px;
+  padding: 6px 16px;
   cursor: pointer;
+  flex: 1;
+  text-align: center;
 }
 
-.account-summary {
+.btn-short:hover {
+  background: linear-gradient(135deg, #ff6659 0%, #ff3d3d 100%);
+}
+
+.btn-close {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 6px 16px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+
+.btn-transfer {
+  flex: 1;
+  text-align: center;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+/* 账户摘要网格布局 */
+.account-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
   background: rgba(0,0,0,0.3);
   border-radius: 4px;
   padding: 8px;
+  margin-bottom: 10px;
 }
 
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+}
+
+.summary-label {
+  color: #a0aec0;
+}
+
+.summary-value {
+  color: #e0e0e0;
+  font-weight: 600;
+  font-family: "Fira Code", Consolas, monospace;
+}
+
+/* 转账区域 */
+.transfer-section {
+  margin-bottom: 12px;
+}
+
+.transfer-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transfer-input-group {
+  width: 100%;
+}
+
+.transfer-input-group .form-control {
+  width: 100%;
+}
+
+.transfer-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* 交易区域 */
+.trade-section {
+  margin-bottom: 12px;
+}
+
+.trade-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trade-inputs {
+  display: flex;
+  gap: 8px;
+}
+
+.input-group-small {
+  flex: 1;
+}
+
+.input-group-small .form-control {
+  width: 100%;
+}
+
+.input-group-select {
+  flex: 2;
+}
+
+.input-group-select .form-control {
+  width: 100%;
+}
+
+.trade-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* 持仓区域 */
+.positions-section {
+  margin-top: 8px;
+}
+
+.positions-list {
+  max-height: 140px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.position-item {
+  border-bottom: 1px solid #3d3d5c;
+  padding: 6px 0;
+}
+
+.position-item:last-child {
+  border-bottom: none;
+}
+
+.position-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.position-instrument {
+  font-weight: bold;
+  font-size: 11px;
+  color: #667eea;
+}
+
+.pnl-positive {
+  color: #48bb78;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.pnl-negative {
+  color: #ef5350;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.position-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #a0aec0;
+}
+
+/* 滚动条样式 */
+.positions-list::-webkit-scrollbar,
+.debug-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.positions-list::-webkit-scrollbar-track,
+.debug-panel::-webkit-scrollbar-track {
+  background: #2d2d3f;
+}
+
+.positions-list::-webkit-scrollbar-thumb,
+.debug-panel::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 2px;
+}
+
+/* 其他组件样式 */
 .period-row {
   display: flex;
   align-items: center;
@@ -1858,35 +2077,37 @@ body {
   color: white !important;
 }
 
-/* 交易面板滚动条样式 */
-.positions-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.positions-list::-webkit-scrollbar-track {
-  background: #2d2d3f;
-}
-
-.positions-list::-webkit-scrollbar-thumb {
-  background: #667eea;
-  border-radius: 2px;
-}
-
-/* 输入框样式覆盖 */
-.transfer-section input, 
-.open-section input, 
-.close-section input {
-  background-color: #1e1e2f !important;
-  border: 1px solid #4a5568 !important;
-  color: #e0e0e0 !important;
-  border-radius: 4px !important;
-  padding: 4px 8px !important;
-  font-size: 12px !important;
-}
-
-/* 交易面板整体样式 */
-.trading-panel {
-  margin-top: 5px;
+/* 响应式调整 */
+@media (min-width: 768px) {
+  .transfer-row {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .transfer-input-group {
+    flex: 2;
+  }
+  
+  .transfer-buttons {
+    flex: 3;
+  }
+  
+  .trade-row {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .trade-inputs {
+    flex: 2;
+  }
+  
+  .trade-buttons {
+    flex: 1;
+  }
+  
+  .account-summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 '
   writeLines(css_content, "www/css/style.css")
