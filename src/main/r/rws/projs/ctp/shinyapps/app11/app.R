@@ -1031,6 +1031,7 @@ server <- function(input, output, session) {
   })
   
   # 持仓列表显示
+  last_choices <- reactiveVal(NULL)
   output$positions_ui <- renderUI({
     positions_df <- positions_data()
     
@@ -1039,9 +1040,15 @@ server <- function(input, output, session) {
       return(div(style = "text-align: center; color: #718096; padding: 10px;", "暂无持仓"))
     }
     
-    choices <- setNames(positions_df$持仓ID, 
-                        paste0(positions_df$合约, " ", positions_df$方向, " ", positions_df$手数, "手"))
-    updateSelectInput(session, "close_position_id", choices = choices)
+    choices <- setNames(positions_df$持仓ID, paste0(positions_df$合约, " ", positions_df$方向, " ", positions_df$手数, "手"))
+    # 只在 choices 变化时更新
+    if (!identical(choices, last_choices())) {
+      # 保持当前选中的值（如果还存在）
+      current_selected <- input$close_position_id
+      new_selected <- if (current_selected %in% names(choices)) current_selected else NULL
+      updateSelectInput(session, "close_position_id", choices = choices, selected = new_selected)
+      last_choices(choices)
+    }
     
     rows <- lapply(1:nrow(positions_df), function(i) {
       pos <- positions_df[i, ]
