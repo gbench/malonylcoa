@@ -333,14 +333,14 @@ FuturesAccount <- R6::R6Class(
       for (pos in self$positions) {
         side_text <- if(pos$side == "long") "多头" else "空头"
         df <- rbind(df, data.frame(
-          合约 = pos$instrument,
-          方向 = side_text,
-          手数 = pos$volume,
-          开仓价 = round(pos$open_price, 2),
-          现价 = round(pos$current_price, 2),
-          浮动盈亏 = round(pos$pnl, 2),
-          保证金 = round(pos$margin, 2),
-          持仓ID = pos$id,
+          instrument = pos$instrument, # 合约
+          side = side_text, # 方向
+          volume = pos$volume, # 手数
+          open_price = round(pos$open_price, 2), # 开仓价
+          current_price = round(pos$current_price, 2), # 现价
+          pnl = round(pos$pnl, 2), # 浮动盈亏
+          margin = round(pos$margin, 2), # 保证金
+          id = pos$id, # 持仓ID
           stringsAsFactors = FALSE
         ))
       }
@@ -1040,7 +1040,7 @@ server <- function(input, output, session) {
       return(div(style = "text-align: center; color: #718096; padding: 10px;", "暂无持仓"))
     }
     
-    choices <- setNames(positions_df$持仓ID, paste0(positions_df$合约, " ", positions_df$方向, " ", positions_df$手数, "手"))
+    choices <- setNames(positions_df$id, paste0(positions_df$id, "#", positions_df$instrument, " ", positions_df$side, " ", positions_df$volume, "手"))
     # 只在 choices 变化时更新
     if (!identical(choices, last_choices())) {
       # 保持当前选中的值（如果还存在）
@@ -1052,16 +1052,16 @@ server <- function(input, output, session) {
     
     rows <- lapply(1:nrow(positions_df), function(i) {
       pos <- positions_df[i, ]
-      pnl_class <- if(pos$浮动盈亏 >= 0) "pnl-positive" else "pnl-negative"
+      pnl_class <- if(pos$pnl >= 0) "pnl-positive" else "pnl-negative"
       div(
         class = "position-item",
         div(class = "position-header",
-            span(class = "position-instrument", pos$合约),
-            span(class = pnl_class, sprintf("%+.0f", pos$浮动盈亏))
+            span(class = "position-instrument", pos$instrument),
+            span(class = pnl_class, sprintf("%+.0f", pos$pnl))
         ),
         div(class = "position-details",
-            span(sprintf("%s %d手 @%.1f", pos$方向, pos$手数, pos$开仓价)),
-            span(sprintf("保证金: %.0f", pos$保证金))
+            span(sprintf("%s#%s %d手 @%.1f", pos$id, pos$side, pos$volume, pos$open_price)),
+            span(sprintf("保证金: %.0f", pos$margin))
         )
       )
     })
