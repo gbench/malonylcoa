@@ -597,7 +597,7 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      width = 3,
+      width = 4,
       class = "sidebar-panel",
       
       div(class = "status-bar",
@@ -739,7 +739,7 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      width = 9,
+      width = 8,
       class = "main-panel",
       div(id = "chart", class = "chart-container"),
       tags$script(src = "js/klinecharts.min.js"),
