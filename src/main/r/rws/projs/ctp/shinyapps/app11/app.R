@@ -2105,7 +2105,7 @@ body {
   }
   
   .trade-inputs {
-    flex: 2;
+    flex: 4;
   }
   
   .trade-buttons {
