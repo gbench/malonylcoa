@@ -597,7 +597,7 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      width = 4,
+      width = 3,
       class = "sidebar-panel",
       
       div(class = "status-bar",
@@ -739,7 +739,7 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      width = 8,
+      width = 9,
       class = "main-panel",
       div(id = "chart", class = "chart-container"),
       tags$script(src = "js/klinecharts.min.js"),
@@ -2085,7 +2085,7 @@ body {
 }
 
 /* 响应式调整 */
-@media (min-width: 768px) {
+@media (min-width: 1281px) {
   .transfer-row {
     flex-direction: row;
     align-items: center;
