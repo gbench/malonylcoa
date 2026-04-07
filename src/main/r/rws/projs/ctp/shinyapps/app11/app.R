@@ -1935,7 +1935,7 @@ body {
 }
 
 .input-group-select {
-  flex: 2;
+  flex: 3;
 }
 
 .input-group-select .form-control {
