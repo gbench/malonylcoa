@@ -311,8 +311,12 @@ input_set <- function(session, name, value) {
 #' @param name 输出名称
 #' @param expr 响应式表达式（无需显式调用 reactive()）
 output_def <- function(session, name, expr) {
-  # 使用表达式do.call来捕获expr原来值.  而非 captured_expr <- substitute(expr); reactive(captured_expr)
-  # 这样就可以避免reactive对expr进行substitute时，获得captured_expr 这个中间符号！
+  # 使用do.call来捕获expr的源码表达式.  即 通过参数 args=list(expr=substitute(expr))
+  # 来强制把substitute(expr)的替换发生在output_def执行环境中，以便获得expr源码！
+  # 注意：不要采用 captured_expr <- substitute(expr);  session$output[[name]]  <- reactive(captured_expr) 这种！
+  # 因为，为了保持reactive可独立使用而不是现定于output_def内调用，reactive也对对expr进行substitute，
+  # 如果在output_def中captured_expr <- substitute(expr);   然后在reactive里再次substitute，
+  # reactive 只能获得captured_expr 这个中间符号！
   session$output[[name]] <- do.call(reactive, args=list(expr=substitute(expr))) 
 }
 
