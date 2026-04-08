@@ -418,6 +418,8 @@ reactiveVal <- function(init = NULL) {
   env$reverse_deps <- list()
   
   # 强制使用server函数的运行环境
+  # 关键：将当前环境的父环境设置为 server 函数的运行环境
+  # 这样 .ctx 的查找会沿着环境链找到属于当前 Session 的 .ctx
   thisenv <- environment();
   parent.env(thisenv) <- parent.frame(2)
   
@@ -461,6 +463,8 @@ reactive <- function(expr) {
   env$expr <- substitute(expr)
   
   # 强制使用server函数的运行环境
+  # 关键：将当前环境的父环境设置为 server 函数的运行环境
+  # 这样 .ctx 的查找会沿着环境链找到属于当前 Session 的 .ctx
   thisenv <- environment();
   parent.env(thisenv) <- parent.frame(2)
   
