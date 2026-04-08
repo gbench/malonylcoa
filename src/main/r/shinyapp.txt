@@ -115,7 +115,6 @@ output 自动重算 → 推回前端更新
 你拿去就能给别人讲懂 Shiny 本质。
 
 ```R
-
 .ctx <- NULL
 
 reactive <- function(expr) {
@@ -123,18 +122,26 @@ reactive <- function(expr) {
   env <- new.env()
   env$invalid <- TRUE
   env$value <- NULL
-  env$deps <- list()  # 这个 reactive 依赖哪些 reactiveVal/reactive
+  env$deps <- list()      # 这个 reactive 依赖哪些 reactiveVal/reactive
   env$reverse_deps <- list()  # 哪些 reactive/reactiveVal 依赖这个 reactive
   env$expr <- expr
 
   fn <- function() {
+    # 如果当前有上下文（.ctx），说明自己是被依赖的，需要注册关系
+    if (!is.null(.ctx)) {
+      # 添加依赖关系：.ctx 依赖 env
+      if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+        env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+        .ctx$deps <- c(.ctx$deps, list(env))
+      }
+    }
+    
     if (env$invalid) {
       old <- .ctx
       .ctx <<- env
       
       # 清除旧的依赖关系
       lapply(env$deps, function(dep) {
-        # 从这个 dep 的 reverse_deps 中移除自己
         dep$reverse_deps <- dep$reverse_deps[!sapply(dep$reverse_deps, identical, env)]
       })
       env$deps <- list()
@@ -154,7 +161,7 @@ reactive <- function(expr) {
 reactiveVal <- function(init = NULL) {
   env <- new.env()
   env$v <- init
-  env$deps <- list()  # 哪些 reactive 依赖这个 reactiveVal
+  env$deps <- list()      # 哪些 reactive 依赖这个 reactiveVal
   env$reverse_deps <- list()  # 这个 reactiveVal 依赖什么（通常为空）
   
   fn <- function(value) {
@@ -172,10 +179,17 @@ reactiveVal <- function(init = NULL) {
     } else {
       # setter
       env$v <- value
-      # 通知所有依赖项失效
-      lapply(env$deps, function(dep) {
-        dep$invalid <- TRUE
-      })
+      # 通知所有依赖项失效（包括链式依赖）
+      invalidate_deps <- function(deps) {
+        for (dep in deps) {
+          dep$invalid <- TRUE
+          # 递归通知依赖此 reactive 的其他 reactive
+          if (length(dep$reverse_deps) > 0) {
+            invalidate_deps(dep$reverse_deps)
+          }
+        }
+      }
+      invalidate_deps(env$deps)
       invisible(value)
     }
   }
