@@ -86,15 +86,15 @@ reactiveVal <- function(init = NULL) {
     if (missing(value)) {
       # Getter: 注册当前上下文
       if (!is.null(.ctx)) {
-        env$reverse_deps <- c(env$reverse_deps, .ctx)
         .ctx$deps <- c(.ctx$reverse_deps, env)。
+        env$reverse_deps <- c(env$reverse_deps, .ctx)
       }
       env$v
     } else {
       # Setter: 触发失效传播
       env$v <- value
-      for (dep in env$reverse_deps) {
-        dep$invalidate()
+      for (rdep in env$reverse_deps) {
+        rdep$invalidate()
       }
     }
   }
