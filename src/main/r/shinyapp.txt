@@ -364,10 +364,28 @@ output_def(s, "z", {
   s$input$x() * 2
 })
 
+# output_get 内置使用 eactiveVal 与 reactive
 print(output_get(s, "z"))   # 应该输出 10
 input_set(s, "x", 10)
 print(output_get(s, "z"))   # 应该输出 20
 print(output_get(s, "y"))   # 应该输出 11
 print(output_get(s, "_3y")) # 应该输出 33
 
+# 独立使用 reactiveVal 与 reactive
+# > x <- reactiveVal(9)
+# > y <- reactive(x()*2)
+# > y()
+# [1] 18
+# > x(5)
+# > y()
+# [1] 10
+# > y()
+# [1] 10
+# > environment(y)
+# <environment: 0x0000019c88bc0618>
+# > environment(y)$env$value
+# [1] 10
+# > 
+
 ```
+
