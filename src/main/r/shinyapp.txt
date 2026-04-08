@@ -1,0 +1,210 @@
+# 一、Shiny 整体架构本质
+```
+Shiny = 网页版响应式 REPL
+     = MVC 架构
+     = 自装配数据流框架
+```
+
+- **UI = View（前端页面模板）**
+- **Server = 每个用户独立的会话构造器**
+- **Session = 每个用户的独立运行环境（隔离容器）**
+- **Input = 前端传入的响应式源头**
+- **Output = 推回前端的自动执行端点**
+- **响应式引擎 = 依赖收集 + 失效传播 + 自动重算**
+
+---
+
+# 二、响应式核心机制（最底层）
+## 1. 全局上下文栈（灵魂）
+- 存在一个**包级全局变量**（如 `.current_context`）
+- **对所有函数透明、穿透调用栈**
+- 普通函数完全无感，不影响执行
+- 只有 reactiveVal / reactive 会读取它
+
+## 2. reactiveVal（源头节点）
+- 本质：**闭包 + 内部值 + 依赖列表**
+- 读 `x()`：
+  - 如果在上下文内 → **自动注册依赖**
+- 写 `x(val)`：
+  - 修改内部值
+  - **遍历所有下游，标记失效（invalidate）**
+
+## 3. reactive（中间计算节点）
+- 本质：**惰性计算 + 缓存 + 依赖列表**
+- 只有**被调用时**才计算
+- 计算时自动收集所有用到的 reactiveVal
+- 脏了也不会主动跑，**必须被人调用**
+
+## 4. Output / Observe（终点节点）
+- 特殊 reactive：**主动执行、自动重算**
+- 一旦 invalidate → **不需要调用，自动执行**
+- 执行完自动推送给前端
+- 这是前端能**自动刷新、自动联动**的根本原因
+
+---
+
+# 三、依赖收集机制（你最关键的理解）
+- **不解析语法树**
+- **不重载运算符**
+- **不重写 <-**
+- **不做静态分析**
+
+**唯一机制：**
+> 在 reactive 上下文执行代码时，
+> 任何被调用的 reactiveVal 都会**自动把当前上下文登记为依赖**。
+
+**普通函数完全透明，嵌套多少层都不中断。**
+
+---
+
+# 四、数据流完整路径（你一句话还原的真流程）
+```
+前端控件改变
+↓
+通过 WebSocket 发送：/session/input/xxx/set
+↓
+后端把 input$xxx 变成 reactiveVal 并 set(新值)
+↓
+reactiveVal 标记所有下游为失效
+↓
+级联传导到所有中间 reactive
+↓
+到达 output 端点
+↓
+output 自动重算 → 推回前端更新
+```
+
+---
+
+# 五、Server 函数的真正作用
+- **server() 不是运行一次，是每个用户实例化一次**
+- 每次新用户访问 = 调用一次全新 server()
+- 每次调用 = 创建**完全隔离**的：
+  - 响应式图
+  - 上下文环境
+  - input / output
+  - session 生命周期
+
+**Server = 函数式响应式容器生成器**
+多用户之间完全隔离、互不干扰。
+
+---
+
+# 六、与传统报表/BI 的本质区别
+## 传统架构（离散结构）
+- 数据源、计算、展示是分离的
+- 需要 **Controller/工程师手动接线**
+- 像洗衣机要现场接进水管、出水管
+
+## Shiny 架构（自装配结构）
+- **output$yyy 本身就是出水口**
+- 符号自带依赖、自带连接、自带推送
+- **不需要外部接线，代码即管线**
+- 全自动、自驱动、自更新
+
+---
+
+# 七、最终极简总结（三句话）
+1. **Shiny 是网页版响应式 REPL，基于全局上下文栈实现依赖收集。**
+2. **reactiveVal 是源头，reactive 是惰性中间层，output 是自动执行终点。**
+3. **整个数据流自装配、自连接、自驱动，彻底颠覆传统离散架构。**
+
+---
+
+如果你需要，我可以把这套机制画成一张**一页纸架构总图**，
+你拿去就能给别人讲懂 Shiny 本质。
+
+```R
+
+.ctx <- NULL
+
+reactive <- function(expr) {
+  env <- new.env()
+  env$invalid <- TRUE
+  env$value <- NULL
+  env$deps  <- list()
+  env$expr  <- substitute(expr)
+
+  env$run <- function() {
+    if (env$invalid) {
+      old <- .ctx
+      .ctx <<- env
+
+      env$value <- eval(env$expr, parent.frame())
+      env$invalid <- FALSE
+
+      # 反向注册依赖
+      lapply(env$deps, function(rv) {
+        rv$deps <<- c(rv$deps, list(env))
+      })
+      .ctx <<- old
+    }
+    env$value
+  }
+  env
+}
+
+reactiveVal <- function(init = NULL) {
+  v <- init
+  deps <- list()
+
+  list(
+    get = function() {
+      if (!is.null(.ctx)) {
+        .ctx$deps <<- c(.ctx$deps, list(environment()))
+      }
+      v
+    },
+    set = function(new) {
+      v <<- new
+      lapply(deps, function(d) d$invalid <<- TRUE)
+    },
+    deps = deps
+  )
+}
+
+new_session <- function() {
+  list(input  = new.env(), output = new.env()) |> list2env()
+}
+
+# 前端发来 input$xxx = value
+input_set <- function(session, name, value) {
+  if (is.null(session$input[[name]])) {
+    session$input[[name]] <- reactiveVal(value)
+  } else {
+    session$input[[name]]$set(value)
+  }
+}
+
+# 定义 output$yyy
+output_def <- function(session, name, expr) {
+  session$output[[name]] <- reactive(expr)
+}
+
+# 取 output（模拟推回前端）
+output_get <- function(session, name) {
+  session$output[[name]]$run()
+}
+
+# 1. 新建一个用户会话（对应一次 server()）
+s <- new_session()
+
+# 2. 前端发来 input$x = 10
+#    对应路径：/shinyapp/session/input/x/set
+input_set(s, "x", 10)
+
+# 3. 后端定义 output$y = input$x() + 1
+output_def(s, "y", {
+  s$input$x$get() + 1
+})
+
+# 4. 第一次取 output
+output_get(s, "y")  # 11
+
+# 5. 前端再次发来 input$x = 5
+input_set(s, "x", 5)
+
+# 6. output 自动级联失效，重新计算
+output_get(s, "y")  # 6
+
+```
