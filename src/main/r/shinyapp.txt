@@ -214,15 +214,14 @@ reactiveVal <- function(init = NULL) {
 #'   当前 reactive 注册为其 reverse_deps（后代），同时将 reactiveVal 
 #'   记录到当前 reactive 的 deps（祖先）中。
 reactive <- function(expr) {
-  force(expr)
-  
+
   # 创建闭包环境，存储状态
   env <- new.env()
   env$invalid <- TRUE        # 脏标记：是否需要重新计算
   env$value <- NULL          # 缓存的计算结果
   env$deps <- list()         # 祖先列表：本 reactive 依赖的上游节点
   env$reverse_deps <- list() # 后代列表：依赖本 reactive 的下游节点
-  env$expr <- expr           # 待执行的表达式
+  env$expr <- substitute(expr)           # 待执行的表达式
   
   fn <- function() {
     # -------------------------------------------------------------------------
@@ -312,9 +311,9 @@ input_set <- function(session, name, value) {
 #' @param name 输出名称
 #' @param expr 响应式表达式（无需显式调用 reactive()）
 output_def <- function(session, name, expr) {
-  # 使用 substitute 捕获表达式，避免提前求值
-  captured_expr <- substitute(expr)
-  session$output[[name]] <- reactive(captured_expr)
+  # 使用表达式do.call来捕获expr原来值.  而非 captured_expr <- substitute(expr); reactive(captured_expr)
+  # 这样就可以避免reactive对expr进行substitute时，获得captured_expr 这个中间符号！
+  session$output[[name]] <- do.call(reactive, args=list(expr=substitute(expr))) 
 }
 
 #' 获取输出值 (Output Getter)
