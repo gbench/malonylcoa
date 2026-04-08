@@ -135,7 +135,8 @@ reactive <- function(expr) {
 
       # 反向注册依赖
       lapply(env$deps, function(rv) {
-        rv$deps <<- c(rv$deps, list(env))
+        # 此处“rv$deps <<- c(rv$deps, list(env)) ” 不可以！会出现找不到“rv"
+        assign("deps", c(rv$deps, list(env)), rv)
       })
       .ctx <<- old
     }
@@ -178,12 +179,14 @@ input_set <- function(session, name, value) {
 
 # 定义 output$yyy
 output_def <- function(session, name, expr) {
-  session$output[[name]] <- reactive(expr)
+  t <- substitute(expr)
+  session$output[[name]] <- do.call(reactive, list(expr=bquote(.(t))))
 }
 
 # 取 output（模拟推回前端）
 output_get <- function(session, name) {
-  session$output[[name]]$run()
+  if(is.null(session$output[[name]]$run)) session$output[[name]]$get()
+  else session$output[[name]]$run()
 }
 
 # 1. 新建一个用户会话（对应一次 server()）
