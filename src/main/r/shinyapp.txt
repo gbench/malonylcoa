@@ -119,100 +119,128 @@ output 自动重算 → 推回前端更新
 .ctx <- NULL
 
 reactive <- function(expr) {
+  force(expr)
   env <- new.env()
   env$invalid <- TRUE
   env$value <- NULL
-  env$deps  <- list()
-  env$expr  <- substitute(expr)
+  env$deps <- list()  # 这个 reactive 依赖哪些 reactiveVal/reactive
+  env$reverse_deps <- list()  # 哪些 reactive/reactiveVal 依赖这个 reactive
+  env$expr <- expr
 
-  env$run <- function() {
+  fn <- function() {
     if (env$invalid) {
       old <- .ctx
       .ctx <<- env
-
+      
+      # 清除旧的依赖关系
+      lapply(env$deps, function(dep) {
+        # 从这个 dep 的 reverse_deps 中移除自己
+        dep$reverse_deps <- dep$reverse_deps[!sapply(dep$reverse_deps, identical, env)]
+      })
+      env$deps <- list()
+      
+      # 执行表达式，这会触发 reactiveVal 的 getter
       env$value <- eval(env$expr, parent.frame())
       env$invalid <- FALSE
-
-      # 反向注册依赖
-      lapply(env$deps, function(rv) {
-        # 此处“rv$deps <<- c(rv$deps, list(env)) ” 不可以！会出现找不到“rv"
-        assign("deps", c(rv$deps, list(env)), rv)
-      })
+      
       .ctx <<- old
     }
     env$value
   }
-  env
+  
+  fn
 }
 
 reactiveVal <- function(init = NULL) {
   env <- new.env()
   env$v <- init
-  env$deps <- list()
+  env$deps <- list()  # 哪些 reactive 依赖这个 reactiveVal
+  env$reverse_deps <- list()  # 这个 reactiveVal 依赖什么（通常为空）
   
-  env$get <- function() {
-    if (!is.null(.ctx)) {
-      # 现在 .ctx$deps 收集的是 env（环境），可以正确修改 env$deps
-      already_dep <- any(sapply(env$deps, identical, .ctx))
-      if (!already_dep) {
-        env$deps <- c(env$deps, list(.ctx))
+  fn <- function(value) {
+    if (missing(value)) {
+      # getter
+      if (!is.null(.ctx)) {
+        # 添加依赖关系
+        if (!any(sapply(env$deps, identical, .ctx))) {
+          env$deps <- c(env$deps, list(.ctx))
+          # 同时在被依赖者中注册反向依赖
+          .ctx$deps <- c(.ctx$deps, list(env))
+        }
       }
+      env$v
+    } else {
+      # setter
+      env$v <- value
+      # 通知所有依赖项失效
+      lapply(env$deps, function(dep) {
+        dep$invalid <- TRUE
+      })
+      invisible(value)
     }
-    env$v
   }
   
-  env$set <- function(new) {
-    env$v <- new
-    lapply(env$deps, function(d) d$invalid <- TRUE)
-  }
-  
-  env  # 返回环境
+  fn
 }
 
 new_session <- function() {
-  list(input  = new.env(), output = new.env()) |> list2env()
+  list(input = new.env(), output = new.env()) |> list2env()
 }
 
-# 前端发来 input$xxx = value
 input_set <- function(session, name, value) {
   if (is.null(session$input[[name]])) {
     session$input[[name]] <- reactiveVal(value)
   } else {
-    session$input[[name]]$set(value)
+    session$input[[name]](value)
   }
 }
 
-# 定义 output$yyy
 output_def <- function(session, name, expr) {
-  t <- substitute(expr)
-  session$output[[name]] <- do.call(reactive, list(expr=bquote(.(t))))
+  captured_expr <- substitute(expr)
+  session$output[[name]] <- reactive(captured_expr)
 }
 
-# 取 output（模拟推回前端）
 output_get <- function(session, name) {
-  if(is.null(session$output[[name]]$run)) session$output[[name]]$get()
-  else session$output[[name]]$run()
+  session$output[[name]]()
 }
 
-# 1. 新建一个用户会话（对应一次 server()）
+# ================= 测试 =================
+# 1. 新建会话
 s <- new_session()
 
-# 2. 前端发来 input$x = 10
-#    对应路径：/shinyapp/session/input/x/set
+# 2. 设置 input$x = 10
 input_set(s, "x", 10)
 
-# 3. 后端定义 output$y = input$x() + 1
+# 3. 定义 output$y
 output_def(s, "y", {
-  s$input$x$get() + 1
+  s$input$x() + 1
 })
 
-# 4. 第一次取 output
-output_get(s, "y")  # 11
+# 定义 _3y 依赖于 y
+output_def(s, "_3y", {
+  s$output$y() * 3
+})
 
-# 5. 前端再次发来 input$x = 5
+# 4. 第一次获取
+print(output_get(s, "y"))   # 应该输出 11
+print(output_get(s, "_3y")) # 应该输出 33
+
+# 5. 修改 input$x
 input_set(s, "x", 5)
 
-# 6. output 自动级联失效，重新计算
-output_get(s, "y")  # 6
+# 6. 再次获取（应该自动重新计算）
+print(output_get(s, "y"))   # 应该输出 6
+print(output_get(s, "_3y")) # 应该输出 18
+
+# 额外测试：多个依赖
+output_def(s, "z", {
+  s$input$x() * 2
+})
+
+print(output_get(s, "z"))   # 应该输出 10
+input_set(s, "x", 10)
+print(output_get(s, "z"))   # 应该输出 20
+print(output_get(s, "y"))   # 应该输出 11
+print(output_get(s, "_3y")) # 应该输出 33
 
 ```
