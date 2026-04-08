@@ -146,22 +146,27 @@ reactive <- function(expr) {
 }
 
 reactiveVal <- function(init = NULL) {
-  v <- init
-  deps <- list()
-
-  list(
-    get = function() {
-      if (!is.null(.ctx)) {
-        .ctx$deps <<- c(.ctx$deps, list(environment()))
+  env <- new.env()
+  env$v <- init
+  env$deps <- list()
+  
+  env$get <- function() {
+    if (!is.null(.ctx)) {
+      # 现在 .ctx$deps 收集的是 env（环境），可以正确修改 env$deps
+      already_dep <- any(sapply(env$deps, identical, .ctx))
+      if (!already_dep) {
+        env$deps <- c(env$deps, list(.ctx))
       }
-      v
-    },
-    set = function(new) {
-      v <<- new
-      lapply(deps, function(d) d$invalid <<- TRUE)
-    },
-    deps = deps
-  )
+    }
+    env$v
+  }
+  
+  env$set <- function(new) {
+    env$v <- new
+    lapply(env$deps, function(d) d$invalid <- TRUE)
+  }
+  
+  env  # 返回环境
 }
 
 new_session <- function() {
