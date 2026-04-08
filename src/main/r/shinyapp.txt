@@ -121,11 +121,11 @@ output 自动重算 → 推回前端更新
 # 模型定义：生命树依赖模型 (Life-tree Dependency Model)
 # 
 #   祖先/上游 (Ancestors/Upstream)      后代/下游 (Descendants/Downstream)
-#         xn0 (reactiveVal)  <--------------  y (reactive)
-#            |                                 ^
-#            | 数据流 (Data Flow)               | 通知流 (Notification)
-#            v                                 |
-#         xn1, xn2 ... (reactive)  -----------+ 
+#         xn0 (reactiveVal)  <----------------  y (reactive)
+#            |                                                 ^
+#            | 数据流 (Data Flow)                     | 通知流 (Notification)
+#            v                                                 |
+#         xn1, xn2 ... (reactive)  --------------+ 
 #
 # 关系定义：
 #   y <- xn0 + 1  <==>  y deps xn0  <==>  xn0 reverse_deps y
@@ -136,6 +136,71 @@ output 自动重算 → 推回前端更新
 # 全局上下文：当前正在执行的 reactive 环境（用于依赖收集）
 # 类似于 Shiny 的 getCurrentContext()
 .ctx <- NULL
+
+#' 创建响应式值容器 (Reactive Value Container)
+#' 
+#' 类似于 Shiny 的 reactiveVal，是响应式生命树的根节点（祖先）。
+#' 提供 getter/setter 接口，支持值的存储和变更通知。
+#'
+#' @param init 初始值
+#' @return 函数（闭包），支持 fn() 获取值，fn(new_val) 设置值
+#' @details
+#'   生命树位置：作为根节点，通常只有 reverse_deps（后代），没有 deps（祖先）。
+#'   当值改变时，沿 reverse_deps 树递归通知所有后代失效。
+reactiveVal <- function(init = NULL) {
+  env <- new.env()
+  env$v <- init              # 存储的实际值
+  env$deps <- list()         # 祖先列表：本节点依赖的上游（通常为空，因为是根）
+  env$reverse_deps <- list() # 后代列表：依赖本节点的下游 reactives
+  
+  fn <- function(value) {
+    if (missing(value)) {
+      # =======================================================================
+      # GETTER 模式：被读取时建立依赖关系
+      # =======================================================================
+      if (!is.null(.ctx)) {
+        # .ctx 是当前正在执行的 reactive（后代）
+        # 建立关系：.ctx 依赖 env，即 env 被 .ctx 依赖
+        if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+          # 记录到 env 的 reverse_deps：谁依赖我（我的后代）
+          env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+          # 记录到 .ctx 的 deps：我依赖谁（我的祖先）
+          .ctx$deps <- c(.ctx$deps, list(env))
+          
+          # 关系验证：y <- x + 1  ==>  y$deps 包含 x,  x$reverse_deps 包含 y
+        }
+      }
+      env$v
+      
+    } else {
+      # =======================================================================
+      # SETTER 模式：值改变时向下游传播失效通知
+      # =======================================================================
+      env$v <- value
+      
+      #' 递归失效函数：沿生命树向下游传播
+      #' @param children 当前节点的 reverse_deps（直接后代列表）
+      walk_invalidate <- function(children) {
+        for (child in children) {
+          # 标记后代为失效状态（下次读取时会重新计算）
+          child$invalid <- TRUE
+          
+          # 递归通知更深层后代（孙代、曾孙代...）
+          # 形成链式反应：xn0 -> xn1 -> xn2 -> y
+          if (length(child$reverse_deps) > 0) {
+            walk_invalidate(child$reverse_deps)
+          }
+        }
+      }
+      
+      # 从根节点开始，通知整棵依赖树失效
+      walk_invalidate(env$reverse_deps)
+      invisible(value)
+    }
+  }
+  
+  fn
+}
 
 #' 创建响应式表达式 (Reactive Expression)
 #' 
@@ -202,71 +267,6 @@ reactive <- function(expr) {
     }
     
     env$value
-  }
-  
-  fn
-}
-
-#' 创建响应式值容器 (Reactive Value Container)
-#' 
-#' 类似于 Shiny 的 reactiveVal，是响应式生命树的根节点（祖先）。
-#' 提供 getter/setter 接口，支持值的存储和变更通知。
-#'
-#' @param init 初始值
-#' @return 函数（闭包），支持 fn() 获取值，fn(new_val) 设置值
-#' @details
-#'   生命树位置：作为根节点，通常只有 reverse_deps（后代），没有 deps（祖先）。
-#'   当值改变时，沿 reverse_deps 树递归通知所有后代失效。
-reactiveVal <- function(init = NULL) {
-  env <- new.env()
-  env$v <- init              # 存储的实际值
-  env$deps <- list()         # 祖先列表：本节点依赖的上游（通常为空，因为是根）
-  env$reverse_deps <- list() # 后代列表：依赖本节点的下游 reactives
-  
-  fn <- function(value) {
-    if (missing(value)) {
-      # =======================================================================
-      # GETTER 模式：被读取时建立依赖关系
-      # =======================================================================
-      if (!is.null(.ctx)) {
-        # .ctx 是当前正在执行的 reactive（后代）
-        # 建立关系：.ctx 依赖 env，即 env 被 .ctx 依赖
-        if (!any(sapply(env$reverse_deps, identical, .ctx))) {
-          # 记录到 env 的 reverse_deps：谁依赖我（我的后代）
-          env$reverse_deps <- c(env$reverse_deps, list(.ctx))
-          # 记录到 .ctx 的 deps：我依赖谁（我的祖先）
-          .ctx$deps <- c(.ctx$deps, list(env))
-          
-          # 关系验证：y <- x + 1  ==>  y$deps 包含 x,  x$reverse_deps 包含 y
-        }
-      }
-      env$v
-      
-    } else {
-      # =======================================================================
-      # SETTER 模式：值改变时向下游传播失效通知
-      # =======================================================================
-      env$v <- value
-      
-      #' 递归失效函数：沿生命树向下游传播
-      #' @param children 当前节点的 reverse_deps（直接后代列表）
-      walk_invalidate <- function(children) {
-        for (child in children) {
-          # 标记后代为失效状态（下次读取时会重新计算）
-          child$invalid <- TRUE
-          
-          # 递归通知更深层后代（孙代、曾孙代...）
-          # 形成链式反应：xn0 -> xn1 -> xn2 -> y
-          if (length(child$reverse_deps) > 0) {
-            walk_invalidate(child$reverse_deps)
-          }
-        }
-      }
-      
-      # 从根节点开始，通知整棵依赖树失效
-      walk_invalidate(env$reverse_deps)
-      invisible(value)
-    }
   }
   
   fn
