@@ -149,12 +149,12 @@ output 自动重算 → 推回前端更新
 #'   当值改变时，沿 reverse_deps 树递归通知所有后代失效。
 reactiveVal <- function(init = NULL) {
   env <- new.env()
-  env$v <- init              # 存储的实际值
+  env$value <- init              # 存储的实际值
   env$deps <- list()         # 祖先列表：本节点依赖的上游（通常为空，因为是根）
   env$reverse_deps <- list() # 后代列表：依赖本节点的下游 reactives
   
-  fn <- function(value) {
-    if (missing(value)) {
+  fn <- function(val) {
+    if (missing(val)) {
       # =======================================================================
       # GETTER 模式：被读取时建立依赖关系
       # =======================================================================
@@ -170,13 +170,13 @@ reactiveVal <- function(init = NULL) {
           # 关系验证：y <- x + 1  ==>  y$deps 包含 x,  x$reverse_deps 包含 y
         }
       }
-      env$v
+      env$value
       
     } else {
       # =======================================================================
       # SETTER 模式：值改变时向下游传播失效通知
       # =======================================================================
-      env$v <- value
+      env$value <- val
       
       #' 递归失效函数：沿生命树向下游传播
       #' @param children 当前节点的 reverse_deps（直接后代列表）
@@ -195,7 +195,7 @@ reactiveVal <- function(init = NULL) {
       
       # 从根节点开始，通知整棵依赖树失效
       walk_invalidate(env$reverse_deps)
-      invisible(value)
+      invisible(val)
     }
   }
   
@@ -372,20 +372,39 @@ print(output_get(s, "y"))   # 应该输出 11
 print(output_get(s, "_3y")) # 应该输出 33
 
 # 独立使用 reactiveVal 与 reactive
-# > x <- reactiveVal(9)
-# > y <- reactive(x()*2)
-# > y()
-# [1] 18
-# > x(5)
-# > y()
-# [1] 10
-# > y()
-# [1] 10
-# > environment(y)
-# <environment: 0x0000019c88bc0618>
-# > environment(y)$env$value
-# [1] 10
-# > 
+x <- reactiveVal(1)
+y <- reactive(x()*2)
+z <- reactive(y()*3)
+
+#  第一回合 x  初始值
+x() # 期待 1
+y() # 期待 2
+z() # 期待 6
+
+#  第二回合 x 更新，invalidate y 与 z
+x(2) # 期待 2
+y() # 期待 4
+z() # 期待 12
+
+# 缓存值
+environment(x)$env$value # 期待 2
+environment(y)$env$value # 期待 4
+environment(z)$env$value # 期待 12
+
+# 环境对象
+environment(x)$env
+environment(y)$env
+environment(z)$env
+
+# 上游祖先对象
+environment(x)$env$deps # 期待是list()
+environment(y)$env$deps # 期待是environment(x)$env
+environment(z)$env$deps # 期待是environment(y)$env
+
+# 下游子孙对象
+environment(x)$env$reverse_deps # 期待是y的 environment(y)$env
+environment(y)$env$reverse_deps # 期待是z的 environment(z)$env
+environment(z)$env$reverse_deps # 期待是list()
 
 ```
 
