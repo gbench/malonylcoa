@@ -160,35 +160,33 @@ reactive <- function(expr) {
 reactiveVal <- function(init = NULL) {
   env <- new.env()
   env$v <- init
-  env$deps <- list()      # 哪些 reactive 依赖这个 reactiveVal
-  env$reverse_deps <- list()  # 这个 reactiveVal 依赖什么（通常为空）
+  env$deps <- list()          # 这个 reactiveVal 依赖什么（上游，通常为空）
+  env$reverse_deps <- list()  # 哪些 reactive 依赖这个 reactiveVal（下游）
   
   fn <- function(value) {
     if (missing(value)) {
       # getter
       if (!is.null(.ctx)) {
-        # 添加依赖关系
-        if (!any(sapply(env$deps, identical, .ctx))) {
-          env$deps <- c(env$deps, list(.ctx))
-          # 同时在被依赖者中注册反向依赖
-          .ctx$reverse_deps <- c(.ctx$reverse_deps, list(env))
+        # 添加依赖关系：.ctx 依赖 env
+        if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+          env$reverse_deps <- c(env$reverse_deps, list(.ctx))  # 修正：下游依赖我
+          .ctx$deps <- c(.ctx$deps, list(env))                  # 修正：我依赖上游
         }
       }
       env$v
     } else {
       # setter
       env$v <- value
-      # 通知所有依赖项失效（包括链式依赖）
+      # 通知所有依赖项失效（下游）
       invalidate_deps <- function(deps) {
         for (dep in deps) {
           dep$invalid <- TRUE
-          # 递归通知依赖此 reactive 的其他 reactive
           if (length(dep$reverse_deps) > 0) {
             invalidate_deps(dep$reverse_deps)
           }
         }
       }
-      invalidate_deps(env$deps)
+      invalidate_deps(env$reverse_deps)  # 修正：通知下游
       invisible(value)
     }
   }
