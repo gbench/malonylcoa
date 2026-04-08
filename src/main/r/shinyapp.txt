@@ -408,3 +408,139 @@ environment(z)$env$reverse_deps # 期待是list()
 
 ```
 
+# 模拟一个shinyapp
+```R
+
+reactiveVal <- function(init = NULL) {
+  env <- new.env()
+  env$value <- init
+  env$deps <- list()
+  env$reverse_deps <- list()
+  
+  # 强制使用server函数的运行环境
+  thisenv <- environment();
+  parent.env(thisenv) <- parent.frame(2)
+  
+  fn <- function(val) {
+    if (missing(val)) {
+      if (!is.null(.ctx)) {
+        if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+          env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+          .ctx$deps <- c(.ctx$deps, list(env))
+        }
+      }
+      env$value
+      
+    } else {
+      env$value <- val
+      
+      walk_invalidate <- function(children) {
+        for (child in children) {
+          child$invalid <- TRUE
+          
+          if (length(child$reverse_deps) > 0) {
+            walk_invalidate(child$reverse_deps)
+          }
+        }
+      }
+      
+      walk_invalidate(env$reverse_deps)
+      invisible(val)
+    }
+  }
+  
+  fn
+}
+
+reactive <- function(expr) {
+  env <- new.env()
+  env$invalid <- TRUE
+  env$value <- NULL
+  env$deps <- list()
+  env$reverse_deps <- list()
+  env$expr <- substitute(expr)
+  
+  # 强制使用server函数的运行环境
+  thisenv <- environment();
+  parent.env(thisenv) <- parent.frame(2)
+  
+  fn <- function() {
+    if (!is.null(.ctx)) {
+      if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+        env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+        .ctx$deps <- c(.ctx$deps, list(env))
+      }
+    }
+    
+    if (env$invalid) {
+      old_ctx <- .ctx
+      .ctx <<- env
+      
+      lapply(env$deps, function(ancestor) {
+        ancestor$reverse_deps <- ancestor$reverse_deps[!sapply(ancestor$reverse_deps, identical, env)]
+      })
+      env$deps <- list()
+      
+      env$value <- eval(env$expr, parent.frame())
+      env$invalid <- FALSE
+      
+      .ctx <<- old_ctx
+    }
+    
+    env$value
+  }
+  
+  fn
+}
+
+# 模仿shinyApp
+shinyapp <- function(server) {
+  .ctx <- NULL
+  
+  new_session <- function() {
+    session <- list(
+      input = new.env(),
+      output = new.env()
+    )
+    list2env(session)
+  }
+  
+  input_set <- function(session, name, value) {
+    if (is.null(session$input[[name]])) {
+      session$input[[name]] <- reactiveVal(value)
+    } else {
+      session$input[[name]](value)
+    }
+  }
+  
+  output_def <- function(session, name, expr) {
+    session$output[[name]] <- do.call(reactive, args=list(expr=substitute(expr))) 
+  }
+  
+  output_get <- function(session, name) {
+    session$output[[name]]()
+  }
+  
+  s <- new_session()
+  
+  server(s$input, s$output, s)
+}
+
+# server函数
+server <- function (input, output, session) {
+  x <- reactiveVal(1)
+  y <- reactive(x()*2)
+  z <- reactive(y()*2)
+  
+  message(gettextf("第一轮[x:%s, y:%s, z:%s]",x(), y(), z()))
+  
+  x(2)
+  
+  message(gettextf("第二轮[x:%s, y:%s, z:%s]",x(), y(), z()))
+}
+
+# 模拟shinyapp
+shinyapp(server)
+
+```
+
