@@ -171,7 +171,7 @@ reactiveVal <- function(init = NULL) {
         if (!any(sapply(env$deps, identical, .ctx))) {
           env$deps <- c(env$deps, list(.ctx))
           # 同时在被依赖者中注册反向依赖
-          .ctx$deps <- c(.ctx$deps, list(env))
+          .ctx$reverse_deps <- c(.ctx$reverse_deps, list(env))
         }
       }
       env$v
