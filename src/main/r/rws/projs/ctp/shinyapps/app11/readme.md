@@ -389,7 +389,7 @@ graph LR
     
     subgraph "R环境"
         SocketServer[svSocket Server<br/>端口:随机分配]
-        AppPool[apps全局注册表<br/>new.env(hash=TRUE)]
+        AppPool["apps全局注册表<br/>new.env&#40;hash=TRUE&#41;"]
     end
     
     subgraph "Shiny实例"
