@@ -1,4 +1,4 @@
-# Shiny 响应式引擎核心架构文档
+# Shiny 响应式引擎核心架构文档（增强版）
 
 ## 一、架构总览
 
@@ -9,6 +9,13 @@ Shiny 响应式引擎 = 惰性求值 + 自动依赖追踪 + 级联失效传播
 ```
 
 **一句话本质**：一个基于**全局上下文栈**的**声明式 DAG 执行引擎**，让普通 R 代码自动获得响应式能力。
+
+**顶层视角**：
+```
+Shiny = 网页版响应式 REPL
+     = 自装配数据流框架
+     = 符号即连接，代码即管线
+```
 
 ### 1.2 架构分层
 
@@ -86,7 +93,7 @@ reactiveVal <- function(init = NULL) {
     if (missing(value)) {
       # Getter: 注册当前上下文
       if (!is.null(.ctx)) {
-        .ctx$deps <- c(.ctx$reverse_deps, env)。
+        .ctx$deps <- c(.ctx$reverse_deps, env)
         env$reverse_deps <- c(env$reverse_deps, .ctx)
       }
       env$v
@@ -217,7 +224,43 @@ observe <- function(expr) {
 - **无需修改 R 语法**：不依赖 AST 解析
 - **零侵入设计**：只在 getter/setter 处检查
 
-### 3.2 依赖图构建与维护
+### 3.2 AST 深度遍历与符号栈机制（关键补充）
+
+Shiny 的依赖追踪**不解析语法树、不重载运算符、不重写 `<-` 赋值符号**。它利用了 R 语言对表达式求值时的**深度优先遍历**机制。
+
+**核心洞察**：
+> 当执行 `z <- x() * f(y()) + 1` 时，R 解释器会对这棵语法树进行深度遍历求值。Shiny 的响应式引擎**只拦截对 `reactiveVal` 和 `reactive` 函数的调用**（即带有 `()` 的符号），而忽略所有其他普通符号和函数。
+
+**符号栈模型**：
+```
+表达式: z <- x() * f(y()) + 1
+
+AST 深度遍历顺序:
+1. 进入乘法左分支: x()
+   -> 检测到 reactive 符号 'x'，压入 .ctx 栈
+   -> 执行 x()，建立依赖关系
+   -> 弹出 .ctx
+
+2. 进入乘法右分支: f(y())
+   -> 进入普通函数 f，**.ctx 栈保持不变（透明穿透）**
+   -> 在 f 内部求值参数: y()
+   -> 检测到 reactive 符号 'y'，压入 .ctx 栈
+   -> 执行 y()，建立依赖关系
+   -> 弹出 .ctx
+
+3. 执行普通函数 f 的返回值计算
+
+4. 执行乘法运算
+
+5. 执行加法运算
+
+最终结果: z 的依赖列表包含 [x, y]
+```
+
+**为什么普通函数完全透明？**
+因为 `.ctx` 是一个**包级全局变量**，它存在于 R 的环境链顶端。无论调用栈嵌套多少层普通函数，只要最终调用了 `x()`，读取 `.ctx` 时都能找到当前正在执行的响应式节点。普通函数无法修改或屏蔽 `.ctx`，因此**不中断依赖追踪**。
+
+### 3.3 依赖图构建与维护
 
 ```
 构建时机（依赖收集）：
@@ -250,7 +293,7 @@ observe <- function(expr) {
             └─→ Reactive B: invalid = TRUE
 ```
 
-### 3.3 依赖图可视化
+### 3.4 依赖图可视化
 
 ```
 输入层                  计算层                  输出层
@@ -433,6 +476,75 @@ server <- function(input, output, session) {
 - **计算隔离**：一个用户的密集计算不影响其他用户
 - **自动清理**：session 结束，整个依赖图被回收
 
+### 5.3 Session 隔离的 R 环境链实现（关键补充）
+
+在 R 语言层面实现 Session 隔离，关键在于**正确绑定 `.ctx` 变量的查找环境**。
+
+**问题**：如果在 `reactiveVal` 和 `reactive` 的闭包工厂函数内部直接定义 `.ctx`，那么每个 Session 会共享同一个全局 `.ctx`，导致不同用户之间的依赖关系混乱。
+
+**解决方案**：将闭包环境的父环境强制设置为 `server` 函数的运行环境。
+
+```r
+reactive <- function(expr) {
+  env <- new.env()
+  # ... 其他状态初始化 ...
+  
+  # 【关键步骤】强制绑定环境链
+  # 获取当前函数环境（即 reactive 闭包的实例化环境）
+  thisenv <- environment()
+  # 将父环境设置为调用 server 函数的环境（向上回溯两级调用栈）
+  parent.env(thisenv) <- parent.frame(2)
+  
+  fn <- function() {
+    # 这里的 .ctx 会沿着环境链查找：
+    # fn -> reactive 闭包环境 -> server 环境 -> 全局环境
+    # 由于 parent.env 被重定向，.ctx 会找到当前 Session 的 .ctx
+    if (!is.null(.ctx)) { ... }
+  }
+  fn
+}
+```
+
+**环境链图示**：
+```
+Session 1 环境链:
+  reactive fn -> reactive 闭包(父环境=Server1) -> Server1(.ctx=Session1)
+
+Session 2 环境链:
+  reactive fn -> reactive 闭包(父环境=Server2) -> Server2(.ctx=Session2)
+
+结果: 两个 Session 的 .ctx 查找路径完全隔离。
+```
+
+### 5.4 `output_def` 中的 `substitute` 陷阱（关键补充）
+
+在封装 Shiny 风格的 API 时，常见的错误是错误处理 R 的**非标准求值（NSE）**。
+
+**错误示例**：
+```r
+output_def <- function(session, name, expr) {
+  captured_expr <- substitute(expr)  # 捕获 expr 的符号
+  session$output[[name]] <- reactive(captured_expr)  # 传递符号
+}
+# 问题: reactive 内部再次 substitute，只能得到 'captured_expr' 这个符号本身！
+```
+
+**正确做法（使用 `do.call` 传递表达式源代码）**：
+```r
+output_def <- function(session, name, expr) {
+  # 必须在调用 reactive 之前完成 substitute，并将结果作为表达式对象传递
+  session$output[[name]] <- do.call(
+    reactive, 
+    args = list(expr = substitute(expr))
+  )
+}
+# 原理: substitute(expr) 在这里执行，获得原始表达式的 AST。
+# do.call 构造调用: reactive(expr = <原始AST>)
+# reactive 内部的 substitute(expr) 拿到的是 <原始AST>，而非中间变量名。
+```
+
+这个细节是构建 Shiny 风格 DSL 的关键——**在正确的层级捕获表达式**。
+
 ---
 
 ## 六、与传统架构对比
@@ -454,13 +566,6 @@ server <- function(input, output, session) {
 │  • 状态需显式管理（Session/DB）             │
 │  • 更新需手动触发                           │
 └─────────────────────────────────────────────┘
-
-代码示例（伪代码）：
-controller.get("/user/:id", (req, res) => {
-  const user = User.find(req.params.id)  // Model
-  res.render("user.html", { user })       // View
-  // 需要手动连接 Model → View
-})
 ```
 
 ### 6.2 Shiny 响应式架构
@@ -484,15 +589,6 @@ controller.get("/user/:id", (req, res) => {
 │  • 状态内建（reactiveVal）                  │
 │  • 自动更新（响应式传播）                   │
 └─────────────────────────────────────────────┘
-
-代码示例（R Shiny）：
-server <- function(input, output) {
-  # output$text 自动依赖 input$slider
-  output$text <- renderText({
-    paste("Value:", input$slider)
-  })
-  # 无需手动连接，自动响应
-}
 ```
 
 ### 6.3 核心差异总结
@@ -595,28 +691,29 @@ values <- reactiveValues(a=1, b=2, c=3)
 ```
 Shiny 响应式引擎 = 
     全局上下文栈（依赖追踪）
+    + AST 深度遍历 + 符号栈机制（透明穿透）
     + 双向依赖图（失效传播）
     + 惰性求值（性能优化）
-    + Session 隔离（多用户）
+    + R 环境链绑定（Session 隔离）
 ```
 
 ### 8.2 核心洞察
 
-1. **魔法背后的真相**：不是 AST 解析，不是运算符重载，而是**巧妙的闭包 + 全局变量**
+1. **魔法背后的真相**：不是 AST 解析，不是运算符重载，而是**巧妙的闭包 + 全局变量 + R 环境链特性**
 
-2. **透明性的来源**：普通函数完全不知道响应式的存在，却自动获得响应式能力
+2. **透明性的来源**：AST 深度遍历时，只拦截响应式符号（带 `()` 的函数调用），普通函数求值过程不改变 `.ctx` 栈，实现零侵入追踪
 
 3. **自装配的本质**：代码即管线，符号自带连接，无需外部配置
 
-4. **隔离的关键**：server 函数每次执行创建新闭包，天然隔离
+4. **隔离的关键**：通过 `parent.env() <- parent.frame(2)` 将闭包环境绑定到 Session 环境，实现多用户完全隔离
 
 ### 8.3 一句话总结
 
-> **Shiny 是一个基于全局上下文栈实现自动依赖追踪的声明式 DAG 执行引擎，通过惰性求值和级联失效传播，让普通 R 代码自动获得响应式能力。**
+> **Shiny 是一个基于全局上下文栈和 AST 深度遍历实现自动依赖追踪的声明式 DAG 执行引擎，通过惰性求值和级联失效传播，让普通 R 代码自动获得响应式能力。**
 
 ---
 
-## 附录：完整示例代码
+## 附录 A：完整示例代码
 
 ```r
 # 最小完整实现
@@ -643,4 +740,139 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-这个文档完整揭示了 Shiny 从底层机制到上层架构的全貌，可作为深入理解 Shiny 的路线图。
+## 附录 B：响应式核心引擎最小实现（带环境链绑定）
+
+```r
+# =============================================================================
+# 响应式编程核心引擎 (Reactivity Core Engine) - 完整可运行版本
+# =============================================================================
+
+# 全局上下文
+.ctx <- NULL
+
+#' 创建响应式值容器
+reactiveVal <- function(init = NULL) {
+  env <- new.env()
+  env$value <- init
+  env$deps <- list()
+  env$reverse_deps <- list()
+  
+  # 【关键】绑定环境链到 server 函数环境
+  thisenv <- environment()
+  parent.env(thisenv) <- parent.frame(2)
+  
+  fn <- function(val) {
+    if (missing(val)) {
+      if (!is.null(.ctx)) {
+        if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+          env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+          .ctx$deps <- c(.ctx$deps, list(env))
+        }
+      }
+      env$value
+    } else {
+      env$value <- val
+      
+      walk_invalidate <- function(children) {
+        for (child in children) {
+          child$invalid <- TRUE
+          if (length(child$reverse_deps) > 0) {
+            walk_invalidate(child$reverse_deps)
+          }
+        }
+      }
+      
+      walk_invalidate(env$reverse_deps)
+      invisible(val)
+    }
+  }
+  fn
+}
+
+#' 创建响应式表达式
+reactive <- function(expr) {
+  env <- new.env()
+  env$invalid <- TRUE
+  env$value <- NULL
+  env$deps <- list()
+  env$reverse_deps <- list()
+  env$expr <- substitute(expr)
+  
+  # 【关键】绑定环境链到 server 函数环境
+  thisenv <- environment()
+  parent.env(thisenv) <- parent.frame(2)
+  
+  fn <- function() {
+    if (!is.null(.ctx)) {
+      if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+        env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+        .ctx$deps <- c(.ctx$deps, list(env))
+      }
+    }
+    
+    if (env$invalid) {
+      old_ctx <- .ctx
+      .ctx <<- env
+      
+      lapply(env$deps, function(ancestor) {
+        ancestor$reverse_deps <- Filter(function(x) !identical(x, env), ancestor$reverse_deps)
+      })
+      env$deps <- list()
+      
+      env$value <- eval(env$expr, parent.frame())
+      env$invalid <- FALSE
+      
+      .ctx <<- old_ctx
+    }
+    env$value
+  }
+  fn
+}
+
+#' 模拟 shinyApp 运行环境
+shinyapp <- function(server) {
+  .ctx <- NULL
+  
+  new_session <- function() {
+    list2env(list(input = new.env(), output = new.env()))
+  }
+  
+  input_set <- function(session, name, value) {
+    if (is.null(session$input[[name]])) {
+      session$input[[name]] <- reactiveVal(value)
+    } else {
+      session$input[[name]](value)
+    }
+  }
+  
+  output_def <- function(session, name, expr) {
+    # 【关键】使用 do.call 传递 substitute 后的表达式
+    session$output[[name]] <- do.call(reactive, args = list(expr = substitute(expr)))
+  }
+  
+  output_get <- function(session, name) {
+    session$output[[name]]()
+  }
+  
+  s <- new_session()
+  server(s$input, s$output, s)
+}
+
+# ================= 测试 =================
+server <- function(input, output, session) {
+  x <- reactiveVal(1)
+  y <- reactive(x() * 2)
+  z <- reactive(y() * 2)
+  
+  message(sprintf("第一轮[x:%s, y:%s, z:%s]", x(), y(), z()))
+  
+  x(2)
+  
+  message(sprintf("第二轮[x:%s, y:%s, z:%s]", x(), y(), z()))
+}
+
+shinyapp(server)
+# 输出:
+# 第一轮[x:1, y:2, z:4]
+# 第二轮[x:2, y:4, z:8]
+```
