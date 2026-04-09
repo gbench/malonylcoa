@@ -1,0 +1,554 @@
+# 一、Shiny 整体架构本质
+```
+Shiny = 网页版响应式 REPL
+     = MVC 架构
+     = 自装配数据流框架
+```
+
+- **UI = View（前端页面模板）**
+- **Server = 每个用户独立的会话构造器**
+- **Session = 每个用户的独立运行环境（隔离容器）**
+- **Input = 前端传入的响应式源头**
+- **Output = 推回前端的自动执行端点**
+- **响应式引擎 = 依赖收集 + 失效传播 + 自动重算**
+
+---
+
+# 二、响应式核心机制（最底层）
+## 1. 全局上下文栈（灵魂）
+- 存在一个**包级全局变量**（如 `.current_context`）
+- **对所有函数透明、穿透调用栈**
+- 普通函数完全无感，不影响执行
+- 只有 reactiveVal / reactive 会读取它
+
+## 2. reactiveVal（源头节点）
+- 本质：**闭包 + 内部值 + 依赖列表**
+- 读 `x()`：
+  - 如果在上下文内 → **自动注册依赖**
+- 写 `x(val)`：
+  - 修改内部值
+  - **遍历所有下游，标记失效（invalidate）**
+
+## 3. reactive（中间计算节点）
+- 本质：**惰性计算 + 缓存 + 依赖列表**
+- 只有**被调用时**才计算
+- 计算时自动收集所有用到的 reactiveVal
+- 脏了也不会主动跑，**必须被人调用**
+
+## 4. Output / Observe（终点节点）
+- 特殊 reactive：**主动执行、自动重算**
+- 一旦 invalidate → **不需要调用，自动执行**
+- 执行完自动推送给前端
+- 这是前端能**自动刷新、自动联动**的根本原因
+
+---
+
+# 三、依赖收集机制
+- **不解析语法树**
+- **不重载运算符**
+- **不重写 <-**
+- **不做静态分析**
+
+**唯一机制：**
+> 在 reactive 上下文执行代码时，
+> 任何被调用的 reactiveVal 都会**自动把当前上下文登记为依赖**。
+> {z <- x() * f(y()) + 1} 会被构造成对一棵根节点为z, z的子节点为x, y的语法树的深度遍历！
+
+**普通函数完全透明，嵌套多少层都不中断。**
+> 对eval(expression)的计算，采用语法树ast求值的深度遍历机制，建立reactive符号栈
+> 求值时，只压栈reactive符号，忽略其他符号，从而就保证了普通函数的透明性
+> 通过闭包函数reactive <- \(expr) {renv; fn <- \() { ... }; fn}， 在此函数fn内部建立&维护reactive符号renv的层级依赖关系!
+
+---
+
+# 四、数据流完整路径
+```
+前端控件改变
+↓
+通过 WebSocket 发送：/session/input/xxx/set
+↓
+后端把 input$xxx 变成 reactiveVal 并 set(新值)
+↓
+reactiveVal 标记所有下游为失效
+↓
+级联传导到所有中间 reactive
+↓
+到达 output 端点
+↓
+output 自动重算 → 推回前端更新
+```
+
+---
+
+# 五、Server 函数的真正作用
+- **server() 不是运行一次，是每个用户实例化一次**
+- 每次新用户访问 = 调用一次全新 server()
+- 每次调用 = 创建**完全隔离**的：
+  - 响应式图
+  - 上下文环境
+  - input / output
+  - session 生命周期
+
+**Server = 函数式响应式容器生成器**
+多用户之间完全隔离、互不干扰。
+
+---
+
+# 六、与传统报表/BI 的本质区别
+## 传统架构（离散结构）
+- 数据源、计算、展示是分离的
+- 需要 **Controller/工程师手动接线**
+- 像洗衣机要现场接进水管、出水管
+
+## Shiny 架构（自装配结构）
+- **output$yyy 本身就是出水口**
+- 符号自带依赖、自带连接、自带推送
+- **不需要外部接线，代码即管线**
+- 全自动、自驱动、自更新
+
+---
+
+# 七、最终极简总结（三句话）
+1. **Shiny 是网页版响应式 REPL，基于全局上下文栈实现依赖收集。**
+2. **reactiveVal 是源头，reactive 是惰性中间层，output 是自动执行终点。**
+3. **整个数据流自装配、自连接、自驱动，彻底颠覆传统离散架构。**
+
+---
+
+Reactive示例代码演示：
+
+```R
+
+# =============================================================================
+# 响应式编程核心引擎 (Reactivity Core Engine)
+# -----------------------------------------------------------------------------
+# 模型定义：生命树依赖模型 (Life-tree Dependency Model)
+# 
+#   祖先/上游 (Ancestors/Upstream)      后代/下游 (Descendants/Downstream)
+#         xn0 (reactiveVal)  <----------------  y (reactive)
+#            |                                                 ^
+#            | 数据流 (Data Flow)                     | 通知流 (Notification)
+#            v                                                 |
+#         xn1, xn2 ... (reactive)  --------------+ 
+#
+# 关系定义：
+#   y <- xn0 + 1  <==>  y deps xn0  <==>  xn0 reverse_deps y
+#   deps: 指向祖先 (我依赖谁 / 我的上游)
+#   reverse_deps: 指向后代 (谁依赖我 / 我的下游)
+# =============================================================================
+
+# 全局上下文：当前正在执行的 reactive 环境（用于依赖收集）
+# 类似于 Shiny 的 getCurrentContext()
+.ctx <- NULL
+
+#' 创建响应式值容器 (Reactive Value Container)
+#' 
+#' 类似于 Shiny 的 reactiveVal，是响应式生命树的根节点（祖先）。
+#' 提供 getter/setter 接口，支持值的存储和变更通知。
+#'
+#' @param init 初始值
+#' @return 函数（闭包），支持 fn() 获取值，fn(new_val) 设置值
+#' @details
+#'   生命树位置：作为根节点，通常只有 reverse_deps（后代），没有 deps（祖先）。
+#'   当值改变时，沿 reverse_deps 树递归通知所有后代失效。
+reactiveVal <- function(init = NULL) {
+  env <- new.env()
+  env$value <- init              # 存储的实际值
+  env$deps <- list()         # 祖先列表：本节点依赖的上游（通常为空，因为是根）
+  env$reverse_deps <- list() # 后代列表：依赖本节点的下游 reactives
+  
+  fn <- function(val) {
+    if (missing(val)) {
+      # =======================================================================
+      # GETTER 模式：被读取时建立依赖关系
+      # =======================================================================
+      if (!is.null(.ctx)) {
+        # .ctx 是当前正在执行的 reactive（后代）
+        # 建立关系：.ctx 依赖 env，即 env 被 .ctx 依赖
+        if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+          # 记录到 env 的 reverse_deps：谁依赖我（我的后代）
+          env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+          # 记录到 .ctx 的 deps：我依赖谁（我的祖先）
+          .ctx$deps <- c(.ctx$deps, list(env))
+          
+          # 关系验证：y <- x + 1  ==>  y$deps 包含 x,  x$reverse_deps 包含 y
+        }
+      }
+      env$value
+      
+    } else {
+      # =======================================================================
+      # SETTER 模式：值改变时向下游传播失效通知
+      # =======================================================================
+      env$value <- val
+      
+      #' 递归失效函数：沿生命树向下游传播
+      #' @param children 当前节点的 reverse_deps（直接后代列表）
+      walk_invalidate <- function(children) {
+        for (child in children) {
+          # 标记后代为失效状态（下次读取时会重新计算）
+          child$invalid <- TRUE
+          
+          # 递归通知更深层后代（孙代、曾孙代...）
+          # 形成链式反应：xn0 -> xn1 -> xn2 -> y
+          if (length(child$reverse_deps) > 0) {
+            walk_invalidate(child$reverse_deps)
+          }
+        }
+      }
+      
+      # 从根节点开始，通知整棵依赖树失效
+      walk_invalidate(env$reverse_deps)
+      invisible(val)
+    }
+  }
+  
+  fn
+}
+
+#' 创建响应式表达式 (Reactive Expression)
+#' 
+#' 实现延迟计算（Lazy Evaluation）和缓存机制。当依赖的上游数据变化时，
+#' 自动标记为失效（invalid），下次读取时重新计算。
+#'
+#' @param expr R表达式，可包含对其他 reactive/reactiveVal 的调用
+#' @return 函数（闭包），调用时返回表达式的当前值
+#' @details
+#'   依赖收集机制：执行 expr 时，内部调用的 reactiveVal/reactive 会将 
+#'   当前 reactive 注册为其 reverse_deps（后代），同时将 reactiveVal 
+#'   记录到当前 reactive 的 deps（祖先）中。
+reactive <- function(expr) {
+
+  # 创建闭包环境，存储状态
+  env <- new.env()
+  env$invalid <- TRUE        # 脏标记：是否需要重新计算
+  env$value <- NULL          # 缓存的计算结果
+  env$deps <- list()         # 祖先列表：本 reactive 依赖的上游节点
+  env$reverse_deps <- list() # 后代列表：依赖本 reactive 的下游节点
+  env$expr <- substitute(expr)           # 待执行的表达式
+  
+  fn <- function() {
+    # -------------------------------------------------------------------------
+    # 阶段1：上下文注册（建立与父节点的关系）
+    # 如果被另一个 reactive（.ctx）引用，则建立双向依赖关系
+    # -------------------------------------------------------------------------
+    if (!is.null(.ctx)) {
+      # 检查是否已建立关系，避免重复注册
+      if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+        # 建立双向链接：
+        # env (祖先) 的 reverse_deps 添加 .ctx (后代)
+        env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+        # .ctx (后代) 的 deps 添加 env (祖先)
+        .ctx$deps <- c(.ctx$deps, list(env))
+      }
+    }
+    
+    # -------------------------------------------------------------------------
+    # 阶段2：重新计算（仅在失效时执行）
+    # -------------------------------------------------------------------------
+    if (env$invalid) {
+      # 保存当前上下文（支持嵌套 reactive 调用）
+      old_ctx <- .ctx
+      .ctx <<- env
+      
+      # --- 清理旧依赖关系（动态依赖追踪）---
+      # 上次计算时依赖的祖先，本次可能不再依赖，需先解耦
+      lapply(env$deps, function(ancestor) {
+        # 从祖先的 reverse_deps 中移除本节点
+        ancestor$reverse_deps <- ancestor$reverse_deps[!sapply(ancestor$reverse_deps, identical, env)]
+      })
+      env$deps <- list()  # 清空祖先列表，将在本次执行中重新收集
+      
+      # --- 执行表达式并收集新依赖 ---
+      # eval 过程中，内部 reactiveVal/reactive 的 getter 会读取 .ctx
+      # 从而将 env 注册为它们的 reverse_deps（后代）
+      env$value <- eval(env$expr, parent.frame())
+      env$invalid <- FALSE
+      
+      # 恢复上下文
+      .ctx <<- old_ctx
+    }
+    
+    env$value
+  }
+  
+  fn
+}
+
+#' 创建新会话 (Session)
+#' 
+#' 模拟 Shiny 的 session 对象，包含独立的 input/output 命名空间。
+#' 每个会话拥有独立的响应式图（Reactive Graph）。
+#'
+#' @return 环境对象，包含 input 和 output 两个子环境
+new_session <- function() {
+  session <- list(
+    input = new.env(),   # 存储 reactiveVal（输入）
+    output = new.env()   # 存储 reactive（输出定义）
+  )
+  list2env(session)
+}
+
+#' 设置输入值 (Input Setter)
+#' 
+#' 在 session 的 input 命名空间中创建或更新 reactiveVal。
+#' 如果值已存在则更新（会触发下游计算），否则创建新的 reactiveVal。
+#'
+#' @param session 由 new_session() 创建的会话对象
+#' @param name 输入名称（变量名）
+#' @param value 设置的值
+input_set <- function(session, name, value) {
+  if (is.null(session$input[[name]])) {
+    # 首次创建：初始化 reactiveVal
+    session$input[[name]] <- reactiveVal(value)
+  } else {
+    # 已存在：调用 setter 触发更新传播
+    session$input[[name]](value)
+  }
+}
+
+#' 定义输出 (Output Definition)
+#' 
+#' 将表达式绑定到 session 的 output 命名空间，延迟执行。
+#'
+#' @param session 会话对象
+#' @param name 输出名称
+#' @param expr 响应式表达式（无需显式调用 reactive()）
+output_def <- function(session, name, expr) {
+  # 使用do.call来捕获expr的源码表达式.  即 通过参数 args=list(expr=substitute(expr))
+  # 来强制把substitute(expr)的替换发生在output_def执行环境中，以便获得expr源码！
+  # 注意：不要采用 captured_expr <- substitute(expr);  session$output[[name]]  <- reactive(captured_expr) 这种！
+  # 因为，为了保持reactive可独立使用而不是现定于output_def内调用，reactive也对对expr进行substitute，
+  # 如果在output_def中captured_expr <- substitute(expr);   然后在reactive里再次substitute，
+  # reactive 只能获得captured_expr 这个中间符号！
+  session$output[[name]] <- do.call(reactive, args=list(expr=substitute(expr))) 
+}
+
+#' 获取输出值 (Output Getter)
+#' 
+#' 触发指定输出的计算（如果已失效则重新计算）。
+#'
+#' @param session 会话对象
+#' @param name 输出名称
+#' @return 计算结果的当前值
+output_get <- function(session, name) {
+  session$output[[name]]()
+}
+
+# ================= 测试 =================
+# 1. 新建会话
+s <- new_session()
+
+# 2. 设置 input$x = 10
+input_set(s, "x", 10)
+
+# 3. 定义 output$y
+output_def(s, "y", {
+  s$input$x() + 1
+})
+
+# 定义 _3y 依赖于 y
+output_def(s, "_3y", {
+  s$output$y() * 3
+})
+
+# 4. 第一次获取
+print(output_get(s, "y"))   # 应该输出 11
+print(output_get(s, "_3y")) # 应该输出 33
+
+# 5. 修改 input$x
+input_set(s, "x", 5)
+
+# 6. 再次获取（应该自动重新计算）
+print(output_get(s, "y"))   # 应该输出 6
+print(output_get(s, "_3y")) # 应该输出 18
+
+# 额外测试：多个依赖
+output_def(s, "z", {
+  s$input$x() * 2
+})
+
+# output_get 内置使用 eactiveVal 与 reactive
+print(output_get(s, "z"))   # 应该输出 10
+input_set(s, "x", 10)
+print(output_get(s, "z"))   # 应该输出 20
+print(output_get(s, "y"))   # 应该输出 11
+print(output_get(s, "_3y")) # 应该输出 33
+
+# 独立使用 reactiveVal 与 reactive
+x <- reactiveVal(1)
+y <- reactive(x()*2)
+z <- reactive(y()*3)
+
+#  第一回合 x  初始值
+x() # 期待 1
+y() # 期待 2
+z() # 期待 6
+
+#  第二回合 x 更新，invalidate y 与 z
+x(2) # 期待 2
+y() # 期待 4
+z() # 期待 12
+
+# 缓存值
+environment(x)$env$value # 期待 2
+environment(y)$env$value # 期待 4
+environment(z)$env$value # 期待 12
+
+# 环境对象
+environment(x)$env
+environment(y)$env
+environment(z)$env
+
+# 上游祖先对象
+environment(x)$env$deps # 期待是list()
+environment(y)$env$deps # 期待是environment(x)$env
+environment(z)$env$deps # 期待是environment(y)$env
+
+# 下游子孙对象
+environment(x)$env$reverse_deps # 期待是y的 environment(y)$env
+environment(y)$env$reverse_deps # 期待是z的 environment(z)$env
+environment(z)$env$reverse_deps # 期待是list()
+
+```
+
+# 模拟一个shinyapp
+```R
+
+reactiveVal <- function(init = NULL) {
+  env <- new.env()
+  env$value <- init
+  env$deps <- list()
+  env$reverse_deps <- list()
+  
+  # 强制使用server函数的运行环境
+  # 关键：将当前环境的父环境设置为 server 函数的运行环境
+  # 这样 .ctx 的查找会沿着环境链找到属于当前 Session 的 .ctx
+  thisenv <- environment();
+  parent.env(thisenv) <- parent.frame(2)
+  
+  fn <- function(val) {
+    if (missing(val)) {
+      if (!is.null(.ctx)) {
+        if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+          env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+          .ctx$deps <- c(.ctx$deps, list(env))
+        }
+      }
+      env$value
+      
+    } else {
+      env$value <- val
+      
+      walk_invalidate <- function(children) {
+        for (child in children) {
+          child$invalid <- TRUE
+          
+          if (length(child$reverse_deps) > 0) {
+            walk_invalidate(child$reverse_deps)
+          }
+        }
+      }
+      
+      walk_invalidate(env$reverse_deps)
+      invisible(val)
+    }
+  }
+  
+  fn
+}
+
+reactive <- function(expr) {
+  env <- new.env()
+  env$invalid <- TRUE
+  env$value <- NULL
+  env$deps <- list()
+  env$reverse_deps <- list()
+  env$expr <- substitute(expr)
+  
+  # 强制使用server函数的运行环境
+  # 关键：将当前环境的父环境设置为 server 函数的运行环境
+  # 这样 .ctx 的查找会沿着环境链找到属于当前 Session 的 .ctx
+  thisenv <- environment();
+  parent.env(thisenv) <- parent.frame(2)
+  
+  fn <- function() {
+    if (!is.null(.ctx)) {
+      if (!any(sapply(env$reverse_deps, identical, .ctx))) {
+        env$reverse_deps <- c(env$reverse_deps, list(.ctx))
+        .ctx$deps <- c(.ctx$deps, list(env))
+      }
+    }
+    
+    if (env$invalid) {
+      old_ctx <- .ctx
+      .ctx <<- env
+      
+      lapply(env$deps, function(ancestor) {
+        ancestor$reverse_deps <- ancestor$reverse_deps[!sapply(ancestor$reverse_deps, identical, env)]
+      })
+      env$deps <- list()
+      
+      env$value <- eval(env$expr, parent.frame())
+      env$invalid <- FALSE
+      
+      .ctx <<- old_ctx
+    }
+    
+    env$value
+  }
+  
+  fn
+}
+
+# 模仿shinyApp
+shinyapp <- function(server) {
+  .ctx <- NULL
+  
+  new_session <- function() {
+    session <- list(
+      input = new.env(),
+      output = new.env()
+    )
+    list2env(session)
+  }
+  
+  input_set <- function(session, name, value) {
+    if (is.null(session$input[[name]])) {
+      session$input[[name]] <- reactiveVal(value)
+    } else {
+      session$input[[name]](value)
+    }
+  }
+  
+  output_def <- function(session, name, expr) {
+    session$output[[name]] <- do.call(reactive, args=list(expr=substitute(expr))) 
+  }
+  
+  output_get <- function(session, name) {
+    session$output[[name]]()
+  }
+  
+  s <- new_session()
+  
+  server(s$input, s$output, s)
+}
+
+# server函数
+server <- function (input, output, session) {
+  x <- reactiveVal(1)
+  y <- reactive(x()*2)
+  z <- reactive(y()*2)
+  
+  message(gettextf("第一轮[x:%s, y:%s, z:%s]",x(), y(), z()))
+  
+  x(2)
+  
+  message(gettextf("第二轮[x:%s, y:%s, z:%s]",x(), y(), z()))
+}
+
+# 模拟shinyapp
+shinyapp(server)
+
+```
+
