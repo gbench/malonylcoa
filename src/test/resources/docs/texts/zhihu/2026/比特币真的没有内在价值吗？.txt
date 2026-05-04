@@ -90,7 +90,7 @@ y = f(x, \theta)
 最终实现：用 \(x\) 的形式结构彻底复制 \(Y\)，即
 
 \[
-Y = \int f(x) \cdot dx \quad \text{in } X \text{ (with } \theta\text{)}
+Y = \int f(x) \cdot dx \quad \text{in } X \text{ (with } \Theta\text{)}
 \]
 
 等价向量递归形式：
