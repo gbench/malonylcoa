@@ -94,7 +94,7 @@ ui <- fluidPage(
                                       choices = min_year:max_year, selected = 2000)),
                    column(6, 
                           selectInput("year2", "选择对比年份:", 
-                                      choices = min_year:max_year, selected = 2022))
+                                      choices = min_year:max_year, selected = max_year))
                  ),
                  br(),
                  h4("对比结果"),
