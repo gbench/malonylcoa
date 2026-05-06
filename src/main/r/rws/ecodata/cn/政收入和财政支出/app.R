@@ -63,7 +63,11 @@ ui <- fluidPage(
       
       # 数据来源说明
       p(em("数据来源：《中国财政年鉴》《中国统计年鉴》")),
-      p(em("注：财政收入中不包括国内外债务收入；从2000年起，财政支出中包括国内外债务付息支出。"))
+      p(em("注：财政收入中不包括国内外债务收入；从2000年起，财政支出中包括国内外债务付息支出。")),
+     
+      hr(),
+      
+      actionButton("close", "关闭应用", class = "btn-danger btn-sm", width = "100%")
     ),
     
     mainPanel(
@@ -526,6 +530,23 @@ server <- function(input, output, session) {
     
     p
   })
+  
+  # 关闭应用
+  observeEvent(input$close, {
+    showModal(modalDialog(
+      "确定关闭应用吗？",
+      footer = tagList(
+        actionButton("confirm_close", "确定", class = "btn-danger btn-sm"),
+        modalButton("取消")
+      )
+    ))
+  })
+  
+  observeEvent(input$confirm_close, {
+    removeModal()
+    stopApp()
+  })
+  
 }
 
 # 运行应用
