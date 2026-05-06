@@ -6,12 +6,18 @@ library(plotly)
 library(DT)
 library(tidyr)
 
+# 工作区域设置
+setwd("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/ecodata/cn/政收入和财政支出")
+
 # 数据
 data <- read.csv("data.csv")
 
+min_year <- min(data$年份)
+max_year <- max(data$年份)
+
 # UI
 ui <- fluidPage(
-  titlePanel("中国一般公共预算收支增长情况 (1978-2022)"),
+  titlePanel(gettextf("中国一般公共预算收支增长情况 (%s-%s)", min_year, max_year)),
   
   sidebarLayout(
     sidebarPanel(
@@ -20,9 +26,9 @@ ui <- fluidPage(
       # 年份范围选择
       sliderInput("年份范围", 
                   "选择年份范围:",
-                  min = 1978, 
-                  max = 2022, 
-                  value = c(1978, 2022),
+                  min = min_year, 
+                  max = max_year, 
+                  value = c(min_year, max_year),
                   step = 1,
                   sep = ""),
       
@@ -85,10 +91,10 @@ ui <- fluidPage(
                  fluidRow(
                    column(6, 
                           selectInput("year1", "选择基准年份:", 
-                                      choices = 1978:2022, selected = 2000)),
+                                      choices = min_year:max_year, selected = 2000)),
                    column(6, 
                           selectInput("year2", "选择对比年份:", 
-                                      choices = 1978:2022, selected = 2022))
+                                      choices = min_year:max_year, selected = 2022))
                  ),
                  br(),
                  h4("对比结果"),
