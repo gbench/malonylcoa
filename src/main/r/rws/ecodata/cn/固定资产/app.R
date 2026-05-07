@@ -4,6 +4,7 @@ library(plotly)
 library(dplyr)
 library(tidyr)
 library(DT)
+library(purrr)
 
 setwd("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/ecodata/cn/固定资产")
 
@@ -186,17 +187,11 @@ server <- function(input, output, session) {
   
   # 显示原始数据表（使用DT包实现交互式表格）
   output$dataTable <- renderDT({
-    datatable(data, 
-              options = list(
-                pageLength = 10,
-                scrollX = TRUE,
-                dom = 'Bfrtip',
-                buttons = c('copy', 'csv', 'excel', 'pdf')
-              ),
+    datatable( data %>% mutate(across(everything(), ~replace(., is.na(.), 0))), 
+              options = list( pageLength = 10, scrollX = TRUE, dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf')),
               rownames = FALSE,
               class = 'display nowrap',
-              caption = "三次产业固定资产投资完整数据表") %>%
-      formatRound(columns = c(2:9), digits = 1)
+              caption = "三次产业固定资产投资完整数据表") %>% formatRound(columns = data |> compose(\(x) x[-1], seq, length) () , digits = 1)
   })
   
   # 显示数据结构
