@@ -10,7 +10,6 @@ library(tidyr)
 
 setwd("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/ecodata/cn/人口")
 
-
 # 根据图片内容提取数据（仅到2024年）
 population_data <- read.csv("data.csv")
 
