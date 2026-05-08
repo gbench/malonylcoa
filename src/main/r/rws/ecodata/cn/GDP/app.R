@@ -10,7 +10,7 @@ library(dplyr)
 library(tidyr)
 
 # 数据 - 从图片内容整理
-data <- read.csv("data.csv")
+data <- read.csv("gdp_2016-2025.csv")
 names(data ) <- names(data) |> gsub("^X", "", x=_)
 
 # 转换为长格式（面板数据）
