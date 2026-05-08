@@ -1,17 +1,18 @@
 # 保存为 app.R
 # 运行方式：在RStudio中打开此文件，点击“Run App”按钮，或执行 shiny::runApp()
 
-setwd("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/ecodata/cn/GDP")
-
 # 加载必要的库
 library(shiny)
 library(plotly)
 library(dplyr)
 library(tidyr)
 
+setwd("F:/slicef/ws/gitws/malonylcoa/src/main/r/rws/ecodata/cn/GDP")
+
 # 数据 - 从图片内容整理
 data <- read.csv("gdp_2016-2025.csv")
 names(data ) <- names(data) |> gsub("^X", "", x=_)
+rng_year <- names(data)[-1] |> range() |> as.numeric() |> setNames(c("min_year","max_year"))
 
 # 转换为长格式（面板数据）
 data_long <- data %>%
@@ -72,7 +73,7 @@ ui <- fluidPage(
     '))
   ),
   
-  titlePanel("中国各省（区、市）地区生产总值展示（2016-2022）"),
+  titlePanel(gettextf("中国各省（区、市）地区生产总值展示（%s-%s）", rng_year[1], rng_year[2])),
   
   sidebarLayout(
     sidebarPanel(
@@ -82,14 +83,14 @@ ui <- fluidPage(
         inputId = "selected_regions",
         label = "地区选择",
         choices = regions,
-        selected = c("广东", "江苏", "山东", "浙江")  # 默认选择几个代表性省份
+        selected = sample(data$地区, 5)  # 默认选择几个代表性省份
       ),
       hr(),
       h5("图表设置"),
       checkboxInput("show_trend", "显示趋势线（线性回归）", value = TRUE),
       checkboxInput("show_errorbars", "显示误差线（基于增长率波动）", value = TRUE),
       hr(),
-      helpText("数据来源：国家统计局数据发布库。2022年数据为初步核算数。"),
+      helpText(gettextf("数据来源：国家统计局数据发布库。%s年数据为初步核算数。", rng_year[2])),
       helpText("误差线说明：基于3年滚动增长率标准差计算的GDP波动范围，反映经济稳定性。"),
       br(),
       # 关闭按钮
@@ -120,9 +121,9 @@ ui <- fluidPage(
                  h5("基础数据"),
                  p("• 数据来源：国家统计局数据发布库 (data.stats.gov.cn)"),
                  p("• 统计指标：地区生产总值 (GDP)，单位为亿元。"),
-                 p("• 时间范围：2016年至2022年，共7个年份。"),
+                 p(gettextf("• 时间范围：%s年至%s年，共%s个年份。", rng_year[1], rng_year[2], rng_year[2] - rng_year[1])),
                  p("• 地区范围：全国31个省、自治区、直辖市（不含港澳台）。"),
-                 p("• 2022年数据为初步核算数，后续可能修订。"),
+                 p(gettextf("• %s年数据为初步核算数，后续可能修订。", rng_year[2])),
                  
                  h5("📈 误差线计算方法"),
                  p("误差线基于各地区的年度增长率波动构建："),
