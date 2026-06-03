@@ -66,7 +66,7 @@ app_init <- \(port, dbname="mem:mybank", sqlquery.host=gettextf("jdbc:h2:tcp://l
   message(gettextf("switch to dbname:%s, port:%s", dbname, port))
 }
 
-# qpp 取消初始化
+# app 取消初始化
 app_uninit <- \() {
     es <- search() |> grep(pattern=xxxconfig, value=T)
     if(length(es)>0) {
