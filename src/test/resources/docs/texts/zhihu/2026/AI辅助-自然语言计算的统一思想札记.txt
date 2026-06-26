@@ -107,34 +107,18 @@
 七、自然语言结构
 我们可以把上述推导，收敛为一个主函数（收束所有语言现象的结构公式）：
 
-最
-终
-话
-语
-语
-序
-约
-束
-集
-用
-户
-注
-意
-力
+\[
+\boxed{\text{最终话语} = \text{Render}\left( \text{Filter}_{\text{语序}}(\text{Propagation}(\text{约束集})), \text{用户注意力} \right)}
+\]
 
 在这个公式下：
 
-汉语：Filter = Identity（直出）
-日语：Filter = 
-（把字滤镜）
-倒装句：Filter = 
-（谓词提前）
-反讽句：Filter = 
-对
-方
-现
-实
-（双层滤镜叠加比较）
+在这个公式下：
+- **汉语**：Filter = Identity（直出）
+- **日语**：Filter = \( \text{Ba} \)（把字滤镜）
+- **倒装句**：Filter = \( \text{Predicate-Lift} \)（谓词提前）
+- **反讽句**：Filter = \( \text{Aspect}_{\text{对方}} \circ \text{Aspect}_{\text{现实}} \circ \text{Compare} \)（双层滤镜叠加比较）
+
 自然语言结构：
 
 世界上的所有语言，共享同一套“注意力母函数”底层逻辑；所谓的“语法差异”，仅仅是这个母函数在输出层叠加了不同“拓扑滤镜（Filter）”后的不同波形。
