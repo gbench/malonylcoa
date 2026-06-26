@@ -30,7 +30,7 @@ $$\mathbf{h}_{t+1} = f(\mathbf{h}_t, \mathbf{x}_{\leq t}) \approx \mathbf{h}_t +
 - $\nabla_{\mathcal{M}}$ 是流形上的语义梯度
 - 离散token $x_{t+1}$ 是通过Voronoi投影 $\pi: \mathcal{M} \to V$ 获得的
 
-**关键定理**（ 来自最新研究 [Latent Semantic Manifolds in Large Language Models] (https://arxiv.org/html/2603.22301v1) ）：对于任何大小为 $N$ 的词汇表，语义失真满足下界 $D \geq c_k (\text{vol}(\mathcal{M})/N)^{2/k}$。这意味着：
+**关键定理**（摘自： [Latent Semantic Manifolds in Large Language Models] (https://arxiv.org/html/2603.22301v1) ）：对于任何大小为 $N$ 的词汇表，语义失真满足下界 $D \geq c_k \cdot (\text{vol}(\mathcal{M})/N)^{2/k}$。这意味着：
 
 > **语言本质上是对更丰富语义结构的”有损压缩”，而LLM的”智能”来自于它学会了这种压缩的逆映射——从离散符号重构连续语义。同时，语义失真 D (Distortion)，也给出了思想传播里，采用文字方式来表达观点&思想时，所不得不接受的损失代价，即任何文本信息都是不完整表达！另一方面，D也变相证明了，那些广泛流传于生活&交流里“只可意会不可言传”的所谓“你懂的”是要必然存在的。即，要系统深入&全面理解 对方传递过来的文本信息，人类大脑发生的那些格式塔Gestalt式的关联&延展即“脑补”是解码信息所必须的！**
 
