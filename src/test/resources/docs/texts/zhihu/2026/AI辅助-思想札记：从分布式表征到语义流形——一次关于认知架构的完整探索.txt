@@ -102,12 +102,12 @@
 
 ## 五、第四次观念跃迁：语义流形上的测地线行走
 
-### 5.1 深度学习的网络结构本质（形式服务化的逻辑关系）
+### 5.1 深度学习的网络结构本质（形式结构化的逻辑&关系）
 $$\mathbf{Y} = f(\mathbf{X} \mathbf{W}) $$
 
 $$ \mathbf{X} = \begin{pmatrix} x_{11} & x_{12} & \cdots & x_{1n} & 1 \\ x_{21} & x_{22} & \cdots & x_{2n} & 1 \\ \vdots & \vdots & \ddots & \vdots \\ x_{m1} & x_{m2} & \cdots & x_{mn} & 1\end{pmatrix} $$
 
-$$ \mathbf{W} = \begin{pmatrix} w_{11} & w_{21} & \cdots & w_{1p} \\ w_{21} & w_{22} & \cdots & w_{2p} \\ \vdots & \vdots & \ddots & \vdots \\ w_{n1} & w_{n2} & \cdots & w_{np} \\ b_1 & b_2  & \cdots & b_n \end{pmatrix} $$
+$$ \mathbf{W} = \begin{pmatrix} w_{11} & w_{21} & \cdots & w_{1q} \\ w_{21} & w_{22} & \cdots & w_{2q} \\ \vdots & \vdots & \ddots & \vdots \\ w_{n1} & w_{n2} & \cdots & w_{nq} \\ b_1 & b_2  & \cdots & b_q \end{pmatrix} $$
 
 ## q层网络模型（Neuron Network NN）
 $$NN(q)= f^q(...f^2(f^1(X W^1) W^2) ...) $$
