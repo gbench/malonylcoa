@@ -102,7 +102,7 @@
 
 ## 五、第四次观念跃迁：语义流形上的测地线行走
 
-### 5.1 深度网络的结构本质
+### 5.1 深度学习的网络结构本质（形式服务化的逻辑关系）
 $$\mathbf{Y} = f(\mathbf{X} \mathbf{W}) $$
 
 $$ \mathbf{X} = \begin{pmatrix} x_{11} & x_{12} & \cdots & x_{1n} & 1 \\ x_{21} & x_{22} & \cdots & x_{2n} & 1 \\ \vdots & \vdots & \ddots & \vdots \\ x_{m1} & x_{m2} & \cdots & x_{mn} & 1\end{pmatrix} $$
