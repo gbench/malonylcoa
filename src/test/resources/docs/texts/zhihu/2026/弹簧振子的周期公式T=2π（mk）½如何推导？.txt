@@ -1,0 +1,13 @@
+弹簧振子 可 视为 圆周运动 在 水平轴上的投影
+
+于是，圆周向心力 f 的x轴投影 f cos a 与 回复力 - k x 大小相等
+
+其中 f = m r w^2， x = r cos a ；a 是 向心力 与 x 轴正方向 之间 的 夹角，等于 圆周角速度w 与运动时间t 的乘积，即 a= w t
+
+结果：|m r w^2 cos(w t)| = |-k r * cos(w t)|
+
+所以 m w^2 = k，w = sqrt (k/m)
+
+周期 T = 2 pi / w
+
+因此 T = 2 pi / sqrt (k/m) = 2 pi sqrt(m/k)
