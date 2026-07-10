@@ -12,7 +12,7 @@ library(reticulate)
 # ctp-ind-3.11             D:\sliced\develop\anaconda\anaconda3\envs\ctp-ind-3.11
 # myinv                    D:\sliced\develop\anaconda\anaconda3\envs\myinv
 # packt-ganstf2            D:\sliced\develop\anaconda\anaconda3\envs\packt-ganstf2
-ctp_3.11 <- "D:/sliced/develop/anaconda/anaconda3/envs/ctp-3.11"
-use_condaenv("ctp-3.11") 
-# 或 use_python(ctp_3.11)
+
+# use_python("D:/sliced/develop/anaconda/anaconda3/envs/ctp-3.11")
+use_condaenv("PY3_11") 
 np <- import("numpy")
