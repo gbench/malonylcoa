@@ -47,6 +47,165 @@
   这意味着：**一个空间上极小的“破汽车”（\( \sigma \) 很小），在频率/动量空间中反而极其“宽广”（\( \Delta p \) 很大）。**
   **关键结论：** 平面波是构成世界的“砖块”（本征态），而破汽车是“砖块砌成的房子”（物理态）。二者不是对立，而是**组件与整体**的关系。这正是不确定性原理（\( \sigma \cdot \Delta p \approx \hbar/2 \)）的自然体现。
 
+**证明：波包 \( \psi(x,t) \) 的动量空间展开 \( \phi(k) \propto e^{-\sigma^2 (k - k_0)^2} \)**
+
+---
+
+### 1. 证明目标与前提
+
+- **给定波函数（实空间）**（采用统一约定 \( e^{-i(\omega_0 t - k_0 x)} \)）：
+  \[
+  \psi(x, t) = \frac{1}{(2\pi\sigma^2)^{1/4}} e^{-\frac{(x - vt)^2}{4\sigma^2}} e^{-i(\omega_0 t - k_0 x)}
+  \]
+
+- **傅里叶变换定义（动量/波数空间）**：
+  \[
+  \phi(k, t) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{+\infty} \psi(x, t) \, e^{i k x} \, dx
+  \]
+  这里采用 \( +i k x \) 的核，与 \( e^{-i\omega t} \) 的时间约定共同构成 \( e^{-i(\omega t - kx)} \) 的完整四维相位。
+
+- **待证明的结果**（取模方，忽略不重要的全局相位因子）：
+  \[
+  \phi(k, t) \propto e^{-\sigma^2 (k - k_0)^2}
+  \]
+
+---
+
+### 2. 代入波函数
+
+将 \( \psi(x,t) \) 代入傅里叶变换：
+
+\[
+\phi(k, t) = \frac{1}{\sqrt{2\pi}} \frac{1}{(2\pi\sigma^2)^{1/4}} 
+\int_{-\infty}^{+\infty} 
+e^{-\frac{(x - vt)^2}{4\sigma^2}} 
+e^{-i(\omega_0 t - k_0 x)} 
+e^{i k x} \, dx
+\]
+
+合并指数中的 \( x \) 相关项：
+
+\[
+\phi(k, t) = \frac{1}{\sqrt{2\pi}} \frac{1}{(2\pi\sigma^2)^{1/4}} 
+e^{-i\omega_0 t}
+\int_{-\infty}^{+\infty} 
+e^{-\frac{(x - vt)^2}{4\sigma^2}} 
+e^{i (k - k_0) x} \, dx
+\]
+
+---
+
+### 3. 完成平方（高斯积分标准技巧）
+
+令 \( a = \frac{1}{4\sigma^2} \)，\( b = i(k - k_0) \)，则积分形式为：
+
+\[
+I = \int_{-\infty}^{+\infty} e^{-a (x - vt)^2} e^{i (k - k_0) x} \, dx
+\]
+
+将指数合并为关于 \( x \) 的二次型：
+
+\[
+-a (x - vt)^2 + i (k - k_0) x
+= -a \left[ x^2 - 2vt \cdot x + v^2 t^2 \right] + i (k - k_0) x
+\]
+
+只保留含 \( x \) 和 \( x^2 \) 的项（常数因子 \( -a v^2 t^2 \) 可提到积分外）：
+
+\[
+= -a x^2 + \left[ 2a vt + i (k - k_0) \right] x - a v^2 t^2
+\]
+
+完成平方：
+
+\[
+-a x^2 + b' x = -a \left( x - \frac{b'}{2a} \right)^2 + \frac{b'^2}{4a}
+\]
+
+其中 \( b' = 2a vt + i (k - k_0) \)。
+
+因此：
+
+\[
+I = e^{-a v^2 t^2} \cdot e^{\frac{b'^2}{4a}} 
+\int_{-\infty}^{+\infty} e^{-a \left( x - \frac{b'}{2a} \right)^2} dx
+\]
+
+高斯积分公式：
+
+\[
+\int_{-\infty}^{+\infty} e^{-a (x - x_0)^2} dx = \sqrt{\frac{\pi}{a}} = 2\sigma \sqrt{\pi}
+\]
+
+（因为 \( a = \frac{1}{4\sigma^2} \)，所以 \( \sqrt{\pi/a} = 2\sigma \sqrt{\pi} \)）
+
+---
+
+### 4. 提取 \( k \) 依赖项
+
+我们只关心 \( \phi(k) \) 对 \( k \) 的依赖，常数和含 \( t \) 的全局相位因子（如 \( e^{-a v^2 t^2} e^{-i\omega_0 t} \)）对 \( k \) 的分布形状无影响，可合并到比例常数中。
+
+关键的 \( k \) 依赖来自：
+
+\[
+e^{\frac{b'^2}{4a}} = e^{\frac{[2a vt + i (k - k_0)]^2}{4a}}
+= e^{a v^2 t^2} \cdot e^{i vt (k - k_0)} \cdot e^{-\frac{(k - k_0)^2}{4a}}
+\]
+
+其中：
+- \( e^{a v^2 t^2} \) 是常数（对 \( k \) 无影响），
+- \( e^{i vt (k - k_0)} \) 是全局相位（对概率分布 \( |\phi|^2 \) 无影响），
+- \( e^{-\frac{(k - k_0)^2}{4a}} \) 是真正的 \( k \) 依赖项。
+
+代入 \( 4a = 4 \cdot \frac{1}{4\sigma^2} = \frac{1}{\sigma^2} \)，得：
+
+\[
+e^{-\frac{(k - k_0)^2}{4a}} = e^{-\sigma^2 (k - k_0)^2}
+\]
+
+---
+
+### 5. 最终结果
+
+将所有常数（包括 \( \frac{1}{\sqrt{2\pi}} \frac{1}{(2\pi\sigma^2)^{1/4}} \cdot 2\sigma\sqrt{\pi} \) 以及含 \( t \) 的全局因子）合并为一个比例常数 \( C \)：
+
+\[
+\phi(k, t) = C \cdot e^{-\sigma^2 (k - k_0)^2} \cdot e^{i vt (k - k_0)} \cdot e^{-i\omega_0 t}
+\]
+
+取模方（物理上可观测的动量分布）：
+
+\[
+|\phi(k, t)|^2 = |C|^2 \cdot e^{-2\sigma^2 (k - k_0)^2}
+\]
+
+因此：
+
+\[
+\boxed{|\phi(k)|^2 \propto e^{-2\sigma^2 (k - k_0)^2}}
+\]
+
+等价地，常写为：
+
+\[
+\boxed{\phi(k) \propto e^{-\sigma^2 (k - k_0)^2}}
+\]
+
+（吸收因子 2 进入常数定义，或重新定义 \( \sigma_k = \frac{1}{2\sigma} \) 时形式不变。）
+
+---
+
+### 6. 物理含义（回扣直觉）
+
+| 实空间（破汽车） | 动量空间（频谱） |
+| :--- | :--- |
+| 宽度 \( \sigma \) 很小（汽车很小） | 宽度 \( 1/\sigma \) 很大（速度极其不确定） |
+| 位置相对确定 | 动量极其分散 |
+| 高斯包络 \( e^{-x^2/(4\sigma^2)} \) | 高斯包络 \( e^{-\sigma^2 (k - k_0)^2} \) |
+| **不确定性关系**：\( \Delta x \cdot \Delta k \approx \sigma \cdot \frac{1}{\sigma} = 1 \)（忽略 \( \hbar \) 因子，即 \( \Delta x \cdot \Delta p \approx \hbar/2 \)） |
+
+这恰好对应“醉汉斜眼射击”：**瞄得越准（\( \sigma \) 越小），抖得越狠（\( \Delta k \) 越大）。**
+
 ---
 
 ## 二、 突破：从“破汽车”到“颤巍巍的泡泡”
