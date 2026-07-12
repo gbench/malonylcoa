@@ -118,10 +118,10 @@
 
 > **弹簧振子的启示——所有“力”都是投影效应**
 >
-> 考虑一个高维匀速圆周运动：\( \mathcal{F} (t) = r e^{i \omega t} = x + i y，x = r\cos(\omega t) \)，\( y = r\sin(\omega t) \)。
+> 考虑一个高维匀速圆周运动：\( F (t; r, \omega) = r e^{i \omega t} = x + i y, x = r\cos(\omega t) ,  y = r\sin(\omega t) \)。
 >
-> 若你只能观测 \( x \) 轴，你会看到：$ \ddot{x} = \frac{\mathrm{d^2}} {\mathrm{d}t^2}x = \frac{\mathrm{d}} {\mathrm{d}t} (\frac{\mathrm{d}} {\mathrm{d}t} r\cos(\omega t)) = \frac{\mathrm{d}} {\mathrm{d}t} (r (-\omega \sin(\omega t))) = -r \omega(\omega(\cos(\omega t)) = - \omega(\omega(r \cos(\omega t)) = -\omega (\omega x) = -\omega^2 x  $
-> 即 \( f = -m\omega^2 x \)。我们通常将它写为 \( f = -k x \)，并称之为“弹簧力”。
+> 若我们只能观测 \( x \) 轴，将会看到：$ \ddot{x} = \frac{\mathrm{d^2}} {\mathrm{d}t^2}x = \frac{\mathrm{d}} {\mathrm{d}t} (\frac{\mathrm{d}} {\mathrm{d}t} r\cos(\omega t)) = \frac{\mathrm{d}} {\mathrm{d}t} (r (-\omega \sin(\omega t))) = -r \omega(\omega(\cos(\omega t)) = - \omega(\omega(r \cos(\omega t)) = -\omega (\omega x) = -\omega^2 x  $
+> 即 \( f = F_{x} = -m\omega^2 x \)。我们通常将它写为 \( f = -k x \)，并称之为“弹簧力”。
 >
 > 但高维本体中根本没有“弹簧”——只有匀速圆周运动。\( -kx \) 不是力，而是圆周运动在低维投影时**丢失了 \( y \) 维度后产生的表观梯度**。
 >
@@ -164,3 +164,4 @@
 **档案声明：**本篇完整记录了从"泡泡如何坍缩"的追问到"ValuePlan 即道"的全部观念生成与反思路径，含每一步的触发点、辨析与结论，及一处贯穿始终的"刚—柔"螺丝。日后无需依赖原始对话，仅凭本札记即可复现并深化这套"关系优先"的本体论。
 
 > （注：部分内容可能由 AI 生成）
+
