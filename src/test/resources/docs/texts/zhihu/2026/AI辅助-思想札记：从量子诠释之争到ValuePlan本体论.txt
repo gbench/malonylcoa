@@ -120,7 +120,7 @@
 >
 > 考虑一个高维匀速圆周运动：\( x = r\cos(\omega t) \)，\( y = r\sin(\omega t) \)。
 >
-> 若你只能观测 \( x \) 轴，你会看到：$ \ddot{x} = -\omega^2 x $
+> 若你只能观测 \( x \) 轴，你会看到：$ \ddot{x} = \frac{\mathrm{d^2}}{\mathrm{d}t^2}x = \frac{\mathrm{d}}{\mathrm{d}t} (\frac{\mathrm{d}}{\mathrm{d}t} x) = \frac{\mathrm{d}}{\mathrm{d}t} (r (-\omega sin(\omega t))) = -\omega(\omega(r cos(\omega t)) = -\omega(\omega x) = -\omega^2 x  $
 > 即 \( F = -m\omega^2 x \)。你将它写为 \( F = -kx \)，并称之为“弹簧力”。
 >
 > 但高维本体中根本没有“弹簧”——只有匀速圆周运动。\( -kx \) 不是力，而是圆周运动在低维投影时**丢失了 \( y \) 维度后产生的表观梯度**。
