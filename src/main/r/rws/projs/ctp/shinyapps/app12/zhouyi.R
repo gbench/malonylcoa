@@ -53,5 +53,10 @@ kqry <- \(pattern, ds=gs, prefix ="【", suffix="】") ds |> grep(pattern, x=_, 
 # [1] "c(\"a\", \"b\")"
 # 因此从卦象xs数据提取模式结构时，需要进行代码代码解析：str2lang , eval
 library(purrr)
+#
+"利建侯" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
+#
+"利涉大川" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
+#
 "悔亡" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
 
