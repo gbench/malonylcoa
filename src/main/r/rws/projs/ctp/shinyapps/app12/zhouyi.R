@@ -33,7 +33,8 @@ ns <- lines |> grep("上(九|六)：", x=_) # 结束行
 xs <- mapply(\(s, e, i) lines[seq(s, e)], ms, ns, seq(length(ns))) |> (\(ys, # 设置项目名称 
   nms = ys |> lapply(\(y) unlist(strsplit(y[1], "\\s+"))[2])) ys |> setNames(nm=nms)) () # 卦象结构
 gs <- xs |> sapply(\(x) x[2]) # 卦辞
-kqry <- \(pattern, ds=gs) ds |> grep(pattern, x=_, value=T) # 关键词查询
+kqry <- \(pattern, ds=gs, prefix ="【", suffix="】") ds |> grep(pattern, x=_, value=T) |> 
+  gsub(gettextf("(.*)(%s)(.*)",pattern), gettextf("\\1%s\\2%s\\3", prefix, suffix), x=_) # 关键词查询
 
 # 
 "元|亨|利|贞" |> kqry() |> as.list()
@@ -52,5 +53,5 @@ kqry <- \(pattern, ds=gs) ds |> grep(pattern, x=_, value=T) # 关键词查询
 # [1] "c(\"a\", \"b\")"
 # 因此从卦象xs数据提取模式结构时，需要进行代码代码解析：str2lang , eval
 library(purrr)
-"利建侯" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
+"悔亡" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
 
