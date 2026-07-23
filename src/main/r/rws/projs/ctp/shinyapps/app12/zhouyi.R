@@ -56,6 +56,15 @@ yaos[yaos[, "X5"]==1, ]
 # 九四
 yaos[yaos[, "X4"]==1, ]
 
+# 爻辞提取
+yaoget <- \(gua, pattern="^([初上][九六]|[九六][二三四五])") xs |> getElement(gua) |> grep(pattern, x=_, value=T)
+yaoget("未济")
+yaoget("未济",  "^([初上][九六]|[九][二三四五])")
+yaoget("未济",  "^([初上][九六]|[六][二三四五])")
+yaoget("未济",  "^([初上][九六]")
+yaoget("未济",  "^([九][二三四五])")
+yaoget("未济",  "^([六][二三四五])")
+
 # 
 "元|亨|利|贞" |> kqry() |> as.list()
 
