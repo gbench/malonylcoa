@@ -30,10 +30,50 @@ f <- "F:/slicef/ws/gitws/malonylcoa/src/test/resources/docs/texts/jingshi/zhouyi
 lines <- readLines(f) |> grep("(^$)|(图解)", x=_, value=T, invert=T) # 数据行
 ms <- lines |> grep("第[一二三四五六七八九十]+卦", x=_) # 开始行
 ns <- lines |> grep("上(九|六)：", x=_) # 结束行
-xs <- mapply(\(s, e, i) lines[seq(s, e)], ms, ns, seq(length(ns))) |> (\(ys, # 设置项目名称 
-  nms = ys |> lapply(\(y) unlist(strsplit(y[1], "\\s+"))[2])) ys |> setNames(nm=nms)) () # 卦象结构
+pick <- \(ys, i=1) ys |> lapply(\(y) unlist(strsplit(y[1], "\\s+"))[i]) # 提取卦象结构的成分&片段
+xs <- mapply(\(s, e, i) lines[seq(s, e)], ms, ns, seq(length(ns))) |> (\(ys, .nm=pick(ys, 2)) ys |> setNames(nm=.nm)) () # 卦象结构
+guaget <- \(gua, pattern=".") xs |> getElement(gua) |> grep(pattern, x=_, value=T) # 提取卦象
 gs <- xs |> sapply(\(x) x[2]) # 卦辞
-kqry <- \(pattern, ds=gs) ds |> grep(pattern, x=_, value=T) # 关键词查询
+kqry <- \(pattern, ds=gs, prefix="【", suffix="】") ds |> grep(pattern, x=_, value=T) |> 
+  gsub(gettextf("(.*)(%s)(.*)",pattern), gettextf("\\1%s\\2%s\\3", prefix, suffix), x=_) # 关键词查询
+trigrams <- list(坤=c(0,0,0), 震=c(0,0,1), 坎=c(0,1,0), 兑=c(0,1,1), 艮=c(1,0,0), 离=c(1,0,1), 巽=c(1,1,0), 乾=c(1,1,1)) # 三爻符号
+ynm <- list(X1="初爻", X2="二爻", X3="三爻", X4="四爻", X5="五爻", X6="上爻") # 爻辞名称
+taiji <- \(flag=T) list(ys=pick(xs,4) |> unlist() |> strsplit("上|下") |> lapply(\(i) trigrams[i])) |> # 提取太极结构 
+  with(if(flag) {zs <- lapply(ys, unlist) |> data.frame(); attr(zs, "row.names") <- rev(names(ynm)); zs} else ys) # 太极图
+yaos <- t(taiji()) # 爻辞结构
+
+#爻辞结构
+yaos
+
+# 初九 
+yaos[yaos[, "X1"]==1, ]
+# 上九 
+yaos[yaos[, "X6"]==1, ]
+
+# 初六 
+yaos[yaos[, "X1"]==0, ]
+# 上六
+yaos[yaos[, "X6"]==0, ]
+
+# 九五
+yaos[yaos[, "X5"]==1, ]
+# 九四
+yaos[yaos[, "X4"]==1, ]
+
+# 提取卦象
+guaget("屯", ".")
+# 提取彖辞
+guaget("屯", "^彖")
+# 提取象辞
+guaget("屯", "^象")
+
+# 提取爻辞
+guaget("未济", "^([初上][九六]|[九六][二三四五])")
+guaget("未济", "^([初上][九六]|[九][二三四五])")
+guaget("未济", "^([初上][九六]|[六][二三四五])")
+guaget("未济", "^([初上][九六])")
+guaget("未济", "^([九][二三四五])")
+guaget("未济", "^([六][二三四五])")
 
 # 
 "元|亨|利|贞" |> kqry() |> as.list()
@@ -52,5 +92,10 @@ kqry <- \(pattern, ds=gs) ds |> grep(pattern, x=_, value=T) # 关键词查询
 # [1] "c(\"a\", \"b\")"
 # 因此从卦象xs数据提取模式结构时，需要进行代码代码解析：str2lang , eval
 library(purrr)
+#
 "利建侯" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
+#
+"利涉大川" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
+#
+"悔亡" |> kqry(ds=xs) |> lapply(compose(eval, str2lang))
 
