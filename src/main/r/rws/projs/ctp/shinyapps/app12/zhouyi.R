@@ -32,6 +32,7 @@ ms <- lines |> grep("第[一二三四五六七八九十]+卦", x=_) # 开始行
 ns <- lines |> grep("上(九|六)：", x=_) # 结束行
 pick <- \(ys, i=1) ys |> lapply(\(y) unlist(strsplit(y[1], "\\s+"))[i]) # 提取卦象结构的成分&片段
 xs <- mapply(\(s, e, i) lines[seq(s, e)], ms, ns, seq(length(ns))) |> (\(ys, .nm=pick(ys, 2)) ys |> setNames(nm=.nm)) () # 卦象结构
+guaget <- \(gua, pattern=".") xs |> getElement(gua) |> grep(pattern, x=_, value=T) # 提取卦象
 gs <- xs |> sapply(\(x) x[2]) # 卦辞
 kqry <- \(pattern, ds=gs, prefix="【", suffix="】") ds |> grep(pattern, x=_, value=T) |> 
   gsub(gettextf("(.*)(%s)(.*)",pattern), gettextf("\\1%s\\2%s\\3", prefix, suffix), x=_) # 关键词查询
@@ -56,14 +57,20 @@ yaos[yaos[, "X5"]==1, ]
 # 九四
 yaos[yaos[, "X4"]==1, ]
 
-# 爻辞提取
-yaoget <- \(gua, pattern="^([初上][九六]|[九六][二三四五])") xs |> getElement(gua) |> grep(pattern, x=_, value=T)
-yaoget("未济")
-yaoget("未济",  "^([初上][九六]|[九][二三四五])")
-yaoget("未济",  "^([初上][九六]|[六][二三四五])")
-yaoget("未济",  "^([初上][九六]")
-yaoget("未济",  "^([九][二三四五])")
-yaoget("未济",  "^([六][二三四五])")
+# 提取卦象
+guaget("屯", ".")
+# 提取彖辞
+guaget("屯", "^彖")
+# 提取象辞
+guaget("屯", "^象")
+
+# 提取爻辞
+guaget("未济", "^([初上][九六]|[九六][二三四五])")
+guaget("未济", "^([初上][九六]|[九][二三四五])")
+guaget("未济", "^([初上][九六]|[六][二三四五])")
+guaget("未济", "^([初上][九六])")
+guaget("未济", "^([九][二三四五])")
+guaget("未济", "^([六][二三四五])")
 
 # 
 "元|亨|利|贞" |> kqry() |> as.list()
