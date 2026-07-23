@@ -40,7 +40,10 @@ trigrams <- list(坤=c(0,0,0), 震=c(0,0,1), 坎=c(0,1,0), 兑=c(0,1,1), 艮=c(1
 ynm <- list(X1="初爻", X2="二爻", X3="三爻", X4="四爻", X5="五爻", X6="上爻") # 爻辞名称
 taiji <- \(flag=T) list(ys=pick(xs,4) |> unlist() |> strsplit("上|下") |> lapply(\(i) trigrams[i])) |> # 提取太极结构 
   with(if(flag) {zs <- lapply(ys, unlist) |> data.frame(); attr(zs, "row.names") <- rev(names(ynm)); zs} else ys) # 太极图
-yaos <- t(taiji()) # 爻辞
+yaos <- t(taiji()) # 爻辞结构
+
+#爻辞结构
+yaos
 
 # 初九 
 yaos[yaos[, "X1"]==1, ]
