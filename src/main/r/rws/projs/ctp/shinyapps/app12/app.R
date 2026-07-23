@@ -881,7 +881,7 @@ server <- function(input, output, session) {
       info <- data()$structure_info[idx]
       parts <- strsplit(info, "上|下")[[1]]
       if (length(parts) >= 2) {
-        paste(parts[2], "→", parts[1])
+        paste(parts[1], "→", parts[2])
       } else {
         "未知结构"
       }
