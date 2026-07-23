@@ -37,7 +37,23 @@ kqry <- \(pattern, ds=gs, prefix="【", suffix="】") ds |> grep(pattern, x=_, v
   gsub(gettextf("(.*)(%s)(.*)",pattern), gettextf("\\1%s\\2%s\\3", prefix, suffix), x=_) # 关键词查询
 trigrams <- list(坤=c(0,0,0), 震=c(0,0,1), 坎=c(0,1,0), 兑=c(0,1,1), 艮=c(1,0,0), 离=c(1,0,1), 巽=c(1,1,0), 乾=c(1,1,1)) # 三爻符号
 bagua <- \(flag=T) list(ys=pick(xs,4) |> unlist() |> strsplit("上|下") |> lapply(\(i) trigrams[i])) |> # 提取八卦结构 
-  with(if(flag) {zs <- lapply(ys, unlist) |> data.frame(); attr(zs, "row.names") <- paste0("X", 1:6); zs} else ys) # 八卦图
+  with(if(flag) {zs <- lapply(ys, unlist) |> data.frame(); attr(zs, "row.names") <- paste0("X", 6:1); zs} else ys) # 八卦图
+yaos <- t(bagua()) # 爻辞
+
+# 初九 
+yaos[yaos[, "X1"]==1, ]
+# 上九 
+yaos[yaos[, "X6"]==1, ]
+
+# 初六 
+yaos[yaos[, "X1"]==0, ]
+# 上六
+yaos[yaos[, "X6"]==0, ]
+
+# 九五
+yaos[yaos[, "X5"]==1, ]
+# 九四
+yaos[yaos[, "X4"]==1, ]
 
 # 
 "元|亨|利|贞" |> kqry() |> as.list()
