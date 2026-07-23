@@ -205,18 +205,18 @@ plot_single_gua <- function(gua_name, yaos_matrix, gua_data) {
   })
   
   p <- ggplot(df, aes(x = 1, y = yao)) +
-    geom_rect(aes(xmin = -1.2, xmax = 3.0, ymin = 0.5, ymax = 6.5),
+    geom_rect(aes(xmin = -1.2, xmax = 3.2, ymin = 0.5, ymax = 6.5),
               fill = NA, color = "#8B4513", linewidth = 1.5, linetype = "solid") +
     geom_tile(aes(fill = factor(value)), 
-              width = 2.6, height = 0.8, color = "#2C3E50", linewidth = 1.2) +
+              width = 3.7, height = 0.8, color = "#2C3E50", linewidth = 1.2) +
     geom_text(aes(label = ifelse(value == 1, "—", "––")), 
               x = 1, size = 20, 
               color = ifelse(df$value == 1, "white", "#2C3E50"),
               fontface = "bold") +
     geom_text(aes(label = label), x = 2.4, hjust = 0, 
-              size = 4.5, color = "#34495E", fontface = "bold") +
+              size = 4.5, color = "#6d8688", fontface = "bold") +
     geom_text(aes(label = yao_text_short), 
-              x = -0.8, hjust = 1, size = 5, color = "#7F8C8D") +
+              x = -0.8, hjust = 0, size = 5, color = "#7F8C8D") +
     scale_fill_manual(values = c("0" = "#F5E6D3", "1" = "#2C3E50"),
                       labels = c("阴 (––)", "阳 (—)")) +
     labs(title = paste0("「", gua_name, "」卦 · 六爻结构"),
@@ -565,7 +565,7 @@ ui <- fluidPage(
       "卦象浏览",
       icon = icon("book"),
       fluidRow(
-        column(3,
+        column(5,
           wellPanel(
             h4("📖 选择卦象", style = "color: #1a1a2e; font-weight: 700;"),
             selectInput("gua_select", NULL,
@@ -597,7 +597,7 @@ ui <- fluidPage(
                         class = "btn-primary btn-block")
           )
         ),
-        column(9,
+        column(7,
           fluidRow(
             column(4,
               div(class = "stat-box",
@@ -756,7 +756,7 @@ ui <- fluidPage(
             ),
             br(),
             h4("数据来源", style = "color: #2C3E50;"),
-            p("基于《京氏易传》文本解析生成"),
+            p("基于《经史/周易》文本解析生成"),
             p("文件路径: F:/slicef/ws/gitws/malonylcoa/src/test/resources/docs/texts/jingshi/zhouyi.txt"),
             br(),
             h4("技术栈", style = "color: #2C3E50;"),
