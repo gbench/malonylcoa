@@ -30,10 +30,10 @@ f <- "F:/slicef/ws/gitws/malonylcoa/src/test/resources/docs/texts/jingshi/zhouyi
 lines <- readLines(f) |> grep("(^$)|(图解)", x=_, value=T, invert=T) # 数据行
 ms <- lines |> grep("第[一二三四五六七八九十]+卦", x=_) # 开始行
 ns <- lines |> grep("上(九|六)：", x=_) # 结束行
-xs <- mapply(\(s, e, i) lines[seq(s, e)], ms, ns, seq(length(ns))) |> (\(ys, # 设置项目名称 
-  nms = ys |> lapply(\(y) unlist(strsplit(y[1], "\\s+"))[2])) ys |> setNames(nm=nms)) () # 卦象结构
+pick <- \(ys, i=1) ys |> lapply(\(y) unlist(strsplit(y[1], "\\s+"))[i]) # 提取卦象结构的成分&片段
+xs <- mapply(\(s, e, i) lines[seq(s, e)], ms, ns, seq(length(ns))) |> (\(ys, nm_=pick(ys, 2)) ys |> setNames(nm=.nm)) () # 卦象结构
 gs <- xs |> sapply(\(x) x[2]) # 卦辞
-kqry <- \(pattern, ds=gs, prefix ="【", suffix="】") ds |> grep(pattern, x=_, value=T) |> 
+kqry <- \(pattern, ds=gs, prefix="【", suffix="】") ds |> grep(pattern, x=_, value=T) |> 
   gsub(gettextf("(.*)(%s)(.*)",pattern), gettextf("\\1%s\\2%s\\3", prefix, suffix), x=_) # 关键词查询
 
 # 
