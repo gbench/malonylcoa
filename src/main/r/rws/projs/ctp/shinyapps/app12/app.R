@@ -618,9 +618,14 @@ ui <- fluidPage(
               )
             )
           ),
-          fluidRow(
+	  fluidRow(# 卦象结构图示
             column(12,
-              plotOutput("gua_plot", height = "600px")
+	      uiOutput("gua_img", height = "100px")  # 占位符，用于放置动态生成的图片
+            )
+          ),
+          fluidRow( # 卦爻结构
+            column(12,
+              plotOutput("gua_yao", height = "600px")
             )
           )
         )
@@ -821,11 +826,18 @@ server <- function(input, output, session) {
   
   # ---------- 卦象浏览 ----------
   
-  output$gua_plot <- renderPlot({
+  output$gua_yao <- renderPlot({
     req(current_gua())
     gua_data <- data()$parsed[[current_gua()]]
     plot_single_gua(current_gua(), data()$yaos, gua_data)
   }, width = 800, height = 600)
+
+  output$gua_img <- renderUI({
+    gnm <- strsplit(current_gua(),"\\s+")[[1]][1]
+    gua_names <- data()$gua_names
+    imgpath <- gettextf("imgs/guas/%s%s.jpeg", gnm, grep(gnm, gua_names) )
+    img(src = imgpath)
+  })
   
   output$gua_text_display <- renderText({
     req(current_gua())
