@@ -8,9 +8,13 @@ Software architecture description
 
 #### Installation
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1. 下载最新JDK，版本JAVA21以上：https://www.oracle.com/java/technologies/downloads/
+2. 下载并配置最新版本MAVEN安装到D:/sliced/develop/maven/apache-maven-3.9.6,这里以3.9.6为例
+   配置 set M2_HOME=D:/sliced/develop/maven/apache-maven-3.9.6
+   添加%M2_HOME%/bin到系统环境变量PATH 
+3. 设置 D:/sliced/develop/maven/apache-maven-3.9.6/conf/settings.xml下的
+   <localRepository>D:/sliced/mvn_repos</localRepository>
+4. mvn clean install -DskipTests=true 
 
 #### Instructions
 
@@ -24,7 +28,6 @@ Software architecture description
 2.  Create Feat_xxx branch
 3.  Commit your code
 4.  Create Pull Request
-
 
 #### Gitee Feature
 
