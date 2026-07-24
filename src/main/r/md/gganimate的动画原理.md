@@ -156,4 +156,8 @@ ease_aes('custom',
          ease_out = function(x) 1 - cos(x * pi / 2))
 ```
 
-> 札记完。核心公式：**`M_theta = (1 - f(theta)) * M_1 + f(theta) * M_t`**，其中 `f` 是从 `[0,1]` 到 `[0,1]` 的缓动变换函数。
+
+>核心公式：**$M_{\theta} = (1 - f(\theta)) * M_{t-1} + f(\theta) * M_t$**，其中 `f` 是从 `[0,1]` 到 `[0,1]` 的缓动变换函数。
+
+
+**其实gganimate的动画原理就是把由facet_wrap所生成一组panel上的分面facets表示成一个关键帧序列$\{M_t\}_1^n$，将其在时间的维度轴上摊开，并对关键帧序列$[M_1,M_2,...,M_{t-1},M_t,...,M_n]$进行连续&光滑的插值&过渡**
