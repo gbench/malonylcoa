@@ -74,3 +74,6 @@ $ git branch -vv
 * develop 2fe095ee [github/develop] 删除文件
   master  14abe37f [origin/master] 增加图片
 
+# 将 develop 分支的上游改回 origin/develop
+git branch --set-upstream-to=origin/develop
+
