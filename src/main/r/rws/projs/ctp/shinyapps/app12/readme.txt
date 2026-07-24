@@ -77,3 +77,38 @@ $ git branch -vv
 # 将 develop 分支的上游改回 origin/develop
 git branch --set-upstream-to=origin/develop
 
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git branch --set-upstream-to=origin/develop
+branch 'develop' set up to track 'origin/develop'.
+
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git branch -vv
+* develop 9895e276 [origin/develop] 增加跟踪位置查看说明
+  master  14abe37f [origin/master] 增加图片
+
+# 增加修改内容
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git add .
+
+# 提交修改
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git commit -m "修改默认跟踪远程未origin"
+[develop 1f245ee8] 修改默认跟踪远程未origin
+ 1 file changed, 3 insertions(+)
+
+# 默认推送
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git push
+Enumerating objects: 21, done.
+Counting objects: 100% (21/21), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (11/11), done.
+Writing objects: 100% (11/11), 963 bytes | 240.00 KiB/s, done.
+Total 11 (delta 8), reused 0 (delta 0), pack-reused 0
+remote: Powered by GITEE.COM [1.1.23]
+remote: Set trace flag a040d19f
+To https://gitee.com/gbench/malonylcoa.git
+   9895e276..1f245ee8  develop -> develop
+
+
+
