@@ -67,3 +67,10 @@ $ git remote show github
     develop merges with remote develop
   Local ref configured for 'git push':
     develop pushes to develop (up to date)
+
+# 注意 本地 develop 跟踪的是github/develop； 本地 master 跟踪的是origin/master
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git branch -vv
+* develop 2fe095ee [github/develop] 删除文件
+  master  14abe37f [origin/master] 增加图片
+
