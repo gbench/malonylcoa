@@ -27,3 +27,43 @@ git push -u github develop:develop
 git push github develop
 
 # ----------------------------------------------------------------------------------
+# 添加一个名为 all 的远程，指向两个仓库
+# ----------------------------------------------------------------------------------
+# 先添加一个名为 all 的远程（fetch URL 可以随便填一个）
+git remote add all https://gitee.com/gbench/malonylcoa.git
+# 指定 push 位置
+git remote set-url --add --push all https://gitee.com/gbench/malonylcoa.git
+git remote set-url --add --push all https://github.com/gbench/malonylcoa.git
+git push all develop
+
+# ----------------------------------------------------------------------------------
+
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git remote show origin
+* remote origin
+  Fetch URL: https://gitee.com/gbench/malonylcoa.git
+  Push  URL: https://gitee.com/gbench/malonylcoa.git
+  HEAD branch: master
+  Remote branches:
+    develop tracked
+    feature tracked
+    master  tracked
+  Local branch configured for 'git pull':
+    master merges with remote master
+  Local refs configured for 'git push':
+    develop pushes to develop (up to date)
+    master  pushes to master  (up to date)
+
+Administrator@XQH-THINKPAD-230518 MINGW64 /f/slicef/ws/gitws/malonylcoa (develop)
+$ git remote show github
+* remote github
+  Fetch URL: https://github.com/gbench/malonylcoa.git
+  Push  URL: https://github.com/gbench/malonylcoa.git
+  HEAD branch: develop
+  Remote branches:
+    develop tracked
+    main    new (next fetch will store in remotes/github)
+  Local branch configured for 'git pull':
+    develop merges with remote develop
+  Local ref configured for 'git push':
+    develop pushes to develop (up to date)
