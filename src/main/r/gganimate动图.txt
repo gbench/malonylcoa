@@ -1,0 +1,80 @@
+# ------------------------------------------------------------------------------------------------------------
+# gganimate is available on CRAN and can be installed with install.packages('gganimate'). 
+# If you wish to install the development version you can install directly from github using devtools:
+# install.packages('pak')
+# pak::pak('thomasp85/gganimate')
+
+# install.packages(c("ggplot2", "gifski", "png", "gapminder", "gganimate"))
+# ------------------------------------------------------------------------------------------------------------
+
+# 数据安装
+library(gapminder)
+library(ggplot2)
+library(gganimate)
+library(dplyr)
+library(tidyr)
+
+# 准备数据：按年份和GDP排名
+df_rank <- gapminder %>%
+  group_by(year) %>%
+  # 按GDP排序，排名靠前的在前面
+  arrange(desc(gdpPercap)) %>%
+  mutate(rank = row_number()) %>%
+  # 只保留前20名，避免太拥挤
+  filter(rank <= 20) %>%
+  ungroup()
+
+# 创建动态条形图
+p <- ggplot(df_rank, 
+            aes(x = rank, 
+                y = gdpPercap, 
+                fill = country,
+                label = country)) +
+  # 条形图
+  geom_col(alpha = 0.8, width = 0.7) +
+  # 添加国家名称标签
+  geom_text(aes(y = gdpPercap/2, label = country), 
+            hjust = 1, 
+            size = 4,
+            color = "white") +
+  # 添加数值标签
+  geom_text(aes(y = gdpPercap, 
+                label = paste0("$", round(gdpPercap, 0))),
+            hjust = -0.1,
+            size = 3.5) +
+  # 坐标转换：排名1在顶部
+  coord_flip() +
+  # 按排名反转y轴，让第一名在顶部
+  scale_x_reverse() +
+  # 配色（使用国家颜色）
+  scale_fill_manual(values = country_colors) +
+  # 主题设置
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(size = 14),
+        axis.text.y = element_blank(),
+        axis.title = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank()) +
+  # 动态部分
+  labs(title = 'GDP per Capita Ranking',
+       subtitle = 'Year: {frame_time}',
+       x = NULL,
+       y = NULL) +
+  transition_time(year) +
+  # 动画过渡效果
+  ease_aes('linear') +
+  # 保持排名条的位置稳定
+  view_follow(fixed_y = TRUE)
+
+# 生成动画
+animate(p, 
+        nframes = length(unique(gapminder$year)) * 6,  # 每6帧/年， 数量越大显示越慢
+        fps = 5,
+        width = 800
+        height = 600,
+        renderer = gifski_renderer("gdp_ranking.gif"))
+
+# 或者直接在R中显示
+# animate(p, nframes = 120, fps = 5)
