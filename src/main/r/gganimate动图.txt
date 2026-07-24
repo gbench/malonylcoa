@@ -20,8 +20,8 @@ df_rank <- gapminder %>%
   # 按GDP排序，排名靠前的在前面
   arrange(desc(gdpPercap)) %>%
   mutate(rank = row_number()) %>%
-  # 只保留前20名，避免太拥挤
-  filter(rank <= 20) %>%
+  # 只保留前10名，避免太拥挤
+  filter(rank <= 10) %>%
   ungroup()
 
 # 创建动态条形图
@@ -59,5 +59,5 @@ p <- ggplot(df_rank, aes(x = rank, y = gdpPercap, fill = country, label = countr
 # animate(p, nframes = 120, fps = 5)
 # 生成动画
 animate(p, nframes = length(unique(gapminder$year)) * 20,  # 每20帧/年， 数量越大显示越慢
-  fps = 3, width = 800, height = 600, renderer = gifski_renderer("gdp_ranking.gif"))
+  fps = 5, width = 800, height = 600, renderer = gifski_renderer("gdp_ranking.gif"))
 
