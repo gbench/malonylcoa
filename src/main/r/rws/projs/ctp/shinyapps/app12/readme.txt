@@ -27,13 +27,15 @@ git push -u github develop:develop
 git push github develop
 
 # ----------------------------------------------------------------------------------
-# 添加一个名为 all 的远程，指向两个仓库
+# 添加一个名为 all 的远程，指向两个仓库（一个修改推送多个远程仓库，仓库镜像）
 # ----------------------------------------------------------------------------------
 # 先添加一个名为 all 的远程（fetch URL 可以随便填一个）
 git remote add all https://gitee.com/gbench/malonylcoa.git
-# 指定 push 位置
+# 设置&指定 push 的位置列表
 git remote set-url --add --push all https://gitee.com/gbench/malonylcoa.git
 git remote set-url --add --push all https://github.com/gbench/malonylcoa.git
+
+# 使用 all 进行批量推送
 git push all develop
 
 # ----------------------------------------------------------------------------------
