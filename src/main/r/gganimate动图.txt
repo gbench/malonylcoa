@@ -37,7 +37,7 @@ p <- ggplot(df_rank, aes(x = rank, y = gdpPercap, fill = country, label = countr
   # 按排名反转y轴，让第一名在顶部
   scale_x_reverse() +
   # 配色（使用国家颜色）
-  scale_fill_manual(values = country_colors) +
+  scale_fill_manual(values = brewer.pal(n =seq(country_colors),name="Set1")) +
   # 主题设置
   theme_minimal() +
   theme(legend.position = "none",
