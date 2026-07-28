@@ -52,7 +52,13 @@ PCI-SIG 中第一个设备的IO地址空间是如何定义的？是统一大小�
 
 一旦分配了地址，内核就可以直接访问PCI总线的内存空间，获得该部分摊贩性质的设备元数据（设备类型、摊位大小、制造厂商等），这样物理登记就完成了！接下来，直接把摊位元数据与驱动程序绑定（设备Class关联file_operations）分配设备号，登记进内核结构 cdev_map（字符设备）或是 bdev_map（块设备），设备管理的设备内存模型就完成了，就可以开展映射文件文件系统的工作了！
 
-如果，文件是一栋信息仓库（信息容器），那么 inode 就是此厂房资产的房产证（产权登记记录）。管理文件的本质就是，维护“产权登记记录”，把 产权登记记录 组织成目录结构：dentry(name层级名称, parent指针，inode编号索引)，以及 inode 对应的 数据空间分配状况（数据块位图）以及 块设备b_dev，这样我们就可以把通过把dentry组织成树形结构（层架计划的目录结构/a/b/c.txt）的同时，获得对 数据库块 blocks 的 管理能力。inode充当了 批量化维护blocks的容器的功能，可以离理解为inode是一个“装了一包数据块的塑料袋”。问题是inode是如何生产的？或者说，我们如何定义&生产inode以及将数据块装入inode塑料袋呢？这就是文件系统vfsmount之超级块的superblock 功能职责（s_inodes_count+super_operations）； vfsmount：{dentry mnt_root, super_block *mnt_sb}
+如果，文件是一栋信息仓库（信息容器），那么 inode 就是此厂房资产的房产证（产权登记记录）。管理文件的本质就是，维护“产权登记记录”，把 产权登记记录 组织成目录结构：dentry(name层级名称, parent指针，inode编号索引)，以及 inode 对应的 数据空间分配状况（数据块位图）以及 设备号（i_rdev：对应设备驱动程序，进而关联file_operations）这样我们就可以把通过把dentry组织成树形结构（层架计划的目录结构/a/b/c.txt）的同时，获得对 数据库块 blocks 的 管理能力。inode充当了 批量化维护blocks的容器的功能，可以离理解为inode是一个“装了一包数据块的塑料袋”。
+
+问题是inode是如何生产出来的呢？或者说，我们如何定义&生产inode以及将数据块装入inode塑料袋呢？这就是文件系统vfsmount之超级块的superblock 功能职责（s_inodes_count+super_operations）
+
+ vfsmount 事实是一个把 超级快绑定到 目录项的结构：{dentry *mnt_root, super_block *mnt_sb}:
+- 硬链接(a/b/c_bakup -> a/b/c)：在目录文件“a/b”中建立一个目录项(c_bakup的dentry）指向一个“a/b/c”对应的c文件的inode;  
+- 软链接：编写一个文件“a/b/c_bakup”，然后在此文件中写入字符串“a/b/c” ！
 
 
 
