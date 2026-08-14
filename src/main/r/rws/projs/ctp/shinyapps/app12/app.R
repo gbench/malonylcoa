@@ -1037,10 +1037,11 @@ server <- function(input, output, session) {
       all_text <- paste(all_text, gua$gua_text, gua$tuan_text, gua$xiang_text)
     }
     
-    for (kw in c("元", "亨", "利", "贞")) {
-      count <- str_count(all_text, kw)
-      output[[paste0("count_", kw)]] <- renderText({ count })
-    }
+   lapply(c("元", "亨", "利", "贞"), function(kw) {
+     count <- str_count(all_text, kw)
+     output[[paste0("count_", kw)]] <- renderText({ count })
+   })
+
   })
   
   output$yhli_distribution <- renderPlot({
