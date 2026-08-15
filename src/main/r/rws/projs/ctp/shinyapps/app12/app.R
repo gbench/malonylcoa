@@ -205,24 +205,14 @@ plot_single_gua <- function(gua_name, yaos_matrix, gua_data) {
   })
   
   p <- ggplot(df, aes(x = 1, y = yao)) +
-    geom_rect(aes(xmin = -1.2, xmax = 3.2, ymin = 0.5, ymax = 6.5),
-              fill = NA, color = "#8B4513", linewidth = 1.5, linetype = "solid") +
-    geom_tile(aes(fill = factor(value)), 
-              width = 3.7, height = 0.8, color = "#2C3E50", linewidth = 1.2) +
-    geom_text(aes(label = ifelse(value == 1, "—", "––")), 
-              x = 1, size = 20, 
-              color = ifelse(df$value == 1, "white", "#2C3E50"),
-              fontface = "bold") +
-    geom_text(aes(label = label), x = 2.4, hjust = 0, 
-              size = 4.5, color = "#6d8688", fontface = "bold") +
-    geom_text(aes(label = yao_text_short), 
-              x = -0.8, hjust = 0, size = 5, color = "#7F8C8D") +
-    scale_fill_manual(values = c("0" = "#F5E6D3", "1" = "#2C3E50"),
-                      labels = c("阴 (––)", "阳 (—)")) +
-    labs(title = paste0("「", gua_name, "」卦 · 六爻结构"),
-         subtitle = paste("卦序:", which(rownames(yaos_matrix) == gua_name), "/", 
-                         nrow(yaos_matrix)),
-         x = NULL, y = NULL) +
+    geom_rect(aes(xmin = -1.2, xmax = 3.2, ymin = 0.5, ymax = 6.5), fill = NA, color = "#8B4513", linewidth = 1.5, linetype = "solid") +
+    geom_tile(aes(fill = factor(value)), width = 3.7, height = 0.8, color = "#2C3E50", linewidth = 1.2) +
+    geom_text(aes(label = ifelse(value == 1, "—", "––")), x = 1, size = 20, color = ifelse(df$value == 1, "white", "#2C3E50"), fontface = "bold") +
+    geom_text(aes(label = label), x = 2.4, hjust = 0, size = 4.5, color = "#6d8688", fontface = "bold") +
+    geom_text(aes(label = yao_text_short), x = -0.8, hjust = 0, size = 5, color = "#7F8C8D") +
+    scale_fill_manual(values = c("0" = "#F5E6D3", "1" = "#2C3E50"), labels = c("阴 (––)", "阳 (—)")) +
+    labs(x = NULL, y = NULL, title = paste0("「", gua_name, "」卦 · 六爻结构"), 
+	 subtitle = paste("卦序:", which(rownames(yaos_matrix) == gua_name), "/", nrow(yaos_matrix))) +
     theme_minimal() +
     theme(
       axis.text = element_blank(),
