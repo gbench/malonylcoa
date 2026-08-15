@@ -1066,12 +1066,11 @@ server <- function(input, output, session) {
       geom_bar(stat = "identity", width = 0.6) +
       geom_text(aes(label =频次), vjust = -0.8, size = 6, fontface = "bold") +
       scale_fill_manual(values = colors, guide = "none") +
-      labs(title = "「元亨利贞」在卦辞中的出现频次",
-           x = NULL, y = "频次") +
+      labs(title = "「元亨利贞」在卦辞中的出现频次", x = NULL, y = "频次") +
+      coord_cartesian(ylim = range(df$频次) + c(0, 10)) + 
       theme_minimal() +
       theme(
-        plot.title = element_text(size = 16, hjust = 0.5, face = "bold", 
-                                 color = "#1a1a2e"),
+        plot.title = element_text(size = 16, hjust = 0.5, face = "bold", color = "#1a1a2e"),
         axis.text = element_text(size = 13, color = "#34495E", face = "bold"),
         panel.grid.major.x = element_blank()
       )
