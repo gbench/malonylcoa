@@ -408,6 +408,11 @@ rbx.tse <- \(...) { # 扩展表格时间
 # 设置当前期货合约以及时间戳
 options(sqlquery.rb.instrument="rb2701", sqlquery.rb.timestamp=20260901)
 
+# 模板填充
+rbx.tse(ma601, .09, .1015) |> sqlfill(t=TICKSQL)
+# > rbx.tse(ma601, .09, .1015) |> sqlfill(t=TICKSQL)
+# [1] "select * from t_ma601_20260901 where UpdateTime between '09:00:00' and '10:15:00'"
+
 # 使用模板，数字时间的解释规则：从高到低，截取前6位，不足尾部补充0，于是：0 相当于000000，24相当于240000，
 OHLCV1M |> sqldframe(rbx.tse(, 0, 24))
 # 默认合约代码，指定时间范围：(, .0930表示startime="09:30",  .0945表示endtime="09:45")，使用小数是因为小时与分钟要保持两位数
