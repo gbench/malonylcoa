@@ -415,6 +415,11 @@ OHLCV1M |> sqldframe(rbx.tse(, .0930, .0945))
 # 指定合约代码，时间戳范围
 rbx.tse(ma610, .0930, .0935) |> sqldframe('1min.kline', params=_)
 
+# 默认合约
+OHLCV1M |> sqldframe(rbx.tse(, 2150, 22)) |> transform(Time=as.POSIXct(paste(Date, Time))) |> (\(.) xts(.[, -(1:3)], .$Time)) () |> chartSeries()
+# 指定合约代码
+OHLCV1M |> sqldframe(rbx.tse(ma610, 2150, 23)) |> (\(.) with(., xts(.[, -c(1:3)], as.POSIXct(paste(Date, Time))))) () |> chartSeries()
+
 # ----------------------------------------------------------------------------------------------------------------
 # 动态参数计算，sqlquery vs sqlquery2 以及 sqlexecute  vs sqlexecute2
 # ----------------------------------------------------------------------------------------------------------------
