@@ -240,6 +240,9 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
     }
 }
 
+# ctp 的tickdata sql
+TICKSQL <- "select * from ##tbl where UpdateTime Between #startime And #endtime"
+
 #' 判断时点x是否位于交易时段之内
 #' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
 #' 如此，记法上"23:60==24:00"是时长等价的，同理hm("23:60")==hms("23:59:60")、hms("23:59:60")==ddays(1)！
