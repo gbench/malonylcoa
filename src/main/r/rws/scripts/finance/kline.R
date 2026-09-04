@@ -240,14 +240,14 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
     }
 }
 
-#  仓位 OpenInterest
-has.OI <- function(x) {
+#  是否有 持仓量 数据
+has.Oi <- function(x) {
   any(grepl("OpenInterest", colnames(x), ignore.case = TRUE))
 }
 
-# 读取仓位数据 OpenInterest
-OI <- function(x) {
-  if (has.OI(x)) {
+# 读取 持仓量 数据
+Oi <- function(x) {
+  if (has.Oi(x)) {
     return(x[, "OpenInterest"])
   } else {
     warning("No OpenInterest column found")
