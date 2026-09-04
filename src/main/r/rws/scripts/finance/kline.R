@@ -243,12 +243,12 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
 # ctp tickdata sql
 TICKSQL <- "select * from ##tbl where UpdateTime between #startime and #endtime"
 
-# 时间解析函数
+# 时间解析函数 calendar time
 ct <- \(..., fmt="%Y-%m-%d %H:%M:%S") as.POSIXct(format=fmt, paste(...)) |> ( \(.) if(sum(is.na(.))<1) . else as.POSIXct(paste(...)) ) () 
 
 # 数据框转xts, ks:数据键名序列，js:时间列键名序列
 # rbx.tse() |> sqldframe(x=OHLCV1M) |> df2xts(4:8, 2:3)
-# rbx.tse() |> sqlfill(t=TICKSQL) |> sqlquery() |> head(5) |> df2xts("LastPrice", c("ActionDay","UpdateTime"), "%Y%m%d %H:%M:%S")
+# rbx.tse() |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
 df2xts <- \(x, ks=1:ncol(x), js=setdiff(1:ncol(x), ks), format="%Y-%m-%d %H:%M:%S") xts(x[, ks], do.call(ct, args=c(x[, js], fmt=format)))
 
 #' 判断时点x是否位于交易时段之内
