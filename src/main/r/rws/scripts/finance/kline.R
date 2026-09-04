@@ -241,18 +241,25 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
 }
 
 #  是否有 持仓量 数据
-has.Oi <- function(x) {
-  any(grepl("OpenInterest", colnames(x), ignore.case = TRUE))
+has.Oi <- function (x, which = FALSE) {
+    colAttr <- attr(x, "Oi")
+    if (!is.null(colAttr)) 
+        return(if (which) colAttr else TRUE)
+    loc <- grep("\\bOpenInterest\\b", colnames(x), ignore.case = TRUE)
+    if (length(loc) > 1) 
+        loc <- grep("\\.OpenInterest$", colnames(x), ignore.case = TRUE)
+    if (!identical(loc, integer(0))) {
+        return(if (which) loc else TRUE)
+    }
+    else FALSE
 }
 
 # 读取 持仓量 数据
-Oi <- function(x) {
-  if (has.Oi(x)) {
-    return(x[, "OpenInterest"])
-  } else {
-    warning("No OpenInterest column found")
-    return(NULL)
-  }
+Oi <- function (x) {
+    loc <- has.Oi(x, which = TRUE)
+    if ((length(loc) == 1) && (is.numeric(loc))) 
+        return(x[, loc])
+    stop("subscript out of bounds: no or multiple column name containing \"OpenInterest\"")
 }
 
 # ctp tickdata sql
