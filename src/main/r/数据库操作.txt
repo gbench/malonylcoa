@@ -434,6 +434,32 @@ df2xts <- \(x, ks=1:ncol(x), js=setdiff(1:ncol(x), ks), format="%Y-%m-%d %H:%M:%
 rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqldframe(x=OHLCV1M) |> df2xts(4:8, 2:3)
 rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
 
+--- 
+## KDJ 指标制作
+
+library(quantmod)
+library(TTR)
+
+# 定义 KDJ 计算函数（独立出来）
+calcKDJ <- function(x, n=9, m1=3, m2=3) {
+  low_n  <- runMin(Cl(x), n)
+  high_n <- runMax(Cl(x), n)
+  RSV <- (Cl(x) - low_n) / (high_n - low_n) * 100
+  
+  K <- SMA(RSV, m1)
+  D <- SMA(K,  m2)
+  J <- 3 * K - 2 * D
+  
+  cbind(K = K, D = D, J = J)
+}
+
+# 用 newTA 封装成副图指标
+addKDJ <- newTA(calcKDJ, col = c("purple", "orange", "green"), lwd = c(1.5, 1.5, 1.5), legend = "KDJ")
+
+# 画图
+(ma610 <- rbx.tse(ma610, tsp = 20260901) |> sqldframe(x = OHLCV1M) |> df2xts(4:8, 2:3)) |> chartSeries(name = "")
+addEMA(c(5,10), col = c("blue","red")); addKDJ()
+
 # ----------------------------------------------------------------------------------------------------------------
 # 动态参数计算，sqlquery vs sqlquery2 以及 sqlexecute  vs sqlexecute2
 # ----------------------------------------------------------------------------------------------------------------
