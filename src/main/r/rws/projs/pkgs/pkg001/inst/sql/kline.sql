@@ -69,6 +69,7 @@ WITH MinuteKLine AS (
         MIN(LastPrice) OVER w as LowPrice,
         FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
         MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        LAST_VALUE(OpenInterest) OVER w as OpenInterest,
         COUNT(*) OVER w as TradeCount
     FROM ##tbl
     WHERE Volume > 0 AND UpdateTime BETWEEN #startime AND #endtime
@@ -84,7 +85,8 @@ SELECT
     HighPrice High,
     LowPrice Low,
     ClosePrice Close,
-    MinuteVolume Volume
+    MinuteVolume Volume,
+    OpenInterest 
 FROM MinuteKLine2
 
 -- ---------------------------------------------------------------
@@ -104,6 +106,7 @@ WITH MinuteKLine AS (
         MIN(LastPrice) OVER w as LowPrice,
         FIRST_VALUE(LastPrice) OVER (w ORDER BY UpdateTime DESC) as ClosePrice,
         MAX(Volume) OVER w - MIN(Volume) OVER w as MinuteVolume,
+        LAST_VALUE(OpenInterest) OVER w as OpenInterest,
         COUNT(*) OVER w as TradeCount
     FROM ##tbl
     WHERE Volume > 0 AND UpdateTime BETWEEN #startime AND #endtime
@@ -119,6 +122,7 @@ SELECT
     HighPrice high,
     LowPrice low,
     ClosePrice close,
-    MinuteVolume volume
+    MinuteVolume volume,
+    OpenInterest oint
 FROM MinuteKLine2
 
