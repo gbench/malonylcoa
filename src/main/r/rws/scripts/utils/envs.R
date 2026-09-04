@@ -535,7 +535,9 @@ rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb�
 
 #' 使用拓展构建器进行简洁查询（采用循环填充rep_len模式的构建以及与options的sqlquery.rb.xxx配置相关默认配置）
 #' sqldframe("1min.kline", rbx.tse(rb2605)) 从数据库中查询出最近两小时的合约K线！
-#' rbx.tse(ma601, 0930, 1547) |> sqldframe('1min.kline',params=_)
+#' rbx.tse(ma610, .0930, 1547) |> sqldframe('1min.kline', params=_) # 提取 ma610当前日期日期的交易数据
+#' rbx.tse(rb2701, .0930, .0946, tsp=20260903) |> sqldframe(x=OHLCV1M) #  提取20260902的[09:30, .0946]的交易数据
+#' rbx.tse(tsp=20260902) |> sqldframe(x=OHLCV1M) #  提取20260902的交易数据
 #' 
 #' 拓展合约表格时间TSE (Table,Startime,Endtime) 构建器
 #' 使用sqlquery.rb.keys配置项目进行默认键名读取
