@@ -244,7 +244,7 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
 TICKSQL <- "select * from ##tbl where UpdateTime between #startime and #endtime"
 
 # 时间解析函数 calendar time
-ct <- \(..., fmt="%Y-%m-%d %H:%M:%S") as.POSIXct(format=fmt, paste(...)) |> ( \(.) if(sum(is.na(.))<1) . else as.POSIXct(paste(...)) ) () 
+ct <- \(..., fmt="%Y-%m-%d %H:%M:%S", x=paste(...)) as.POSIXct(format=fmt, x) |> ( \(.) if(sum(is.na(.))<1) . else as.POSIXct(x) ) () 
 
 # 数据框转xts, ks:数据键名序列，js:时间列键名序列
 # rbx.tse() |> sqldframe(x=OHLCV1M) |> df2xts(4:8, 2:3)
