@@ -499,12 +499,12 @@ validate_symbol <- function(value) {
 #' 2) sqlqeury.rb.interval # rb构建器的默认时间跨度时长（单位小时）
 #' @param rb record.builder生成的构建器
 #' @return the extended record.builder
-rbx <- \(rb) \(...) list(...) |> (\(., keys=setdiff(environment(rb)$keys, c("tsp"))) { # 提取rb的键名, tsp: 日期timestamp
+rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb的键名, tsp: 日期timestamp
   flags <- "magrittr,lubridate" |> strsplit(",") |> unlist() |> (\(.) setNames(.,.))() |> sapply(require, character.only=T)
   if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed!") |> stop()
   
-  # 生成键值序列的记录并进行调整
-  setNames(rep_len(., length(keys)), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
+  # 生成键值序列的记录并进行调整, 剔除掉 时间戳 tsp项目。
+  setNames(rep_len(.[! (names(.) %in% c("tsp")) ], length(keys)), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
       ftm <- \(tm) strftime(tm, "%H:%M:%S") # 时间格式化
       Reduce(\(acc, k, v=acc[[k]]) { # 对记录值进行私人定制
         if(identical("##tbl", k)) { # 表名字段处理
