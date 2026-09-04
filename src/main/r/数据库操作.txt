@@ -425,6 +425,15 @@ OHLCV1M |> sqldframe(rbx.tse(, 2150, 22)) |> transform(Time=as.POSIXct(paste(Dat
 # 指定合约代码
 OHLCV1M |> sqldframe(rbx.tse(ma610, 2150, 23)) |> (\(.) with(., xts(.[, -c(1:3)], as.POSIXct(paste(Date, Time))))) () |> chartSeries()
 
+# 时间解析函数 calendar time
+ct <- \(..., fmt="%Y-%m-%d %H:%M:%S", x=paste(...)) as.POSIXct(format=fmt, x) |> ( \(.) if(sum(is.na(.))<1) . else as.POSIXct(x) ) () 
+# 数据框转xts, ks:数据键名序列，js:时间列键名序列
+df2xts <- \(x, ks=1:ncol(x), js=setdiff(1:ncol(x), ks), format="%Y-%m-%d %H:%M:%S") xts(x[, ks], do.call(ct, args=c(x[, js], fmt=format)))
+
+# 使用tsp标记时间戳
+rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqldframe(x=OHLCV1M) |> df2xts(4:8, 2:3)
+rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
+
 # ----------------------------------------------------------------------------------------------------------------
 # 动态参数计算，sqlquery vs sqlquery2 以及 sqlexecute  vs sqlexecute2
 # ----------------------------------------------------------------------------------------------------------------
