@@ -515,7 +515,7 @@ rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb�
             acc[[k]] <- "t_%s_%s" |> sprintf(.v, timestamp) # 默认表
           } # if
         } else if(grepl("time$", k)) { # 时间字段调整，对开始时间与结束时间进行默认值处理
-          # 把".0930"格式化09:30:00;"150",格式化成15:30:00格式的简洁时间输入函数！命令行输入的API，长度少一个字符都有意义能短则短！
+          # 把".0930"格式化09:30:00;"1530",格式化成15:30:00格式的简洁时间输入函数！命令行输入的API，长度少一个字符都有意义能短则短！
           # “小时小于2位小数记录，因为小数可以保护首位0，小时大于2位整数记录”，其余形式保持原样
           as.tm <- \(x, flag = is.numeric(x), n = as.integer(abs(x))) if(!flag) x else # 数据合法
             ifelse(n<1, as.character(abs(x)) |> substring(3, 8), format(n, scientific=F)) |> # 若是小数去除正整数部分，若是整数取消科学数法获得完整数字
