@@ -504,12 +504,12 @@ rbx <- \(rb) \(...) list(...) |> (\(., keys=environment(rb)$keys) { # 提取rb�
   if(!all(flags)) paste0(names(flags[!flags]), collapse=",") |> sprintf(fmt="make sure packages '%s' are all installed!") |> stop()
   
   # 生成键值序列的记录并进行调整, 剔除掉 时间戳 tsp项目。
-  setNames(rep_len( if(is.null(names(.))) . else .[! (names(.) %in% c("tsp")) ], length(keys)), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
+  setNames(rep_len( if(is.null(names(.))) . else .[! (names(.) %in% c("tsp"))], length(keys) ), keys) |> (\(rec) { # 采用循环填充rep_len的方式构造记录结构
       ftm <- \(tm) strftime(tm, "%H:%M:%S") # 时间格式化
       Reduce(\(acc, k, v=acc[[k]]) { # 对记录值进行私人定制
         if(identical("##tbl", k)) { # 表名字段处理
           .v <- gsub("\\s*", "", v) |> (\(.) ifelse(is.null(.) || is.na(.) || grepl("^$", .) || length(.) < 1, # 判断tbl参数是合法有效
-            getOption("sqlquery.rb.instrument", "rb2605"), .)) () # 默认合约表
+            getOption("sqlquery.rb.instrument", "rb2701"), .)) () # 默认合约表
           if(grepl("^[[:alnum:]]+$", .v)) { # 金融期货合约进行增广处理
             timestamp <- (\(f) if(is.function(f)) strftime(f(), "%Y%m%d") else as.character(f)) ( .$tsp %||% getOption("sqlquery.rb.timestamp", Sys.time))
             acc[[k]] <- "t_%s_%s" |> sprintf(.v, timestamp) # 默认表
