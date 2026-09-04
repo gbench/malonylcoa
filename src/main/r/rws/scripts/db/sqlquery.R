@@ -143,39 +143,109 @@ ctsql.mysql <- function(dfm, tbl) {
     ) () # SQL 创建表语句
 }
 
-#' 表数据插入SQL
-#' @param dfm 数据框数据
-#' @param tbl  数据表名
-#' @return 表数据插入SQL
-insql <- function(dfm, tbl) {
-  .tbl <- if(missing(tbl)) deparse(substitute(dfm)) else deparse(substitute(tbl)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "") #  提取数据表名
-  keys <- names(dfm) |> paste(collapse=", ") # 列名列表
-  values <- dfm |> lapply(\(e, t=typeof(e), cls=class(e)) # 记录值列表的各个字段值处理：
-      switch(t, # 元素类型判断，决定是否用单引号把数值括起来，数值与逻辑值不用，list 转换成列表
-        `logical`=e, # 逻辑类型，保持原值不变
-        `integer`=if('factor' %in% cls) sprintf("'%s'", e) else e, # 整数类型，保持原值不变
-        `double`=if(any(grepl(pattern="Date|POSIXct|POSIXt", x=cls))) sprintf("'%s'", e) else e, # 双精度，保持原值不变
-        `list`=sprintf("'%s'", gsub("'", "''", toJSON(e))), # list类型，转换成JSON, 并对单引号进行转义
-        sprintf("'%s'", gsub("'", "''", e)) # 默认类型，使用单引号'给括起来, 并对单引号进行转义
-      ) |> (\(x) ifelse(is.na(x), "NULL", x))() # NA值转NULL值
-    ) |> do.call(\(...) mapply(\(...) paste(..., sep=', ', collapse=','), ...), args=_) |> # 行映射，此处\(...)有层级差异,内为字段外为数据行是两个不同变量
-    sprintf(fmt='( %s )') |> paste(collapse=',\n  ') # 值列表
-  sprintf( "insert into %s (%s) values \n  %s\n", .tbl, keys, values ) # SQL 插入记录行数据（多行）语句
+#' SQL 值的安全引号化（核心修复）
+#'
+#' 修复原实现的两个缺陷：
+#'   1) 只做了 ' -> '' ，未处理反斜杠。MySQL 中 \' 是合法转义序列，
+#'      输入 \' 双写后变成 \'' —— 第一个引号被反斜杠吃掉当字面量，
+#'      第二个引号提前闭合字符串，其后内容溢出为可执行 SQL。
+#'      必须先转义反斜杠、再双写引号（顺序反了会把刚加的反斜杠又吞掉）。
+#'   2) NA 被当成普通字符串输出（upsql 里会存成字面 'NA'），应为 NULL。
+#'
+#' @param x  待引号化的向量
+#' @param con 可选。数据库连接对象，给出时交给驱动转义
+#'   （RMySQL 下走 mysqlEscapeStrings，同时覆盖宽字符集等驱动相关情形）。
+#'   不给出则用标准 SQL 写法：反斜杠 -> \\ ，单引号 -> '' 。
+#' @return 字符向量，可直接嵌入 SQL
+sqlquote <- function(x, con = NULL) {
+  if (length(x) == 0) return(character(0))
+  if (!is.null(con)) { # 交由驱动转义（推荐，只要有连接可用）
+    q <- as.character(DBI::dbQuoteString(con, as.character(x)))
+    q[is.na(x)] <- "NULL"
+    return(q)
+  }
+  # 本地转义：先反斜杠，后单引号，两步顺序不可颠倒
+  v <- as.character(x)
+  q <- paste0("'", gsub("'", "''", gsub("\\", "\\\\", v, fixed = TRUE), fixed = TRUE), "'")
+  q[is.na(v)] <- "NULL" # NA 写成 NULL 而不是 'NA'
+  q
 }
 
-#' 表数据更新SQL
+#' SQL 标识符的安全引号化
+#' 值用 sqlquote，表名/列名用 sqlident，两者不可混用：
+#' prepared statement 的 ? 只能绑定值，绑不了标识符，
+#' 而本工具链的动态部分（t_{合约}_{日期}）几乎全在表名位置。
+#' @param x 标识符向量
+sqlident <- function(x, con = NULL) {
+  if (length(x) == 0) return(character(0))
+  if (!is.null(con)) return(as.character(DBI::dbQuoteIdentifier(con, x)))
+  # db.tbl 形式要分段加反引号，整体包裹会得到 `ctp2.t_user` 这个非法标识符
+  vapply(as.character(x), \(s)
+    s |> strsplit(".", fixed = TRUE) |> vapply(\(p)
+      sprintf("`%s`", gsub("`", "``", p, fixed = TRUE)), character(1)) |> paste(collapse = "."),
+    character(1))
+}
+
+#' 判断向量是否需要加引号（数值与逻辑值裸写，其余加引号）
+#' 原实现里 upsql 对所有字段一律加引号，数值靠 MySQL 隐式转换，此处一并修正
+is.bare <- function(e) {
+  t <- typeof(e); cls <- class(e)
+  if (any(is.na(e))) FALSE # 含 NA 时统一走引号化，以便输出 NULL
+  else if (t == "logical") TRUE                       # TRUE/FALSE 在 MySQL 即 1/0
+  else if (t == "integer") cls != "factor"
+  else if (t == "double") !any(grepl("Date|POSIXct|POSIXt", cls))
+  else FALSE
+}
+
+#' 表数据插入SQL（安全版）
+#' @param dfm 数据框数据
+#' @param tbl  数据表名
+#' @param con  可选数据库连接，给出时由驱动转义
+#' @return 表数据插入SQL
+insql <- function(dfm, tbl, con = NULL) {
+  tbl <- if (missing(tbl)) deparse(substitute(dfm)) else tbl # 提取数据表名
+  keys <- names(dfm) |> paste(collapse = ", ")
+
+  # 逐列处理。数值与逻辑值保持裸写（与原实现一致，避免严格 sql_mode 下报错），
+  # 只有需要引号的类型才走 sqlquote
+  values <- dfm |> lapply(\(e) {
+    if (is.list(e)) # list 列：逐元素序列化成 JSON
+      vapply(e, \(v) toJSON(v, auto_unbox = TRUE, null = "null"), character(1)) |>
+        sqlquote(con = con)
+    else if (is.bare(e)) as.character(e)
+    else sqlquote(e, con) # 字符串 / factor / 日期时间
+  }) |>
+    do.call(\(...) mapply(\(...) paste(..., sep = ", ", collapse = ","), ...), args = _) |>
+    sprintf(fmt = "( %s )") |> paste(collapse = ",\n  ") # 值列表
+
+  sprintf("insert into %s (%s) values \n  %s\n", sqlident(tbl, con), keys, values)
+}
+
+#' 表数据更新SQL（安全版）
 #' @param dfm 数据框数据
 #' @param tbl 数据表名
-#' @param pk 数据主键
-upsql <- \(dfm, tbl, pk = "id") { # 数据更新
-  .tbl <- if(missing(tbl)) deparse(substitute(dfm)) else tbl #  提取数据表名
+#' @param pk  数据主键
+#' @param con 可选数据库连接，给出时由驱动转义
+upsql <- function(dfm, tbl, pk = "id", con = NULL) {
   nms <- names(dfm) # 提取各个数据列名
-  .pk <- deparse(substitute(pk)) |> gsub(pattern = "^['\"]|['\"]$", replacement = "")
-  idx <- match(.pk, nms) #  主键pk在名称nms中的索引位置
+  idx <- match(pk, nms) # 主键pk在名称nms中的索引位置
   stopifnot("dfm的名称nms中必须包含主键名pk" = !is.na(idx)) # pk名字的有效性检测
-  flds <- sapply(nms, \(i) sprintf("%s='%s'", i, dfm[, i, drop=T] |> gsub("'", "''", x=_))) |> 
-    apply(1, \(line) paste(line[-idx], collapse=",\n  ")) # 字段拼接
-  sprintf("update %s set\n  %s \nwhere %s='%s'\n", .tbl, flds, .pk, dfm[, .pk]) # 数据更新的SQL语句
+
+  # 逐列生成 "字段=值"，数值类裸写，字符类走 sqlquote
+  flds <- lapply(nms, \(i) {
+    e <- dfm[, i, drop = TRUE]
+    v <- if (is.bare(e)) as.character(e) else sqlquote(e, con)
+    sprintf("%s=%s", sqlident(i, con), v)
+  }) |> do.call(cbind, args = _) |>
+    apply(1, \(line) paste(line[-idx], collapse = ",\n  ")) # 字段拼接
+
+  # 原实现主键值是裸拼进 sprintf 的（dfm[, pk] 未经任何转义），此处补齐
+  where <- sprintf("%s in (%s)",
+    sqlident(pk, con),
+    paste(if (is.bare(dfm[[pk]])) as.character(dfm[[pk]]) else sqlquote(dfm[[pk]], con),
+          collapse = ", "))
+
+  sprintf("update %s set\n  %s \nwhere %s\n", sqlident(tbl, con), flds, where)
 }
 
 #' 带有动态参数计算能力：sqlexecute2(sql, dbname=test), 即dbname=test相当于dbname="test"，合法标识符名可以不打引号而直接获得符号名!
