@@ -151,6 +151,14 @@ ctsql.mysql <- function(dfm, tbl) {
 #'      第二个引号提前闭合字符串，其后内容溢出为可执行 SQL。
 #'      必须先转义反斜杠、再双写引号（顺序反了会把刚加的反斜杠又吞掉）。
 #'   2) NA 被当成普通字符串输出（upsql 里会存成字面 'NA'），应为 NULL。
+#'   
+#' 代码测试 ：
+#'   t_user2 <- data.frame(id = 1:2, name = c("C:\\data\\tick", "\\' ,(3,'王五') #"))
+#'   t_user2                      # 确认：这就是两条普通字符数据
+#'   sqlexecute("drop table t_user2", dbname="test")  
+#'   sqlexecute(ctsql(t_user2), dbname="test")    # 留意 affected_rows
+#'   sqlexecute(insql(t_user2), dbname="test")    # 留意 affected_rows
+#'   sqlquery("select * from t_user2", dbname="test")   # 数据查询
 #'
 #' @param x  待引号化的向量
 #' @param con 可选。数据库连接对象，给出时交给驱动转义
@@ -175,15 +183,50 @@ sqlquote <- function(x, con = NULL) {
 #' 值用 sqlquote，表名/列名用 sqlident，两者不可混用：
 #' prepared statement 的 ? 只能绑定值，绑不了标识符，
 #' 而本工具链的动态部分（t_{合约}_{日期}）几乎全在表名位置。
+#'
+#' 点号的两种语义（对齐 MySQL）：
+#'   a.b     点未被引号包裹 -> 层级分隔符，split=TRUE 时拆成 `a`.`b`
+#'   `a.b`   点已在引号内   -> 名字的一部分，原样返回，绝不拆分
+#'
 #' @param x 标识符向量
-sqlident <- function(x, con = NULL) {
+#' @param con 可选数据库连接
+#' @param split 是否按"反引号之外的点"拆成 库.表 两级。
+#'   默认 FALSE，即整体包裹。理由：列名中的点属于名字本身，
+#'   且整体包裹即使对 db.tbl 用错也只是"表不存在"的显式报错，
+#'   不会像错误拆分那样静默指向另一个库。
+sqlident <- function(x, con = NULL, split = FALSE) {
   if (length(x) == 0) return(character(0))
   if (!is.null(con)) return(as.character(DBI::dbQuoteIdentifier(con, x)))
-  # db.tbl 形式要分段加反引号，整体包裹会得到 `ctp2.t_user` 这个非法标识符
-  vapply(as.character(x), \(s)
-    s |> strsplit(".", fixed = TRUE) |> vapply(\(p)
-      sprintf("`%s`", gsub("`", "``", p, fixed = TRUE)), character(1)) |> paste(collapse = "."),
-    character(1))
+  vapply(as.character(x), sqlident_one, character(1), split = split, USE.NAMES = FALSE)
+}
+
+#' 单个标识符的引号化
+sqlident_one <- function(s, split = FALSE) {
+  if (is.na(s)) stop("sqlident: 标识符不能为 NA")
+  if (!nzchar(s)) return("``")
+  if (!split) return(sqlident_quote(s)) # 整体包裹
+
+  # 逐字符扫描，仅在反引号之外切分点号
+  parts <- character(0); cur <- character(0); inq <- FALSE
+  for (ch in strsplit(s, "", fixed = TRUE)[[1]]) {
+    if (identical(ch, "`")) {
+      inq <- !inq; cur <- c(cur, ch)
+    } else if (identical(ch, ".") && !inq) {
+      parts <- c(parts, paste0(cur, collapse = "")); cur <- character(0)
+    } else cur <- c(cur, ch)
+  }
+  parts <- c(parts, paste0(cur, collapse = ""))
+  vapply(parts, sqlident_quote, character(1)) |> paste(collapse = ".")
+}
+
+#' 给不含层级分隔的单个名字加反引号；已引号化的原样返回
+sqlident_quote <- function(p) {
+  if (startsWith(p, "`")) { # 调用方已引号化，不再包裹（`a.b` 包一次会变成名为 `a.b` 的怪名字）
+    if (nchar(p) < 2L || !endsWith(p, "`"))
+      stop(sprintf("sqlident: 标识符反引号不配对 -> %s", p))
+    return(p)
+  }
+  sprintf("`%s`", gsub("`", "``", p, fixed = TRUE)) # 内部反引号加倍
 }
 
 #' 判断向量是否需要加引号（数值与逻辑值裸写，其余加引号）
@@ -204,10 +247,8 @@ is.bare <- function(e) {
 #' @return 表数据插入SQL
 insql <- function(dfm, tbl, con = NULL) {
   tbl <- if (missing(tbl)) deparse(substitute(dfm)) else tbl # 提取数据表名
-  keys <- names(dfm) |> paste(collapse = ", ")
-
-  # 逐列处理。数值与逻辑值保持裸写（与原实现一致，避免严格 sql_mode 下报错），
-  # 只有需要引号的类型才走 sqlquote
+  # 列名逐个引号化且不拆分（列名里的点属于名字本身），顺带避免 desc/order 等关键字冲突
+  keys <- names(dfm) |> sqlident(con = con) |> paste(collapse = ", ")
   values <- dfm |> lapply(\(e) {
     if (is.list(e)) # list 列：逐元素序列化成 JSON
       vapply(e, \(v) toJSON(v, auto_unbox = TRUE, null = "null"), character(1)) |>
@@ -218,7 +259,7 @@ insql <- function(dfm, tbl, con = NULL) {
     do.call(\(...) mapply(\(...) paste(..., sep = ", ", collapse = ","), ...), args = _) |>
     sprintf(fmt = "( %s )") |> paste(collapse = ",\n  ") # 值列表
 
-  sprintf("insert into %s (%s) values \n  %s\n", sqlident(tbl, con), keys, values)
+  sprintf("insert into %s (%s) values \n  %s\n", sqlident(tbl, con, split = TRUE), keys, values)
 }
 
 #' 表数据更新SQL（安全版）
@@ -245,7 +286,7 @@ upsql <- function(dfm, tbl, pk = "id", con = NULL) {
     paste(if (is.bare(dfm[[pk]])) as.character(dfm[[pk]]) else sqlquote(dfm[[pk]], con),
           collapse = ", "))
 
-  sprintf("update %s set\n  %s \nwhere %s\n", sqlident(tbl, con), flds, where)
+  sprintf("update %s set\n  %s \nwhere %s\n", sqlident(tbl, con, split = TRUE), flds, where)
 }
 
 #' 带有动态参数计算能力：sqlexecute2(sql, dbname=test), 即dbname=test相当于dbname="test"，合法标识符名可以不打引号而直接获得符号名!
