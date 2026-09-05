@@ -436,8 +436,13 @@ rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqlfill(t=TICKSQL) |> sqlquery() 
 
 # 多周期图均值图
 rbx.tse(rb2701, 0, 24, tsp=20260901) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> chartSeries(name="rb2701")
-# newTA(SMA, Oi, on = NA, col = "grey50", type = "l", legend="OpenInterest") (n=1)
-mapply((\(n, col, leg) newTA(SMA, Cl, on=1, legend=leg) (n=n, col=col)), n=c(10, 20, 30), col=c("red", "blue", "green"), leg=c("MA10", "MA20", "MA30")) 
+# newTA(SMA, Oi, on = NA, col = "grey50", type = "l", legend="OpenInterest") (n=1) # 持仓量
+
+# legend 的名称参数没有替换
+# mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=leg, col=col) (n=n) , n=c(10, 20, 30), col=c("red", "blue", "green"), leg=c("MA10", "MA20", "MA30")) 
+
+# legend 的名称参数被替换
+mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=.(leg), col=.(col)) (n=.(n)) |> bquote() |> eval(), n=c(10, 20, 30), col=c("red", "blue", "green"), leg=c("MA10", "MA20", "MA30")) 
 
 --
 #  是否有 持仓量 数据
