@@ -435,7 +435,7 @@ rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqldframe(x=OHLCV1M) |> df2xts(4:
 rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
 
 # 多周期图均值图
-rbx.tse(rb2701, 0, 24, tsp=20260901) |> sqldframe(x=OHLCV1M) |> df2xts(4:9, 2:3) |> chartSeries(name="rb2701")
+rbx.tse(rb2701, 0, 24, tsp=20260901) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> chartSeries(name="rb2701")
 # newTA(SMA, Oi, on = NA, col = "grey50", type = "l", legend="OpenInterest") (n=1)
 mapply((\(n, col, leg) newTA(SMA, Cl, on=1, legend=leg) (n=n, col=col)), n=c(10, 20, 30), col=c("red", "blue", "green"), leg=c("MA10", "MA20", "MA30")) 
 
