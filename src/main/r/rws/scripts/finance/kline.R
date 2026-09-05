@@ -271,7 +271,7 @@ ct <- \(..., fmt="%Y-%m-%d %H:%M:%S", x=paste(...)) as.POSIXct(format=fmt, x) |>
 # 数据框转xts, ks:数据键名序列，js:时间列键名序列
 # rbx.tse() |> sqldframe(x=OHLCV1M) |> df2xts(4:8, 2:3)
 # rbx.tse() |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
-df2xts <- \(x, ks=1:ncol(x), js=setdiff(1:ncol(x), ks), format="%Y-%m-%d %H:%M:%S") xts(x[, ks], do.call(ct, args=c(x[, js], fmt=format)))
+df2xts <- \(x, ks=ns, js=setdiff(ns, ks), format="%Y-%m-%d %H:%M:%S", ns=1:ncol(x)) xts(x[, if(missing(ks) && !missing(js)) setdiff(ns, js) else ks], do.call(ct, args=c(x[, js], fmt=format)))
 
 #' 判断时点x是否位于交易时段之内
 #' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
