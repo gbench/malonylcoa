@@ -438,15 +438,13 @@ rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqlfill(t=TICKSQL) |> sqlquery() 
 # 多周期图均值图
 batch_load() # 加载基础工具包：.SqlQueryEnv(自定义函数：rbx.tse, sqldframe所在包), tidyverse等
 
-# 基础图表
-(\(instrument="ma610", tsp=20260901) rbx.tse(substitute(instrument), 0, 24, tsp=tsp) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> chartSeries(name=instrument)) ()
-newTA(SMA, Oi, on = NA, col = "grey50", type = "l", legend="OpenInterest") (n=1) # 持仓量
+# 基础K线图表
+kchart <- \(instrument="ma610", startime=0, endtime=24, tsp=20260901) bquote(rbx.tse(.(instrument), .(startime), .(endtime), tsp=.(tsp))) |> eval() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> chartSeries(name=instrument) # K线图表
+kchart("rb2701"); newTA(SMA, Oi, on = NA, col = "grey50", type = "l", legend="OpenInterest") (n=1) # 带有持仓量的K线图
+(\(n=c(10, 20, 30), col=c("red", "blue", "green")) mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=.(leg), col=.(col)) (n=.(n)) |> bquote() |> eval(), n, col, leg=paste0("MA", n)) ) () # 多周期移动平均，legend 的名称参数被替换
 
-# legend 的名称参数没有替换
+# 多周期移动平均，legend 的名称参数没有替换
 # (\(n=c(10, 20, 30), col=c("red", "blue", "green")) mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=leg, col=col) (n=n) , n, col, leg=paste0("MA", n)) ) ()
-
-# legend 的名称参数被替换
-(\(n=c(10, 20, 30), col=c("red", "blue", "green")) mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=.(leg), col=.(col)) (n=.(n)) |> bquote() |> eval(), n, col, leg=paste0("MA", n)) ) ()
 
 --
 #  是否有 持仓量 数据
