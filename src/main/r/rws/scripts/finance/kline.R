@@ -240,6 +240,14 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
     }
 }
 
+# 时间解析函数 calendar time
+ct <- \(..., fmt="%Y-%m-%d %H:%M:%S", x=paste(...)) as.POSIXct(format=fmt, x) |> ( \(.) if(sum(is.na(.))<1) . else as.POSIXct(x) ) () 
+
+# 数据框转xts, ks:数据键名序列，js:时间列键名序列
+# rbx.tse() |> sqldframe(x=OHLCV1M) |> df2xts(4:8, 2:3)
+# rbx.tse() |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
+df2xts <- \(x, ks=ns, js=setdiff(ns, ks), format="%Y-%m-%d %H:%M:%S", ns=1:ncol(x)) xts(x[, if(missing(ks) && !missing(js)) setdiff(ns, js) else ks], do.call(ct, args=c(x[, js], fmt=format)))
+
 #  是否有 持仓量 数据
 has.Oi <- function (x, which = FALSE) {
     colAttr <- attr(x, "Oi")
@@ -262,16 +270,28 @@ Oi <- function (x) {
     stop("subscript out of bounds: no or multiple column name containing \"OpenInterest\"")
 }
 
+# 定义 KDJ 计算函数（独立出来）
+calcKDJ <- function(x, n=9, m1=3, m2=3) {
+  low_n  <- runMin(Cl(x), n)
+  high_n <- runMax(Cl(x), n)
+  RSV <- (Cl(x) - low_n) / (high_n - low_n) * 100
+  
+  K <- SMA(RSV, m1)
+  D <- SMA(K,  m2)
+  J <- 3 * K - 2 * D
+  
+  cbind(K = K, D = D, J = J)
+}
+
+# 基础K线图表
+kchart <- \(instrument="ma610", startime=0, endtime=24, periods=c(10, 20, 30), tsp=NULL) {
+  rbx.tse(instrument, startime, endtime, tsp=tsp) |> evalq() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> chartSeries(name=instrument) # K线图表
+  newTA(SMA, Oi, on = NA, col = "grey50", type = "l", legend="OpenInterest") (n=1) |> print() # 带有持仓量的K线图，chob带有plot/print方法，需被R的自动打印触发
+  (\(n=periods, col=seq(n)+1) mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=leg, col=col) (n=n) |> evalq(), n, col, leg=paste0("MA", n)) ) () # 多周期移动平均，legend 的名称参数被替换
+}
+
 # ctp tickdata sql
 TICKSQL <- "select * from ##tbl where UpdateTime between #startime and #endtime"
-
-# 时间解析函数 calendar time
-ct <- \(..., fmt="%Y-%m-%d %H:%M:%S", x=paste(...)) as.POSIXct(format=fmt, x) |> ( \(.) if(sum(is.na(.))<1) . else as.POSIXct(x) ) () 
-
-# 数据框转xts, ks:数据键名序列，js:时间列键名序列
-# rbx.tse() |> sqldframe(x=OHLCV1M) |> df2xts(4:8, 2:3)
-# rbx.tse() |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
-df2xts <- \(x, ks=ns, js=setdiff(ns, ks), format="%Y-%m-%d %H:%M:%S", ns=1:ncol(x)) xts(x[, if(missing(ks) && !missing(js)) setdiff(ns, js) else ks], do.call(ct, args=c(x[, js], fmt=format)))
 
 #' 判断时点x是否位于交易时段之内
 #' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
