@@ -283,8 +283,14 @@ calcKDJ <- function(x, n=9, m1=3, m2=3) {
   cbind(K = K, D = D, J = J)
 }
 
+# Error in assign(nm, compiler::cmpfun(obj, options = list(optimize = optimize_level)),  : cannot change value of locked binding for '..getModelData'
+#
+# R 包加载后，其命名空间（namespace）会被自动锁定，其中的变量绑定（binding）不能被重新赋值 。
+# ..getModelData 是 quantmod 包的内部函数（以 .. 开头），当你或某个机制尝试用 compiler::cmpfun() 编译它并 assign 回 quantmod 命名空间时，
+# 就会触发 cannot change value of locked binding 错误。从 newTA 的源码可以看到，它创建的新函数被绑定到 quantmod 的命名空间。
+#
 # 用 newTA 封装成副图指标
-addKDJ <- newTA(calcKDJ, col = c("purple", "orange", "green"), lwd = c(1.5, 1.5, 1.5), legend = "KDJ")
+# addKDJ <- newTA(calcKDJ, col = c("purple", "orange", "green"), lwd = c(1.5, 1.5, 1.5), legend = "KDJ")
 
 # 基础K线图表
 kchart <- \(instrument="ma610", startime=0, endtime=24, periods=c(10, 20, 30), tsp=NULL) {
