@@ -296,7 +296,7 @@ calcKDJ <- function(x, n=9, m1=3, m2=3) {
 kchart <- \(instrument="ma610", startime=0, endtime=24, periods=c(10, 20, 30), tsp=NULL) {
   rbx.tse(instrument, startime, endtime, tsp=tsp) |> evalq() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> chartSeries(name=instrument) # K线图表
   newTA(SMA, Oi, on = NA, col = "grey50", type = "l", legend="OpenInterest") (n=1) |> print() # 带有持仓量的K线图，chob带有plot/print方法，需被R的自动打印触发
-  (\(n=periods, col=seq(n)+1) mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=leg, col=col) (n=n) |> evalq(), n, col, leg=paste0("MA", n)) ) () # 多周期移动平均，legend 的名称参数被替换
+  (\(n=periods, col=seq(n)+1) mapply(\(n, col, leg) newTA(SMA, Cl, on=1, legend=leg, col=col) (n=.(n)) |> bquote() |> eval(), n, col, leg=paste0("MA", n)) ) () # 多周期移动平均，legend 的名称参数被替换
 }
 
 # ctp tickdata sql
