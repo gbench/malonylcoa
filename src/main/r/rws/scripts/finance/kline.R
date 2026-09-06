@@ -283,6 +283,9 @@ calcKDJ <- function(x, n=9, m1=3, m2=3) {
   cbind(K = K, D = D, J = J)
 }
 
+# 用 newTA 封装成副图指标
+addKDJ <- newTA(calcKDJ, col = c("purple", "orange", "green"), lwd = c(1.5, 1.5, 1.5), legend = "KDJ")
+
 # 基础K线图表
 kchart <- \(instrument="ma610", startime=0, endtime=24, periods=c(10, 20, 30), tsp=NULL) {
   rbx.tse(instrument, startime, endtime, tsp=tsp) |> evalq() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> chartSeries(name=instrument) # K线图表
