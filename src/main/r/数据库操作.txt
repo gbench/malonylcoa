@@ -455,12 +455,12 @@ kchart <- \(instrument=getOption("sqlquery.rb.instrument", "rb2701"), startime=0
   data.night <- data.origin[paste(index(data.origin) |> head(1) |> date(), "21:00:00/")] # 夜盘数据
   date.night <- data.night |> head(1) |> date() # 前一日期
   date.day <- data.origin |> head(1) |> date() # 前一日期
-  index.nigh <- index(data.night[paste(date.night, "21:00:00/")]) - 24*3600 # 提前一天
-  xdata.night <- xts(coredata(data.night), index.nigh) # 夜盘数据
+  index.night <- index(data.night[paste(date.night, "21:00:00/")]) - 24*3600 # 提前一天
+  xdata.night <- xts(coredata(data.night), index.night) # 夜盘数据
   xdata.day <- data.origin[paste0("/", date.day, " 15:00:00")] # 日盘数据
-  
-  xdata.tx <- c(xdata.night, xdata.day) # 把夜盘与日盘拼接成一个独立交易会话数据(transaction data)
-  chob <- xdata.tx |> chartSeries(name=tryCatch(instrument, error=\(e) inst )) # K线图表
+  xdata.trading <- c(xdata.night, xdata.day) # 把夜盘与日盘拼接成一个独立交易日的会话数据(trading data)
+
+  chob <- xdata.trading |> chartSeries(name=tryCatch(instrument, error=\(e) inst )) # K线图表
   ( range(chob@xdata$OpenInterest) |> newTA(SMA, Oi, col = "grey50", legend="OpenInterest", yrange=_) ) (n=1) |> print() # 带有持仓量的K线图，chob带有plot/print方法，需被R的自动打印触发
   ( \(n=periods, col=seq(n)+1) mapply(\(n, col, lgd) newTA(SMA, Cl, on=1, legend=lgd, col=col) (n=.(n)) |> bquote() |> eval(), n, col, lgd=paste0("MA", n)) ) () |> print() # 多周期移动平均，legend 的名称参数被替换
   chob |> invisible()
