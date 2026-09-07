@@ -305,16 +305,16 @@ kchart0 <- \(instrument=getOption("sqlquery.rb.instrument", "rb2701"), startime=
 kchart <- \(instrument=getOption("sqlquery.rb.instrument", "rb2701"), startime=0, endtime=24, periods=c(10, 20, 30), tsp=NULL) {
   inst <- as.character(substitute(instrument)) # 提取原始合约符号，以便让 kchart(rb2701) 可以无障碍运行
   
-  oridata <- rbx.tse(instrument, startime, endtime, tsp=tsp) |> substitute() |> eval() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) # 原始数据
-  nightdata <- oridata[paste(index(oridata) |> head(1) |> date(), "21:00:00/")] # 夜盘数据
-  nightdate <- nightdata |> head(1) |> date() # 前一日期
-  daydate <- oridata |> head(1) |> date() # 前一日期
-  nightindex <- index(nightdata[paste(nightdate, "21:00:00/")]) - 24*3600 # 提前一天
-  nightxts <- xts(coredata(nightdata), nightindex) # 夜盘数据
-  dayxts <- oridata[paste0("/", daydate, " 15:00:00")] # 日盘数据
+  data.origin <- rbx.tse(instrument, startime, endtime, tsp=tsp) |> substitute() |> eval() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) # 原始数据
+  data.night <- data.origin[paste(index(data.origin) |> head(1) |> date(), "21:00:00/")] # 夜盘数据
+  date.night <- data.night |> head(1) |> date() # 前一日期
+  date.day <- data.origin |> head(1) |> date() # 前一日期
+  index.nigh <- index(data.night[paste(date.night, "21:00:00/")]) - 24*3600 # 提前一天
+  xdata.night <- xts(coredata(data.night), index.nigh) # 夜盘数据
+  xdata.day <- data.origin[paste0("/", date.day, " 15:00:00")] # 日盘数据
   
-  txdata <- c(nightxts, dayxts) # 把夜盘与日盘拼接成一个独立交易会话数据(transaction data)
-  chob <- txdata |> chartSeries(name=tryCatch(instrument, error=\(e) inst )) # K线图表
+  xdata.tx <- c(xdata.night, xdata.day) # 把夜盘与日盘拼接成一个独立交易会话数据(transaction data)
+  chob <- xdata.tx |> chartSeries(name=tryCatch(instrument, error=\(e) inst )) # K线图表
   ( range(chob@xdata$OpenInterest) |> newTA(SMA, Oi, col = "grey50", legend="OpenInterest", yrange=_) ) (n=1) |> print() # 带有持仓量的K线图，chob带有plot/print方法，需被R的自动打印触发
   ( \(n=periods, col=seq(n)+1) mapply(\(n, col, lgd) newTA(SMA, Cl, on=1, legend=lgd, col=col) (n=.(n)) |> bquote() |> eval(), n, col, lgd=paste0("MA", n)) ) () |> print() # 多周期移动平均，legend 的名称参数被替换
   chob |> invisible()
