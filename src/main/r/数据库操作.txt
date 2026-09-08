@@ -530,10 +530,35 @@ addEMA(c(5,10), col = c("blue","red")); addKDJ()
 ---
 # 批量查询合约
 inst <- "rb2701" # 合约名称
-sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(3) |> # 提取3张数据表(合约数据日表的名字结构t_{inst}_{timestamp}，如：t_rb2701_20260831）
+sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(30) |> # 提取3张数据表(合约数据日表的名字结构t_{inst}_{timestamp}，如：t_rb2701_20260831）
   lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |> # rbx记录日表元结构提取时段交易数据聚合ohlcv并进行夜盘时间调整
   Reduce(c, x=_) |> to.minutes(5, name="") |> # 聚合成5分钟K线
   chartSeries(name=inst) # K线绘图
+---
+# 带有OpenInterest的聚合
+agg.ohlcv_oi <- function(x, name.oi = "OpenInterest", rule.oi = c("last", "sum", "max")) {
+  rule.oi <- match.arg(rule.oi)
+  n <- NROW(x)
+  if (n == 0) return(NULL)
+
+  mx <- function(z) if (all(is.na(z))) NA_real_ else max(z, na.rm = TRUE)
+  mn <- function(z) if (all(is.na(z))) NA_real_ else min(z, na.rm = TRUE)
+
+  .oi <- as.numeric(x[, 6])
+  oi <- switch(rule.oi, last = .oi[n], sum  = sum(.oi, na.rm = TRUE), max  = mx(.oi))
+
+  out <- c(Open=as.numeric(x[1, 1]), High=mx(x[, 2]), Low=mn(x[, 3]), Close=as.numeric(x[n, 4]), Volume=sum(as.numeric(x[, 5]), na.rm = TRUE), oi)
+  names(out)[6] <- name.oi
+  out
+}
+
+# 自定义聚合
+inst <- "rb2701"
+chob <- sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(3) |>
+  lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |>
+  Reduce(c, x=_) |> (\(x) period.apply(x, INDEX=endpoints(x, on="minutes", k=5), FUN=agg.ohlcv_oi, name.oi="OpenInterest", rule.oi = "last")) () |>
+  chartSeries(name = inst)
+(chob@xdata[,6] |> range() |> newTA(SMA, Oi, yrange=_)) (n=1) # 加入持仓量
 
 # ----------------------------------------------------------------------------------------------------------------
 # 动态参数计算，sqlquery vs sqlquery2 以及 sqlexecute  vs sqlexecute2
