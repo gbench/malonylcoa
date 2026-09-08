@@ -530,9 +530,10 @@ addEMA(c(5,10), col = c("blue","red")); addKDJ()
 ---
 # 批量查询合约
 inst <- "rb2701" # 合约名称
-sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(3) |>
-  lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |> 
-  Reduce(c, x=_) |> chartSeries(name=inst)
+sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(3) |> # 提取3张数据表
+  lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |> # 提取数据ohlcv数据
+  Reduce(c, x=_) |> to.minutes(5) |> # 聚合成5分钟K线
+  chartSeries(name=inst) # K线绘图
 
 # ----------------------------------------------------------------------------------------------------------------
 # 动态参数计算，sqlquery vs sqlquery2 以及 sqlexecute  vs sqlexecute2
