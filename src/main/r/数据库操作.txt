@@ -530,8 +530,8 @@ addEMA(c(5,10), col = c("blue","red")); addKDJ()
 ---
 # 批量查询合约
 inst <- "rb2701" # 合约名称
-sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(3) |> # 提取3张数据表(数据表名结构t_{inst}_{timestamp}：t_rb2701_20260831）
-  lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |> # 提取数据ohlcv数据并进行夜盘时间调整
+sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(3) |> # 提取3张数据表(合约数据日表的名字结构t_{inst}_{timestamp}，如：t_rb2701_20260831）
+  lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |> # rbx记录日表元结构提取时段交易数据聚合ohlcv并进行夜盘时间调整
   Reduce(c, x=_) |> to.minutes(5, name="") |> # 聚合成5分钟K线
   chartSeries(name=inst) # K线绘图
 
