@@ -527,6 +527,13 @@ addKDJ <- newTA(calcKDJ, col = c("purple", "orange", "green"), lwd = c(1.5, 1.5,
 (ma610 <- rbx.tse(ma610, tsp = 20260901) |> sqldframe(x = OHLCV1M) |> df2xts(4:8, 2:3)) |> chartSeries(name = "")
 addEMA(c(5,10), col = c("blue","red")); addKDJ()
 
+---
+# 批量查询合约
+inst <- "rb2701" # 合约名称
+sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(3) |>
+  lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |> 
+  Reduce(c, x=_) |> chartSeries(name=inst)
+
 # ----------------------------------------------------------------------------------------------------------------
 # 动态参数计算，sqlquery vs sqlquery2 以及 sqlexecute  vs sqlexecute2
 # ----------------------------------------------------------------------------------------------------------------
