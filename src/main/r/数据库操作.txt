@@ -569,11 +569,12 @@ agg.ohlcv_oi <- function(x,  n=NROW(x), name.oi="OpenInterest") if (n == 0) NULL
 
 # 自定义聚合
 kchart.inst <- \(instrument, n=3, k=5) {
-chob <- sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(n) |>
-  lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |>
-  Reduce(c, x=_) |> (\(x) period.apply(x, INDEX=endpoints(x, on="minutes", k=k), FUN=agg.ohlcv_oi)) () |>
-  chartSeries(name = inst)
-(chob@xdata[, 6] |> range() |> newTA(SMA, Oi, yrange=_)) (n=1) # 加入持仓量
+  inst <- as.character(substitute(instrument)) # 提取原始合约符号，以便让 kchart(rb2701) 可以无障碍运行
+  chob <- sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(n) |>
+    lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |>
+    Reduce(c, x=_) |> (\(x) period.apply(x, INDEX=endpoints(x, on="minutes", k=k), FUN=agg.ohlcv_oi)) () |>
+    chartSeries(name = inst)
+  (chob@xdata[, 6] |> range() |> newTA(SMA, Oi, yrange=_)) (n=1) # 加入持仓量
 }
 kchart.inst (rb2701)
 
