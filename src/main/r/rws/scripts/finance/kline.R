@@ -303,13 +303,16 @@ kchart0 <- \(instrument=getOption("sqlquery.rb.instrument", "rb2701"), startime=
 
 # 夜盘前移， data.origin：xt结构的时间序列
 nightshift <- \(data.origin, seconds.shfit=1*24*3600) {
-  data.night <- data.origin[paste(index(data.origin) |> head(1) |> date(), "21:00:00/")] # 夜盘数据
-  date.night <- data.night |> head(1) |> date() # 前一日期
-  date.day <- data.origin |> head(1) |> date() # 前一日期
-  index.night <- index(data.night[paste(date.night, "21:00:00/")]) - seconds.shfit # 前移动时间长度
-  xdata.night <- xts(coredata(data.night), index.night) # 夜盘数据
-  xdata.day <- data.origin[paste0("/", date.day, " 15:00:00")] # 日盘数据
-  c(xdata.night, xdata.day) # 把夜盘与日盘拼接成一个独立交易日的会话数据(trading data)
+  tryCatch({
+    data.night <- data.origin[paste(index(data.origin) |> head(1) |> date(), "21:00:00/")] # 夜盘数据
+    date.night <- data.night |> head(1) |> date() # 前一日期
+    date.day <- data.origin |> head(1) |> date() # 前一日期
+    index.night <- index(data.night[paste(date.night, "21:00:00/")]) - seconds.shfit # 前移动时间长度
+    xdata.night <- xts(coredata(data.night), index.night) # 夜盘数据
+    xdata.day <- data.origin[paste0("/", date.day, " 15:00:00")] # 日盘数据
+    xdata.trading <- c(xdata.night, xdata.day) # 把夜盘与日盘拼接成一个独立交易日的会话数据(trading data)
+    xdata.trading
+  }, error = \(e) data.origin)
 }
 
 # 基础K线图表（调整夜盘）
