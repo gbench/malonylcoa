@@ -324,6 +324,21 @@ kchart <- \(instrument=getOption("sqlquery.rb.instrument", "rb2701"), startime=0
   chob |> invisible()
 }
 
+# 自定义聚合, k：聚合周期数，on: 时间单位，默认"minutes", n：提取的最新数据数量，periods：均线周期序列
+kchart.agg <- \(instrument="rb2701", k=5, on="minutes", n=3, periods=c(10, 20, 30)) {
+  inst <- as.character(substitute(instrument)) # 提取原始合约符号，以便让 kchart(rb2701) 可以无障碍运行
+  ohlcv_oi.agg <- \(x) period.apply(x, INDEX=endpoints(x, on=on, k=k), FUN=\(x,  n=NROW(x)) 
+      if (n == 0) NULL else c(Open=as.numeric(x[1, 1]), High=max(x[, 2]), Low=min(x[, 3]), Close=as.numeric(x[n, 4]), 
+        Volume=sum(as.numeric(x[, 5]), na.rm=TRUE), OpenInterest=as.numeric(x[n, 6]))) # 自定聚合 
+  chob <- sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(n) |>
+    lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |>
+    Reduce(c, x=_) |> ohlcv_oi.agg () |> chartSeries(name = inst) # chob
+  (chob@xdata[, 6] |> range() |> newTA(SMA, Oi, yrange=_)) (n=1) |> print() # 加入持仓量
+  ( \(n=periods, col=seq(n)+1) mapply(\(n, col, lgd) newTA(SMA, Cl, on=1, legend=lgd, col=col) (n=.(n)) |> bquote() |> eval(), 
+    n, col, lgd=paste0("MA", n)) ) () |> print() # 多周期移动平均，legend 的名称参数被替换
+  chob |> invisible()
+}
+
 # ctp tickdata sql
 TICKSQL <- "select * from ##tbl where UpdateTime between #startime and #endtime"
 
