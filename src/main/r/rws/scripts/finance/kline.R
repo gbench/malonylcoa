@@ -240,6 +240,15 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
     }
 }
 
+#' 判断时点x是否位于交易时段之内
+#' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
+#' 如此，记法上"23:60==24:00"是时长等价的，同理hm("23:60")==hms("23:59:60")、hms("23:59:60")==ddays(1)！
+#' 测试示例:
+#' c("08:60", "09:10", "10:20", "12:00", "21:30", "23:60", "25:00", NA) |> is.trading()
+#' (Sys.time()+(1:5)*60*60) |> is.trading() # 当前时间的结构判断
+#' @param x 时点 
+is.trading <- is.trading.gen()
+
 # 时间解析函数 calendar time
 ct <- \(..., fmt="%Y-%m-%d %H:%M:%S", x=paste(...)) as.POSIXct(format=fmt, x) |> ( \(.) if(sum(is.na(.))<1) . else as.POSIXct(x) ) () 
 
@@ -328,28 +337,19 @@ kchart <- \(instrument=getOption("sqlquery.rb.instrument", "rb2701"), startime=0
 kchart.agg <- \(instrument="rb2701", k=5, on="minutes", n=3, periods=c(10, 20, 30)) {
   inst <- as.character(substitute(instrument)) # 提取原始合约符号，以便让 kchart(rb2701) 可以无障碍运行
   ohlcv_oi.agg <- \(x) period.apply(x, INDEX=endpoints(x, on=on, k=k), FUN=\(x,  n=NROW(x)) 
-      if (n == 0) NULL else c(Open=as.numeric(x[1, 1]), High=max(x[, 2]), Low=min(x[, 3]), Close=as.numeric(x[n, 4]), 
-        Volume=sum(as.numeric(x[, 5]), na.rm=TRUE), OpenInterest=as.numeric(x[n, 6]))) # 自定聚合 
-  chob <- sqlquery("show tables") |> grep(inst, x=_, value=T) |> strsplit("_") |> tail(n) |>
-    lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |>
+    if (n == 0) NULL else c(Open=as.numeric(x[1, 1]), High=max(x[, 2]), Low=min(x[, 3]), Close=as.numeric(x[n, 4]), 
+      Volume=sum(as.numeric(x[, 5]), na.rm=TRUE), OpenInterest=as.numeric(x[n, 6]))) # 自定聚合 
+  chob <- sqlquery("show tables") |> grep(inst, x=_, value=T) |> tail(n) |> # 提取尾部n个数据表
+    strsplit("_") |> lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |>
     Reduce(c, x=_) |> ohlcv_oi.agg () |> chartSeries(name = inst) # chob
   (chob@xdata[, 6] |> range() |> newTA(SMA, Oi, yrange=_)) (n=1) |> print() # 加入持仓量
   ( \(n=periods, col=seq(n)+1) mapply(\(n, col, lgd) newTA(SMA, Cl, on=1, legend=lgd, col=col) (n=.(n)) |> bquote() |> eval(), 
     n, col, lgd=paste0("MA", n)) ) () |> print() # 多周期移动平均，legend 的名称参数被替换
-  chob |> invisible()
+  chob |> invisible() # 返回 chart object
 }
 
 # ctp tickdata sql
 TICKSQL <- "select * from ##tbl where UpdateTime between #startime and #endtime"
-
-#' 判断时点x是否位于交易时段之内
-#' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
-#' 如此，记法上"23:60==24:00"是时长等价的，同理hm("23:60")==hms("23:59:60")、hms("23:59:60")==ddays(1)！
-#' 测试示例:
-#' c("08:60", "09:10", "10:20", "12:00", "21:30", "23:60", "25:00", NA) |> is.trading()
-#' (Sys.time()+(1:5)*60*60) |> is.trading() # 当前时间的结构判断
-#' @param x 时点 
-is.trading <- is.trading.gen()
 
 # 使用符号变量 
 # symbol <- "rb2605"; ohlc(symbol, 2100, 2300, keys=0)
