@@ -240,9 +240,14 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
     }
 }
 
-# 生成一个函数调用f(x)，x：参数，f：函数名称
+# 生成一个函数调用f(x)，x：参数，f：函数名称 或是 表达式
 # xdata |> xf(\(.) .[is.trading(index(.)), ])
-xf <- \(x, f) match.fun(f) (x)
+xf <- \(x, f) { 
+  .f <- substitute(f) # 提取表达式
+  . <- x # 为x起一个别名
+  fn <- tryCatch(match.fun(f), error=\(.) .f ) # 提取函数
+  if(is.function(fn)) fn(x) else fn |> eval() 
+}
 
 #' 判断时点x是否位于交易时段之内
 #' 注意，时点x这里采用的是时长period结构来描述，period是特定时刻是与基准时刻"00:00"之间时长跨度
