@@ -435,6 +435,13 @@ rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqldframe(x=OHLCV1M) |> df2xts(4:
 rbx.tse(rb2701, .0930, .0945, tsp=20260901) |> sqlfill(t=TICKSQL) |> sqlquery() |> df2xts("LastPrice", c("ActionDay", "UpdateTime"), "%Y%m%d %H:%M:%S") |> plot(main="tickdata")
 
 ---
+# 分库分表的查询
+sqlquerys <- list(sql="show databases") |> do.call(sqlquery, args=_) |> setNames(nm=_) |> 
+  lapply(\(db) \(sql) bquote(sqlquery(sql=sql, dbname=db)) |> eval()) # 生成专用查询函数
+
+sqlquerys$ctp("show tables") |> tail(5) |> sprintf(fmt="select * from %s limit 5") |> sqlquerys$ctp()
+
+---
 # 多周期图均值图
 batch_load() # 加载基础工具包：.SqlQueryEnv(自定义函数：rbx.tse, sqldframe所在包), tidyverse等
 
