@@ -331,7 +331,7 @@ nightshift <- \(data.origin, seconds.shift=1*24*3600) {
 # 基础K线图表（调整夜盘）
 kchart <- \(instrument=getOption("sqlquery.rb.instrument", "rb2701"), startime=0, endtime=24, periods=c(10, 20, 30), tsp=NULL, seconds.shift=1*24*3600) {
   inst <- as.character(substitute(instrument)) # 提取原始合约符号，以便让 kchart(rb2701) 可以无障碍运行
-  chob <- rbx.tse(instrument, startime, endtime, tsp=tsp) |> substitute() |> eval() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift(seconds.shift) |> chartSeries(name=tryCatch(instrument, error=\(e) inst )) # K线图表
+  chob <- rbx.tse(instrument, startime, endtime, tsp=tsp) |> substitute() |> eval() |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> xf(\(.).[is.trading(index(.)),]) |> nightshift(seconds.shift) |> chartSeries(name=tryCatch(instrument, error=\(e) inst )) # K线图表
   ( range(chob@xdata$OpenInterest) |> newTA(SMA, Oi, col = "grey50", legend="OpenInterest", yrange=_) ) (n=1) |> print() # 带有持仓量的K线图，chob带有plot/print方法，需被R的自动打印触发
   ( \(n=periods, col=seq(n)+1) mapply(\(n, col, lgd) newTA(SMA, Cl, on=1, legend=lgd, col=col) (n=.(n)) |> bquote() |> eval(), n, col, lgd=paste0("MA", n)) ) () |> print() # 多周期移动平均，legend 的名称参数被替换
   chob |> invisible()
@@ -344,8 +344,8 @@ kchart.agg <- \(instrument="rb2701", k=5, on="minutes", n=3, periods=c(10, 20, 3
     if (n == 0) NULL else c(Open=as.numeric(x[1, 1]), High=max(x[, 2]), Low=min(x[, 3]), Close=as.numeric(x[n, 4]), 
       Volume=sum(as.numeric(x[, 5]), na.rm=TRUE), OpenInterest=as.numeric(x[n, 6]))) # 自定聚合 
   chob <- sqlquery("show tables") |> grep(inst, x=_, value=T) |> tail(n) |> # 提取尾部n个数据表
-    strsplit("_") |> lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> nightshift()) |>
-    Reduce(c, x=_) |> ohlcv_oi.agg () |> chartSeries(name = inst) # chob
+    strsplit("_") |> lapply(\(e) rbx.tse(e[2], 0, 24, tsp=e[3]) |> sqldframe(x=OHLCV.1M) |> df2xts(3:8) |> 
+    xf(\(.).[is.trading(index(.)),]) |> nightshift()) |> Reduce(c, x=_) |> ohlcv_oi.agg () |> chartSeries(name = inst) # chob
   (chob@xdata[, 6] |> range() |> newTA(SMA, Oi, yrange=_)) (n=1) |> print() # 加入持仓量
   ( \(n=periods, col=seq(n)+1) mapply(\(n, col, lgd) newTA(SMA, Cl, on=1, legend=lgd, col=col) (n=.(n)) |> bquote() |> eval(), 
     n, col, lgd=paste0("MA", n)) ) () |> print() # 多周期移动平均，legend 的名称参数被替换
