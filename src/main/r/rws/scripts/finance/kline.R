@@ -240,13 +240,15 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
     }
 }
 
-# 生成一个函数调用f(x)，x：参数，f：函数名称 或是 表达式
-# xdata |> xf(\(.) .[is.trading(index(.)), ])
-xf <- \(x, f) { 
+# execute function 生成一个函数调用f(x)，x：参数，f：函数名称 或是 表达式
+# iris |> xf(this[this$Species == sp, ], sp = "setosa")
+xf <- \(x, f, ...) { 
   .f <- substitute(f) # 提取表达式
   self <- this <- . <- x # 为x起一个别名
   fn <- tryCatch(match.fun(f), error=\(.) .f ) # 提取函数
-  if(is.function(fn)) fn(x) else fn |> eval() 
+  env <- list2env(list(...)) # 把可选参数封装成环境
+  parent.env(env) <- environment() # 创建一个fn的自定义闭包环境
+  if(is.function(fn)) fn(x, ...) else fn |> eval(envir=env) 
 }
 
 #' 判断时点x是否位于交易时段之内
