@@ -244,7 +244,7 @@ is.trading.gen <- \(tbs="09:00,10:15;10:30,11:30;13:30,15:00;21:00,23:00") {
 # xdata |> xf(\(.) .[is.trading(index(.)), ])
 xf <- \(x, f) { 
   .f <- substitute(f) # 提取表达式
-  . <- x # 为x起一个别名
+  self <- this <- . <- x # 为x起一个别名
   fn <- tryCatch(match.fun(f), error=\(.) .f ) # 提取函数
   if(is.function(fn)) fn(x) else fn |> eval() 
 }
