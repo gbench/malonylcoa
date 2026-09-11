@@ -401,6 +401,17 @@ rbx.tse <- \(...) { # 扩展表格时间
     do.call(rbx(.rb.tse), args = _) # 将标准构建器封装成扩展构建器
 }
 
+# execute function 生成一个函数调用f(x)，x：参数，f：函数名称 或是 表达式
+# iris |> xf(this[this$Species == sp, ], sp = "setosa")
+xf <- \(x, f, ...) { 
+  .f <- substitute(f) # 提取表达式
+  self <- this <- . <- x # 为x起一个别名
+  fn <- tryCatch(match.fun(f), error=\(.) .f ) # 提取函数
+  env <- list2env(list(...)) # 把可选参数封装成环境
+  parent.env(env) <- environment() # 创建一个fn的自定义闭包环境
+  if(is.function(fn)) fn(x, ...) else fn |> eval(envir=env) 
+}
+
 # ----------------------------------------------------------------------------------------------------------------
 # 模板数据查询
 # ----------------------------------------------------------------------------------------------------------------
@@ -440,6 +451,8 @@ sqlquerys <- list(sql="show databases") |> do.call(sqlquery, args=_) |> setNames
   lapply(\(db) \(sql) bquote(sqlquery(sql=sql, dbname=db)) |> eval()) # 生成专用查询函数
 
 sqlquerys$ctp("show tables") |> tail(5) |> sprintf(fmt="select * from %s limit 5") |> sqlquerys$ctp()
+
+sqlquery("show databases") |> xf(lapply(.,\(db) \(sql) sqlquery(sql, dbname=db))|> setNames(nm=.)) |> lapply(\(f) f("show tables"))
 
 ---
 # 多周期图均值图
