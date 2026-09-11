@@ -452,7 +452,7 @@ sqlquerys <- list(sql="show databases") |> do.call(sqlquery, args=_) |> setNames
 
 sqlquerys$ctp("show tables") |> tail(5) |> sprintf(fmt="select * from %s limit 5") |> sqlquerys$ctp()
 
-sqlquery("show databases") |> xf(lapply(.,\(db) \(sql) sqlquery(sql, dbname=db))|> setNames(nm=.)) |> lapply(\(f) f("show tables"))
+sqlquery("show databases") |> xf(lapply(., \(db) \(sql) sqlquery(sql, dbname=db)) |> setNames(nm=.)) |> lapply(\(f) f("show tables"))
 
 ---
 # 多周期图均值图
